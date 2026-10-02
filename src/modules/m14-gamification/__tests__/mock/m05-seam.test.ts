@@ -11,12 +11,17 @@ import { RepositoryError } from '@/mock/repository'
 
 const holder: { practice: unknown } = { practice: undefined }
 
-vi.mock('@/modules/m05-practice/mock', () => ({
-  default: { id: 'M05' },
-  get practice() {
-    return holder.practice
-  },
-}))
+// Partial mock: other modules (reads.ts -> M15 -> M08 ...) import further M05 exports through the
+// chain; only `practice` is replaced.
+vi.mock('@/modules/m05-practice/mock', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>()
+  return {
+    ...original,
+    get practice() {
+      return holder.practice
+    },
+  }
+})
 
 const { m05PracticeReads } = await import('../../mock/repository/reads')
 
