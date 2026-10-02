@@ -1,10 +1,27 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 /**
- * M11 route fragment "analisis-item" (S6; build-plan §S.3 rule 2). Created empty by M11-T1; the UI task of the
- * screen fills it (M11-T2 S1 / S6, M11-T3 S2–S5 and the `/admin-sekolah/monitoring` alias, M11-T4 S8,
- * M11-T5 S7).
+ * M11 route fragment "analisis-item": S6 `/guru/analisis-item` (`?subject_id=&classroom_id=`), user
+ * shell (FR-M11-04). Teacher and admin only (M10 §7 **T** guard); `/guru/analisis-item/{x}` renders the
+ * global 404 (FR-M11-07).
  */
-const routes: RouteRecordRaw[] = []
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/guru/analisis-item',
+    name: 'guru-analisis-item',
+    component: () => import('../pages/AnalisisItemPage.vue'),
+    meta: {
+      layout: 'user',
+      access: 'auth',
+      roles: ['teacher', 'admin'],
+      title: 'Analisis Item Soalan - Portal Guru',
+      header: {
+        title: 'Analisis Item Soalan',
+        subtitle: 'Kenal pasti soalan yang sukar dan indeks diskriminasi',
+      },
+      module: 'M11',
+    },
+  },
+]
 
 export default routes

@@ -34,3 +34,7 @@ Thumbs.db
 # Raw live captures and screenshots: local evidence only, may contain real personal data (privacy rule)
 docs/discovery/inventory/_raw/
 docs/discovery/img/
+
+# Per-agent Playwright outputs
+test-results-*/
+playwright-report-*/

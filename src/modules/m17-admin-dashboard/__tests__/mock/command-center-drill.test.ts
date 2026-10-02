@@ -792,3 +792,82 @@ describe('school admin scope (ATS, BR-M17-34, FR-M17-114, SEC-M17-13)', () => {
     }
   })
 })
+
+describe('observed figures (M17 SRS §6.7 B/C, XR-M17-02 landed in M05)', () => {
+  it('S4 8082: 549 pupils · 393 engaged · 130,233 answers · 82.3 %', async () => {
+    const s = await get<CcSchool>(ADMIN, `${cc}/school/8082`)
+    expect(s.cards).toEqual({ students: 549, active: 393, answers: 130_233, accuracy: 82.3 })
+    expect(s.teachers).toHaveLength(68)
+  })
+
+  it('S4 8080: 185 pupils · 174 engaged · 53,494 answers · 81.7 %', async () => {
+    const s = await get<CcSchool>(ADMIN, `${cc}/school/8080`)
+    expect(s.cards).toEqual({ students: 185, active: 174, answers: 53_494, accuracy: 81.7 })
+  })
+
+  it('S5 1919: class 370 has 30 members · 8 active (30h) · 13,641 answers · 79.0 %', async () => {
+    const t = await get<CcTeacher>(ADMIN, `${cc}/school/8080/teacher/1919`)
+    const row = t.classes.find((c) => c.id === 370)
+    expect(row).toMatchObject({ students: 30, active30d: 8, answers: 13_641, accuracy: 79 })
+  })
+
+  it('S6 370: 30 members, Σ answers 13,641, 3 "Aktif", pupil 2022 first with 2,378 · 93.5 %', async () => {
+    const c = await get<CcClass>(ADMIN, `${cc}/classroom/370`)
+    expect(c.students).toHaveLength(30)
+    expect(c.students.reduce((n, s) => n + s.answers, 0)).toBe(13_641)
+    expect(c.students.filter((s) => s.status === 'aktif')).toHaveLength(3)
+    expect(c.students[0]).toMatchObject({ userId: 2022, answers: 2378, accuracy: 93.5 })
+    expect(c.students.slice(1, 3).map((s) => [s.answers, s.accuracy])).toEqual([
+      [2204, 73.2],
+      [1836, 77.8],
+    ])
+  })
+
+  it('S7 2022: 2,378 answers · 93.5 %; 123 sessions (2,372 answers, 93.7 %); week 452 · 23 · 99.6 %', async () => {
+    const s = await get<CcStudent>(ADMIN, `${cc}/student/2022`)
+    expect(s.cards).toMatchObject({ answers: 2378, accuracy: 93.5, streak: 1 })
+    expect(s.weeks.slice(-2).map((w) => w.count)).toEqual([1166, 452])
+    const all = await get<CcSessionList>(
+      ADMIN,
+      `${cc}/student/2022/week?start=2020-01-01&end=2030-12-31`,
+    )
+    expect(all).toMatchObject({ totalSessions: 123, totalAnswers: 2372, accuracy: 93.7 })
+    const wk = await get<CcSessionList>(
+      ADMIN,
+      `${cc}/student/2022/week?start=2026-09-21&end=2026-09-27`,
+    )
+    expect(wk).toMatchObject({ totalSessions: 23, totalAnswers: 452, accuracy: 99.6 })
+  })
+
+  const week = (id: number) =>
+    get<CcSessionList>(ADMIN, `${cc}/student/${String(id)}/week?start=2026-09-21&end=2026-09-27`)
+
+  it.each([
+    [2013, 330, 18, 99.7],
+    [2014, 234, 11, 62],
+    [2015, 200, 15, 93.5],
+    [2016, 160, 4, 73.8],
+    [2018, 159, 10, 78.6],
+    [2019, 159, 10, 78.6],
+    [2017, 99, 5, 80.8],
+  ])(
+    'week of pupil %i: %i answers · %i sessions · %f %%',
+    async (id, answers, sessions, accuracy) => {
+      expect(await week(id)).toMatchObject({
+        totalAnswers: answers,
+        totalSessions: sessions,
+        accuracy,
+      })
+    },
+  )
+
+  it.each([
+    [2013, 2893, 99.2],
+    [2017, 1701, 90.2],
+    [2020, 3637, 92.6],
+    [2023, 1179, 87.9],
+  ])('month top pupil %i: %i answers · %f %%', async (id, answers, accuracy) => {
+    const s = await get<CcStudent>(ADMIN, `${cc}/student/${String(id)}`)
+    expect(s.cards).toMatchObject({ answers, accuracy })
+  })
+})
