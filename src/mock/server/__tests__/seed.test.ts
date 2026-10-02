@@ -46,7 +46,7 @@ describe('plugin definition and registry loader', () => {
     expect(() => toMockModule(EMPTY_CORE)).toThrow(/core/)
   })
 
-  it('loads the real registry (18 modules) in order', async () => {
+  it('loads the real registry (21 modules) in order', async () => {
     const modules = await loadMockModules(mockPlugins)
     expect(modules.map((m) => m.id)).toEqual([
       'M01',
@@ -67,6 +67,9 @@ describe('plugin definition and registry loader', () => {
       'M16',
       'M17',
       'M18',
+      'M20',
+      'M21',
+      'M25',
     ])
   })
 
