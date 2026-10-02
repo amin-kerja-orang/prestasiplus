@@ -32,4 +32,7 @@ export const mockPlugins: readonly MockPluginLoader[] = [
   () => import('@/modules/m16-battle-games/mock'),
   () => import('@/modules/m17-admin-dashboard/mock'),
   () => import('@/modules/m18-ppd-jpn/mock'),
+  () => import('@/modules/m20-marketplace/mock'),
+  () => import('@/modules/m21-sponsorship/mock'),
+  () => import('@/modules/m25-ai-centre/mock'),
 ]

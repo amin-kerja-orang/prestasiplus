@@ -18,6 +18,9 @@ import { manifest as m15 } from '@/modules/m15-rewards-shop'
 import { manifest as m16 } from '@/modules/m16-battle-games'
 import { manifest as m17 } from '@/modules/m17-admin-dashboard'
 import { manifest as m18 } from '@/modules/m18-ppd-jpn'
+import { manifest as m20 } from '@/modules/m20-marketplace'
+import { manifest as m21 } from '@/modules/m21-sponsorship'
+import { manifest as m25 } from '@/modules/m25-ai-centre'
 
 /**
  * THE module registry (overview §4, ADR-0009).
@@ -55,4 +58,7 @@ export const modules: readonly ModuleManifest[] = [
   m16,
   m17,
   m18,
+  m20,
+  m21,
+  m25,
 ]
