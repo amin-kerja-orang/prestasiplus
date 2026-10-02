@@ -11,7 +11,10 @@
  * — plus the owner-side repositories the M14 handlers use (`coinLedger`, `tiers`, `teacherCash`,
  * `teacherRewards`, `rewardControl`), and the error class `M14Error`.
  *
- * M14's handlers (#2–#43), test hooks (§6.14) and screens belong to M14-T1…T5.
+ * Routes (M14-T1, `handlers/`): §7 #2–#43 (#1 stays the core handler). Test hooks (§6.14,
+ * `hooks/`): `setWallet`, `getWallet`, `ledger`, `createDraw`, `setStreak`, `setTeacherWallet`,
+ * `gamificationSession`, `gameResult`, `m14LoadFixture`. The screens belong to M14-T2…T5; the API
+ * client is `../api`.
  *
  * Bump `version` whenever the seed, a spec, `derive` or a cheap field changes (overview §6.9,
  * §14 rule 4b).
@@ -20,6 +23,8 @@
 import { defineMockModule } from '@/mock/define'
 
 import { ledgerDataset } from './datasets/ledger'
+import { m14Routes } from './handlers'
+import { m14Hooks } from './hooks'
 import { walletsDataset } from './datasets/wallets'
 import {
   achievementsRepo,
@@ -68,6 +73,8 @@ const plugin = defineMockModule({
   },
   seed: seedGamification,
   finalise: finaliseGamification,
+  routes: m14Routes,
+  hooks: m14Hooks,
 })
 
 export default plugin

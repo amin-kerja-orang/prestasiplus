@@ -27,6 +27,7 @@ import type { Clock } from '@/lib/time'
 import { RepositoryError } from '@/mock/repository'
 import { users } from '@/modules/m01-authentication/mock'
 import * as m02 from '@/modules/m02-users-schools/mock'
+import * as m03 from '@/modules/m03-curriculum/mock'
 import * as m05 from '@/modules/m05-practice/mock'
 import * as m15 from '@/modules/m15-rewards-shop/mock'
 
@@ -59,6 +60,10 @@ export interface PracticeReads {
   practiceSessions(userId: number): PracticeSessionFact[]
   answersOn(userId: number, date: string): PracticeAnswerFact[]
   mastery(userId: number): PracticeMasteryFact[]
+  /** Test seam only (optional): every completed session, all modes (S18). Default: M05 history. */
+  allSessions?(userId: number): PracticeSessionFact[]
+  /** Test seam only (optional): the totals of every answer (S18). Default: M05 answers. */
+  allAnswers?(userId: number): { total: number; correct: number }
 }
 
 /** BR-M14-16 practice modes (the lifetime "kuiz" count). */
@@ -197,6 +202,90 @@ export function practiceReads(): PracticeReads {
 /** Test seam: replaces the M05 reads (`null` restores them). */
 export function setPracticeReadsForTests(reads: PracticeReads | null): void {
   override = reads
+}
+
+/**
+ * Every completed session of the user, all modes (S18 "Sesi", M05 S8 `all`), through the M05 read
+ * contract; empty while `practice` is absent.
+ */
+export function allSessions(userId: number): PracticeSessionFact[] {
+  const reads = practiceReads()
+  return reads.allSessions ? reads.allSessions(userId) : history(userId, {})
+}
+
+/**
+ * Every answer of the user, with or without a session (S18 "Soalan" / "Ketepatan", the M05 S8
+ * `all` definition: admin 119 answers, 46 correct), through the M05 read contract.
+ */
+export function allAnswers(userId: number): { total: number; correct: number } {
+  const reads = practiceReads()
+  if (reads.allAnswers) return reads.allAnswers(userId)
+  const repo = practiceRepo()
+  if (!repo) return { total: 0, correct: 0 }
+  const rows = arrayOf(
+    method(repo, 'answers')(userId, {}),
+    `practice.answers(${String(userId)}, {})`,
+  )
+  let correct = 0
+  for (const r of rows) if (r.isCorrect === true) correct++
+  return { total: rows.length, correct }
+}
+
+/**
+ * Test hook `gamificationSession` (§6.14): inserts one completed session without answers through
+ * the M05 hook `mock.addSession` (`practice.addSession`) and returns its id. Falls back to a
+ * synthetic id while M05 is absent, so the hook works before F-26 (M14-only tests).
+ */
+export function insertSession(
+  userId: number,
+  s: { mode: string; correct: number; total: number; timeSpentSec: number; at: string },
+): string {
+  const repo = practiceRepo()
+  const add = repo?.addSession
+  if (typeof add === 'function') {
+    const row = (add as Fn).call(repo, userId, s) as { id?: unknown } | undefined
+    if (row && (typeof row.id === 'string' || typeof row.id === 'number')) return String(row.id)
+    throw contract('practice.addSession must return the stored session with an id')
+  }
+  hookSessionSeq += 1
+  return `m14-hook-${String(hookSessionSeq)}`
+}
+
+let hookSessionSeq = 0
+
+/** M03 subject names and order (S11 / S18 mastery), read at call time; ids when M03 is absent. */
+export function subjectNames(): { name(id: number): string; order(id: number): number } {
+  const repo = Reflect.get(m03, 'curriculum') as unknown as Loose | undefined
+  const subject = repo?.subject
+  const ids = repo?.subjectIds
+  const order = new Map<number, number>()
+  const names = new Map<number, string>()
+  try {
+    if (typeof ids === 'function') {
+      ;((ids as Fn).call(repo) as number[]).forEach((id, i) => order.set(id, i))
+    }
+  } catch {
+    /* M03 is not booted (an M14-only test): ids order, names by id */
+  }
+  return {
+    name(id) {
+      const cached = names.get(id)
+      if (cached !== undefined) return cached
+      let name = `Subjek ${String(id)}`
+      try {
+        const s =
+          typeof subject === 'function'
+            ? ((subject as Fn).call(repo, id) as { name?: unknown } | undefined)
+            : undefined
+        if (typeof s?.name === 'string') name = s.name
+      } catch {
+        /* M03 is not booted */
+      }
+      names.set(id, name)
+      return name
+    },
+    order: (id) => order.get(id) ?? Number.MAX_SAFE_INTEGER,
+  }
 }
 
 /** M15 `mysteryBox.openingsCount(userId)` (Q-M15-OPENINGS-COUNT), 0 until M15 exists. */

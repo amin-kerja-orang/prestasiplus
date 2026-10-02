@@ -234,6 +234,10 @@ export const drawsRepo = defineRepository({
       list(): Draw[] {
         return drawsTable.query({ sort: [{ field: 'id', dir: 'desc' }] }).rows
       },
+      /** One draw by id (M15 S7 needs the title and price of the draw it buys a ticket for). */
+      get(id: number): Draw | undefined {
+        return drawsTable.get(id)
+      },
       /** M15 S7: status `open` and `closesAt` ≥ today (local date). */
       listOpenDraws(today: string | number = nowMs()): Draw[] {
         const date =
