@@ -50,3 +50,27 @@ export function get(runtime: MockRuntime, url: string, token?: string): Promise<
   if (token !== undefined) headers.authorization = `Bearer ${token}`
   return runtime.transport.request({ method: 'GET', url, headers })
 }
+
+/** Any method, an optional query (`{page: 2}`) and body, as the API client sends them. */
+export function send(
+  runtime: MockRuntime,
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  url: string,
+  options: { token?: string; query?: Record<string, string | number>; body?: unknown } = {},
+): Promise<TransportResponse> {
+  const headers: Record<string, string> = { accept: 'application/json' }
+  if (options.token !== undefined) headers.authorization = `Bearer ${options.token}`
+  const query = options.query
+    ? Object.fromEntries(Object.entries(options.query).map(([k, v]) => [k, String(v)]))
+    : undefined
+  return runtime.transport.request({
+    method,
+    url,
+    headers,
+    ...(query ? { query } : {}),
+    ...(options.body !== undefined ? { body: options.body } : {}),
+  })
+}
+
+/** The `data` of a response body (`{data}` envelope). */
+export const dataOf = <T = unknown>(res: TransportResponse): T => (res.body as { data: T }).data
