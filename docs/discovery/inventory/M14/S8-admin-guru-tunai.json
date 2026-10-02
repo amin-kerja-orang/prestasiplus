@@ -1,0 +1,856 @@
+{
+ "screen": "S8",
+ "key": "S8-admin-guru-tunai",
+ "route": "/admin/gamifikasi/guru/tunai",
+ "name": "Tebus Tunai Guru — Admin",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.406Z",
+ "notes": "new route",
+ "shell": "SHA",
+ "summary": {
+  "total": 29,
+  "visibleDefault": 27,
+  "conditional": 0,
+  "hiddenOnly": 2,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 5,
+   "text": 8,
+   "filter": 6,
+   "table": 1,
+   "badge": 1,
+   "form": 1,
+   "hidden-field": 2,
+   "select": 1,
+   "input": 1,
+   "button": 1,
+   "link": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "status=PENDING (default; 2 requests)",
+   "file": "_raw/M14/S8-admin-guru-tunai__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru/tunai",
+   "finalUrl": "/admin/gamifikasi/guru/tunai",
+   "httpStatus": 200,
+   "title": "Tebus Tunai Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 6",
+    "sanitized: cells=4 strings=4 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 2
+   }
+  },
+  {
+   "label": "status-APPROVED__1280",
+   "description": "status=APPROVED",
+   "file": "_raw/M14/S8-admin-guru-tunai__status-APPROVED__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru/tunai?status=APPROVED",
+   "finalUrl": "/admin/gamifikasi/guru/tunai?status=APPROVED",
+   "httpStatus": 200,
+   "title": "Tebus Tunai Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=1 strings=1 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-PAID__1280",
+   "description": "status=PAID",
+   "file": "_raw/M14/S8-admin-guru-tunai__status-PAID__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru/tunai?status=PAID",
+   "finalUrl": "/admin/gamifikasi/guru/tunai?status=PAID",
+   "httpStatus": 200,
+   "title": "Tebus Tunai Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=1 strings=1 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-PROCESSING__1280",
+   "description": "status=PROCESSING",
+   "file": "_raw/M14/S8-admin-guru-tunai__status-PROCESSING__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru/tunai?status=PROCESSING",
+   "finalUrl": "/admin/gamifikasi/guru/tunai?status=PROCESSING",
+   "httpStatus": 200,
+   "title": "Tebus Tunai Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=1 strings=1 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-REJECTED__1280",
+   "description": "status=REJECTED",
+   "file": "_raw/M14/S8-admin-guru-tunai__status-REJECTED__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru/tunai?status=REJECTED",
+   "finalUrl": "/admin/gamifikasi/guru/tunai?status=REJECTED",
+   "httpStatus": 200,
+   "title": "Tebus Tunai Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=1 strings=1 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-all__1280",
+   "description": "status=all",
+   "file": "_raw/M14/S8-admin-guru-tunai__status-all__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru/tunai?status=all",
+   "finalUrl": "/admin/gamifikasi/guru/tunai?status=all",
+   "httpStatus": 200,
+   "title": "Tebus Tunai Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 6",
+    "sanitized: cells=4 strings=4 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 2
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "status=PENDING (default; 2 requests) @375",
+   "file": "_raw/M14/S8-admin-guru-tunai__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru/tunai",
+   "finalUrl": "/admin/gamifikasi/guru/tunai",
+   "httpStatus": 200,
+   "title": "Tebus Tunai Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 6",
+    "sanitized: cells=4 strings=4 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 2
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "status=PENDING (default; 2 requests) @768",
+   "file": "_raw/M14/S8-admin-guru-tunai__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru/tunai",
+   "finalUrl": "/admin/gamifikasi/guru/tunai",
+   "httpStatus": 200,
+   "title": "Tebus Tunai Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 6",
+    "sanitized: cells=4 strings=4 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 2
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  },
+  {
+   "text": "Kemaskini status?",
+   "sources": [
+    "attr:onclick@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S8-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "2",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "Menunggu",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "Diluluskan",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dibayar",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "RM0.00",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM0.00",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Dibayar",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-013",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Menunggu",
+   "href": "?status=PENDING",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru/tunai?status=PENDING",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-014",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Diluluskan",
+   "href": "?status=APPROVED",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru/tunai?status=APPROVED",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-015",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Dalam Proses",
+   "href": "?status=PROCESSING",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru/tunai?status=PROCESSING",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-016",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Dibayar",
+   "href": "?status=PAID",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru/tunai?status=PAID",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-017",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Ditolak",
+   "href": "?status=REJECTED",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru/tunai?status=REJECTED",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-018",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Semua",
+   "href": "?status=all",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru/tunai?status=all",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "Guru",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-020",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Guru",
+    "Syiling",
+    "Tunai",
+    "Bank",
+    "Status",
+    "Tarikh",
+    "Tindakan"
+   ],
+   "rowCount": 2,
+   "firstRowActions": [
+    {
+     "tag": "button",
+     "text": "",
+     "icon": "fa-check"
+    }
+   ],
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-021",
+   "kind": "badge",
+   "tag": "span",
+   "text": "PENDING",
+   "landmark": "table",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-022",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/tunai/2",
+   "method": "POST",
+   "spoofedMethod": "PATCH",
+   "fields": [
+    "_token",
+    "_method",
+    "status",
+    "admin_note"
+   ],
+   "landmark": "table",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-023",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Tebus Tunai Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-024",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Tebus Tunai Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-025",
+   "kind": "select",
+   "tag": "select",
+   "name": "status",
+   "options": [
+    {
+     "value": "PENDING",
+     "text": "PENDING"
+    },
+    {
+     "value": "APPROVED",
+     "text": "APPROVED"
+    },
+    {
+     "value": "PROCESSING",
+     "text": "PROCESSING"
+    },
+    {
+     "value": "PAID",
+     "text": "PAID"
+    },
+    {
+     "value": "REJECTED",
+     "text": "REJECTED"
+    }
+   ],
+   "landmark": "form",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-026",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "admin_note",
+   "placeholder": "Nota...",
+   "landmark": "form",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-027",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-check",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/tunai/2",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tebus Tunai Guru",
+   "alpine": {
+    "onclick": "return confirm('Kemaskini status?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-028",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tetapan",
+   "href": "https://prestasiplus.my/admin/gamifikasi/pengaturan",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/pengaturan",
+   "icon": "fa-cog",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S8-029",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ganjaran",
+   "href": "https://prestasiplus.my/admin/gamifikasi/guru",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru",
+   "icon": "fa-gift",
+   "landmark": "main",
+   "section": "Tebus Tunai Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-APPROVED__1280",
+    "status-PAID__1280",
+    "status-PROCESSING__1280",
+    "status-REJECTED__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

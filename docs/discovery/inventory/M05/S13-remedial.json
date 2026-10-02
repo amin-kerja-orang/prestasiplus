@@ -1,0 +1,397 @@
+{
+ "screen": "S13",
+ "key": "S13-remedial",
+ "route": "/remedial/saya",
+ "name": "Ujian Remedial Saya",
+ "module": "M05",
+ "generatedAt": "2026-09-25T07:56:13.833Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 8,
+  "visibleDefault": 5,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 6,
+   "heading": 1,
+   "empty-state": 1
+  }
+ },
+ "states": [
+  {
+   "label": "empty__1280",
+   "description": "no remedial tests (empty state)",
+   "file": "_raw/M05/S13-remedial__empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/remedial/saya",
+   "finalUrl": "/remedial/saya",
+   "httpStatus": 200,
+   "title": "Ujian Remedial Saya",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "empty__375",
+   "description": "empty @375",
+   "file": "_raw/M05/S13-remedial__empty__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/remedial/saya",
+   "finalUrl": "/remedial/saya",
+   "httpStatus": 200,
+   "title": "Ujian Remedial Saya",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "empty__768",
+   "description": "empty @768",
+   "file": "_raw/M05/S13-remedial__empty__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/remedial/saya",
+   "finalUrl": "/remedial/saya",
+   "httpStatus": 200,
+   "title": "Ujian Remedial Saya",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "empty__1280",
+    "empty__375",
+    "empty__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Admin PRESTASI+",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M05-S13-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "empty__1280",
+    "empty__375",
+    "empty__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S13-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "empty__1280",
+    "empty__375",
+    "empty__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S13-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "empty__1280",
+    "empty__375",
+    "empty__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M05-S13-004",
+   "kind": "text",
+   "tag": "span",
+   "text": "🔬",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "empty__1280",
+    "empty__375",
+    "empty__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S13-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Ujian Remedial Saya",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "empty__1280",
+    "empty__375",
+    "empty__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S13-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ujian khas untuk topik yang perlu diperbaiki",
+   "landmark": "main",
+   "section": "Ujian Remedial Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "empty__1280",
+    "empty__375",
+    "empty__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S13-007",
+   "kind": "text",
+   "tag": "span",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "Ujian Remedial Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "empty__1280",
+    "empty__375",
+    "empty__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S13-008",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada ujian remedial. Bagus — teruskan usaha!",
+   "landmark": "main",
+   "section": "Ujian Remedial Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "empty__1280",
+    "empty__375",
+    "empty__768"
+   ]
+  }
+ ]
+}

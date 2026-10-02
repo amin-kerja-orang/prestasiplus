@@ -1,0 +1,62 @@
+{
+  "capturedAt": "2026-09-30T03:41:00Z to 03:46:00Z (11:41 to 11:46 MYT)",
+  "note": "M27 seed snapshot. Admin account only (D16). GET only, at least 450 ms apart; the probes used context.request.get with maxRedirects 0 (no redirect is followed, so the pilih-sekolah 500 is not hit once per probe). No person data is present on any M27 page reached.",
+  "probes": [
+    { "path": "/admin-sekolah", "status": 302, "location": "/admin-sekolah/pilih-sekolah" },
+    { "path": "/admin-sekolah/command-center", "status": 403, "title": "403 - Akses Ditolak | PRESTASIPLUS" },
+    { "path": "/admin-sekolah/monitoring", "status": 200, "title": "Monitoring Penglibatan Sekolah - Admin", "identity": "main text identical to /admin/monitoring (16,437 chars, 0 differing characters)" },
+    { "path": "/admin-sekolah/kirkpatrick", "status": 200, "title": "Kirkpatrick Evaluation Dashboard", "identity": "main text identical to /admin/kirkpatrick (3,969 chars, 0 differing characters)" },
+    { "path": "/admin-sekolah/statistik-penggunaan", "status": 302, "location": "/admin-sekolah/pilih-sekolah" },
+    { "path": "/admin-sekolah/laporan-aktiviti", "status": 404 },
+    { "path": "/admin-sekolah/pelajar", "status": 302, "location": "/admin-sekolah/pilih-sekolah" },
+    { "path": "/admin-sekolah/guru", "status": 302, "location": "/admin-sekolah/pilih-sekolah" },
+    { "path": "/admin-sekolah/kelas", "status": 302, "location": "/admin-sekolah/pilih-sekolah" },
+    { "path": "/admin-sekolah/dskp-heatmap", "status": 302, "location": "/admin-sekolah/pilih-sekolah" },
+    { "path": "/admin-sekolah/laporan-bulanan", "status": 302, "location": "/admin-sekolah/pilih-sekolah" },
+    { "path": "/admin-sekolah/pengguna", "status": 302, "location": "/admin-sekolah/pilih-sekolah" },
+    { "path": "/admin-sekolah/import-pelajar", "status": 404 },
+    { "path": "/admin-sekolah/aktiviti-guru", "status": 404 },
+    { "path": "/admin-sekolah/langganan", "status": 404 },
+    { "path": "/admin-sekolah/invois", "status": 404 },
+    { "path": "/admin-sekolah/pilih-sekolah", "status": 500, "title": "500 - Ralat Pelayan | PRESTASIPLUS" },
+    { "path": "/admin-sekolah/m27-control-nonexistent", "status": 404, "role": "control" }
+  ],
+  "aliasMonitoring": {
+    "route": "/admin-sekolah/monitoring",
+    "sameAs": "/admin/monitoring (M11 S2)",
+    "header": { "h1": "Monitoring Penglibatan", "sub": "Pantau penglibatan sekolah & pelajar T4/T5 dalam platform" },
+    "filterForm": { "method": "get", "action": "/admin/monitoring", "fields": ["period (4 options)", "state (11 options)", "tahap (6 options)"], "exports": ["/admin/monitoring/export/pdf?", "/admin/monitoring/export/csv?"] },
+    "kpi": { "Jumlah Sekolah": "58", "Pelajar T4/T5": "4,162", "Pernah Aktif": "1,467", "% Penglibatan": "35.2%", "Soalan Dijawab": "474,106", "Purata/Pelajar": "323.2", "Guru Berdaftar": "522", "Guru Pernah Login": "277", "% Penglibatan Guru": "53.1%" },
+    "tables": { "pelajar": { "badge": "34 sekolah", "rows": 34, "columns": ["#", "Sekolah", "Daftar", "Aktif", "%", "Tahap", "Bar"], "tahap": { "Cemerlang": 8, "Sederhana": 7, "Rendah": 1, "Kritikal": 2, "Tiada Langsung": 16 } }, "guru": { "badge": "13 sekolah", "rows": 13, "columns": ["#", "Sekolah", "Daftar", "Login", "%", "Tahap", "Bar"], "tahap": { "Cemerlang": 6, "Sederhana": 7 } }, "mingguan": { "rows": 34, "columns": "Sekolah, M1 to M33, Trend, Best" } },
+    "sections": ["Panduan Monitoring Penglibatan", "Analisis Penglibatan Pelajar T4/T5", "Analisis Penglibatan Guru", "Tracking Mingguan", "Sekolah Terbaik", "Perhatian Segera", "Cadangan Tindakan"],
+    "drillLinks": "35 unique /admin/monitoring/sekolah/{id} (not /admin-sekolah/...)",
+    "vsM11_2026_09_25": { "schools": "57 -> 58", "students": "4,158 -> 4,162", "active": "1,462 -> 1,467", "pct": "35.2% -> 35.2%", "answers": "472,371 -> 474,106", "avg": "323.1 -> 323.2", "teachers": "522 -> 522", "teacherLogin": "277 -> 277", "teacherPct": "53.1% -> 53.1%", "pelajarTableRows": "33 -> 34", "guruTableRows": "13 -> 13", "note": "live data drift (one school and 4 students added, 1,735 answers); no definition conflict" }
+  },
+  "aliasKirkpatrick": {
+    "route": "/admin-sekolah/kirkpatrick",
+    "sameAs": "/admin/kirkpatrick (M12 S1)",
+    "header": { "h1": "Kirkpatrick Evaluation", "sub": "Analisis Keberkesanan Platform — Model Penilaian 4 Tahap" },
+    "filterForm": { "method": "get", "action": "/admin/kirkpatrick", "fields": ["school_id (59 options incl. Semua Sekolah)", "state (11 options)"] },
+    "levelLinks": ["/admin/kirkpatrick/reaction", "/admin/kirkpatrick/learning", "/admin/kirkpatrick/behavior", "/admin/kirkpatrick/results", "/admin/monitoring"],
+    "figures": { "T4 GPS": "4.30", "T4 headcount records": "4393", "T3 active": "953/4162", "T3 sessions": "21060", "T3/T2 accuracy": "82.8%", "T2 answered": "307,162", "T1 satisfaction": "4.6/5", "T1 responses": "336", "sebelum (Jan 2026)": "2 aktif, 33.3%, 3 jawapan, 0 champion", "selepas (Sep 2026)": "66 aktif, 86.3%, 14,992 jawapan, 33 champion", "teachers active": "277/522", "students registered": "4,162", "champion": "514 (12.3%)" },
+    "vsM12": { "T4 records": "4378 -> 4393", "T3 active": "951/4158 -> 953/4162", "T3 sessions": "20991 -> 21060", "T2 answered": "306,133 -> 307,162", "T1": "4.6 and 336 unchanged", "note": "live data drift; no definition conflict. 4162 agrees with M11 S2 today." }
+  },
+  "errorPages": {
+    "500": { "title": "500 - Ralat Pelayan | PRESTASIPLUS", "elements": ["500", "gear emoji", "Ralat Pelayan", "Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.", "Halaman Utama -> /", "Cuba Semula -> javascript:location.reload()", "PRESTASIPLUS"] },
+    "403": { "title": "403 - Akses Ditolak | PRESTASIPLUS", "elements": ["403", "no-entry emoji", "Akses Ditolak", "Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.", "Halaman Utama -> /", "Log Masuk -> /login", "PRESTASIPLUS"] },
+    "404": { "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS", "elements": ["404", "magnifier emoji", "Halaman Tidak Dijumpai", "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?", "Halaman Utama -> /", "Mula Latihan -> /latih-tubi", "PRESTASIPLUS"] }
+  },
+  "layout": {
+    "errorPages": "375/768/1280: scrollWidth equals viewport, no overflow, no text under 12px, no tables",
+    "kirkpatrick": { "375": "scrollWidth 487 (OVERFLOW; school_id select 466 px, D-M12-7), 41 text nodes under 12px", "768": "753 (viewport minus 15px scrollbar), 37 under 12px", "1280": "1265, 37 under 12px" },
+    "monitoring": { "375": "scrollWidth 360, tables scroll inside their wrapper (603/565/1976 px), 274 text nodes under 12px", "768": "753, 212 under 12px", "1280": "1265, 212 under 12px" }
+  },
+  "sideEffects": {
+    "guardBlockedTotal": 56,
+    "guardBlockedKinds": "12 probe requests (POST, DELETE, toggle, mark-read, export, logout, api/ai, generate, chat, openai host, external) plus Cloudflare beacon scripts and shell chatbot-history fetches",
+    "serverHitsBrowser": "each page reached the server once through the guard cache, plus one context.request probe each",
+    "duplicateGets": "/admin-sekolah/monitoring, /admin-sekolah/kirkpatrick, /admin/monitoring, /admin/kirkpatrick were fetched a second time for the identity check; /admin-sekolah/pilih-sekolah, /command-center and /laporan-aktiviti 2 times (probe + one browser load). The 500 page says the technical team is notified, so about 2 error log entries may exist.",
+    "livePageCounters": "none seen on any page reached",
+    "login": "POST /login updated the admin last-login time, as in every discovery"
+  }
+}

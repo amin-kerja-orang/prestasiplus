@@ -1,0 +1,4060 @@
+{
+ "screen": "S17",
+ "key": "S17-video",
+ "route": "/video",
+ "name": "Video Pembelajaran",
+ "module": "M09",
+ "generatedAt": "2026-09-25T11:01:18.126Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 235,
+  "visibleDefault": 40,
+  "conditional": 164,
+  "hiddenOnly": 31,
+  "mobileOnly": 2,
+  "desktopOnly": 18,
+  "byKind": {
+   "text": 27,
+   "form": 2,
+   "input": 1,
+   "link": 62,
+   "filter": 14,
+   "image": 28,
+   "modal": 26,
+   "heading": 34,
+   "badge": 27,
+   "pagination": 14
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (2260, 24/page, 95 pages)",
+   "file": "_raw/M09/S17-video__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/video",
+   "finalUrl": "/video",
+   "httpStatus": 200,
+   "title": "Video Pembelajaran - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var seen = {}, out = []; document.querySelectorAll('main span, main div, main a, main h1, main h2, main p').forEach(function (e) { var t = (e.childElementCount ? [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.nodeValue).join('') : e.textContent).replace(/\\s+/g, ' ').trim(); if (!t || t.length > 40) return; var c = e.getAttribute('class') || ''; if (!/rounded-full|rounded-md|rounded-lg|badge|^h[12]$/.test(c + ' ' + e.tagName.toLowerCase()) && !/^H[12]$/.test(e.tagName)) return; var cs = getComputedStyle(e); var k = t + '|' + cs.backgroundColor + '|' + cs.color; if (seen[k]) return; seen[k] = 1; out.push(t.slice(0, 30) + ' {bg:' + cs.backgroundColor + (cs.backgroundImage !== 'none' ? ' ' + cs.backgroundImage.slice(0, 70) : '') + ' fg:' + cs.color + '}'); }); return out.slice(0, 45).join(' ; '); })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "Semua {bg:rgba(0, 0, 0, 0) linear-gradient(135deg, rgb(239, 68, 68), rgb(249, 115, 22)) fg:rgb(255, 255, 255)} ; Motivasi {bg:rgb(255, 255, 255) fg:oklch(0.446 0.03 256.802)} ; Tutorial {bg:rgb(255, 255, 255) fg:oklch(0.446 0.03 256.802)} ; Tips SPM {bg:rgb(255, 255, 255) fg:oklch(0.446 0.03 256.802)} ; Ceramah {bg:rgb(255, 255, 255) fg:oklch(0.446 0.03 256.802)} ; Lain-lain {bg:oklch(0.985 0.002 247.839) fg:oklch(0.872 0.01 258.338)} ; Matematik {bg:rgb(255, 255, 255) fg:oklch(0.551 0.027 264.364)} ; Sejarah {bg:rgb(255, 255, 255) fg:oklch(0.551 0.027 264.364)} ; Matematik Tambahan {bg:rgb(255, 255, 255) fg:oklch(0.551 0.027 264.364)} ; Fizik {bg:rgb(255, 255, 255) fg:oklch(0.551 0.027 264.364)} ; Kimia {bg:rgb(255, 255, 255) fg:oklch(0.551 0.027 264.364)} ; YouTube {bg:oklch(0.577 0.245 27.325) fg:rgb(255, 255, 255)} ; A {bg:rgba(0, 0, 0, 0) linear-gradient(to right bottom, oklch(0.704 0.191 22.216) 0%, oklch(0 fg:rgb(255, 255, 255)} ; « Previous {bg:rgb(255, 255, 255) fg:oklch(0.551 0.027 264.364)} ; Next » {bg:rgb(255, 255, 255) fg:oklch(0.373 0.034 259.733)}",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=27 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.grid > a[href*=\"/video/\"]": 24
+   }
+  },
+  {
+   "label": "category__1280",
+   "description": "category=motivasi (3)",
+   "file": "_raw/M09/S17-video__category__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/video?category=motivasi",
+   "finalUrl": "/video?category=motivasi",
+   "httpStatus": 200,
+   "title": "Video Pembelajaran - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var seen = {}, out = []; document.querySelectorAll('main span, main div, main a, main h1, main h2, main p').forEach(function (e) { var t = (e.childElementCount ? [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.nodeValue).join('') : e.textContent).replace(/\\s+/g, ' ').trim(); if (!t || t.length > 40) return; var c = e.getAttribute('class') || ''; if (!/rounded-full|rounded-md|rounded-lg|badge|^h[12]$/.test(c + ' ' + e.tagName.toLowerCase()) && !/^H[12]$/.test(e.tagName)) return; var cs = getComputedStyle(e); var k = t + '|' + cs.backgroundColor + '|' + cs.color; if (seen[k]) return; seen[k] = 1; out.push(t.slice(0, 30) + ' {bg:' + cs.backgroundColor + (cs.backgroundImage !== 'none' ? ' ' + cs.backgroundImage.slice(0, 70) : '') + ' fg:' + cs.color + '}'); }); return out.slice(0, 45).join(' ; '); })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "Semua {bg:rgb(255, 255, 255) fg:oklch(0.446 0.03 256.802)} ; Motivasi {bg:rgba(0, 0, 0, 0) linear-gradient(135deg, rgb(239, 68, 68), rgb(249, 115, 22)) fg:rgb(255, 255, 255)} ; Tutorial {bg:rgb(255, 255, 255) fg:oklch(0.446 0.03 256.802)} ; Tips SPM {bg:rgb(255, 255, 255) fg:oklch(0.446 0.03 256.802)} ; Ceramah {bg:rgb(255, 255, 255) fg:oklch(0.446 0.03 256.802)} ; Lain-lain {bg:oklch(0.985 0.002 247.839) fg:oklch(0.872 0.01 258.338)} ; Sejarah {bg:rgb(255, 255, 255) fg:oklch(0.551 0.027 264.364)} ; YouTube {bg:oklch(0.577 0.245 27.325) fg:rgb(255, 255, 255)} ; A {bg:rgba(0, 0, 0, 0) linear-gradient(to right bottom, oklch(0.704 0.191 22.216) 0%, oklch(0 fg:rgb(255, 255, 255)}",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=6 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.grid > a[href*=\"/video/\"]": 3
+   }
+  },
+  {
+   "label": "empty__1280",
+   "description": "search no match -> \"Tiada Video Dijumpai\"",
+   "file": "_raw/M09/S17-video__empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/video?search=zzzqqq",
+   "finalUrl": "/video?search=zzzqqq",
+   "httpStatus": 200,
+   "title": "Video Pembelajaran - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.grid > a[href*=\"/video/\"]": 0
+   }
+  },
+  {
+   "label": "guest__1280",
+   "description": "guest (public page) (guest)",
+   "file": "_raw/M09/S17-video__guest__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/video",
+   "finalUrl": "/video",
+   "httpStatus": 200,
+   "title": "Video Pembelajaran — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main div.grid > a[href*=\"/video/\"]": 0
+   }
+  },
+  {
+   "label": "lain-lain__1280",
+   "description": "category=lain-lain (0; pill href is \"#\")",
+   "file": "_raw/M09/S17-video__lain-lain__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/video?category=lain-lain",
+   "finalUrl": "/video?category=lain-lain",
+   "httpStatus": 200,
+   "title": "Video Pembelajaran - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.grid > a[href*=\"/video/\"]": 0
+   }
+  },
+  {
+   "label": "last-page__1280",
+   "description": "page 95",
+   "file": "_raw/M09/S17-video__last-page__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/video?page=95",
+   "finalUrl": "/video?page=95",
+   "httpStatus": 200,
+   "title": "Video Pembelajaran - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=7 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.grid > a[href*=\"/video/\"]": 4
+   }
+  },
+  {
+   "label": "subject__1280",
+   "description": "subject=5 Sejarah (97)",
+   "file": "_raw/M09/S17-video__subject__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/video?subject=5",
+   "finalUrl": "/video?subject=5",
+   "httpStatus": 200,
+   "title": "Video Pembelajaran - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "[...document.querySelectorAll('main a[href*=\"page=\"]')].slice(0, 3).map(a => a.getAttribute('href').replace(/^https?:\\/\\/[^/]+/, '')).join(' ')"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "/video?subject=5&page=2 /video?subject=5&page=2 /video?subject=5&page=3",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=27 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.grid > a[href*=\"/video/\"]": 24
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M09/S17-video__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/video",
+   "finalUrl": "/video",
+   "httpStatus": 200,
+   "title": "Video Pembelajaran - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main *')].filter(e => { var s = getComputedStyle(e).overflowX; return (s === 'auto' || s === 'scroll') && e.scrollWidth > e.clientWidth + 2; }).map(e => e.tagName + '.' + (e.getAttribute('class') || '').split(' ').slice(0, 3).join('.') + ' ' + e.scrollWidth + '>' + e.clientWidth).join(' ; ') || 'no inner h-scroll')()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "no inner h-scroll",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=27 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.grid > a[href*=\"/video/\"]": 24
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M09/S17-video__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/video",
+   "finalUrl": "/video",
+   "httpStatus": 200,
+   "title": "Video Pembelajaran - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main *')].filter(e => { var s = getComputedStyle(e).overflowX; return (s === 'auto' || s === 'scroll') && e.scrollWidth > e.clientWidth + 2; }).map(e => e.tagName + '.' + (e.getAttribute('class') || '').split(' ').slice(0, 3).join('.') + ' ' + e.scrollWidth + '>' + e.clientWidth).join(' ; ') || 'no inner h-scroll')()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "no inner h-scroll",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=27 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.grid > a[href*=\"/video/\"]": 24
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Video Pembelajaran",
+   "seenIn": [
+    "default__1280",
+    "category__1280",
+    "empty__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M09-S17-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Video Pembelajaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "category__1280",
+    "empty__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Video Pembelajaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "category__1280",
+    "empty__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Video Pembelajaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "category__1280",
+    "empty__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-004",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/video",
+   "method": "GET",
+   "fields": [
+    "search"
+   ],
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "empty__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-005",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "search",
+   "placeholder": "Cari video...",
+   "landmark": "form",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "empty__1280",
+    "guest__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua (2260)",
+   "href": "https://prestasiplus.my/video",
+   "absHref": "https://prestasiplus.my/video",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-007",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Motivasi (3)",
+   "href": "https://prestasiplus.my/video?category=motivasi",
+   "absHref": "https://prestasiplus.my/video?category=motivasi",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-008",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Tutorial (12)",
+   "href": "https://prestasiplus.my/video?category=tutorial",
+   "absHref": "https://prestasiplus.my/video?category=tutorial",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-009",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Tips SPM (3)",
+   "href": "https://prestasiplus.my/video?category=tips-spm",
+   "absHref": "https://prestasiplus.my/video?category=tips-spm",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-010",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Ceramah (2242)",
+   "href": "https://prestasiplus.my/video?category=ceramah",
+   "absHref": "https://prestasiplus.my/video?category=ceramah",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-011",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lain-lain (0)",
+   "href": "#",
+   "absHref": "https://prestasiplus.my/video#",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "empty__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-012",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik (865)",
+   "href": "https://prestasiplus.my/video?subject=3",
+   "absHref": "https://prestasiplus.my/video?subject=3",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-013",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sejarah (97)",
+   "href": "https://prestasiplus.my/video?subject=5",
+   "absHref": "https://prestasiplus.my/video?subject=5",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-014",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik Tambahan (420)",
+   "href": "https://prestasiplus.my/video?subject=8",
+   "absHref": "https://prestasiplus.my/video?subject=8",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-015",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fizik (779)",
+   "href": "https://prestasiplus.my/video?subject=9",
+   "absHref": "https://prestasiplus.my/video?subject=9",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-016",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kimia (96)",
+   "href": "https://prestasiplus.my/video?subject=10",
+   "absHref": "https://prestasiplus.my/video?subject=10",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-017",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Video",
+   "href": "https://prestasiplus.my/video/tambah",
+   "absHref": "https://prestasiplus.my/video/tambah",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "empty__1280",
+    "lain-lain__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-018",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah A <name> admin 121 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/2224",
+   "absHref": "https://prestasiplus.my/video/2224",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-019",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "src": "/vi/iqtUCV6AHuI/hqdefault.jpg",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-020",
+   "kind": "modal",
+   "tag": "div",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "category__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-021",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-022",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "landmark": "main",
+   "section": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-023",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Pengenalan Asas Nombor Bab 2 Tingkatan 4 A <name> admin 108 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/64",
+   "absHref": "https://prestasiplus.my/video/64",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-024",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Pengenalan Asas Nombor  Bab 2 Tingkatan 4",
+   "src": "/vi/8gTUDcMTfhg/hqdefault.jpg",
+   "landmark": "main",
+   "section": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-025",
+   "kind": "modal",
+   "tag": "div",
+   "landmark": "main",
+   "section": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "category__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-026",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-027",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "landmark": "main",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "category__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-029",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/video?page=2",
+   "absHref": "https://prestasiplus.my/video?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "24",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "2260",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-035",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "2",
+   "href": "https://prestasiplus.my/video?page=2",
+   "absHref": "https://prestasiplus.my/video?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 2",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-036",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/video?page=3",
+   "absHref": "https://prestasiplus.my/video?page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 3",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-037",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "4",
+   "href": "https://prestasiplus.my/video?page=4",
+   "absHref": "https://prestasiplus.my/video?page=4",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-038",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/video?page=5",
+   "absHref": "https://prestasiplus.my/video?page=5",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 5",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-039",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "6",
+   "href": "https://prestasiplus.my/video?page=6",
+   "absHref": "https://prestasiplus.my/video?page=6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 6",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-040",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "7",
+   "href": "https://prestasiplus.my/video?page=7",
+   "absHref": "https://prestasiplus.my/video?page=7",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 7",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-041",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "8",
+   "href": "https://prestasiplus.my/video?page=8",
+   "absHref": "https://prestasiplus.my/video?page=8",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 8",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-042",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "9",
+   "href": "https://prestasiplus.my/video?page=9",
+   "absHref": "https://prestasiplus.my/video?page=9",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 9",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-043",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/video?page=10",
+   "absHref": "https://prestasiplus.my/video?page=10",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 10",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "...",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-045",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "94",
+   "href": "https://prestasiplus.my/video?page=94",
+   "absHref": "https://prestasiplus.my/video?page=94",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 94",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-046",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "95",
+   "href": "https://prestasiplus.my/video?page=95",
+   "absHref": "https://prestasiplus.my/video?page=95",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Go to page 95",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-047",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/video?page=2",
+   "absHref": "https://prestasiplus.my/video?page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "ariaLabel": "Next &raquo;",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "last-page__1280",
+    "subject__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-048",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Sejarah (1)",
+   "href": "https://prestasiplus.my/video?category=motivasi&subject=5",
+   "absHref": "https://prestasiplus.my/video?category=motivasi&subject=5",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "category__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-049",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Kenapa Sejarah Penting Untuk Masa Depan Kita A <name> admin 254 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/18",
+   "absHref": "https://prestasiplus.my/video/18",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "category__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-050",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kenapa Sejarah Penting Untuk Masa Depan Kita",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "category__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-051",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Semangat Belajar - Kunci Kejayaan Pelajar A <name> admin 143 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/17",
+   "absHref": "https://prestasiplus.my/video/17",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Kenapa Sejarah Penting Untuk Masa Depan Kita",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "category__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-052",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Semangat Belajar - Kunci Kejayaan Pelajar",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "category__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-053",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Semua (0)",
+   "href": "https://prestasiplus.my/video?search=zzzqqq",
+   "absHref": "https://prestasiplus.my/video?search=zzzqqq",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-054",
+   "kind": "link",
+   "tag": "a",
+   "text": "Motivasi (0)",
+   "href": "#",
+   "absHref": "https://prestasiplus.my/video?search=zzzqqq#",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-055",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tutorial (0)",
+   "href": "#",
+   "absHref": "https://prestasiplus.my/video?search=zzzqqq#",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-056",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tips SPM (0)",
+   "href": "#",
+   "absHref": "https://prestasiplus.my/video?search=zzzqqq#",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-057",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ceramah (0)",
+   "href": "#",
+   "absHref": "https://prestasiplus.my/video?search=zzzqqq#",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-058",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎬",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280",
+    "lain-lain__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-059",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tiada Video Dijumpai",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280",
+    "lain-lain__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-060",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cuba ubah carian atau pilih kategori lain.",
+   "landmark": "main",
+   "section": "Tiada Video Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280",
+    "lain-lain__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-061",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Semua Video",
+   "href": "https://prestasiplus.my/video",
+   "absHref": "https://prestasiplus.my/video",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Tiada Video Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280",
+    "lain-lain__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-062",
+   "kind": "link",
+   "tag": "a",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "iconOnly": true,
+   "landmark": "nav",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-063",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "landmark": "nav",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-064",
+   "kind": "text",
+   "tag": "span",
+   "text": "|",
+   "landmark": "nav",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-065",
+   "kind": "text",
+   "tag": "span",
+   "text": "🎬",
+   "landmark": "nav",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-066",
+   "kind": "text",
+   "tag": "span",
+   "text": "Video",
+   "landmark": "nav",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-067",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk",
+   "href": "https://prestasiplus.my/login",
+   "absHref": "https://prestasiplus.my/login",
+   "landmark": "nav",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-068",
+   "kind": "link",
+   "tag": "a",
+   "text": "Daftar Percuma",
+   "href": "https://prestasiplus.my/register",
+   "absHref": "https://prestasiplus.my/register",
+   "landmark": "nav",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-069",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎬",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-070",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-071",
+   "kind": "badge",
+   "tag": "div",
+   "text": "VIDEO PEMBELAJARAN",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-072",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-073",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tutorial, tips SPM, motivasi dan banyak lagi — semua dalam satu platform!",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-074",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/video",
+   "method": "GET",
+   "fields": [
+    "search"
+   ],
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-075",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua (2260)",
+   "href": "https://prestasiplus.my/video",
+   "absHref": "https://prestasiplus.my/video",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-076",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Motivasi (3)",
+   "href": "https://prestasiplus.my/video?category=motivasi",
+   "absHref": "https://prestasiplus.my/video?category=motivasi",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-077",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Tutorial (12)",
+   "href": "https://prestasiplus.my/video?category=tutorial",
+   "absHref": "https://prestasiplus.my/video?category=tutorial",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-078",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Tips SPM (3)",
+   "href": "https://prestasiplus.my/video?category=tips-spm",
+   "absHref": "https://prestasiplus.my/video?category=tips-spm",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-079",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Ceramah (2242)",
+   "href": "https://prestasiplus.my/video?category=ceramah",
+   "absHref": "https://prestasiplus.my/video?category=ceramah",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-080",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lain-lain (0)",
+   "href": "#",
+   "absHref": "https://prestasiplus.my/video#",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-081",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik (865)",
+   "href": "https://prestasiplus.my/video?subject=3",
+   "absHref": "https://prestasiplus.my/video?subject=3",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-082",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sejarah (97)",
+   "href": "https://prestasiplus.my/video?subject=5",
+   "absHref": "https://prestasiplus.my/video?subject=5",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-083",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik Tambahan (420)",
+   "href": "https://prestasiplus.my/video?subject=8",
+   "absHref": "https://prestasiplus.my/video?subject=8",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-084",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fizik (779)",
+   "href": "https://prestasiplus.my/video?subject=9",
+   "absHref": "https://prestasiplus.my/video?subject=9",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-085",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kimia (96)",
+   "href": "https://prestasiplus.my/video?subject=10",
+   "absHref": "https://prestasiplus.my/video?subject=10",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-086",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah A Admin PRESTASI+ admin 121 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/2224",
+   "absHref": "https://prestasiplus.my/video/2224",
+   "icon": "fa-play",
+   "section": "Tonton & Fahami",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-087",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "src": "/vi/iqtUCV6AHuI/hqdefault.jpg",
+   "section": "Tonton & Fahami",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-088",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Tonton & Fahami",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-089",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-090",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-091",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Pengenalan Asas Nombor Bab 2 Tingkatan 4 A Admin PRESTASI+ admin 108 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/64",
+   "absHref": "https://prestasiplus.my/video/64",
+   "icon": "fa-play",
+   "section": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-092",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Pengenalan Asas Nombor  Bab 2 Tingkatan 4",
+   "src": "/vi/8gTUDcMTfhg/hqdefault.jpg",
+   "section": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-093",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-094",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-095",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-096",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube F4 24/12 Pengukuran pt. 2 A Admin PRESTASI+ admin 107 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/433",
+   "absHref": "https://prestasiplus.my/video/433",
+   "icon": "fa-play",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-097",
+   "kind": "image",
+   "tag": "img",
+   "alt": "F4 24/12 Pengukuran pt. 2",
+   "src": "/vi/FjPHQJyFtW8/hqdefault.jpg",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-098",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Pengenalan Asas Nombor Bab 2 Tingkatan 4",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-099",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "F4 24/12 Pengukuran pt. 2",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-100",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "F4 24/12 Pengukuran pt. 2",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-101",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Medan lastik - 4.1: Daya keatas konduktor pembawa arus | Keelektromagnetan (Fizik KSSM Tingkatan 5) A Admin PRESTASI+ admin 118 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/825",
+   "absHref": "https://prestasiplus.my/video/825",
+   "icon": "fa-play",
+   "section": "F4 24/12 Pengukuran pt. 2",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-102",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Medan lastik - 4.1: Daya keatas konduktor pembawa arus | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "src": "/vi/DqVg-Z-deVI/hqdefault.jpg",
+   "section": "F4 24/12 Pengukuran pt. 2",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-103",
+   "kind": "modal",
+   "tag": "div",
+   "section": "F4 24/12 Pengukuran pt. 2",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-104",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Medan lastik - 4.1: Daya keatas konduktor pembawa arus | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-105",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Medan lastik - 4.1: Daya keatas konduktor pembawa arus | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-106",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Fizik Tingkatan 5 KSSM Bab 2 Tekanan | Tekanan Atmosfera | Barometer Ringkas (Soalan Mencabar) A Admin PRESTASI+ admin 122 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/1020",
+   "absHref": "https://prestasiplus.my/video/1020",
+   "icon": "fa-play",
+   "section": "Medan lastik - 4.1: Daya keatas konduktor pembawa arus | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-107",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Fizik Tingkatan 5 KSSM Bab 2 Tekanan | Tekanan Atmosfera | Barometer Ringkas (Soalan Mencabar)",
+   "src": "/vi/5iG6dHa9WRE/hqdefault.jpg",
+   "section": "Medan lastik - 4.1: Daya keatas konduktor pembawa arus | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-108",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Medan lastik - 4.1: Daya keatas konduktor pembawa arus | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-109",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Fizik Tingkatan 5 KSSM Bab 2 Tekanan | Tekanan Atmosfera | Barometer Ringkas (Soalan Mencabar)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-110",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Fizik Tingkatan 5 KSSM Bab 2 Tekanan | Tekanan Atmosfera | Barometer Ringkas (Soalan Mencabar)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-111",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Reinventing Education for Malaysia - TEDx A Admin PRESTASI+ admin 338 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/19",
+   "absHref": "https://prestasiplus.my/video/19",
+   "icon": "fa-play",
+   "section": "Fizik Tingkatan 5 KSSM Bab 2 Tekanan | Tekanan Atmosfera | Barometer Ringkas (Soalan Mencabar)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-112",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Reinventing Education for Malaysia - TEDx",
+   "src": "/vi/tQ4wn_viYI4/hqdefault.jpg",
+   "section": "Fizik Tingkatan 5 KSSM Bab 2 Tekanan | Tekanan Atmosfera | Barometer Ringkas (Soalan Mencabar)",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-113",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Fizik Tingkatan 5 KSSM Bab 2 Tekanan | Tekanan Atmosfera | Barometer Ringkas (Soalan Mencabar)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-114",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Reinventing Education for Malaysia - TEDx",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-115",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Reinventing Education for Malaysia - TEDx",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-116",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Sejarah Tingkatan 1: Bab 2 - Zaman Air Batu A Admin PRESTASI+ admin 103 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/2225",
+   "absHref": "https://prestasiplus.my/video/2225",
+   "icon": "fa-play",
+   "section": "Reinventing Education for Malaysia - TEDx",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-117",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Sejarah Tingkatan 1: Bab 2 - Zaman Air Batu",
+   "src": "/vi/jd-f1gsSMmE/hqdefault.jpg",
+   "section": "Reinventing Education for Malaysia - TEDx",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-118",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Reinventing Education for Malaysia - TEDx",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-119",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah Tingkatan 1: Bab 2 - Zaman Air Batu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-120",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Sejarah Tingkatan 1: Bab 2 - Zaman Air Batu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-121",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Apikasi Pembezaan: Menentukan kecerunan tangen dan normal A Admin PRESTASI+ admin 99 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/65",
+   "absHref": "https://prestasiplus.my/video/65",
+   "icon": "fa-play",
+   "section": "Sejarah Tingkatan 1: Bab 2 - Zaman Air Batu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-122",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Apikasi Pembezaan: Menentukan kecerunan tangen dan normal",
+   "src": "/vi/oHmzNdJPYZs/hqdefault.jpg",
+   "section": "Sejarah Tingkatan 1: Bab 2 - Zaman Air Batu",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-123",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Sejarah Tingkatan 1: Bab 2 - Zaman Air Batu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-124",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Apikasi Pembezaan: Menentukan kecerunan tangen dan normal",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-125",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Apikasi Pembezaan: Menentukan kecerunan tangen dan normal",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-126",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube F4 23/12 Pengukuran pt. 1 A Admin PRESTASI+ admin 95 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/434",
+   "absHref": "https://prestasiplus.my/video/434",
+   "icon": "fa-play",
+   "section": "Apikasi Pembezaan: Menentukan kecerunan tangen dan normal",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-127",
+   "kind": "image",
+   "tag": "img",
+   "alt": "F4 23/12 Pengukuran pt. 1",
+   "src": "/vi/aa6i6k6iqcU/hqdefault.jpg",
+   "section": "Apikasi Pembezaan: Menentukan kecerunan tangen dan normal",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-128",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Apikasi Pembezaan: Menentukan kecerunan tangen dan normal",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-129",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "F4 23/12 Pengukuran pt. 1",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-130",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "F4 23/12 Pengukuran pt. 1",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-131",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Faktor pengaruhi daya - 4.1: Daya keatas konduktor | Keelektromagnetan (Fizik KSSM Tingkatan 5) A Admin PRESTASI+ admin 97 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/827",
+   "absHref": "https://prestasiplus.my/video/827",
+   "icon": "fa-play",
+   "section": "F4 23/12 Pengukuran pt. 1",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-132",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Faktor pengaruhi daya - 4.1: Daya keatas konduktor | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "src": "/vi/pFi-20uCxcg/hqdefault.jpg",
+   "section": "F4 23/12 Pengukuran pt. 1",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-133",
+   "kind": "modal",
+   "tag": "div",
+   "section": "F4 23/12 Pengukuran pt. 1",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-134",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Faktor pengaruhi daya - 4.1: Daya keatas konduktor | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-135",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Faktor pengaruhi daya - 4.1: Daya keatas konduktor | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-136",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Tenaga Keupayaan Kenyal | Fizik Tingkatan 5 KSSM Bab 1 - Daya dan Gerakan II A Admin PRESTASI+ admin 92 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/1021",
+   "absHref": "https://prestasiplus.my/video/1021",
+   "icon": "fa-play",
+   "section": "Faktor pengaruhi daya - 4.1: Daya keatas konduktor | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-137",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Tenaga Keupayaan Kenyal | Fizik Tingkatan 5 KSSM Bab 1 - Daya dan Gerakan II",
+   "src": "/vi/Kj3nQtCmIac/hqdefault.jpg",
+   "section": "Faktor pengaruhi daya - 4.1: Daya keatas konduktor | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-138",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Faktor pengaruhi daya - 4.1: Daya keatas konduktor | Keelektromagnetan (Fizik KSSM Tingkatan 5)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-139",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tenaga Keupayaan Kenyal | Fizik Tingkatan 5 KSSM Bab 1 - Daya dan Gerakan II",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-140",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Tenaga Keupayaan Kenyal | Fizik Tingkatan 5 KSSM Bab 1 - Daya dan Gerakan II",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-141",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Sejarah Tingkatan 1: Bab 3 - Zaman Prasejarah A Admin PRESTASI+ admin 105 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/2226",
+   "absHref": "https://prestasiplus.my/video/2226",
+   "icon": "fa-play",
+   "section": "Tenaga Keupayaan Kenyal | Fizik Tingkatan 5 KSSM Bab 1 - Daya dan Gerakan II",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-142",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Sejarah Tingkatan 1: Bab 3 - Zaman Prasejarah",
+   "src": "/vi/_hzEvAz0z8g/hqdefault.jpg",
+   "section": "Tenaga Keupayaan Kenyal | Fizik Tingkatan 5 KSSM Bab 1 - Daya dan Gerakan II",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-143",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Tenaga Keupayaan Kenyal | Fizik Tingkatan 5 KSSM Bab 1 - Daya dan Gerakan II",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-144",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah Tingkatan 1: Bab 3 - Zaman Prasejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-145",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Sejarah Tingkatan 1: Bab 3 - Zaman Prasejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-146",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Bab 1 Matematik Tambahan Tingkatan 4: Garis mencancang untuk mengesan suatu graf ialah fungsi A Admin PRESTASI+ admin 96 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/66",
+   "absHref": "https://prestasiplus.my/video/66",
+   "icon": "fa-play",
+   "section": "Sejarah Tingkatan 1: Bab 3 - Zaman Prasejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-147",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Bab 1 Matematik Tambahan Tingkatan 4: Garis mencancang untuk mengesan suatu graf ialah fungsi",
+   "src": "/vi/jO25XAh1-oc/hqdefault.jpg",
+   "section": "Sejarah Tingkatan 1: Bab 3 - Zaman Prasejarah",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-148",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Sejarah Tingkatan 1: Bab 3 - Zaman Prasejarah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-149",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bab 1 Matematik Tambahan Tingkatan 4: Garis mencancang untuk mengesan suatu graf ialah fungsi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-150",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Bab 1 Matematik Tambahan Tingkatan 4: Garis mencancang untuk mengesan suatu graf ialah fungsi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-151",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Latihan - 6.2: Pantulan dalam penuh | Cahaya & optik (Fizik KSSM Tingkatan 4) A Admin PRESTASI+ admin 106 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/435",
+   "absHref": "https://prestasiplus.my/video/435",
+   "icon": "fa-play",
+   "section": "Bab 1 Matematik Tambahan Tingkatan 4: Garis mencancang untuk mengesan suatu graf ialah fungsi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-152",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Latihan - 6.2: Pantulan dalam penuh | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "src": "/vi/JHbZnlQ-2ko/hqdefault.jpg",
+   "section": "Bab 1 Matematik Tambahan Tingkatan 4: Garis mencancang untuk mengesan suatu graf ialah fungsi",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-153",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Bab 1 Matematik Tambahan Tingkatan 4: Garis mencancang untuk mengesan suatu graf ialah fungsi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-154",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Latihan - 6.2: Pantulan dalam penuh | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-155",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Latihan - 6.2: Pantulan dalam penuh | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-156",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Corak dan kekuatan medan elektrik - 2.1: Arus dan beza keupayaan | Elektrik (Fizik KSSM Tingkatan 5) A Admin PRESTASI+ admin 94 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/852",
+   "absHref": "https://prestasiplus.my/video/852",
+   "icon": "fa-play",
+   "section": "Latihan - 6.2: Pantulan dalam penuh | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-157",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Corak dan kekuatan medan elektrik - 2.1: Arus dan beza keupayaan | Elektrik (Fizik KSSM Tingkatan 5)",
+   "src": "/vi/UGyfx59VDyQ/hqdefault.jpg",
+   "section": "Latihan - 6.2: Pantulan dalam penuh | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-158",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Latihan - 6.2: Pantulan dalam penuh | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-159",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Corak dan kekuatan medan elektrik - 2.1: Arus dan beza keupayaan | Elektrik (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-160",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Corak dan kekuatan medan elektrik - 2.1: Arus dan beza keupayaan | Elektrik (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-161",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Matematik Tambahan SPM 2023 Kertas 2 - Soalan 1 - 5 (Kertas Sebenar) A Admin PRESTASI+ admin 87 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/1022",
+   "absHref": "https://prestasiplus.my/video/1022",
+   "icon": "fa-play",
+   "section": "Corak dan kekuatan medan elektrik - 2.1: Arus dan beza keupayaan | Elektrik (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-162",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Matematik Tambahan SPM 2023 Kertas 2 - Soalan 1 - 5 (Kertas Sebenar)",
+   "src": "/vi/zgaGqgIUbys/hqdefault.jpg",
+   "section": "Corak dan kekuatan medan elektrik - 2.1: Arus dan beza keupayaan | Elektrik (Fizik KSSM Tingkatan 5)",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-163",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Corak dan kekuatan medan elektrik - 2.1: Arus dan beza keupayaan | Elektrik (Fizik KSSM Tingkatan 5)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-164",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik Tambahan SPM 2023 Kertas 2 - Soalan 1 - 5 (Kertas Sebenar)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-165",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Matematik Tambahan SPM 2023 Kertas 2 - Soalan 1 - 5 (Kertas Sebenar)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-166",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Sejarah Tingkatan 1: Bab 4 - Mengenali Tamadun A Admin PRESTASI+ admin 118 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/2227",
+   "absHref": "https://prestasiplus.my/video/2227",
+   "icon": "fa-play",
+   "section": "Matematik Tambahan SPM 2023 Kertas 2 - Soalan 1 - 5 (Kertas Sebenar)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-167",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Sejarah Tingkatan 1: Bab 4 - Mengenali Tamadun",
+   "src": "/vi/AkpSs9HVwZQ/hqdefault.jpg",
+   "section": "Matematik Tambahan SPM 2023 Kertas 2 - Soalan 1 - 5 (Kertas Sebenar)",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-168",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Matematik Tambahan SPM 2023 Kertas 2 - Soalan 1 - 5 (Kertas Sebenar)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-169",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah Tingkatan 1: Bab 4 - Mengenali Tamadun",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-170",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Sejarah Tingkatan 1: Bab 4 - Mengenali Tamadun",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-171",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Jawab soalan persamaan linear dalam satu pemboleh ubah dengan kalkulator A Admin PRESTASI+ admin 106 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/67",
+   "absHref": "https://prestasiplus.my/video/67",
+   "icon": "fa-play",
+   "section": "Sejarah Tingkatan 1: Bab 4 - Mengenali Tamadun",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-172",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Jawab soalan persamaan linear dalam satu pemboleh ubah dengan  kalkulator",
+   "src": "/vi/sF97pRi0NZc/hqdefault.jpg",
+   "section": "Sejarah Tingkatan 1: Bab 4 - Mengenali Tamadun",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-173",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Sejarah Tingkatan 1: Bab 4 - Mengenali Tamadun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-174",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Jawab soalan persamaan linear dalam satu pemboleh ubah dengan kalkulator",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-175",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Jawab soalan persamaan linear dalam satu pemboleh ubah dengan kalkulator",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-176",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Latihan Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4) A Admin PRESTASI+ admin 91 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/436",
+   "absHref": "https://prestasiplus.my/video/436",
+   "icon": "fa-play",
+   "section": "Jawab soalan persamaan linear dalam satu pemboleh ubah dengan kalkulator",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-177",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Latihan Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "src": "/vi/KFUKYAhbtFg/hqdefault.jpg",
+   "section": "Jawab soalan persamaan linear dalam satu pemboleh ubah dengan kalkulator",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-178",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Jawab soalan persamaan linear dalam satu pemboleh ubah dengan kalkulator",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-179",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Latihan Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-180",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Latihan Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-181",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Sistem Lif - 1.1: Daya paduan | Daya dan Gerakan II (Fizik KSSM Tingkatan 5) A Admin PRESTASI+ admin 88 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/877",
+   "absHref": "https://prestasiplus.my/video/877",
+   "icon": "fa-play",
+   "section": "Latihan Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-182",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Sistem Lif - 1.1: Daya paduan | Daya dan Gerakan II (Fizik KSSM Tingkatan 5)",
+   "src": "/vi/9p9j14eteOM/hqdefault.jpg",
+   "section": "Latihan Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-183",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Latihan Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-184",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sistem Lif - 1.1: Daya paduan | Daya dan Gerakan II (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-185",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Sistem Lif - 1.1: Daya paduan | Daya dan Gerakan II (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-186",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube SPM Add Maths 2023 Paper 2 - Question 1 - 5 (Kertas Sebenar) A Admin PRESTASI+ admin 91 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/1023",
+   "absHref": "https://prestasiplus.my/video/1023",
+   "icon": "fa-play",
+   "section": "Sistem Lif - 1.1: Daya paduan | Daya dan Gerakan II (Fizik KSSM Tingkatan 5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-187",
+   "kind": "image",
+   "tag": "img",
+   "alt": "SPM Add Maths 2023 Paper 2 - Question 1 - 5 (Kertas Sebenar)",
+   "src": "/vi/rTqqyV-vRu8/hqdefault.jpg",
+   "section": "Sistem Lif - 1.1: Daya paduan | Daya dan Gerakan II (Fizik KSSM Tingkatan 5)",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-188",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Sistem Lif - 1.1: Daya paduan | Daya dan Gerakan II (Fizik KSSM Tingkatan 5)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-189",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "SPM Add Maths 2023 Paper 2 - Question 1 - 5 (Kertas Sebenar)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-190",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "SPM Add Maths 2023 Paper 2 - Question 1 - 5 (Kertas Sebenar)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-191",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Sejarah Tingkatan 1: Bab 5 - Tamadun Awal Dunia A Admin PRESTASI+ admin 102 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/2228",
+   "absHref": "https://prestasiplus.my/video/2228",
+   "icon": "fa-play",
+   "section": "SPM Add Maths 2023 Paper 2 - Question 1 - 5 (Kertas Sebenar)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-192",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Sejarah Tingkatan 1: Bab 5 - Tamadun Awal Dunia",
+   "src": "/vi/KS0IY8Yvjeg/hqdefault.jpg",
+   "section": "SPM Add Maths 2023 Paper 2 - Question 1 - 5 (Kertas Sebenar)",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-193",
+   "kind": "modal",
+   "tag": "div",
+   "section": "SPM Add Maths 2023 Paper 2 - Question 1 - 5 (Kertas Sebenar)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-194",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah Tingkatan 1: Bab 5 - Tamadun Awal Dunia",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-195",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Sejarah Tingkatan 1: Bab 5 - Tamadun Awal Dunia",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-196",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Pengiraan sukatan serakan data tak terkumpul guna kalkulator A Admin PRESTASI+ admin 94 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/68",
+   "absHref": "https://prestasiplus.my/video/68",
+   "icon": "fa-play",
+   "section": "Sejarah Tingkatan 1: Bab 5 - Tamadun Awal Dunia",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-197",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Pengiraan sukatan serakan data tak terkumpul guna kalkulator",
+   "src": "/vi/ZvYjFB9cnaQ/hqdefault.jpg",
+   "section": "Sejarah Tingkatan 1: Bab 5 - Tamadun Awal Dunia",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-198",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Sejarah Tingkatan 1: Bab 5 - Tamadun Awal Dunia",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-199",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pengiraan sukatan serakan data tak terkumpul guna kalkulator",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-200",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Pengiraan sukatan serakan data tak terkumpul guna kalkulator",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-201",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Rekabentuk Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4) A Admin PRESTASI+ admin 92 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/437",
+   "absHref": "https://prestasiplus.my/video/437",
+   "icon": "fa-play",
+   "section": "Pengiraan sukatan serakan data tak terkumpul guna kalkulator",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-202",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Rekabentuk Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "src": "/vi/z6g6ce3ejns/hqdefault.jpg",
+   "section": "Pengiraan sukatan serakan data tak terkumpul guna kalkulator",
+   "alpine": {
+    "onerror": "this.style.display='none'; this.nextElementSibling.style.display='flex';"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-203",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Pengiraan sukatan serakan data tak terkumpul guna kalkulator",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "opacity:0"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-204",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Rekabentuk Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-205",
+   "kind": "badge",
+   "tag": "div",
+   "text": "A",
+   "section": "Rekabentuk Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-206",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎬",
+   "landmark": "section",
+   "section": "Rekabentuk Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-207",
+   "kind": "text",
+   "tag": "div",
+   "text": "📚",
+   "landmark": "section",
+   "section": "Rekabentuk Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-208",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "section",
+   "section": "Rekabentuk Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-209",
+   "kind": "text",
+   "tag": "div",
+   "text": "🚀",
+   "landmark": "section",
+   "section": "Rekabentuk Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-210",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓",
+   "landmark": "section",
+   "section": "Rekabentuk Teleskop dan Mikroskop - 6.5: Peralatan optik | Cahaya & optik (Fizik KSSM Tingkatan 4)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-211",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Nak Tonton Lebih Banyak?",
+   "landmark": "section",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-212",
+   "kind": "text",
+   "tag": "p",
+   "text": "Daftar percuma dan dapat akses penuh ke semua video, latih tubi interaktif, ganjaran menarik dan banyak lagi!",
+   "landmark": "section",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-213",
+   "kind": "link",
+   "tag": "a",
+   "text": "Daftar Percuma Sekarang",
+   "href": "https://prestasiplus.my/register",
+   "absHref": "https://prestasiplus.my/register",
+   "icon": "fa-arrow-right",
+   "landmark": "section",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-214",
+   "kind": "text",
+   "tag": "p",
+   "text": "100% Percuma • Tiada Kad Kredit Diperlukan",
+   "landmark": "section",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-215",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "landmark": "footer",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-216",
+   "kind": "text",
+   "tag": "p",
+   "text": "© 2026 PRESTASIPLUS by GCM Technologies Sdn Bhd. Hak Cipta Terpelihara.",
+   "landmark": "footer",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-217",
+   "kind": "link",
+   "tag": "a",
+   "text": "Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "landmark": "footer",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-218",
+   "kind": "link",
+   "tag": "a",
+   "text": "Artikel",
+   "href": "https://prestasiplus.my/artikel",
+   "absHref": "https://prestasiplus.my/artikel",
+   "landmark": "footer",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-219",
+   "kind": "link",
+   "tag": "a",
+   "text": "Video",
+   "href": "https://prestasiplus.my/video",
+   "absHref": "https://prestasiplus.my/video",
+   "landmark": "footer",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-220",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk",
+   "href": "https://prestasiplus.my/login",
+   "absHref": "https://prestasiplus.my/login",
+   "landmark": "footer",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-221",
+   "kind": "link",
+   "tag": "a",
+   "text": "Daftar",
+   "href": "https://prestasiplus.my/register",
+   "absHref": "https://prestasiplus.my/register",
+   "landmark": "footer",
+   "section": "Nak Tonton Lebih Banyak?",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-222",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Kimia Tingkatan 4 KSSM Bab 4 Jadual Berkala Unsur | Tindak Balas Unsur Kumpulan 17 dengan Air A <name> admin 38 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/2220",
+   "absHref": "https://prestasiplus.my/video/2220",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "last-page__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-223",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kimia Tingkatan 4 KSSM Bab 4 Jadual Berkala Unsur | Tindak Balas Unsur Kumpulan 17 dengan Air",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "last-page__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-224",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Kimia Tingkatan 4 KSSM Bab 4 Jadual Berkala Unsur | Unsur dalam Kumpulan 17 A <name> admin 37 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/2221",
+   "absHref": "https://prestasiplus.my/video/2221",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Kimia Tingkatan 4 KSSM Bab 4 Jadual Berkala Unsur | Tindak Balas Unsur Kumpulan 17 dengan Air",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "last-page__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-225",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kimia Tingkatan 4 KSSM Bab 4 Jadual Berkala Unsur | Unsur dalam Kumpulan 17",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "last-page__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-226",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "« Previous",
+   "href": "https://prestasiplus.my/video?page=94",
+   "absHref": "https://prestasiplus.my/video?page=94",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Kimia Tingkatan 4 KSSM Bab 4 Jadual Berkala Unsur | Unsur dalam Kumpulan 17",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "last-page__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-227",
+   "kind": "text",
+   "tag": "span",
+   "text": "Next »",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Kimia Tingkatan 4 KSSM Bab 4 Jadual Berkala Unsur | Unsur dalam Kumpulan 17",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "last-page__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-228",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua (97)",
+   "href": "https://prestasiplus.my/video?subject=5",
+   "absHref": "https://prestasiplus.my/video?subject=5",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-229",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Motivasi (1)",
+   "href": "https://prestasiplus.my/video?subject=5&category=motivasi",
+   "absHref": "https://prestasiplus.my/video?subject=5&category=motivasi",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-230",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Tutorial (12)",
+   "href": "https://prestasiplus.my/video?subject=5&category=tutorial",
+   "absHref": "https://prestasiplus.my/video?subject=5&category=tutorial",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-231",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Tips SPM (3)",
+   "href": "https://prestasiplus.my/video?subject=5&category=tips-spm",
+   "absHref": "https://prestasiplus.my/video?subject=5&category=tips-spm",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-232",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Ceramah (81)",
+   "href": "https://prestasiplus.my/video?subject=5&category=ceramah",
+   "absHref": "https://prestasiplus.my/video?subject=5&category=ceramah",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-233",
+   "kind": "link",
+   "tag": "a",
+   "text": "Reset Subjek",
+   "href": "https://prestasiplus.my/video",
+   "absHref": "https://prestasiplus.my/video",
+   "icon": "fa-times",
+   "landmark": "main",
+   "section": "Video Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-234",
+   "kind": "link",
+   "tag": "a",
+   "text": "YouTube Sejarah Tingkatan 1: Bab 2 - Zaman Air Batu A <name> admin 103 tontonan 6 bulan yang lepas",
+   "href": "https://prestasiplus.my/video/2225",
+   "absHref": "https://prestasiplus.my/video/2225",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Sejarah Tingkatan 1: Bab 1 - Mengenali Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S17-235",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah Tingkatan 1: Bab 2 - Zaman Air Batu",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject__1280"
+   ]
+  }
+ ]
+}

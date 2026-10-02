@@ -1,0 +1,2546 @@
+{
+ "screen": "S1",
+ "key": "S1-overview",
+ "route": "/admin/kirkpatrick",
+ "name": "Kirkpatrick Evaluation Dashboard",
+ "module": "M12",
+ "generatedAt": "2026-09-25T11:27:07.515Z",
+ "notes": "twin /guru/kirkpatrick renders the identical <main> (admin shell); filters school_id, state (GET)",
+ "shell": "SHA",
+ "summary": {
+  "total": 125,
+  "visibleDefault": 67,
+  "conditional": 53,
+  "hiddenOnly": 5,
+  "mobileOnly": 4,
+  "desktopOnly": 8,
+  "byKind": {
+   "form": 1,
+   "label": 2,
+   "select": 2,
+   "button": 1,
+   "link": 54,
+   "card": 4,
+   "heading": 3,
+   "badge": 9,
+   "text": 48,
+   "empty-state": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "Semua Sekolah / Semua Negeri (default)",
+   "file": "_raw/M12/S1-overview__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick",
+   "finalUrl": "/admin/kirkpatrick",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Evaluation Dashboard",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 57",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "guru__1280",
+   "description": "teacher route /guru/kirkpatrick (same template, admin shell)",
+   "file": "_raw/M12/S1-overview__guru__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/kirkpatrick",
+   "finalUrl": "/guru/kirkpatrick",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Evaluation Dashboard",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 57",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "school__1280",
+   "description": "school_id=8080 (GET by URL): Reset shown, decline comparison (red)",
+   "file": "_raw/M12/S1-overview__school__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick?school_id=8080",
+   "finalUrl": "/admin/kirkpatrick?school_id=8080",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Evaluation Dashboard",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 57",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "state-empty__1280",
+   "description": "state=Kelantan (GET by URL): no data, \"Tiada Data vs Tiada Data\"",
+   "file": "_raw/M12/S1-overview__state-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick?state=Kelantan",
+   "finalUrl": "/admin/kirkpatrick?state=Kelantan",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Evaluation Dashboard",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 57",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M12/S1-overview__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/kirkpatrick",
+   "finalUrl": "/admin/kirkpatrick",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Evaluation Dashboard",
+   "horizontalOverflow": "487px > 375px",
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 57",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M12/S1-overview__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/kirkpatrick",
+   "finalUrl": "/admin/kirkpatrick",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Evaluation Dashboard",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 57",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M12-S1-001",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/kirkpatrick",
+   "method": "GET",
+   "fields": [
+    "school_id",
+    "state"
+   ],
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-002",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sekolah",
+   "landmark": "form",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-003",
+   "kind": "select",
+   "tag": "select",
+   "name": "school_id",
+   "label": "Sekolah",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Sekolah"
+    },
+    {
+     "value": "8300",
+     "text": "<school>"
+    },
+    {
+     "value": "8298",
+     "text": "<school>"
+    },
+    {
+     "value": "8277",
+     "text": "<school>"
+    },
+    {
+     "value": "8284",
+     "text": "<school>"
+    },
+    {
+     "value": "3160",
+     "text": "<school>"
+    },
+    {
+     "value": "5441",
+     "text": "<school>"
+    },
+    {
+     "value": "3390",
+     "text": "<school>"
+    },
+    {
+     "value": "987",
+     "text": "<school>"
+    },
+    {
+     "value": "3582",
+     "text": "<school>"
+    },
+    {
+     "value": "1014",
+     "text": "<school>"
+    },
+    {
+     "value": "978",
+     "text": "<school>"
+    },
+    {
+     "value": "4961",
+     "text": "<school>"
+    },
+    {
+     "value": "1267",
+     "text": "<school>"
+    },
+    {
+     "value": "2418",
+     "text": "<school>"
+    },
+    {
+     "value": "2710",
+     "text": "<school>"
+    },
+    {
+     "value": "853",
+     "text": "<school>"
+    },
+    {
+     "value": "940",
+     "text": "<school>"
+    },
+    {
+     "value": "3931",
+     "text": "<school>"
+    },
+    {
+     "value": "995",
+     "text": "<school>"
+    },
+    {
+     "value": "5997",
+     "text": "<school>"
+    },
+    {
+     "value": "998",
+     "text": "<school>"
+    },
+    {
+     "value": "2700",
+     "text": "<school>"
+    },
+    {
+     "value": "854",
+     "text": "<school>"
+    },
+    {
+     "value": "1712",
+     "text": "<school>"
+    },
+    {
+     "value": "1",
+     "text": "<school>"
+    },
+    {
+     "value": "5183",
+     "text": "<school>"
+    },
+    {
+     "value": "1518",
+     "text": "<school>"
+    },
+    {
+     "value": "8302",
+     "text": "<school>"
+    },
+    {
+     "value": "9681",
+     "text": "<school>"
+    },
+    {
+     "value": "8965",
+     "text": "<school>"
+    },
+    {
+     "value": "8078",
+     "text": "<school>"
+    },
+    {
+     "value": "8106",
+     "text": "<school>"
+    },
+    {
+     "value": "8107",
+     "text": "<school>"
+    },
+    {
+     "value": "8102",
+     "text": "<school>"
+    },
+    {
+     "value": "8308",
+     "text": "<school>"
+    },
+    {
+     "value": "8198",
+     "text": "<school>"
+    },
+    {
+     "value": "8082",
+     "text": "<school>"
+    },
+    {
+     "value": "9167",
+     "text": "<school>"
+    },
+    {
+     "value": "7780",
+     "text": "<school>"
+    },
+    {
+     "value": "8098",
+     "text": "<school>"
+    },
+    {
+     "value": "8087",
+     "text": "<school>"
+    },
+    {
+     "value": "8088",
+     "text": "<school>"
+    },
+    {
+     "value": "9806",
+     "text": "<school>"
+    },
+    {
+     "value": "8080",
+     "text": "<school>"
+    },
+    {
+     "value": "8765",
+     "text": "<school>"
+    },
+    {
+     "value": "8090",
+     "text": "<school>"
+    },
+    {
+     "value": "8030",
+     "text": "<school>"
+    },
+    {
+     "value": "8209",
+     "text": "<school>"
+    },
+    {
+     "value": "8772",
+     "text": "<school>"
+    },
+    {
+     "value": "9924",
+     "text": "<school>"
+    },
+    {
+     "value": "8228",
+     "text": "<school>"
+    },
+    {
+     "value": "8880",
+     "text": "<school>"
+    },
+    {
+     "value": "8767",
+     "text": "<school>"
+    },
+    {
+     "value": "9726",
+     "text": "<school>"
+    },
+    {
+     "value": "8641",
+     "text": "<school>"
+    },
+    {
+     "value": "10220",
+     "text": "<school>"
+    },
+    {
+     "value": "9801",
+     "text": "<school>"
+    }
+   ],
+   "landmark": "form",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-004",
+   "kind": "label",
+   "tag": "label",
+   "text": "Negeri",
+   "landmark": "form",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-005",
+   "kind": "select",
+   "tag": "select",
+   "name": "state",
+   "label": "Negeri",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Negeri"
+    },
+    {
+     "value": "Johor",
+     "text": "Johor"
+    },
+    {
+     "value": "Kedah",
+     "text": "Kedah"
+    },
+    {
+     "value": "Kelantan",
+     "text": "Kelantan"
+    },
+    {
+     "value": "Kuala Lumpur",
+     "text": "Kuala Lumpur"
+    },
+    {
+     "value": "Melaka",
+     "text": "Melaka"
+    },
+    {
+     "value": "Pahang",
+     "text": "Pahang"
+    },
+    {
+     "value": "Perak",
+     "text": "Perak"
+    },
+    {
+     "value": "Sabah",
+     "text": "Sabah"
+    },
+    {
+     "value": "Selangor",
+     "text": "Selangor"
+    },
+    {
+     "value": "Terengganu",
+     "text": "Terengganu"
+    }
+   ],
+   "landmark": "form",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-006",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tapis",
+   "icon": "fa-filter",
+   "form": "https://prestasiplus.my/admin/kirkpatrick",
+   "landmark": "form",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-007",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahap 4: Hasil 4.30 GPS Sekolah · 4378 rekod headcount Lihat detail",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "icon": "fa-trophy",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-008",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahap 3: Tingkah Laku 951/4158 Pelajar aktif · 20991 sesi · 82.8% ketepatan Lihat detail",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-009",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahap 2: Pembelajaran 82.8% Ketepatan · 306,133 soalan dijawab Lihat detail",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-010",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahap 1: Reaksi 4.6/5 Kepuasan purata · 336 respon Lihat detail",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/reaction",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/reaction",
+   "icon": "fa-smile",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-011",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-012",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-013",
+   "kind": "link",
+   "tag": "a",
+   "text": "T1: Reaksi Kepuasan pengguna 4.6/5",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/reaction",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/reaction",
+   "icon": "fa-smile",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-014",
+   "kind": "badge",
+   "tag": "span",
+   "text": "4.6/5",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-015",
+   "kind": "link",
+   "tag": "a",
+   "text": "T2: Pembelajaran Peningkatan kemahiran 82.8% ketepatan",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-016",
+   "kind": "badge",
+   "tag": "span",
+   "text": "82.8% ketepatan",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-017",
+   "kind": "link",
+   "tag": "a",
+   "text": "T3: Tingkah Laku Konsistensi penggunaan 951 pelajar aktif",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-018",
+   "kind": "badge",
+   "tag": "span",
+   "text": "951 pelajar aktif",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-019",
+   "kind": "link",
+   "tag": "a",
+   "text": "T4: Hasil Keputusan peperiksaan GPS 4.30",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "icon": "fa-trophy",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "state-empty__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-020",
+   "kind": "badge",
+   "tag": "span",
+   "text": "GPS 4.30",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "state-empty__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-021",
+   "kind": "link",
+   "tag": "a",
+   "text": "T1: Reaksi Kepuasan pengguna 4.6/5",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/reaction",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/reaction",
+   "icon": "fa-smile",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-022",
+   "kind": "link",
+   "tag": "a",
+   "text": "T2: Pembelajaran Peningkatan kemahiran 82.8% ketepatan",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-023",
+   "kind": "link",
+   "tag": "a",
+   "text": "T3: Tingkah Laku Konsistensi penggunaan 951 pelajar aktif",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-024",
+   "kind": "link",
+   "tag": "a",
+   "text": "T4: Hasil Keputusan peperiksaan GPS 4.30",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "icon": "fa-trophy",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "state-empty__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-025",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perbandingan Sebelum & Selepas",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-026",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Perbandingan Sebelum & Selepas",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "Januari 2026 vs September 2026",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "SEBELUM",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "01 Jan 2026 - 31 Jan 2026",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "2",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-031",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar Aktif",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "33.3%",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-033",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "3",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-035",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Jawapan",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-037",
+   "kind": "text",
+   "tag": "p",
+   "text": "Champion",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "SELEPAS",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-039",
+   "kind": "text",
+   "tag": "span",
+   "text": "01 Sep 2026 - 25 Sep 2026",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-040",
+   "kind": "text",
+   "tag": "p",
+   "text": "58",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-041",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar Aktif",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-042",
+   "kind": "text",
+   "tag": "p",
+   "text": "87%",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-043",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-044",
+   "kind": "text",
+   "tag": "p",
+   "text": "13,968",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-045",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Jawapan",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-046",
+   "kind": "text",
+   "tag": "p",
+   "text": "28",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-047",
+   "kind": "text",
+   "tag": "p",
+   "text": "Champion",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-048",
+   "kind": "text",
+   "tag": "p",
+   "text": "+56",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-049",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar Aktif",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-050",
+   "kind": "text",
+   "tag": "p",
+   "text": "+53.7%",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-051",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-052",
+   "kind": "text",
+   "tag": "p",
+   "text": "+13965",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-053",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Jawapan",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-054",
+   "kind": "text",
+   "tag": "p",
+   "text": "+28",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-055",
+   "kind": "text",
+   "tag": "p",
+   "text": "Champion",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan meningkat 465500%. 28 pelajar naik ke tahap Champion.",
+   "icon": "fa-chart-line",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-057",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Ringkasan:",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-058",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pelajar Berdaftar (T4/T5) 4,158",
+   "href": "https://prestasiplus.my/admin/monitoring",
+   "absHref": "https://prestasiplus.my/admin/monitoring",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-059",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan Dijawab 306,133",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-060",
+   "kind": "link",
+   "tag": "a",
+   "text": "Guru Aktif 277/522",
+   "href": "https://prestasiplus.my/admin/monitoring",
+   "absHref": "https://prestasiplus.my/admin/monitoring",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-061",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ketepatan Keseluruhan 82.8%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-062",
+   "kind": "card",
+   "tag": "div",
+   "text": "Taburan Engagement Pelajar",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-063",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Taburan Engagement Pelajar",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-064",
+   "kind": "link",
+   "tag": "a",
+   "text": "513 Champion 12.3%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-crown",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-065",
+   "kind": "link",
+   "tag": "a",
+   "text": "259 Konsisten 6.2%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-check-double",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-066",
+   "kind": "link",
+   "tag": "a",
+   "text": "169 Berkembang 4.1%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-seedling",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-067",
+   "kind": "link",
+   "tag": "a",
+   "text": "5 Minimum 0.1%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-minus-circle",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-068",
+   "kind": "link",
+   "tag": "a",
+   "text": "3207 Tidak Terlibat 77.1%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-069",
+   "kind": "card",
+   "tag": "div",
+   "text": "Model Kirkpatrick — 4 Tahap Penilaian Keberkesanan",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-070",
+   "kind": "text",
+   "tag": "p",
+   "text": "Model Kirkpatrick — 4 Tahap Penilaian Keberkesanan",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-071",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dashboard ini mengukur keberkesanan platform PrestasiPlus berdasarkan model Kirkpatrick (1959). Data Tahap 2 (Pembelajaran) dan Tahap 3 (Tingkah Laku) dijana secara automatik daripada aktiviti pelajar. Tahap 1 (Reaksi) memerlukan data survey, dan Tahap 4 (Hasil) memerlukan keputusan peperiksaan sebe…",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "school__1280",
+    "state-empty__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-072",
+   "kind": "link",
+   "tag": "a",
+   "text": "Reset",
+   "href": "https://prestasiplus.my/admin/kirkpatrick",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick",
+   "icon": "fa-times",
+   "landmark": "form",
+   "section": "Kirkpatrick Evaluation",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280",
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-073",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahap 4: Hasil 4 GPS Sekolah · 4378 rekod headcount Lihat detail",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "icon": "fa-trophy",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-074",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahap 3: Tingkah Laku 53/184 Pelajar aktif · 1002 sesi · 75.6% ketepatan Lihat detail",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-075",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahap 2: Pembelajaran 75.6% Ketepatan · 15,007 soalan dijawab Lihat detail",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-076",
+   "kind": "link",
+   "tag": "a",
+   "text": "T2: Pembelajaran Peningkatan kemahiran 75.6% ketepatan",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-077",
+   "kind": "badge",
+   "tag": "span",
+   "text": "75.6% ketepatan",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-078",
+   "kind": "link",
+   "tag": "a",
+   "text": "T3: Tingkah Laku Konsistensi penggunaan 53 pelajar aktif",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-079",
+   "kind": "badge",
+   "tag": "span",
+   "text": "53 pelajar aktif",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-080",
+   "kind": "link",
+   "tag": "a",
+   "text": "T4: Hasil Keputusan peperiksaan GPS 4",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "icon": "fa-trophy",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-081",
+   "kind": "badge",
+   "tag": "span",
+   "text": "GPS 4",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-082",
+   "kind": "link",
+   "tag": "a",
+   "text": "T2: Pembelajaran Peningkatan kemahiran 75.6% ketepatan",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-083",
+   "kind": "link",
+   "tag": "a",
+   "text": "T3: Tingkah Laku Konsistensi penggunaan 53 pelajar aktif",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-084",
+   "kind": "link",
+   "tag": "a",
+   "text": "T4: Hasil Keputusan peperiksaan GPS 4",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "icon": "fa-trophy",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-085",
+   "kind": "text",
+   "tag": "p",
+   "text": "April 2026 vs September 2026",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-086",
+   "kind": "text",
+   "tag": "span",
+   "text": "01 Apr 2026 - 30 Apr 2026",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-087",
+   "kind": "text",
+   "tag": "p",
+   "text": "71.6%",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-088",
+   "kind": "text",
+   "tag": "p",
+   "text": "55%",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-089",
+   "kind": "text",
+   "tag": "p",
+   "text": "-11",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-090",
+   "kind": "text",
+   "tag": "p",
+   "text": "-16.6%",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-091",
+   "kind": "text",
+   "tag": "p",
+   "text": "-451",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-092",
+   "kind": "text",
+   "tag": "p",
+   "text": "-2",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-093",
+   "kind": "text",
+   "tag": "div",
+   "text": "Penurunan 16.6% dalam ketepatan jawapan. 11 pelajar kurang aktif berbanding sebelumnya.",
+   "icon": "fa-chart-line",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-094",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pelajar Berdaftar (T4/T5) 184",
+   "href": "https://prestasiplus.my/admin/monitoring",
+   "absHref": "https://prestasiplus.my/admin/monitoring",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-095",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan Dijawab 15,007",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-096",
+   "kind": "link",
+   "tag": "a",
+   "text": "Guru Aktif 34/34",
+   "href": "https://prestasiplus.my/admin/monitoring",
+   "absHref": "https://prestasiplus.my/admin/monitoring",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-097",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ketepatan Keseluruhan 75.6%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-098",
+   "kind": "link",
+   "tag": "a",
+   "text": "36 Champion 19.6%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-crown",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-099",
+   "kind": "link",
+   "tag": "a",
+   "text": "8 Konsisten 4.3%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-check-double",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-100",
+   "kind": "link",
+   "tag": "a",
+   "text": "9 Berkembang 4.9%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-seedling",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-101",
+   "kind": "link",
+   "tag": "a",
+   "text": "0 Minimum 0%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-minus-circle",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280",
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-102",
+   "kind": "link",
+   "tag": "a",
+   "text": "131 Tidak Terlibat 71.2%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-103",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahap 3: Tingkah Laku 0/0 Pelajar aktif · 0 sesi · 0% ketepatan Lihat detail",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-104",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahap 2: Pembelajaran 0% Ketepatan · 0 soalan dijawab Lihat detail",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-105",
+   "kind": "link",
+   "tag": "a",
+   "text": "T2: Pembelajaran Peningkatan kemahiran 0% ketepatan",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-106",
+   "kind": "badge",
+   "tag": "span",
+   "text": "0% ketepatan",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-107",
+   "kind": "link",
+   "tag": "a",
+   "text": "T3: Tingkah Laku Konsistensi penggunaan 0 pelajar aktif",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-108",
+   "kind": "badge",
+   "tag": "span",
+   "text": "0 pelajar aktif",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-109",
+   "kind": "link",
+   "tag": "a",
+   "text": "T2: Pembelajaran Peningkatan kemahiran 0% ketepatan",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "state-empty__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-110",
+   "kind": "link",
+   "tag": "a",
+   "text": "T3: Tingkah Laku Konsistensi penggunaan 0 pelajar aktif",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation Flow Klik mana-mana tahap untuk lihat detail",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "state-empty__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-111",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada Data vs Tiada Data",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-112",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-113",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-114",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-115",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-116",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-117",
+   "kind": "text",
+   "tag": "div",
+   "text": "Data tidak mencukupi untuk perbandingan.",
+   "icon": "fa-chart-line",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-118",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pelajar Berdaftar (T4/T5) 0",
+   "href": "https://prestasiplus.my/admin/monitoring",
+   "absHref": "https://prestasiplus.my/admin/monitoring",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-119",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan Dijawab 0",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-120",
+   "kind": "link",
+   "tag": "a",
+   "text": "Guru Aktif 0/0",
+   "href": "https://prestasiplus.my/admin/monitoring",
+   "absHref": "https://prestasiplus.my/admin/monitoring",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-121",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ketepatan Keseluruhan 0%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "landmark": "main",
+   "section": "Perbandingan Sebelum & Selepas",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-122",
+   "kind": "link",
+   "tag": "a",
+   "text": "0 Champion 0%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-crown",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-123",
+   "kind": "link",
+   "tag": "a",
+   "text": "0 Konsisten 0%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-check-double",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-124",
+   "kind": "link",
+   "tag": "a",
+   "text": "0 Berkembang 0%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-seedling",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S1-125",
+   "kind": "link",
+   "tag": "a",
+   "text": "0 Tidak Terlibat 0%",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Taburan Engagement Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "state-empty__1280"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,3647 @@
+{
+ "screen": "S8",
+ "key": "S8-subjektif",
+ "route": "/spm/subjektif",
+ "name": "Latihan Subjektif SPM",
+ "module": "M06",
+ "generatedAt": "2026-09-25T08:07:43.672Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 150,
+  "visibleDefault": 87,
+  "conditional": 60,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 18,
+   "link": 31,
+   "heading": 31,
+   "card": 34,
+   "tab": 3,
+   "badge": 13,
+   "alert": 20
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "tab Semua (default)",
+   "file": "_raw/M06/S8-subjektif__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/spm/subjektif",
+   "finalUrl": "/spm/subjektif",
+   "httpStatus": 200,
+   "title": "Latihan Subjektif SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "tab-core__1280",
+   "description": "tab Teras",
+   "file": "_raw/M06/S8-subjektif__tab-core__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/spm/subjektif",
+   "finalUrl": "/spm/subjektif",
+   "httpStatus": 200,
+   "title": "Latihan Subjektif SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    },
+    {
+     "click": "main [\\@click=\"tab = 'core'\"]"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "tab-elective__1280",
+   "description": "tab Elektif",
+   "file": "_raw/M06/S8-subjektif__tab-elective__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/spm/subjektif",
+   "finalUrl": "/spm/subjektif",
+   "httpStatus": 200,
+   "title": "Latihan Subjektif SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    },
+    {
+     "click": "main [\\@click=\"tab = 'elective'\"]"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "tab Semua @375",
+   "file": "_raw/M06/S8-subjektif__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/spm/subjektif",
+   "finalUrl": "/spm/subjektif",
+   "httpStatus": 200,
+   "title": "Latihan Subjektif SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "tab Semua @768",
+   "file": "_raw/M06/S8-subjektif__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/spm/subjektif",
+   "finalUrl": "/spm/subjektif",
+   "httpStatus": 200,
+   "title": "Latihan Subjektif SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "tab-core__375",
+   "description": "tab Teras @375",
+   "file": "_raw/M06/S8-subjektif__tab-core__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/spm/subjektif",
+   "finalUrl": "/spm/subjektif",
+   "httpStatus": 200,
+   "title": "Latihan Subjektif SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    },
+    {
+     "click": "main [\\@click=\"tab = 'core'\"]"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Subjektif SPM",
+   "seenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ tab: 'all' }",
+   "keys": [
+    "tab"
+   ],
+   "liveState": {
+    "tab": "all"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Latihan Subjektif SPM",
+   "seenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M06-S8-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Subjektif SPM",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Subjektif SPM",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Subjektif SPM",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Mod SPM",
+   "href": "https://prestasiplus.my/spm",
+   "absHref": "https://prestasiplus.my/spm",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Latihan Subjektif SPM",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih subjek untuk menjawab set struktur dan esei SPM berasaskan bank subjektif Tingkatan 4 dan 5.",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pilih subjek → jawab set struktur/subjektif SPM → semak markah dan model jawapan. Bank ini ditarik daripada soalan berstruktur Tingkatan 4 dan 5 yang telah diterbitkan.",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-008",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bagaimana ia berfungsi?",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-009",
+   "kind": "card",
+   "tag": "div",
+   "text": "Set Dijawab",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Set Dijawab",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "Percubaan subjektif SPM yang telah dihantar",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "Subjek Dicuba",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "Subjek Dicuba",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-015",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bilangan subjek subjektif SPM yang pernah dicuba",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-017",
+   "kind": "card",
+   "tag": "div",
+   "text": "Skor Terbaik",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "Skor Terbaik",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "Belum Ada",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-020",
+   "kind": "text",
+   "tag": "p",
+   "text": "Skor tertinggi merentas semua set subjektif SPM",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-021",
+   "kind": "card",
+   "tag": "div",
+   "text": "Set Terbaik Disimpan",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "Set Terbaik Disimpan",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-024",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bilangan set yang mempunyai percubaan terbaik tersimpan",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-025",
+   "kind": "tab",
+   "tag": "button",
+   "type": "button",
+   "text": "Semua 15",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "alpine": {
+    "@click": "tab = 'all'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-026",
+   "kind": "badge",
+   "tag": "span",
+   "text": "15",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-027",
+   "kind": "tab",
+   "tag": "button",
+   "type": "button",
+   "text": "Teras 5",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "alpine": {
+    "@click": "tab = 'core'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-028",
+   "kind": "badge",
+   "tag": "span",
+   "text": "5",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-029",
+   "kind": "tab",
+   "tag": "button",
+   "type": "button",
+   "text": "Elektif 10",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "alpine": {
+    "@click": "tab = 'elective'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-030",
+   "kind": "badge",
+   "tag": "span",
+   "text": "10",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-core__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S8-031",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bahasa Inggeris Teras English Language 773 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=2&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=2&scope=spm",
+   "icon": "fa-globe",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-032",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Latihan Subjektif SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-033",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-034",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-035",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bahasa Melayu Teras Malay Language 559 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=1&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=1&scope=spm",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-036",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-037",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-038",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-039",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik Teras Mathematics 298 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=3&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=3&scope=spm",
+   "icon": "fa-calculator",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-040",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-041",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-042",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-043",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sains Teras Science 204 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=4&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=4&scope=spm",
+   "icon": "fa-beaker",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-044",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-045",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sains",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-046",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-047",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sejarah Teras History 328 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=5&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=5&scope=spm",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-048",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-049",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-050",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-051",
+   "kind": "link",
+   "tag": "a",
+   "text": "Biologi Elektif Biology 217 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=11&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=11&scope=spm",
+   "icon": "fa-leaf",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-052",
+   "kind": "card",
+   "tag": "div",
+   "text": "Biologi",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-053",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Biologi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-054",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-055",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ekonomi Elektif Economics 42 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=22&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=22&scope=spm",
+   "icon": "fa-trending-up",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-056",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ekonomi",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-057",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ekonomi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-058",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-059",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fizik Elektif Physics 246 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=9&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=9&scope=spm",
+   "icon": "fa-zap",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-060",
+   "kind": "card",
+   "tag": "div",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-061",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Fizik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-062",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "Geografi Elektif Geography 21 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=12&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=12&scope=spm",
+   "icon": "fa-map",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-064",
+   "kind": "card",
+   "tag": "div",
+   "text": "Geografi",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-065",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Geografi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-066",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-067",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kimia Elektif Chemistry 232 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=10&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=10&scope=spm",
+   "icon": "fa-flask-round",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-068",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-069",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kimia",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-070",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-071",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik Tambahan Elektif Additional Mathematics 256 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=8&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=8&scope=spm",
+   "icon": "fa-variable",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-072",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-073",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-074",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-075",
+   "kind": "link",
+   "tag": "a",
+   "text": "Perniagaan Elektif Business Studies 763 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=23&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=23&scope=spm",
+   "icon": "fa-briefcase",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-076",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-077",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Perniagaan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-078",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-079",
+   "kind": "link",
+   "tag": "a",
+   "text": "Prinsip Perakaunan Elektif Principles of Accounting 76 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=21&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=21&scope=spm",
+   "icon": "fa-receipt",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-080",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-081",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-082",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-083",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sains Komputer Elektif Computer Science 22 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=17&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=17&scope=spm",
+   "icon": "fa-monitor",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-084",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains Komputer",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-085",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sains Komputer",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-086",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-087",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tasawwur Islam Elektif Islamic Worldview 22 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=25&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=25&scope=spm",
+   "icon": "fa-fas fa-mosque",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-088",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-089",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-090",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-core__1280",
+    "tab-elective__1280",
+    "tab-core__375"
+   ],
+   "showWhen": "tab === 'all'"
+  },
+  {
+   "id": "EL-M06-S8-091",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bahasa Inggeris Teras English Language 773 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=2&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=2&scope=spm",
+   "icon": "fa-globe",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-092",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-093",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-094",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-095",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bahasa Melayu Teras Malay Language 559 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=1&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=1&scope=spm",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-096",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-097",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-098",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-099",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik Teras Mathematics 298 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=3&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=3&scope=spm",
+   "icon": "fa-calculator",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-100",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-101",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-102",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-103",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sains Teras Science 204 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=4&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=4&scope=spm",
+   "icon": "fa-beaker",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-104",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-105",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sains",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-106",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-107",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sejarah Teras History 328 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=5&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=5&scope=spm",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-108",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-109",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-110",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-core__1280",
+    "tab-core__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-elective__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'core'"
+  },
+  {
+   "id": "EL-M06-S8-111",
+   "kind": "link",
+   "tag": "a",
+   "text": "Biologi Elektif Biology 217 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=11&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=11&scope=spm",
+   "icon": "fa-leaf",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-112",
+   "kind": "card",
+   "tag": "div",
+   "text": "Biologi",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-113",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Biologi",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-114",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-115",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ekonomi Elektif Economics 42 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=22&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=22&scope=spm",
+   "icon": "fa-trending-up",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-116",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ekonomi",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-117",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ekonomi",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-118",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-119",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fizik Elektif Physics 246 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=9&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=9&scope=spm",
+   "icon": "fa-zap",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-120",
+   "kind": "card",
+   "tag": "div",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-121",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Fizik",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-122",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-123",
+   "kind": "link",
+   "tag": "a",
+   "text": "Geografi Elektif Geography 21 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=12&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=12&scope=spm",
+   "icon": "fa-map",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-124",
+   "kind": "card",
+   "tag": "div",
+   "text": "Geografi",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-125",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Geografi",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-126",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-127",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kimia Elektif Chemistry 232 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=10&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=10&scope=spm",
+   "icon": "fa-flask-round",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-128",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-129",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kimia",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-130",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-131",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik Tambahan Elektif Additional Mathematics 256 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=8&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=8&scope=spm",
+   "icon": "fa-variable",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-132",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-133",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-134",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-135",
+   "kind": "link",
+   "tag": "a",
+   "text": "Perniagaan Elektif Business Studies 763 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=23&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=23&scope=spm",
+   "icon": "fa-briefcase",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-136",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-137",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Perniagaan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-138",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-139",
+   "kind": "link",
+   "tag": "a",
+   "text": "Prinsip Perakaunan Elektif Principles of Accounting 76 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=21&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=21&scope=spm",
+   "icon": "fa-receipt",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-140",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-141",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-142",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-143",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sains Komputer Elektif Computer Science 22 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=17&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=17&scope=spm",
+   "icon": "fa-monitor",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-144",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains Komputer",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-145",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sains Komputer",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-146",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-147",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tasawwur Islam Elektif Islamic Worldview 22 set subjektif",
+   "href": "https://prestasiplus.my/latihan-berstruktur?subject_id=25&scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?subject_id=25&scope=spm",
+   "icon": "fa-fas fa-mosque",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-148",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-149",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  },
+  {
+   "id": "EL-M06-S8-150",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Elektif",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-elective__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-core__1280",
+    "default__375",
+    "default__768",
+    "tab-core__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'elective'"
+  }
+ ]
+}

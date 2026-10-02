@@ -1,0 +1,2775 @@
+{
+ "screen": "S7",
+ "key": "S7-reports",
+ "route": "/admin/question-reports",
+ "name": "Laporan Soalan — Admin Panel",
+ "module": "M04",
+ "generatedAt": "2026-09-25T07:37:18.396Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 146,
+  "visibleDefault": 53,
+  "conditional": 72,
+  "hiddenOnly": 21,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 1,
+   "text": 53,
+   "filter": 5,
+   "card": 8,
+   "badge": 29,
+   "form": 6,
+   "hidden-field": 21,
+   "textarea": 3,
+   "button": 8,
+   "link": 6,
+   "empty-state": 2,
+   "alert": 4
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (status=pending)",
+   "file": "_raw/M04/S7-reports__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/question-reports",
+   "finalUrl": "/admin/question-reports",
+   "httpStatus": 200,
+   "title": "Laporan Soalan — Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main i.fa-hashtag').forEach(function (i) { var c = i.closest('[class*=\"lg:flex-row\"]'); if (c && c.parentElement) { c.parentElement.setAttribute('data-card', ''); n++; } }); return 'report cards=' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 2",
+    "report cards=2",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 2
+   }
+  },
+  {
+   "label": "status-all__1280",
+   "description": "status=all",
+   "file": "_raw/M04/S7-reports__status-all__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/question-reports?status=all",
+   "finalUrl": "/admin/question-reports?status=all",
+   "httpStatus": 200,
+   "title": "Laporan Soalan — Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main i.fa-hashtag').forEach(function (i) { var c = i.closest('[class*=\"lg:flex-row\"]'); if (c && c.parentElement) { c.parentElement.setAttribute('data-card', ''); n++; } }); return 'report cards=' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 13",
+    "report cards=10",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 10
+   }
+  },
+  {
+   "label": "status-dismissed__1280",
+   "description": "status=dismissed",
+   "file": "_raw/M04/S7-reports__status-dismissed__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/question-reports?status=dismissed",
+   "finalUrl": "/admin/question-reports?status=dismissed",
+   "httpStatus": 200,
+   "title": "Laporan Soalan — Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main i.fa-hashtag').forEach(function (i) { var c = i.closest('[class*=\"lg:flex-row\"]'); if (c && c.parentElement) { c.parentElement.setAttribute('data-card', ''); n++; } }); return 'report cards=' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "report cards=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "status-fixed__1280",
+   "description": "status=fixed",
+   "file": "_raw/M04/S7-reports__status-fixed__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/question-reports?status=fixed",
+   "finalUrl": "/admin/question-reports?status=fixed",
+   "httpStatus": 200,
+   "title": "Laporan Soalan — Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main i.fa-hashtag').forEach(function (i) { var c = i.closest('[class*=\"lg:flex-row\"]'); if (c && c.parentElement) { c.parentElement.setAttribute('data-card', ''); n++; } }); return 'report cards=' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 5",
+    "report cards=5",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 5
+   }
+  },
+  {
+   "label": "status-reviewed__1280",
+   "description": "status=reviewed",
+   "file": "_raw/M04/S7-reports__status-reviewed__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/question-reports?status=reviewed",
+   "finalUrl": "/admin/question-reports?status=reviewed",
+   "httpStatus": 200,
+   "title": "Laporan Soalan — Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main i.fa-hashtag').forEach(function (i) { var c = i.closest('[class*=\"lg:flex-row\"]'); if (c && c.parentElement) { c.parentElement.setAttribute('data-card', ''); n++; } }); return 'report cards=' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 6",
+    "report cards=3",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 3
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M04/S7-reports__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/question-reports",
+   "finalUrl": "/admin/question-reports",
+   "httpStatus": 200,
+   "title": "Laporan Soalan — Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main i.fa-hashtag').forEach(function (i) { var c = i.closest('[class*=\"lg:flex-row\"]'); if (c && c.parentElement) { c.parentElement.setAttribute('data-card', ''); n++; } }); return 'report cards=' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 2",
+    "report cards=2",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 2
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "status=all @768",
+   "file": "_raw/M04/S7-reports__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/question-reports?status=all",
+   "finalUrl": "/admin/question-reports?status=all",
+   "httpStatus": 200,
+   "title": "Laporan Soalan — Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main i.fa-hashtag').forEach(function (i) { var c = i.closest('[class*=\"lg:flex-row\"]'); if (c && c.parentElement) { c.parentElement.setAttribute('data-card', ''); n++; } }); return 'report cards=' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 13",
+    "report cards=10",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 10
+   }
+  },
+  {
+   "label": "status-all__375",
+   "description": "status=all @375",
+   "file": "_raw/M04/S7-reports__status-all__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/question-reports?status=all",
+   "finalUrl": "/admin/question-reports?status=all",
+   "httpStatus": 200,
+   "title": "Laporan Soalan — Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main i.fa-hashtag').forEach(function (i) { var c = i.closest('[class*=\"lg:flex-row\"]'); if (c && c.parentElement) { c.parentElement.setAttribute('data-card', ''); n++; } }); return 'report cards=' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 13",
+    "report cards=10",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 10
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M04-S7-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Laporan Soalan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-dismissed__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan yang dilaporkan oleh pelajar dari kuiz, latihan & Papan Bijak",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-dismissed__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-003",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Menunggu (2)",
+   "href": "?status=pending",
+   "absHref": "https://prestasiplus.my/admin/question-reports?status=pending",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-dismissed__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-004",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Disemak (3)",
+   "href": "?status=reviewed",
+   "absHref": "https://prestasiplus.my/admin/question-reports?status=reviewed",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-dismissed__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-005",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Diperbaiki (5)",
+   "href": "?status=fixed",
+   "absHref": "https://prestasiplus.my/admin/question-reports?status=fixed",
+   "icon": "fa-check",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-dismissed__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-006",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Ditolak (0)",
+   "href": "?status=dismissed",
+   "absHref": "https://prestasiplus.my/admin/question-reports?status=dismissed",
+   "icon": "fa-times",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-dismissed__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-007",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Semua (10)",
+   "href": "?status=all",
+   "absHref": "https://prestasiplus.my/admin/question-reports?status=all",
+   "icon": "fa-list",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-dismissed__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Menunggu",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-009",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Menunggu",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-010",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Lain-lain",
+   "icon": "fa-info-circle",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-011",
+   "kind": "badge",
+   "tag": "span",
+   "text": "trial",
+   "icon": "fa-database",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "Oleh:",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-013",
+   "kind": "text",
+   "tag": "strong",
+   "text": "<person>",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-014",
+   "kind": "text",
+   "tag": "span",
+   "text": "2 minggu yang lepas",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-015",
+   "kind": "badge",
+   "tag": "span",
+   "text": "ID Soalan: 3698",
+   "icon": "fa-hashtag",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-016",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Lain-lain",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-017",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Struktur #3698:",
+   "icon": "fa-file-alt",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kedaulatan ialah konsep kenegaraan yang diasaskan sejak tamadun Yunani dan ditafsirkan oleh pelbagai tokoh mengikut perubahan zaman.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sejarah — Tingkatan 5",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-020",
+   "kind": "text",
+   "tag": "p",
+   "text": "Compliance: verified",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-021",
+   "kind": "text",
+   "tag": "p",
+   "text": "Komen pelajar:",
+   "icon": "fa-comment",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "Lambat",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-023",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/question-reports/10/update",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "status",
+    "admin_notes"
+   ],
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-024",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-025",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "status",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-026",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "admin_notes",
+   "placeholder": "Contoh: Soalan diperbaiki / Soalan dikeluarkan kerana silibus lama...",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-027",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tandakan Selesai",
+   "icon": "fa-check",
+   "form": "https://prestasiplus.my/admin/question-reports/10/update",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-028",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/question-reports/10/update",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "status",
+    "admin_notes",
+    "reactivate"
+   ],
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-029",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-030",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "status",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-031",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "admin_notes",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-032",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "reactivate",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-033",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tolak & Aktifkan Semula",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/question-reports/10/update",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-034",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Soalan Struktur #3698",
+   "href": "https://prestasiplus.my/admin/structured-questions/3698",
+   "absHref": "https://prestasiplus.my/admin/structured-questions/3698",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-035",
+   "kind": "link",
+   "tag": "a",
+   "text": "Buka Soalan Sama",
+   "href": "https://prestasiplus.my/latihan-berstruktur/3698/jawab?scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur/3698/jawab?scope=spm",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-036",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/question-reports/10/update",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "status",
+    "admin_notes",
+    "force_deactivate"
+   ],
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-037",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-038",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "status",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-039",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "admin_notes",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-040",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "force_deactivate",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-041",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Nyahaktif Segera",
+   "icon": "fa-ban",
+   "form": "https://prestasiplus.my/admin/question-reports/10/update",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-042",
+   "kind": "card",
+   "tag": "div",
+   "text": "Menunggu",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-043",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Menunggu",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-044",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Lain-lain",
+   "icon": "fa-info-circle",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-045",
+   "kind": "badge",
+   "tag": "span",
+   "text": "trial",
+   "icon": "fa-database",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "Oleh:",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-047",
+   "kind": "text",
+   "tag": "strong",
+   "text": "<person>",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-048",
+   "kind": "text",
+   "tag": "span",
+   "text": "3 bulan yang lepas",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-049",
+   "kind": "badge",
+   "tag": "span",
+   "text": "ID Soalan: 3700",
+   "icon": "fa-hashtag",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-050",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Lain-lain",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-051",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Struktur #3700:",
+   "icon": "fa-file-alt",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-052",
+   "kind": "text",
+   "tag": "p",
+   "text": "Petikan 2: Dialog Kerabu Rumpai Laut.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-053",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Melayu — Tingkatan 5",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-054",
+   "kind": "text",
+   "tag": "p",
+   "text": "Compliance: verified",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-055",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/question-reports/9/update",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "status",
+    "admin_notes"
+   ],
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-056",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-057",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "status",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-058",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "admin_notes",
+   "placeholder": "Contoh: Soalan diperbaiki / Soalan dikeluarkan kerana silibus lama...",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-059",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tandakan Selesai",
+   "icon": "fa-check",
+   "form": "https://prestasiplus.my/admin/question-reports/9/update",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-060",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/question-reports/9/update",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "status",
+    "admin_notes",
+    "reactivate"
+   ],
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-061",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-062",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "status",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-063",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "admin_notes",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-064",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "reactivate",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-065",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tolak & Aktifkan Semula",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/question-reports/9/update",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-066",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Soalan Struktur #3700",
+   "href": "https://prestasiplus.my/admin/structured-questions/3700",
+   "absHref": "https://prestasiplus.my/admin/structured-questions/3700",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-067",
+   "kind": "link",
+   "tag": "a",
+   "text": "Buka Soalan Sama",
+   "href": "https://prestasiplus.my/latihan-berstruktur/3700/jawab?scope=spm",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur/3700/jawab?scope=spm",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-068",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/question-reports/9/update",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "status",
+    "admin_notes",
+    "force_deactivate"
+   ],
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-069",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-070",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "status",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "status-reviewed__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-071",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "admin_notes",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-072",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "force_deactivate",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-073",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Nyahaktif Segera",
+   "icon": "fa-ban",
+   "form": "https://prestasiplus.my/admin/question-reports/9/update",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-074",
+   "kind": "card",
+   "tag": "div",
+   "text": "Dikeluarkan",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-075",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Dikeluarkan",
+   "icon": "fa-ban",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-076",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Lain-lain",
+   "icon": "fa-info-circle",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-077",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Dinyahaktif",
+   "icon": "fa-ban",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-078",
+   "kind": "badge",
+   "tag": "span",
+   "text": "trial",
+   "icon": "fa-database",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-079",
+   "kind": "text",
+   "tag": "span",
+   "text": "Oleh:",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-080",
+   "kind": "text",
+   "tag": "strong",
+   "text": "<person>",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-081",
+   "kind": "text",
+   "tag": "span",
+   "text": "3 bulan yang lepas",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-082",
+   "kind": "badge",
+   "tag": "span",
+   "text": "ID Soalan: 3699",
+   "icon": "fa-hashtag",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-083",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Lain-lain",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-084",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Struktur #3699:",
+   "icon": "fa-file-alt",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-085",
+   "kind": "text",
+   "tag": "p",
+   "text": "Petikan 1: Rencana Wau Kapal.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-086",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Melayu — Tingkatan 5",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-087",
+   "kind": "text",
+   "tag": "p",
+   "text": "Compliance: verified",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-088",
+   "kind": "text",
+   "tag": "p",
+   "text": "Komen pelajar:",
+   "icon": "fa-comment",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "status-reviewed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-089",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada soalan???",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "status-all__1280",
+    "status-fixed__1280",
+    "default__768",
+    "status-all__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-090",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada laporan buat masa ini",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-dismissed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-091",
+   "kind": "card",
+   "tag": "div",
+   "text": "Dikeluarkan",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-092",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Dikeluarkan",
+   "icon": "fa-ban",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-093",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Tak Jelas",
+   "icon": "fa-question-circle",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280",
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-094",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Dinyahaktif",
+   "icon": "fa-ban",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280",
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-095",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Soalan mengelirukan",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-096",
+   "kind": "text",
+   "tag": "p",
+   "text": "Petikan 1: Rencana Wau Kapal.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-097",
+   "kind": "text",
+   "tag": "p",
+   "text": "tidak dapat melihat petikan tersebut.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-098",
+   "kind": "card",
+   "tag": "div",
+   "text": "Dikeluarkan",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-099",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Dikeluarkan",
+   "icon": "fa-ban",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-100",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Tak Jelas",
+   "icon": "fa-question-circle",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-101",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Dinyahaktif",
+   "icon": "fa-ban",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280",
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-102",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280",
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-103",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Soalan mengelirukan",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-104",
+   "kind": "text",
+   "tag": "p",
+   "text": "Petikan 1: Rencana Wau Kapal.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-105",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Melayu — Tingkatan 5",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-fixed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-106",
+   "kind": "card",
+   "tag": "div",
+   "text": "Disemak",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-107",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Disemak",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-108",
+   "kind": "badge",
+   "tag": "span",
+   "text": "tracking_a_<redacted>_math_20260326",
+   "icon": "fa-database",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-109",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bilik: Y31OBA",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-110",
+   "kind": "badge",
+   "tag": "span",
+   "text": "unclear",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-111",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan #136891:",
+   "icon": "fa-file-alt",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-112",
+   "kind": "text",
+   "tag": "p",
+   "text": "Rajah 16 menunjukkan dua segi tiga, GHIJ dan PQR, dilukis di atas satah Cartes. Segi tiga GHIJ ialah objek bagi segi tiga PQR di bawah suatu pembesaran. Tentukan pusat pembesaran dan faktor skala bagi pembesaran itu.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-113",
+   "kind": "text",
+   "tag": "div",
+   "text": "A. A",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-114",
+   "kind": "text",
+   "tag": "div",
+   "text": "B. B",
+   "icon": "fa-check",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-115",
+   "kind": "text",
+   "tag": "div",
+   "text": "C. C",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-116",
+   "kind": "text",
+   "tag": "div",
+   "text": "D. D",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-117",
+   "kind": "text",
+   "tag": "p",
+   "text": "Matematik — Tingkatan 5",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-118",
+   "kind": "text",
+   "tag": "p",
+   "text": "Status tindakan admin:",
+   "icon": "fa-sticky-note",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-119",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dinyahaktifkan segera oleh admin",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-120",
+   "kind": "link",
+   "tag": "a",
+   "text": "Edit Soalan #136891",
+   "href": "https://prestasiplus.my/admin/questions/136891/edit",
+   "absHref": "https://prestasiplus.my/admin/questions/136891/edit",
+   "icon": "fa-edit",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-121",
+   "kind": "link",
+   "tag": "a",
+   "text": "Buka Soalan Sama",
+   "href": "https://prestasiplus.my/spm/latih-tubi/MATH/quiz?question_id=136891&count=1",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/MATH/quiz?question_id=136891&count=1",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-122",
+   "kind": "card",
+   "tag": "div",
+   "text": "Disemak",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-123",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Disemak",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-124",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Jawapan Salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-125",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-126",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Set jawapan tidak tepat",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-127",
+   "kind": "text",
+   "tag": "p",
+   "text": "Part 1 email response to cousin Fairuz about planning an outing after exams.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-128",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Inggeris — Tingkatan 5",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-129",
+   "kind": "text",
+   "tag": "p",
+   "text": "This is supposed to be an email and obviously marks depends on what we say.. why is there already an answer set???? I wanna talk about going to a cafe. I don't wanna go to 'the beach'.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-130",
+   "kind": "text",
+   "tag": "p",
+   "text": "Status tindakan admin:",
+   "icon": "fa-sticky-note",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-131",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dinyahaktifkan segera oleh admin",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-132",
+   "kind": "card",
+   "tag": "div",
+   "text": "Disemak",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-133",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Disemak",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-134",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Jawapan Salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-135",
+   "kind": "text",
+   "tag": "span",
+   "text": "5 bulan yang lepas",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-136",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Jawapan tidak tepat",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-137",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jadual 1 menunjukkan markah Irfan bagi empat subjek dalam asas yang berbeza.",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-138",
+   "kind": "text",
+   "tag": "p",
+   "text": "Matematik — Tingkatan 4",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-139",
+   "kind": "text",
+   "tag": "p",
+   "text": "Compliance: draft",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-140",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bende ni AI",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-141",
+   "kind": "text",
+   "tag": "p",
+   "text": "Status tindakan admin:",
+   "icon": "fa-sticky-note",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-142",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dinyahaktifkan segera oleh admin",
+   "landmark": "main",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-143",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "admin_notes",
+   "placeholder": "Contoh: Soalan diperbaiki / Soalan dikeluarkan kerana silibus lama...",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-144",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tandakan Selesai",
+   "icon": "fa-check",
+   "form": "https://prestasiplus.my/admin/question-reports/3/update",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-145",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "reactivate",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "status-reviewed__1280"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S7-146",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tolak & Aktifkan Semula",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/question-reports/3/update",
+   "landmark": "form",
+   "section": "Laporan Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-reviewed__1280"
+   ]
+  }
+ ]
+}

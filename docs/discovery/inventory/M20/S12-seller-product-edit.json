@@ -1,0 +1,1279 @@
+{
+ "screen": "S12",
+ "key": "S12-seller-product-edit",
+ "route": "/seller/produk/{id}/edit",
+ "name": "Edit Produk - PRESTASIPLUS Marketplace",
+ "module": "M20",
+ "generatedAt": "2026-09-26T20:59:26.989Z",
+ "notes": "form PUT /seller/produk/{id} (never submitted); GET /seller/produk/{id} → 405",
+ "shell": "SHU",
+ "summary": {
+  "total": 54,
+  "visibleDefault": 34,
+  "conditional": 11,
+  "hiddenOnly": 9,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 8,
+   "link": 3,
+   "form": 1,
+   "hidden-field": 2,
+   "card": 3,
+   "heading": 6,
+   "label": 11,
+   "input": 4,
+   "select": 1,
+   "textarea": 1,
+   "radio": 4,
+   "alert": 4,
+   "image": 5,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "seller edit #1 (never saved)",
+   "file": "_raw/M20/S12-seller-product-edit__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/seller/produk/1/edit",
+   "finalUrl": "/seller/produk/1/edit",
+   "httpStatus": 200,
+   "title": "Edit Produk - PRESTASIPLUS Marketplace",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 4",
+    "sanitized: cells=2 strings=3 attrs=1 texts=4 inputs=2 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "not-found__1280",
+   "description": "unknown id → 404",
+   "file": "_raw/M20/S12-seller-product-edit__not-found__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/seller/produk/999999/edit",
+   "finalUrl": "/seller/produk/999999/edit",
+   "httpStatus": 404,
+   "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "show-405__1280",
+   "description": "GET /seller/produk/1 → 405",
+   "file": "_raw/M20/S12-seller-product-edit__show-405__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/seller/produk/1",
+   "finalUrl": "/seller/produk/1",
+   "httpStatus": 405,
+   "title": "An Error Occurred: Method Not Allowed",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "used__1280",
+   "description": "seller edit #7 (Terpakai)",
+   "file": "_raw/M20/S12-seller-product-edit__used__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/seller/produk/7/edit",
+   "finalUrl": "/seller/produk/7/edit",
+   "httpStatus": 200,
+   "title": "Edit Produk - PRESTASIPLUS Marketplace",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 4",
+    "sanitized: cells=2 strings=3 attrs=1 texts=4 inputs=2 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "edit #1 @375",
+   "file": "_raw/M20/S12-seller-product-edit__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/seller/produk/1/edit",
+   "finalUrl": "/seller/produk/1/edit",
+   "httpStatus": 200,
+   "title": "Edit Produk - PRESTASIPLUS Marketplace",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 4",
+    "sanitized: cells=2 strings=3 attrs=1 texts=4 inputs=2 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "edit #1 @768",
+   "file": "_raw/M20/S12-seller-product-edit__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/seller/produk/1/edit",
+   "finalUrl": "/seller/produk/1/edit",
+   "httpStatus": 200,
+   "title": "Edit Produk - PRESTASIPLUS Marketplace",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 4",
+    "sanitized: cells=2 strings=3 attrs=1 texts=4 inputs=2 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Edit Produk",
+   "seenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M20-S12-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Edit Produk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Edit Produk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Edit Produk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/seller/produk",
+   "absHref": "https://prestasiplus.my/seller/produk",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Edit Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-005",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/seller/produk/1",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "_method",
+    "name",
+    "category_id",
+    "price",
+    "original_price",
+    "description",
+    "condition",
+    "condition",
+    "stock_status",
+    "stock_status",
+    "images[]"
+   ],
+   "landmark": "main",
+   "section": "Edit Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-006",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Edit Produk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-007",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Edit Produk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kemaskini Produk",
+   "landmark": "form",
+   "section": "Edit Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-009",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kemaskini Produk",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Produk *",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-011",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama Produk *",
+   "required": true,
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kategori *",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-013",
+   "kind": "select",
+   "tag": "select",
+   "name": "category_id",
+   "label": "Kategori *",
+   "required": true,
+   "options": [
+    {
+     "value": "1",
+     "text": "Peralatan Sekolah"
+    },
+    {
+     "value": "2",
+     "text": "Buku & Rujukan"
+    },
+    {
+     "value": "3",
+     "text": "Uniform & Pakaian"
+    },
+    {
+     "value": "4",
+     "text": "Stationery"
+    },
+    {
+     "value": "5",
+     "text": "Digital & E-Book"
+    },
+    {
+     "value": "6",
+     "text": "Lain-lain"
+    }
+   ],
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Harga (RM) *",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "price",
+   "label": "Harga (RM) *",
+   "required": true,
+   "step": "0.01",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Harga Asal (RM)",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-017",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "original_price",
+   "label": "Harga Asal (RM)",
+   "step": "0.01",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-018",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-019",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan",
+   "rows": "4",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-020",
+   "kind": "label",
+   "tag": "label",
+   "text": "Keadaan *",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-021",
+   "kind": "label",
+   "tag": "label",
+   "text": "🆕 Baru",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-022",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "condition",
+   "label": "🆕 Baru",
+   "optionValue": "new",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-023",
+   "kind": "alert",
+   "tag": "div",
+   "text": "🆕 Baru",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "♻️ Terpakai",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-025",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "condition",
+   "label": "♻️ Terpakai",
+   "optionValue": "used",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": [
+    "used__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-026",
+   "kind": "alert",
+   "tag": "div",
+   "text": "♻️ Terpakai",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "Status Stok *",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "✅ Ada",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-029",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "stock_status",
+   "label": "✅ Ada",
+   "optionValue": "available",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-030",
+   "kind": "alert",
+   "tag": "div",
+   "text": "✅ Ada",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-031",
+   "kind": "label",
+   "tag": "label",
+   "text": "❌ Habis",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-032",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "stock_status",
+   "label": "❌ Habis",
+   "optionValue": "out_of_stock",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M20-S12-033",
+   "kind": "alert",
+   "tag": "div",
+   "text": "❌ Habis",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-034",
+   "kind": "card",
+   "tag": "div",
+   "text": "Gambar Sedia Ada",
+   "landmark": "form",
+   "section": "Kemaskini Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-035",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Gambar Sedia Ada",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-036",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/1/img_2_698a630bb9768.jpg",
+   "landmark": "form",
+   "section": "Gambar Sedia Ada",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-037",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/1/img_3_698a630bf14f3.jpg",
+   "landmark": "form",
+   "section": "Gambar Sedia Ada",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-038",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/1/img_4_698a630c665c5.jpg",
+   "landmark": "form",
+   "section": "Gambar Sedia Ada",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-039",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/1/img_5_698a630cb254a.jpg",
+   "landmark": "form",
+   "section": "Gambar Sedia Ada",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-040",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tambah Gambar Baru",
+   "landmark": "form",
+   "section": "Gambar Sedia Ada",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-041",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tambah Gambar Baru",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-042",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "images[]",
+   "accept": "image/jpeg,image/png,image/webp",
+   "multiple": true,
+   "landmark": "form",
+   "section": "Tambah Gambar Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-043",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan Perubahan",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/seller/produk/1",
+   "landmark": "form",
+   "section": "Tambah Gambar Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "used__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-044",
+   "kind": "text",
+   "tag": "div",
+   "text": "404",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔍",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-046",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-047",
+   "kind": "text",
+   "tag": "p",
+   "text": "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-048",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-049",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "/latih-tubi",
+   "absHref": "https://prestasiplus.my/latih-tubi",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-051",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Oops! An Error Occurred",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "show-405__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-052",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "The server returned a \"405 Method Not Allowed\".",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "show-405__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-053",
+   "kind": "text",
+   "tag": "p",
+   "text": "Something is broken. Please let us know what you were doing when this error occurred. We will fix it as soon as possible. Sorry for any inconvenience caused.",
+   "section": "The server returned a \"405 Method Not Allowed\".",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "show-405__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S12-054",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/7/img_5_698a6318ed81c.jpg",
+   "landmark": "form",
+   "section": "Gambar Sedia Ada",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "used__1280"
+   ]
+  }
+ ]
+}

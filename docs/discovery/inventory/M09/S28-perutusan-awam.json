@@ -1,0 +1,1234 @@
+{
+ "screen": "S28",
+ "key": "S28-perutusan-awam",
+ "route": "/perutusan/awam/{id}",
+ "name": "Perutusan awam (public page, guest) — added in top-up",
+ "module": "M09",
+ "generatedAt": "2026-09-25T11:01:18.284Z",
+ "notes": "standalone public layout; captured from one cached guest response",
+ "shell": "none",
+ "summary": {
+  "total": 71,
+  "visibleDefault": 69,
+  "conditional": 1,
+  "hiddenOnly": 1,
+  "mobileOnly": 0,
+  "desktopOnly": 1,
+  "byKind": {
+   "link": 13,
+   "image": 2,
+   "text": 49,
+   "badge": 1,
+   "heading": 2,
+   "card": 2,
+   "button": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "#4 public page (cached single response) (guest)",
+   "file": "_raw/M09/S28-perutusan-awam__default__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/perutusan/awam/4",
+   "finalUrl": "/perutusan/awam/4",
+   "httpStatus": 200,
+   "title": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var names = []; document.querySelectorAll('.author-avatar').forEach(function (a) { var s = a.nextElementSibling; var p = s && s.querySelector('.author-name, p'); if (p && p.textContent.trim()) names.push(p.textContent.trim()); }); var SCH = /\\b(SMKA|SMK|SK|SJKC|SJKT|SJK|SMA|MRSM|SBP)(\\s|\\+|%20)+[A-Z][A-Za-z']*((\\s|\\+|%20)+[A-Z][A-Za-z']*)*/g; function scrub(v) { var o = v; names.forEach(function (x) { [x, encodeURIComponent(x), encodeURIComponent(x).replace(/%20/g, '+')].forEach(function (y) { if (o.indexOf(y) >= 0) o = o.split(y).join('<person>'); }); }); return o.replace(SCH, '<school>'); } var w = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var s2 = scrub(t.nodeValue); if (s2 !== t.nodeValue) { t.nodeValue = s2; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.title = scrub(document.title); var html = document.documentElement.outerHTML; var leaks = names.filter(function (x) { return html.indexOf(x) >= 0; }).length + (html.match(SCH) || []).length; return 'awammask: names=' + names.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var cs = function (e) { if (!e) return 'none'; var c = getComputedStyle(e); return e.tagName + '.' + (e.className || '').toString().split(' ')[0] + '{bg:' + c.backgroundColor + (c.backgroundImage !== 'none' ? ' ' + c.backgroundImage.slice(0, 60) : '') + ' fg:' + c.color + ' pos:' + c.position + '}'; }; var ifr = document.querySelector('iframe'); var r = ifr ? ifr.getBoundingClientRect() : null; return ['nav ' + cs(document.querySelector('nav')), 'body ' + cs(document.body), 'h1 ' + cs(document.querySelector('h1')), 'role ' + cs(document.querySelector('.role-badge')), 'cta ' + cs([...document.querySelectorAll('a')].find(a => /Daftar Percuma Sekarang/.test(a.textContent))), 'footer ' + cs(document.querySelector('footer')), 'iframe ' + (r ? Math.round(r.width) + 'x' + Math.round(r.height) : 'none'), 'docW=' + document.documentElement.scrollWidth].join(' ; '); })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('a, button')].filter(b => b.offsetParent).map(b => { var r = b.getBoundingClientRect(); return (b.textContent.trim().replace(/\\s+/g, ' ') || b.getAttribute('aria-label') || b.tagName).slice(0, 24) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; '))()"
+    },
+    {
+     "eval": "(() => { var n = 0; var names = []; document.querySelectorAll('.author-avatar').forEach(function (a) { var s = a.nextElementSibling; var p = s && s.querySelector('.author-name, p'); if (p && p.textContent.trim()) names.push(p.textContent.trim()); }); var SCH = /\\b(SMKA|SMK|SK|SJKC|SJKT|SJK|SMA|MRSM|SBP)(\\s|\\+|%20)+[A-Z][A-Za-z']*((\\s|\\+|%20)+[A-Z][A-Za-z']*)*/g; function scrub(v) { var o = v; names.forEach(function (x) { [x, encodeURIComponent(x), encodeURIComponent(x).replace(/%20/g, '+')].forEach(function (y) { if (o.indexOf(y) >= 0) o = o.split(y).join('<person>'); }); }); return o.replace(SCH, '<school>'); } var w = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var s2 = scrub(t.nodeValue); if (s2 !== t.nodeValue) { t.nodeValue = s2; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.title = scrub(document.title); var html = document.documentElement.outerHTML; var leaks = names.filter(function (x) { return html.indexOf(x) >= 0; }).length + (html.match(SCH) || []).length; return 'awammask: names=' + names.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "awammask: names=1 replaced=7 leaks=0",
+    "nav NAV.top-nav{bg:rgba(15, 23, 42, 0.97) fg:rgb(0, 0, 0) pos:sticky} ; body BODY.{bg:rgb(248, 250, 252) fg:rgb(0, 0, 0) pos:static} ; h1 H1.hero-title{bg:rgba(0, 0, 0, 0) fg:rgb(255, 255, 255) pos:static} ; role SPAN.role-badge{bg:rgba(245, 158, 11, 0.12) fg:rgb(252, 211, 77) pos:static} ; cta A.cta-primary{bg:rgba(0, 0, 0, 0) linear-gradient(135deg, rgb(245, 158, 11), rgb(234, 179, 8)) fg:rgb(15, 23, 42) pos:static} ; footer FOOTER.site-footer{bg:rgb(15, 23, 42) fg:rgb(100, 116, 139) pos:static} ; iframe 635x357 ; docW=1265",
+    "A@136,10 136x44 ; Daftar Percuma@866,15 125x34 ; Log Masuk@1000,14 128x35 ; Utama@264,93 34x17 ; WhatsApp@264,2776 114x44 ; Telegram@388,2776 109x44 ; Facebook@507,2776 106x44 ; Salin Pautan@622,2776 131x44 ; Daftar Percuma Sekarang@419,3006 255x48 ; Log Masuk@685,3004 161x51 ; Utama@887,3218 37x18 ; Tentang@940,3218 46x18 ; Hubungi@1002,3218 48x18 ; Log Masuk@1066,3218 62x18",
+    "awammask: names=1 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "link-copied__1280",
+   "description": "\"Salin Pautan\" clicked (clipboard; button feedback) (guest)",
+   "file": "_raw/M09/S28-perutusan-awam__link-copied__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/perutusan/awam/4",
+   "finalUrl": "/perutusan/awam/4",
+   "httpStatus": 200,
+   "title": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var names = []; document.querySelectorAll('.author-avatar').forEach(function (a) { var s = a.nextElementSibling; var p = s && s.querySelector('.author-name, p'); if (p && p.textContent.trim()) names.push(p.textContent.trim()); }); var SCH = /\\b(SMKA|SMK|SK|SJKC|SJKT|SJK|SMA|MRSM|SBP)(\\s|\\+|%20)+[A-Z][A-Za-z']*((\\s|\\+|%20)+[A-Z][A-Za-z']*)*/g; function scrub(v) { var o = v; names.forEach(function (x) { [x, encodeURIComponent(x), encodeURIComponent(x).replace(/%20/g, '+')].forEach(function (y) { if (o.indexOf(y) >= 0) o = o.split(y).join('<person>'); }); }); return o.replace(SCH, '<school>'); } var w = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var s2 = scrub(t.nodeValue); if (s2 !== t.nodeValue) { t.nodeValue = s2; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.title = scrub(document.title); var html = document.documentElement.outerHTML; var leaks = names.filter(function (x) { return html.indexOf(x) >= 0; }).length + (html.match(SCH) || []).length; return 'awammask: names=' + names.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "click": "button:has-text(\"Salin Pautan\")"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "[...document.querySelectorAll('button')].map(b => b.outerHTML.slice(0, 160)).join(' | ')"
+    },
+    {
+     "eval": "(() => { var n = 0; var names = []; document.querySelectorAll('.author-avatar').forEach(function (a) { var s = a.nextElementSibling; var p = s && s.querySelector('.author-name, p'); if (p && p.textContent.trim()) names.push(p.textContent.trim()); }); var SCH = /\\b(SMKA|SMK|SK|SJKC|SJKT|SJK|SMA|MRSM|SBP)(\\s|\\+|%20)+[A-Z][A-Za-z']*((\\s|\\+|%20)+[A-Z][A-Za-z']*)*/g; function scrub(v) { var o = v; names.forEach(function (x) { [x, encodeURIComponent(x), encodeURIComponent(x).replace(/%20/g, '+')].forEach(function (y) { if (o.indexOf(y) >= 0) o = o.split(y).join('<person>'); }); }); return o.replace(SCH, '<school>'); } var w = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var s2 = scrub(t.nodeValue); if (s2 !== t.nodeValue) { t.nodeValue = s2; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.title = scrub(document.title); var html = document.documentElement.outerHTML; var leaks = names.filter(function (x) { return html.indexOf(x) >= 0; }).length + (html.match(SCH) || []).length; return 'awammask: names=' + names.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "awammask: names=1 replaced=7 leaks=0",
+    "<button onclick=\"copyLink(this)\" class=\"share-btn share-copy\"><i class=\"fas fa-check\" style=\"margin-right: 0.35rem;\"></i>Disalin!</button>",
+    "awammask: names=1 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "#4 (guest) @375",
+   "file": "_raw/M09/S28-perutusan-awam__default__375.json",
+   "width": 375,
+   "session": "guest",
+   "url": "/perutusan/awam/4",
+   "finalUrl": "/perutusan/awam/4",
+   "httpStatus": 200,
+   "title": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var names = []; document.querySelectorAll('.author-avatar').forEach(function (a) { var s = a.nextElementSibling; var p = s && s.querySelector('.author-name, p'); if (p && p.textContent.trim()) names.push(p.textContent.trim()); }); var SCH = /\\b(SMKA|SMK|SK|SJKC|SJKT|SJK|SMA|MRSM|SBP)(\\s|\\+|%20)+[A-Z][A-Za-z']*((\\s|\\+|%20)+[A-Z][A-Za-z']*)*/g; function scrub(v) { var o = v; names.forEach(function (x) { [x, encodeURIComponent(x), encodeURIComponent(x).replace(/%20/g, '+')].forEach(function (y) { if (o.indexOf(y) >= 0) o = o.split(y).join('<person>'); }); }); return o.replace(SCH, '<school>'); } var w = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var s2 = scrub(t.nodeValue); if (s2 !== t.nodeValue) { t.nodeValue = s2; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.title = scrub(document.title); var html = document.documentElement.outerHTML; var leaks = names.filter(function (x) { return html.indexOf(x) >= 0; }).length + (html.match(SCH) || []).length; return 'awammask: names=' + names.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var cs = function (e) { if (!e) return 'none'; var c = getComputedStyle(e); return e.tagName + '.' + (e.className || '').toString().split(' ')[0] + '{bg:' + c.backgroundColor + (c.backgroundImage !== 'none' ? ' ' + c.backgroundImage.slice(0, 60) : '') + ' fg:' + c.color + ' pos:' + c.position + '}'; }; var ifr = document.querySelector('iframe'); var r = ifr ? ifr.getBoundingClientRect() : null; return ['nav ' + cs(document.querySelector('nav')), 'body ' + cs(document.body), 'h1 ' + cs(document.querySelector('h1')), 'role ' + cs(document.querySelector('.role-badge')), 'cta ' + cs([...document.querySelectorAll('a')].find(a => /Daftar Percuma Sekarang/.test(a.textContent))), 'footer ' + cs(document.querySelector('footer')), 'iframe ' + (r ? Math.round(r.width) + 'x' + Math.round(r.height) : 'none'), 'docW=' + document.documentElement.scrollWidth].join(' ; '); })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('a, button')].filter(b => b.offsetParent).map(b => { var r = b.getBoundingClientRect(); return (b.textContent.trim().replace(/\\s+/g, ' ') || b.getAttribute('aria-label') || b.tagName).slice(0, 24) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; '))()"
+    },
+    {
+     "eval": "(() => { var n = 0; var names = []; document.querySelectorAll('.author-avatar').forEach(function (a) { var s = a.nextElementSibling; var p = s && s.querySelector('.author-name, p'); if (p && p.textContent.trim()) names.push(p.textContent.trim()); }); var SCH = /\\b(SMKA|SMK|SK|SJKC|SJKT|SJK|SMA|MRSM|SBP)(\\s|\\+|%20)+[A-Z][A-Za-z']*((\\s|\\+|%20)+[A-Z][A-Za-z']*)*/g; function scrub(v) { var o = v; names.forEach(function (x) { [x, encodeURIComponent(x), encodeURIComponent(x).replace(/%20/g, '+')].forEach(function (y) { if (o.indexOf(y) >= 0) o = o.split(y).join('<person>'); }); }); return o.replace(SCH, '<school>'); } var w = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var s2 = scrub(t.nodeValue); if (s2 !== t.nodeValue) { t.nodeValue = s2; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.title = scrub(document.title); var html = document.documentElement.outerHTML; var leaks = names.filter(function (x) { return html.indexOf(x) >= 0; }).length + (html.match(SCH) || []).length; return 'awammask: names=' + names.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "awammask: names=1 replaced=7 leaks=0",
+    "nav NAV.top-nav{bg:rgba(15, 23, 42, 0.97) fg:rgb(0, 0, 0) pos:sticky} ; body BODY.{bg:rgb(248, 250, 252) fg:rgb(0, 0, 0) pos:static} ; h1 H1.hero-title{bg:rgba(0, 0, 0, 0) fg:rgb(255, 255, 255) pos:static} ; role SPAN.role-badge{bg:rgba(245, 158, 11, 0.12) fg:rgb(252, 211, 77) pos:static} ; cta A.cta-primary{bg:rgba(0, 0, 0, 0) linear-gradient(135deg, rgb(245, 158, 11), rgb(234, 179, 8)) fg:rgb(15, 23, 42) pos:static} ; footer FOOTER.site-footer{bg:rgb(15, 23, 42) fg:rgb(100, 116, 139) pos:static} ; iframe 267x150 ; docW=360",
+    "A@16,10 111x36 ; Log Masuk@228,12 116x32 ; Utama@16,85 34x17 ; WhatsApp@16,3039 114x44 ; Telegram@140,3039 109x44 ; Facebook@16,3093 106x44 ; Salin Pautan@131,3093 131x44 ; Daftar Percuma Sekarang@42,3303 277x48 ; Log Masuk@42,3361 277x51 ; Utama@59,3601 37x18 ; Tentang@112,3601 46x18 ; Hubungi@174,3601 48x18 ; Log Masuk@238,3601 62x18",
+    "awammask: names=1 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "#4 (guest) @768",
+   "file": "_raw/M09/S28-perutusan-awam__default__768.json",
+   "width": 768,
+   "session": "guest",
+   "url": "/perutusan/awam/4",
+   "finalUrl": "/perutusan/awam/4",
+   "httpStatus": 200,
+   "title": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var names = []; document.querySelectorAll('.author-avatar').forEach(function (a) { var s = a.nextElementSibling; var p = s && s.querySelector('.author-name, p'); if (p && p.textContent.trim()) names.push(p.textContent.trim()); }); var SCH = /\\b(SMKA|SMK|SK|SJKC|SJKT|SJK|SMA|MRSM|SBP)(\\s|\\+|%20)+[A-Z][A-Za-z']*((\\s|\\+|%20)+[A-Z][A-Za-z']*)*/g; function scrub(v) { var o = v; names.forEach(function (x) { [x, encodeURIComponent(x), encodeURIComponent(x).replace(/%20/g, '+')].forEach(function (y) { if (o.indexOf(y) >= 0) o = o.split(y).join('<person>'); }); }); return o.replace(SCH, '<school>'); } var w = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var s2 = scrub(t.nodeValue); if (s2 !== t.nodeValue) { t.nodeValue = s2; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.title = scrub(document.title); var html = document.documentElement.outerHTML; var leaks = names.filter(function (x) { return html.indexOf(x) >= 0; }).length + (html.match(SCH) || []).length; return 'awammask: names=' + names.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var cs = function (e) { if (!e) return 'none'; var c = getComputedStyle(e); return e.tagName + '.' + (e.className || '').toString().split(' ')[0] + '{bg:' + c.backgroundColor + (c.backgroundImage !== 'none' ? ' ' + c.backgroundImage.slice(0, 60) : '') + ' fg:' + c.color + ' pos:' + c.position + '}'; }; var ifr = document.querySelector('iframe'); var r = ifr ? ifr.getBoundingClientRect() : null; return ['nav ' + cs(document.querySelector('nav')), 'body ' + cs(document.body), 'h1 ' + cs(document.querySelector('h1')), 'role ' + cs(document.querySelector('.role-badge')), 'cta ' + cs([...document.querySelectorAll('a')].find(a => /Daftar Percuma Sekarang/.test(a.textContent))), 'footer ' + cs(document.querySelector('footer')), 'iframe ' + (r ? Math.round(r.width) + 'x' + Math.round(r.height) : 'none'), 'docW=' + document.documentElement.scrollWidth].join(' ; '); })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('a, button')].filter(b => b.offsetParent).map(b => { var r = b.getBoundingClientRect(); return (b.textContent.trim().replace(/\\s+/g, ' ') || b.getAttribute('aria-label') || b.tagName).slice(0, 24) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; '))()"
+    },
+    {
+     "eval": "(() => { var n = 0; var names = []; document.querySelectorAll('.author-avatar').forEach(function (a) { var s = a.nextElementSibling; var p = s && s.querySelector('.author-name, p'); if (p && p.textContent.trim()) names.push(p.textContent.trim()); }); var SCH = /\\b(SMKA|SMK|SK|SJKC|SJKT|SJK|SMA|MRSM|SBP)(\\s|\\+|%20)+[A-Z][A-Za-z']*((\\s|\\+|%20)+[A-Z][A-Za-z']*)*/g; function scrub(v) { var o = v; names.forEach(function (x) { [x, encodeURIComponent(x), encodeURIComponent(x).replace(/%20/g, '+')].forEach(function (y) { if (o.indexOf(y) >= 0) o = o.split(y).join('<person>'); }); }); return o.replace(SCH, '<school>'); } var w = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var s2 = scrub(t.nodeValue); if (s2 !== t.nodeValue) { t.nodeValue = s2; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.title = scrub(document.title); var html = document.documentElement.outerHTML; var leaks = names.filter(function (x) { return html.indexOf(x) >= 0; }).length + (html.match(SCH) || []).length; return 'awammask: names=' + names.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "awammask: names=1 replaced=7 leaks=0",
+    "nav NAV.top-nav{bg:rgba(15, 23, 42, 0.97) fg:rgb(0, 0, 0) pos:sticky} ; body BODY.{bg:rgb(248, 250, 252) fg:rgb(0, 0, 0) pos:static} ; h1 H1.hero-title{bg:rgba(0, 0, 0, 0) fg:rgb(255, 255, 255) pos:static} ; role SPAN.role-badge{bg:rgba(245, 158, 11, 0.12) fg:rgb(252, 211, 77) pos:static} ; cta A.cta-primary{bg:rgba(0, 0, 0, 0) linear-gradient(135deg, rgb(245, 158, 11), rgb(234, 179, 8)) fg:rgb(15, 23, 42) pos:static} ; footer FOOTER.site-footer{bg:rgb(15, 23, 42) fg:rgb(100, 116, 139) pos:static} ; iframe 636x358 ; docW=753",
+    "A@16,10 136x44 ; Daftar Percuma@475,15 125x34 ; Log Masuk@609,14 128x35 ; Utama@16,93 34x17 ; WhatsApp@16,2740 114x44 ; Telegram@140,2740 109x44 ; Facebook@258,2740 106x44 ; Salin Pautan@374,2740 131x44 ; Daftar Percuma Sekarang@163,2969 255x48 ; Log Masuk@429,2968 161x51 ; Utama@496,3182 37x18 ; Tentang@549,3182 46x18 ; Hubungi@611,3182 48x18 ; Log Masuk@674,3182 62x18",
+    "awammask: names=1 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "Disalin!",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Salin Pautan",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-M09-S28-001",
+   "kind": "link",
+   "tag": "a",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "iconOnly": true,
+   "landmark": "nav",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-002",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PrestasiPlus",
+   "src": "/images/logo-custom.png",
+   "landmark": "nav",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-003",
+   "kind": "link",
+   "tag": "a",
+   "text": "Daftar Percuma",
+   "href": "/daftar",
+   "absHref": "https://prestasiplus.my/daftar",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk",
+   "href": "/login",
+   "absHref": "https://prestasiplus.my/login",
+   "icon": "fa-sign-in-alt",
+   "landmark": "nav",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-006",
+   "kind": "text",
+   "tag": "span",
+   "text": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "AD",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-009",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Pengetua",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-010",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sekolah",
+   "icon": "fa-school",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "17 Mac 2026 11:23 PM",
+   "icon": "fa-calendar-alt",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "|",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-013",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-014",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 Suka",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-015",
+   "kind": "text",
+   "tag": "span",
+   "text": "@media(min-width:640px){display:inline}",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-016",
+   "kind": "text",
+   "tag": "span",
+   "text": "3 baca",
+   "icon": "fa-eye",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-017",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 komen",
+   "icon": "fa-comment",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-018",
+   "kind": "card",
+   "tag": "div",
+   "text": "Hari Raya Aidilfitri 1447H",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "Hari Raya Aidilfitri 1447H",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-020",
+   "kind": "text",
+   "tag": "p",
+   "text": "✦ ✦ ✦",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-021",
+   "kind": "text",
+   "tag": "p",
+   "text": "بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dengan Nama Allah Yang Maha Pemurah Lagi Maha Penyayang",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selamat Hari Raya Aidilfitri",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-024",
+   "kind": "text",
+   "tag": "p",
+   "text": "1 Syawal 1447H / 2026M",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-025",
+   "kind": "text",
+   "tag": "p",
+   "text": "✦ ✦ ✦",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-026",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ucapan Perutusan Hari Raya Aidilfitri 2026",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "Daripada Pihak Pengurusan Sekolah",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-028",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kepada Warga Guru dan Pelajar Yang Dihormati",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-029",
+   "kind": "text",
+   "tag": "p",
+   "text": "Assalamualaikum Warahmatullahi Wabarakatuh dan Salam Sejahtera,",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "Alhamdulillah, segala puji bagi Allah SWT kerana dengan limpah kurnia-Nya, kita masih diberi peluang untuk menyambut tibanya dalam keadaan sihat dan sejahtera.",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-031",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Hari Raya Aidilfitri 1447H",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pihak sekolah dengan penuh rasa syukur dan kerendahan hati merakamkan ucapan kepada seluruh warga guru, kakitangan, pelajar, serta ibu bapa dan penjaga yang dihormati sekalian.",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-033",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Selamat Hari Raya Aidilfitri, Maaf Zahir dan Batin",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bulan Ramadan yang baru sahaja kita tempuhi adalah sebuah madrasah yang agung — mendidik kita erti . Semoga amalan-amalan mulia yang telah kita tanam sepanjang bulan yang penuh barakah itu, terus subur dalam kehidupan kita seharian.",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-035",
+   "kind": "text",
+   "tag": "strong",
+   "text": "kesabaran, keikhlasan, dan ketaqwaan",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kepada para yang dihormati — terima kasih di atas pengorbanan, dedikasi, dan amanah yang terus kalian tunaikan dalam mendidik generasi masa hadapan bangsa. Jasa kalian adalah pelita ilmu yang takkan padam.",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-037",
+   "kind": "text",
+   "tag": "strong",
+   "text": "guru dan kakitangan",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-038",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kepada para yang dikasihi — jadikanlah Syawal ini sebagai titik permulaan baharu. Tingkatkan semangat belajar, jaga adab, dan teruskan perjuangan menuntut ilmu dengan penuh kesungguhan. Ingatlah, setiap kejayaan yang kalian raih adalah sumbangan kalian kepada keluarga, bangsa, dan agama.",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-039",
+   "kind": "text",
+   "tag": "strong",
+   "text": "pelajar",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-040",
+   "kind": "text",
+   "tag": "p",
+   "text": "Marilah kita manfaatkan perayaan mulia ini sebagai peluang untuk , memohon kemaafan sesama kita, dan memperbaharui niat untuk terus menjadi insan yang lebih baik.",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-041",
+   "kind": "text",
+   "tag": "strong",
+   "text": "mempererat silaturrahim",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-042",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekali lagi,",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-043",
+   "kind": "text",
+   "tag": "em",
+   "text": "\"Selamat Hari Raya Aidilfitri — Maaf Zahir dan Batin.\"",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-044",
+   "kind": "text",
+   "tag": "em",
+   "text": "\"Semoga Allah SWT menerima segala amal ibadah kita,",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-045",
+   "kind": "text",
+   "tag": "em",
+   "text": "melimpahkan rahmat dan keberkatan-Nya ke atas kita semua,",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-046",
+   "kind": "text",
+   "tag": "em",
+   "text": "dan menjadikan kita golongan yang sentiasa bersyukur.\"",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-047",
+   "kind": "text",
+   "tag": "p",
+   "text": "Aamiin Ya Rabbal 'Alamin.",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-048",
+   "kind": "text",
+   "tag": "p",
+   "text": "Hormat daripada,",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-049",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pihak Pengurusan Sekolah",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-050",
+   "kind": "text",
+   "tag": "p",
+   "text": "<school>",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-051",
+   "kind": "text",
+   "tag": "p",
+   "text": "Syawal 1447H / 2026M",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-052",
+   "kind": "text",
+   "tag": "p",
+   "text": "🌙 ⭐",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-053",
+   "kind": "text",
+   "tag": "p",
+   "text": "Takbir Bergema, Hati Bersatu",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-054",
+   "kind": "text",
+   "tag": "div",
+   "text": "Video",
+   "icon": "fa-youtube",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-055",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kongsi Perutusan",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-056",
+   "kind": "link",
+   "tag": "a",
+   "text": "WhatsApp",
+   "href": "https://wa.me/?text=Video+Ucapan+Selamat+Hari+Raya+Dari+Pihak+Pengurusan+<school>+%E2%80%94+Baca+di+PrestasiPlus%3A+https%3A%2F%2Fprestasiplus.my%2Fperutusan%2Fawam%2F4",
+   "absHref": "https://wa.me/?text=Video+Ucapan+Selamat+Hari+Raya+Dari+Pihak+Pengurusan+%3Cschool%3E+%E2%80%94+Baca+di+PrestasiPlus%3A+https%3A%2F%2Fprestasiplus.my%2Fperutusan%2Fawam%2F4",
+   "target": "_blank",
+   "icon": "fa-whatsapp",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-057",
+   "kind": "link",
+   "tag": "a",
+   "text": "Telegram",
+   "href": "https://t.me/share/url?url=https%3A%2F%2Fprestasiplus.my%2Fperutusan%2Fawam%2F4&text=Video+Ucapan+Selamat+Hari+Raya+Dari+Pihak+Pengurusan+<school>",
+   "absHref": "https://t.me/share/url?url=https%3A%2F%2Fprestasiplus.my%2Fperutusan%2Fawam%2F4&text=Video+Ucapan+Selamat+Hari+Raya+Dari+Pihak+Pengurusan+%3Cschool%3E",
+   "target": "_blank",
+   "icon": "fa-telegram-plane",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-058",
+   "kind": "link",
+   "tag": "a",
+   "text": "Facebook",
+   "href": "https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fprestasiplus.my%2Fperutusan%2Fawam%2F4",
+   "absHref": "https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fprestasiplus.my%2Fperutusan%2Fawam%2F4",
+   "target": "_blank",
+   "icon": "fa-facebook-f",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-059",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Salin Pautan",
+   "icon": "fa-link",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "alpine": {
+    "onclick": "copyLink(this)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-060",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-061",
+   "kind": "text",
+   "tag": "p",
+   "text": "Platform latih tubi interaktif untuk pelajar SPM. Beri reaksi, komen, dan banyak lagi!",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-062",
+   "kind": "link",
+   "tag": "a",
+   "text": "Daftar Percuma Sekarang",
+   "href": "/daftar",
+   "absHref": "https://prestasiplus.my/daftar",
+   "icon": "fa-rocket",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk",
+   "href": "/login",
+   "absHref": "https://prestasiplus.my/login",
+   "icon": "fa-sign-in-alt",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-064",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PrestasiPlus",
+   "src": "/images/logo-custom.png",
+   "landmark": "footer",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-065",
+   "kind": "text",
+   "tag": "div",
+   "text": "Platform Latih Tubi Interaktif Malaysia",
+   "landmark": "footer",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-066",
+   "kind": "link",
+   "tag": "a",
+   "text": "Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "landmark": "footer",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-067",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tentang",
+   "href": "/tentang",
+   "absHref": "https://prestasiplus.my/tentang",
+   "landmark": "footer",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-068",
+   "kind": "link",
+   "tag": "a",
+   "text": "Hubungi",
+   "href": "/hubungi",
+   "absHref": "https://prestasiplus.my/hubungi",
+   "landmark": "footer",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-069",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk",
+   "href": "/login",
+   "absHref": "https://prestasiplus.my/login",
+   "landmark": "footer",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-070",
+   "kind": "text",
+   "tag": "p",
+   "text": "© 2026 PRESTASIPLUS. Hak Cipta Terpelihara.",
+   "landmark": "footer",
+   "section": "Jom Sertai PrestasiPlus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-copied__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S28-071",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Disalin!",
+   "icon": "fa-check",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan <school>",
+   "alpine": {
+    "onclick": "copyLink(this)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "link-copied__1280"
+   ]
+  }
+ ]
+}

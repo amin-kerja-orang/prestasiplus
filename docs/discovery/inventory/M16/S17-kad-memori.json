@@ -1,0 +1,2160 @@
+{
+ "screen": "S17",
+ "key": "S17-kad-memori",
+ "route": "/permainan/kad-memori",
+ "name": "Kad Memori — PRESTASIPLUS",
+ "module": "M16",
+ "generatedAt": "2026-09-26T04:58:28.614Z",
+ "notes": "new route; 6 pairs, timer",
+ "shell": "SHU",
+ "summary": {
+  "total": 100,
+  "visibleDefault": 24,
+  "conditional": 61,
+  "hiddenOnly": 15,
+  "mobileOnly": 11,
+  "desktopOnly": 12,
+  "byKind": {
+   "text": 29,
+   "link": 5,
+   "heading": 3,
+   "clickable": 59,
+   "modal": 2,
+   "card": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "12 face-down cards, timer running",
+   "file": "_raw/M16/S17-kad-memori__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/permainan/kad-memori",
+   "finalUrl": "/permainan/kad-memori",
+   "httpStatus": 200,
+   "title": "Kad Memori — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 600
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "complete__1280",
+   "description": "result overlay (Alpine gameComplete=true) — client-only",
+   "file": "_raw/M16/S17-kad-memori__complete__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/permainan/kad-memori",
+   "finalUrl": "/permainan/kad-memori",
+   "httpStatus": 200,
+   "title": "Kad Memori — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var e = document.querySelector('[x-data=\"memoryGame()\"]'); if (!e) return 'missing memoryGame()'; var d = Alpine.$data(e); var o = {\"gameComplete\":true,\"syilingEarned\":0,\"resultAccuracy\":0}; for (var k in o) d[k] = o[k]; return 'alpine set gameComplete,syilingEarned,resultAccuracy'; })()"
+    },
+    {
+     "wait": 600
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "alpine set gameComplete,syilingEarned,resultAccuracy",
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "flipped__1280",
+   "description": "one card flipped (client-only)",
+   "file": "_raw/M16/S17-kad-memori__flipped__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/permainan/kad-memori",
+   "finalUrl": "/permainan/kad-memori",
+   "httpStatus": 200,
+   "title": "Kad Memori — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var e = document.querySelector(\"main [\\\\@click=\\\"flipCard(index)\\\"]\"); if (!e) return 'missing main [\\@click=\"flipCard(index)\"]'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M16/S17-kad-memori__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/permainan/kad-memori",
+   "finalUrl": "/permainan/kad-memori",
+   "httpStatus": 200,
+   "title": "Kad Memori — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 600
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M16/S17-kad-memori__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/permainan/kad-memori",
+   "finalUrl": "/permainan/kad-memori",
+   "httpStatus": 200,
+   "title": "Kad Memori — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 600
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "memoryGame",
+   "xData": "memoryGame()",
+   "keys": [],
+   "liveState": {
+    "cards": "array(12)",
+    "sessionId": "string(17)",
+    "totalPairs": 6,
+    "matches": 0,
+    "moves": 0,
+    "timer": 4,
+    "timerInterval": 3,
+    "firstCard": null,
+    "secondCard": null,
+    "lockBoard": false,
+    "gameComplete": false,
+    "syilingEarned": 0,
+    "resultAccuracy": 0
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Submit error:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/permainan/kad-memori/submit",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M16-S17-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Permainan",
+   "href": "https://prestasiplus.my/permainan",
+   "absHref": "https://prestasiplus.my/permainan",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "🃏 Kad Memori",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Padankan soalan dengan jawapan yang betul!",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-007",
+   "kind": "text",
+   "tag": "span",
+   "text": "⏱️",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-008",
+   "kind": "text",
+   "tag": "span",
+   "text": "0:04",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "x-text": "formatTime(timer)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "langkah",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-010",
+   "kind": "text",
+   "tag": "span",
+   "text": "👆",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-011",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "x-text": "moves"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "/ padan",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "✅",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-014",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "x-text": "matches"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-015",
+   "kind": "text",
+   "tag": "span",
+   "text": "6",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "x-text": "totalPairs"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-016",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(card, index) in cards"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-017",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Untuk melihat dan mengenal persekitaran",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-018",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Membuat rangka karangan",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-019",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Apakah langkah pertama yang perlu dilakukan sebelum menulis karangan?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-020",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Ejaan yang manakah tepat untuk perkataan 'pemadam'?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-021",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Apakah tugas utama mata pada manusia?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-022",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Bentuk 2D manakah yang mempunyai 3 sisi?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-023",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Aina mempunyai 11 kotak. Setiap kotak berisi 438 biji gula-gula. Kemudian, dia mendapat tambahan 3450 biji gula-gula. Berapakah jumlah gula-gula Aina sekarang?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-024",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ pemadam",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-025",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Berapa panjang harakat bacaan untuk Mad Asli?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-026",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ 8268",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-027",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ segi tiga",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-028",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ 2 harakat",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-029",
+   "kind": "modal",
+   "tag": "div",
+   "text": "Tahniah!",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click.self": "closeResult"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-030",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahniah!",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "x-ref": "rewardSection"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-031",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎉",
+   "section": "🃏 Kad Memori",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-032",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Tahniah!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-033",
+   "kind": "text",
+   "tag": "p",
+   "text": "Semua kad berjaya dipadankan!",
+   "section": "Tahniah!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "Masa",
+   "section": "Tahniah!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-035",
+   "kind": "text",
+   "tag": "p",
+   "text": "Langkah",
+   "section": "Tahniah!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "section": "Tahniah!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-037",
+   "kind": "text",
+   "tag": "p",
+   "text": "Syiling 🪙",
+   "section": "Tahniah!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-038",
+   "kind": "link",
+   "tag": "a",
+   "text": "🔄 Main Lagi",
+   "href": "https://prestasiplus.my/permainan/kad-memori",
+   "absHref": "https://prestasiplus.my/permainan/kad-memori",
+   "section": "Tahniah!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-039",
+   "kind": "link",
+   "tag": "a",
+   "text": "🏠 Hub",
+   "href": "https://prestasiplus.my/permainan",
+   "absHref": "https://prestasiplus.my/permainan",
+   "section": "Tahniah!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "complete__1280",
+    "flipped__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=gameComplete"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-040",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Neptun",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-041",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Dalam konteks pembelajaran lanjutan, yang manakah kata kerja dalam konteks kata nama dan kata kerja berdasarkan kes 53298?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-042",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ ا",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-043",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Planet manakah paling jauh dari Matahari dalam konteks sistem suria set 8?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-044",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Dalam kad imbasan kelas, Guru menyebut ثَلَاثَةٌ di dalam kelas. Murid perlu memahami maksudnya sebagai apa?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-045",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ tiga",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-046",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ went",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "complete__1280",
+    "default__375",
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-047",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ menyediakan sumber kehidupan kepada manusia",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-048",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Finish the sentence: Nadia ____ to the bookstore yesterday.",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-049",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Apakah konsep tepat dalam Jawi D1 bagi fakta berikut: huruf alif ditulis sebagai ا dalam tulisan Jawi?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-050",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Alam sekitar perlu dijaga kerana ...",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-051",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ menulis",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-052",
+   "kind": "modal",
+   "tag": "div",
+   "text": "Tahniah!",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "alpine": {
+    "@click.self": "closeResult"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-053",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahniah!",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "alpine": {
+    "x-ref": "rewardSection"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-054",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎉",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-055",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Tahniah!",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-056",
+   "kind": "text",
+   "tag": "p",
+   "text": "Semua kad berjaya dipadankan!",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-057",
+   "kind": "text",
+   "tag": "p",
+   "text": "0:04",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "alpine": {
+    "x-text": "formatTime(timer)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-058",
+   "kind": "text",
+   "tag": "p",
+   "text": "Masa",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-059",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "alpine": {
+    "x-text": "moves"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-060",
+   "kind": "text",
+   "tag": "p",
+   "text": "Langkah",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-061",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "alpine": {
+    "x-text": "resultAccuracy + '%'"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-063",
+   "kind": "text",
+   "tag": "p",
+   "text": "+0",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "alpine": {
+    "x-text": "'+' + syilingEarned"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-064",
+   "kind": "text",
+   "tag": "p",
+   "text": "Syiling 🪙",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-065",
+   "kind": "link",
+   "tag": "a",
+   "text": "🔄 Main Lagi",
+   "href": "https://prestasiplus.my/permainan/kad-memori",
+   "absHref": "https://prestasiplus.my/permainan/kad-memori",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-066",
+   "kind": "link",
+   "tag": "a",
+   "text": "🏠 Hub",
+   "href": "https://prestasiplus.my/permainan",
+   "absHref": "https://prestasiplus.my/permainan",
+   "landmark": "main",
+   "section": "Tahniah!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "complete__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S17-067",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ menyemak ejaan Jawi sebelum hantar",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-068",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Aina menulis buku di perpustakaan.",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-069",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Lengkapkan ayat: Saya bermain bola ____.",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-070",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Apakah tindakan yang perlu dilakukan setelah menulis dalam tulisan Jawi?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-071",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Ayat yang betul daripada perkataan 'perpustakaan menulis di buku Aina' ialah?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-072",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ di kantin",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-073",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Hakim menyiapkan tugasan tanpa disuruh di rumah. Nilai apakah yang ditunjukkan?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-074",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Apakah pemahaman yang betul tentang \"titik huruf perlu diletakkan dengan betul supaya tidak berubah makna\"?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-075",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ bertanggungjawab",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-076",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ titik huruf dengan betul",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-077",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ 17",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-078",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ 8 L + 9 L = ? (dalam L)",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flipped__1280"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-079",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Silakan.",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-080",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Segi empat sama semua sisi sama panjang",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-081",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Ali bertanya, 'Boleh saya masuk ke kelas?' Apakah jawapan yang paling sesuai untuk diberikan?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-082",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Sama-sama.",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-083",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Amir went to the science lab. It happened yesterday.",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-084",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Apa bezanya segi empat sama dengan segi empat tepat?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-085",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Apakah peranti yang paling sesuai untuk mengukur tempoh masa yang singkat seperti dalam larian?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-086",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Jam randik",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-087",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Siti berkata, \"Terima kasih atas bantuan awak.\" Apakah jawapan yang paling sesuai?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-088",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ rajin",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-089",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Dalam tugasan pengukuhan, baca rangkap sajak: Rajin belajar setiap hari, Ilmu dicari sepanjang masa. Apakah nilai yang terdapat dalam sajak ini dalam konteks puisi dan sajak?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-090",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Hakim was at the computer room the day before. Choose the right word.",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-091",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Pilih perkataan yang betul untuk melengkapkan frasa: baca ____",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-092",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ line up quietly",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-093",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Namakan bentuk yang serupa dengan telur dan tiada sudut.",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-094",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ prihatin",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-095",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Teacher says, \"Line Up Quietly.\" What should you do for this communication task in communicate ideas context?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-096",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Atur huruf 'nroe' supaya menjadi perkataan yang bermakna.",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-097",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ oren",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-098",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Di rumah, Danish mengasingkan sisa kitar semula. Apakah nilai yang diamalkan oleh Danish?",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-099",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ buku",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S17-100",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "❓ Bujur",
+   "landmark": "main",
+   "section": "🃏 Kad Memori",
+   "alpine": {
+    "@click": "flipCard(index)"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  }
+ ],
+ "payloadStrings": {
+  "count": 45,
+  "sources": [
+   "script#4"
+  ],
+  "note": "question-bank payload strings (random per load; M04 data) removed from jsMessages by tools/jobs/M16-payload.js; shape documented in the narrative §6.4"
+ }
+}

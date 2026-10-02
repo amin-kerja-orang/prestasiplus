@@ -1,0 +1,1662 @@
+{
+ "screen": "S9",
+ "key": "S9-schools",
+ "route": "/admin/schools",
+ "name": "Urus Sekolah",
+ "module": "M02",
+ "generatedAt": "2026-09-25T06:44:32.327Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 63,
+  "visibleDefault": 51,
+  "conditional": 7,
+  "hiddenOnly": 5,
+  "mobileOnly": 2,
+  "desktopOnly": 18,
+  "byKind": {
+   "card": 5,
+   "text": 14,
+   "link": 5,
+   "form": 4,
+   "input": 1,
+   "select": 2,
+   "button": 4,
+   "table": 1,
+   "badge": 9,
+   "hidden-field": 3,
+   "pagination": 15
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default",
+   "file": "_raw/M02/S9-schools__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/schools",
+   "finalUrl": "/admin/schools",
+   "httpStatus": 200,
+   "title": "Urus Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 30
+   }
+  },
+  {
+   "label": "page-2__1280",
+   "description": "page=2",
+   "file": "_raw/M02/S9-schools__page-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/schools?page=2",
+   "finalUrl": "/admin/schools?page=2",
+   "httpStatus": 200,
+   "title": "Urus Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 30
+   }
+  },
+  {
+   "label": "page-last__1280",
+   "description": "last page",
+   "file": "_raw/M02/S9-schools__page-last__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/schools?page=341",
+   "finalUrl": "/admin/schools?page=341",
+   "httpStatus": 200,
+   "title": "Urus Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 20
+   }
+  },
+  {
+   "label": "search-empty__1280",
+   "description": "search no result (empty state)",
+   "file": "_raw/M02/S9-schools__search-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/schools?search=zzqxv",
+   "finalUrl": "/admin/schools?search=zzqxv",
+   "httpStatus": 200,
+   "title": "Urus Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "search__1280",
+   "description": "search=bangi",
+   "file": "_raw/M02/S9-schools__search__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/schools?search=bangi",
+   "finalUrl": "/admin/schools?search=bangi",
+   "httpStatus": 200,
+   "title": "Urus Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 5
+   }
+  },
+  {
+   "label": "state-perlis__1280",
+   "description": "state=Perlis",
+   "file": "_raw/M02/S9-schools__state-perlis__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/schools?state=Perlis",
+   "finalUrl": "/admin/schools?state=Perlis",
+   "httpStatus": 200,
+   "title": "Urus Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 30
+   }
+  },
+  {
+   "label": "type-sk__1280",
+   "description": "type=SK",
+   "file": "_raw/M02/S9-schools__type-sk__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/schools?type=SK",
+   "finalUrl": "/admin/schools?type=SK",
+   "httpStatus": 200,
+   "title": "Urus Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 30
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M02/S9-schools__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/schools",
+   "finalUrl": "/admin/schools",
+   "httpStatus": 200,
+   "title": "Urus Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 30
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M02/S9-schools__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/schools",
+   "finalUrl": "/admin/schools",
+   "httpStatus": 200,
+   "title": "Urus Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 30
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M02-S9-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "10,220",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "10,220",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Sekolah",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "10,212",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "10,212",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Aktif",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "8",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "8",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tidak Aktif",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tambah Sekolah",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-011",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Sekolah",
+   "href": "https://prestasiplus.my/admin/schools/create",
+   "absHref": "https://prestasiplus.my/admin/schools/create",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-012",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [
+    "search",
+    "state",
+    "type"
+   ],
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-013",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "search",
+   "placeholder": "Cari nama atau kod sekolah...",
+   "landmark": "form.card",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-014",
+   "kind": "select",
+   "tag": "select",
+   "name": "state",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Negeri"
+    },
+    {
+     "value": "Johor",
+     "text": "Johor"
+    },
+    {
+     "value": "Kedah",
+     "text": "Kedah"
+    },
+    {
+     "value": "Kelantan",
+     "text": "Kelantan"
+    },
+    {
+     "value": "Kuala Lumpur",
+     "text": "Kuala Lumpur"
+    },
+    {
+     "value": "Labuan",
+     "text": "Labuan"
+    },
+    {
+     "value": "Melaka",
+     "text": "Melaka"
+    },
+    {
+     "value": "Negeri Sembilan",
+     "text": "Negeri Sembilan"
+    },
+    {
+     "value": "Pahang",
+     "text": "Pahang"
+    },
+    {
+     "value": "Perak",
+     "text": "Perak"
+    },
+    {
+     "value": "Perlis",
+     "text": "Perlis"
+    },
+    {
+     "value": "Pulau Pinang",
+     "text": "Pulau Pinang"
+    },
+    {
+     "value": "Putrajaya",
+     "text": "Putrajaya"
+    },
+    {
+     "value": "Sabah",
+     "text": "Sabah"
+    },
+    {
+     "value": "Sarawak",
+     "text": "Sarawak"
+    },
+    {
+     "value": "Selangor",
+     "text": "Selangor"
+    },
+    {
+     "value": "Terengganu",
+     "text": "Terengganu"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-015",
+   "kind": "select",
+   "tag": "select",
+   "name": "type",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Jenis"
+    },
+    {
+     "value": "SK",
+     "text": "SK"
+    },
+    {
+     "value": "SMK",
+     "text": "SMK"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-016",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cari",
+   "icon": "fa-search",
+   "form": "(no action)",
+   "landmark": "form.card",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-017",
+   "kind": "card",
+   "tag": "div",
+   "text": "Nama Sekolah",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-018",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Nama Sekolah",
+    "Kod",
+    "Jenis",
+    "Negeri",
+    "Daerah",
+    "Pelajar",
+    "Guru",
+    "Status",
+    "Tindakan"
+   ],
+   "rowCount": 30,
+   "firstRowActions": [
+    {
+     "tag": "a",
+     "text": "",
+     "href": "https://prestasiplus.my/admin/schools/10124/edit",
+     "icon": "fa-pen",
+     "title": "Edit"
+    },
+    {
+     "tag": "button",
+     "text": "",
+     "icon": "fa-toggle-on",
+     "title": "Nyahaktif"
+    }
+   ],
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-019",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SMK",
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-020",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-021",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/schools/10124/edit",
+   "absHref": "https://prestasiplus.my/admin/schools/10124/edit",
+   "icon": "fa-pen",
+   "iconOnly": true,
+   "landmark": "table",
+   "section": "Sekolah",
+   "title": "Edit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-022",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/schools/10124/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-023",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-024",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-toggle-on",
+   "form": "https://prestasiplus.my/admin/schools/10124/toggle",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sekolah",
+   "title": "Nyahaktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-025",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SMK",
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-026",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-027",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/schools/8300/edit",
+   "absHref": "https://prestasiplus.my/admin/schools/8300/edit",
+   "icon": "fa-pen",
+   "iconOnly": true,
+   "landmark": "table",
+   "section": "Sekolah",
+   "title": "Edit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-028",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/schools/8300/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-029",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-030",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-toggle-on",
+   "form": "https://prestasiplus.my/admin/schools/8300/toggle",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sekolah",
+   "title": "Nyahaktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-031",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SMK",
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-032",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-033",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/schools/7935/edit",
+   "absHref": "https://prestasiplus.my/admin/schools/7935/edit",
+   "icon": "fa-pen",
+   "iconOnly": true,
+   "landmark": "table",
+   "section": "Sekolah",
+   "title": "Edit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-034",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/schools/7935/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-035",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-036",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-toggle-on",
+   "form": "https://prestasiplus.my/admin/schools/7935/toggle",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sekolah",
+   "title": "Nyahaktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-038",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/admin/schools?page=2",
+   "absHref": "https://prestasiplus.my/admin/schools?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-039",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "30",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "10220",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-044",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "2",
+   "href": "https://prestasiplus.my/admin/schools?page=2",
+   "absHref": "https://prestasiplus.my/admin/schools?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 2",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-045",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/admin/schools?page=3",
+   "absHref": "https://prestasiplus.my/admin/schools?page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 3",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-046",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "4",
+   "href": "https://prestasiplus.my/admin/schools?page=4",
+   "absHref": "https://prestasiplus.my/admin/schools?page=4",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-047",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/admin/schools?page=5",
+   "absHref": "https://prestasiplus.my/admin/schools?page=5",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 5",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-048",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "6",
+   "href": "https://prestasiplus.my/admin/schools?page=6",
+   "absHref": "https://prestasiplus.my/admin/schools?page=6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 6",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-049",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "7",
+   "href": "https://prestasiplus.my/admin/schools?page=7",
+   "absHref": "https://prestasiplus.my/admin/schools?page=7",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 7",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-050",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "8",
+   "href": "https://prestasiplus.my/admin/schools?page=8",
+   "absHref": "https://prestasiplus.my/admin/schools?page=8",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 8",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-051",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "9",
+   "href": "https://prestasiplus.my/admin/schools?page=9",
+   "absHref": "https://prestasiplus.my/admin/schools?page=9",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 9",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-052",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/admin/schools?page=10",
+   "absHref": "https://prestasiplus.my/admin/schools?page=10",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 10",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "...",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-054",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "340",
+   "href": "https://prestasiplus.my/admin/schools?page=340",
+   "absHref": "https://prestasiplus.my/admin/schools?page=340",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 340",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-055",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "341",
+   "href": "https://prestasiplus.my/admin/schools?page=341",
+   "absHref": "https://prestasiplus.my/admin/schools?page=341",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Go to page 341",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-056",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/schools?page=2",
+   "absHref": "https://prestasiplus.my/admin/schools?page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Next &raquo;",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "page-last__1280",
+    "state-perlis__1280",
+    "type-sk__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-057",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "« Previous",
+   "href": "https://prestasiplus.my/admin/schools?page=1",
+   "absHref": "https://prestasiplus.my/admin/schools?page=1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "page-2__1280",
+    "page-last__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-058",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/schools?page=3",
+   "absHref": "https://prestasiplus.my/admin/schools?page=3",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "ariaLabel": "Next &raquo;",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-059",
+   "kind": "text",
+   "tag": "span",
+   "text": "Next »",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "page-last__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-060",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/schools",
+   "absHref": "https://prestasiplus.my/admin/schools",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "landmark": "form.card",
+   "section": "Sekolah",
+   "title": "Reset",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search-empty__1280",
+    "search__1280",
+    "state-perlis__1280",
+    "type-sk__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-061",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SK",
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search__1280",
+    "type-sk__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-062",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SK",
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search__1280",
+    "type-sk__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S9-063",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SK",
+   "landmark": "table",
+   "section": "Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search__1280",
+    "type-sk__1280"
+   ]
+  }
+ ]
+}

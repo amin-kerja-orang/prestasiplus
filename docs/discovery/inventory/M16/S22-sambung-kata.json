@@ -1,0 +1,339 @@
+{
+ "screen": "S22",
+ "key": "S22-sambung-kata",
+ "route": "/permainan/sambung-kata",
+ "name": "(HTTP 500, empty body)",
+ "module": "M16",
+ "generatedAt": "2026-09-26T04:58:29.054Z",
+ "notes": "new route; HTTP 500 with an empty body (browser error page)",
+ "shell": "none",
+ "summary": {
+  "total": 9,
+  "visibleDefault": 5,
+  "conditional": 0,
+  "hiddenOnly": 4,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 1,
+   "text": 5,
+   "button": 1,
+   "image": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "HTTP 500 (empty body)",
+   "file": "_raw/M16/S22-sambung-kata__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/",
+   "finalUrl": "chrome-error://chromewebdata/",
+   "httpStatus": null,
+   "title": "prestasiplus.my",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "ERR {\"eval\":\"(function mask() {\\n    var n = 0, main = document.querySelector('main': Error: page.evaluate: Execution context was destroyed, most likely because of a navigation",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "HTTP 500 @375",
+   "file": "_raw/M16/S22-sambung-kata__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/",
+   "finalUrl": "chrome-error://chromewebdata/",
+   "httpStatus": null,
+   "title": "prestasiplus.my",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "Assertion failed",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "Re-setting data.",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "No data. Did you remember to include strings.js?",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "Could not find value for",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "Unescaped $ found in localized string.",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "Number isn't integer:",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "Replacements must be a dictionary object.",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "Data must exist before being overridden",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "CSSResult is not constructable. Use `unsafeCSS` or `css` instead.",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "[ \\t\\n\\f\\r]",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "(prefers-color-scheme: dark)",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "intro .4s ease-out 1 both",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": ") translateY(",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "(hover: hover)",
+   "sources": [
+    "script#0"
+   ]
+  },
+  {
+   "text": "Details",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "HTTP ERROR 500",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "'Segoe UI', Tahoma, sans-serif",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "This page isn’t working",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Hide details",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Reload",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "\\u003Cstrong>prestasiplus.my\\u003C/strong> is currently unable to handle this request.",
+   "sources": [
+    "script#2"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/permainan/sambung-kata",
+   "sources": [
+    "script#2"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M16-S22-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "This page isn’t working",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S22-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "is currently unable to handle this request.",
+   "section": "This page isn’t working",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S22-003",
+   "kind": "text",
+   "tag": "strong",
+   "text": "prestasiplus.my",
+   "section": "This page isn’t working",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S22-004",
+   "kind": "text",
+   "tag": "div",
+   "text": "HTTP ERROR 500",
+   "section": "This page isn’t working",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S22-005",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Reload",
+   "section": "This page isn’t working",
+   "domId": "reload-button",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S22-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "is currently unable to handle this request.",
+   "section": "This page isn’t working",
+   "domId": "sub-frame-error-details",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "opacity:0",
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M16-S22-007",
+   "kind": "text",
+   "tag": "strong",
+   "text": "prestasiplus.my",
+   "section": "This page isn’t working",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M16-S22-008",
+   "kind": "image",
+   "tag": "img",
+   "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABNEAAABkBAMAAABayruYAAAAJFBMVEUAAADa2tr/////9/e6urpTU1O5ubn39/f///9ZWVlfX1/z8/O/OctmAAAACXRSTlMA//////////ZO3iNwAA",
+   "section": "This page isn’t working",
+   "domId": "offline-resources-1x",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M16-S22-009",
+   "kind": "image",
+   "tag": "img",
+   "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACY4AAADCCAMAAADT9DSoAAAANlBMVEUAAADa2tr/////9/e5ubn39/dTU1P29vbv7+/+/v74+Pjw8PD///9ZWVlfX1/z8/P5+fn///9RgilMAAAAEn",
+   "section": "This page isn’t working",
+   "domId": "offline-resources-2x",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  }
+ ]
+}

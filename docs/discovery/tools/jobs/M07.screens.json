@@ -1,0 +1,19 @@
+{
+  "normalizeIds": true,
+  "dataRows": [],
+  "collapseKeys": [],
+  "screens": {
+    "S1": { "key": "S1-pksk-hub", "route": "/pksk", "title": "PKSK — Persediaan Kemasukan SBP / MRSM / SMKA (sidebar \"PKSK\" + \"PRO\")", "shell": "SHU" },
+    "S2": { "key": "S2-level-dashboard", "route": "/pksk/level/{T1|T4}", "title": "Dashboard PKSK - {T1|T4}", "shell": "SHU" },
+    "S3": { "key": "S3-domains", "route": "/pksk/level/{T1|T4}/domains", "title": "Domain PKSK - {T1|T4}", "shell": "SHU" },
+    "S4": { "key": "S4-history", "route": "/pksk/level/{T1|T4}/history", "title": "Sejarah (live: HTTP 500 \"Ralat Pelayan\")", "shell": "SHU", "notes": "error page only; no layout shell" },
+    "S5": { "key": "S5-questions", "route": "/admin/pksk/questions", "title": "Soalan PKSK", "shell": "SHA" },
+    "S6": { "key": "S6-create", "route": "/admin/pksk/questions/create", "title": "Tambah Soalan PKSK", "shell": "SHA" },
+    "S7": { "key": "S7-edit", "route": "/admin/pksk/questions/{id}/edit", "title": "Edit Soalan PKSK", "shell": "SHA" },
+    "S8": { "key": "S8-access", "route": "/admin/pksk/access", "title": "Akses PKSK", "shell": "SHA" }
+  },
+  "shells": {
+    "SHU": { "key": "SHU-user-shell", "title": "User-portal shell", "owner": "00-global-ui.md", "note": "layout chrome of S1–S3" },
+    "SHA": { "key": "SHA-admin-shell", "title": "Admin panel shell", "owner": "00-global-ui.md / M23", "note": "layout chrome of S5–S8" }
+  }
+}

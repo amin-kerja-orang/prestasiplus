@@ -1,0 +1,35 @@
+{
+  "normalizeIds": true,
+  "dataRows": [],
+  "collapseKeys": [],
+  "extraModuleRules": [
+    ["^/admin/marketplace", "M20", "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405"],
+    ["^/marketplace/[^/]+/whatsapp$", "M20", "product 'Hubungi Penjual di WhatsApp' → GET that counts a click and redirects to wa.me (never opened; guard blocks it)"],
+    ["^/marketplace", "M20", "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}"],
+    ["^/seller/", "M20", "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)"],
+    ["^/seller$", "M20", "guessed seller root → 404"],
+    ["^/penjual", "M20", "guessed seller route → 404 (does not exist on live)"],
+    ["^/admin/hadiah", "M15", "rewards shop admin 'Kedai Hadiah' (M15, coins, not the marketplace)"],
+    ["^/gamification/rewards", "M15", "student rewards shop 'Kedai Hadiah' (M15)"],
+    ["^/admin/payments", "M19", "payments (M19; marketplace has no online payment)"],
+    ["^/pricing", "M19", "subscription packages (M19)"]
+  ],
+  "screens": {
+    "S1": { "key": "S1-admin-products", "route": "/admin/marketplace/products", "title": "Urus Produk - Admin PRESTASIPLUS", "shell": "SHA", "notes": "GET ?q&category&status&page; per-row toggle (POST …/toggle) and delete (POST _method=DELETE, confirm) forms never submitted" },
+    "S2": { "key": "S2-admin-product-create", "route": "/admin/marketplace/products/create", "title": "Tambah Produk - Admin PRESTASIPLUS", "shell": "SHA", "notes": "form POST /admin/marketplace/products multipart (never submitted)" },
+    "S3": { "key": "S3-admin-product-edit", "route": "/admin/marketplace/products/{id}/edit", "title": "Edit Produk - Admin PRESTASIPLUS", "shell": "SHA", "notes": "form PUT /admin/marketplace/products/{id}; image delete forms; unknown id 404; GET /admin/marketplace/products/{id} → 405 (captured here)" },
+    "S4": { "key": "S4-admin-sellers", "route": "/admin/marketplace/sellers", "title": "Urus Penjual - Admin PRESTASIPLUS", "shell": "SHA", "notes": "GET ?status; stat cards; ban form (never submitted)" },
+    "S5": { "key": "S5-admin-seller-show", "route": "/admin/marketplace/sellers/{id}", "title": "Semak Penjual - {shop}", "shell": "SHA", "notes": "seller review page; 'Haramkan Penjual' never clicked; unknown id 404" },
+    "S6": { "key": "S6-marketplace", "route": "/marketplace", "title": "Marketplace - PRESTASIPLUS", "shell": "SHU", "notes": "GET ?q&category&condition&sort; category chips" },
+    "S7": { "key": "S7-product", "route": "/marketplace/{slug}", "title": "{product} - Marketplace PRESTASIPLUS", "shell": "SHU", "notes": "each server GET adds 1 view; served from the guard cache after the first GET; WhatsApp link never opened" },
+    "S8": { "key": "S8-shop", "route": "/marketplace/penjual/{id}", "title": "{shop} - Marketplace PRESTASIPLUS", "shell": "SHU" },
+    "S9": { "key": "S9-seller-dashboard", "route": "/seller/dashboard", "title": "Kedai Saya - PRESTASIPLUS Marketplace", "shell": "SHU", "notes": "admin account owns seller #1; /seller/daftar redirects here" },
+    "S10": { "key": "S10-seller-products", "route": "/seller/produk", "title": "Produk Saya - PRESTASIPLUS Marketplace", "shell": "SHU", "notes": "delete forms (never submitted)" },
+    "S11": { "key": "S11-seller-product-create", "route": "/seller/produk/tambah", "title": "Tambah Produk - PRESTASIPLUS Marketplace", "shell": "SHU", "notes": "form POST /seller/produk (never submitted)" },
+    "S12": { "key": "S12-seller-product-edit", "route": "/seller/produk/{id}/edit", "title": "Edit Produk - PRESTASIPLUS Marketplace", "shell": "SHU", "notes": "form PUT /seller/produk/{id} (never submitted); GET /seller/produk/{id} → 405" }
+  },
+  "shells": {
+    "SHA": { "key": "SHA-admin-shell", "title": "Admin panel shell (S1–S5)", "owner": "00-global-ui.md", "note": "Layout chrome, not M20 content. Sidebar group 'Marketplace' (toggle('marketplace')) holds Produk / Penjual." },
+    "SHU": { "key": "SHU-user-shell", "title": "User-portal shell (S6–S12)", "owner": "00-global-ui.md", "note": "Layout chrome, not M20 content. User menu holds 'Marketplace' → /marketplace and, for admin, 'Urus Produk' / 'Urus Penjual'." }
+  }
+}

@@ -1,0 +1,1568 @@
+{
+ "screen": "S1",
+ "key": "S1-admin-sponsors",
+ "route": "/admin/sponsors",
+ "name": "Urus Penaja - Admin",
+ "module": "M21",
+ "generatedAt": "2026-09-27T02:22:47.226Z",
+ "notes": "GET ?search&status&category&page; row 'Lihat' → 500, 'Edit' → S3; guest → /login",
+ "shell": "SHA",
+ "summary": {
+  "total": 46,
+  "visibleDefault": 37,
+  "conditional": 7,
+  "hiddenOnly": 2,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 7,
+   "text": 16,
+   "link": 8,
+   "form": 1,
+   "label": 3,
+   "input": 1,
+   "select": 2,
+   "button": 1,
+   "table": 1,
+   "badge": 3,
+   "pagination": 3
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "list (6 sponsors, all Digantung)",
+   "file": "_raw/M21/S1-admin-sponsors__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors",
+   "finalUrl": "/admin/sponsors",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 16",
+    "sanitized: cells=7 strings=7 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 6
+   }
+  },
+  {
+   "label": "cat-individu__1280",
+   "description": "category=INDIVIDU → empty",
+   "file": "_raw/M21/S1-admin-sponsors__cat-individu__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?category=INDIVIDU",
+   "finalUrl": "/admin/sponsors?category=INDIVIDU",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "cat-swasta__1280",
+   "description": "category=SYARIKAT_SWASTA → 6",
+   "file": "_raw/M21/S1-admin-sponsors__cat-swasta__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?category=SYARIKAT_SWASTA",
+   "finalUrl": "/admin/sponsors?category=SYARIKAT_SWASTA",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 16",
+    "sanitized: cells=7 strings=7 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 6
+   }
+  },
+  {
+   "label": "page-2__1280",
+   "description": "?page=2 → empty + English pager \"Showing 0 of 6 results\"",
+   "file": "_raw/M21/S1-admin-sponsors__page-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?page=2",
+   "finalUrl": "/admin/sponsors?page=2",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "search-match__1280",
+   "description": "search=Kedai → 1",
+   "file": "_raw/M21/S1-admin-sponsors__search-match__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?search=Kedai",
+   "finalUrl": "/admin/sponsors?search=Kedai",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 4",
+    "sanitized: cells=1 strings=1 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "search-none__1280",
+   "description": "search with no match → empty",
+   "file": "_raw/M21/S1-admin-sponsors__search-none__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?search=zzqxv",
+   "finalUrl": "/admin/sponsors?search=zzqxv",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-approved__1280",
+   "description": "status=approved → empty",
+   "file": "_raw/M21/S1-admin-sponsors__status-approved__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?status=approved",
+   "finalUrl": "/admin/sponsors?status=approved",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-pending-uc__1280",
+   "description": "status=PENDING (select value) → empty",
+   "file": "_raw/M21/S1-admin-sponsors__status-pending-uc__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?status=PENDING",
+   "finalUrl": "/admin/sponsors?status=PENDING",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-pending__1280",
+   "description": "status=pending (lower-case) → empty \"Tiada penaja dijumpai\" + Reset",
+   "file": "_raw/M21/S1-admin-sponsors__status-pending__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?status=pending",
+   "finalUrl": "/admin/sponsors?status=pending",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-rejected__1280",
+   "description": "status=rejected → empty",
+   "file": "_raw/M21/S1-admin-sponsors__status-rejected__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?status=rejected",
+   "finalUrl": "/admin/sponsors?status=rejected",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-suspended-uc__1280",
+   "description": "status=SUSPENDED (select value)",
+   "file": "_raw/M21/S1-admin-sponsors__status-suspended-uc__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?status=SUSPENDED",
+   "finalUrl": "/admin/sponsors?status=SUSPENDED",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 16",
+    "sanitized: cells=7 strings=7 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 6
+   }
+  },
+  {
+   "label": "status-suspended__1280",
+   "description": "status=suspended → 6",
+   "file": "_raw/M21/S1-admin-sponsors__status-suspended__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors?status=suspended",
+   "finalUrl": "/admin/sponsors?status=suspended",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 16",
+    "sanitized: cells=7 strings=7 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 6
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M21/S1-admin-sponsors__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/sponsors",
+   "finalUrl": "/admin/sponsors",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 16",
+    "sanitized: cells=7 strings=7 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 6
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M21/S1-admin-sponsors__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/sponsors",
+   "finalUrl": "/admin/sponsors",
+   "httpStatus": 200,
+   "title": "Urus Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 16",
+    "sanitized: cells=7 strings=7 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 6
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M21-S1-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "6",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "6",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "Menunggu",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Diluluskan",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ditolak",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "6",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "6",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "Digantung",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-016",
+   "kind": "text",
+   "tag": "span",
+   "text": "6 penaja dijumpai",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-017",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Penaja",
+   "href": "https://prestasiplus.my/admin/sponsors/create",
+   "absHref": "https://prestasiplus.my/admin/sponsors/create",
+   "icon": "fa-plus-circle",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-018",
+   "kind": "card",
+   "tag": "div",
+   "text": "Carian",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-019",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [
+    "search",
+    "status",
+    "category"
+   ],
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-020",
+   "kind": "label",
+   "tag": "label",
+   "text": "Carian",
+   "landmark": "form",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-021",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "search",
+   "label": "Carian",
+   "placeholder": "Nama, email...",
+   "landmark": "form",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-022",
+   "kind": "label",
+   "tag": "label",
+   "text": "Status",
+   "landmark": "form",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-023",
+   "kind": "select",
+   "tag": "select",
+   "name": "status",
+   "label": "Status",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Status"
+    },
+    {
+     "value": "PENDING",
+     "text": "Menunggu"
+    },
+    {
+     "value": "APPROVED",
+     "text": "Diluluskan"
+    },
+    {
+     "value": "REJECTED",
+     "text": "Ditolak"
+    },
+    {
+     "value": "SUSPENDED",
+     "text": "Digantung"
+    }
+   ],
+   "landmark": "form",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kategori",
+   "landmark": "form",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-025",
+   "kind": "select",
+   "tag": "select",
+   "name": "category",
+   "label": "Kategori",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Kategori"
+    },
+    {
+     "value": "INDIVIDU",
+     "text": "Individu / Peribadi"
+    },
+    {
+     "value": "SYARIKAT_SWASTA",
+     "text": "Syarikat Swasta"
+    },
+    {
+     "value": "GLC",
+     "text": "Syarikat Berkaitan Kerajaan"
+    },
+    {
+     "value": "NGO",
+     "text": "Pertubuhan Bukan Kerajaan"
+    },
+    {
+     "value": "BADAN_KERAJAAN",
+     "text": "Badan / Agensi Kerajaan"
+    },
+    {
+     "value": "BANK",
+     "text": "Bank / Institusi Kewangan"
+    },
+    {
+     "value": "UNIVERSITI",
+     "text": "Universiti / IPT"
+    },
+    {
+     "value": "PERSATUAN",
+     "text": "Persatuan / Kesatuan"
+    },
+    {
+     "value": "KOPERASI",
+     "text": "Koperasi"
+    },
+    {
+     "value": "KEDAI_BUKU",
+     "text": "Kedai Buku / Alat Tulis"
+    },
+    {
+     "value": "RESTORAN",
+     "text": "Restoran / F&B"
+    },
+    {
+     "value": "TEKNOLOGI",
+     "text": "Syarikat Teknologi"
+    },
+    {
+     "value": "PENDIDIKAN",
+     "text": "Penyedia Pendidikan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-026",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cari",
+   "icon": "fa-search",
+   "form": "(no action)",
+   "landmark": "form",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "#",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-028",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Organisasi",
+    "Kategori",
+    "Pegawai",
+    "Status",
+    "Tarikh",
+    "Tindakan"
+   ],
+   "rowCount": 6,
+   "firstRowActions": [
+    {
+     "tag": "a",
+     "text": "Lihat",
+     "href": "https://prestasiplus.my/admin/sponsors/11",
+     "icon": "fa-eye"
+    },
+    {
+     "tag": "a",
+     "text": "Edit",
+     "href": "https://prestasiplus.my/admin/sponsors/11/edit",
+     "icon": "fa-edit"
+    }
+   ],
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "page-2__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-029",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Digantung",
+   "icon": "fa-ban",
+   "landmark": "table",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "search-match__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-030",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat",
+   "href": "https://prestasiplus.my/admin/sponsors/11",
+   "absHref": "https://prestasiplus.my/admin/sponsors/11",
+   "icon": "fa-eye",
+   "landmark": "table",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "search-match__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-031",
+   "kind": "link",
+   "tag": "a",
+   "text": "Edit",
+   "href": "https://prestasiplus.my/admin/sponsors/11/edit",
+   "absHref": "https://prestasiplus.my/admin/sponsors/11/edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "search-match__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-032",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Digantung",
+   "icon": "fa-ban",
+   "landmark": "table",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-033",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat",
+   "href": "https://prestasiplus.my/admin/sponsors/6",
+   "absHref": "https://prestasiplus.my/admin/sponsors/6",
+   "icon": "fa-eye",
+   "landmark": "table",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-034",
+   "kind": "link",
+   "tag": "a",
+   "text": "Edit",
+   "href": "https://prestasiplus.my/admin/sponsors/6/edit",
+   "absHref": "https://prestasiplus.my/admin/sponsors/6/edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-035",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Digantung",
+   "icon": "fa-ban",
+   "landmark": "table",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-036",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat",
+   "href": "https://prestasiplus.my/admin/sponsors/7",
+   "absHref": "https://prestasiplus.my/admin/sponsors/7",
+   "icon": "fa-eye",
+   "landmark": "table",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-037",
+   "kind": "link",
+   "tag": "a",
+   "text": "Edit",
+   "href": "https://prestasiplus.my/admin/sponsors/7/edit",
+   "absHref": "https://prestasiplus.my/admin/sponsors/7/edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Pengurusan Penaja",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-swasta__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 penaja dijumpai",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-individu__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-039",
+   "kind": "link",
+   "tag": "a",
+   "text": "Reset",
+   "href": "https://prestasiplus.my/admin/sponsors",
+   "absHref": "https://prestasiplus.my/admin/sponsors",
+   "icon": "fa-times",
+   "landmark": "form",
+   "section": "Pengurusan Penaja",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-individu__1280",
+    "cat-swasta__1280",
+    "search-match__1280",
+    "search-none__1280",
+    "status-approved__1280",
+    "status-pending-uc__1280",
+    "status-pending__1280",
+    "status-rejected__1280",
+    "status-suspended-uc__1280",
+    "status-suspended__1280"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-040",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "« Previous",
+   "href": "https://prestasiplus.my/admin/sponsors?page=1",
+   "absHref": "https://prestasiplus.my/admin/sponsors?page=1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengurusan Penaja",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "page-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "Next »",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengurusan Penaja",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "page-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-042",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing 0 of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengurusan Penaja",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengurusan Penaja",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-044",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/sponsors?page=1",
+   "absHref": "https://prestasiplus.my/admin/sponsors?page=1",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengurusan Penaja",
+   "ariaLabel": "&laquo; Previous",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-045",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "1",
+   "href": "https://prestasiplus.my/admin/sponsors?page=1",
+   "absHref": "https://prestasiplus.my/admin/sponsors?page=1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Pengurusan Penaja",
+   "ariaLabel": "Go to page 1",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M21-S1-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 penaja dijumpai",
+   "landmark": "main",
+   "section": "Pengurusan Penaja",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search-match__1280"
+   ]
+  }
+ ]
+}

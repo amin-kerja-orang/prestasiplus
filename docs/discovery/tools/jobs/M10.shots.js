@@ -1,0 +1,81 @@
+// M10 masked screenshot plan → docs/discovery/img/M10/. Load tools/jobs/M10.js FIRST (it exposes window.__M10_HELPERS),
+// then addScriptTag(this file), then browser_run_code_unsafe{filename: tools/shoot.js}.
+// Every shot runs M10MASK ("Soalan Oleh"/"Dicipta oleh" names, school names, school-search results, avatars) and then
+// tools/sanitize.js with {selectors:['.m10n'], titleName:false} (attendance "Nama" column, profile name/e-mail/IC inputs).
+// Client-side reveals only; nothing is submitted; no Evaluate/Badges panel; no quiz/live link is followed.
+(function () {
+  var B = 'https://prestasiplus.my', D = 'docs/discovery/img/M10/';
+  var H = window.__M10_HELPERS;
+  var MK = { eval: H.MASK };
+  var W = function (ms) { return { wait: ms || 500 }; };
+  var S = [];
+  function s(file, url, width, actions, extra) { S.push(Object.assign({ file: D + file, url: B + url, width: width || 1280, actions: [MK].concat(actions || []).concat([MK]), sanitize: H.SAN }, extra || {})); }
+  var VP = { fullPage: false };
+  var ev = function (js) { return { eval: js }; };
+  var GUIDE = ev("localStorage.removeItem('hideGuruGuide')");
+  s('guru-dashboard-desktop.png', '/guru', 1280, [GUIDE, W(200)]);
+  s('guru-dashboard-tablet.png', '/guru', 768, [GUIDE, W(200)], VP);
+  s('guru-dashboard-mobile.png', '/guru', 375, [GUIDE, W(200)]);
+  s('command-center-desktop.png', '/guru/command-center', 1280, [W(1500)]);
+  s('command-center-mobile.png', '/guru/command-center', 375, [W(1500)]);
+  s('command-center-drill-modal.png', '/guru/command-center', 1280, [W(1200), ev("drill('students')"), W(1500)], VP);
+  s('command-center-remedial-error.png', '/guru/command-center', 1280, [W(1200), ev('showRemedial()'), W(2500)], VP);
+  s('command-center-predictive.png', '/guru/command-center', 1280, [W(1200), ev('showPredictive()'), W(2500)], VP);
+  s('command-center-kelas.png', '/guru/command-center', 1280, [W(1200), ev('showTeacherPerf()'), W(2500)], VP);
+  s('remedial-progress-desktop.png', '/guru/remedial-progress', 1280, [], VP);
+  s('kelas-empty-desktop.png', '/guru/kelas', 1280, [], VP);
+  s('kelas-empty-mobile.png', '/guru/kelas', 375, [], VP);
+  s('kelas-qr-modal.png', '/guru/kelas', 1280, [ev("(() => { var m = document.getElementById('quickQrModal'); m.classList.remove('hidden'); m.classList.add('flex'); return 1; })()"), W(300)], VP);
+  s('kelas-cipta-desktop.png', '/guru/kelas/cipta', 1280);
+  s('kelas-cipta-mobile.png', '/guru/kelas/cipta', 375);
+  s('kelas-cipta-school-search.png', '/guru/kelas/cipta', 1280, [{ type: ['main input[placeholder^="Taip nama sekolah"]', 'kebangsaan'] }, W(1800)], VP);
+  s('pelajar-mine-desktop.png', '/guru/pelajar', 1280, [], VP);
+  s('pelajar-school-tab.png', '/guru/pelajar', 1280, [{ click: "main button[\\@click=\"tab = 'school'\"]" }, W(400)], VP);
+  s('kehadiran-desktop.png', '/guru/kehadiran-digital', 1280, [], VP);
+  s('kehadiran-mobile.png', '/guru/kehadiran-digital', 375, [], VP);
+  s('jadual-belajar-desktop.png', '/guru/jadual-belajar', 1280);
+  s('jadual-belajar-mobile.png', '/guru/jadual-belajar', 375, [], VP);
+  s('broadcast-desktop.png', '/guru/broadcast', 1280, [], VP);
+  s('broadcast-mobile.png', '/guru/broadcast', 375, [], VP);
+  s('live-kelas-desktop.png', '/guru/live-kelas', 1280, [W(800)]);
+  s('misi-harian-empty.png', '/guru/misi-harian', 1280, [], VP);
+  s('misi-cipta-desktop.png', '/guru/misi-harian/cipta', 1280);
+  s('misi-cipta-youtube.png', '/guru/misi-harian/cipta', 1280, [{ select: ['main select[name="mission_type"]', 'youtube'] }, W(300)]);
+  s('misi-cipta-mobile.png', '/guru/misi-harian/cipta', 375);
+  s('set-soalan-empty.png', '/guru/set-soalan', 1280, [], VP);
+  s('set-cipta-scheduled.png', '/guru/set-soalan/cipta', 1280, [{ click: "main label[\\@click=\"status = 'scheduled'\"]" }, W(300)]);
+  s('set-cipta-mobile.png', '/guru/set-soalan/cipta', 375);
+  s('soalan-guru-empty.png', '/guru/soalan-guru', 1280, [], VP);
+  s('soalan-guru-cipta-desktop.png', '/guru/soalan-guru/cipta', 1280);
+  s('soalan-guru-cipta-mobile.png', '/guru/soalan-guru/cipta', 375, [], VP);
+  s('berstruktur-list-desktop.png', '/guru/soalan-berstruktur', 1280, [], VP);
+  s('berstruktur-list-mobile.png', '/guru/soalan-berstruktur', 375, [], VP);
+  s('berstruktur-cipta-desktop.png', '/guru/soalan-berstruktur/cipta', 1280);
+  s('berstruktur-cipta-symbols-mobile.png', '/guru/soalan-berstruktur/cipta', 375, [{ click: 'main button[\\@click="showSymbols = !showSymbols"]' }, W(300)], VP);
+  s('berstruktur-cipta-eksperimen.png', '/guru/soalan-berstruktur/cipta', 1280, [{ select: ['main select[name="question_template"]', 'eksperimen'] }, W(500)], VP);
+  s('berstruktur-show-desktop.png', '/guru/soalan-berstruktur/4454', 1280);
+  s('berstruktur-edit-desktop.png', '/guru/soalan-berstruktur/4454/edit', 1280, [W(1200)]);
+  s('sumbang-soalan-desktop.png', '/guru/soalan', 1280, [], VP);
+  s('sumbang-soalan-mobile.png', '/guru/soalan', 375, [], VP);
+  s('soalan-cipta-desktop.png', '/guru/soalan/cipta', 1280);
+  s('soalan-cipta-arab-keyboard.png', '/guru/soalan/cipta', 375, [{ select: ['main select[name="script_type"]', 'arab'] }, W(300), { click: 'main textarea[name="question_text"]' }, W(500)], VP);
+  s('soalan-cipta-galeri.png', '/guru/soalan/cipta', 1280, [{ click: 'main button[\\@click="openGaleri()"]' }, W(1800)], VP);
+  s('soalan-show-desktop.png', '/guru/soalan/522425', 1280, [], VP);
+  s('soalan-edit-desktop.png', '/guru/soalan/522425/edit', 1280);
+  s('audio-kbat-desktop.png', '/guru/audio-kbat', 1280, [], VP);
+  s('audio-kbat-create-desktop.png', '/guru/audio-kbat/create', 1280, [], VP);
+  s('databank-desktop.png', '/guru/databank', 1280);
+  s('databank-mobile.png', '/guru/databank', 375, [], VP);
+  s('databank-bm-desktop.png', '/guru/databank/BM', 1280, [], VP);
+  s('databank-report-modal.png', '/guru/databank/BM', 1280, [{ click: 'main button[\\@click^="openReport("]' }, W(400)], VP);
+  s('databank-report-modal-mobile.png', '/guru/databank/BM', 375, [{ click: 'main button[\\@click^="openReport("]' }, W(400)], VP);
+  s('artikel-list-desktop.png', '/guru/artikel', 1280, [], VP);
+  s('artikel-cipta-desktop.png', '/guru/artikel/cipta', 1280);
+  s('artikel-cipta-mobile.png', '/guru/artikel/cipta', 375, [], VP);
+  s('profil-guru-desktop.png', '/guru/profil/edit', 1280);
+  s('kelas-saya-student.png', '/kelas-saya', 1280, [], VP);
+  s('kelas-saya-student-mobile.png', '/kelas-saya', 375, [], VP);
+  s('set-soalan-saya-student.png', '/set-soalan-saya', 1280, [], VP);
+  s('settings-404.png', '/settings', 1280, [], VP);
+  window.__shots = S;
+})();

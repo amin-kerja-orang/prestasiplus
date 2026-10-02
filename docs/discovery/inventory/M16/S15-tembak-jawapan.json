@@ -1,0 +1,1881 @@
+{
+ "screen": "S15",
+ "key": "S15-tembak-jawapan",
+ "route": "/permainan/tembak-jawapan",
+ "name": "Tembak Jawapan 🎯 — PRESTASIPLUS",
+ "module": "M16",
+ "generatedAt": "2026-09-26T04:58:28.456Z",
+ "notes": "new route; ?darjah=; 3 lives, auto-start",
+ "shell": "SHU",
+ "summary": {
+  "total": 74,
+  "visibleDefault": 4,
+  "conditional": 43,
+  "hiddenOnly": 27,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 47,
+   "modal": 4,
+   "clickable": 6,
+   "alert": 3,
+   "card": 2,
+   "heading": 3,
+   "link": 9
+  }
+ },
+ "states": [
+  {
+   "label": "countdown__1280",
+   "description": "?darjah=4 → countdown",
+   "file": "_raw/M16/S15-tembak-jawapan__countdown__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/permainan/tembak-jawapan?darjah=4",
+   "finalUrl": "/permainan/tembak-jawapan?darjah=4",
+   "httpStatus": 200,
+   "title": "Tembak Jawapan 🎯 — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 100
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "done__1280",
+   "description": "result screen (Alpine phase=done, isNewRecord=true) — client-only",
+   "file": "_raw/M16/S15-tembak-jawapan__done__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/permainan/tembak-jawapan?darjah=4",
+   "finalUrl": "/permainan/tembak-jawapan?darjah=4",
+   "httpStatus": 200,
+   "title": "Tembak Jawapan 🎯 — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 3200
+    },
+    {
+     "eval": "(() => { var e = document.querySelector('[x-data=\"tembakJawapan()\"]'); if (!e) return 'missing tembakJawapan()'; var d = Alpine.$data(e); var o = {\"phase\":\"done\",\"isNewRecord\":true}; for (var k in o) d[k] = o[k]; return 'alpine set phase,isNewRecord'; })()"
+    },
+    {
+     "wait": 600
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "alpine set phase,isNewRecord",
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "level-up__1280",
+   "description": "LEVEL banner (Alpine showLevelUp, level 2, lives 1) — client-only",
+   "file": "_raw/M16/S15-tembak-jawapan__level-up__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/permainan/tembak-jawapan?darjah=4",
+   "finalUrl": "/permainan/tembak-jawapan?darjah=4",
+   "httpStatus": 200,
+   "title": "Tembak Jawapan 🎯 — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 3200
+    },
+    {
+     "eval": "(() => { var e = document.querySelector('[x-data=\"tembakJawapan()\"]'); if (!e) return 'missing tembakJawapan()'; var d = Alpine.$data(e); var o = {\"showLevelUp\":true,\"level\":2,\"lives\":1}; for (var k in o) d[k] = o[k]; return 'alpine set showLevelUp,level,lives'; })()"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "alpine set showLevelUp,level,lives",
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "picker__1280",
+   "description": "no ?darjah → darjah picker overlay (game runs underneath)",
+   "file": "_raw/M16/S15-tembak-jawapan__picker__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/permainan/tembak-jawapan",
+   "finalUrl": "/permainan/tembak-jawapan",
+   "httpStatus": 200,
+   "title": "Tembak Jawapan 🎯 — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "playing__1280",
+   "description": "?darjah=4 → playing (after countdown)",
+   "file": "_raw/M16/S15-tembak-jawapan__playing__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/permainan/tembak-jawapan?darjah=4",
+   "finalUrl": "/permainan/tembak-jawapan?darjah=4",
+   "httpStatus": 200,
+   "title": "Tembak Jawapan 🎯 — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 3200
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "picker__375",
+   "description": "picker overlay @375",
+   "file": "_raw/M16/S15-tembak-jawapan__picker__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/permainan/tembak-jawapan",
+   "finalUrl": "/permainan/tembak-jawapan",
+   "httpStatus": 200,
+   "title": "Tembak Jawapan 🎯 — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "playing__375",
+   "description": "playing @375",
+   "file": "_raw/M16/S15-tembak-jawapan__playing__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/permainan/tembak-jawapan?darjah=4",
+   "finalUrl": "/permainan/tembak-jawapan?darjah=4",
+   "httpStatus": 200,
+   "title": "Tembak Jawapan 🎯 — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 3200
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "playing__768",
+   "description": "playing @768",
+   "file": "_raw/M16/S15-tembak-jawapan__playing__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/permainan/tembak-jawapan?darjah=4",
+   "finalUrl": "/permainan/tembak-jawapan?darjah=4",
+   "httpStatus": 200,
+   "title": "Tembak Jawapan 🎯 — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 3200
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "tembakJawapan",
+   "xData": "tembakJawapan()",
+   "keys": [],
+   "liveState": {
+    "questions": "array(30)",
+    "sessionId": "string(19)",
+    "phase": "countdown",
+    "countdownNum": 2,
+    "level": 1,
+    "lives": 3,
+    "score": 0,
+    "correctCount": 0,
+    "totalAnswered": 0,
+    "syilingEarned": 0,
+    "questionIndex": 0,
+    "currentQ": null,
+    "activeTiles": "array(0)",
+    "questionNum": 0,
+    "showLevelUp": false,
+    "tileUid": 0,
+    "missTimer": null,
+    "resultEmoji": "string(2)",
+    "resultTitle": "string(6)"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Ali",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Hebat!",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "CUBA LAGI!",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Level",
+   "sources": [
+    "attr:x-text@p"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "hari ini",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Mata",
+   "sources": [
+    "script#4"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/permainan/tembak-jawapan/submit",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M16-S15-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-004",
+   "kind": "modal",
+   "tag": "div",
+   "text": "🎯 TEMBAK JAWAPAN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'countdown'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "🎯 TEMBAK JAWAPAN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'countdown'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tap jawapan yang betul sebelum jatuh!",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'countdown'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-007",
+   "kind": "modal",
+   "tag": "div",
+   "text": "🎯 TEMBAK JAWAPAN",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "countdown__1280",
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "🎯 TEMBAK JAWAPAN",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "countdown__1280",
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "x-text": "countdownNum"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "countdown__1280",
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tap jawapan yang betul sebelum jatuh!",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "countdown__1280",
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Skor",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'playing' || phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "Level",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'playing' || phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "❤️",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=i in 3"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "🪙",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'playing' || phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-015",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'playing' || phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-016",
+   "kind": "text",
+   "tag": "span",
+   "text": "⚠ GARIS MAUT",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'playing' || phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-017",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "section": "Dashboard",
+   "alpine": {
+    "@click": "tapTile(tile)",
+    "x-text": "tile.text"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=tile in activeTiles"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S15-018",
+   "kind": "alert",
+   "tag": "div",
+   "text": "⚡ LEVEL !",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=showLevelUp"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-019",
+   "kind": "modal",
+   "tag": "div",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-020",
+   "kind": "card",
+   "tag": "div",
+   "section": "Dashboard",
+   "alpine": {
+    "x-ref": "rewardSection"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-021",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "alpine": {
+    "x-text": "resultTitle"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tembak Jawapan — Level",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "Skor Total",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-024",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-025",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tertinggi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-026",
+   "kind": "text",
+   "tag": "p",
+   "text": "Syiling",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-027",
+   "kind": "link",
+   "tag": "a",
+   "text": "🔄 Main Lagi",
+   "href": "https://prestasiplus.my/permainan/tembak-jawapan",
+   "absHref": "https://prestasiplus.my/permainan/tembak-jawapan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-028",
+   "kind": "link",
+   "tag": "a",
+   "text": "🎮 Hub",
+   "href": "https://prestasiplus.my/permainan",
+   "absHref": "https://prestasiplus.my/permainan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "countdown__1280",
+    "done__1280",
+    "level-up__1280",
+    "picker__1280",
+    "playing__1280",
+    "picker__375",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=phase === 'done'"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-029",
+   "kind": "text",
+   "tag": "p",
+   "text": "Skor",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "x-text": "score"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-031",
+   "kind": "text",
+   "tag": "p",
+   "text": "Level",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "1",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "x-text": "level"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "❤️",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=i in 3"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "❤️",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "❤️",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "❤️",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-037",
+   "kind": "text",
+   "tag": "p",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-038",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "x-text": "syilingEarned"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-039",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "showWhen": "currentQ"
+  },
+  {
+   "id": "EL-M16-S15-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "x-text": "questionNum"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "showWhen": "currentQ"
+  },
+  {
+   "id": "EL-M16-S15-041",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jika murid mengulang kaji fakta \"tanda baca perlu digunakan mengikut jenis ayat\", apakah pilihan yang paling tepat?",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "x-text": "currentQ?.question || ''"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "showWhen": "currentQ",
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S15-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "⚠ GARIS MAUT",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-043",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "section": "Dashboard",
+   "alpine": {
+    "@click": "tapTile(tile)",
+    "x-text": "tile.text"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=tile in activeTiles"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S15-044",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "membaca tanpa memahami maksud teks",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "@click": "tapTile(tile)",
+    "x-text": "tile.text"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S15-045",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "menulis secara rawak tanpa melihat huruf",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "@click": "tapTile(tile)",
+    "x-text": "tile.text"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S15-046",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "mengabaikan bentuk huruf dan ejaan",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "@click": "tapTile(tile)",
+    "x-text": "tile.text"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S15-047",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "mengikut jenis ayat",
+   "landmark": "main",
+   "section": "Dashboard",
+   "alpine": {
+    "@click": "tapTile(tile)",
+    "x-text": "tile.text"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "dataRow": true,
+   "note": "question-bank payload item rendered by the game (random per load; M04 data)"
+  },
+  {
+   "id": "EL-M16-S15-048",
+   "kind": "alert",
+   "tag": "div",
+   "text": "⚡ LEVEL !",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "done__1280",
+    "level-up__1280",
+    "playing__1280",
+    "playing__375",
+    "playing__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=showLevelUp"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-049",
+   "kind": "modal",
+   "tag": "div",
+   "text": "Hebat!",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-050",
+   "kind": "card",
+   "tag": "div",
+   "text": "Hebat!",
+   "landmark": "main",
+   "alpine": {
+    "x-ref": "rewardSection"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-051",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "alpine": {
+    "x-text": "resultEmoji"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-052",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Hebat!",
+   "landmark": "main",
+   "alpine": {
+    "x-text": "resultTitle"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-053",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tembak Jawapan — Level",
+   "landmark": "main",
+   "section": "Hebat!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-054",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "main",
+   "section": "Hebat!",
+   "alpine": {
+    "x-text": "level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-055",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Hebat!",
+   "alpine": {
+    "x-text": "score"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-056",
+   "kind": "text",
+   "tag": "p",
+   "text": "Skor Total",
+   "landmark": "main",
+   "section": "Hebat!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-057",
+   "kind": "text",
+   "tag": "p",
+   "text": "0/0",
+   "landmark": "main",
+   "section": "Hebat!",
+   "alpine": {
+    "x-text": "correctCount + '/' + totalAnswered"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-058",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Hebat!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-059",
+   "kind": "text",
+   "tag": "p",
+   "text": "Level 1",
+   "landmark": "main",
+   "section": "Hebat!",
+   "alpine": {
+    "x-text": "'Level ' + level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-060",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tertinggi",
+   "landmark": "main",
+   "section": "Hebat!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-061",
+   "kind": "text",
+   "tag": "p",
+   "text": "0 🪙",
+   "landmark": "main",
+   "section": "Hebat!",
+   "alpine": {
+    "x-text": "syilingEarned + ' 🪙'"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "Syiling",
+   "landmark": "main",
+   "section": "Hebat!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "🔄 Main Lagi",
+   "href": "https://prestasiplus.my/permainan/tembak-jawapan",
+   "absHref": "https://prestasiplus.my/permainan/tembak-jawapan",
+   "landmark": "main",
+   "section": "Hebat!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-064",
+   "kind": "link",
+   "tag": "a",
+   "text": "🎮 Hub",
+   "href": "https://prestasiplus.my/permainan",
+   "absHref": "https://prestasiplus.my/permainan",
+   "landmark": "main",
+   "section": "Hebat!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "done__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-065",
+   "kind": "alert",
+   "tag": "div",
+   "text": "⚡ LEVEL 2!",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "level-up__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-066",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "visibleIn": [
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-067",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Tembak Jawapan",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-068",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih darjah / tingkatan kamu:",
+   "landmark": "main",
+   "section": "Tembak Jawapan",
+   "status": "conditional",
+   "visibleIn": [
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-069",
+   "kind": "text",
+   "tag": "p",
+   "text": "🏫 Sekolah Rendah",
+   "landmark": "main",
+   "section": "Tembak Jawapan",
+   "status": "conditional",
+   "visibleIn": [
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-070",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 1",
+   "href": "https://prestasiplus.my/permainan/tembak-jawapan?darjah=1",
+   "absHref": "https://prestasiplus.my/permainan/tembak-jawapan?darjah=1",
+   "landmark": "main",
+   "section": "Tembak Jawapan",
+   "alpine": {
+    "onmouseover": "this.style.borderColor='#f97316';this.style.background='rgba(255,255,255,0.08)'",
+    "onmouseout": "this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(255,255,255,0.04)'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-071",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 2",
+   "href": "https://prestasiplus.my/permainan/tembak-jawapan?darjah=2",
+   "absHref": "https://prestasiplus.my/permainan/tembak-jawapan?darjah=2",
+   "landmark": "main",
+   "section": "Tembak Jawapan",
+   "alpine": {
+    "onmouseover": "this.style.borderColor='#f97316';this.style.background='rgba(255,255,255,0.08)'",
+    "onmouseout": "this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(255,255,255,0.04)'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-072",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 3",
+   "href": "https://prestasiplus.my/permainan/tembak-jawapan?darjah=3",
+   "absHref": "https://prestasiplus.my/permainan/tembak-jawapan?darjah=3",
+   "landmark": "main",
+   "section": "Tembak Jawapan",
+   "alpine": {
+    "onmouseover": "this.style.borderColor='#f97316';this.style.background='rgba(255,255,255,0.08)'",
+    "onmouseout": "this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(255,255,255,0.04)'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-073",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 4",
+   "href": "https://prestasiplus.my/permainan/tembak-jawapan?darjah=4",
+   "absHref": "https://prestasiplus.my/permainan/tembak-jawapan?darjah=4",
+   "landmark": "main",
+   "section": "Tembak Jawapan",
+   "alpine": {
+    "onmouseover": "this.style.borderColor='#f97316';this.style.background='rgba(255,255,255,0.08)'",
+    "onmouseout": "this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(255,255,255,0.04)'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "picker__1280",
+    "picker__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S15-074",
+   "kind": "link",
+   "tag": "a",
+   "text": "← Kembali ke Hub",
+   "href": "https://prestasiplus.my/permainan",
+   "absHref": "https://prestasiplus.my/permainan",
+   "landmark": "main",
+   "section": "Tembak Jawapan",
+   "status": "conditional",
+   "visibleIn": [
+    "picker__1280",
+    "picker__375"
+   ]
+  }
+ ],
+ "payloadStrings": {
+  "count": 573,
+  "sources": [
+   "script#4"
+  ],
+  "note": "question-bank payload strings (random per load; M04 data) removed from jsMessages by tools/jobs/M16-payload.js; shape documented in the narrative §6.4"
+ }
+}

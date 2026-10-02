@@ -1,0 +1,3221 @@
+{
+ "screen": "S6",
+ "key": "S6-pricing",
+ "route": "/pricing",
+ "name": "Pilih Pakej Anda - PRESTASIPLUS",
+ "module": "M19",
+ "generatedAt": "2026-09-26T20:36:45.180Z",
+ "notes": "3 POST forms to /subscribe/* (never submitted); FAQ accordion",
+ "shell": "SHU",
+ "summary": {
+  "total": 128,
+  "visibleDefault": 114,
+  "conditional": 5,
+  "hiddenOnly": 9,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 88,
+   "heading": 9,
+   "card": 7,
+   "empty-state": 1,
+   "form": 3,
+   "hidden-field": 6,
+   "button": 8,
+   "badge": 3,
+   "link": 2,
+   "table": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "pricing (admin viewer; all FAQ closed)",
+   "file": "_raw/M19/S6-pricing__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pricing",
+   "finalUrl": "/pricing",
+   "httpStatus": 200,
+   "title": "Pilih Pakej Anda - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm19n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    // label / reference rules only on admin finance pages (on /pricing \"Pelajar\" is a package name, not a person label)\n    var adm = /^\\/admin/.test(location.pathname);\n    var LBL = /^(nama( penuh| pelajar| pembayar| pengguna)?|pelajar|pengguna|pembayar|ibu ?bapa|penjaga|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?k\\/?p|bill ?code|kod bil|rujukan( pembayaran| gateway| transaksi)?|no\\.? ?rujukan|reference|ref|transaction ?id|id transaksi|order ?id|external ?id|bil)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BT|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      else if (adm && /^(?=.*\\d)(?=.*[a-z])[a-z0-9_\\-]{8,40}$/i.test(t) && !/^(EL|INV|ID)-/i.test(t) && !/^\\d{4}-\\d{2}-\\d{2}/.test(t)) tag(el, 'm19r');\n      if (adm && LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) { if (/rujukan|ref|bill|kod|transaction|transaksi|order|external|^bil/i.test(t)) tag(v, 'm19r'); else tag(v); }\n      }\n    });\n    // table cells of person columns (also the first line of multi-line cells: name / e-mail / phone)\n    document.querySelectorAll('table').forEach(function (tb) {\n      var hs = Array.from(tb.querySelectorAll('thead th')).map(function (h) { return T(h.textContent); });\n      hs.forEach(function (h, i) {\n        var person = /^(pelajar|pengguna|nama|pembayar|user)$/i.test(h), ref = /^(rujukan|ref|bill ?code|transaksi|reference)/i.test(h);\n        if (!person && !ref) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (!td) return; td.querySelectorAll('*').forEach(function (d) { if (!d.children.length && T(d.textContent)) tag(d, person ? 'm19n' : 'm19r'); }); if (!td.children.length && T(td.textContent)) tag(td, person ? 'm19n' : 'm19r'); });\n      });\n    });\n    // form inputs holding a person value or a reference\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/ref|bill|transaction|order|external|name|email|phone/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m19', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=)\\d+/, '$160XXXXXXXXX')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm19mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m19mask: 6",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "faq-0__1280",
+   "description": "FAQ 1 open",
+   "file": "_raw/M19/S6-pricing__faq-0__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pricing",
+   "finalUrl": "/pricing",
+   "httpStatus": 200,
+   "title": "Pilih Pakej Anda - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var el = Array.from(document.querySelectorAll('main [x-data]')).find(function (x) { return /open:\\s*null/.test(x.getAttribute('x-data')); }); if (!el) return 'no faq'; Alpine.$data(el).open = 0; return 'faq 0'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm19n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    // label / reference rules only on admin finance pages (on /pricing \"Pelajar\" is a package name, not a person label)\n    var adm = /^\\/admin/.test(location.pathname);\n    var LBL = /^(nama( penuh| pelajar| pembayar| pengguna)?|pelajar|pengguna|pembayar|ibu ?bapa|penjaga|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?k\\/?p|bill ?code|kod bil|rujukan( pembayaran| gateway| transaksi)?|no\\.? ?rujukan|reference|ref|transaction ?id|id transaksi|order ?id|external ?id|bil)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BT|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      else if (adm && /^(?=.*\\d)(?=.*[a-z])[a-z0-9_\\-]{8,40}$/i.test(t) && !/^(EL|INV|ID)-/i.test(t) && !/^\\d{4}-\\d{2}-\\d{2}/.test(t)) tag(el, 'm19r');\n      if (adm && LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) { if (/rujukan|ref|bill|kod|transaction|transaksi|order|external|^bil/i.test(t)) tag(v, 'm19r'); else tag(v); }\n      }\n    });\n    // table cells of person columns (also the first line of multi-line cells: name / e-mail / phone)\n    document.querySelectorAll('table').forEach(function (tb) {\n      var hs = Array.from(tb.querySelectorAll('thead th')).map(function (h) { return T(h.textContent); });\n      hs.forEach(function (h, i) {\n        var person = /^(pelajar|pengguna|nama|pembayar|user)$/i.test(h), ref = /^(rujukan|ref|bill ?code|transaksi|reference)/i.test(h);\n        if (!person && !ref) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (!td) return; td.querySelectorAll('*').forEach(function (d) { if (!d.children.length && T(d.textContent)) tag(d, person ? 'm19n' : 'm19r'); }); if (!td.children.length && T(td.textContent)) tag(td, person ? 'm19n' : 'm19r'); });\n      });\n    });\n    // form inputs holding a person value or a reference\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/ref|bill|transaction|order|external|name|email|phone/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m19', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=)\\d+/, '$160XXXXXXXXX')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm19mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "faq 0",
+    "m19mask: 6",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "faq-1__1280",
+   "description": "FAQ 2 open",
+   "file": "_raw/M19/S6-pricing__faq-1__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pricing",
+   "finalUrl": "/pricing",
+   "httpStatus": 200,
+   "title": "Pilih Pakej Anda - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var el = Array.from(document.querySelectorAll('main [x-data]')).find(function (x) { return /open:\\s*null/.test(x.getAttribute('x-data')); }); if (!el) return 'no faq'; Alpine.$data(el).open = 1; return 'faq 1'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm19n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    // label / reference rules only on admin finance pages (on /pricing \"Pelajar\" is a package name, not a person label)\n    var adm = /^\\/admin/.test(location.pathname);\n    var LBL = /^(nama( penuh| pelajar| pembayar| pengguna)?|pelajar|pengguna|pembayar|ibu ?bapa|penjaga|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?k\\/?p|bill ?code|kod bil|rujukan( pembayaran| gateway| transaksi)?|no\\.? ?rujukan|reference|ref|transaction ?id|id transaksi|order ?id|external ?id|bil)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BT|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      else if (adm && /^(?=.*\\d)(?=.*[a-z])[a-z0-9_\\-]{8,40}$/i.test(t) && !/^(EL|INV|ID)-/i.test(t) && !/^\\d{4}-\\d{2}-\\d{2}/.test(t)) tag(el, 'm19r');\n      if (adm && LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) { if (/rujukan|ref|bill|kod|transaction|transaksi|order|external|^bil/i.test(t)) tag(v, 'm19r'); else tag(v); }\n      }\n    });\n    // table cells of person columns (also the first line of multi-line cells: name / e-mail / phone)\n    document.querySelectorAll('table').forEach(function (tb) {\n      var hs = Array.from(tb.querySelectorAll('thead th')).map(function (h) { return T(h.textContent); });\n      hs.forEach(function (h, i) {\n        var person = /^(pelajar|pengguna|nama|pembayar|user)$/i.test(h), ref = /^(rujukan|ref|bill ?code|transaksi|reference)/i.test(h);\n        if (!person && !ref) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (!td) return; td.querySelectorAll('*').forEach(function (d) { if (!d.children.length && T(d.textContent)) tag(d, person ? 'm19n' : 'm19r'); }); if (!td.children.length && T(td.textContent)) tag(td, person ? 'm19n' : 'm19r'); });\n      });\n    });\n    // form inputs holding a person value or a reference\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/ref|bill|transaction|order|external|name|email|phone/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m19', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=)\\d+/, '$160XXXXXXXXX')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm19mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "faq 1",
+    "m19mask: 6",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "faq-2__1280",
+   "description": "FAQ 3 open",
+   "file": "_raw/M19/S6-pricing__faq-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pricing",
+   "finalUrl": "/pricing",
+   "httpStatus": 200,
+   "title": "Pilih Pakej Anda - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var el = Array.from(document.querySelectorAll('main [x-data]')).find(function (x) { return /open:\\s*null/.test(x.getAttribute('x-data')); }); if (!el) return 'no faq'; Alpine.$data(el).open = 2; return 'faq 2'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm19n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    // label / reference rules only on admin finance pages (on /pricing \"Pelajar\" is a package name, not a person label)\n    var adm = /^\\/admin/.test(location.pathname);\n    var LBL = /^(nama( penuh| pelajar| pembayar| pengguna)?|pelajar|pengguna|pembayar|ibu ?bapa|penjaga|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?k\\/?p|bill ?code|kod bil|rujukan( pembayaran| gateway| transaksi)?|no\\.? ?rujukan|reference|ref|transaction ?id|id transaksi|order ?id|external ?id|bil)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BT|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      else if (adm && /^(?=.*\\d)(?=.*[a-z])[a-z0-9_\\-]{8,40}$/i.test(t) && !/^(EL|INV|ID)-/i.test(t) && !/^\\d{4}-\\d{2}-\\d{2}/.test(t)) tag(el, 'm19r');\n      if (adm && LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) { if (/rujukan|ref|bill|kod|transaction|transaksi|order|external|^bil/i.test(t)) tag(v, 'm19r'); else tag(v); }\n      }\n    });\n    // table cells of person columns (also the first line of multi-line cells: name / e-mail / phone)\n    document.querySelectorAll('table').forEach(function (tb) {\n      var hs = Array.from(tb.querySelectorAll('thead th')).map(function (h) { return T(h.textContent); });\n      hs.forEach(function (h, i) {\n        var person = /^(pelajar|pengguna|nama|pembayar|user)$/i.test(h), ref = /^(rujukan|ref|bill ?code|transaksi|reference)/i.test(h);\n        if (!person && !ref) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (!td) return; td.querySelectorAll('*').forEach(function (d) { if (!d.children.length && T(d.textContent)) tag(d, person ? 'm19n' : 'm19r'); }); if (!td.children.length && T(td.textContent)) tag(td, person ? 'm19n' : 'm19r'); });\n      });\n    });\n    // form inputs holding a person value or a reference\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/ref|bill|transaction|order|external|name|email|phone/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m19', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=)\\d+/, '$160XXXXXXXXX')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm19mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "faq 2",
+    "m19mask: 6",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "faq-3__1280",
+   "description": "FAQ 4 open",
+   "file": "_raw/M19/S6-pricing__faq-3__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pricing",
+   "finalUrl": "/pricing",
+   "httpStatus": 200,
+   "title": "Pilih Pakej Anda - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var el = Array.from(document.querySelectorAll('main [x-data]')).find(function (x) { return /open:\\s*null/.test(x.getAttribute('x-data')); }); if (!el) return 'no faq'; Alpine.$data(el).open = 3; return 'faq 3'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm19n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    // label / reference rules only on admin finance pages (on /pricing \"Pelajar\" is a package name, not a person label)\n    var adm = /^\\/admin/.test(location.pathname);\n    var LBL = /^(nama( penuh| pelajar| pembayar| pengguna)?|pelajar|pengguna|pembayar|ibu ?bapa|penjaga|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?k\\/?p|bill ?code|kod bil|rujukan( pembayaran| gateway| transaksi)?|no\\.? ?rujukan|reference|ref|transaction ?id|id transaksi|order ?id|external ?id|bil)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BT|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      else if (adm && /^(?=.*\\d)(?=.*[a-z])[a-z0-9_\\-]{8,40}$/i.test(t) && !/^(EL|INV|ID)-/i.test(t) && !/^\\d{4}-\\d{2}-\\d{2}/.test(t)) tag(el, 'm19r');\n      if (adm && LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) { if (/rujukan|ref|bill|kod|transaction|transaksi|order|external|^bil/i.test(t)) tag(v, 'm19r'); else tag(v); }\n      }\n    });\n    // table cells of person columns (also the first line of multi-line cells: name / e-mail / phone)\n    document.querySelectorAll('table').forEach(function (tb) {\n      var hs = Array.from(tb.querySelectorAll('thead th')).map(function (h) { return T(h.textContent); });\n      hs.forEach(function (h, i) {\n        var person = /^(pelajar|pengguna|nama|pembayar|user)$/i.test(h), ref = /^(rujukan|ref|bill ?code|transaksi|reference)/i.test(h);\n        if (!person && !ref) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (!td) return; td.querySelectorAll('*').forEach(function (d) { if (!d.children.length && T(d.textContent)) tag(d, person ? 'm19n' : 'm19r'); }); if (!td.children.length && T(td.textContent)) tag(td, person ? 'm19n' : 'm19r'); });\n      });\n    });\n    // form inputs holding a person value or a reference\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/ref|bill|transaction|order|external|name|email|phone/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m19', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=)\\d+/, '$160XXXXXXXXX')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm19mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "faq 3",
+    "m19mask: 6",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "faq-4__1280",
+   "description": "FAQ 5 open",
+   "file": "_raw/M19/S6-pricing__faq-4__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pricing",
+   "finalUrl": "/pricing",
+   "httpStatus": 200,
+   "title": "Pilih Pakej Anda - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var el = Array.from(document.querySelectorAll('main [x-data]')).find(function (x) { return /open:\\s*null/.test(x.getAttribute('x-data')); }); if (!el) return 'no faq'; Alpine.$data(el).open = 4; return 'faq 4'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm19n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    // label / reference rules only on admin finance pages (on /pricing \"Pelajar\" is a package name, not a person label)\n    var adm = /^\\/admin/.test(location.pathname);\n    var LBL = /^(nama( penuh| pelajar| pembayar| pengguna)?|pelajar|pengguna|pembayar|ibu ?bapa|penjaga|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?k\\/?p|bill ?code|kod bil|rujukan( pembayaran| gateway| transaksi)?|no\\.? ?rujukan|reference|ref|transaction ?id|id transaksi|order ?id|external ?id|bil)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BT|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      else if (adm && /^(?=.*\\d)(?=.*[a-z])[a-z0-9_\\-]{8,40}$/i.test(t) && !/^(EL|INV|ID)-/i.test(t) && !/^\\d{4}-\\d{2}-\\d{2}/.test(t)) tag(el, 'm19r');\n      if (adm && LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) { if (/rujukan|ref|bill|kod|transaction|transaksi|order|external|^bil/i.test(t)) tag(v, 'm19r'); else tag(v); }\n      }\n    });\n    // table cells of person columns (also the first line of multi-line cells: name / e-mail / phone)\n    document.querySelectorAll('table').forEach(function (tb) {\n      var hs = Array.from(tb.querySelectorAll('thead th')).map(function (h) { return T(h.textContent); });\n      hs.forEach(function (h, i) {\n        var person = /^(pelajar|pengguna|nama|pembayar|user)$/i.test(h), ref = /^(rujukan|ref|bill ?code|transaksi|reference)/i.test(h);\n        if (!person && !ref) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (!td) return; td.querySelectorAll('*').forEach(function (d) { if (!d.children.length && T(d.textContent)) tag(d, person ? 'm19n' : 'm19r'); }); if (!td.children.length && T(td.textContent)) tag(td, person ? 'm19n' : 'm19r'); });\n      });\n    });\n    // form inputs holding a person value or a reference\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/ref|bill|transaction|order|external|name|email|phone/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m19', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=)\\d+/, '$160XXXXXXXXX')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm19mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "faq 4",
+    "m19mask: 6",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M19/S6-pricing__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/pricing",
+   "finalUrl": "/pricing",
+   "httpStatus": 200,
+   "title": "Pilih Pakej Anda - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm19n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    // label / reference rules only on admin finance pages (on /pricing \"Pelajar\" is a package name, not a person label)\n    var adm = /^\\/admin/.test(location.pathname);\n    var LBL = /^(nama( penuh| pelajar| pembayar| pengguna)?|pelajar|pengguna|pembayar|ibu ?bapa|penjaga|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?k\\/?p|bill ?code|kod bil|rujukan( pembayaran| gateway| transaksi)?|no\\.? ?rujukan|reference|ref|transaction ?id|id transaksi|order ?id|external ?id|bil)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BT|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      else if (adm && /^(?=.*\\d)(?=.*[a-z])[a-z0-9_\\-]{8,40}$/i.test(t) && !/^(EL|INV|ID)-/i.test(t) && !/^\\d{4}-\\d{2}-\\d{2}/.test(t)) tag(el, 'm19r');\n      if (adm && LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) { if (/rujukan|ref|bill|kod|transaction|transaksi|order|external|^bil/i.test(t)) tag(v, 'm19r'); else tag(v); }\n      }\n    });\n    // table cells of person columns (also the first line of multi-line cells: name / e-mail / phone)\n    document.querySelectorAll('table').forEach(function (tb) {\n      var hs = Array.from(tb.querySelectorAll('thead th')).map(function (h) { return T(h.textContent); });\n      hs.forEach(function (h, i) {\n        var person = /^(pelajar|pengguna|nama|pembayar|user)$/i.test(h), ref = /^(rujukan|ref|bill ?code|transaksi|reference)/i.test(h);\n        if (!person && !ref) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (!td) return; td.querySelectorAll('*').forEach(function (d) { if (!d.children.length && T(d.textContent)) tag(d, person ? 'm19n' : 'm19r'); }); if (!td.children.length && T(td.textContent)) tag(td, person ? 'm19n' : 'm19r'); });\n      });\n    });\n    // form inputs holding a person value or a reference\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/ref|bill|transaction|order|external|name|email|phone/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m19', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=)\\d+/, '$160XXXXXXXXX')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm19mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m19mask: 6",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M19/S6-pricing__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/pricing",
+   "finalUrl": "/pricing",
+   "httpStatus": 200,
+   "title": "Pilih Pakej Anda - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm19n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    // label / reference rules only on admin finance pages (on /pricing \"Pelajar\" is a package name, not a person label)\n    var adm = /^\\/admin/.test(location.pathname);\n    var LBL = /^(nama( penuh| pelajar| pembayar| pengguna)?|pelajar|pengguna|pembayar|ibu ?bapa|penjaga|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?k\\/?p|bill ?code|kod bil|rujukan( pembayaran| gateway| transaksi)?|no\\.? ?rujukan|reference|ref|transaction ?id|id transaksi|order ?id|external ?id|bil)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BT|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      else if (adm && /^(?=.*\\d)(?=.*[a-z])[a-z0-9_\\-]{8,40}$/i.test(t) && !/^(EL|INV|ID)-/i.test(t) && !/^\\d{4}-\\d{2}-\\d{2}/.test(t)) tag(el, 'm19r');\n      if (adm && LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) { if (/rujukan|ref|bill|kod|transaction|transaksi|order|external|^bil/i.test(t)) tag(v, 'm19r'); else tag(v); }\n      }\n    });\n    // table cells of person columns (also the first line of multi-line cells: name / e-mail / phone)\n    document.querySelectorAll('table').forEach(function (tb) {\n      var hs = Array.from(tb.querySelectorAll('thead th')).map(function (h) { return T(h.textContent); });\n      hs.forEach(function (h, i) {\n        var person = /^(pelajar|pengguna|nama|pembayar|user)$/i.test(h), ref = /^(rujukan|ref|bill ?code|transaksi|reference)/i.test(h);\n        if (!person && !ref) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (!td) return; td.querySelectorAll('*').forEach(function (d) { if (!d.children.length && T(d.textContent)) tag(d, person ? 'm19n' : 'm19r'); }); if (!td.children.length && T(td.textContent)) tag(td, person ? 'm19n' : 'm19r'); });\n      });\n    });\n    // form inputs holding a person value or a reference\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/ref|bill|transaction|order|external|name|email|phone/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m19', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=)\\d+/, '$160XXXXXXXXX')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm19mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m19mask: 6",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "faq-0__375",
+   "description": "FAQ 1 open @375",
+   "file": "_raw/M19/S6-pricing__faq-0__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/pricing",
+   "finalUrl": "/pricing",
+   "httpStatus": 200,
+   "title": "Pilih Pakej Anda - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var el = Array.from(document.querySelectorAll('main [x-data]')).find(function (x) { return /open:\\s*null/.test(x.getAttribute('x-data')); }); if (!el) return 'no faq'; Alpine.$data(el).open = 0; return 'faq 0'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm19n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    // label / reference rules only on admin finance pages (on /pricing \"Pelajar\" is a package name, not a person label)\n    var adm = /^\\/admin/.test(location.pathname);\n    var LBL = /^(nama( penuh| pelajar| pembayar| pengguna)?|pelajar|pengguna|pembayar|ibu ?bapa|penjaga|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?k\\/?p|bill ?code|kod bil|rujukan( pembayaran| gateway| transaksi)?|no\\.? ?rujukan|reference|ref|transaction ?id|id transaksi|order ?id|external ?id|bil)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BT|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      else if (adm && /^(?=.*\\d)(?=.*[a-z])[a-z0-9_\\-]{8,40}$/i.test(t) && !/^(EL|INV|ID)-/i.test(t) && !/^\\d{4}-\\d{2}-\\d{2}/.test(t)) tag(el, 'm19r');\n      if (adm && LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) { if (/rujukan|ref|bill|kod|transaction|transaksi|order|external|^bil/i.test(t)) tag(v, 'm19r'); else tag(v); }\n      }\n    });\n    // table cells of person columns (also the first line of multi-line cells: name / e-mail / phone)\n    document.querySelectorAll('table').forEach(function (tb) {\n      var hs = Array.from(tb.querySelectorAll('thead th')).map(function (h) { return T(h.textContent); });\n      hs.forEach(function (h, i) {\n        var person = /^(pelajar|pengguna|nama|pembayar|user)$/i.test(h), ref = /^(rujukan|ref|bill ?code|transaksi|reference)/i.test(h);\n        if (!person && !ref) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (!td) return; td.querySelectorAll('*').forEach(function (d) { if (!d.children.length && T(d.textContent)) tag(d, person ? 'm19n' : 'm19r'); }); if (!td.children.length && T(td.textContent)) tag(td, person ? 'm19n' : 'm19r'); });\n      });\n    });\n    // form inputs holding a person value or a reference\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/ref|bill|transaction|order|external|name|email|phone/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m19', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=)\\d+/, '$160XXXXXXXXX')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm19mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "faq 0",
+    "m19mask: 6",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ open: null }",
+   "keys": [
+    "open"
+   ],
+   "liveState": {
+    "open": null
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Perbandingan Pakej",
+   "seenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M19-S6-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-004",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Pilih Pakej Anda",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tingkatkan pengalaman belajar anak anda dengan pakej yang bersesuaian",
+   "landmark": "main",
+   "section": "Pilih Pakej Anda",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-006",
+   "kind": "text",
+   "tag": "span",
+   "text": "Percubaan Percuma",
+   "landmark": "main",
+   "section": "Pilih Pakej Anda",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "Setiap pelajar baru mendapat untuk dicuba — campur semua subjek, sekali sahaja.",
+   "landmark": "main",
+   "section": "Pilih Pakej Anda",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-008",
+   "kind": "text",
+   "tag": "strong",
+   "text": "50 soalan percuma",
+   "landmark": "main",
+   "section": "Pilih Pakej Anda",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-009",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pelajar",
+   "landmark": "main",
+   "section": "Pilih Pakej Anda",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-010",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pelajar",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Langganan Bulanan",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM10",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "/bulan",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "Untuk pelajar & ibu bapa",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-015",
+   "kind": "text",
+   "tag": "span",
+   "text": "soalan sebulan",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-016",
+   "kind": "text",
+   "tag": "strong",
+   "text": "500",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-017",
+   "kind": "text",
+   "tag": "span",
+   "text": "tersedia",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-018",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Semua subjek",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "Latih tubi interaktif",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "Semua tahap kesukaran",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-021",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada analisa prestasi",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-022",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/subscribe/regular",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "billing"
+   ],
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-023",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-024",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "billing",
+   "landmark": "form",
+   "section": "Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-025",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Langgan RM10/bulan",
+   "icon": "fa-bolt",
+   "form": "https://prestasiplus.my/subscribe/regular",
+   "landmark": "form",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-026",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sesuai untuk latihan kendiri",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "Via PPD",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-028",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Via PPD",
+   "landmark": "main",
+   "section": "Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-029",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sekolah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "Per Sesi Pembelajaran",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM30",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "/sesi",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-033",
+   "kind": "text",
+   "tag": "p",
+   "text": "Per pelajar, pendaftaran pukal",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "soalan",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-035",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Unlimited",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "tersedia",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-037",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Semua subjek",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "Analisa prestasi",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-039",
+   "kind": "text",
+   "tag": "strong",
+   "text": "bulk",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pendaftaran pukal oleh sekolah",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "Laporan untuk guru & pentadbir",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-042",
+   "kind": "link",
+   "tag": "a",
+   "text": "Hubungi Kami",
+   "href": "https://wa.me/60XXXXXXXXX?text=Saya%20berminat%20dengan%20Pakej%20Sekolah%20PRESTASIPLUS",
+   "absHref": "https://wa.me/60XXXXXXXXX?text=Saya%20berminat%20dengan%20Pakej%20Sekolah%20PRESTASIPLUS",
+   "target": "_blank",
+   "icon": "fa-whatsapp",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-043",
+   "kind": "text",
+   "tag": "p",
+   "text": "Minima 100 pelajar (Jumlah boleh dirunding)",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-044",
+   "kind": "card",
+   "tag": "div",
+   "text": "Popular",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-045",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Popular",
+   "landmark": "main",
+   "section": "Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-046",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Personal Bulanan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-047",
+   "kind": "text",
+   "tag": "p",
+   "text": "Langganan Bulanan",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-048",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM90",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "/bulan",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-050",
+   "kind": "text",
+   "tag": "p",
+   "text": "Unlimited, bayar bila perlu",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "soalan",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-052",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Unlimited",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "(ikut SK/SMK)",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-054",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Semua subjek",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-055",
+   "kind": "text",
+   "tag": "span",
+   "text": "Analisa prestasi",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-056",
+   "kind": "text",
+   "tag": "strong",
+   "text": "individu penuh",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-057",
+   "kind": "text",
+   "tag": "span",
+   "text": "Laporan kemajuan peribadi",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-058",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/subscribe/personal",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "billing"
+   ],
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-059",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Personal Bulanan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-060",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "billing",
+   "landmark": "form",
+   "section": "Personal Bulanan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-061",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Langgan RM90/bulan",
+   "icon": "fa-star",
+   "form": "https://prestasiplus.my/subscribe/personal",
+   "landmark": "form",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sesuai cuba dulu sebelum komit setahun",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-063",
+   "kind": "card",
+   "tag": "div",
+   "text": "Terbaik Nilai",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-064",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Terbaik Nilai",
+   "landmark": "main",
+   "section": "Personal Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-065",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Personal Setahun",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-066",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sesi Persekolahan",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-067",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM200",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-068",
+   "kind": "text",
+   "tag": "span",
+   "text": "/sesi",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-069",
+   "kind": "text",
+   "tag": "p",
+   "text": "Setahun penuh, ikut tahun pelajar",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-070",
+   "kind": "text",
+   "tag": "span",
+   "text": "soalan",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-071",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Unlimited",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-072",
+   "kind": "text",
+   "tag": "span",
+   "text": "(ikut SK/SMK)",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-073",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Semua subjek",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-074",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sah sehingga (1 sesi)",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-075",
+   "kind": "text",
+   "tag": "strong",
+   "text": "10 Januari",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-076",
+   "kind": "text",
+   "tag": "span",
+   "text": "Auto naik darjah bila renew",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-077",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/subscribe/personal",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "billing"
+   ],
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-078",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Personal Setahun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-079",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "billing",
+   "landmark": "form",
+   "section": "Personal Setahun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-080",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Langgan RM200/sesi",
+   "icon": "fa-crown",
+   "form": "https://prestasiplus.my/subscribe/personal",
+   "landmark": "form",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-081",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilihan terbaik untuk satu tahun penuh",
+   "landmark": "main",
+   "section": "Personal Setahun",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-082",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tersedia Untuk Semua Tahap Pendidikan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-083",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sekolah Rendah",
+   "icon": "fa-child",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-084",
+   "kind": "text",
+   "tag": "div",
+   "text": "Darjah 1–6 (KSSR)",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-085",
+   "kind": "text",
+   "tag": "div",
+   "text": "BM, BI, Matematik, Sains, dll",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-086",
+   "kind": "text",
+   "tag": "div",
+   "text": "Menengah Rendah",
+   "icon": "fa-book-reader",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-087",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 1–3 (KSSM)",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-088",
+   "kind": "text",
+   "tag": "div",
+   "text": "Subjek teras + elektif",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-089",
+   "kind": "text",
+   "tag": "div",
+   "text": "SPM",
+   "icon": "fa-user-graduate",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-090",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 4–5 (KSSM)",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-091",
+   "kind": "text",
+   "tag": "div",
+   "text": "Persediaan peperiksaan SPM",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-092",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pakej Sekolah Mengikut Tahap",
+   "landmark": "main",
+   "section": "Tersedia Untuk Semua Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-093",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Pakej Sekolah Mengikut Tahap",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-094",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendaftaran pukal melalui sekolah/PPD — semua RM30 per pelajar per sesi",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-095",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pakej Rendah",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-096",
+   "kind": "text",
+   "tag": "div",
+   "text": "Darjah 1–6",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-097",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM30",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-098",
+   "kind": "text",
+   "tag": "div",
+   "text": "per pelajar · sehingga 6 tahun",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-099",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pakej Menengah",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-100",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 1–3",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-101",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM30",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-102",
+   "kind": "text",
+   "tag": "div",
+   "text": "per pelajar · sehingga 3 tahun",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-103",
+   "kind": "text",
+   "tag": "div",
+   "text": "SPM Ting. 4",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-104",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 4",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-105",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM30",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-106",
+   "kind": "text",
+   "tag": "div",
+   "text": "per pelajar · sehingga 2 tahun",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-107",
+   "kind": "text",
+   "tag": "div",
+   "text": "SPM Ting. 5",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-108",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 5",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-109",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM30",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-110",
+   "kind": "text",
+   "tag": "div",
+   "text": "per pelajar · sehingga 1 tahun",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-111",
+   "kind": "link",
+   "tag": "a",
+   "text": "Hubungi Untuk Pendaftaran Sekolah",
+   "href": "https://wa.me/60XXXXXXXXX?text=Saya%20berminat%20dengan%20Pakej%20Sekolah%20PRESTASIPLUS",
+   "absHref": "https://wa.me/60XXXXXXXXX?text=Saya%20berminat%20dengan%20Pakej%20Sekolah%20PRESTASIPLUS",
+   "target": "_blank",
+   "icon": "fa-whatsapp",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-112",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perbandingan Pakej",
+   "landmark": "main",
+   "section": "Pakej Sekolah Mengikut Tahap",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-113",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Perbandingan Pakej",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-114",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Ciri",
+    "Percuma",
+    "PelajarRM10/bln",
+    "SekolahRM30/sesi",
+    "PersonalRM90/bln · RM200/sesi"
+   ],
+   "rowCount": 7,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Perbandingan Pakej",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-115",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pembayaran selamat melalui",
+   "landmark": "main",
+   "section": "Perbandingan Pakej",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-116",
+   "kind": "text",
+   "tag": "span",
+   "text": "Toyyibpay",
+   "landmark": "main",
+   "section": "Perbandingan Pakej",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-117",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan Lazim",
+   "landmark": "main",
+   "section": "Perbandingan Pakej",
+   "alpine": {
+    "x-data": "{ open: null }"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-118",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Soalan Lazim",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-119",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Apa itu Percubaan Percuma?",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "@click": "open = open === 0 ? null : 0"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-120",
+   "kind": "text",
+   "tag": "div",
+   "text": "Setiap pelajar baru mendapat 50 soalan percuma untuk dicuba — campur semua subjek, sekali sahaja per akaun. Tiada bayaran diperlukan.",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "x-show": "open === 0",
+    "x-transition": ""
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "faq-0__1280",
+    "faq-0__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open === 0"
+  },
+  {
+   "id": "EL-M19-S6-121",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Bagaimana Pakej Sekolah berfungsi?",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "@click": "open = open === 1 ? null : 1"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-122",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sekolah mendaftar secara pukal melalui PPD atau admin sekolah dengan harga RM30 per pelajar per sesi pembelajaran. Pelajar mendapat akses unlimited ke semua subjek dengan analisa prestasi bulk. Guru dan pentadbir mendapat akses percuma secara automatik.",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "x-show": "open === 1",
+    "x-transition": ""
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "faq-1__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open === 1"
+  },
+  {
+   "id": "EL-M19-S6-123",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Apa maksud \"per sesi pembelajaran\"?",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "@click": "open = open === 2 ? null : 2"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-124",
+   "kind": "text",
+   "tag": "div",
+   "text": "Satu sesi pembelajaran bermaksud satu tempoh pengajian yang ditetapkan oleh sekolah atau PPD. Hubungi kami untuk maklumat lanjut tentang tempoh sesi.",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "x-show": "open === 2",
+    "x-transition": ""
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "faq-2__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open === 2"
+  },
+  {
+   "id": "EL-M19-S6-125",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Adakah guru perlu bayar?",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "@click": "open = open === 3 ? null : 3"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-126",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tidak! Guru, pentadbir sekolah, dan pegawai PPD mendapat akses percuma secara automatik apabila sekolah mereka melanggan Pakej Sekolah.",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "x-show": "open === 3",
+    "x-transition": ""
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "faq-3__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open === 3"
+  },
+  {
+   "id": "EL-M19-S6-127",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Apakah kaedah pembayaran yang diterima?",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "@click": "open = open === 4 ? null : 4"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "faq-4__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ]
+  },
+  {
+   "id": "EL-M19-S6-128",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kami menerima pembayaran melalui FPX (perbankan internet) dan kad kredit/debit melalui Toyyibpay.",
+   "landmark": "main",
+   "section": "Soalan Lazim",
+   "alpine": {
+    "x-show": "open === 4",
+    "x-transition": ""
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "faq-4__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "faq-0__1280",
+    "faq-1__1280",
+    "faq-2__1280",
+    "faq-3__1280",
+    "default__375",
+    "default__768",
+    "faq-0__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open === 4"
+  }
+ ]
+}

@@ -1,0 +1,559 @@
+/* M05 S1 `/dashboard` page styles (M05-T3).
+ *
+ * Copied from the live dashboard page <style> block ("DUOLINGO MEETS KAHOOT - EXTRA PLAYFUL THEME",
+ * docs/discovery/inventory/_raw/M05/work/page_dashboard.html lines 536-1065); nothing is added.
+ * These classes exist on live only inside this page, so they are scoped to the page root
+ * `.m05-dashboard` with `:where()` (no extra specificity, so the live cascade order between this
+ * block and the global user-layout classes is kept: `.card:hover` of live-globals.css still wins
+ * over the page-level `.card`).
+ * Keyframes are renamed with an `m05-` prefix so they cannot clash with the global `sparkle`
+ * keyframes of motion.css. Deviation DV-M05-11 is not here: the quest chips use `text-xs` in the
+ * markup.
+ */
+
+/* Hero */
+:where(.m05-dashboard) .hero-gradient {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #f472b6 100%);
+  border-radius: 2rem;
+  box-shadow: 0 20px 60px rgba(59, 130, 246, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+:where(.m05-dashboard) .hero-gradient::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: m05-float 6s ease-in-out infinite;
+}
+
+:where(.m05-dashboard) .hero-gradient::after {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  left: -50px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: m05-float 8s ease-in-out infinite reverse;
+}
+
+@keyframes m05-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.1);
+  }
+}
+
+@keyframes m05-wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(14deg);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  30% {
+    transform: rotate(14deg);
+  }
+  40% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+  60% {
+    transform: rotate(0deg);
+  }
+}
+
+:where(.m05-dashboard) .wave-emoji {
+  display: inline-block;
+  animation: m05-wave 2.5s ease-in-out infinite;
+  transform-origin: 70% 70%;
+}
+
+/* Gamification stat cards */
+:where(.m05-dashboard) .gamification-card {
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  :where(.m05-dashboard) .gamification-card {
+    border-radius: 2rem;
+    padding: 2rem;
+  }
+}
+
+:where(.m05-dashboard) .gamification-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+:where(.m05-dashboard) .gamification-card:hover {
+  transform: translateY(-12px) scale(1.05) rotate(-1deg);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+}
+
+:where(.m05-dashboard) .gamification-card:hover::before {
+  opacity: 1;
+}
+
+:where(.m05-dashboard) .gamification-card.gold {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%);
+  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.4);
+}
+
+:where(.m05-dashboard) .gamification-card.gold:hover {
+  box-shadow:
+    0 24px 48px rgba(251, 191, 36, 0.5),
+    0 0 40px rgba(251, 191, 36, 0.3);
+}
+
+:where(.m05-dashboard) .gamification-card.fire {
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #fb923c 100%);
+  box-shadow: 0 4px 20px rgba(251, 146, 60, 0.4);
+}
+
+:where(.m05-dashboard) .gamification-card.fire:hover {
+  box-shadow:
+    0 24px 48px rgba(251, 146, 60, 0.5),
+    0 0 40px rgba(251, 146, 60, 0.4);
+}
+
+:where(.m05-dashboard) .gamification-card.blue {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #60a5fa 100%);
+  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.4);
+}
+
+:where(.m05-dashboard) .gamification-card.blue:hover {
+  box-shadow:
+    0 24px 48px rgba(96, 165, 250, 0.5),
+    0 0 40px rgba(96, 165, 250, 0.3);
+}
+
+:where(.m05-dashboard) .gamification-card.green {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #34d399 100%);
+  box-shadow: 0 4px 20px rgba(52, 211, 153, 0.4);
+}
+
+:where(.m05-dashboard) .gamification-card.green:hover {
+  box-shadow:
+    0 24px 48px rgba(52, 211, 153, 0.5),
+    0 0 40px rgba(52, 211, 153, 0.3);
+}
+
+:where(.m05-dashboard) .gamification-card.purple {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #a78bfa 100%);
+  border: 3px solid rgba(167, 139, 250, 0.4);
+}
+
+:where(.m05-dashboard) .gamification-card.purple:hover {
+  box-shadow:
+    0 24px 48px rgba(167, 139, 250, 0.5),
+    0 0 40px rgba(167, 139, 250, 0.3);
+}
+
+/* Sparkle and counters */
+@keyframes m05-sparkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  25% {
+    transform: scale(1.15) rotate(-12deg);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.3) rotate(12deg);
+    opacity: 0.9;
+  }
+  75% {
+    transform: scale(1.15) rotate(-8deg);
+    opacity: 0.85;
+  }
+}
+
+:where(.m05-dashboard) .icon-sparkle {
+  display: inline-block;
+  animation: m05-sparkle 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+@keyframes m05-count-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  60% {
+    transform: translateY(-5px) scale(1.1);
+  }
+  80% {
+    transform: translateY(2px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+:where(.m05-dashboard) .number-display {
+  font-family: 'Outfit Variable', Outfit, sans-serif;
+  font-weight: 900;
+  animation: m05-count-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Badge shelf (the live classes; the populated layout itself is PROPOSED, LS-9) */
+:where(.m05-dashboard) .badge-card {
+  min-width: 130px;
+  text-align: center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:where(.m05-dashboard) .badge-card:hover {
+  transform: scale(1.15) translateY(-8px);
+}
+
+:where(.m05-dashboard) .badge-icon-wrapper {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  border: 4px solid;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+/* Quick actions */
+:where(.m05-dashboard) .quick-action-btn {
+  padding: 1.25rem 1.5rem;
+  border-radius: 1.5rem;
+  font-family: 'Outfit Variable', Outfit, sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  :where(.m05-dashboard) .quick-action-btn {
+    padding: 1.75rem 2rem;
+    border-radius: 2rem;
+    font-size: 1.25rem;
+    gap: 1rem;
+  }
+}
+
+:where(.m05-dashboard) .quick-action-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.6s,
+    height 0.6s;
+}
+
+:where(.m05-dashboard) .quick-action-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+:where(.m05-dashboard) .quick-action-btn:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+:where(.m05-dashboard) .quick-action-btn.primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+  color: white;
+}
+
+:where(.m05-dashboard) .quick-action-btn.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  color: white;
+}
+
+:where(.m05-dashboard) .quick-action-btn.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  color: white;
+}
+
+/* Subject cards */
+:where(.m05-dashboard) .subject-card {
+  background: white;
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 640px) {
+  :where(.m05-dashboard) .subject-card {
+    border-radius: 2rem;
+    padding: 2rem;
+  }
+}
+
+:where(.m05-dashboard) .subject-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--subject-color);
+  transition: width 0.4s;
+}
+
+:where(.m05-dashboard) .subject-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.15);
+}
+
+:where(.m05-dashboard) .subject-card:hover::before {
+  width: 12px;
+}
+
+:where(.m05-dashboard) .subject-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  transition: transform 0.4s;
+}
+
+@media (min-width: 640px) {
+  :where(.m05-dashboard) .subject-icon-circle {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+:where(.m05-dashboard) .subject-card:hover .subject-icon-circle {
+  transform: rotate(10deg) scale(1.1);
+}
+
+/* Platform stats */
+:where(.m05-dashboard) .platform-stat-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 0.75rem;
+  text-align: center;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 640px) {
+  :where(.m05-dashboard) .platform-stat-card {
+    border-radius: 1.75rem;
+    padding: 2rem;
+  }
+}
+
+:where(.m05-dashboard) .platform-stat-card:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Education level pills */
+:where(.m05-dashboard) .level-pill {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #c4b5fd 100%);
+  border: 3px solid #c4b5fd;
+  color: #6d28d9;
+  padding: 1rem 1.75rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: inline-block;
+}
+
+:where(.m05-dashboard) .level-pill:hover {
+  background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 50%, #a78bfa 100%);
+  border-color: #a78bfa;
+  transform: scale(1.12) rotate(-2deg);
+  box-shadow: 0 8px 24px rgba(109, 40, 217, 0.3);
+}
+
+/* Recent questions */
+:where(.m05-dashboard) .question-item {
+  background: #f8fafc;
+  border-left: 5px solid #4f46e5;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:where(.m05-dashboard) .question-item:hover {
+  background: #f1f5f9;
+  border-left-width: 8px;
+  transform: translateX(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Difficulty bars */
+:where(.m05-dashboard) .difficulty-bar-container {
+  height: 16px;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+:where(.m05-dashboard) .difficulty-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+:where(.m05-dashboard) .difficulty-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: m05-shimmer 2.5s infinite;
+}
+
+@keyframes m05-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Empty state (badge shelf) */
+:where(.m05-dashboard) .empty-state {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+  border: 3px dashed #7dd3fc;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  :where(.m05-dashboard) .empty-state {
+    border-radius: 2rem;
+    padding: 4rem;
+  }
+}
+
+/* Page-level card base (overrides the global `.card` values, as the live page block does) */
+:where(.m05-dashboard) .card {
+  background: white;
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 640px) {
+  :where(.m05-dashboard) .card {
+    border-radius: 2rem;
+    padding: 2.5rem;
+  }
+}
+
+:where(.m05-dashboard) .scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+:where(.m05-dashboard) .scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+:where(.m05-dashboard) .gradient-text {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subject statistics */
+:where(.m05-dashboard) .subject-stat-card {
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  border: 2px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1rem;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (min-width: 640px) {
+  :where(.m05-dashboard) .subject-stat-card {
+    border-radius: 1.5rem;
+    padding: 1.75rem;
+  }
+}
+
+:where(.m05-dashboard) .subject-stat-card:hover {
+  background: white;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  transform: translateY(-6px);
+}
+
+/* Carousel slide */
+:where(.m05-dashboard) .announcement-card {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:where(.m05-dashboard) .announcement-card:hover {
+  transform: scale(1.02);
+}

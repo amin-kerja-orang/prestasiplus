@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`derivation and determinism > golden rows stay stable (seed base 1) 1`] = `
+[
+  "1|21|11|archived|false|4|15|Apakah soalan 1 (subjek 21)?",
+  "2|4|2|approved|true|1|5|Manakah soalan 2 (subjek 4)?",
+  "3|9|7|approved|true|2|70|Siapakah soalan 3 (subjek 9)?",
+  "4|22|10|archived|false|3|60|Mengapakah soalan 4 (subjek 22)?",
+  "5|18|4|archived|false|3|26|Apakah soalan 5 (subjek 18)?",
+  "7|11|2|approved|true|1|14|Bagaimanakah soalan 7 (subjek 11)?",
+  "8|17|5|archived|false|2|12|Siapakah soalan 8 (subjek 17)?",
+  "9|8|9|archived|false|2|99|Berapakah soalan 9 (subjek 8)?",
+  "10|19|3|archived|false|3|65|Bagaimanakah soalan 10 (subjek 19)?",
+  "12|21|11|archived|false|3|16|Berapakah soalan 12 (subjek 21)?",
+  "13|7|2|archived|false|1|86|Manakah soalan 13 (subjek 7)?",
+  "14|15|3|archived|false|2|90|Bagaimanakah soalan 14 (subjek 15)?",
+  "15|2|5|approved|true|4|43|Bagaimanakah soalan 15 (subjek 2)?",
+  "17|6|3|archived|false|3|88|Mengapakah soalan 17 (subjek 6)?",
+  "18|12|4|archived|false|4|61|Berapakah soalan 18 (subjek 12)?",
+  "19|9|3|archived|false|3|84|Berapakah soalan 19 (subjek 9)?",
+  "20|12|11|archived|false|2|55|Siapakah soalan 20 (subjek 12)?",
+  "22|17|5|archived|false|2|62|Manakah soalan 22 (subjek 17)?",
+  "23|2|3|approved|true|1|2|Apakah soalan 23 (subjek 2)?",
+  "24|9|8|archived|false|2|26|Manakah soalan 24 (subjek 9)?",
+]
+`;

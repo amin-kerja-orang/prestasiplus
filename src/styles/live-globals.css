@@ -1,0 +1,143 @@
+/* Live global classes (build-plan F-19 carry-over, §S.3 rule 7 exception; owner F-19).
+ *
+ * Copied verbatim from the live user layout <style> block
+ * (docs/discovery/inventory/_raw/M05/work/page_dashboard.html, lines 47-534). These classes are
+ * defined by the live layout and used by page content in several modules, so they are global
+ * here. Shell-only classes (.sidebar, .topbar, .bottom-nav, .nav-item, drawer, .user-card, ...)
+ * live in src/shells/user/user-shell.css instead. Nothing is added.
+ *
+ * Unlayered on purpose: on live this block is plain CSS after the Tailwind bundle, so it wins
+ * over Tailwind utilities (e.g. `.card` padding over `p-*`). Tailwind v4 emits utilities in
+ * `@layer utilities`, so unlayered rules keep the same precedence here.
+ *
+ * Note: the live dashboard page (M05) redefines `.card` in its own page <style>; that page-level
+ * override belongs to M05, not here.
+ */
+
+/* ═══ GLOBAL FIX: Force white text on DARK gradient headers only ═══
+ * Observed only in the live USER layout (no admin-layout HTML was captured), so it is scoped to
+ * the user shell root (`.user-shell`). Selectors otherwise verbatim; live `i` targets FA icons
+ * (the rebuild's Lucide `<svg>` icons are not matched, as a page's own icon colour decides). */
+.user-shell [class*='-hero'] h1,
+.user-shell [class*='-hero'] h2,
+.user-shell [class*='-hero'] h3,
+.user-shell [class*='-hero'] p,
+.user-shell [class*='-hero'] span:not(.badge),
+.user-shell [class*='-hero'] i,
+.user-shell [class*='-hero'] a:not(.bg-white):not([class*='bg-']) {
+  color: #ffffff !important;
+}
+.user-shell [style*='linear-gradient(135deg, #7F1D1D'] *,
+.user-shell [style*='linear-gradient(135deg, #1e40af'] *,
+.user-shell [style*='linear-gradient(135deg, #0f172a'] * {
+  color: #ffffff !important;
+}
+
+/* Card Utility */
+.card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow:
+    0 2px 8px rgba(99, 102, 241, 0.08),
+    0 1px 4px rgba(99, 102, 241, 0.06);
+  padding: 1rem;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(99, 102, 241, 0.08);
+}
+
+@media (min-width: 640px) {
+  .card {
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+  }
+}
+
+.card:hover {
+  box-shadow:
+    0 12px 28px rgba(99, 102, 241, 0.12),
+    0 4px 12px rgba(99, 102, 241, 0.08);
+  transform: translateY(-3px);
+}
+
+/* Avatar Ring - COOL BRAND COLORS */
+.avatar-ring {
+  box-shadow:
+    0 0 0 3px rgba(99, 102, 241, 0.2),
+    0 0 0 6px rgba(139, 92, 246, 0.1);
+  border: 2px solid white;
+}
+
+/* Smooth Hover */
+.smooth-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smooth-hover:hover {
+  transform: translateY(-3px);
+}
+
+/* Gamification Pills - COLORFUL & FUN */
+.coin-pill {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde047 100%);
+  border: 2px solid #fbbf24;
+  box-shadow:
+    0 4px 12px rgba(251, 191, 36, 0.25),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+}
+
+.coin-pill:hover {
+  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.35);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.streak-pill {
+  background: linear-gradient(135deg, #fed7aa 0%, #fb923c 100%);
+  border: 2px solid #f97316;
+  box-shadow:
+    0 4px 12px rgba(249, 115, 22, 0.25),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+}
+
+.streak-pill:hover {
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.35);
+  transform: translateY(-2px) scale(1.05);
+}
+
+/* RTL Support — Arab & Jawi */
+.rtl-content {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Scheherazade New', 'Lateef', serif;
+  font-size: 1.35em;
+  line-height: 2;
+}
+.rtl-content.question-text {
+  font-size: 1.5em;
+  line-height: 2.2;
+}
+.rtl-option {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Scheherazade New', 'Lateef', serif;
+  font-size: 1.2em;
+  line-height: 1.8;
+}
+.mixed-content {
+  font-family: 'Scheherazade New', 'Inter', system-ui, sans-serif;
+  font-size: 1.1em;
+  line-height: 1.8;
+}
+textarea.rtl-input,
+input.rtl-input {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Scheherazade New', serif;
+  font-size: 1.3em;
+  line-height: 2;
+}

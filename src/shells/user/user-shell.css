@@ -1,0 +1,349 @@
+/* User-portal shell styles (F-19). Shell-only classes, copied verbatim from the live user layout
+ * <style> block (docs/discovery/inventory/_raw/M05/work/page_dashboard.html, lines 47-534) and
+ * scoped to the shell by the `.user-shell` root class (the markup spans several components, so a
+ * namespace is used instead of per-component `<style scoped>`). Cross-module live classes
+ * (.card, .coin-pill, .avatar-ring, ...) are in src/styles/live-globals.css.
+ *
+ * Unlayered, as live (plain CSS after the Tailwind bundle wins over utilities).
+ * Live targets Font Awesome `<i>` elements; the rebuild renders Lucide `<svg class="pp-icon">`,
+ * so `i` selectors read `.pp-icon` here. Nothing else is changed except the one marked fix.
+ */
+
+/* Sidebar Styling - CLEAN WHITE WITH SUBTLE PATTERN */
+.user-shell .sidebar {
+  background-color: #ffffff;
+  border-right: 1px solid #c7d2fe;
+  box-shadow: 4px 0 16px rgba(99, 102, 241, 0.06);
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+}
+
+/* Top Bar Styling - COOL WHITE */
+.user-shell .topbar {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.06);
+}
+
+/* Bottom Navigation - COOL WITH SUBTLE GLOW */
+.user-shell .bottom-nav {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 -4px 20px rgba(99, 102, 241, 0.1);
+  border-top: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.user-shell .nav-item {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 1rem;
+  padding: 0.875rem 1rem;
+}
+
+.user-shell .nav-item.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+  color: white;
+  box-shadow:
+    0 4px 12px rgba(99, 102, 241, 0.3),
+    0 2px 6px rgba(139, 92, 246, 0.2);
+  transform: translateX(4px) scale(1.02);
+}
+
+.user-shell .nav-item.active .pp-icon {
+  color: white !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Sidebar Tooltips — appears BELOW the menu item to avoid scrollbar overlap */
+.user-shell .nav-item[data-tip] {
+  position: relative;
+}
+.user-shell .nav-item[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  background: #1e293b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  animation: tipFadeIn 0.15s ease-out;
+  max-width: 220px;
+  white-space: normal;
+  line-height: 1.4;
+}
+.user-shell .nav-item[data-tip]:hover::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: calc(100% - 2px);
+  border: 4px solid transparent;
+  border-bottom-color: #1e293b;
+  z-index: 999;
+  pointer-events: none;
+  animation: tipFadeIn 0.15s ease-out;
+}
+@keyframes tipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Hide on mobile — sidebar is usually a drawer */
+@media (max-width: 1023px) {
+  .user-shell .nav-item[data-tip]:hover::after,
+  .user-shell .nav-item[data-tip]:hover::before {
+    display: none;
+  }
+}
+
+.user-shell .nav-item:not(.active) {
+  color: #64748b;
+  background: transparent;
+}
+
+.user-shell .nav-item:hover:not(.active) {
+  background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+  transform: translateX(6px) scale(1.03);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.12);
+}
+
+.user-shell .nav-item:hover:not(.active) .pp-icon {
+  transform: scale(1.15);
+}
+
+/* Mobile Nav Item - COLORFUL WITH DOT INDICATOR */
+.user-shell .mobile-nav-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.user-shell .mobile-nav-item.active {
+  color: #6366f1;
+  transform: translateY(-2px);
+}
+
+.user-shell .mobile-nav-item.active .pp-icon {
+  transform: scale(1.2);
+  filter: drop-shadow(0 2px 6px rgba(99, 102, 241, 0.3));
+}
+
+.user-shell .mobile-nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+.user-shell .mobile-nav-item:not(.active) {
+  color: #94a3b8;
+}
+
+.user-shell .mobile-nav-item:active {
+  transform: scale(0.92);
+}
+
+/* Page Transitions: the `animate-page-transition` utility (motion.css). */
+
+/* User Card - COOL BRAND GRADIENT */
+.user-shell .user-card {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #e0e7ff 100%);
+  border-radius: 1.25rem;
+  padding: 1rem;
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+  transition: all 0.3s ease;
+}
+
+.user-shell .user-card:hover {
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.18);
+  transform: translateY(-2px);
+}
+
+/* Icon Colorful - BRIGHT & FUN */
+.user-shell .icon-home {
+  color: #3b82f6;
+  transition: all 0.3s ease;
+}
+
+.user-shell .icon-brain {
+  color: #f59e0b;
+  transition: all 0.3s ease;
+}
+
+.user-shell .icon-book {
+  color: #10b981;
+  transition: all 0.3s ease;
+}
+
+.user-shell .icon-gift {
+  color: #ec4899;
+  transition: all 0.3s ease;
+}
+
+.user-shell .icon-trophy {
+  color: #f59e0b;
+  transition: all 0.3s ease;
+}
+
+.user-shell .icon-profile {
+  color: #8b5cf6;
+  transition: all 0.3s ease;
+}
+
+/* Mobile Nav Icons - Brand Colors */
+.user-shell .mobile-nav-item:nth-child(1) .pp-icon {
+  color: #3b82f6;
+}
+.user-shell .mobile-nav-item:nth-child(2) .pp-icon {
+  color: #6366f1;
+}
+.user-shell .mobile-nav-item:nth-child(3) .pp-icon {
+  color: #8b5cf6;
+}
+.user-shell .mobile-nav-item:nth-child(4) .pp-icon {
+  color: #10b981;
+}
+.user-shell .mobile-nav-item:nth-child(5) .pp-icon {
+  color: #a855f7;
+}
+
+.user-shell .mobile-nav-item.active:nth-child(1) .pp-icon {
+  color: #3b82f6;
+}
+.user-shell .mobile-nav-item.active:nth-child(2) .pp-icon {
+  color: #6366f1;
+}
+.user-shell .mobile-nav-item.active:nth-child(3) .pp-icon {
+  color: #8b5cf6;
+}
+.user-shell .mobile-nav-item.active:nth-child(4) .pp-icon {
+  color: #10b981;
+}
+.user-shell .mobile-nav-item.active:nth-child(5) .pp-icon {
+  color: #a855f7;
+}
+
+/* ═══ Mobile Slide-Out Drawer ═══ */
+.user-shell .mobile-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 60;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.user-shell .mobile-drawer-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.user-shell .mobile-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 85vw;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f3ff 100%);
+  z-index: 70;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+  border-right: 2px solid rgba(99, 102, 241, 0.12);
+}
+.user-shell .mobile-drawer.open {
+  transform: translateX(0);
+}
+.user-shell .drawer-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #475569;
+  transition: all 0.2s;
+}
+.user-shell .drawer-nav-item:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(139, 92, 246, 0.04));
+}
+.user-shell .drawer-nav-item.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08));
+  color: #4f46e5;
+}
+.user-shell .drawer-nav-item.active .pp-icon {
+  color: #4f46e5 !important;
+}
+.user-shell .drawer-section-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.85rem 1rem 0.4rem;
+  margin-top: 0.25rem;
+}
+.user-shell .hamburger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  transition: all 0.2s;
+}
+.user-shell .hamburger-btn:active {
+  transform: scale(0.92);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.12));
+}
+
+/* Fun Footer */
+.user-shell .footer-text {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.user-shell .footer-text .emoji {
+  display: inline-block;
+  animation: sparkle 2.5s ease-in-out infinite;
+}
+
+/* ─── Rebuild fix (NFR-RESP-03, design-system §8: touch targets ≥ 44 px below lg) ───
+ * Live controls below 1024 px are smaller than 44 px (bell 36, hamburger 40, drawer close 32,
+ * drawer rows ~41). The hit area is padded without changing the look: an invisible pseudo-element
+ * for the icon buttons, and a 44 px minimum row height for drawer links. */
+@media (max-width: 1023px) {
+  .user-shell .pp-hit {
+    position: relative;
+  }
+  .user-shell .pp-hit::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+  .user-shell .mobile-drawer .drawer-nav-item {
+    min-height: 44px;
+  }
+}

@@ -1,0 +1,995 @@
+{
+ "screen": "S14",
+ "key": "S14-leaderboard",
+ "route": "/gamification/leaderboard",
+ "name": "Papan Pendahulu",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.551Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 45,
+  "visibleDefault": 42,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 34,
+   "heading": 1,
+   "card": 4,
+   "image": 6
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (top 3 podium + rows #4–#50)",
+   "file": "_raw/M14/S14-leaderboard__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/gamification/leaderboard",
+   "finalUrl": "/gamification/leaderboard",
+   "httpStatus": 200,
+   "title": "Papan Pendahulu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 103",
+    "sanitized: cells=51 strings=50 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    ".lb-row": 47
+   }
+  },
+  {
+   "label": "period-ignored__1280",
+   "description": "period=week (ignored: same list)",
+   "file": "_raw/M14/S14-leaderboard__period-ignored__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/gamification/leaderboard?period=week",
+   "finalUrl": "/gamification/leaderboard?period=week",
+   "httpStatus": 200,
+   "title": "Papan Pendahulu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 103",
+    "sanitized: cells=51 strings=50 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    ".lb-row": 47
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default (top 3 podium + rows #4–#50) @375",
+   "file": "_raw/M14/S14-leaderboard__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/gamification/leaderboard",
+   "finalUrl": "/gamification/leaderboard",
+   "httpStatus": 200,
+   "title": "Papan Pendahulu",
+   "horizontalOverflow": "376px > 375px",
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 103",
+    "sanitized: cells=51 strings=50 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    ".lb-row": 47
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default (top 3 podium + rows #4–#50) @768",
+   "file": "_raw/M14/S14-leaderboard__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/gamification/leaderboard",
+   "finalUrl": "/gamification/leaderboard",
+   "httpStatus": 200,
+   "title": "Papan Pendahulu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 103",
+    "sanitized: cells=51 strings=50 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    ".lb-row": 47
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S14-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-004",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "🏆 Papan Pendahulu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Siapa paling rajin belajar?",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-006",
+   "kind": "card",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-007",
+   "kind": "text",
+   "tag": "span",
+   "text": "🥇",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-008",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "src": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "1,018,083 syiling",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "💎 Platinum",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-012",
+   "kind": "card",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "🥈",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-014",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "src": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-016",
+   "kind": "text",
+   "tag": "div",
+   "text": "686,730 syiling",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "💎 Platinum",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-018",
+   "kind": "card",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "🥉",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-020",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "src": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-021",
+   "kind": "text",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "135,760 syiling",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-023",
+   "kind": "text",
+   "tag": "div",
+   "text": "💎 Platinum",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-024",
+   "kind": "card",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "#4",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-026",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "src": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-027",
+   "kind": "text",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-028",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mitos · Level 39",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "65,127",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-030",
+   "kind": "text",
+   "tag": "div",
+   "text": "syiling",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-031",
+   "kind": "text",
+   "tag": "div",
+   "text": "💎",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "#5",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-033",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "src": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-035",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mitos · Level 37",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-036",
+   "kind": "text",
+   "tag": "div",
+   "text": "60,305",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-037",
+   "kind": "text",
+   "tag": "div",
+   "text": "syiling",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-038",
+   "kind": "text",
+   "tag": "div",
+   "text": "💎",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-039",
+   "kind": "text",
+   "tag": "div",
+   "text": "#6",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-040",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "src": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-041",
+   "kind": "text",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-042",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mitos · Level 36",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-043",
+   "kind": "text",
+   "tag": "div",
+   "text": "57,783",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-044",
+   "kind": "text",
+   "tag": "div",
+   "text": "syiling",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S14-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "💎",
+   "landmark": "main",
+   "section": "🏆 Papan Pendahulu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "period-ignored__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

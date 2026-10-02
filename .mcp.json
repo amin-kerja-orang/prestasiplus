@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "cmd",
+      "args": ["/c", "npx", "@playwright/mcp@latest"]
+    },
+    "playwright2": {
+      "command": "cmd",
+      "args": ["/c", "npx", "@playwright/mcp@latest", "--isolated", "--output-dir", ".playwright-mcp/lane2"]
+    },
+    "playwright3": {
+      "command": "cmd",
+      "args": ["/c", "npx", "@playwright/mcp@latest", "--isolated", "--output-dir", ".playwright-mcp/lane3"]
+    }
+  }
+}

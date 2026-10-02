@@ -1,0 +1,1007 @@
+{
+ "screen": "S18",
+ "key": "S18-profil-awam",
+ "route": "/pelajar/{id}",
+ "name": "{nama} — Pelajar PRESTASIPLUS (public profile)",
+ "module": "M08",
+ "generatedAt": "2026-09-25T10:25:47.210Z",
+ "shell": "none (standalone public layout)",
+ "summary": {
+  "total": 65,
+  "visibleDefault": 59,
+  "conditional": 6,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 4,
+  "byKind": {
+   "link": 6,
+   "button": 1,
+   "text": 39,
+   "card": 10,
+   "image": 1,
+   "badge": 4,
+   "heading": 4
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "own public profile (id 1)",
+   "file": "_raw/M08/S18-profil-awam__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pelajar/1",
+   "finalUrl": "/pelajar/1",
+   "httpStatus": 200,
+   "title": "Admin Prestasiplus — Pelajar PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "timeline-link__1280",
+   "description": "id from the /timeline \"Profil Awam\" link (404)",
+   "file": "_raw/M08/S18-profil-awam__timeline-link__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pelajar/3",
+   "finalUrl": "/pelajar/3",
+   "httpStatus": 404,
+   "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "own public profile @375",
+   "file": "_raw/M08/S18-profil-awam__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/pelajar/1",
+   "finalUrl": "/pelajar/1",
+   "httpStatus": 200,
+   "title": "Admin Prestasiplus — Pelajar PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "own public profile @768",
+   "file": "_raw/M08/S18-profil-awam__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/pelajar/1",
+   "finalUrl": "/pelajar/1",
+   "httpStatus": 200,
+   "title": "Admin Prestasiplus — Pelajar PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "Admin Prestasiplus",
+   "sources": [
+    "attr:onclick@button"
+   ]
+  },
+  {
+   "text": "Link disalin!",
+   "sources": [
+    "attr:onclick@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-M08-S18-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "PRESTASIPLUS",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "icon": "fa-graduation-cap",
+   "landmark": "header",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-002",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Kongsi",
+   "icon": "fa-share-alt",
+   "landmark": "header",
+   "alpine": {
+    "onclick": "navigator.share ? navigator.share({title:'Admin Prestasiplus', url:window.location.href}) : navigator.clipboard.writeText(window.location.href).then(()=>alert('Link disalin!'))"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-003",
+   "kind": "link",
+   "tag": "a",
+   "text": "Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "icon": "fa-home",
+   "landmark": "header",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-004",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pelajar PRESTASIPLUS",
+   "icon": "fa-graduation-cap",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "334 hari bersama",
+   "icon": "fa-clock",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-006",
+   "kind": "card",
+   "tag": "div",
+   "text": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-007",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-008",
+   "kind": "badge",
+   "tag": "div",
+   "text": "🥉",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-009",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-010",
+   "kind": "text",
+   "tag": "span",
+   "text": "🥉 Bronze",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar PRESTASIPLUS",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-012",
+   "kind": "badge",
+   "tag": "span",
+   "text": "<school>",
+   "icon": "fa-school",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-013",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Darjah 6",
+   "icon": "fa-layer-group",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-014",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Ahli sejak 25 Oktober 2025",
+   "icon": "fa-calendar",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-015",
+   "kind": "text",
+   "tag": "span",
+   "text": "🪙",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-016",
+   "kind": "text",
+   "tag": "span",
+   "text": "Syiling",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "103",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "timeline-link__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-018",
+   "kind": "card",
+   "tag": "div",
+   "text": "🔥 0",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-019",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "🔥",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-021",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kombo",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-022",
+   "kind": "card",
+   "tag": "div",
+   "text": "0%",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-023",
+   "kind": "text",
+   "tag": "div",
+   "text": "0%",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-024",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯 Tepat",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-025",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bronze",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "🥉",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-027",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bronze",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-028",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tahap 1",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-029",
+   "kind": "text",
+   "tag": "p",
+   "text": "397 syiling lagi ke Silver",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-030",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ringkasan Aktiviti",
+   "section": "Admin Prestasiplus",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-031",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 sesi latihan",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 hari berlatih",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 jawapan betul",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 kombo terpanjang",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-036",
+   "kind": "card",
+   "tag": "div",
+   "text": "103",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "🪙",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-038",
+   "kind": "text",
+   "tag": "div",
+   "text": "103",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-039",
+   "kind": "text",
+   "tag": "div",
+   "text": "Syiling",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-040",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "🔥",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-042",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-043",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kombo Hari",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-044",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-045",
+   "kind": "text",
+   "tag": "span",
+   "text": "📚",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-046",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-047",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sesi Latihan",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-048",
+   "kind": "card",
+   "tag": "div",
+   "text": "0%",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "🎯",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "0%",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-051",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ketepatan",
+   "section": "Ringkasan Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-052",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ingin menyokong pelajar ini?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-053",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jadilah penaja \"Anak Angkat\" dan bantu pelajar cemerlang!",
+   "section": "Ingin menyokong pelajar ini?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-054",
+   "kind": "link",
+   "tag": "a",
+   "text": "Jadi Penaja",
+   "href": "/sponsor/register",
+   "absHref": "https://prestasiplus.my/sponsor/register",
+   "icon": "fa-heart",
+   "section": "Ingin menyokong pelajar ini?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-055",
+   "kind": "card",
+   "tag": "div",
+   "text": "Teruskan usaha Admin!",
+   "section": "Ingin menyokong pelajar ini?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-056",
+   "kind": "text",
+   "tag": "p",
+   "text": "Teruskan usaha Admin!",
+   "section": "Ingin menyokong pelajar ini?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-057",
+   "kind": "text",
+   "tag": "p",
+   "text": "Setiap latihan membawa kejayaan ⭐",
+   "section": "Ingin menyokong pelajar ini?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-058",
+   "kind": "text",
+   "tag": "div",
+   "text": "— Platform Latih Tubi Interaktif Malaysia",
+   "icon": "fa-graduation-cap",
+   "section": "Ingin menyokong pelajar ini?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-059",
+   "kind": "link",
+   "tag": "a",
+   "text": "PRESTASIPLUS",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "icon": "fa-graduation-cap",
+   "section": "Ingin menyokong pelajar ini?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔍",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "timeline-link__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-061",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "timeline-link__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "timeline-link__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "timeline-link__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-064",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "/latih-tubi",
+   "absHref": "https://prestasiplus.my/latih-tubi",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "timeline-link__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S18-065",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "timeline-link__1280"
+   ]
+  }
+ ]
+}

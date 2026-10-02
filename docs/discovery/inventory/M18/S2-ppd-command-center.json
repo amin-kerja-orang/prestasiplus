@@ -1,0 +1,166 @@
+{
+ "screen": "S2",
+ "key": "S2-ppd-command-center",
+ "route": "/ppd/command-center",
+ "name": "403 - Akses Ditolak | PRESTASIPLUS",
+ "module": "M18",
+ "generatedAt": "2026-09-26T04:52:47.958Z",
+ "notes": "403 for the admin account",
+ "shell": "none (global 403 page)",
+ "summary": {
+  "total": 7,
+  "visibleDefault": 7,
+  "conditional": 0,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 4,
+   "heading": 1,
+   "link": 2
+  }
+ },
+ "states": [
+  {
+   "label": "forbidden__1280",
+   "description": "403 \"Akses Ditolak\" for the admin account",
+   "file": "_raw/M18/S2-ppd-command-center__forbidden__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/ppd/command-center",
+   "finalUrl": "/ppd/command-center",
+   "httpStatus": 403,
+   "title": "403 - Akses Ditolak | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "forbidden__375",
+   "description": "403 @375",
+   "file": "_raw/M18/S2-ppd-command-center__forbidden__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/ppd/command-center",
+   "finalUrl": "/ppd/command-center",
+   "httpStatus": 403,
+   "title": "403 - Akses Ditolak | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-M18-S2-001",
+   "kind": "text",
+   "tag": "div",
+   "text": "403",
+   "status": "visible-default",
+   "visibleIn": [
+    "forbidden__1280",
+    "forbidden__375"
+   ]
+  },
+  {
+   "id": "EL-M18-S2-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "🚫",
+   "status": "visible-default",
+   "visibleIn": [
+    "forbidden__1280",
+    "forbidden__375"
+   ]
+  },
+  {
+   "id": "EL-M18-S2-003",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "forbidden__1280",
+    "forbidden__375"
+   ]
+  },
+  {
+   "id": "EL-M18-S2-004",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.",
+   "section": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "forbidden__1280",
+    "forbidden__375"
+   ]
+  },
+  {
+   "id": "EL-M18-S2-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "forbidden__1280",
+    "forbidden__375"
+   ]
+  },
+  {
+   "id": "EL-M18-S2-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk",
+   "href": "/login",
+   "absHref": "https://prestasiplus.my/login",
+   "section": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "forbidden__1280",
+    "forbidden__375"
+   ]
+  },
+  {
+   "id": "EL-M18-S2-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "forbidden__1280",
+    "forbidden__375"
+   ]
+  }
+ ]
+}

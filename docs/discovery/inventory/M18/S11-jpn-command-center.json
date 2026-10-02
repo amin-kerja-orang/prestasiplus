@@ -1,0 +1,898 @@
+{
+ "screen": "S11",
+ "key": "S11-jpn-command-center",
+ "route": "/jpn/command-center",
+ "name": "Command Center JPN — Johor",
+ "module": "M18",
+ "generatedAt": "2026-09-26T04:52:48.555Z",
+ "notes": "new route; polls /jpn/command-center/live-data",
+ "shell": "none (standalone dark page)",
+ "summary": {
+  "total": 44,
+  "visibleDefault": 42,
+  "conditional": 2,
+  "hiddenOnly": 0,
+  "mobileOnly": 1,
+  "desktopOnly": 2,
+  "byKind": {
+   "link": 2,
+   "heading": 1,
+   "badge": 1,
+   "text": 38,
+   "card": 1,
+   "empty-state": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "JPN command center (standalone page, polls /jpn/command-center/live-data every 10 s)",
+   "file": "_raw/M18/S11-jpn-command-center__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/jpn/command-center",
+   "finalUrl": "/jpn/command-center",
+   "httpStatus": 200,
+   "title": "Command Center JPN — Johor",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "JPN command center (standalone page, polls /jpn/command-center/live-data every 10 s) @375",
+   "file": "_raw/M18/S11-jpn-command-center__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/jpn/command-center",
+   "finalUrl": "/jpn/command-center",
+   "httpStatus": 200,
+   "title": "Command Center JPN — Johor",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "JPN command center (standalone page, polls /jpn/command-center/live-data every 10 s) @768",
+   "file": "_raw/M18/S11-jpn-command-center__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/jpn/command-center",
+   "finalUrl": "/jpn/command-center",
+   "httpStatus": 200,
+   "title": "Command Center JPN — Johor",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "sekolah negeri",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "% vs minggu lepas</span>",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "<span style='color:var(--text-muted)'>Sama dengan minggu lepas</span>",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "<div class=\"school-item\"><div class=\"school-rank",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "</div><a href=\"",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "\" class=\"school-name\" target=\"_blank\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "</a><div class=\"school-count\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "</span><span class=\"student-name\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "</span><span class=\"student-stat\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Champion",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Konsisten",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Berkembang",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Minimum",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Disengaged",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "<div class=\"eng-row\"><div class=\"eng-label\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "</div><div class=\"eng-bar-bg\"><div class=\"eng-bar-fill\" style=\"width:",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "<div class=\"feed-item\"><div class=\"feed-time\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "</div><div class=\"feed-name\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "</div><div class=\"feed-subject\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "</div><div class=\"feed-school\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "</div><div class=\"feed-result\">",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "sekolah ·",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "\"Negeri menunjukkan <strong>",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "% minggu ini.",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "% pelajar terlibat aktif. Ketepatan purata",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "% dengan",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "sekolah aktif. GPS daerah:",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Fetch error:",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/jpn/sekolah/__ID__",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/jpn/command-center/live-data",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M18-S11-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "← Dashboard",
+   "href": "/jpn/dashboard",
+   "absHref": "https://prestasiplus.my/jpn/dashboard",
+   "landmark": "header",
+   "alpine": {
+    "onmouseover": "this.style.background='rgba(99,102,241,0.3)'",
+    "onmouseout": "this.style.background='rgba(99,102,241,0.15)'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-002",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Command Center JPN",
+   "landmark": "header",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-003",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Johor",
+   "landmark": "header",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-004",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE",
+   "landmark": "header",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-005",
+   "kind": "text",
+   "tag": "span",
+   "text": "12:23:20",
+   "landmark": "header",
+   "section": "Command Center JPN",
+   "domId": "clock",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-006",
+   "kind": "text",
+   "tag": "span",
+   "text": "MYT",
+   "landmark": "header",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sekolah Aktif",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "1,187",
+   "section": "Command Center JPN",
+   "domId": "s-schools",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "dari 1187 sekolah negeri",
+   "section": "Command Center JPN",
+   "domId": "s-schools-sub",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pelajar Berdaftar",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "72",
+   "section": "Command Center JPN",
+   "domId": "s-students",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "aktif menjawab",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "6",
+   "section": "Command Center JPN",
+   "domId": "s-active",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan Dijawab",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "NaN",
+   "section": "Command Center JPN",
+   "domId": "s-answered",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-016",
+   "kind": "text",
+   "tag": "div",
+   "text": "sepanjang masa",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ketepatan Purata",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "83.8%",
+   "section": "Command Center JPN",
+   "domId": "s-accuracy",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-019",
+   "kind": "text",
+   "tag": "div",
+   "text": "keseluruhan negeri",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-020",
+   "kind": "text",
+   "tag": "div",
+   "text": "Top Sekolah Aktif",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "🏆",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-023",
+   "kind": "link",
+   "tag": "a",
+   "text": "undefined",
+   "href": "https://prestasiplus.my/jpn/sekolah/undefined",
+   "absHref": "https://prestasiplus.my/jpn/sekolah/undefined",
+   "target": "_blank",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-024",
+   "kind": "text",
+   "tag": "div",
+   "text": "6 plj",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "ALESA AI",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "🤖",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-027",
+   "kind": "text",
+   "tag": "div",
+   "text": "Memuatkan wawasan...",
+   "section": "Command Center JPN",
+   "domId": "ai-insight",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-028",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "Aktiviti Hari Ini",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "📈",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 soalan",
+   "section": "Command Center JPN",
+   "domId": "today-count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "Minggu ini:",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-033",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0",
+   "section": "Command Center JPN",
+   "domId": "week-count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sama dengan minggu lepas",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-035",
+   "kind": "text",
+   "tag": "div",
+   "text": "Live Feed",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "⚡",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-037",
+   "kind": "text",
+   "tag": "div",
+   "text": "Top Pelajar Minggu Ini",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-039",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada data",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-040",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pecahan Daerah",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "🏢",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-042",
+   "kind": "text",
+   "tag": "footer",
+   "text": "Powered by ALESA AI · PrestasiPlus © 2026 · Data dikemaskini setiap 10 saat",
+   "section": "Command Center JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "12:23:23",
+   "landmark": "header",
+   "section": "Command Center JPN",
+   "domId": "clock",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M18-S11-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "12:23:27",
+   "landmark": "header",
+   "section": "Command Center JPN",
+   "domId": "clock",
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ]
+  }
+ ]
+}

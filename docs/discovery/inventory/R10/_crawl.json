@@ -1,0 +1,2253 @@
+{
+ "module": "R10",
+ "generatedAt": "2026-09-27T04:38:04.818Z",
+ "total": 146,
+ "urls": [
+  {
+   "url": "/logout",
+   "module": "M01",
+   "via": "TRACKER /logout",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Log Keluar"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "module": "M01",
+   "via": "TRACKER /notifikasi",
+   "inTracker": true,
+   "kinds": [
+    "js-endpoint",
+    "link"
+   ],
+   "foundOn": [
+    "S1",
+    "S1(shell)"
+   ],
+   "texts": [
+    "99+",
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "module": "M01",
+   "via": "TRACKER /notifikasi",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/profile",
+   "module": "M01",
+   "via": "TRACKER /profile",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Profil Saya"
+   ]
+  },
+  {
+   "url": "/settings",
+   "module": "M01",
+   "via": "TRACKER /settings",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Tetapan"
+   ]
+  },
+  {
+   "url": "/tetapan",
+   "module": "M01",
+   "via": "TRACKER /tetapan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Tetapan Peribadi"
+   ]
+  },
+  {
+   "url": "/peta-belajar",
+   "module": "M03",
+   "via": "TRACKER /peta-belajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Peta Belajar"
+   ]
+  },
+  {
+   "url": "/topics",
+   "module": "M03",
+   "via": "TRACKER /topics",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Topik"
+   ]
+  },
+  {
+   "url": "/admin/master-notes",
+   "module": "M04",
+   "via": "TRACKER /admin/master-notes",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "https://prestasiplus.my/pusat-nota-ringkas"
+   ],
+   "texts": [
+    "Semakan Nota Master"
+   ]
+  },
+  {
+   "url": "/admin/question-submissions",
+   "module": "M04",
+   "via": "TRACKER /admin/question-submissions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kertas Soalan Guru"
+   ]
+  },
+  {
+   "url": "/admin/soalan-gambar",
+   "module": "M04",
+   "via": "TRACKER /admin/soalan-gambar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Gambar Rajah 6,144"
+   ]
+  },
+  {
+   "url": "/laporan-soalan",
+   "module": "M04",
+   "via": "TRACKER /laporan-soalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Laporan Soalan"
+   ]
+  },
+  {
+   "url": "/dashboard",
+   "module": "M05",
+   "via": "TRACKER /dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Dashboard",
+    "Home"
+   ]
+  },
+  {
+   "url": "/latihan-berstruktur",
+   "module": "M05",
+   "via": "TRACKER /latihan-berstruktur",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Soalan Berstruktur"
+   ]
+  },
+  {
+   "url": "/misi-harian",
+   "module": "M05",
+   "via": "TRACKER /misi-harian",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Misi Harian"
+   ]
+  },
+  {
+   "url": "/pembetulan",
+   "module": "M05",
+   "via": "TRACKER /pembetulan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Pembetulan"
+   ]
+  },
+  {
+   "url": "/penguasaan",
+   "module": "M05",
+   "via": "TRACKER /penguasaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Penguasaan"
+   ]
+  },
+  {
+   "url": "/practice",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Latih Tubi"
+   ]
+  },
+  {
+   "url": "/practice/chapter",
+   "module": "M05",
+   "via": "TRACKER /practice/chapter",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "S1(shell)",
+    "https://prestasiplus.my/buku-nota/heatmap"
+   ],
+   "texts": [
+    "Soalan by Chapter",
+    "Kemahiran Bahasa Tingkatan 4 5 cuba · 0% betul",
+    "Kemahiran Bahasa Tingkatan 5 38 cuba · 32% betul",
+    "Kemahiran Mendengar dan Bertutur 18 cuba · 44% betul"
+   ]
+  },
+  {
+   "url": "/remedial/saya",
+   "module": "M05",
+   "via": "TRACKER /remedial/saya",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Remedial"
+   ]
+  },
+  {
+   "url": "/target-spm",
+   "module": "M05",
+   "via": "TRACKER /target-spm",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Target SPM"
+   ]
+  },
+  {
+   "url": "/spm-mock",
+   "module": "M06",
+   "via": "TRACKER /spm-mock",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "SPM Mock Exam"
+   ]
+  },
+  {
+   "url": "/analisa-item",
+   "module": "M08",
+   "via": "TRACKER /analisa-item",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Analisa Item"
+   ]
+  },
+  {
+   "url": "/analitik/pelajar",
+   "module": "M08",
+   "via": "TRACKER /analitik/pelajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Analitik Adaptif"
+   ]
+  },
+  {
+   "url": "/headcount",
+   "module": "M08",
+   "via": "TRACKER /headcount",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Headcount"
+   ]
+  },
+  {
+   "url": "/laporan-mingguan",
+   "module": "M08",
+   "via": "TRACKER /laporan-mingguan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Laporan Mingguan"
+   ]
+  },
+  {
+   "url": "/prestasi",
+   "module": "M08",
+   "via": "TRACKER /prestasi",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Prestasi"
+   ]
+  },
+  {
+   "url": "/prestasi/kelas",
+   "module": "M08",
+   "via": "TRACKER /prestasi/{userId}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Prestasi"
+   ]
+  },
+  {
+   "url": "/ranking",
+   "module": "M08",
+   "via": "TRACKER /ranking",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kedudukan"
+   ]
+  },
+  {
+   "url": "/timeline",
+   "module": "M08",
+   "via": "TRACKER /timeline",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Timeline Saya"
+   ]
+  },
+  {
+   "url": "/artikel",
+   "module": "M09",
+   "via": "TRACKER /artikel",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Artikel"
+   ]
+  },
+  {
+   "url": "/audio-kbat",
+   "module": "M09",
+   "via": "TRACKER /audio-kbat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Audio KBAT"
+   ]
+  },
+  {
+   "url": "/panduan",
+   "module": "M09",
+   "via": "TRACKER /panduan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Panduan"
+   ]
+  },
+  {
+   "url": "/perutusan",
+   "module": "M09",
+   "via": "TRACKER /perutusan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Perutusan"
+   ]
+  },
+  {
+   "url": "/pusat-tuisyen/panduan",
+   "module": "M09",
+   "via": "TRACKER /pusat-tuisyen/panduan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Panduan"
+   ]
+  },
+  {
+   "url": "/guru/artikel",
+   "module": "M10",
+   "via": "TRACKER /guru/artikel",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Sumbang Artikel"
+   ]
+  },
+  {
+   "url": "/guru/broadcast",
+   "module": "M10",
+   "via": "TRACKER /guru/broadcast",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Broadcast"
+   ]
+  },
+  {
+   "url": "/guru/databank",
+   "module": "M10",
+   "via": "TRACKER /guru/databank",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Databank Soalan"
+   ]
+  },
+  {
+   "url": "/guru/jadual-belajar",
+   "module": "M10",
+   "via": "TRACKER /guru/jadual-belajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Jadual Belajar"
+   ]
+  },
+  {
+   "url": "/guru/kehadiran-digital",
+   "module": "M10",
+   "via": "TRACKER /guru/kehadiran-digital",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kehadiran Digital"
+   ]
+  },
+  {
+   "url": "/guru/kelas",
+   "module": "M10",
+   "via": "TRACKER /guru/kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kelas Guru",
+    "Kelas Saya"
+   ]
+  },
+  {
+   "url": "/guru/live-kelas",
+   "module": "M10",
+   "via": "TRACKER /guru/live-kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kelas Live"
+   ]
+  },
+  {
+   "url": "/guru/misi-harian",
+   "module": "M10",
+   "via": "TRACKER /guru/misi-harian",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Misi Harian"
+   ]
+  },
+  {
+   "url": "/guru/pelajar",
+   "module": "M10",
+   "via": "TRACKER /guru/pelajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Pelajar Saya"
+   ]
+  },
+  {
+   "url": "/guru/set-soalan",
+   "module": "M10",
+   "via": "TRACKER /guru/set-soalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Set Soalan"
+   ]
+  },
+  {
+   "url": "/guru/soalan",
+   "module": "M10",
+   "via": "TRACKER /guru/soalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Sumbang Soalan"
+   ]
+  },
+  {
+   "url": "/guru/soalan-berstruktur",
+   "module": "M10",
+   "via": "TRACKER /guru/soalan-berstruktur",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Soalan Berstruktur"
+   ]
+  },
+  {
+   "url": "/guru/soalan-guru",
+   "module": "M10",
+   "via": "TRACKER /guru/soalan-guru",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Soalan & Rujukan"
+   ]
+  },
+  {
+   "url": "/kelas-saya",
+   "module": "M10",
+   "via": "TRACKER /kelas-saya",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kelas Saya",
+    "Kelas Saya BARU"
+   ]
+  },
+  {
+   "url": "/set-soalan-saya",
+   "module": "M10",
+   "via": "TRACKER /set-soalan-saya",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Set Soalan Guru"
+   ]
+  },
+  {
+   "url": "/guru/analisis-item",
+   "module": "M11",
+   "via": "TRACKER /guru/analisis-item",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Analisis Item"
+   ]
+  },
+  {
+   "url": "/guru/laporan",
+   "module": "M11",
+   "via": "TRACKER /guru/laporan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Laporan"
+   ]
+  },
+  {
+   "url": "/guru/laporan-mingguan-kelas",
+   "module": "M11",
+   "via": "TRACKER /guru/laporan-mingguan-kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Laporan Mingguan"
+   ]
+  },
+  {
+   "url": "/guru/monitoring",
+   "module": "M11",
+   "via": "TRACKER /guru/monitoring",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Monitoring"
+   ]
+  },
+  {
+   "url": "/guru/perbandingan-kelas",
+   "module": "M11",
+   "via": "TRACKER /guru/perbandingan-kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Perbandingan Kelas"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Ringkasan"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/behavior",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "T3: Tingkah Laku"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/chain",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Rantaian Impak"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/interventions",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Intervensi"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/learning",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "T2: Pembelajaran"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/reaction",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "T1: Reaksi"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/results",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "T4: Hasil"
+   ]
+  },
+  {
+   "url": "/cikgu/essay",
+   "module": "M13",
+   "via": "TRACKER /cikgu/essay",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Semak Karangan (Cikgu Alesa)",
+    "Mark Karangan"
+   ]
+  },
+  {
+   "url": "/cikgu/pbd",
+   "module": "M13",
+   "via": "TRACKER /cikgu/pbd",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "PBD (Cikgu Alesa)",
+    "PBD Auto-Tag"
+   ]
+  },
+  {
+   "url": "/cikgu/rph",
+   "module": "M13",
+   "via": "TRACKER /cikgu/rph",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "RPH (Cikgu Alesa)",
+    "RPH (Rancangan Harian)",
+    "RPH"
+   ]
+  },
+  {
+   "url": "/admin/gamifikasi/guru",
+   "module": "M14",
+   "via": "TRACKER /admin/gamifikasi/guru",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Gamifikasi Guru"
+   ]
+  },
+  {
+   "url": "/gamification",
+   "module": "M14",
+   "via": "TRACKER /gamification",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Syiling & Token 🏆",
+    "Syiling & Token"
+   ]
+  },
+  {
+   "url": "/gamification/achievements",
+   "module": "M14",
+   "via": "TRACKER /gamification/achievements",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Pencapaian"
+   ]
+  },
+  {
+   "url": "/gamification/challenges",
+   "module": "M14",
+   "via": "TRACKER /gamification/challenges",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Cabaran Harian"
+   ]
+  },
+  {
+   "url": "/gamification/convert",
+   "module": "M14",
+   "via": "TRACKER /gamification/convert",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Tukar Token"
+   ]
+  },
+  {
+   "url": "/gamification/leaderboard",
+   "module": "M14",
+   "via": "TRACKER /gamification/leaderboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Papan Pendahulu"
+   ]
+  },
+  {
+   "url": "/gamification/referral",
+   "module": "M14",
+   "via": "TRACKER /gamification/referral",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Rujuk Kawan"
+   ]
+  },
+  {
+   "url": "/guru/gamifikasi",
+   "module": "M14",
+   "via": "TRACKER /guru/gamifikasi",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Syiling & Ganjaran"
+   ]
+  },
+  {
+   "url": "/admin/hadiah",
+   "module": "M15",
+   "via": "TRACKER /admin/hadiah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Admin Tebusan",
+    "Urus Hadiah"
+   ]
+  },
+  {
+   "url": "/cabutan",
+   "module": "M15",
+   "via": "TRACKER /cabutan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Cabutan Bertuah 🎟️"
+   ]
+  },
+  {
+   "url": "/cikgu/kelulusan-hadiah",
+   "module": "M15",
+   "via": "TRACKER /cikgu/kelulusan-hadiah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kelulusan Hadiah"
+   ]
+  },
+  {
+   "url": "/gamification/mystery-box",
+   "module": "M15",
+   "via": "TRACKER /gamification/mystery-box",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kotak Misteri"
+   ]
+  },
+  {
+   "url": "/gamification/rewards",
+   "module": "M15",
+   "via": "TRACKER /gamification/rewards",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kedai Hadiah"
+   ]
+  },
+  {
+   "url": "/admin",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Ke Admin Panel"
+   ]
+  },
+  {
+   "url": "/amaran",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Amaran Awal"
+   ]
+  },
+  {
+   "url": "/api/tournament/active",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/cikgu",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Cikgu Alesa Chat AI",
+    "Cikgu Alesa AI"
+   ]
+  },
+  {
+   "url": "/cikgu-alesa",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/pusat-nota-ringkas"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/fcm/token",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/guru",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "https://prestasiplus.my/pusat-nota-ringkas"
+   ],
+   "texts": [
+    "Dashboard Guru"
+   ]
+  },
+  {
+   "url": "/kombo",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kombo"
+   ]
+  },
+  {
+   "url": "/latih-tubi",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/heatmap-topik-lemah",
+    "https://prestasiplus.my/admin-sekolah/r10-control-nonexistent"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/liga",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Liga Pertandingan"
+   ]
+  },
+  {
+   "url": "/notes/practice_session/{id}",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/buku-nota"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/permainan",
+   "module": "M16",
+   "via": "TRACKER /permainan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Permainan 🎮",
+    "Game"
+   ]
+  },
+  {
+   "url": "/pksk",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "PKSK PRO"
+   ]
+  },
+  {
+   "url": "/robots.txt",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "read once: Disallow /admin-sekolah, /murid/, /guru/, /ibu-bapa/, /sponsor/ …"
+   ],
+   "foundOn": [
+    "R10 probe notes"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/sekolah-bersaing",
+   "module": "M16",
+   "via": "TRACKER /sekolah-bersaing",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Sekolah Bersaing NEW",
+    "Sekolah Bersaing"
+   ]
+  },
+  {
+   "url": "/sitemap.xml",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "read once: no heatmap / admin-sekolah URL"
+   ],
+   "foundOn": [
+    "R10 probe notes"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/spm",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "SPM SPM",
+    "SPM"
+   ]
+  },
+  {
+   "url": "/tournament",
+   "module": "M16",
+   "via": "TRACKER /tournament",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Tournament"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "module": "M16",
+   "via": "TRACKER /tournament",
+   "inTracker": true,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "attr::href@a"
+   ]
+  },
+  {
+   "url": "/video",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Video"
+   ]
+  },
+  {
+   "url": "/guru/command-center",
+   "module": "M17",
+   "via": "TRACKER /guru/command-center/*",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Command Center LIVE"
+   ]
+  },
+  {
+   "url": "/admin-sekolah",
+   "module": "M18",
+   "via": "R10 rule: school-admin portal (no owner in TRACKER; R10 recommends M18, Perlu pengesahan)",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "R10-crawl"
+   ],
+   "texts": [
+    "500 - Ralat Pelayan | PRESTASIPLUS [chain /admin-sekolah > /admin-sekolah/pilih-sekolah]"
+   ],
+   "httpStatus": 500
+  },
+  {
+   "url": "/admin-sekolah/dskp-heatmap",
+   "module": "M18",
+   "via": "R10 rule: school-admin portal (no owner in TRACKER; R10 recommends M18, Perlu pengesahan)",
+   "inTracker": false,
+   "kinds": [
+    "probe",
+    "R10 S2 route (school-admin sidebar \"DSKP Heatmap\"; href INFERRED in user-nav.ts, confirmed by 302 vs control 404)"
+   ],
+   "foundOn": [
+    "R10-crawl",
+    "R10 probe notes"
+   ],
+   "texts": [
+    "500 - Ralat Pelayan | PRESTASIPLUS [chain /admin-sekolah/dskp-heatmap > /admin-sekolah/pilih-sekolah]"
+   ],
+   "httpStatus": 500
+  },
+  {
+   "url": "/admin-sekolah/laporan-bulanan",
+   "module": "M18",
+   "via": "R10 rule: school-admin portal (no owner in TRACKER; R10 recommends M18, Perlu pengesahan)",
+   "inTracker": false,
+   "kinds": [
+    "probe",
+    "R10 S3 route (school-admin sidebar \"Laporan Bulanan\"; href INFERRED in user-nav.ts, confirmed by 302 vs control 404)"
+   ],
+   "foundOn": [
+    "R10-crawl",
+    "R10 probe notes"
+   ],
+   "texts": [
+    "500 - Ralat Pelayan | PRESTASIPLUS [chain /admin-sekolah/laporan-bulanan > /admin-sekolah/pilih-sekolah]"
+   ],
+   "httpStatus": 500
+  },
+  {
+   "url": "/admin-sekolah/pilih-sekolah",
+   "module": "M18",
+   "via": "R10 rule: school-admin portal (no owner in TRACKER; R10 recommends M18, Perlu pengesahan)",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "redirect target of every existing /admin-sekolah/* route for the platform admin → 500 \"Ralat Pelayan\""
+   ],
+   "foundOn": [
+    "S2",
+    "S3",
+    "R10 probe notes"
+   ],
+   "texts": [
+    "500 - Ralat Pelayan | PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin-sekolah/r10-control-nonexistent",
+   "module": "M18",
+   "via": "R10 rule: school-admin portal (no owner in TRACKER; R10 recommends M18, Perlu pengesahan)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "R10-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/jpn/dashboard",
+   "module": "M18",
+   "via": "TRACKER /jpn/dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Dashboard JPN"
+   ]
+  },
+  {
+   "url": "/jpn/ranking-kebangsaan",
+   "module": "M18",
+   "via": "TRACKER /jpn/ranking-kebangsaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Ranking Kebangsaan JPN",
+    "Ranking Kebangsaan"
+   ]
+  },
+  {
+   "url": "/jpn/statistik-penggunaan",
+   "module": "M18",
+   "via": "TRACKER /jpn/statistik-penggunaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Statistik Penggunaan"
+   ]
+  },
+  {
+   "url": "/ppd/benchmark-sekolah",
+   "module": "M18",
+   "via": "TRACKER /ppd/benchmark-sekolah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Benchmark Sekolah"
+   ]
+  },
+  {
+   "url": "/ppd/command-center",
+   "module": "M18",
+   "via": "TRACKER /ppd/command-center",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Command Center LIVE"
+   ]
+  },
+  {
+   "url": "/ppd/dashboard",
+   "module": "M18",
+   "via": "TRACKER /ppd/dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Dashboard PPD"
+   ]
+  },
+  {
+   "url": "/ppd/export-laporan",
+   "module": "M18",
+   "via": "TRACKER /ppd/export-laporan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Export Laporan"
+   ]
+  },
+  {
+   "url": "/ppd/leaderboard-sekolah",
+   "module": "M18",
+   "via": "TRACKER /ppd/leaderboard-sekolah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Leaderboard Sekolah"
+   ]
+  },
+  {
+   "url": "/ppd/peta-haba",
+   "module": "M18",
+   "via": "TRACKER /ppd/peta-haba",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Peta Haba"
+   ]
+  },
+  {
+   "url": "/ppd/ranking-kebangsaan",
+   "module": "M18",
+   "via": "TRACKER /ppd/ranking-kebangsaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Ranking Kebangsaan"
+   ]
+  },
+  {
+   "url": "/ppd/statistik-penggunaan",
+   "module": "M18",
+   "via": "TRACKER /ppd/statistik-penggunaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Statistik PPD",
+    "Statistik Penggunaan"
+   ]
+  },
+  {
+   "url": "/admin/billing",
+   "module": "M19",
+   "via": "TRACKER /admin/billing",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Billing Dashboard"
+   ]
+  },
+  {
+   "url": "/billing/invoices",
+   "module": "M19",
+   "via": "TRACKER /billing/invoices",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Invois Saya"
+   ]
+  },
+  {
+   "url": "/pricing",
+   "module": "M19",
+   "via": "TRACKER /pricing",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Pakej 💎"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products",
+   "module": "M20",
+   "via": "TRACKER /admin/marketplace/products",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Urus Produk"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/sellers",
+   "module": "M20",
+   "via": "TRACKER /admin/marketplace/sellers",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Urus Penjual"
+   ]
+  },
+  {
+   "url": "/marketplace",
+   "module": "M20",
+   "via": "TRACKER /marketplace",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Marketplace"
+   ]
+  },
+  {
+   "url": "/mohon-keluarga-angkat",
+   "module": "M21",
+   "via": "TRACKER /mohon-keluarga-angkat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Mohon Keluarga Angkat"
+   ]
+  },
+  {
+   "url": "/admin/tiket",
+   "module": "M22",
+   "via": "TRACKER /admin/tiket",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Urus Tiket 2"
+   ]
+  },
+  {
+   "url": "/pusat-tuisyen/tiket",
+   "module": "M22",
+   "via": "TRACKER /pusat-tuisyen/tiket",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Tiket Bantuan"
+   ]
+  },
+  {
+   "url": "/admin/audit-log",
+   "module": "M23",
+   "via": "TRACKER /admin/audit-log",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Audit Log"
+   ]
+  },
+  {
+   "url": "/akademi-duta",
+   "module": "M24",
+   "via": "TRACKER /akademi-duta",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Akademi Duta"
+   ]
+  },
+  {
+   "url": "/bilik-duta",
+   "module": "M24",
+   "via": "TRACKER /bilik-duta",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Bilik Duta DEV",
+    "Bilik Duta"
+   ]
+  },
+  {
+   "url": "/bilik-duta/cikgu-maestro-math",
+   "module": "M24",
+   "via": "TRACKER /bilik-duta/{slug}",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/buku-nota/heatmap",
+    "https://prestasiplus.my/pusat-nota-ringkas"
+   ],
+   "texts": [
+    "<masked> <masked> Maestro Matematik · 22 tahun ajar pelajar "
+   ]
+  },
+  {
+   "url": "/bilik-duta/kem",
+   "module": "M24",
+   "via": "TRACKER /bilik-duta/{slug}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kem & Bootcamp"
+   ]
+  },
+  {
+   "url": "/buku-nota",
+   "module": "M25",
+   "via": "Buku Nota Saya (AI notes from wrong answers) and its tab 'Heatmap Topik Lemah' /buku-nota/heatmap (R10 S1); student sidebar Pusat AI; linked from /pusat-nota-ringkas (M25)",
+   "inTracker": true,
+   "kinds": [
+    "probe",
+    "crawl-link",
+    "form GET"
+   ],
+   "foundOn": [
+    "R10-crawl",
+    "https://prestasiplus.my/buku-nota",
+    "https://prestasiplus.my/pusat-nota-ringkas"
+   ],
+   "texts": [
+    "Buku Nota Saya",
+    "subject_id,status,group"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/buku-nota/heatmap",
+   "module": "M25",
+   "via": "Buku Nota Saya (AI notes from wrong answers) and its tab 'Heatmap Topik Lemah' /buku-nota/heatmap (R10 S1); student sidebar Pusat AI; linked from /pusat-nota-ringkas (M25)",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "probe",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "R10-crawl",
+    "https://prestasiplus.my/buku-nota",
+    "https://prestasiplus.my/pusat-nota-ringkas"
+   ],
+   "texts": [
+    "Heatmap Topik Lemah"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/heatmap-topik-lemah",
+   "module": "M25",
+   "via": "R10 probe of the INFERRED user-nav href → 404 (does not exist on live)",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "R10-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/pusat-ai/aktiviti",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/aktiviti",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Aktiviti Advisor"
+   ]
+  },
+  {
+   "url": "/pusat-ai/doa",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/doa",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Doa & Motivasi"
+   ]
+  },
+  {
+   "url": "/pusat-ai/kamus",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/kamus",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Kamus AI"
+   ]
+  },
+  {
+   "url": "/pusat-ai/pendamping",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/pendamping",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Pendamping Motivasi"
+   ]
+  },
+  {
+   "url": "/pusat-ai/whiteboard",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/whiteboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Whiteboard → Quiz"
+   ]
+  },
+  {
+   "url": "/pusat-nota-ringkas",
+   "module": "M25",
+   "via": "TRACKER /pusat-nota-ringkas",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "R10-crawl"
+   ],
+   "texts": [
+    "(read by fetch for links only)"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/cikgu-suara",
+   "module": "M26",
+   "via": "TRACKER /cikgu-suara",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Cikgu Suara"
+   ]
+  },
+  {
+   "url": "/cita-cita",
+   "module": "M26",
+   "via": "TRACKER /cita-cita",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Cita-Cita Hijrah"
+   ]
+  },
+  {
+   "url": "/profil-cerah",
+   "module": "M26",
+   "via": "TRACKER /profil-cerah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Profil Cerah"
+   ]
+  },
+  {
+   "url": "/wellbeing/alerts",
+   "module": "M26",
+   "via": "TRACKER /wellbeing/alerts",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)"
+   ],
+   "texts": [
+    "Wellbeing Alerts"
+   ]
+  },
+  {
+   "url": "/",
+   "module": "unknown",
+   "via": "",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S2",
+    "S3",
+    "https://prestasiplus.my/admin-sekolah",
+    "https://prestasiplus.my/heatmap-topik-lemah",
+    "https://prestasiplus.my/admin-sekolah/dskp-heatmap",
+    "https://prestasiplus.my/admin-sekolah/laporan-bulanan",
+    "https://prestasiplus.my/admin-sekolah/r10-control-nonexistent"
+   ],
+   "texts": [
+    "Halaman Utama"
+   ]
+  }
+ ],
+ "supplement": "tools/jobs/R10-crawl-post.js: probes (with httpStatus and redirect chain) + in-page links of the structural crawl"
+}

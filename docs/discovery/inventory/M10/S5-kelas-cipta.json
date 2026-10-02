@@ -1,0 +1,2101 @@
+{
+ "screen": "S5",
+ "key": "S5-kelas-cipta",
+ "route": "/guru/kelas/cipta",
+ "name": "Cipta Kelas - Portal Guru",
+ "module": "M10",
+ "generatedAt": "2026-09-25T09:58:30.491Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 68,
+  "visibleDefault": 27,
+  "conditional": 19,
+  "hiddenOnly": 22,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 6,
+   "link": 1,
+   "form": 1,
+   "hidden-field": 3,
+   "card": 2,
+   "heading": 2,
+   "button": 20,
+   "input": 3,
+   "empty-state": 2,
+   "label": 15,
+   "select": 1,
+   "radio": 11,
+   "textarea": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "create class form",
+   "file": "_raw/M10/S5-kelas-cipta__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/kelas/cipta",
+   "finalUrl": "/guru/kelas/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Kelas - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "school-none__1280",
+   "description": "school search \"zzqx\" → Tiada sekolah dijumpai",
+   "file": "_raw/M10/S5-kelas-cipta__school-none__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/kelas/cipta",
+   "finalUrl": "/guru/kelas/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Kelas - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "type": [
+      "main input[placeholder^=\"Taip nama sekolah\"]",
+      "zzqx"
+     ]
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "school-search__1280",
+   "description": "school search typed \"kebangsaan\" → results",
+   "file": "_raw/M10/S5-kelas-cipta__school-search__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/kelas/cipta",
+   "finalUrl": "/guru/kelas/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Kelas - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "type": [
+      "main input[placeholder^=\"Taip nama sekolah\"]",
+      "kebangsaan"
+     ]
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 30",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "school-selected__1280",
+   "description": "school chosen from results (secondary) → Ting. radios only",
+   "file": "_raw/M10/S5-kelas-cipta__school-selected__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/kelas/cipta",
+   "finalUrl": "/guru/kelas/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Kelas - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "type": [
+      "main input[placeholder^=\"Taip nama sekolah\"]",
+      "menengah"
+     ]
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "click": "main button[\\@click=\"selectSchool(s)\"]"
+    },
+    {
+     "wait": 600
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 2",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "create class form @375",
+   "file": "_raw/M10/S5-kelas-cipta__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/kelas/cipta",
+   "finalUrl": "/guru/kelas/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Kelas - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "create class form @768",
+   "file": "_raw/M10/S5-kelas-cipta__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/kelas/cipta",
+   "finalUrl": "/guru/kelas/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Kelas - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z]{2}[A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|SMA [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z]{2}[A-Z0-9 ()'.-]*[A-Z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Cipta Kelas Baru",
+   "seenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "form",
+   "component": "classroomForm",
+   "xData": "classroomForm()",
+   "keys": [],
+   "liveState": {
+    "schoolId": null,
+    "schoolName": "",
+    "schoolMeta": "",
+    "schoolType": null,
+    "schoolQuery": "",
+    "schoolResults": "array(0)",
+    "schoolDropdown": false,
+    "schoolLoading": false,
+    "selectedClassName": "",
+    "selectedClassId": null,
+    "classStudents": "array(0)",
+    "selectedStudents": "array(0)",
+    "selectAll": true,
+    "classLoading": false,
+    "autoLevelSet": false,
+    "gradeMap": "object"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Cipta Kelas Baru",
+   "seenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/api/schools/search?q=",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/api/schools/search?id=",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/api/school-classes/",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/students",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M10-S5-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Cipta Kelas Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Cipta Kelas Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Cipta Kelas Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/guru/kelas",
+   "absHref": "https://prestasiplus.my/guru/kelas",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Cipta Kelas Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-005",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/guru/kelas",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "school_id",
+    "name",
+    "subject_id",
+    "education_level",
+    "education_level",
+    "education_level",
+    "education_level",
+    "education_level",
+    "education_level",
+    "education_level",
+    "education_level",
+    "education_level",
+    "education_level",
+    "education_level",
+    "description"
+   ],
+   "landmark": "main",
+   "section": "Cipta Kelas Baru",
+   "alpine": {
+    "x-data": "classroomForm()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-006",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Cipta Kelas Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pilih Sekolah",
+   "landmark": "form",
+   "section": "Cipta Kelas Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-008",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pilih Sekolah",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-009",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "school_id",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    ":value": "schoolId"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-010",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times-circle",
+   "iconOnly": true,
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "clearSchool()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=schoolId"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-011",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Taip nama sekolah untuk cari...",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "x-model": "schoolQuery",
+    "@input.debounce.300ms": "searchSchool()",
+    "@focus": "schoolDropdown = schoolResults.length > 0"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!schoolId"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-012",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "iconOnly": true,
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=s in schoolResults"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-013",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada sekolah dijumpai",
+   "icon": "fa-search-minus",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "x-show": "schoolDropdown && schoolResults.length === 0 && schoolQuery.length >= 2 && !schoolLoading"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!schoolId"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-014",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Taip nama sekolah untuk cari...",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "x-model": "schoolQuery",
+    "@input.debounce.300ms": "searchSchool()",
+    "@focus": "schoolDropdown = schoolResults.length > 0"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-015",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "iconOnly": true,
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=s in schoolResults"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-016",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada sekolah dijumpai",
+   "icon": "fa-search-minus",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "x-show": "schoolDropdown && schoolResults.length === 0 && schoolQuery.length >= 2 && !schoolLoading"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-none__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "school-search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length === 0 && schoolQuery.length >= 2 && !schoolLoading"
+  },
+  {
+   "id": "EL-M10-S5-017",
+   "kind": "card",
+   "tag": "div",
+   "text": "Maklumat Kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-018",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Maklumat Kelas",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-019",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "name",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "classNameInput",
+    ":value": "selectedClassName || ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-020",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Kumpulan *",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-021",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Nama Kumpulan *",
+   "placeholder": "cth: 5 Bestari",
+   "required": true,
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-model": "selectedClassName"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "Nama kumpulan latih tubi anda.",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-023",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek *",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-024",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Subjek *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Subjek --"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "3",
+     "text": "Matematik"
+    },
+    {
+     "value": "4",
+     "text": "Sains"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahap Pendidikan * Auto dari kelas sekolah",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-026",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahun 1",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType === 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-selected__1280"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-027",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Tahun 1",
+   "optionValue": "tahun-1",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tahun_1"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahun 2",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType === 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-selected__1280"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-029",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Tahun 2",
+   "optionValue": "tahun-2",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tahun_2"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-030",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahun 3",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType === 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-selected__1280"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-031",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Tahun 3",
+   "optionValue": "tahun-3",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tahun_3"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-032",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahun 4",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType === 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-selected__1280"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-033",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Tahun 4",
+   "optionValue": "tahun-4",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tahun_4"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-034",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahun 5",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType === 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-selected__1280"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-035",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Tahun 5",
+   "optionValue": "tahun-5",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tahun_5"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-036",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahun 6",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType === 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-selected__1280"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-037",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Tahun 6",
+   "optionValue": "tahun-6",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tahun_6"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!schoolType || schoolType === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-038",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 1",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType !== 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-039",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Ting. 1",
+   "optionValue": "tingkatan-1",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tingkatan_1"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-040",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 2",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType !== 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-041",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Ting. 2",
+   "optionValue": "tingkatan-2",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tingkatan_2"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-042",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 3",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType !== 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-043",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Ting. 3",
+   "optionValue": "tingkatan-3",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tingkatan_3"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-044",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 4",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType !== 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-045",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Ting. 4",
+   "optionValue": "tingkatan-4",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tingkatan_4"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-046",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 5",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-show": "!schoolType || schoolType !== 'SK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'"
+  },
+  {
+   "id": "EL-M10-S5-047",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "education_level",
+   "label": "Ting. 5",
+   "optionValue": "tingkatan-5",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "alpine": {
+    "x-ref": "level_tingkatan_5"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "showWhen": "!schoolType || schoolType !== 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S5-048",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan (pilihan)",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-049",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan (pilihan)",
+   "placeholder": "Penerangan ringkas tentang kelas ini...",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-050",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cipta Kelas",
+   "icon": "fa-plus-circle",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Maklumat Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "school-none__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-051",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD SEGAMAT, Johor",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-052",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD BATU PAHAT, Johor",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-053",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD BATU PAHAT, Johor",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-054",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD MUAR, Johor",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-055",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD KULIM/BANDAR BAHARU, Kedah",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-056",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD TIMUR LAUT, Pulau Pinang",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-057",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD LARUT/MATANG/SELAMA, Perak",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-058",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD KRIAN, Perak",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-059",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD SEBERANG PERAI UTARA, Pulau Pinang",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-060",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD SEBERANG PERAI UTARA, Pulau Pinang",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-061",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD KUALA MUDA/YAN, Kedah",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-062",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD MUAR, Johor",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-063",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD KUALA SELANGOR, Selangor",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-064",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD TAMPIN, Negeri Sembilan",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-065",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<school> PPD ALOR GAJAH, Melaka",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "schoolDropdown && schoolResults.length > 0"
+  },
+  {
+   "id": "EL-M10-S5-066",
+   "kind": "text",
+   "tag": "p",
+   "text": "<school>",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "x-text": "schoolName"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-selected__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-067",
+   "kind": "text",
+   "tag": "p",
+   "text": "JPN PERLIS, Perlis",
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "x-text": "schoolMeta"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-selected__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S5-068",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times-circle",
+   "form": "https://prestasiplus.my/guru/kelas",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Pilih Sekolah",
+   "alpine": {
+    "@click": "clearSchool()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-selected__1280"
+   ]
+  }
+ ]
+}

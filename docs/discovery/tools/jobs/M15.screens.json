@@ -1,0 +1,25 @@
+{
+  "normalizeIds": true,
+  "dataRows": [],
+  "collapseKeys": [],
+  "extraModuleRules": [
+    ["^/admin/hadiah", "M15", "admin reward catalogue + redemption queue (sub-routes found by crawl)"],
+    ["^/gamification/mystery-box/", "M15", "mystery-box open action (POST)"],
+    ["^/admin/reward-control", "M14", "reward control (legacy reward costs + Cabutan admin)"]
+  ],
+  "screens": {
+    "S1": { "key": "S1-hadiah", "route": "/admin/hadiah", "title": "Admin — Kedai Hadiah", "shell": "SHA", "notes": "catalogue of 59 digital rewards (?cat=, ?page=) + bulk toolbar" },
+    "S2": { "key": "S2-tebusan", "route": "/admin/hadiah/tebusan", "title": "Admin — Tebusan Hadiah", "shell": "SHA", "notes": "new route; redemption queue (?status=pending_admin|pending_parent_consent|delivered|cancelled|all)" },
+    "S3": { "key": "S3-hadiah-baharu", "route": "/admin/hadiah/baharu", "title": "Tambah Hadiah", "shell": "SHA", "notes": "new route; create form POST /admin/hadiah" },
+    "S4": { "key": "S4-hadiah-edit", "route": "/admin/hadiah/{id}/edit", "title": "Edit Hadiah", "shell": "SHA", "notes": "new route; edit form PUT /admin/hadiah/{id}; unknown id 404" },
+    "S5": { "key": "S5-rewards", "route": "/gamification/rewards", "title": "Kedai Hadiah", "shell": "SHU", "notes": "student shop; empty state for the admin account" },
+    "S6": { "key": "S6-mystery-box", "route": "/gamification/mystery-box", "title": "Kotak Misteri — PRESTASIPLUS", "shell": "SHU", "notes": "4 boxes, POST /gamification/mystery-box/{id}/open" },
+    "S7": { "key": "S7-cabutan", "route": "/cabutan", "title": "Cabutan Bertuah - PRESTASIPLUS", "shell": "SHU", "notes": "lucky draw; no open draw" },
+    "S8": { "key": "S8-kelulusan-hadiah", "route": "/cikgu/kelulusan-hadiah", "title": "Kelulusan Hadiah — Ibu Bapa", "shell": "SHU", "notes": "parent approval of redemptions (route under /cikgu)" },
+    "S9": { "key": "S9-hadiah-show", "route": "/admin/hadiah/{id}", "title": "An Error Occurred: Method Not Allowed", "shell": "none (framework error page)", "notes": "GET on the PUT-only update URL → 405" }
+  },
+  "shells": {
+    "SHA": { "key": "SHA-admin-shell", "title": "Admin panel shell (S1–S4, S9 none)", "owner": "00-global-ui.md / M23", "note": "Layout chrome, not M15 content." },
+    "SHU": { "key": "SHU-user-shell", "title": "User-portal shell (S5–S8)", "owner": "00-global-ui.md", "note": "Layout chrome, not M15 content. Header koin/mata chips are M14 wallet data." }
+  }
+}

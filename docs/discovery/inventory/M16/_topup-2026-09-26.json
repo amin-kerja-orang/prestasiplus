@@ -1,0 +1,1209 @@
+{
+  "id": "TU-M16-01",
+  "module": "M16",
+  "capturedAt": "2026-09-26T06:50:52.891Z",
+  "capturedFrom": "https://prestasiplus.my/sekolah-bersaing?week=… (read-only GET, admin session, browser lane 3, audit round 2)",
+  "privacy": "no school or person names stored; each row is identified by its rank in the week of 2026-09-21 (rank21), compared by equality inside the browser",
+  "note": "aktif = \"% Aktif\", streak = \"Streak Avg\" (hari), nota = \"Nota/Pelajar\" (per 10); week of 2026-09-21 has 49 rows",
+  "weeks": {
+    "2026-09-14": {
+      "line": "Minggu 14 Sep 2026 · 48 sekolah dalam pertandingan",
+      "rows": [
+        {
+          "pos": 1,
+          "rank21": 1,
+          "state": "Kelantan",
+          "aktif": "0.0%",
+          "streak": "15.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 2,
+          "rank21": 2,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "9.3",
+          "nota": "0.0"
+        },
+        {
+          "pos": 3,
+          "rank21": 3,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "8.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 4,
+          "rank21": 4,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "8.4",
+          "nota": "0.0"
+        },
+        {
+          "pos": 5,
+          "rank21": 5,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "8.2",
+          "nota": "0.0"
+        },
+        {
+          "pos": 6,
+          "rank21": 6,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "8.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 7,
+          "rank21": 7,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "7.9",
+          "nota": "0.0"
+        },
+        {
+          "pos": 8,
+          "rank21": 8,
+          "state": "Kedah",
+          "aktif": "0.0%",
+          "streak": "7.2",
+          "nota": "0.0"
+        },
+        {
+          "pos": 9,
+          "rank21": 9,
+          "state": "Perak",
+          "aktif": "0.0%",
+          "streak": "7.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 10,
+          "rank21": 10,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "6.8",
+          "nota": "0.0"
+        },
+        {
+          "pos": 11,
+          "rank21": 11,
+          "state": "Melaka",
+          "aktif": "0.0%",
+          "streak": "6.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 12,
+          "rank21": 12,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "6.4",
+          "nota": "0.0"
+        },
+        {
+          "pos": 13,
+          "rank21": 13,
+          "state": "Kedah",
+          "aktif": "0.0%",
+          "streak": "5.7",
+          "nota": "0.0"
+        },
+        {
+          "pos": 14,
+          "rank21": 14,
+          "state": "Melaka",
+          "aktif": "0.0%",
+          "streak": "5.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 15,
+          "rank21": 15,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "5.3",
+          "nota": "0.0"
+        },
+        {
+          "pos": 16,
+          "rank21": 16,
+          "state": "Perak",
+          "aktif": "0.0%",
+          "streak": "4.9",
+          "nota": "0.0"
+        },
+        {
+          "pos": 17,
+          "rank21": 17,
+          "state": "Selangor",
+          "aktif": "0.5%",
+          "streak": "1.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 18,
+          "rank21": 20,
+          "state": "Kelantan",
+          "aktif": "0.0%",
+          "streak": "2.4",
+          "nota": "0.0"
+        },
+        {
+          "pos": 19,
+          "rank21": 18,
+          "state": "Selangor",
+          "aktif": "0.2%",
+          "streak": "1.8",
+          "nota": "0.0"
+        },
+        {
+          "pos": 20,
+          "rank21": 48,
+          "state": "Kuala Lumpur",
+          "aktif": "0.0%",
+          "streak": "1.5",
+          "nota": "0.0"
+        },
+        {
+          "pos": 21,
+          "rank21": 19,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 22,
+          "rank21": 21,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 23,
+          "rank21": 22,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 24,
+          "rank21": 23,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 25,
+          "rank21": 24,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 26,
+          "rank21": 25,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 27,
+          "rank21": 26,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 28,
+          "rank21": 27,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 29,
+          "rank21": 28,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 30,
+          "rank21": 29,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 31,
+          "rank21": 30,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 32,
+          "rank21": 31,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 33,
+          "rank21": 32,
+          "state": "Pahang",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 34,
+          "rank21": 33,
+          "state": "Pahang",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 35,
+          "rank21": 34,
+          "state": "Kedah",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 36,
+          "rank21": 35,
+          "state": "Terengganu",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 37,
+          "rank21": 36,
+          "state": "Terengganu",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 38,
+          "rank21": 37,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 39,
+          "rank21": 38,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 40,
+          "rank21": 39,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 41,
+          "rank21": 40,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 42,
+          "rank21": 41,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 43,
+          "rank21": 42,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 44,
+          "rank21": 43,
+          "state": "Pahang",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 45,
+          "rank21": 44,
+          "state": "Kuala Lumpur",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 46,
+          "rank21": 45,
+          "state": "Kuala Lumpur",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 47,
+          "rank21": 47,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 48,
+          "rank21": 49,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "0.0",
+          "nota": "0.0"
+        }
+      ]
+    },
+    "2026-09-07": {
+      "line": "Minggu 07 Sep 2026 · 48 sekolah dalam pertandingan",
+      "rows": [
+        {
+          "pos": 1,
+          "rank21": 1,
+          "state": "Kelantan",
+          "aktif": "0.0%",
+          "streak": "15.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 2,
+          "rank21": 2,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "9.3",
+          "nota": "0.0"
+        },
+        {
+          "pos": 3,
+          "rank21": 3,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "8.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 4,
+          "rank21": 4,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "8.4",
+          "nota": "0.0"
+        },
+        {
+          "pos": 5,
+          "rank21": 5,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "8.2",
+          "nota": "0.0"
+        },
+        {
+          "pos": 6,
+          "rank21": 6,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "8.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 7,
+          "rank21": 7,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "7.9",
+          "nota": "0.0"
+        },
+        {
+          "pos": 8,
+          "rank21": 8,
+          "state": "Kedah",
+          "aktif": "0.0%",
+          "streak": "7.2",
+          "nota": "0.0"
+        },
+        {
+          "pos": 9,
+          "rank21": 9,
+          "state": "Perak",
+          "aktif": "0.0%",
+          "streak": "7.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 10,
+          "rank21": 10,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "6.8",
+          "nota": "0.0"
+        },
+        {
+          "pos": 11,
+          "rank21": 11,
+          "state": "Melaka",
+          "aktif": "0.0%",
+          "streak": "6.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 12,
+          "rank21": 12,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "6.4",
+          "nota": "0.0"
+        },
+        {
+          "pos": 13,
+          "rank21": 13,
+          "state": "Kedah",
+          "aktif": "0.0%",
+          "streak": "5.7",
+          "nota": "0.0"
+        },
+        {
+          "pos": 14,
+          "rank21": 14,
+          "state": "Melaka",
+          "aktif": "0.0%",
+          "streak": "5.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 15,
+          "rank21": 15,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "5.3",
+          "nota": "0.0"
+        },
+        {
+          "pos": 16,
+          "rank21": 16,
+          "state": "Perak",
+          "aktif": "0.0%",
+          "streak": "4.9",
+          "nota": "0.0"
+        },
+        {
+          "pos": 17,
+          "rank21": 17,
+          "state": "Selangor",
+          "aktif": "0.5%",
+          "streak": "1.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 18,
+          "rank21": 18,
+          "state": "Selangor",
+          "aktif": "0.4%",
+          "streak": "1.8",
+          "nota": "0.0"
+        },
+        {
+          "pos": 19,
+          "rank21": 20,
+          "state": "Kelantan",
+          "aktif": "0.0%",
+          "streak": "2.2",
+          "nota": "0.0"
+        },
+        {
+          "pos": 20,
+          "rank21": 19,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.2",
+          "nota": "0.0"
+        },
+        {
+          "pos": 21,
+          "rank21": 21,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 22,
+          "rank21": 22,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 23,
+          "rank21": 23,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 24,
+          "rank21": 24,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 25,
+          "rank21": 25,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 26,
+          "rank21": 26,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 27,
+          "rank21": 27,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 28,
+          "rank21": 28,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 29,
+          "rank21": 29,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 30,
+          "rank21": 30,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 31,
+          "rank21": 31,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 32,
+          "rank21": 32,
+          "state": "Pahang",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 33,
+          "rank21": 33,
+          "state": "Pahang",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 34,
+          "rank21": 34,
+          "state": "Kedah",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 35,
+          "rank21": 35,
+          "state": "Terengganu",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 36,
+          "rank21": 36,
+          "state": "Terengganu",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 37,
+          "rank21": 37,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 38,
+          "rank21": 38,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 39,
+          "rank21": 39,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 40,
+          "rank21": 40,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 41,
+          "rank21": 41,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 42,
+          "rank21": 42,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 43,
+          "rank21": 43,
+          "state": "Pahang",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 44,
+          "rank21": 44,
+          "state": "Kuala Lumpur",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 45,
+          "rank21": 45,
+          "state": "Kuala Lumpur",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 46,
+          "rank21": 47,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 47,
+          "rank21": 48,
+          "state": "Kuala Lumpur",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 48,
+          "rank21": 49,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "0.0",
+          "nota": "0.0"
+        }
+      ]
+    },
+    "2026-08-31": {
+      "line": "Minggu 31 Aug 2026 · 48 sekolah dalam pertandingan",
+      "rows": [
+        {
+          "pos": 1,
+          "rank21": 1,
+          "state": "Kelantan",
+          "aktif": "0.0%",
+          "streak": "15.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 2,
+          "rank21": 2,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "9.3",
+          "nota": "0.0"
+        },
+        {
+          "pos": 3,
+          "rank21": 3,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "8.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 4,
+          "rank21": 4,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "8.4",
+          "nota": "0.0"
+        },
+        {
+          "pos": 5,
+          "rank21": 5,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "8.2",
+          "nota": "0.0"
+        },
+        {
+          "pos": 6,
+          "rank21": 6,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "8.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 7,
+          "rank21": 7,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "7.9",
+          "nota": "0.0"
+        },
+        {
+          "pos": 8,
+          "rank21": 8,
+          "state": "Kedah",
+          "aktif": "0.0%",
+          "streak": "7.2",
+          "nota": "0.0"
+        },
+        {
+          "pos": 9,
+          "rank21": 9,
+          "state": "Perak",
+          "aktif": "0.0%",
+          "streak": "7.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 10,
+          "rank21": 10,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "6.8",
+          "nota": "0.0"
+        },
+        {
+          "pos": 11,
+          "rank21": 11,
+          "state": "Melaka",
+          "aktif": "0.0%",
+          "streak": "6.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 12,
+          "rank21": 12,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "6.4",
+          "nota": "0.0"
+        },
+        {
+          "pos": 13,
+          "rank21": 13,
+          "state": "Kedah",
+          "aktif": "0.0%",
+          "streak": "5.7",
+          "nota": "0.0"
+        },
+        {
+          "pos": 14,
+          "rank21": 14,
+          "state": "Melaka",
+          "aktif": "0.0%",
+          "streak": "5.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 15,
+          "rank21": 15,
+          "state": "Johor",
+          "aktif": "0.0%",
+          "streak": "5.3",
+          "nota": "0.0"
+        },
+        {
+          "pos": 16,
+          "rank21": 16,
+          "state": "Perak",
+          "aktif": "0.0%",
+          "streak": "4.9",
+          "nota": "0.0"
+        },
+        {
+          "pos": 17,
+          "rank21": 18,
+          "state": "Selangor",
+          "aktif": "0.2%",
+          "streak": "1.7",
+          "nota": "0.0"
+        },
+        {
+          "pos": 18,
+          "rank21": 19,
+          "state": "Selangor",
+          "aktif": "0.4%",
+          "streak": "1.2",
+          "nota": "0.0"
+        },
+        {
+          "pos": 19,
+          "rank21": 20,
+          "state": "Kelantan",
+          "aktif": "0.0%",
+          "streak": "1.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 20,
+          "rank21": 17,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.6",
+          "nota": "0.0"
+        },
+        {
+          "pos": 21,
+          "rank21": 21,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 22,
+          "rank21": 22,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 23,
+          "rank21": 23,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.1",
+          "nota": "0.0"
+        },
+        {
+          "pos": 24,
+          "rank21": 24,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 25,
+          "rank21": 25,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 26,
+          "rank21": 26,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 27,
+          "rank21": 27,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 28,
+          "rank21": 28,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 29,
+          "rank21": 29,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 30,
+          "rank21": 30,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 31,
+          "rank21": 31,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 32,
+          "rank21": 32,
+          "state": "Pahang",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 33,
+          "rank21": 33,
+          "state": "Pahang",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 34,
+          "rank21": 34,
+          "state": "Kedah",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 35,
+          "rank21": 35,
+          "state": "Terengganu",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 36,
+          "rank21": 36,
+          "state": "Terengganu",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 37,
+          "rank21": 37,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 38,
+          "rank21": 38,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 39,
+          "rank21": 39,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 40,
+          "rank21": 40,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 41,
+          "rank21": 41,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 42,
+          "rank21": 42,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 43,
+          "rank21": 43,
+          "state": "Pahang",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 44,
+          "rank21": 44,
+          "state": "Kuala Lumpur",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 45,
+          "rank21": 45,
+          "state": "Kuala Lumpur",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 46,
+          "rank21": 47,
+          "state": "Sabah",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 47,
+          "rank21": 48,
+          "state": "Kuala Lumpur",
+          "aktif": "0.0%",
+          "streak": "1.0",
+          "nota": "0.0"
+        },
+        {
+          "pos": 48,
+          "rank21": 49,
+          "state": "Selangor",
+          "aktif": "0.0%",
+          "streak": "0.0",
+          "nota": "0.0"
+        }
+      ]
+    }
+  },
+  "tuCells": {
+    "2026-09-14": {
+      "pos17": {
+        "aktif": "0.5%",
+        "streak": "1.6"
+      },
+      "pos21": {
+        "aktif": "0.0%"
+      }
+    },
+    "2026-09-07": {
+      "pos17": {
+        "aktif": "0.5%",
+        "streak": "1.6"
+      },
+      "pos19": {
+        "aktif": "0.0%"
+      },
+      "pos20": {
+        "aktif": "0.0%"
+      }
+    },
+    "2026-08-31": {
+      "pos19": {
+        "aktif": "0.0%"
+      },
+      "pos20": {
+        "aktif": "0.0%"
+      }
+    }
+  },
+  "seedCheckNote": "Audit round 2: compare with SRS §6.11.6. Differences at the TU cells: 14 Sep pos21 aktif 0.0% (seed 0.4%), 07 Sep pos20 aktif 0.0% (seed 0.4%), 31 Aug pos20 aktif 0.0% (seed 0.5%)."
+}

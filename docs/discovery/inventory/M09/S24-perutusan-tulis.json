@@ -1,0 +1,3256 @@
+{
+ "screen": "S24",
+ "key": "S24-perutusan-tulis",
+ "route": "/perutusan/tulis",
+ "name": "Tulis Perutusan",
+ "module": "M09",
+ "generatedAt": "2026-09-25T11:01:18.244Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 93,
+  "visibleDefault": 36,
+  "conditional": 45,
+  "hiddenOnly": 12,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 5,
+   "form": 1,
+   "hidden-field": 2,
+   "label": 14,
+   "input": 6,
+   "toggle": 1,
+   "dropdown-trigger": 3,
+   "button": 50,
+   "select": 3,
+   "link": 2,
+   "textarea": 1,
+   "checkbox": 2,
+   "radio": 3
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (status published; Quill editor)",
+   "file": "_raw/M09/S24-perutusan-tulis__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var f = [...document.querySelectorAll('main form')].find(x => (x.method || '').toLowerCase() === 'post' && !x.querySelector('input[name=_method][value=DELETE]')); if (!f) return 'no post form'; var inv = [...f.querySelectorAll(':invalid')].filter(e => e.name).map(e => e.name); return 'novalidate=' + f.noValidate + ' valid=' + f.checkValidity() + ' invalid(' + inv.length + ')=' + inv.slice(0, 12).join(','); })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main select')].filter(s => s.name).map(s => s.name + '=' + JSON.stringify(s.value) + (s.selectedIndex >= 0 ? '(' + s.options[s.selectedIndex].text.trim() + ')' : '')).concat([...document.querySelectorAll('main input[type=checkbox],main input[type=radio]')].filter(c => c.name).map(c => c.name + ':' + c.value + '=' + c.checked)).join(' ; '))()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main a, main button')].filter(b => /^(Batal|Kembali|Simpan|Kemaskini|Terbitkan|Hantar|Tapis|Cari|Reset|Tambah)/.test(b.textContent.trim())).map(b => { var r = b.getBoundingClientRect(); return b.textContent.trim().replace(/\\s+/g, ' ').slice(0, 26) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; ') + ' | docW=' + document.documentElement.scrollWidth)()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "novalidate=false valid=false invalid(1)=title",
+    "is_pinned:1=false ; is_public:1=false ; status:published=true ; status:scheduled=false ; status:draft=false",
+    "Batal@440,1432 88x50 ; Hantar Perutusan@541,1432 540x50 | docW=1265",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "align-picker__1280",
+   "description": "Quill align picker open",
+   "file": "_raw/M09/S24-perutusan-tulis__align-picker__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "click": "main .ql-align .ql-picker-label"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "color-picker__1280",
+   "description": "Quill colour picker open",
+   "file": "_raw/M09/S24-perutusan-tulis__color-picker__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "click": "main .ql-color .ql-picker-label"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "draft__1280",
+   "description": "\"Draf\" chosen",
+   "file": "_raw/M09/S24-perutusan-tulis__draft__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "click": "main label:has-text(\"Draf\")"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main select')].filter(s => s.name).map(s => s.name + '=' + JSON.stringify(s.value) + (s.selectedIndex >= 0 ? '(' + s.options[s.selectedIndex].text.trim() + ')' : '')).concat([...document.querySelectorAll('main input[type=checkbox],main input[type=radio]')].filter(c => c.name).map(c => c.name + ':' + c.value + '=' + c.checked)).join(' ; '))()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "is_pinned:1=false ; is_public:1=false ; status:published=false ; status:scheduled=false ; status:draft=true",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "header-picker__1280",
+   "description": "Quill header picker open",
+   "file": "_raw/M09/S24-perutusan-tulis__header-picker__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "click": "main .ql-header .ql-picker-label"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "html-mode__1280",
+   "description": "HTML toggle on (Quill hidden, raw textarea shown)",
+   "file": "_raw/M09/S24-perutusan-tulis__html-mode__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "click": "#btn-toggle-html"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "scheduled__1280",
+   "description": "\"Jadualkan\" chosen -> \"Tarikh & Masa Penerbitan\" shown",
+   "file": "_raw/M09/S24-perutusan-tulis__scheduled__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "click": "main label:has-text(\"Jadualkan\")"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main select')].filter(s => s.name).map(s => s.name + '=' + JSON.stringify(s.value) + (s.selectedIndex >= 0 ? '(' + s.options[s.selectedIndex].text.trim() + ')' : '')).concat([...document.querySelectorAll('main input[type=checkbox],main input[type=radio]')].filter(c => c.name).map(c => c.name + ':' + c.value + '=' + c.checked)).join(' ; '))()"
+    },
+    {
+     "eval": "(() => { var f = [...document.querySelectorAll('main form')].find(x => (x.method || '').toLowerCase() === 'post' && !x.querySelector('input[name=_method][value=DELETE]')); if (!f) return 'no post form'; var inv = [...f.querySelectorAll(':invalid')].filter(e => e.name).map(e => e.name); return 'novalidate=' + f.noValidate + ' valid=' + f.checkValidity() + ' invalid(' + inv.length + ')=' + inv.slice(0, 12).join(','); })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "is_pinned:1=false ; is_public:1=false ; status:published=false ; status:scheduled=true ; status:draft=false",
+    "novalidate=false valid=false invalid(1)=title",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "title-only__1280",
+   "description": "title typed, body empty (form valid: body not required)",
+   "file": "_raw/M09/S24-perutusan-tulis__title-only__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "fill": [
+      "main input[name=title]",
+      "x"
+     ]
+    },
+    {
+     "eval": "(() => { var f = [...document.querySelectorAll('main form')].find(x => (x.method || '').toLowerCase() === 'post' && !x.querySelector('input[name=_method][value=DELETE]')); if (!f) return 'no post form'; var inv = [...f.querySelectorAll(':invalid')].filter(e => e.name).map(e => e.name); return 'novalidate=' + f.noValidate + ' valid=' + f.checkValidity() + ' invalid(' + inv.length + ')=' + inv.slice(0, 12).join(','); })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "novalidate=false valid=true invalid(0)=",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M09/S24-perutusan-tulis__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main a, main button')].filter(b => /^(Batal|Kembali|Simpan|Kemaskini|Terbitkan|Hantar|Tapis|Cari|Reset|Tambah)/.test(b.textContent.trim())).map(b => { var r = b.getBoundingClientRect(); return b.textContent.trim().replace(/\\s+/g, ' ').slice(0, 26) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; ') + ' | docW=' + document.documentElement.scrollWidth)()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "Batal@25,1637 88x50 ; Hantar Perutusan@125,1637 210x50 | docW=360",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M09/S24-perutusan-tulis__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/perutusan/tulis",
+   "finalUrl": "/perutusan/tulis",
+   "httpStatus": 200,
+   "title": "Tulis Perutusan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main a, main button')].filter(b => /^(Batal|Kembali|Simpan|Kemaskini|Terbitkan|Hantar|Tapis|Cari|Reset|Tambah)/.test(b.textContent.trim())).map(b => { var r = b.getBoundingClientRect(); return b.textContent.trim().replace(/\\s+/g, ' ').slice(0, 26) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; ') + ' | docW=' + document.documentElement.scrollWidth)()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "Batal@56,1478 88x50 ; Hantar Perutusan@157,1478 540x50 | docW=753",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Tulis Perutusan",
+   "seenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ status: 'published' }",
+   "keys": [
+    "status"
+   ],
+   "liveState": {
+    "status": "published"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Tulis Perutusan",
+   "seenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tulis perutusan anda di sini...",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M09-S24-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Tulis Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Tulis Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Tulis Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-004",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/perutusan/tulis",
+   "method": "POST",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "title",
+    "body",
+    "images[]",
+    "documents[]",
+    "youtube_url",
+    "is_pinned",
+    "is_public",
+    "status",
+    "status",
+    "status",
+    "scheduled_at"
+   ],
+   "landmark": "main",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-005",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Skop Perutusan",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "Seluruh Malaysia (Kebangsaan)",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-008",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Perutusan",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-009",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "title",
+   "label": "Tajuk Perutusan",
+   "placeholder": "cth: Perutusan Pengetua Semester 2 2026",
+   "required": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kandungan",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-011",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "text": "HTML",
+   "icon": "fa-code",
+   "form": "https://prestasiplus.my/perutusan/tulis",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "alpine": {
+    "onclick": "toggleHtmlEditor()"
+   },
+   "domId": "btn-toggle-html",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-012",
+   "kind": "dropdown-trigger",
+   "tag": "span",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-013",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "header-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-014",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "header-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-015",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "header-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-016",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "2",
+     "text": ""
+    },
+    {
+     "value": "3",
+     "text": ""
+    },
+    {
+     "value": "",
+     "text": ""
+    }
+   ],
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-017",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "svg",
+   "form": "https://prestasiplus.my/perutusan/tulis",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "ariaLabel": "bold",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-018",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "svg",
+   "form": "https://prestasiplus.my/perutusan/tulis",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "ariaLabel": "italic",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-019",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "svg",
+   "form": "https://prestasiplus.my/perutusan/tulis",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "ariaLabel": "underline",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-020",
+   "kind": "dropdown-trigger",
+   "tag": "span",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-021",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-022",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-023",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-024",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-025",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-026",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-027",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-028",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-029",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-030",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-031",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-032",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-033",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-034",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-035",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-036",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-037",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-038",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-039",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-040",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-041",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-042",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-043",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-044",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-045",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-046",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-047",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-048",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-049",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-050",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-051",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-052",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-053",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-054",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-055",
+   "kind": "button",
+   "tag": "span",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "color-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-056",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "",
+     "text": ""
+    },
+    {
+     "value": "#e60000",
+     "text": ""
+    },
+    {
+     "value": "#ff9900",
+     "text": ""
+    },
+    {
+     "value": "#ffff00",
+     "text": ""
+    },
+    {
+     "value": "#008a00",
+     "text": ""
+    },
+    {
+     "value": "#0066cc",
+     "text": ""
+    },
+    {
+     "value": "#9933ff",
+     "text": ""
+    },
+    {
+     "value": "#ffffff",
+     "text": ""
+    },
+    {
+     "value": "#facccc",
+     "text": ""
+    },
+    {
+     "value": "#ffebcc",
+     "text": ""
+    },
+    {
+     "value": "#ffffcc",
+     "text": ""
+    },
+    {
+     "value": "#cce8cc",
+     "text": ""
+    },
+    {
+     "value": "#cce0f5",
+     "text": ""
+    },
+    {
+     "value": "#ebd6ff",
+     "text": ""
+    },
+    {
+     "value": "#bbbbbb",
+     "text": ""
+    },
+    {
+     "value": "#f06666",
+     "text": ""
+    },
+    {
+     "value": "#ffc266",
+     "text": ""
+    },
+    {
+     "value": "#ffff66",
+     "text": ""
+    },
+    {
+     "value": "#66b966",
+     "text": ""
+    },
+    {
+     "value": "#66a3e0",
+     "text": ""
+    },
+    {
+     "value": "#c285ff",
+     "text": ""
+    },
+    {
+     "value": "#888888",
+     "text": ""
+    },
+    {
+     "value": "#a10000",
+     "text": ""
+    },
+    {
+     "value": "#b26b00",
+     "text": ""
+    },
+    {
+     "value": "#b2b200",
+     "text": ""
+    },
+    {
+     "value": "#006100",
+     "text": ""
+    },
+    {
+     "value": "#0047b2",
+     "text": ""
+    },
+    {
+     "value": "#6b24b2",
+     "text": ""
+    },
+    {
+     "value": "#444444",
+     "text": ""
+    },
+    {
+     "value": "#5c0000",
+     "text": ""
+    },
+    {
+     "value": "#663d00",
+     "text": ""
+    },
+    {
+     "value": "#666600",
+     "text": ""
+    },
+    {
+     "value": "#003700",
+     "text": ""
+    },
+    {
+     "value": "#002966",
+     "text": ""
+    },
+    {
+     "value": "#3d1466",
+     "text": ""
+    }
+   ],
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-057",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "svg",
+   "form": "https://prestasiplus.my/perutusan/tulis",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "ariaLabel": "list: ordered",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-058",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "svg",
+   "form": "https://prestasiplus.my/perutusan/tulis",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "ariaLabel": "list: bullet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-059",
+   "kind": "dropdown-trigger",
+   "tag": "span",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-060",
+   "kind": "button",
+   "tag": "span",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "align-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-061",
+   "kind": "button",
+   "tag": "span",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "align-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-062",
+   "kind": "button",
+   "tag": "span",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "align-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-063",
+   "kind": "button",
+   "tag": "span",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "role": "button",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "align-picker__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-064",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "",
+     "text": ""
+    },
+    {
+     "value": "center",
+     "text": ""
+    },
+    {
+     "value": "right",
+     "text": ""
+    },
+    {
+     "value": "justify",
+     "text": ""
+    }
+   ],
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-065",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "svg",
+   "form": "https://prestasiplus.my/perutusan/tulis",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "ariaLabel": "link",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-066",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "svg",
+   "form": "https://prestasiplus.my/perutusan/tulis",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "ariaLabel": "clean",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "html-mode__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-067",
+   "kind": "link",
+   "tag": "a",
+   "href": "about:blank",
+   "absHref": "about:blank",
+   "target": "_blank",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-068",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-069",
+   "kind": "textarea",
+   "tag": "textarea",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "domId": "html-editor",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "html-mode__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-070",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "body",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "domId": "body-input",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-071",
+   "kind": "label",
+   "tag": "label",
+   "text": "Gambar (maks 2MB setiap satu)",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-072",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "images[]",
+   "label": "Klik untuk muat naik gambar JPG, PNG, GIF - maks 2MB",
+   "accept": "image/*",
+   "multiple": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "domId": "imageUpload",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-073",
+   "kind": "label",
+   "tag": "label",
+   "text": "Klik untuk muat naik gambar JPG, PNG, GIF - maks 2MB",
+   "for": "imageUpload",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-074",
+   "kind": "label",
+   "tag": "label",
+   "text": "Dokumen PDF (maks 5MB setiap satu)",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-075",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "documents[]",
+   "label": "Klik untuk muat naik PDF PDF sahaja - maks 5MB",
+   "accept": ".pdf",
+   "multiple": true,
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "domId": "docUpload",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-076",
+   "kind": "label",
+   "tag": "label",
+   "text": "Klik untuk muat naik PDF PDF sahaja - maks 5MB",
+   "for": "docUpload",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-077",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pautan Video YouTube (Pilihan)",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-078",
+   "kind": "input",
+   "tag": "input",
+   "type": "url",
+   "name": "youtube_url",
+   "label": "Pautan Video YouTube (Pilihan)",
+   "placeholder": "https://www.youtube.com/watch?v=...",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-079",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_pinned",
+   "label": "Sematkan di atas (maks 2)",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "domId": "pinCheck",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M09-S24-080",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sematkan di atas (maks 2)",
+   "for": "pinCheck",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-081",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_public",
+   "label": "Jadikan Awam (boleh dibaca tanpa login)",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "domId": "publicCheck",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M09-S24-082",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jadikan Awam (boleh dibaca tanpa login)",
+   "for": "publicCheck",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-083",
+   "kind": "label",
+   "tag": "label",
+   "text": "Status Penerbitan",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-084",
+   "kind": "label",
+   "tag": "label",
+   "text": "Terbit Sekarang Terus dipaparkan",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-085",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "status",
+   "label": "Terbit Sekarang Terus dipaparkan",
+   "optionValue": "published",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "alpine": {
+    "x-model": "status"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-086",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jadualkan Pilih tarikh & masa",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-087",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "status",
+   "label": "Jadualkan Pilih tarikh & masa",
+   "optionValue": "scheduled",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "alpine": {
+    "x-model": "status"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "scheduled__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-088",
+   "kind": "label",
+   "tag": "label",
+   "text": "Draf Simpan dahulu",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-089",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "status",
+   "label": "Draf Simpan dahulu",
+   "optionValue": "draft",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "alpine": {
+    "x-model": "status"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "draft__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-090",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tarikh & Masa Penerbitan",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "scheduled__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "status === 'scheduled'"
+  },
+  {
+   "id": "EL-M09-S24-091",
+   "kind": "input",
+   "tag": "input",
+   "type": "datetime-local",
+   "name": "scheduled_at",
+   "label": "Tarikh & Masa Penerbitan",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "scheduled__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "status === 'scheduled'"
+  },
+  {
+   "id": "EL-M09-S24-092",
+   "kind": "link",
+   "tag": "a",
+   "text": "Batal",
+   "href": "https://prestasiplus.my/perutusan",
+   "absHref": "https://prestasiplus.my/perutusan",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S24-093",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Hantar Perutusan",
+   "icon": "fa-paper-plane",
+   "form": "https://prestasiplus.my/perutusan/tulis",
+   "landmark": "form",
+   "section": "Tulis Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "align-picker__1280",
+    "color-picker__1280",
+    "draft__1280",
+    "header-picker__1280",
+    "html-mode__1280",
+    "scheduled__1280",
+    "title-only__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

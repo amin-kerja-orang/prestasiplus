@@ -1,0 +1,1163 @@
+{
+ "screen": "S4",
+ "key": "S4-hadiah-edit",
+ "route": "/admin/hadiah/{id}/edit",
+ "name": "Edit Hadiah",
+ "module": "M15",
+ "generatedAt": "2026-09-26T03:57:35.889Z",
+ "notes": "new route; edit form PUT /admin/hadiah/{id}; unknown id 404",
+ "shell": "SHA",
+ "summary": {
+  "total": 54,
+  "visibleDefault": 39,
+  "conditional": 13,
+  "hiddenOnly": 2,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 4,
+   "heading": 4,
+   "form": 1,
+   "hidden-field": 2,
+   "label": 19,
+   "select": 2,
+   "input": 11,
+   "textarea": 4,
+   "checkbox": 2,
+   "button": 1,
+   "text": 4
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "id 1 Roblox RM10 (gaming, parent consent ticked, stock ∞)",
+   "file": "_raw/M15/S4-hadiah-edit__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/hadiah/1/edit",
+   "finalUrl": "/admin/hadiah/1/edit",
+   "httpStatus": 200,
+   "title": "Edit Hadiah",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('main tbody td:first-child .font-semibold, main tbody td:first-child .text-xs').forEach(function (d) { if (/tebusan/.test(location.pathname)) { d.classList.add('m15n'); n++; } });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm15mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m15mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "flagship__1280",
+   "description": "id 59 Roblox RM1000 (flagship)",
+   "file": "_raw/M15/S4-hadiah-edit__flagship__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/hadiah/59/edit",
+   "finalUrl": "/admin/hadiah/59/edit",
+   "httpStatus": 200,
+   "title": "Edit Hadiah",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('main tbody td:first-child .font-semibold, main tbody td:first-child .text-xs').forEach(function (d) { if (/tebusan/.test(location.pathname)) { d.classList.add('m15n'); n++; } });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm15mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m15mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "not-found__1280",
+   "description": "unknown id (404)",
+   "file": "_raw/M15/S4-hadiah-edit__not-found__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/hadiah/99999/edit",
+   "finalUrl": "/admin/hadiah/99999/edit",
+   "httpStatus": 404,
+   "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('main tbody td:first-child .font-semibold, main tbody td:first-child .text-xs').forEach(function (d) { if (/tebusan/.test(location.pathname)) { d.classList.add('m15n'); n++; } });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm15mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m15mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "stock__1280",
+   "description": "id 9 Hotlink RM5 (telco, stock 5, no monthly cap)",
+   "file": "_raw/M15/S4-hadiah-edit__stock__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/hadiah/9/edit",
+   "finalUrl": "/admin/hadiah/9/edit",
+   "httpStatus": 200,
+   "title": "Edit Hadiah",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('main tbody td:first-child .font-semibold, main tbody td:first-child .text-xs').forEach(function (d) { if (/tebusan/.test(location.pathname)) { d.classList.add('m15n'); n++; } });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm15mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m15mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M15/S4-hadiah-edit__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/hadiah/1/edit",
+   "finalUrl": "/admin/hadiah/1/edit",
+   "httpStatus": 200,
+   "title": "Edit Hadiah",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('main tbody td:first-child .font-semibold, main tbody td:first-child .text-xs').forEach(function (d) { if (/tebusan/.test(location.pathname)) { d.classList.add('m15n'); n++; } });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm15mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m15mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M15/S4-hadiah-edit__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/hadiah/1/edit",
+   "finalUrl": "/admin/hadiah/1/edit",
+   "httpStatus": 200,
+   "title": "Edit Hadiah",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('main tbody td:first-child .font-semibold, main tbody td:first-child .text-xs').forEach(function (d) { if (/tebusan/.test(location.pathname)) { d.classList.add('m15n'); n++; } });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm15mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m15mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M15-S4-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "← Kembali ke senarai",
+   "href": "https://prestasiplus.my/admin/hadiah",
+   "absHref": "https://prestasiplus.my/admin/hadiah",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-002",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-003",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/hadiah/1",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "category",
+    "vendor",
+    "title",
+    "description",
+    "denomination_rm",
+    "token_cost",
+    "icon_emoji",
+    "stock_quantity",
+    "max_per_month_per_student",
+    "voucher_validity_days",
+    "delivery_method",
+    "vendor_sku",
+    "display_order",
+    "image_url",
+    "terms_text",
+    "is_active",
+    "requires_parent_consent"
+   ],
+   "landmark": "main",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-004",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-005",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-006",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kategori * 🏆 Mahkota (RM500+) 💳 E-Wallet 📱 Telco 🎮 Gaming 🎬 Streaming 🍔 F&B 🛒 E-Commerce 📚 Pembelajaran 🎭 Hiburan",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-007",
+   "kind": "select",
+   "tag": "select",
+   "name": "category",
+   "label": "Kategori * 🏆 Mahkota (RM500+) 💳 E-Wallet 📱 Telco 🎮 Gaming 🎬 Streaming 🍔 F&B 🛒 E-Commerce 📚 Pembelajaran 🎭 Hiburan",
+   "required": true,
+   "options": [
+    {
+     "value": "flagship",
+     "text": "🏆 Mahkota (RM500+)"
+    },
+    {
+     "value": "ewallet",
+     "text": "💳 E-Wallet"
+    },
+    {
+     "value": "telco",
+     "text": "📱 Telco"
+    },
+    {
+     "value": "gaming",
+     "text": "🎮 Gaming"
+    },
+    {
+     "value": "streaming",
+     "text": "🎬 Streaming"
+    },
+    {
+     "value": "food_beverage",
+     "text": "🍔 F&B"
+    },
+    {
+     "value": "ecommerce",
+     "text": "🛒 E-Commerce"
+    },
+    {
+     "value": "education",
+     "text": "📚 Pembelajaran"
+    },
+    {
+     "value": "entertainment",
+     "text": "🎭 Hiburan"
+    }
+   ],
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-008",
+   "kind": "label",
+   "tag": "label",
+   "text": "Vendor *",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-009",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "vendor",
+   "label": "Vendor *",
+   "placeholder": "cth: Roblox, Touch n Go, Hotlink",
+   "required": true,
+   "maxlength": "100",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk *",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-011",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "title",
+   "label": "Tajuk *",
+   "placeholder": "cth: TnG eWallet RM50",
+   "required": true,
+   "maxlength": "200",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan Tukar untuk Robux dalam Roblox.",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-013",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan Tukar untuk Robux dalam Roblox.",
+   "maxlength": "1000",
+   "rows": "2",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nilai (RM) *",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "denomination_rm",
+   "label": "Nilai (RM) *",
+   "required": true,
+   "min": "1",
+   "max": "10000",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kos Token * 100 syiling = 1 token = RM1",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-017",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "token_cost",
+   "label": "Kos Token * 100 syiling = 1 token = RM1",
+   "required": true,
+   "min": "1",
+   "max": "10000",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-018",
+   "kind": "label",
+   "tag": "label",
+   "text": "Emoji Icon",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-019",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon_emoji",
+   "label": "Emoji Icon",
+   "placeholder": "🎁",
+   "maxlength": "8",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-020",
+   "kind": "label",
+   "tag": "label",
+   "text": "Stok (kosong = tanpa had)",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-021",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "stock_quantity",
+   "label": "Stok (kosong = tanpa had)",
+   "min": "0",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-022",
+   "kind": "label",
+   "tag": "label",
+   "text": "Maks/bulan/pelajar",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-023",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "max_per_month_per_student",
+   "label": "Maks/bulan/pelajar",
+   "min": "1",
+   "max": "99",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sah Hari (default 365)",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-025",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "voucher_validity_days",
+   "label": "Sah Hari (default 365)",
+   "min": "1",
+   "max": "1825",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-026",
+   "kind": "label",
+   "tag": "label",
+   "text": "Delivery Manual (admin paste) API (auto, future) Instant",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-027",
+   "kind": "select",
+   "tag": "select",
+   "name": "delivery_method",
+   "label": "Delivery Manual (admin paste) API (auto, future) Instant",
+   "options": [
+    {
+     "value": "manual",
+     "text": "Manual (admin paste)"
+    },
+    {
+     "value": "api",
+     "text": "API (auto, future)"
+    },
+    {
+     "value": "instant",
+     "text": "Instant"
+    }
+   ],
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "Vendor SKU (optional)",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-029",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "vendor_sku",
+   "label": "Vendor SKU (optional)",
+   "maxlength": "100",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-030",
+   "kind": "label",
+   "tag": "label",
+   "text": "Display Order",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-031",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "display_order",
+   "label": "Display Order",
+   "min": "0",
+   "max": "9999",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-032",
+   "kind": "label",
+   "tag": "label",
+   "text": "Image URL (optional)",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-033",
+   "kind": "input",
+   "tag": "input",
+   "type": "url",
+   "name": "image_url",
+   "label": "Image URL (optional)",
+   "maxlength": "500",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-034",
+   "kind": "label",
+   "tag": "label",
+   "text": "Terma Khas",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-035",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "terms_text",
+   "label": "Terma Khas",
+   "maxlength": "2000",
+   "rows": "2",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-036",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-037",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M15-S4-038",
+   "kind": "label",
+   "tag": "label",
+   "text": "Perlu kelulusan ibu bapa",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-039",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "requires_parent_consent",
+   "label": "Perlu kelulusan ibu bapa",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "flagship__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-040",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "💾 Simpan",
+   "form": "https://prestasiplus.my/admin/hadiah/1",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-041",
+   "kind": "link",
+   "tag": "a",
+   "text": "Batal",
+   "href": "https://prestasiplus.my/admin/hadiah",
+   "absHref": "https://prestasiplus.my/admin/hadiah",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM10",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "flagship__1280",
+    "stock__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-042",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "✏️ Edit Hadiah: Roblox Gift Card RM1000 🏆",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flagship__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-043",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan ~13,400 Robux. Untuk mega-fan Roblox.",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM1000 🏆",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flagship__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-044",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan ~13,400 Robux. Untuk mega-fan Roblox.",
+   "maxlength": "1000",
+   "rows": "2",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Roblox Gift Card RM1000 🏆",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "flagship__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "404",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-046",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔍",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-047",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-048",
+   "kind": "text",
+   "tag": "p",
+   "text": "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-049",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-050",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "/latih-tubi",
+   "absHref": "https://prestasiplus.my/latih-tubi",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-051",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-052",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "✏️ Edit Hadiah: Hotlink Topup RM5",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "stock__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-053",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan Reload Hotlink prepaid.",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Hotlink Topup RM5",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "stock__1280"
+   ]
+  },
+  {
+   "id": "EL-M15-S4-054",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan Reload Hotlink prepaid.",
+   "maxlength": "1000",
+   "rows": "2",
+   "landmark": "form",
+   "section": "✏️ Edit Hadiah: Hotlink Topup RM5",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "stock__1280"
+   ]
+  }
+ ]
+}

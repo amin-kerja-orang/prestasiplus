@@ -1,0 +1,717 @@
+{
+ "screen": "S6",
+ "key": "S6-analisis-item",
+ "route": "/guru/analisis-item",
+ "name": "Analisis Item Soalan - Portal Guru",
+ "module": "M11",
+ "generatedAt": "2026-09-25T11:30:26.129Z",
+ "notes": "different view from M08 /analisa-item/kelas/{id}",
+ "shell": "SHU",
+ "summary": {
+  "total": 17,
+  "visibleDefault": 13,
+  "conditional": 1,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 9,
+   "card": 1,
+   "form": 1,
+   "label": 2,
+   "select": 2,
+   "empty-state": 1,
+   "link": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "Semua Subjek / Semua Kelas (empty)",
+   "file": "_raw/M11/S6-analisis-item__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/analisis-item",
+   "finalUrl": "/guru/analisis-item",
+   "httpStatus": 200,
+   "title": "Analisis Item Soalan - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m11n')) { el.classList.add('m11n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    var isDrill = /\\/monitoring\\/sekolah\\/\\d+/.test(path);\n    // --- drill-down headers and <title>\n    if (isDrill) {\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = /\\/(pelajar|guru)\\/\\d+/.test(path) ? '<person>' : '<school>'; n++; });\n      var parts = document.title.split(' - ');\n      if (parts.length > 1 && !/^[0-9]{3} /.test(document.title)) { document.title = (/\\/(pelajar|guru)\\/\\d+/.test(path) ? '<person>' : '<school>') + ' - ' + parts.slice(1).join(' - '); n++; }\n      main.querySelectorAll('.card p.text-sm.text-slate-500').forEach(function (p) { if (/@/.test(p.textContent)) tag(p); });\n    }\n    // --- monitoring overview: school links, weekly table names, attention/suggestion sentences\n    main.querySelectorAll('a[href*=\"/monitoring/sekolah/\"]').forEach(function (a) {\n      var h = a.getAttribute('href');\n      if (/\\/(pelajar|guru)\\/\\d+/.test(h)) { tag(a); var d = a.parentElement.querySelector(':scope > div'); if (d) tag(d); }\n      else { a.textContent = '<school>'; n++; }\n    });\n    main.querySelectorAll('a[href*=\"/kirkpatrick/pelajar/\"]').forEach(function (a) { tag(a); var d = a.parentElement.querySelector(':scope > div'); if (d) tag(d); });\n    main.querySelectorAll('#section-mingguan tbody td:first-child div:first-child').forEach(function (d) { d.textContent = '<school>'; d.setAttribute('title', '<school>'); n++; });\n    main.querySelectorAll('#section-perhatian li span, #section-perhatian .grid > div span').forEach(function (s) {\n      var t = s.textContent.replace(/\\s+/g, ' ').trim(), i = t.indexOf(' — '), j = t.indexOf(': ');\n      var k = i >= 0 && (j < 0 || i < j) ? i : j;\n      if (k > 0) { s.textContent = '<school>' + t.slice(k); n++; }\n    });\n    // --- Alpine search expressions carrying lower-cased names\n    main.querySelectorAll('[x-show*=\".includes(\"]').forEach(function (e) {\n      var v = e.getAttribute('x-show'), nv = v.replace(/'[^']*'\\.includes\\(/g, \"'<name>'.includes(\");\n      if (nv !== v) { e.setAttribute('x-show', nv); n++; }\n    });\n    // --- laporan (/guru/laporan) student lists (name + e-mail) and avatars\n    main.querySelectorAll('p.font-semibold.truncate, p.truncate').forEach(function (p) { var nx = p.nextElementSibling; if (nx && /@|<email>/.test(nx.textContent)) { tag(p); tag(nx); } });\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s) || im.closest('tbody, .space-y-2')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- school names / codes in remaining text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/(pelajar|guru)\\/\\d+(?=$|[?#/])/g, '/$1/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/(pelajar|guru)\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/(pelajar|guru)\\/\\d+/, '/$1/{id}')); n++; }\n    return 'm11mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m11mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "subject__1280",
+   "description": "subject_id=1 (GET by URL; empty)",
+   "file": "_raw/M11/S6-analisis-item__subject__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/analisis-item?subject_id=1",
+   "finalUrl": "/guru/analisis-item?subject_id=1",
+   "httpStatus": 200,
+   "title": "Analisis Item Soalan - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m11n')) { el.classList.add('m11n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    var isDrill = /\\/monitoring\\/sekolah\\/\\d+/.test(path);\n    // --- drill-down headers and <title>\n    if (isDrill) {\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = /\\/(pelajar|guru)\\/\\d+/.test(path) ? '<person>' : '<school>'; n++; });\n      var parts = document.title.split(' - ');\n      if (parts.length > 1 && !/^[0-9]{3} /.test(document.title)) { document.title = (/\\/(pelajar|guru)\\/\\d+/.test(path) ? '<person>' : '<school>') + ' - ' + parts.slice(1).join(' - '); n++; }\n      main.querySelectorAll('.card p.text-sm.text-slate-500').forEach(function (p) { if (/@/.test(p.textContent)) tag(p); });\n    }\n    // --- monitoring overview: school links, weekly table names, attention/suggestion sentences\n    main.querySelectorAll('a[href*=\"/monitoring/sekolah/\"]').forEach(function (a) {\n      var h = a.getAttribute('href');\n      if (/\\/(pelajar|guru)\\/\\d+/.test(h)) { tag(a); var d = a.parentElement.querySelector(':scope > div'); if (d) tag(d); }\n      else { a.textContent = '<school>'; n++; }\n    });\n    main.querySelectorAll('a[href*=\"/kirkpatrick/pelajar/\"]').forEach(function (a) { tag(a); var d = a.parentElement.querySelector(':scope > div'); if (d) tag(d); });\n    main.querySelectorAll('#section-mingguan tbody td:first-child div:first-child').forEach(function (d) { d.textContent = '<school>'; d.setAttribute('title', '<school>'); n++; });\n    main.querySelectorAll('#section-perhatian li span, #section-perhatian .grid > div span').forEach(function (s) {\n      var t = s.textContent.replace(/\\s+/g, ' ').trim(), i = t.indexOf(' — '), j = t.indexOf(': ');\n      var k = i >= 0 && (j < 0 || i < j) ? i : j;\n      if (k > 0) { s.textContent = '<school>' + t.slice(k); n++; }\n    });\n    // --- Alpine search expressions carrying lower-cased names\n    main.querySelectorAll('[x-show*=\".includes(\"]').forEach(function (e) {\n      var v = e.getAttribute('x-show'), nv = v.replace(/'[^']*'\\.includes\\(/g, \"'<name>'.includes(\");\n      if (nv !== v) { e.setAttribute('x-show', nv); n++; }\n    });\n    // --- laporan (/guru/laporan) student lists (name + e-mail) and avatars\n    main.querySelectorAll('p.font-semibold.truncate, p.truncate').forEach(function (p) { var nx = p.nextElementSibling; if (nx && /@|<email>/.test(nx.textContent)) { tag(p); tag(nx); } });\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s) || im.closest('tbody, .space-y-2')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- school names / codes in remaining text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/(pelajar|guru)\\/\\d+(?=$|[?#/])/g, '/$1/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/(pelajar|guru)\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/(pelajar|guru)\\/\\d+/, '/$1/{id}')); n++; }\n    return 'm11mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m11mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M11/S6-analisis-item__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/analisis-item",
+   "finalUrl": "/guru/analisis-item",
+   "httpStatus": 200,
+   "title": "Analisis Item Soalan - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m11n')) { el.classList.add('m11n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    var isDrill = /\\/monitoring\\/sekolah\\/\\d+/.test(path);\n    // --- drill-down headers and <title>\n    if (isDrill) {\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = /\\/(pelajar|guru)\\/\\d+/.test(path) ? '<person>' : '<school>'; n++; });\n      var parts = document.title.split(' - ');\n      if (parts.length > 1 && !/^[0-9]{3} /.test(document.title)) { document.title = (/\\/(pelajar|guru)\\/\\d+/.test(path) ? '<person>' : '<school>') + ' - ' + parts.slice(1).join(' - '); n++; }\n      main.querySelectorAll('.card p.text-sm.text-slate-500').forEach(function (p) { if (/@/.test(p.textContent)) tag(p); });\n    }\n    // --- monitoring overview: school links, weekly table names, attention/suggestion sentences\n    main.querySelectorAll('a[href*=\"/monitoring/sekolah/\"]').forEach(function (a) {\n      var h = a.getAttribute('href');\n      if (/\\/(pelajar|guru)\\/\\d+/.test(h)) { tag(a); var d = a.parentElement.querySelector(':scope > div'); if (d) tag(d); }\n      else { a.textContent = '<school>'; n++; }\n    });\n    main.querySelectorAll('a[href*=\"/kirkpatrick/pelajar/\"]').forEach(function (a) { tag(a); var d = a.parentElement.querySelector(':scope > div'); if (d) tag(d); });\n    main.querySelectorAll('#section-mingguan tbody td:first-child div:first-child').forEach(function (d) { d.textContent = '<school>'; d.setAttribute('title', '<school>'); n++; });\n    main.querySelectorAll('#section-perhatian li span, #section-perhatian .grid > div span').forEach(function (s) {\n      var t = s.textContent.replace(/\\s+/g, ' ').trim(), i = t.indexOf(' — '), j = t.indexOf(': ');\n      var k = i >= 0 && (j < 0 || i < j) ? i : j;\n      if (k > 0) { s.textContent = '<school>' + t.slice(k); n++; }\n    });\n    // --- Alpine search expressions carrying lower-cased names\n    main.querySelectorAll('[x-show*=\".includes(\"]').forEach(function (e) {\n      var v = e.getAttribute('x-show'), nv = v.replace(/'[^']*'\\.includes\\(/g, \"'<name>'.includes(\");\n      if (nv !== v) { e.setAttribute('x-show', nv); n++; }\n    });\n    // --- laporan (/guru/laporan) student lists (name + e-mail) and avatars\n    main.querySelectorAll('p.font-semibold.truncate, p.truncate').forEach(function (p) { var nx = p.nextElementSibling; if (nx && /@|<email>/.test(nx.textContent)) { tag(p); tag(nx); } });\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s) || im.closest('tbody, .space-y-2')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- school names / codes in remaining text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/(pelajar|guru)\\/\\d+(?=$|[?#/])/g, '/$1/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/(pelajar|guru)\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/(pelajar|guru)\\/\\d+/, '/$1/{id}')); n++; }\n    return 'm11mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m11mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M11/S6-analisis-item__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/analisis-item",
+   "finalUrl": "/guru/analisis-item",
+   "httpStatus": 200,
+   "title": "Analisis Item Soalan - Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m11n')) { el.classList.add('m11n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    var isDrill = /\\/monitoring\\/sekolah\\/\\d+/.test(path);\n    // --- drill-down headers and <title>\n    if (isDrill) {\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = /\\/(pelajar|guru)\\/\\d+/.test(path) ? '<person>' : '<school>'; n++; });\n      var parts = document.title.split(' - ');\n      if (parts.length > 1 && !/^[0-9]{3} /.test(document.title)) { document.title = (/\\/(pelajar|guru)\\/\\d+/.test(path) ? '<person>' : '<school>') + ' - ' + parts.slice(1).join(' - '); n++; }\n      main.querySelectorAll('.card p.text-sm.text-slate-500').forEach(function (p) { if (/@/.test(p.textContent)) tag(p); });\n    }\n    // --- monitoring overview: school links, weekly table names, attention/suggestion sentences\n    main.querySelectorAll('a[href*=\"/monitoring/sekolah/\"]').forEach(function (a) {\n      var h = a.getAttribute('href');\n      if (/\\/(pelajar|guru)\\/\\d+/.test(h)) { tag(a); var d = a.parentElement.querySelector(':scope > div'); if (d) tag(d); }\n      else { a.textContent = '<school>'; n++; }\n    });\n    main.querySelectorAll('a[href*=\"/kirkpatrick/pelajar/\"]').forEach(function (a) { tag(a); var d = a.parentElement.querySelector(':scope > div'); if (d) tag(d); });\n    main.querySelectorAll('#section-mingguan tbody td:first-child div:first-child').forEach(function (d) { d.textContent = '<school>'; d.setAttribute('title', '<school>'); n++; });\n    main.querySelectorAll('#section-perhatian li span, #section-perhatian .grid > div span').forEach(function (s) {\n      var t = s.textContent.replace(/\\s+/g, ' ').trim(), i = t.indexOf(' — '), j = t.indexOf(': ');\n      var k = i >= 0 && (j < 0 || i < j) ? i : j;\n      if (k > 0) { s.textContent = '<school>' + t.slice(k); n++; }\n    });\n    // --- Alpine search expressions carrying lower-cased names\n    main.querySelectorAll('[x-show*=\".includes(\"]').forEach(function (e) {\n      var v = e.getAttribute('x-show'), nv = v.replace(/'[^']*'\\.includes\\(/g, \"'<name>'.includes(\");\n      if (nv !== v) { e.setAttribute('x-show', nv); n++; }\n    });\n    // --- laporan (/guru/laporan) student lists (name + e-mail) and avatars\n    main.querySelectorAll('p.font-semibold.truncate, p.truncate').forEach(function (p) { var nx = p.nextElementSibling; if (nx && /@|<email>/.test(nx.textContent)) { tag(p); tag(nx); } });\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s) || im.closest('tbody, .space-y-2')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- school names / codes in remaining text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/(pelajar|guru)\\/\\d+(?=$|[?#/])/g, '/$1/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/(pelajar|guru)\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/(pelajar|guru)\\/\\d+/, '/$1/{id}')); n++; }\n    return 'm11mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m11mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Analisis Item Soalan",
+   "seenIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M11-S6-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Analisis Item Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Analisis Item Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Analisis Item Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tapis:",
+   "landmark": "main",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-005",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/guru/analisis-item",
+   "method": "GET",
+   "fields": [
+    "subject_id",
+    "classroom_id"
+   ],
+   "landmark": "main",
+   "section": "Analisis Item Soalan",
+   "domId": "filterForm",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-006",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tapis:",
+   "landmark": "form#filterForm",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-007",
+   "kind": "label",
+   "tag": "label",
+   "text": "Mata Pelajaran",
+   "landmark": "form#filterForm",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-008",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Mata Pelajaran",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Subjek"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "3",
+     "text": "Matematik"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "4",
+     "text": "Sains"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    }
+   ],
+   "landmark": "form#filterForm",
+   "section": "Analisis Item Soalan",
+   "alpine": {
+    "onchange": "this.form.submit()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-009",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kelas",
+   "landmark": "form#filterForm",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-010",
+   "kind": "select",
+   "tag": "select",
+   "name": "classroom_id",
+   "label": "Kelas",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Kelas"
+    }
+   ],
+   "landmark": "form#filterForm",
+   "section": "Analisis Item Soalan",
+   "alpine": {
+    "onchange": "this.form.submit()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-011",
+   "kind": "text",
+   "tag": "span",
+   "text": "> 70% (Mudah)",
+   "landmark": "main",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "40–70% (Sederhana)",
+   "landmark": "main",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "< 40% (Sukar)",
+   "landmark": "main",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-014",
+   "kind": "text",
+   "tag": "span",
+   "text": "Diskriminasi: >0.3 = baik, <0 = semak semula",
+   "icon": "fa-info-circle",
+   "landmark": "main",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-015",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada data analisis item untuk paparan ini.",
+   "landmark": "main",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar perlu membuat latihan dahulu.",
+   "landmark": "main",
+   "section": "Analisis Item Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M11-S6-017",
+   "kind": "link",
+   "tag": "a",
+   "text": "Reset",
+   "href": "https://prestasiplus.my/guru/analisis-item",
+   "absHref": "https://prestasiplus.my/guru/analisis-item",
+   "icon": "fa-times",
+   "landmark": "form#filterForm",
+   "section": "Analisis Item Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject__1280"
+   ]
+  }
+ ]
+}

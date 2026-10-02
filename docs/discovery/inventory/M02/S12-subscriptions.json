@@ -1,0 +1,995 @@
+{
+ "screen": "S12",
+ "key": "S12-subscriptions",
+ "route": "/admin/school-subscriptions",
+ "name": "Langganan Sekolah",
+ "module": "M02",
+ "generatedAt": "2026-09-25T06:44:32.372Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 39,
+  "visibleDefault": 33,
+  "conditional": 6,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 6,
+   "text": 8,
+   "form": 1,
+   "input": 1,
+   "select": 2,
+   "button": 1,
+   "link": 4,
+   "table": 1,
+   "badge": 15
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default",
+   "file": "_raw/M02/S12-subscriptions__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions",
+   "finalUrl": "/admin/school-subscriptions",
+   "httpStatus": 200,
+   "title": "Langganan Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 14
+   }
+  },
+  {
+   "label": "form-t4__1280",
+   "description": "form_level=t4",
+   "file": "_raw/M02/S12-subscriptions__form-t4__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions?form_level=t4",
+   "finalUrl": "/admin/school-subscriptions?form_level=t4",
+   "httpStatus": 200,
+   "title": "Langganan Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 2
+   }
+  },
+  {
+   "label": "search-empty__1280",
+   "description": "search no result (empty state)",
+   "file": "_raw/M02/S12-subscriptions__search-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions?search=zzqxv",
+   "finalUrl": "/admin/school-subscriptions?search=zzqxv",
+   "httpStatus": 200,
+   "title": "Langganan Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-active__1280",
+   "description": "status=active",
+   "file": "_raw/M02/S12-subscriptions__status-active__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions?status=active",
+   "finalUrl": "/admin/school-subscriptions?status=active",
+   "httpStatus": 200,
+   "title": "Langganan Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 9
+   }
+  },
+  {
+   "label": "status-cancelled__1280",
+   "description": "status=cancelled",
+   "file": "_raw/M02/S12-subscriptions__status-cancelled__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions?status=cancelled",
+   "finalUrl": "/admin/school-subscriptions?status=cancelled",
+   "httpStatus": 200,
+   "title": "Langganan Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 4
+   }
+  },
+  {
+   "label": "status-expired__1280",
+   "description": "status=expired",
+   "file": "_raw/M02/S12-subscriptions__status-expired__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions?status=expired",
+   "finalUrl": "/admin/school-subscriptions?status=expired",
+   "httpStatus": 200,
+   "title": "Langganan Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-grace__1280",
+   "description": "status=grace",
+   "file": "_raw/M02/S12-subscriptions__status-grace__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions?status=grace",
+   "finalUrl": "/admin/school-subscriptions?status=grace",
+   "httpStatus": 200,
+   "title": "Langganan Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M02/S12-subscriptions__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/school-subscriptions",
+   "finalUrl": "/admin/school-subscriptions",
+   "httpStatus": 200,
+   "title": "Langganan Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 14
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M02/S12-subscriptions__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/school-subscriptions",
+   "finalUrl": "/admin/school-subscriptions",
+   "httpStatus": 200,
+   "title": "Langganan Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 14
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M02-S12-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "9",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "9",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "Aktif",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tempoh Ihsan",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tamat Tempoh",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "5,738",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "5,738",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Kuota Pelajar",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cari",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-014",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [
+    "search",
+    "status",
+    "form_level"
+   ],
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "search",
+   "placeholder": "Cari sekolah...",
+   "landmark": "form",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-016",
+   "kind": "select",
+   "tag": "select",
+   "name": "status",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Status"
+    },
+    {
+     "value": "active",
+     "text": "Aktif"
+    },
+    {
+     "value": "grace",
+     "text": "Tempoh Ihsan"
+    },
+    {
+     "value": "expired",
+     "text": "Tamat"
+    },
+    {
+     "value": "cancelled",
+     "text": "Dibatalkan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-017",
+   "kind": "select",
+   "tag": "select",
+   "name": "form_level",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Tingkatan"
+    },
+    {
+     "value": "t4",
+     "text": "Tingkatan 4"
+    },
+    {
+     "value": "t5",
+     "text": "Tingkatan 5"
+    }
+   ],
+   "landmark": "form",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-018",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cari",
+   "icon": "fa-search",
+   "form": "(no action)",
+   "landmark": "form",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-019",
+   "kind": "link",
+   "tag": "a",
+   "text": "Langganan Baru",
+   "href": "https://prestasiplus.my/admin/school-subscriptions/create",
+   "absHref": "https://prestasiplus.my/admin/school-subscriptions/create",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-020",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sekolah",
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-021",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Sekolah",
+    "Tingkatan",
+    "Pakej",
+    "Kuota",
+    "Status",
+    "Mula",
+    "Tamat",
+    ""
+   ],
+   "rowCount": 14,
+   "firstRowActions": [
+    {
+     "tag": "a",
+     "text": "Lihat",
+     "href": "https://prestasiplus.my/admin/school-subscriptions/14",
+     "icon": "fa-arrow-right"
+    }
+   ],
+   "landmark": "main",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "search-empty__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "status-grace__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-022",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-023",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Pemantauan",
+   "icon": "fa-eye",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-024",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-025",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat",
+   "href": "https://prestasiplus.my/admin/school-subscriptions/14",
+   "absHref": "https://prestasiplus.my/admin/school-subscriptions/14",
+   "icon": "fa-arrow-right",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "status-expired__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-026",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-027",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Pemantauan",
+   "icon": "fa-eye",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-028",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-029",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat",
+   "href": "https://prestasiplus.my/admin/school-subscriptions/15",
+   "absHref": "https://prestasiplus.my/admin/school-subscriptions/15",
+   "icon": "fa-arrow-right",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-030",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-031",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Penuh",
+   "icon": "fa-infinity",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-032",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Batal",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "form-t4__1280",
+    "status-cancelled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-033",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat",
+   "href": "https://prestasiplus.my/admin/school-subscriptions/13",
+   "absHref": "https://prestasiplus.my/admin/school-subscriptions/13",
+   "icon": "fa-arrow-right",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-cancelled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-034",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T4",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "form-t4__1280",
+    "status-cancelled__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-035",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T4",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "form-t4__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-036",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Batal",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "form-t4__1280",
+    "status-cancelled__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-037",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-active__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-038",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Batal",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-cancelled__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S12-039",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tamat",
+   "landmark": "table",
+   "section": "Langganan Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-expired__1280"
+   ]
+  }
+ ]
+}

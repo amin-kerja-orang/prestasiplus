@@ -1,0 +1,1162 @@
+{
+ "screen": "S6",
+ "key": "S6-chain",
+ "route": "/admin/kirkpatrick/chain",
+ "name": "Kirkpatrick Impact Chain",
+ "module": "M12",
+ "generatedAt": "2026-09-25T11:27:07.573Z",
+ "notes": "twin /guru/kirkpatrick/chain identical; header shows Dashboard (defect)",
+ "shell": "SHA",
+ "summary": {
+  "total": 67,
+  "visibleDefault": 67,
+  "conditional": 0,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 3,
+  "byKind": {
+   "heading": 3,
+   "text": 52,
+   "link": 2,
+   "card": 5,
+   "badge": 4,
+   "table": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default",
+   "file": "_raw/M12/S6-chain__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/chain",
+   "finalUrl": "/admin/kirkpatrick/chain",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Impact Chain",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "guru__1280",
+   "description": "teacher route",
+   "file": "_raw/M12/S6-chain__guru__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/kirkpatrick/chain",
+   "finalUrl": "/guru/kirkpatrick/chain",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Impact Chain",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M12/S6-chain__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/chain",
+   "finalUrl": "/admin/kirkpatrick/chain",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Impact Chain",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M12/S6-chain__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/chain",
+   "finalUrl": "/admin/kirkpatrick/chain",
+   "httpStatus": 200,
+   "title": "Kirkpatrick Impact Chain",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M12-S6-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Model Kirkpatrick — Rantaian Impak",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bukti keberkesanan Prestasi Plus berdasarkan 4 Tahap Kirkpatrick",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-003",
+   "kind": "link",
+   "tag": "a",
+   "text": "Muat Turun Laporan",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/export-pdf",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/export-pdf",
+   "target": "_blank",
+   "icon": "svg",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "← Kembali",
+   "href": "https://prestasiplus.my/admin/kirkpatrick",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-005",
+   "kind": "card",
+   "tag": "div",
+   "text": "T1",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-006",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T1",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "Reaksi",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kepuasan pengguna terhadap Prestasi Plus",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-009",
+   "kind": "text",
+   "tag": "span",
+   "text": "NPS Purata",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-010",
+   "kind": "text",
+   "tag": "span",
+   "text": "8.3/10",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-011",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kepuasan",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "4.6/5",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "Responden",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-014",
+   "kind": "text",
+   "tag": "span",
+   "text": "336",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "→",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "T2",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-017",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T2",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pembelajaran",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-019",
+   "kind": "text",
+   "tag": "div",
+   "text": "Perkembangan akademik melalui Head Count",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "82.8%",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "Soalan Dijawab",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-023",
+   "kind": "text",
+   "tag": "span",
+   "text": "306,133",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "Skor Purata",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-025",
+   "kind": "text",
+   "tag": "span",
+   "text": "80.3%",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-026",
+   "kind": "text",
+   "tag": "div",
+   "text": "→",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "T3",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-028",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T3",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkah Laku",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-030",
+   "kind": "text",
+   "tag": "div",
+   "text": "Konsistensi penggunaan platform (Mastery Learning)",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pelajar Aktif",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "951/4158 (22.9%)",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sesi Latihan",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "20,991",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-035",
+   "kind": "text",
+   "tag": "div",
+   "text": "Taburan Konsistensi:",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "Champion",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "513",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "Consistent",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-039",
+   "kind": "text",
+   "tag": "span",
+   "text": "259",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "Developing",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "169",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "Minimal",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "5",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "Disengaged",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-045",
+   "kind": "text",
+   "tag": "span",
+   "text": "3207",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-046",
+   "kind": "text",
+   "tag": "div",
+   "text": "→",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-047",
+   "kind": "card",
+   "tag": "div",
+   "text": "T4",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-048",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T4",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-049",
+   "kind": "text",
+   "tag": "div",
+   "text": "Hasil / Impak",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "Korelasi penggunaan dengan pencapaian",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "GPS",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-052",
+   "kind": "text",
+   "tag": "span",
+   "text": "4.30",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "Korelasi (r)",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-054",
+   "kind": "text",
+   "tag": "span",
+   "text": "0.1298",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-055",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kekuatan",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-056",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lemah",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-057",
+   "kind": "card",
+   "tag": "div",
+   "text": "Analisis Korelasi: Penggunaan → Pencapaian",
+   "landmark": "main",
+   "section": "Model Kirkpatrick — Rantaian Impak",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-058",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Analisis Korelasi: Penggunaan → Pencapaian",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-059",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Tahap Penggunaan",
+    "Bil. Pelajar",
+    "Purata Ketepatan",
+    "Visual"
+   ],
+   "rowCount": 4,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Analisis Korelasi: Penggunaan → Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pelajar yang menjawab 100+ soalan mencapai ketepatan 75.2%, berbanding 59.7% bagi pelajar dengan kurang 20 soalan (perbezaan +15.5%). Korelasi Pearson antara penggunaan dan ketepatan: r = 0.1298 (Lemah).",
+   "landmark": "main",
+   "section": "Analisis Korelasi: Penggunaan → Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-061",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Kesimpulan ALESA:",
+   "landmark": "main",
+   "section": "Analisis Korelasi: Penggunaan → Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-062",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Kesimpulan Model Kirkpatrick",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-063",
+   "kind": "text",
+   "tag": "p",
+   "text": "Berdasarkan analisis empat tahap Model Kirkpatrick, Prestasi Plus menunjukkan keberkesanan sebagai platform pembelajaran digital. menunjukkan maklum balas positif daripada pengguna. melalui Head Count menunjukkan perkembangan akademik yang dapat dipantau. menunjukkan pelajar yang konsisten menggunak…",
+   "landmark": "main",
+   "section": "Kesimpulan Model Kirkpatrick",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-064",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Tahap 1 (Reaksi)",
+   "landmark": "main",
+   "section": "Kesimpulan Model Kirkpatrick",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-065",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Tahap 2 (Pembelajaran)",
+   "landmark": "main",
+   "section": "Kesimpulan Model Kirkpatrick",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-066",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Tahap 3 (Tingkah Laku)",
+   "landmark": "main",
+   "section": "Kesimpulan Model Kirkpatrick",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S6-067",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Tahap 4 (Hasil)",
+   "landmark": "main",
+   "section": "Kesimpulan Model Kirkpatrick",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

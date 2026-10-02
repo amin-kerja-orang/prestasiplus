@@ -1,0 +1,1960 @@
+{
+ "screen": "S10",
+ "key": "S10-berstruktur",
+ "route": "/latihan-berstruktur?subject_id=&kbat_level=&page=",
+ "name": "Soalan Berstruktur",
+ "module": "M05",
+ "generatedAt": "2026-09-25T07:56:13.748Z",
+ "notes": "first 3 of 20 cards per page inventoried; teacher/school strings masked",
+ "shell": "SHU",
+ "summary": {
+  "total": 85,
+  "visibleDefault": 57,
+  "conditional": 24,
+  "hiddenOnly": 4,
+  "mobileOnly": 2,
+  "desktopOnly": 18,
+  "byKind": {
+   "text": 37,
+   "heading": 1,
+   "card": 7,
+   "form": 1,
+   "label": 2,
+   "select": 2,
+   "button": 1,
+   "badge": 15,
+   "link": 3,
+   "pagination": 15,
+   "empty-state": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "all subjects, page 1 of 204 (4061 items)",
+   "file": "_raw/M05/S10-berstruktur__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/latihan-berstruktur",
+   "finalUrl": "/latihan-berstruktur",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .grid > .card": 20
+   }
+  },
+  {
+   "label": "empty__1280",
+   "description": "Sains Sukan → empty state",
+   "file": "_raw/M05/S10-berstruktur__empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/latihan-berstruktur?subject_id=31",
+   "finalUrl": "/latihan-berstruktur?subject_id=31",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .grid > .card": 0
+   }
+  },
+  {
+   "label": "math__1280",
+   "description": "subject_id=3 (Matematik)",
+   "file": "_raw/M05/S10-berstruktur__math__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/latihan-berstruktur?subject_id=3",
+   "finalUrl": "/latihan-berstruktur?subject_id=3",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .grid > .card": 20
+   }
+  },
+  {
+   "label": "page2__1280",
+   "description": "page 2 (Previous enabled)",
+   "file": "_raw/M05/S10-berstruktur__page2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/latihan-berstruktur?page=2",
+   "finalUrl": "/latihan-berstruktur?page=2",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .grid > .card": 20
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M05/S10-berstruktur__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/latihan-berstruktur",
+   "finalUrl": "/latihan-berstruktur",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .grid > .card": 20
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M05/S10-berstruktur__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/latihan-berstruktur",
+   "finalUrl": "/latihan-berstruktur",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .grid > .card": 20
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Admin PRESTASI+",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M05-S10-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-004",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Soalan Berstruktur",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Latih tubi format Kertas 2 — jawab & semak secara automatik",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-006",
+   "kind": "card",
+   "tag": "div",
+   "text": "Subjek",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-007",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [
+    "subject_id",
+    "kbat_level"
+   ],
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-008",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek",
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-009",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Subjek",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Subjek"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "3",
+     "text": "Matematik"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "4",
+     "text": "Sains"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    }
+   ],
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aras KBAT",
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-011",
+   "kind": "select",
+   "tag": "select",
+   "name": "kbat_level",
+   "label": "Aras KBAT",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua"
+    },
+    {
+     "value": "1",
+     "text": "1. Mengingat"
+    },
+    {
+     "value": "2",
+     "text": "2. Memahami"
+    },
+    {
+     "value": "3",
+     "text": "3. Mengaplikasi"
+    },
+    {
+     "value": "4",
+     "text": "4. Menganalisis"
+    },
+    {
+     "value": "5",
+     "text": "5. Menilai"
+    },
+    {
+     "value": "6",
+     "text": "6. Mencipta"
+    }
+   ],
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-012",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cari",
+   "icon": "fa-search",
+   "form": "(no action)",
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-014",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-015",
+   "kind": "text",
+   "tag": "span",
+   "text": "MOTS 3",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-016",
+   "kind": "badge",
+   "tag": "span",
+   "text": "8m",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-017",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Trial",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "Merancang Pengendalian Perniagaan",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-020",
+   "kind": "text",
+   "tag": "p",
+   "text": "<masked>",
+   "icon": "fa-user-pen",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 soalan · Tingkatan 5",
+   "icon": "fa-list-ol",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-022",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula",
+   "href": "https://prestasiplus.my/latihan-berstruktur/4454/jawab",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur/4454/jawab",
+   "icon": "fa-arrow-right",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-023",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-024",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-025",
+   "kind": "text",
+   "tag": "span",
+   "text": "MOTS 3",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-026",
+   "kind": "badge",
+   "tag": "span",
+   "text": "7m",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-027",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Trial",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-028",
+   "kind": "text",
+   "tag": "p",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-029",
+   "kind": "text",
+   "tag": "p",
+   "text": "Merancang Pengendalian Perniagaan",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "<masked>",
+   "icon": "fa-user-pen",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 soalan · Tingkatan 5",
+   "icon": "fa-list-ol",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-032",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula",
+   "href": "https://prestasiplus.my/latihan-berstruktur/4455/jawab",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur/4455/jawab",
+   "icon": "fa-arrow-right",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-033",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-034",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "MOTS 3",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-036",
+   "kind": "badge",
+   "tag": "span",
+   "text": "6m",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-037",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Trial",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-038",
+   "kind": "text",
+   "tag": "p",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-039",
+   "kind": "text",
+   "tag": "p",
+   "text": "Merancang Pengendalian Perniagaan",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-040",
+   "kind": "text",
+   "tag": "p",
+   "text": "<masked>",
+   "icon": "fa-user-pen",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 soalan · Tingkatan 5",
+   "icon": "fa-list-ol",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-042",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula",
+   "href": "https://prestasiplus.my/latihan-berstruktur/4456/jawab",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur/4456/jawab",
+   "icon": "fa-arrow-right",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "math__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-044",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=2",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-045",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "20",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-048",
+   "kind": "text",
+   "tag": "span",
+   "text": "4061",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-050",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "2",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=2",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 2",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-051",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=3",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 3",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-052",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "4",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=4",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=4",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-053",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=5",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=5",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 5",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-054",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "6",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=6",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 6",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-055",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "7",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=7",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=7",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 7",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-056",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "8",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=8",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=8",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 8",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-057",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "9",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=9",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=9",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 9",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-058",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=10",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=10",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 10",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-059",
+   "kind": "text",
+   "tag": "span",
+   "text": "...",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-060",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "203",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=203",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=203",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 203",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-061",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "204",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=204",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=204",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 204",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-062",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=2",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Next &raquo;",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "math__1280",
+    "page2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-063",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada soalan berstruktur buat masa ini",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-064",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan akan ditambah oleh guru dan admin",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-065",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-066",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-067",
+   "kind": "text",
+   "tag": "span",
+   "text": "LOTS 1",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-068",
+   "kind": "badge",
+   "tag": "span",
+   "text": "4m",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280",
+    "page2__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-069",
+   "kind": "text",
+   "tag": "span",
+   "text": "2 soalan · Tingkatan 4",
+   "icon": "fa-list-ol",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-070",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-071",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-072",
+   "kind": "text",
+   "tag": "span",
+   "text": "LOTS 1",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-073",
+   "kind": "text",
+   "tag": "span",
+   "text": "3 soalan · Tingkatan 4",
+   "icon": "fa-list-ol",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-074",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-075",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-076",
+   "kind": "text",
+   "tag": "span",
+   "text": "LOTS 1",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-077",
+   "kind": "badge",
+   "tag": "span",
+   "text": "4m",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-078",
+   "kind": "text",
+   "tag": "span",
+   "text": "3 soalan · Tingkatan 4",
+   "icon": "fa-list-ol",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "math__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-079",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3m",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page2__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-080",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kewangan Perniagaan",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page2__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-081",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahagian Fungsian Utama dalam Organisasi Perniagaan",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page2__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-082",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 soalan · Tingkatan 4",
+   "icon": "fa-list-ol",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page2__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-083",
+   "kind": "text",
+   "tag": "p",
+   "text": "Perniagaan Antarabangsa",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page2__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-084",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "« Previous",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=1",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "page2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M05-S10-085",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/latihan-berstruktur?page=3",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur?page=3",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Next &raquo;",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page2__1280"
+   ]
+  }
+ ]
+}

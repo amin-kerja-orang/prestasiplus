@@ -1,0 +1,1218 @@
+{
+ "screen": "S8",
+ "key": "S8-progress",
+ "route": "/practice/progress?period=",
+ "name": "Kemajuan Saya",
+ "module": "M05",
+ "generatedAt": "2026-09-25T07:56:13.669Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 54,
+  "visibleDefault": 20,
+  "conditional": 31,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 38,
+   "filter": 4,
+   "heading": 6,
+   "link": 3,
+   "card": 3
+  }
+ },
+ "states": [
+  {
+   "label": "7__1280",
+   "description": "period=7 (empty)",
+   "file": "_raw/M05/S8-progress__7__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice/progress?period=7",
+   "finalUrl": "/practice/progress?period=7",
+   "httpStatus": 200,
+   "title": "Kemajuan Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "90__1280",
+   "description": "period=90 (empty)",
+   "file": "_raw/M05/S8-progress__90__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice/progress?period=90",
+   "finalUrl": "/practice/progress?period=90",
+   "httpStatus": 200,
+   "title": "Kemajuan Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "all__1280",
+   "description": "period=all (stats, Chart.js trend, weak topics, per-subject cards)",
+   "file": "_raw/M05/S8-progress__all__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice/progress?period=all",
+   "finalUrl": "/practice/progress?period=all",
+   "httpStatus": 200,
+   "title": "Kemajuan Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 800
+    },
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default-30__1280",
+   "description": "default period=30 (no data in window → \"Belum Ada Data\")",
+   "file": "_raw/M05/S8-progress__default-30__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice/progress",
+   "finalUrl": "/practice/progress",
+   "httpStatus": 200,
+   "title": "Kemajuan Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "all__375",
+   "description": "period=all @375",
+   "file": "_raw/M05/S8-progress__all__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/practice/progress?period=all",
+   "finalUrl": "/practice/progress?period=all",
+   "httpStatus": 200,
+   "title": "Kemajuan Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 800
+    },
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "all__768",
+   "description": "period=all @768",
+   "file": "_raw/M05/S8-progress__all__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/practice/progress?period=all",
+   "finalUrl": "/practice/progress?period=all",
+   "httpStatus": 200,
+   "title": "Kemajuan Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 800
+    },
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Kemajuan Saya",
+   "seenIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Admin PRESTASI+",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Ketepatan (%)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "rgba(99, 102, 241, 0.1)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Soalan",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "'Outfit', sans-serif",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Jumlah Soalan",
+   "sources": [
+    "script#4"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M05-S8-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Kemajuan Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Kemajuan Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Kemajuan Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-004",
+   "kind": "filter",
+   "tag": "a",
+   "text": "7 Hari",
+   "href": "?period=7",
+   "absHref": "https://prestasiplus.my/practice/progress?period=7",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-005",
+   "kind": "filter",
+   "tag": "a",
+   "text": "30 Hari",
+   "href": "?period=30",
+   "absHref": "https://prestasiplus.my/practice/progress?period=30",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-006",
+   "kind": "filter",
+   "tag": "a",
+   "text": "3 Bulan",
+   "href": "?period=90",
+   "absHref": "https://prestasiplus.my/practice/progress?period=90",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-007",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Semua",
+   "href": "?period=all",
+   "absHref": "https://prestasiplus.my/practice/progress?period=all",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "📝",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan Dijawab",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "default-30__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-013",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ketepatan Keseluruhan",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "📋",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-016",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sesi Latihan",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "⏱️",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "0m",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "default-30__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-019",
+   "kind": "text",
+   "tag": "div",
+   "text": "Masa Berlatih",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "all__1280",
+    "default-30__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-020",
+   "kind": "text",
+   "tag": "div",
+   "text": "📊",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "default-30__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-021",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Belum Ada Data",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "default-30__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "Mula buat latihan untuk lihat kemajuan kamu di sini!",
+   "landmark": "main",
+   "section": "Belum Ada Data",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "default-30__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-023",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "https://prestasiplus.my/practice",
+   "absHref": "https://prestasiplus.my/practice",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Belum Ada Data",
+   "status": "visible-default",
+   "visibleIn": [
+    "7__1280",
+    "90__1280",
+    "default-30__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-024",
+   "kind": "text",
+   "tag": "div",
+   "text": "38.7%",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "4m",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-026",
+   "kind": "card",
+   "tag": "div",
+   "text": "Trend Ketepatan",
+   "landmark": "main",
+   "section": "Kemajuan Saya",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-027",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Trend Ketepatan",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-028",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Topik Perlu Perhatian",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "BM",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "79 soalan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "40.5%",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-033",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ulang Kaji",
+   "href": "https://prestasiplus.my/practice/BM",
+   "absHref": "https://prestasiplus.my/practice/BM",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "SE",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "40 soalan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "35.0%",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-038",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ulang Kaji",
+   "href": "https://prestasiplus.my/practice/SEJ",
+   "absHref": "https://prestasiplus.my/practice/SEJ",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-039",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Prestasi Mengikut Subjek",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-040",
+   "kind": "card",
+   "tag": "div",
+   "text": "BM",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-041",
+   "kind": "text",
+   "tag": "div",
+   "text": "BM",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-042",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-043",
+   "kind": "text",
+   "tag": "p",
+   "text": "79 soalan dijawab",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-044",
+   "kind": "text",
+   "tag": "div",
+   "text": "40.5%",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-045",
+   "kind": "text",
+   "tag": "span",
+   "text": "Trend:",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "32 betul",
+   "icon": "fa-check",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "47 salah",
+   "icon": "fa-times",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-048",
+   "kind": "card",
+   "tag": "div",
+   "text": "SE",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-049",
+   "kind": "text",
+   "tag": "div",
+   "text": "SE",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-050",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-051",
+   "kind": "text",
+   "tag": "p",
+   "text": "40 soalan dijawab",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-052",
+   "kind": "text",
+   "tag": "div",
+   "text": "35.0%",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "14 betul",
+   "icon": "fa-check",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S8-054",
+   "kind": "text",
+   "tag": "span",
+   "text": "26 salah",
+   "icon": "fa-times",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "all__1280",
+    "all__375",
+    "all__768"
+   ]
+  }
+ ]
+}

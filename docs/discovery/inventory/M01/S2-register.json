@@ -1,0 +1,2808 @@
+{
+ "screen": "S2",
+ "key": "S2-register",
+ "route": "/register",
+ "name": "Daftar",
+ "module": "M01",
+ "generatedAt": "2026-09-25T05:07:36.945Z",
+ "shell": "none (auth layout)",
+ "summary": {
+  "total": 86,
+  "visibleDefault": 70,
+  "conditional": 7,
+  "hiddenOnly": 9,
+  "mobileOnly": 0,
+  "desktopOnly": 13,
+  "byKind": {
+   "text": 29,
+   "card": 3,
+   "heading": 1,
+   "image": 1,
+   "badge": 3,
+   "form": 1,
+   "hidden-field": 4,
+   "label": 9,
+   "input": 7,
+   "clickable": 18,
+   "button": 3,
+   "select": 1,
+   "empty-state": 1,
+   "toggle": 2,
+   "link": 3
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (role=student)",
+   "file": "_raw/M01/S2-register__default__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "grade-selected+pw-visible__1280",
+   "description": "Darjah 1 selected + both password toggles on",
+   "file": "_raw/M01/S2-register__grade-selected+pw-visible__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "[\\@click*=\"selectedGrade\"]"
+    },
+    {
+     "click": "button[\\@click*=\"showPassword = \"]"
+    },
+    {
+     "click": "button[\\@click*=\"showPasswordConfirm\"]"
+    }
+   ],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "loading__1280",
+   "description": "loading",
+   "file": "_raw/M01/S2-register__loading__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(()=>{const f=document.querySelector('[x-data*=loading]');if(!f) return 'no loading comp';f._x_dataStack[0].loading=true;return 'loading=true (simulated)'})()"
+    }
+   ],
+   "actionLog": [
+    "loading=true (simulated)"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "query-ref__1280",
+   "description": "query ?ref=TEST (referral param handling)",
+   "file": "_raw/M01/S2-register__query-ref__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register?ref=TEST",
+   "finalUrl": "/register?ref=TEST",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(()=>[...document.querySelectorAll('input')].map(i=>i.name).filter(Boolean).join(','))()"
+    }
+   ],
+   "actionLog": [
+    "_token,name,email,phone,role,grade,ic_number,school_id,password,password_confirmation"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "query-role-teacher__1280",
+   "description": "query ?role=teacher (does it preselect?)",
+   "file": "_raw/M01/S2-register__query-role-teacher__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register?role=teacher",
+   "finalUrl": "/register?role=teacher",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(()=>{const d=document.querySelector('[x-data*=selectedRole]')._x_dataStack[0];return 'selectedRole='+d.selectedRole})()"
+    }
+   ],
+   "actionLog": [
+    "selectedRole=student"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "role-parent__1280",
+   "description": "role=parent",
+   "file": "_raw/M01/S2-register__role-parent__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "[\\@click*=\"'parent'\"]"
+    }
+   ],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "role-teacher__1280",
+   "description": "role=teacher",
+   "file": "_raw/M01/S2-register__role-teacher__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "[\\@click*=\"'teacher'\"]"
+    }
+   ],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "school-search-empty__1280",
+   "description": "school search, no result",
+   "file": "_raw/M01/S2-register__school-search-empty__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "input[x-model=schoolSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=schoolSearch]",
+      "zzqxv"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "school-search-results__1280",
+   "description": "school search typed, results dropdown",
+   "file": "_raw/M01/S2-register__school-search-results__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "input[x-model=schoolSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=schoolSearch]",
+      "kebangsaan"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "school-selected__1280",
+   "description": "school picked (chip)",
+   "file": "_raw/M01/S2-register__school-selected__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "input[x-model=schoolSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=schoolSearch]",
+      "kebangsaan"
+     ]
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "[x-show*=showSchoolDropdown] div[\\@click^=pickSchool]"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "school-state-filter__1280",
+   "description": "state=Perlis, empty query",
+   "file": "_raw/M01/S2-register__school-state-filter__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[x-model=stateFilter]",
+      "Perlis"
+     ]
+    },
+    {
+     "click": "input[x-model=schoolSearch]"
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default (role=student) @375",
+   "file": "_raw/M01/S2-register__default__375.json",
+   "width": 375,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "role-parent__375",
+   "description": "role=parent @375",
+   "file": "_raw/M01/S2-register__role-parent__375.json",
+   "width": 375,
+   "session": "guest",
+   "url": "/register",
+   "finalUrl": "/register",
+   "httpStatus": 200,
+   "title": "Daftar - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "[\\@click*=\"'parent'\"]"
+    }
+   ],
+   "actionLog": [],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "xData": "{\n        loading: false,\n        selectedRole: 'student',\n        selectedGrade: '',\n        showPassword: false,\n        showPasswordConfirm: false,\n        schoolSearch: '',\n        schoolResults: [],\n        selectedSchool: null,\n        showSchoolDropdown: false,\n        searchingSchool: false,\n        stateFilter: '',\n\n        async searchSchools() {\n            if (this.schoolSearch.length …",
+   "keys": [
+    "loading",
+    "selectedRole",
+    "selectedGrade",
+    "showPassword",
+    "showPasswordConfirm",
+    "schoolSearch",
+    "schoolResults",
+    "selectedSchool",
+    "showSchoolDropdown",
+    "searchingSchool",
+    "stateFilter"
+   ],
+   "liveState": {
+    "loading": false,
+    "selectedRole": "student",
+    "selectedGrade": "",
+    "showPassword": false,
+    "showPasswordConfirm": false,
+    "schoolSearch": "",
+    "schoolResults": "array(0)",
+    "selectedSchool": null,
+    "showSchoolDropdown": false,
+    "searchingSchool": false,
+    "stateFilter": ""
+   },
+   "visible": true,
+   "region": "page",
+   "seenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "[x-show=\"selectedRole === 'student'\"]",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/schools/search?",
+   "sources": [
+    "attr:x-data@div"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M01-S2-001",
+   "kind": "text",
+   "tag": "div",
+   "text": "📚",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "✏️",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "⭐",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-004",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎨",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "🚀",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "💡",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎒",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-009",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Daftar sekarang dan mulakan perjalanan pembelajaran yang menyeronokkan!",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎮",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pembelajaran Gamifikasi",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-013",
+   "kind": "text",
+   "tag": "div",
+   "text": "Belajar sambil bermain",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "👥",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "Komuniti Aktif",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-016",
+   "kind": "text",
+   "tag": "div",
+   "text": "Belajar bersama rakan",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "📊",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "Laporan Terperinci",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-019",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pantau prestasi anda",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-020",
+   "kind": "card",
+   "tag": "div",
+   "text": "1",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-021",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "Daftar Akaun Baru 🇲🇾",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-023",
+   "kind": "badge",
+   "tag": "div",
+   "text": "1",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-024",
+   "kind": "badge",
+   "tag": "div",
+   "text": "2",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-025",
+   "kind": "badge",
+   "tag": "div",
+   "text": "3",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-026",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/register",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "name",
+    "email",
+    "phone",
+    "role",
+    "grade",
+    "ic_number",
+    "school_id",
+    "password",
+    "password_confirmation"
+   ],
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@submit": "loading = true"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-027",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Penuh",
+   "for": "name",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-029",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama Penuh",
+   "placeholder": "Muhammad Fulan bin Fulan",
+   "required": true,
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "domId": "name",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-030",
+   "kind": "label",
+   "tag": "label",
+   "text": "Alamat Email",
+   "for": "email",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-031",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "name": "email",
+   "label": "Alamat Email",
+   "placeholder": "nama@email.com",
+   "required": true,
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "domId": "email",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-032",
+   "kind": "label",
+   "tag": "label",
+   "text": "No. Telefon (Pilihan)",
+   "for": "phone",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-033",
+   "kind": "input",
+   "tag": "input",
+   "type": "tel",
+   "name": "phone",
+   "label": "No. Telefon (Pilihan)",
+   "placeholder": "Cth: 0191234567",
+   "maxlength": "14",
+   "inputmode": "tel",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "domId": "phone",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-034",
+   "kind": "label",
+   "tag": "label",
+   "text": "Saya adalah...",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-035",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "👨‍🎓 Pelajar Saya ingin belajar",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedRole = 'student'; $refs.roleInput.value = 'student'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-036",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "👨‍🏫 Guru Saya ingin mengajar",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedRole = 'teacher'; $refs.roleInput.value = 'teacher'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-037",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "👨‍👩‍👧 Ibu Bapa Pantau anak saya",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedRole = 'parent'; $refs.roleInput.value = 'parent'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-038",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "role",
+   "label": "Saya adalah...",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "x-ref": "roleInput",
+    ":value": "selectedRole"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-039",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilih Tahap Anda",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-040",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah Rendah",
+   "icon": "fa-school",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-041",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Darjah",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = grade; $refs.gradeInput.value = grade"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=grade in [1,2,3,4,5,6]"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-042",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Darjah 1",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = grade; $refs.gradeInput.value = grade"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-043",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Darjah 2",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = grade; $refs.gradeInput.value = grade"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-044",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Darjah 3",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = grade; $refs.gradeInput.value = grade"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-045",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Darjah 4",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = grade; $refs.gradeInput.value = grade"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-046",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Darjah 5",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = grade; $refs.gradeInput.value = grade"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-047",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Darjah 6",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = grade; $refs.gradeInput.value = grade"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-048",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah Menengah",
+   "icon": "fa-building",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-049",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Ting.",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = form + 6; $refs.gradeInput.value = form + 6"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=form in [1,2,3,4,5]"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-050",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Ting. 1",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = form + 6; $refs.gradeInput.value = form + 6"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-051",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Ting. 2",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = form + 6; $refs.gradeInput.value = form + 6"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-052",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Ting. 3",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = form + 6; $refs.gradeInput.value = form + 6"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-053",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Ting. 4",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = form + 6; $refs.gradeInput.value = form + 6"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-054",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Ting. 5",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "selectedGrade = form + 6; $refs.gradeInput.value = form + 6"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "role-teacher__1280"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-055",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "grade",
+   "label": "Pilih Tahap Anda",
+   "required": true,
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "x-ref": "gradeInput",
+    ":value": "selectedGrade",
+    ":required": "selectedRole === 'student'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-056",
+   "kind": "label",
+   "tag": "label",
+   "text": "No. Kad Pengenalan (Pilihan)",
+   "for": "ic_number",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375"
+   ],
+   "hiddenIn": [
+    "role-parent__1280",
+    "role-teacher__1280",
+    "role-parent__375"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-057",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "ic_number",
+   "label": "No. Kad Pengenalan (Pilihan)",
+   "placeholder": "Cth: 031215101234",
+   "maxlength": "14",
+   "inputmode": "numeric",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "domId": "ic_number",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375"
+   ],
+   "hiddenIn": [
+    "role-parent__1280",
+    "role-teacher__1280",
+    "role-parent__375"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-058",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dilindungi PDPA. Hanya 2 digit terakhir akan dipaparkan.",
+   "icon": "fa-shield-alt",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375"
+   ],
+   "hiddenIn": [
+    "role-parent__1280",
+    "role-teacher__1280",
+    "role-parent__375"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M01-S2-059",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sekolah (Pilihan)",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-060",
+   "kind": "text",
+   "tag": "p",
+   "text": "SK · Johor",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "x-text": "(selectedSchool?.type || '') + ' · ' + (selectedSchool?.state || '')"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-selected__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M01-S2-061",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/register",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "clearSchool()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-selected__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M01-S2-062",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "",
+     "text": "Negeri"
+    },
+    {
+     "value": "Johor",
+     "text": "Johor"
+    },
+    {
+     "value": "Kedah",
+     "text": "Kedah"
+    },
+    {
+     "value": "Kelantan",
+     "text": "Kelantan"
+    },
+    {
+     "value": "Kuala Lumpur",
+     "text": "KL"
+    },
+    {
+     "value": "Labuan",
+     "text": "Labuan"
+    },
+    {
+     "value": "Melaka",
+     "text": "Melaka"
+    },
+    {
+     "value": "Negeri Sembilan",
+     "text": "N.Sembilan"
+    },
+    {
+     "value": "Pahang",
+     "text": "Pahang"
+    },
+    {
+     "value": "Perak",
+     "text": "Perak"
+    },
+    {
+     "value": "Perlis",
+     "text": "Perlis"
+    },
+    {
+     "value": "Pulau Pinang",
+     "text": "P.Pinang"
+    },
+    {
+     "value": "Putrajaya",
+     "text": "Putrajaya"
+    },
+    {
+     "value": "Sabah",
+     "text": "Sabah"
+    },
+    {
+     "value": "Sarawak",
+     "text": "Sarawak"
+    },
+    {
+     "value": "Selangor",
+     "text": "Selangor"
+    },
+    {
+     "value": "Terengganu",
+     "text": "Terengganu"
+    }
+   ],
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "x-model": "stateFilter",
+    "@change": "searchSchools()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "school-selected__1280"
+   ],
+   "showWhen": "!selectedSchool"
+  },
+  {
+   "id": "EL-M01-S2-063",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Taip nama sekolah...",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "x-model": "schoolSearch",
+    "@input.debounce.300ms": "searchSchools()",
+    "@focus": "showSchoolDropdown = true"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenIn": [
+    "school-selected__1280"
+   ],
+   "showWhen": "!selectedSchool"
+  },
+  {
+   "id": "EL-M01-S2-064",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "pickSchool(s)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=s in schoolResults"
+   ],
+   "dataRow": true,
+   "repeatCount": 1,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M01-S2-065",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada sekolah dijumpai",
+   "icon": "fa-search",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "x-show": "schoolResults.length === 0 && schoolSearch.length >= 2 && !searchingSchool"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search-empty__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "schoolResults.length === 0 && schoolSearch.length >= 2 && !searchingSchool"
+  },
+  {
+   "id": "EL-M01-S2-066",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "school_id",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    ":value": "selectedSchool?.id || ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-067",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kata Laluan",
+   "for": "password",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-068",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "name": "password",
+   "label": "Kata Laluan",
+   "placeholder": "••••••••",
+   "required": true,
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    ":type": "showPassword ? 'text' : 'password'"
+   },
+   "domId": "password",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-069",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-eye",
+   "form": "https://prestasiplus.my/register",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "showPassword = !showPassword"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-070",
+   "kind": "text",
+   "tag": "p",
+   "text": "Minimum 6 aksara",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-071",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sahkan Kata Laluan",
+   "for": "password_confirmation",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-072",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "name": "password_confirmation",
+   "label": "Sahkan Kata Laluan",
+   "placeholder": "••••••••",
+   "required": true,
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    ":type": "showPasswordConfirm ? 'text' : 'password'"
+   },
+   "domId": "password_confirmation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-073",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-eye",
+   "form": "https://prestasiplus.my/register",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "showPasswordConfirm = !showPasswordConfirm"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-074",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Daftar Sekarang",
+   "icon": "fa-user-plus",
+   "form": "https://prestasiplus.my/register",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    ":disabled": "loading"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-075",
+   "kind": "text",
+   "tag": "span",
+   "text": "Daftar Sekarang",
+   "icon": "fa-user-plus",
+   "section": "Sertai Kami! 🌟",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!loading"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-076",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sedang Mendaftar...",
+   "icon": "fa-circle-notch",
+   "section": "Sertai Kami! 🌟",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=loading"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-077",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sudah ada akaun?",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-078",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk 🔑",
+   "href": "https://prestasiplus.my/login",
+   "absHref": "https://prestasiplus.my/login",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-079",
+   "kind": "text",
+   "tag": "p",
+   "text": "Mewakili organisasi?",
+   "icon": "fa-handshake",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-080",
+   "kind": "link",
+   "tag": "a",
+   "text": "Daftar sebagai Penaja",
+   "href": "https://prestasiplus.my/sponsor/register",
+   "absHref": "https://prestasiplus.my/sponsor/register",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-081",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Laman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "icon": "fa-home",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-082",
+   "kind": "text",
+   "tag": "p",
+   "text": "© 2026 PRESTASIPLUS. Platform Pendidikan Malaysia.",
+   "section": "Sertai Kami! 🌟",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-selected+pw-visible__1280",
+    "loading__1280",
+    "query-ref__1280",
+    "query-role-teacher__1280",
+    "role-parent__1280",
+    "role-teacher__1280",
+    "school-search-empty__1280",
+    "school-search-results__1280",
+    "school-selected__1280",
+    "school-state-filter__1280",
+    "default__375",
+    "role-parent__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-083",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Sedang Mendaftar...",
+   "icon": "fa-circle-notch",
+   "disabled": true,
+   "form": "https://prestasiplus.my/register",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    ":disabled": "loading"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "loading__1280"
+   ]
+  },
+  {
+   "id": "EL-M01-S2-084",
+   "kind": "card",
+   "tag": "div",
+   "text": "SEKOLAH JENIS KEBANGSAAN (CINA) AI CHUN",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "x-show": "showSchoolDropdown && (schoolResults.length > 0 || schoolSearch.length >= 2)",
+    "x-transition": "",
+    "@click.outside": "showSchoolDropdown = false"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search-results__1280",
+    "school-state-filter__1280"
+   ],
+   "showWhen": "showSchoolDropdown && (schoolResults.length > 0 || schoolSearch.length >= 2)"
+  },
+  {
+   "id": "EL-M01-S2-085",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "SEKOLAH JENIS KEBANGSAAN (CINA) AI CHUN SK · Johor · PPD SEGAMAT",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "@click": "pickSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search-results__1280",
+    "school-state-filter__1280"
+   ],
+   "showWhen": "showSchoolDropdown && (schoolResults.length > 0 || schoolSearch.length >= 2)",
+   "dataRow": true,
+   "repeatCount": 15,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M01-S2-086",
+   "kind": "text",
+   "tag": "p",
+   "text": "SEKOLAH JENIS KEBANGSAAN (CINA) AI CHUN",
+   "landmark": "form",
+   "section": "Sertai Kami! 🌟",
+   "alpine": {
+    "x-text": "selectedSchool?.name"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-selected__1280"
+   ],
+   "showWhen": "selectedSchool"
+  }
+ ]
+}

@@ -1,0 +1,1378 @@
+{
+ "screen": "S4",
+ "key": "S4-admin-anak-angkat",
+ "route": "/admin/anak-angkat",
+ "name": "Pengurusan Anak Angkat",
+ "module": "M21",
+ "generatedAt": "2026-09-27T02:22:47.294Z",
+ "notes": "GET ?status; assign form POST /admin/anak-angkat/assign; status forms POST /admin/anak-angkat/{id}/status (never submitted); GET /admin/anak-angkat/{id} → 405 (captured here)",
+ "shell": "SHA",
+ "summary": {
+  "total": 50,
+  "visibleDefault": 38,
+  "conditional": 4,
+  "hiddenOnly": 8,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 6,
+   "text": 10,
+   "heading": 3,
+   "form": 3,
+   "hidden-field": 6,
+   "label": 4,
+   "select": 3,
+   "input": 1,
+   "clickable": 1,
+   "button": 3,
+   "filter": 6,
+   "table": 1,
+   "badge": 3
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "assignments (1 active; stats; assign form never submitted)",
+   "file": "_raw/M21/S4-admin-anak-angkat__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/anak-angkat",
+   "finalUrl": "/admin/anak-angkat",
+   "httpStatus": 200,
+   "title": "Pengurusan Anak Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 6",
+    "sanitized: cells=4 strings=4 attrs=1 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "show-405__1280",
+   "description": "GET /admin/anak-angkat/{id} → 405 Symfony page",
+   "file": "_raw/M21/S4-admin-anak-angkat__show-405__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/anak-angkat/2",
+   "finalUrl": "/admin/anak-angkat/2",
+   "httpStatus": 405,
+   "title": "An Error Occurred: Method Not Allowed",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "status-active__1280",
+   "description": "status=active",
+   "file": "_raw/M21/S4-admin-anak-angkat__status-active__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/anak-angkat?status=active",
+   "finalUrl": "/admin/anak-angkat?status=active",
+   "httpStatus": 200,
+   "title": "Pengurusan Anak Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 6",
+    "sanitized: cells=4 strings=4 attrs=1 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-all__1280",
+   "description": "status=all",
+   "file": "_raw/M21/S4-admin-anak-angkat__status-all__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/anak-angkat?status=all",
+   "finalUrl": "/admin/anak-angkat?status=all",
+   "httpStatus": 200,
+   "title": "Pengurusan Anak Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 6",
+    "sanitized: cells=4 strings=4 attrs=1 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-expired__1280",
+   "description": "status=expired → empty",
+   "file": "_raw/M21/S4-admin-anak-angkat__status-expired__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/anak-angkat?status=expired",
+   "finalUrl": "/admin/anak-angkat?status=expired",
+   "httpStatus": 200,
+   "title": "Pengurusan Anak Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=1 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-graduated__1280",
+   "description": "status=graduated → empty",
+   "file": "_raw/M21/S4-admin-anak-angkat__status-graduated__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/anak-angkat?status=graduated",
+   "finalUrl": "/admin/anak-angkat?status=graduated",
+   "httpStatus": 200,
+   "title": "Pengurusan Anak Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=1 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "status-withdrawn__1280",
+   "description": "status=withdrawn → empty",
+   "file": "_raw/M21/S4-admin-anak-angkat__status-withdrawn__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/anak-angkat?status=withdrawn",
+   "finalUrl": "/admin/anak-angkat?status=withdrawn",
+   "httpStatus": 200,
+   "title": "Pengurusan Anak Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=1 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M21/S4-admin-anak-angkat__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/anak-angkat",
+   "finalUrl": "/admin/anak-angkat",
+   "httpStatus": 200,
+   "title": "Pengurusan Anak Angkat",
+   "horizontalOverflow": "397px > 375px",
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 6",
+    "sanitized: cells=4 strings=4 attrs=1 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M21/S4-admin-anak-angkat__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/anak-angkat",
+   "finalUrl": "/admin/anak-angkat",
+   "httpStatus": 200,
+   "title": "Pengurusan Anak Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 6",
+    "sanitized: cells=4 strings=4 attrs=1 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "xData": "{ query: '', results: [], showResults: false, selectedEmail: '', selectedName: '<name>', async search() { if (this.query.length < 2) { this.results = []; this.showResults = false; return; } try { const res = await fetch('/admin/anak-angkat/cari-pelajar?q=' + encodeURIComponent(this.query)); this.results = await res.json(); this.showResults = this.results.length > 0; } catch(e) { this.results = [];…",
+   "keys": [
+    "query",
+    "results",
+    "showResults",
+    "selectedEmail",
+    "selectedName"
+   ],
+   "liveState": {
+    "query": "",
+    "results": "array(0)",
+    "showResults": false,
+    "selectedEmail": "",
+    "selectedName": "string(6)"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Assign Anak Angkat",
+   "seenIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/admin/anak-angkat/cari-pelajar?q=",
+   "sources": [
+    "attr:x-data@div"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M21-S4-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "Jumlah Penaja",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Penaja",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "1",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pelajar Aktif Ditaja",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar Aktif Ditaja",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "1",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "Graduated",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "Graduated",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "Withdrawn",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Withdrawn",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "Assign Anak Angkat",
+   "landmark": "main",
+   "section": "Anak Angkat — Sponsorship",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-014",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Assign Anak Angkat",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-015",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/anak-angkat/assign",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "sponsor_id",
+    "student_email",
+    "student_category",
+    "channel"
+   ],
+   "landmark": "main",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-016",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penaja",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-018",
+   "kind": "select",
+   "tag": "select",
+   "name": "sponsor_id",
+   "label": "Penaja",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih Penaja"
+    }
+   ],
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "Cari Pelajar (nama/email)",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-020",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Cari Pelajar (nama/email)",
+   "placeholder": "Taip nama atau email...",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "alpine": {
+    "x-model": "query",
+    "@input.debounce.300ms": "search()",
+    "@focus": "showResults = results.length > 0"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-021",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "student_email",
+   "label": "Cari Pelajar (nama/email)",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "alpine": {
+    ":value": "selectedEmail"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-022",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "section": "Assign Anak Angkat",
+   "alpine": {
+    "@click": "select(s)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=s in results"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-023",
+   "kind": "text",
+   "tag": "span",
+   "text": "()",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "alpine": {
+    "x-text": "selectedName + ' (' + selectedEmail + ')'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedEmail"
+  },
+  {
+   "id": "EL-M21-S4-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kategori",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-025",
+   "kind": "select",
+   "tag": "select",
+   "name": "student_category",
+   "label": "Kategori",
+   "options": [
+    {
+     "value": "",
+     "text": "-"
+    },
+    {
+     "value": "B40",
+     "text": "B40"
+    },
+    {
+     "value": "Asnaf",
+     "text": "Asnaf"
+    },
+    {
+     "value": "Yatim",
+     "text": "Yatim"
+    },
+    {
+     "value": "OKU",
+     "text": "OKU"
+    }
+   ],
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-026",
+   "kind": "label",
+   "tag": "label",
+   "text": "Saluran",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-027",
+   "kind": "select",
+   "tag": "select",
+   "name": "channel",
+   "label": "Saluran",
+   "required": true,
+   "options": [
+    {
+     "value": "direct",
+     "text": "Direct"
+    },
+    {
+     "value": "mlm",
+     "text": "Via Agent"
+    }
+   ],
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-028",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Assign",
+   "icon": "fa-plus",
+   "form": "https://prestasiplus.my/admin/anak-angkat/assign",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-029",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Semua (1)",
+   "href": "?status=all",
+   "absHref": "https://prestasiplus.my/admin/anak-angkat?status=all",
+   "landmark": "main",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-030",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Aktif (1)",
+   "href": "?status=active",
+   "absHref": "https://prestasiplus.my/admin/anak-angkat?status=active",
+   "landmark": "main",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-031",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Graduated (0)",
+   "href": "?status=graduated",
+   "absHref": "https://prestasiplus.my/admin/anak-angkat?status=graduated",
+   "landmark": "main",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-032",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Withdrawn (0)",
+   "href": "?status=withdrawn",
+   "absHref": "https://prestasiplus.my/admin/anak-angkat?status=withdrawn",
+   "landmark": "main",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-033",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Expired (0)",
+   "href": "?status=expired",
+   "absHref": "https://prestasiplus.my/admin/anak-angkat?status=expired",
+   "landmark": "main",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-034",
+   "kind": "card",
+   "tag": "div",
+   "text": "<person>",
+   "landmark": "main",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-035",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Penaja",
+    "Pelajar",
+    "Kategori",
+    "Saluran",
+    "Status",
+    "Tarikh",
+    "Aksi"
+   ],
+   "rowCount": 1,
+   "firstRowActions": [
+    {
+     "tag": "button",
+     "text": "Graduate"
+    },
+    {
+     "tag": "button",
+     "text": "Tarik"
+    }
+   ],
+   "landmark": "main",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-036",
+   "kind": "badge",
+   "tag": "span",
+   "text": "B40",
+   "landmark": "table",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-037",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Direct",
+   "landmark": "table",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-038",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Active",
+   "landmark": "table",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-039",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/anak-angkat/2/status",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "status"
+   ],
+   "landmark": "table",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-040",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-041",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "status",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-042",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Graduate",
+   "form": "https://prestasiplus.my/admin/anak-angkat/2/status",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-043",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/anak-angkat/2/status",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "status"
+   ],
+   "landmark": "table",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-044",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-045",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "status",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-046",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tarik",
+   "form": "https://prestasiplus.my/admin/anak-angkat/2/status",
+   "landmark": "form",
+   "section": "Assign Anak Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-047",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Oops! An Error Occurred",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "show-405__1280"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-048",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "The server returned a \"405 Method Not Allowed\".",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "show-405__1280"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-049",
+   "kind": "text",
+   "tag": "p",
+   "text": "Something is broken. Please let us know what you were doing when this error occurred. We will fix it as soon as possible. Sorry for any inconvenience caused.",
+   "section": "The server returned a \"405 Method Not Allowed\".",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "show-405__1280"
+   ]
+  },
+  {
+   "id": "EL-M21-S4-050",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Semua (0)",
+   "href": "?status=all",
+   "absHref": "https://prestasiplus.my/admin/anak-angkat?status=all",
+   "landmark": "main",
+   "section": "Assign Anak Angkat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-expired__1280",
+    "status-graduated__1280",
+    "status-withdrawn__1280"
+   ]
+  }
+ ]
+}

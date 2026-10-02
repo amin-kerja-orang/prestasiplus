@@ -1,0 +1,1220 @@
+{
+ "screen": "S4",
+ "key": "S4-admin-students",
+ "route": "/admin/gamification/students",
+ "name": "Pelajar Gamifikasi",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.271Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 46,
+  "visibleDefault": 38,
+  "conditional": 5,
+  "hiddenOnly": 3,
+  "mobileOnly": 2,
+  "desktopOnly": 18,
+  "byKind": {
+   "heading": 2,
+   "text": 10,
+   "form": 2,
+   "input": 4,
+   "select": 2,
+   "button": 2,
+   "card": 2,
+   "hidden-field": 1,
+   "label": 3,
+   "table": 1,
+   "badge": 3,
+   "pagination": 14
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (sort Jumlah Syiling, page 1)",
+   "file": "_raw/M14/S4-admin-students__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamification/students",
+   "finalUrl": "/admin/gamification/students",
+   "httpStatus": 200,
+   "title": "Pelajar Gamifikasi",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=60 strings=42 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr:has(span.tier-badge[style*=\"cd7f32\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"c0c0c0\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"ffd700\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"e5e4e2\" i])": 20
+   }
+  },
+  {
+   "label": "last-page__1280",
+   "description": "page=113 (last page)",
+   "file": "_raw/M14/S4-admin-students__last-page__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamification/students?page=113",
+   "finalUrl": "/admin/gamification/students?page=113",
+   "httpStatus": 200,
+   "title": "Pelajar Gamifikasi",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=45 strings=32 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr:has(span.tier-badge[style*=\"cd7f32\" i])": 15,
+    "main tbody tr:has(span.tier-badge[style*=\"c0c0c0\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"ffd700\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"e5e4e2\" i])": 0
+   }
+  },
+  {
+   "label": "search-none__1280",
+   "description": "search=zzzq (no match)",
+   "file": "_raw/M14/S4-admin-students__search-none__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamification/students?search=zzzq",
+   "finalUrl": "/admin/gamification/students?search=zzzq",
+   "httpStatus": 200,
+   "title": "Pelajar Gamifikasi",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr:has(span.tier-badge[style*=\"cd7f32\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"c0c0c0\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"ffd700\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"e5e4e2\" i])": 0
+   }
+  },
+  {
+   "label": "sort-level__1280",
+   "description": "sort=level (GET by URL)",
+   "file": "_raw/M14/S4-admin-students__sort-level__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamification/students?sort=level",
+   "finalUrl": "/admin/gamification/students?sort=level",
+   "httpStatus": 200,
+   "title": "Pelajar Gamifikasi",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=60 strings=42 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr:has(span.tier-badge[style*=\"cd7f32\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"c0c0c0\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"ffd700\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"e5e4e2\" i])": 20
+   }
+  },
+  {
+   "label": "tier-silver__1280",
+   "description": "tier=silver (GET by URL)",
+   "file": "_raw/M14/S4-admin-students__tier-silver__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamification/students?tier=silver",
+   "finalUrl": "/admin/gamification/students?tier=silver",
+   "httpStatus": 200,
+   "title": "Pelajar Gamifikasi",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=60 strings=42 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr:has(span.tier-badge[style*=\"cd7f32\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"c0c0c0\" i])": 20,
+    "main tbody tr:has(span.tier-badge[style*=\"ffd700\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"e5e4e2\" i])": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default (sort Jumlah Syiling, page 1) @375",
+   "file": "_raw/M14/S4-admin-students__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/gamification/students",
+   "finalUrl": "/admin/gamification/students",
+   "httpStatus": 200,
+   "title": "Pelajar Gamifikasi",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=60 strings=42 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr:has(span.tier-badge[style*=\"cd7f32\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"c0c0c0\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"ffd700\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"e5e4e2\" i])": 20
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default (sort Jumlah Syiling, page 1) @768",
+   "file": "_raw/M14/S4-admin-students__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/gamification/students",
+   "finalUrl": "/admin/gamification/students",
+   "httpStatus": 200,
+   "title": "Pelajar Gamifikasi",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=60 strings=42 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr:has(span.tier-badge[style*=\"cd7f32\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"c0c0c0\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"ffd700\" i])": 0,
+    "main tbody tr:has(span.tier-badge[style*=\"e5e4e2\" i])": 20
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S4-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "👥 Pelajar Gamifikasi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pantau progress pelajar & berikan bonus syiling",
+   "landmark": "main",
+   "section": "👥 Pelajar Gamifikasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-003",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [
+    "search",
+    "tier",
+    "sort"
+   ],
+   "landmark": "main",
+   "section": "👥 Pelajar Gamifikasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-004",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "search",
+   "placeholder": "Cari nama/email...",
+   "landmark": "form",
+   "section": "👥 Pelajar Gamifikasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-005",
+   "kind": "select",
+   "tag": "select",
+   "name": "tier",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Tier"
+    },
+    {
+     "value": "bronze",
+     "text": "🥉 Gangsa"
+    },
+    {
+     "value": "silver",
+     "text": "🥈 Perak"
+    },
+    {
+     "value": "gold",
+     "text": "🥇 Emas"
+    },
+    {
+     "value": "platinum",
+     "text": "💎 Platinum"
+    }
+   ],
+   "landmark": "form",
+   "section": "👥 Pelajar Gamifikasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-006",
+   "kind": "select",
+   "tag": "select",
+   "name": "sort",
+   "options": [
+    {
+     "value": "total_syiling_earned",
+     "text": "Jumlah Syiling"
+    },
+    {
+     "value": "current_syiling",
+     "text": "Baki Syiling"
+    },
+    {
+     "value": "token_balance",
+     "text": "Baki Token"
+    },
+    {
+     "value": "level",
+     "text": "Level"
+    }
+   ],
+   "landmark": "form",
+   "section": "👥 Pelajar Gamifikasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-007",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cari",
+   "icon": "fa-search",
+   "form": "(no action)",
+   "landmark": "form",
+   "section": "👥 Pelajar Gamifikasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "🎁 Berikan Bonus Syiling",
+   "landmark": "main",
+   "section": "👥 Pelajar Gamifikasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-009",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "🎁 Berikan Bonus Syiling",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-010",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/award-syiling",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "user_id",
+    "amount",
+    "reason"
+   ],
+   "landmark": "main",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-011",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "User ID",
+   "landmark": "form",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-013",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "user_id",
+   "label": "User ID",
+   "placeholder": "ID",
+   "required": true,
+   "landmark": "form",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jumlah",
+   "landmark": "form",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "amount",
+   "label": "Jumlah",
+   "placeholder": "100",
+   "required": true,
+   "min": "1",
+   "max": "10000",
+   "landmark": "form",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sebab",
+   "landmark": "form",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-017",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "reason",
+   "label": "Sebab",
+   "placeholder": "Bonus khas / Pertandingan",
+   "required": true,
+   "landmark": "form",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-018",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Berikan",
+   "icon": "fa-gift",
+   "form": "https://prestasiplus.my/admin/gamification/award-syiling",
+   "landmark": "form",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "search-none__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "<person>",
+   "landmark": "main",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-020",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Pelajar",
+    "Tier",
+    "Level",
+    "Syiling",
+    "Token",
+    "Jumlah Syiling",
+    "XP"
+   ],
+   "rowCount": 20,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-021",
+   "kind": "badge",
+   "tag": "span",
+   "text": "platinum",
+   "landmark": "table",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sort-level__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-023",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=2",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-024",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-025",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "20",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-027",
+   "kind": "text",
+   "tag": "span",
+   "text": "2255",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-029",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "2",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=2",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 2",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-030",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=3",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 3",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-031",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "4",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=4",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=4",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-032",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=5",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=5",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 5",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-033",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "6",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=6",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 6",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-034",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "7",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=7",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=7",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 7",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-035",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "8",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=8",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=8",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 8",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-036",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "9",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=9",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=9",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 9",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-037",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=10",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=10",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 10",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "...",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-039",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "112",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=112",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=112",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 112",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-040",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "113",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=113",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=113",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Go to page 113",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-041",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=2",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "ariaLabel": "Next &raquo;",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "last-page__1280",
+    "sort-level__1280",
+    "tier-silver__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-042",
+   "kind": "badge",
+   "tag": "span",
+   "text": "bronze",
+   "landmark": "table",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "last-page__1280"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-043",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "« Previous",
+   "href": "https://prestasiplus.my/admin/gamification/students?page=112",
+   "absHref": "https://prestasiplus.my/admin/gamification/students?page=112",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "last-page__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "Next »",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "last-page__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-045",
+   "kind": "text",
+   "tag": "p",
+   "text": "Belum ada pelajar dalam sistem gamifikasi",
+   "landmark": "main",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search-none__1280"
+   ]
+  },
+  {
+   "id": "EL-M14-S4-046",
+   "kind": "badge",
+   "tag": "span",
+   "text": "silver",
+   "landmark": "table",
+   "section": "🎁 Berikan Bonus Syiling",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tier-silver__1280"
+   ]
+  }
+ ]
+}

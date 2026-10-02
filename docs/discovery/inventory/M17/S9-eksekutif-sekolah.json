@@ -1,0 +1,1818 @@
+{
+ "screen": "S9",
+ "key": "S9-eksekutif-sekolah",
+ "route": "/admin/laporan-eksekutif/sekolah/{id}",
+ "name": "Fokus: {sekolah}",
+ "module": "M17",
+ "generatedAt": "2026-09-26T04:57:04.335Z",
+ "notes": "new route; per-school focus report; unknown id 404",
+ "shell": "SHA",
+ "summary": {
+  "total": 113,
+  "visibleDefault": 99,
+  "conditional": 14,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 3,
+   "heading": 6,
+   "text": 96,
+   "card": 7,
+   "table": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "school 8880 focus page (2026)",
+   "file": "_raw/M17/S9-eksekutif-sekolah__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif/sekolah/8880",
+   "finalUrl": "/admin/laporan-eksekutif/sekolah/8880",
+   "httpStatus": 200,
+   "title": "Fokus: SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 6
+   }
+  },
+  {
+   "label": "no-data__1280",
+   "description": "school 5183 (a 2025 \"top 5\" school with 0 activity)",
+   "file": "_raw/M17/S9-eksekutif-sekolah__no-data__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif/sekolah/5183",
+   "finalUrl": "/admin/laporan-eksekutif/sekolah/5183",
+   "httpStatus": 200,
+   "title": "Fokus: SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "not-found__1280",
+   "description": "unknown id → 404",
+   "file": "_raw/M17/S9-eksekutif-sekolah__not-found__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif/sekolah/99999999",
+   "finalUrl": "/admin/laporan-eksekutif/sekolah/99999999",
+   "httpStatus": 404,
+   "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 0",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M17/S9-eksekutif-sekolah__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif/sekolah/8880",
+   "finalUrl": "/admin/laporan-eksekutif/sekolah/8880",
+   "httpStatus": 200,
+   "title": "Fokus: SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "horizontalOverflow": "429px > 375px",
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 6
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M17/S9-eksekutif-sekolah__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif/sekolah/8880",
+   "finalUrl": "/admin/laporan-eksekutif/sekolah/8880",
+   "httpStatus": 200,
+   "title": "Fokus: SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 6
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M17-S9-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Laporan Eksekutif",
+   "href": "https://prestasiplus.my/admin/laporan-eksekutif",
+   "absHref": "https://prestasiplus.my/admin/laporan-eksekutif",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Laporan Fokus Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-002",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Negeri: Johor",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "Penglibatan",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Penglibatan",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "55.9%",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "33 aktif / 59 daftar",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan Dijawab",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Dijawab",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "72,332",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "2192 soalan/pelajar",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-012",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ketepatan Akhir",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-013",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan Akhir",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "89.8%",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-015",
+   "kind": "card",
+   "tag": "div",
+   "text": "Konsistensi",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "Konsistensi",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-017",
+   "kind": "text",
+   "tag": "p",
+   "text": "9/12",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "bulan aktif 2026",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "Trend Aktiviti Bulanan",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-020",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Trend Aktiviti Bulanan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-021",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jan",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-023",
+   "kind": "text",
+   "tag": "div",
+   "text": "729",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-024",
+   "kind": "text",
+   "tag": "div",
+   "text": "Feb",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "1,148",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-026",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mar",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-027",
+   "kind": "text",
+   "tag": "div",
+   "text": "1,056",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-028",
+   "kind": "text",
+   "tag": "div",
+   "text": "Apr",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "16,200",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-030",
+   "kind": "text",
+   "tag": "div",
+   "text": "May",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-031",
+   "kind": "text",
+   "tag": "div",
+   "text": "52,059",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jun",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-033",
+   "kind": "text",
+   "tag": "div",
+   "text": "1,074",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jul",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-035",
+   "kind": "text",
+   "tag": "div",
+   "text": "30",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-036",
+   "kind": "text",
+   "tag": "div",
+   "text": "Aug",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-037",
+   "kind": "text",
+   "tag": "div",
+   "text": "35",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-038",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sep",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-039",
+   "kind": "text",
+   "tag": "div",
+   "text": "Oct",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-040",
+   "kind": "text",
+   "tag": "div",
+   "text": "Nov",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-041",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dec",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-042",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prestasi Mengikut Subjek",
+   "landmark": "main",
+   "section": "Trend Aktiviti Bulanan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-043",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Prestasi Mengikut Subjek",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-044",
+   "kind": "text",
+   "tag": "p",
+   "text": "▲ SUBJEK TERKUAT",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-045",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Al-Quran & As-Sunnah",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-046",
+   "kind": "text",
+   "tag": "p",
+   "text": "100.0% (35 soalan)",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-047",
+   "kind": "text",
+   "tag": "p",
+   "text": "▼ SUBJEK PERLU PERHATIAN",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-048",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-049",
+   "kind": "text",
+   "tag": "p",
+   "text": "64.1% (744 soalan)",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "97.1%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-052",
+   "kind": "text",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "93.4%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-054",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-055",
+   "kind": "text",
+   "tag": "span",
+   "text": "86.1%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-057",
+   "kind": "text",
+   "tag": "span",
+   "text": "88.5%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-058",
+   "kind": "text",
+   "tag": "div",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-059",
+   "kind": "text",
+   "tag": "span",
+   "text": "65.4%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pendidikan Jasmani & Kesihatan",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-061",
+   "kind": "text",
+   "tag": "span",
+   "text": "99.3%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-062",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-063",
+   "kind": "text",
+   "tag": "span",
+   "text": "95.2%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-064",
+   "kind": "text",
+   "tag": "div",
+   "text": "Biologi",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-065",
+   "kind": "text",
+   "tag": "span",
+   "text": "70.3%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-066",
+   "kind": "text",
+   "tag": "div",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-067",
+   "kind": "text",
+   "tag": "span",
+   "text": "81.8%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-068",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-069",
+   "kind": "text",
+   "tag": "span",
+   "text": "73.5%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-070",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-071",
+   "kind": "text",
+   "tag": "span",
+   "text": "64.1%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-072",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pendidikan Syariah Islamiah",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-073",
+   "kind": "text",
+   "tag": "span",
+   "text": "91.7%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-074",
+   "kind": "text",
+   "tag": "div",
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-075",
+   "kind": "text",
+   "tag": "span",
+   "text": "81.7%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-076",
+   "kind": "text",
+   "tag": "div",
+   "text": "Reka Bentuk & Teknologi",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-077",
+   "kind": "text",
+   "tag": "span",
+   "text": "99.6%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-078",
+   "kind": "text",
+   "tag": "div",
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-079",
+   "kind": "text",
+   "tag": "span",
+   "text": "71.1%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-080",
+   "kind": "text",
+   "tag": "div",
+   "text": "Geografi",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-081",
+   "kind": "text",
+   "tag": "span",
+   "text": "66.7%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-082",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pendidikan Seni Visual",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-083",
+   "kind": "text",
+   "tag": "span",
+   "text": "95.3%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-084",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ekonomi",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-085",
+   "kind": "text",
+   "tag": "span",
+   "text": "78.8%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-086",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sains Komputer",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-087",
+   "kind": "text",
+   "tag": "span",
+   "text": "88.5%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-088",
+   "kind": "text",
+   "tag": "div",
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-089",
+   "kind": "text",
+   "tag": "span",
+   "text": "67.5%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-090",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pendidikan Al-Quran & As-Sunnah",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-091",
+   "kind": "text",
+   "tag": "span",
+   "text": "100.0%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-092",
+   "kind": "text",
+   "tag": "div",
+   "text": "Bahasa Tamil",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-093",
+   "kind": "text",
+   "tag": "span",
+   "text": "90.0%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-094",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-095",
+   "kind": "text",
+   "tag": "span",
+   "text": "100.0%",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-096",
+   "kind": "card",
+   "tag": "div",
+   "text": "Headcount TOV → RS",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-097",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Headcount TOV → RS",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-098",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Subjek",
+    "Rekod",
+    "Purata TOV",
+    "Purata RS",
+    "Perubahan"
+   ],
+   "rowCount": 6,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Headcount TOV → RS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-099",
+   "kind": "text",
+   "tag": "div",
+   "text": "Laporan dijana: 26 Sep 2026, 04:26 AM · PrestasiPlus",
+   "landmark": "main",
+   "section": "Headcount TOV → RS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "no-data__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-100",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "no-data__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-101",
+   "kind": "text",
+   "tag": "p",
+   "text": "Negeri: Terengganu",
+   "landmark": "main",
+   "section": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "no-data__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-102",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "no-data__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-103",
+   "kind": "text",
+   "tag": "p",
+   "text": "0 aktif / 1 daftar",
+   "landmark": "main",
+   "section": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "no-data__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-104",
+   "kind": "text",
+   "tag": "p",
+   "text": "0 soalan/pelajar",
+   "landmark": "main",
+   "section": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "no-data__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-105",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "no-data__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-106",
+   "kind": "text",
+   "tag": "p",
+   "text": "0/12",
+   "landmark": "main",
+   "section": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "no-data__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-107",
+   "kind": "text",
+   "tag": "div",
+   "text": "404",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-108",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔍",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-109",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-110",
+   "kind": "text",
+   "tag": "p",
+   "text": "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-111",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-112",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "/latih-tubi",
+   "absHref": "https://prestasiplus.my/latih-tubi",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S9-113",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  }
+ ]
+}

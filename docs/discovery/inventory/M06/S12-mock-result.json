@@ -1,0 +1,1030 @@
+{
+ "screen": "S12",
+ "key": "S12-mock-result",
+ "route": "/spm-mock/{id}/result",
+ "name": "Result Mock SPM — {subject}",
+ "module": "M06",
+ "generatedAt": "2026-09-25T08:07:43.831Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 64,
+  "visibleDefault": 54,
+  "conditional": 10,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 5,
+   "text": 44,
+   "link": 7,
+   "badge": 6,
+   "card": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "submitted mock 16 (BM Paper 1, 0/30, grade G)",
+   "file": "_raw/M06/S12-mock-result__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/spm-mock/16/result",
+   "finalUrl": "/spm-mock/16/result",
+   "httpStatus": 200,
+   "title": "Result Mock SPM — Bahasa Melayu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 4",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 27
+   }
+  },
+  {
+   "label": "not-found__1280",
+   "description": "unknown id (404)",
+   "file": "_raw/M06/S12-mock-result__not-found__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/spm-mock/99999/result",
+   "finalUrl": "/spm-mock/99999/result",
+   "httpStatus": 404,
+   "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "mock 16 @375",
+   "file": "_raw/M06/S12-mock-result__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/spm-mock/16/result",
+   "finalUrl": "/spm-mock/16/result",
+   "httpStatus": 200,
+   "title": "Result Mock SPM — Bahasa Melayu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 4",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 27
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "mock 16 @768",
+   "file": "_raw/M06/S12-mock-result__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/spm-mock/16/result",
+   "finalUrl": "/spm-mock/16/result",
+   "httpStatus": 200,
+   "title": "Result Mock SPM — Bahasa Melayu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 4",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 27
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M06-S12-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Bahasa Melayu · Paper 1",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "G",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.00%",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-004",
+   "kind": "text",
+   "tag": "div",
+   "text": "0 / 30 markah",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓 Cikgu Pakar Bahasa Melayu",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Lemah dlm topik tertentu? Cikgu pakar ni boleh bantu anda naik ke A+ next round.",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-007",
+   "kind": "link",
+   "tag": "a",
+   "text": "<in> <person> Pakar Bahasa Melayu SPM · Sasterawan Negeri Johor 2020. 🥇 Duta Bintang 📚 Bahasa Melayu 📍 Johor ⭐ 4.88",
+   "href": "https://prestasiplus.my/bilik-duta/{slug}",
+   "absHref": "https://prestasiplus.my/bilik-duta/%7Bslug%7D",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-008",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "<person>",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-009",
+   "kind": "badge",
+   "tag": "span",
+   "text": "🥇 Duta Bintang",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-010",
+   "kind": "badge",
+   "tag": "span",
+   "text": "📚 Bahasa Melayu",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-011",
+   "kind": "badge",
+   "tag": "span",
+   "text": "📍 Johor",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-012",
+   "kind": "badge",
+   "tag": "span",
+   "text": "⭐ 4.88",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-014",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-015",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sastra",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-016",
+   "kind": "text",
+   "tag": "span",
+   "text": "9 soalan tersilap",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-017",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penulisan",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-018",
+   "kind": "text",
+   "tag": "span",
+   "text": "8 soalan tersilap",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sosiobudaya",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 soalan tersilap",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kosa Kata",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "2 soalan tersilap",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-023",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tatabahasa",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "2 soalan tersilap",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-025",
+   "kind": "text",
+   "tag": "p",
+   "text": "💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu. Boleh start dengan untuk topik tersebut.",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-026",
+   "kind": "link",
+   "tag": "a",
+   "text": "jana nota ringkas",
+   "href": "https://prestasiplus.my/pusat-nota-ringkas",
+   "absHref": "https://prestasiplus.my/pusat-nota-ringkas",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "📋 Review Setiap Soalan",
+   "landmark": "main",
+   "section": "📉 Topik Lemah — Fokus Belajar Ke Sini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-028",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "📋 Review Setiap Soalan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan 1 · 0/1 markah",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "✗",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-031",
+   "kind": "text",
+   "tag": "div",
+   "text": "Apakah maksud perkataan 'inovatif' dalam konteks sains dan teknologi?",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "(tiada jawapan)",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-033",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Anda:",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "A",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-035",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Jawapan:",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-036",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawapan betul: A",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-037",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan 2 · 0/1 markah",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "✗",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-039",
+   "kind": "text",
+   "tag": "div",
+   "text": "Apakah tema utama dalam puisi 'Bumi Bertuah' karya A. Samad Said?",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-040",
+   "kind": "text",
+   "tag": "div",
+   "text": "(tiada jawapan)",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-041",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Anda:",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-042",
+   "kind": "text",
+   "tag": "div",
+   "text": "B",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-043",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Jawapan:",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-044",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawapan betul: B",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan 3 · 0/1 markah",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "✗",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-047",
+   "kind": "text",
+   "tag": "div",
+   "text": "Siapakah penulis novel 'Salina'?",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "(tiada jawapan)",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-049",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Anda:",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "A",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-051",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Jawapan:",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-052",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawapan betul: A",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-053",
+   "kind": "link",
+   "tag": "a",
+   "text": "📝 Mock Lain",
+   "href": "https://prestasiplus.my/spm-mock",
+   "absHref": "https://prestasiplus.my/spm-mock",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-054",
+   "kind": "link",
+   "tag": "a",
+   "text": "📚 Belajar Topik Lemah",
+   "href": "https://prestasiplus.my/pusat-nota-ringkas",
+   "absHref": "https://prestasiplus.my/pusat-nota-ringkas",
+   "landmark": "main",
+   "section": "📋 Review Setiap Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-055",
+   "kind": "text",
+   "tag": "div",
+   "text": "404",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔍",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-057",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-058",
+   "kind": "text",
+   "tag": "p",
+   "text": "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-059",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-060",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "/latih-tubi",
+   "absHref": "https://prestasiplus.my/latih-tubi",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-061",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-062",
+   "kind": "link",
+   "tag": "a",
+   "text": "<in> <person> Maestro Matematik · 22 tahun ajar pelajar B40 capai cita-cita. 🥇 Duta Bintang 📚 Matematik 📍 Johor ⭐ 4.92",
+   "href": "https://prestasiplus.my/bilik-duta/{slug}",
+   "absHref": "https://prestasiplus.my/bilik-duta/%7Bslug%7D",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-063",
+   "kind": "badge",
+   "tag": "span",
+   "text": "📚 Matematik",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S12-064",
+   "kind": "badge",
+   "tag": "span",
+   "text": "⭐ 4.92",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "conditional",
+   "visibleIn": [
+    "default__768"
+   ]
+  }
+ ]
+}

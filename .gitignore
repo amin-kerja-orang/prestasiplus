@@ -1,0 +1,36 @@
+.playwright-mcp/
+
+# Dependencies
+node_modules/
+
+# Builds
+dist/
+dist-*/
+*.local
+
+# Test reports
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# TypeScript / tool caches
+*.tsbuildinfo
+.eslintcache
+.vite/
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Raw live captures and screenshots: local evidence only, may contain real personal data (privacy rule)
+docs/discovery/inventory/_raw/
+docs/discovery/img/

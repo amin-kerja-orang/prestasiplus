@@ -1,0 +1,1579 @@
+{
+ "screen": "S3",
+ "key": "S3-latih-tubi",
+ "route": "/spm/latih-tubi",
+ "name": "Latih Tubi SPM",
+ "module": "M06",
+ "generatedAt": "2026-09-25T08:07:43.495Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 86,
+  "visibleDefault": 83,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 4,
+   "link": 20,
+   "heading": 22,
+   "card": 18,
+   "alert": 22
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (7 teras + 12 elektif, BA locked)",
+   "file": "_raw/M06/S3-latih-tubi__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/spm/latih-tubi",
+   "finalUrl": "/spm/latih-tubi",
+   "httpStatus": 200,
+   "title": "Latih Tubi SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default (7 teras + 12 elektif, BA locked) @375",
+   "file": "_raw/M06/S3-latih-tubi__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/spm/latih-tubi",
+   "finalUrl": "/spm/latih-tubi",
+   "httpStatus": 200,
+   "title": "Latih Tubi SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default (7 teras + 12 elektif, BA locked) @768",
+   "file": "_raw/M06/S3-latih-tubi__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/spm/latih-tubi",
+   "finalUrl": "/spm/latih-tubi",
+   "httpStatus": 200,
+   "title": "Latih Tubi SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Latih Tubi SPM",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M06-S3-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Latih Tubi SPM",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Latih Tubi SPM",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Latih Tubi SPM",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Mod SPM",
+   "href": "https://prestasiplus.my/spm",
+   "absHref": "https://prestasiplus.my/spm",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Latih Tubi SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Latih Tubi SPM",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih subjek untuk mula berlatih (Tingkatan 4 & 5)",
+   "landmark": "main",
+   "section": "Latih Tubi SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-007",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Subjek Teras (7)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-008",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bahasa Melayu Malay Language 514 soalan Target Custom: 34",
+   "href": "https://prestasiplus.my/spm/latih-tubi/BM",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/BM",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Subjek Teras (7)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-009",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Subjek Teras (7)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-010",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-011",
+   "kind": "alert",
+   "tag": "span",
+   "text": "514 soalan",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-012",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target Custom: 34",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-013",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bahasa Inggeris English Language 1,114 soalan Target Custom: 36",
+   "href": "https://prestasiplus.my/spm/latih-tubi/BI",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/BI",
+   "icon": "fa-globe",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-014",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-015",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-016",
+   "kind": "alert",
+   "tag": "span",
+   "text": "1,114 soalan",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-017",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target Custom: 36",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-018",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik Mathematics 1,681 soalan Target SPM: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/MATH",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/MATH",
+   "icon": "fa-calculator",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-020",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-021",
+   "kind": "alert",
+   "tag": "span",
+   "text": "1,681 soalan",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-022",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target SPM: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-023",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sains Science 2,076 soalan Target SPM: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/SCI",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/SCI",
+   "icon": "fa-beaker",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-024",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-025",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sains",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-026",
+   "kind": "alert",
+   "tag": "span",
+   "text": "2,076 soalan",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-027",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target SPM: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-028",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sejarah History 1,539 soalan Target SPM: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/SEJ",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/SEJ",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-029",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-030",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-031",
+   "kind": "alert",
+   "tag": "span",
+   "text": "1,539 soalan",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-032",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target SPM: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-033",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pendidikan Islam Islamic Education 483 soalan Target Latihan: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/PI",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/PI",
+   "icon": "fa-moon",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-034",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-035",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-036",
+   "kind": "alert",
+   "tag": "span",
+   "text": "483 soalan",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-037",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target Latihan: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-038",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pendidikan Moral Moral Education 1,353 soalan Target Latihan: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/PM",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/PM",
+   "icon": "fa-heart",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-039",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-040",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-041",
+   "kind": "alert",
+   "tag": "span",
+   "text": "1,353 soalan",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-042",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target Latihan: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-043",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Subjek Elektif (12)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-044",
+   "kind": "link",
+   "tag": "a",
+   "text": "Geografi Geography 1,228 soalan Target SPM: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/GEO",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/GEO",
+   "icon": "fa-map",
+   "landmark": "main",
+   "section": "Subjek Elektif (12)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-045",
+   "kind": "card",
+   "tag": "div",
+   "text": "Geografi",
+   "landmark": "main",
+   "section": "Subjek Elektif (12)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-046",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Geografi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-047",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target SPM: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-048",
+   "kind": "link",
+   "tag": "a",
+   "text": "Biologi Biology 1,999 soalan Target SPM: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/BIO",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/BIO",
+   "icon": "fa-leaf",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-049",
+   "kind": "card",
+   "tag": "div",
+   "text": "Biologi",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-050",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Biologi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-051",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target SPM: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-052",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kimia Chemistry 1,009 soalan Target SPM: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/CHEM",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/CHEM",
+   "icon": "fa-flask-round",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-053",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-054",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kimia",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-055",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target SPM: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-056",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fizik Physics 1,261 soalan Target SPM: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/PHY",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/PHY",
+   "icon": "fa-zap",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-057",
+   "kind": "card",
+   "tag": "div",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-058",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Fizik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-059",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target SPM: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-060",
+   "kind": "link",
+   "tag": "a",
+   "text": "Perniagaan Business Studies 934 soalan",
+   "href": "https://prestasiplus.my/spm/latih-tubi/PERNIAGA",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/PERNIAGA",
+   "icon": "fa-briefcase",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-061",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-062",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Perniagaan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "Prinsip Perakaunan Principles of Accounting 1,770 soalan",
+   "href": "https://prestasiplus.my/spm/latih-tubi/AKAUN",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/AKAUN",
+   "icon": "fa-receipt",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-064",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-065",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-066",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ekonomi Economics 1,986 soalan Target Latihan: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/EKON",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/EKON",
+   "icon": "fa-trending-up",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-067",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ekonomi",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-068",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ekonomi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-069",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target Latihan: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-070",
+   "kind": "link",
+   "tag": "a",
+   "text": "Matematik Tambahan Additional Mathematics 501 soalan Target Latihan: 20",
+   "href": "https://prestasiplus.my/spm/latih-tubi/ADDMATH",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/ADDMATH",
+   "icon": "fa-variable",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-071",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-072",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-073",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target Latihan: 20",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-074",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pendidikan Seni Visual Visual Arts Education 545 soalan",
+   "href": "https://prestasiplus.my/spm/latih-tubi/PSV",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/PSV",
+   "icon": "fa-palette",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-075",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pendidikan Seni Visual",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-076",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendidikan Seni Visual",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-077",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bahasa Arab Arabic Language 0 soalan Target Latihan: 40 Locked: 0/40",
+   "href": "javascript:void(0)",
+   "absHref": "javascript:void(0)",
+   "icon": "fa-languages",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-078",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-079",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target Latihan: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-080",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tasawwur Islam Islamic Worldview 530 soalan",
+   "href": "https://prestasiplus.my/spm/latih-tubi/TI",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/TI",
+   "icon": "fa-fas fa-mosque",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-081",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-082",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-083",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pendidikan Syariah Islamiah Islamic Syariah Education 510 soalan Target Latihan: 40",
+   "href": "https://prestasiplus.my/spm/latih-tubi/PSI",
+   "absHref": "https://prestasiplus.my/spm/latih-tubi/PSI",
+   "icon": "fa-fas fa-scale-balanced",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-084",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pendidikan Syariah Islamiah",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-085",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendidikan Syariah Islamiah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S3-086",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Target Latihan: 40",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

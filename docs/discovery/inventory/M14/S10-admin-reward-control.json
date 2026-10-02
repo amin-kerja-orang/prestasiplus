@@ -1,0 +1,1276 @@
+{
+ "screen": "S10",
+ "key": "S10-admin-reward-control",
+ "route": "/admin/reward-control",
+ "name": "Kawalan Reward — Admin",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.444Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 55,
+  "visibleDefault": 34,
+  "conditional": 16,
+  "hiddenOnly": 5,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 7,
+   "heading": 3,
+   "form": 5,
+   "hidden-field": 5,
+   "label": 12,
+   "input": 12,
+   "checkbox": 2,
+   "button": 5,
+   "table": 2,
+   "accordion-trigger": 1,
+   "textarea": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (Cabutan details closed)",
+   "file": "_raw/M14/S10-admin-reward-control__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/reward-control",
+   "finalUrl": "/admin/reward-control",
+   "httpStatus": 200,
+   "title": "Kawalan Reward — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main section tbody tr.border-b": 11
+   }
+  },
+  {
+   "label": "draw-open__1280",
+   "description": "\"➕ Cipta Cabutan Baru\" details open",
+   "file": "_raw/M14/S10-admin-reward-control__draw-open__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/reward-control",
+   "finalUrl": "/admin/reward-control",
+   "httpStatus": 200,
+   "title": "Kawalan Reward — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main details summary\"); if (!e) return 'missing main details summary'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m14mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main section tbody tr.border-b": 11
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default (Cabutan details closed) @375",
+   "file": "_raw/M14/S10-admin-reward-control__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/reward-control",
+   "finalUrl": "/admin/reward-control",
+   "httpStatus": 200,
+   "title": "Kawalan Reward — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main section tbody tr.border-b": 11
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default (Cabutan details closed) @768",
+   "file": "_raw/M14/S10-admin-reward-control__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/reward-control",
+   "finalUrl": "/admin/reward-control",
+   "httpStatus": 200,
+   "title": "Kawalan Reward — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main section tbody tr.border-b": 11
+   }
+  },
+  {
+   "label": "draw-open__375",
+   "description": "\"➕ Cipta Cabutan Baru\" details open @375",
+   "file": "_raw/M14/S10-admin-reward-control__draw-open__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/reward-control",
+   "finalUrl": "/admin/reward-control",
+   "httpStatus": 200,
+   "title": "Kawalan Reward — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main details summary\"); if (!e) return 'missing main details summary'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m14mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main section tbody tr.border-b": 11
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S10-001",
+   "kind": "text",
+   "tag": "div",
+   "text": "Liabiliti sesi 2026",
+   "landmark": "main",
+   "section": "Kawalan Ekonomi Reward",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM0.00",
+   "landmark": "main",
+   "section": "Kawalan Ekonomi Reward",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "jumlah kos hadiah ditebus",
+   "landmark": "main",
+   "section": "Kawalan Ekonomi Reward",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-004",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pelajar menebus",
+   "landmark": "main",
+   "section": "Kawalan Ekonomi Reward",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kawalan Ekonomi Reward",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah tebusan",
+   "landmark": "main",
+   "section": "Kawalan Ekonomi Reward",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kawalan Ekonomi Reward",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-008",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "⚙️ Tetapan Kewangan",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-009",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/reward-control/settings",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "reward_budget_sen_session",
+    "reward_budget_sen_month",
+    "flat_quiz_reward",
+    "current_session_year",
+    "games_award_syiling"
+   ],
+   "landmark": "section",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-010",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-011",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bajet tebus / sesi (sen) — RM10 = 1000",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-012",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "reward_budget_sen_session",
+   "label": "Bajet tebus / sesi (sen) — RM10 = 1000",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sub-had tebus / bulan (sen) — RM3 = 300",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-014",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "reward_budget_sen_month",
+   "label": "Sub-had tebus / bulan (sen) — RM3 = 300",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "Syiling flat / soalan betul",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-016",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "flat_quiz_reward",
+   "label": "Syiling flat / soalan betul",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahun sesi semasa",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-018",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "current_session_year",
+   "label": "Tahun sesi semasa",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "Mini-games beri syiling? (jika tidak: XP sahaja — tutup exploit)",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-020",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "games_award_syiling",
+   "label": "Mini-games beri syiling? (jika tidak: XP sahaja — tutup exploit)",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M14-S10-021",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan Tetapan",
+   "form": "https://prestasiplus.my/admin/reward-control/settings",
+   "landmark": "form",
+   "section": "⚙️ Tetapan Kewangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-022",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-023",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Hadiah",
+    "Jenis",
+    "Harga syiling",
+    "Kos sebenar (sen)",
+    ""
+   ],
+   "rowCount": 11,
+   "firstRowActions": [
+    {
+     "tag": "button",
+     "text": "Simpan"
+    }
+   ],
+   "landmark": "section",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-024",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/reward-control/reward/1/cost",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "cost_value_sen"
+   ],
+   "landmark": "table",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-025",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-026",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "cost_value_sen",
+   "landmark": "form",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-027",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/reward-control/reward/1/cost",
+   "landmark": "table",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-028",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/reward-control/reward/2/cost",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "cost_value_sen"
+   ],
+   "landmark": "table",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-029",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-030",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "cost_value_sen",
+   "landmark": "form",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-031",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/reward-control/reward/2/cost",
+   "landmark": "table",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-032",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/reward-control/reward/3/cost",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "cost_value_sen"
+   ],
+   "landmark": "table",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-033",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-034",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "cost_value_sen",
+   "landmark": "form",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-035",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/reward-control/reward/3/cost",
+   "landmark": "table",
+   "section": "🎁 Kos Sebenar Hadiah (sen) — digital = 0, tak makan bajet",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-036",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "🎟️ Cabutan",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-037",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Tajuk",
+    "Status",
+    "Tiket",
+    "Kolam",
+    "Pemenang",
+    ""
+   ],
+   "rowCount": 1,
+   "firstRowActions": [],
+   "landmark": "section",
+   "section": "🎟️ Cabutan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-038",
+   "kind": "accordion-trigger",
+   "tag": "summary",
+   "text": "➕ Cipta Cabutan Baru",
+   "landmark": "section",
+   "section": "🎟️ Cabutan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-039",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/reward-control/draw",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "title",
+    "description",
+    "ticket_cost_syiling",
+    "max_tickets_per_student",
+    "prize_pool",
+    "closes_at",
+    "open_now"
+   ],
+   "landmark": "section",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-040",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "draw-open__1280",
+    "default__375",
+    "default__768",
+    "draw-open__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-041",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-042",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "title",
+   "label": "Tajuk",
+   "required": true,
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-043",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-044",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "description",
+   "label": "Penerangan",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-045",
+   "kind": "label",
+   "tag": "label",
+   "text": "Harga tiket (syiling)",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-046",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "ticket_cost_syiling",
+   "label": "Harga tiket (syiling)",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-047",
+   "kind": "label",
+   "tag": "label",
+   "text": "Max tiket / pelajar",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-048",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "max_tickets_per_student",
+   "label": "Max tiket / pelajar",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-049",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kolam hadiah (JSON)",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-050",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "prize_pool",
+   "label": "Kolam hadiah (JSON)",
+   "placeholder": "[{\"label\":\"Baucar Topup RM50\",\"value_sen\":5000,\"qty\":1},{\"label\":\"Baucar RM5\",\"value_sen\":500,\"qty\":10}]",
+   "rows": "3",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-051",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tarikh tutup",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-052",
+   "kind": "input",
+   "tag": "input",
+   "type": "date",
+   "name": "closes_at",
+   "label": "Tarikh tutup",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-053",
+   "kind": "label",
+   "tag": "label",
+   "text": "Buka serta-merta",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  },
+  {
+   "id": "EL-M14-S10-054",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "open_now",
+   "label": "Buka serta-merta",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M14-S10-055",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cipta Cabutan",
+   "form": "https://prestasiplus.my/admin/reward-control/draw",
+   "landmark": "form",
+   "section": "🎟️ Cabutan",
+   "status": "conditional",
+   "visibleIn": [
+    "draw-open__1280",
+    "draw-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "closed-details"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,2934 @@
+{
+  "capturedAt": "2026-09-26T20:23:11.352Z",
+  "note": "M19 seed snapshot; GET only; payer names/e-mails tokenised (<payer:n>, e-mail domain class), bill codes and gateway refs as presence flags only.",
+  "S1_payments": {
+    "pages": {
+      "1": {
+        "status": 200,
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "rowIds": [
+          65,
+          64,
+          63,
+          62,
+          61,
+          60,
+          59,
+          58,
+          57,
+          56,
+          55,
+          54,
+          53,
+          52,
+          51,
+          50,
+          49,
+          48,
+          47,
+          46
+        ],
+        "table": {
+          "heads": [
+            "",
+            "Pelajar",
+            "Pakej",
+            "Gateway",
+            "Jumlah",
+            "Status",
+            "Tarikh",
+            "Tindakan"
+          ],
+          "rows": [
+            [
+              "",
+              "<payer:1> <email:none>",
+              "Personal Monthly",
+              "toyyibpay",
+              "RM90.00",
+              "Berjaya",
+              "13 Sep 2026 12:34",
+              ""
+            ],
+            [
+              "",
+              "<payer:1> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "13 Sep 2026 12:23",
+              ""
+            ],
+            [
+              "",
+              "<payer:1> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "13 Sep 2026 12:23",
+              ""
+            ],
+            [
+              "",
+              "<payer:1> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "13 Sep 2026 12:23",
+              ""
+            ],
+            [
+              "",
+              "<payer:2> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "01 Jul 2026 04:51",
+              ""
+            ],
+            [
+              "",
+              "<payer:3> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "27 Jun 2026 12:18",
+              ""
+            ],
+            [
+              "",
+              "<payer:3> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "27 Jun 2026 12:18",
+              ""
+            ],
+            [
+              "",
+              "<payer:4> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "24 Jun 2026 10:37",
+              ""
+            ],
+            [
+              "",
+              "<payer:1> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Berjaya",
+              "22 Jun 2026 01:11",
+              ""
+            ],
+            [
+              "",
+              "<payer:5> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "21 Jun 2026 15:13",
+              ""
+            ],
+            [
+              "",
+              "<payer:6> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "21 Jun 2026 08:55",
+              ""
+            ],
+            [
+              "",
+              "<payer:6> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "21 Jun 2026 07:02",
+              ""
+            ],
+            [
+              "",
+              "<payer:7> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 Jun 2026 23:50",
+              ""
+            ],
+            [
+              "",
+              "<payer:7> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 Jun 2026 06:08",
+              ""
+            ],
+            [
+              "",
+              "<payer:8> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 Jun 2026 05:09",
+              ""
+            ],
+            [
+              "",
+              "<payer:8> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 Jun 2026 05:08",
+              ""
+            ],
+            [
+              "",
+              "<payer:9> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 Jun 2026 03:18",
+              ""
+            ],
+            [
+              "",
+              "<payer:9> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 Jun 2026 03:18",
+              ""
+            ],
+            [
+              "",
+              "<payer:9> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 Jun 2026 03:18",
+              ""
+            ],
+            [
+              "",
+              "<payer:9> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 Jun 2026 03:18",
+              ""
+            ]
+          ]
+        },
+        "info": "« Previous Next » Showing 1 to 20 of 59 results 1 2 3"
+      },
+      "2": {
+        "status": 200,
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "rowIds": [
+          45,
+          44,
+          43,
+          42,
+          41,
+          40,
+          39,
+          38,
+          37,
+          36,
+          35,
+          34,
+          33,
+          32,
+          31,
+          30,
+          29,
+          28,
+          27,
+          26
+        ],
+        "table": {
+          "heads": [
+            "",
+            "Pelajar",
+            "Pakej",
+            "Gateway",
+            "Jumlah",
+            "Status",
+            "Tarikh",
+            "Tindakan"
+          ],
+          "rows": [
+            [
+              "",
+              "<payer:10> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 Jun 2026 02:16",
+              ""
+            ],
+            [
+              "",
+              "<payer:11> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "16 Jun 2026 11:20",
+              ""
+            ],
+            [
+              "",
+              "<payer:11> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "16 Jun 2026 11:20",
+              ""
+            ],
+            [
+              "",
+              "<payer:10> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "16 Jun 2026 02:47",
+              ""
+            ],
+            [
+              "",
+              "<payer:12> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "15 Jun 2026 21:29",
+              ""
+            ],
+            [
+              "",
+              "<payer:13> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Berjaya",
+              "15 Jun 2026 13:56",
+              ""
+            ],
+            [
+              "",
+              "<payer:13> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "15 Jun 2026 13:56",
+              ""
+            ],
+            [
+              "",
+              "<payer:14> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "13 Jun 2026 07:20",
+              ""
+            ],
+            [
+              "",
+              "<payer:14> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "13 Jun 2026 07:19",
+              ""
+            ],
+            [
+              "",
+              "<payer:15> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "23 May 2026 05:37",
+              ""
+            ],
+            [
+              "",
+              "<payer:16> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Berjaya",
+              "22 May 2026 09:33",
+              ""
+            ],
+            [
+              "",
+              "<payer:12> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "21 May 2026 13:32",
+              ""
+            ],
+            [
+              "",
+              "<payer:17> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "20 May 2026 01:53",
+              ""
+            ],
+            [
+              "",
+              "<payer:18> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Berjaya",
+              "19 May 2026 11:03",
+              ""
+            ],
+            [
+              "",
+              "<payer:19> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Berjaya",
+              "19 May 2026 10:48",
+              ""
+            ],
+            [
+              "",
+              "<payer:20> <email:none>",
+              "Personal Onetime",
+              "toyyibpay",
+              "RM90.00",
+              "Pending",
+              "17 May 2026 11:45",
+              ""
+            ],
+            [
+              "",
+              "<payer:21> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 May 2026 09:19",
+              ""
+            ],
+            [
+              "",
+              "<payer:21> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 May 2026 09:14",
+              ""
+            ],
+            [
+              "",
+              "<payer:21> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "17 May 2026 09:14",
+              ""
+            ],
+            [
+              "",
+              "<payer:22> <email:none>",
+              "Personal Onetime",
+              "toyyibpay",
+              "RM90.00",
+              "Pending",
+              "17 May 2026 02:37",
+              ""
+            ]
+          ]
+        },
+        "info": "« Previous Next » Showing 21 to 40 of 59 results 1 2 3"
+      },
+      "3": {
+        "status": 200,
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "rowIds": [
+          25,
+          24,
+          23,
+          22,
+          21,
+          20,
+          19,
+          18,
+          17,
+          16,
+          15,
+          12,
+          14,
+          13,
+          11,
+          10,
+          9,
+          8,
+          7
+        ],
+        "table": {
+          "heads": [
+            "",
+            "Pelajar",
+            "Pakej",
+            "Gateway",
+            "Jumlah",
+            "Status",
+            "Tarikh",
+            "Tindakan"
+          ],
+          "rows": [
+            [
+              "",
+              "<payer:23> <email:none>",
+              "Personal Onetime",
+              "toyyibpay",
+              "RM90.00",
+              "Berjaya",
+              "16 May 2026 11:35",
+              ""
+            ],
+            [
+              "",
+              "<payer:23> <email:none>",
+              "Personal Onetime",
+              "toyyibpay",
+              "RM90.00",
+              "Pending",
+              "16 May 2026 11:33",
+              ""
+            ],
+            [
+              "",
+              "<payer:23> <email:none>",
+              "Personal Onetime",
+              "toyyibpay",
+              "RM90.00",
+              "Pending",
+              "16 May 2026 11:31",
+              ""
+            ],
+            [
+              "",
+              "<payer:23> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "14 May 2026 10:16",
+              ""
+            ],
+            [
+              "",
+              "<payer:23> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "08 May 2026 12:08",
+              ""
+            ],
+            [
+              "",
+              "<payer:24> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Berjaya",
+              "07 May 2026 12:39",
+              ""
+            ],
+            [
+              "",
+              "<payer:24> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "06 May 2026 13:00",
+              ""
+            ],
+            [
+              "",
+              "<payer:25> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "03 May 2026 09:17",
+              ""
+            ],
+            [
+              "",
+              "<payer:25> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "03 May 2026 09:17",
+              ""
+            ],
+            [
+              "",
+              "<payer:16> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "24 Apr 2026 01:31",
+              ""
+            ],
+            [
+              "",
+              "<payer:26> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "23 Apr 2026 14:19",
+              ""
+            ],
+            [
+              "",
+              "<payer:27> <email:none>",
+              "Personal Onetime",
+              "toyyibpay",
+              "RM90.00",
+              "Pending",
+              "22 Apr 2026 17:28",
+              ""
+            ],
+            [
+              "",
+              "<payer:26> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "22 Apr 2026 12:55",
+              ""
+            ],
+            [
+              "",
+              "<payer:28> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "22 Apr 2026 12:28",
+              ""
+            ],
+            [
+              "",
+              "<payer:15> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "15 Apr 2026 22:57",
+              ""
+            ],
+            [
+              "",
+              "<payer:15> <email:none>",
+              "Personal Onetime",
+              "toyyibpay",
+              "RM90.00",
+              "Pending",
+              "15 Apr 2026 22:57",
+              ""
+            ],
+            [
+              "",
+              "<payer:29> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "15 Apr 2026 16:12",
+              ""
+            ],
+            [
+              "",
+              "<payer:30> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "15 Apr 2026 15:22",
+              ""
+            ],
+            [
+              "",
+              "<payer:30> <email:none>",
+              "Biasa Monthly",
+              "toyyibpay",
+              "RM10.00",
+              "Pending",
+              "15 Apr 2026 15:22",
+              ""
+            ]
+          ]
+        },
+        "info": "« Previous Next » Showing 41 to 59 of 59 results 1 2 3"
+      }
+    },
+    "filters": {
+      "status=paid": {
+        "status": 200,
+        "rowCount": 8,
+        "info": "",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": ""
+      },
+      "status=pending": {
+        "status": 200,
+        "rowCount": 20,
+        "info": "« Previous Next » Showing 1 to 20 of 51 results 1 2 3",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": ""
+      },
+      "status=failed": {
+        "status": 200,
+        "rowCount": 0,
+        "info": "",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": "Tiada Pembayaran"
+      },
+      "type=regular": {
+        "status": 200,
+        "rowCount": 20,
+        "info": "« Previous Next » Showing 1 to 20 of 51 results 1 2 3",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": ""
+      },
+      "type=personal": {
+        "status": 200,
+        "rowCount": 8,
+        "info": "",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": ""
+      },
+      "type=pksk": {
+        "status": 200,
+        "rowCount": 0,
+        "info": "",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": "Tiada Pembayaran"
+      },
+      "gateway=toyyibpay": {
+        "status": 200,
+        "rowCount": 20,
+        "info": "« Previous Next » Showing 1 to 20 of 59 results 1 2 3",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": ""
+      },
+      "gateway=bizappay": {
+        "status": 200,
+        "rowCount": 0,
+        "info": "",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": "Tiada Pembayaran"
+      },
+      "search=zzqxv": {
+        "status": 200,
+        "rowCount": 0,
+        "info": "",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": "Tiada Pembayaran"
+      },
+      "status=paid&type=personal": {
+        "status": 200,
+        "rowCount": 2,
+        "info": "",
+        "stats": [
+          "59 Jumlah",
+          "8 Berjaya",
+          "51 Pending",
+          "0 Gagal",
+          "RM240.00 Hasil"
+        ],
+        "empty": ""
+      }
+    }
+  },
+  "S2_paymentDetail": {
+    "7": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "15 Apr 2026, 15:22:54",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "8": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "15 Apr 2026, 15:22:55",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "9": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "15 Apr 2026, 16:12:39",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "10": {
+      "Pakej": "personal",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "15 Apr 2026, 22:57:17",
+      "PakejSub": "onetime",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM90.00"
+      ],
+      "status": 200
+    },
+    "11": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "15 Apr 2026, 22:57:33",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "12": {
+      "Pakej": "personal",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "22 Apr 2026, 17:28:21",
+      "PakejSub": "onetime",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM90.00"
+      ],
+      "status": 200
+    },
+    "13": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "22 Apr 2026, 12:28:22",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "14": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "22 Apr 2026, 12:55:13",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "15": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "23 Apr 2026, 14:19:02",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "16": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "24 Apr 2026, 01:31:23",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "17": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "03 May 2026, 09:17:30",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "18": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "03 May 2026, 09:17:31",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "19": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "06 May 2026, 13:00:19",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "20": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "07 May 2026, 12:39:57",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Pembayaran Berjaya",
+        "Dibayar pada 07 May 2026, 12:41",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "21": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "08 May 2026, 12:08:58",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "22": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "14 May 2026, 10:16:02",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "23": {
+      "Pakej": "personal",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "16 May 2026, 11:31:23",
+      "PakejSub": "onetime",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM90.00"
+      ],
+      "status": 200
+    },
+    "24": {
+      "Pakej": "personal",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "16 May 2026, 11:33:19",
+      "PakejSub": "onetime",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM90.00"
+      ],
+      "status": 200
+    },
+    "25": {
+      "Pakej": "personal",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "16 May 2026, 11:35:57",
+      "PakejSub": "onetime",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Pembayaran Berjaya",
+        "Dibayar pada 16 May 2026, 11:37",
+        "RM90.00"
+      ],
+      "status": 200
+    },
+    "26": {
+      "Pakej": "personal",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 May 2026, 02:37:55",
+      "PakejSub": "onetime",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM90.00"
+      ],
+      "status": 200
+    },
+    "27": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 May 2026, 09:14:23",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "28": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 May 2026, 09:14:24",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "29": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 May 2026, 09:19:24",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "30": {
+      "Pakej": "personal",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 May 2026, 11:45:55",
+      "PakejSub": "onetime",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM90.00"
+      ],
+      "status": 200
+    },
+    "31": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "19 May 2026, 10:48:41",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Pembayaran Berjaya",
+        "Dibayar pada 19 May 2026, 10:51",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "32": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "19 May 2026, 11:03:21",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Pembayaran Berjaya",
+        "Dibayar pada 19 May 2026, 11:04",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "33": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "20 May 2026, 01:53:00",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "34": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "21 May 2026, 13:32:21",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "35": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "22 May 2026, 09:33:22",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Pembayaran Berjaya",
+        "Dibayar pada 22 May 2026, 09:34",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "36": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "23 May 2026, 05:37:52",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "37": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "13 Jun 2026, 07:19:05",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "38": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "13 Jun 2026, 07:20:25",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "39": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "15 Jun 2026, 13:56:41",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "40": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "15 Jun 2026, 13:56:43",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Pembayaran Berjaya",
+        "Dibayar pada 15 Jun 2026, 13:59",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "41": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "15 Jun 2026, 21:29:55",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "42": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "16 Jun 2026, 02:47:31",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "43": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "16 Jun 2026, 11:20:48",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "44": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "16 Jun 2026, 11:20:50",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "45": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 Jun 2026, 02:16:17",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "46": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 Jun 2026, 03:18:24",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "47": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 Jun 2026, 03:18:26",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "48": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 Jun 2026, 03:18:27",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "49": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 Jun 2026, 03:18:30",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "50": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 Jun 2026, 05:08:38",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "51": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 Jun 2026, 05:09:50",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "52": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 Jun 2026, 06:08:28",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "53": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "17 Jun 2026, 23:50:08",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "54": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "21 Jun 2026, 07:02:02",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "55": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "21 Jun 2026, 08:55:34",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "56": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "21 Jun 2026, 15:13:34",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "57": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "22 Jun 2026, 01:11:01",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Pembayaran Berjaya",
+        "Dibayar pada 22 Jun 2026, 01:12",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "58": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "24 Jun 2026, 10:37:09",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "59": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "27 Jun 2026, 12:18:32",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "60": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "27 Jun 2026, 12:18:34",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "61": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "01 Jul 2026, 04:51:30",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "62": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "13 Sep 2026, 12:23:56",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "63": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "13 Sep 2026, 12:23:58",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "64": {
+      "Pakej": "regular",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "13 Sep 2026, 12:23:59",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Menunggu Pembayaran",
+        "RM10.00"
+      ],
+      "status": 200
+    },
+    "65": {
+      "Pakej": "personal",
+      "Gateway": "toyyibpay",
+      "Tarikh Dicipta": "13 Sep 2026, 12:34:29",
+      "PakejSub": "monthly",
+      "billCode": "present",
+      "gatewayRef": "—",
+      "banner": [
+        "Pembayaran Berjaya",
+        "Dibayar pada 13 Sep 2026, 12:35",
+        "RM90.00"
+      ],
+      "status": 200
+    }
+  },
+  "S4_billing": {
+    "status": 200,
+    "leaves": [
+      "Admin Panel",
+      "Billing Dashboard",
+      "Semua data langganan dan pembayaran platform PRESTASIPLUS",
+      "Langganan Sekolah Aktif",
+      "9",
+      "Langganan Individu Aktif",
+      "94",
+      "Dalam Grace Period",
+      "0",
+      "Hasil Bulan Ini",
+      "RM90.00",
+      "9",
+      "Pakej SPM Tingkatan 5",
+      "Pembayaran Terkini",
+      "20 transaksi terbaru platform"
+    ],
+    "recent": {
+      "heads": [
+        "Tarikh",
+        "Pengguna",
+        "Jenis",
+        "Jumlah",
+        "Status"
+      ],
+      "rows": [
+        [
+          "13/09/2026 12:34",
+          "<payer:1> <email:none>",
+          "regular",
+          "RM90.00",
+          "Berjaya"
+        ],
+        [
+          "13/09/2026 12:23",
+          "<payer:1> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "13/09/2026 12:23",
+          "<payer:1> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "13/09/2026 12:23",
+          "<payer:1> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "01/07/2026 04:51",
+          "<payer:2> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "27/06/2026 12:18",
+          "<payer:3> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "27/06/2026 12:18",
+          "<payer:3> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "24/06/2026 10:37",
+          "<payer:4> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "22/06/2026 01:11",
+          "<payer:1> <email:none>",
+          "regular",
+          "RM10.00",
+          "Berjaya"
+        ],
+        [
+          "21/06/2026 15:13",
+          "<payer:5> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "21/06/2026 08:55",
+          "<payer:6> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "21/06/2026 07:02",
+          "<payer:6> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "17/06/2026 23:50",
+          "<payer:7> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "17/06/2026 06:08",
+          "<payer:7> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "17/06/2026 05:09",
+          "<payer:8> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "17/06/2026 05:08",
+          "<payer:8> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "17/06/2026 03:18",
+          "<payer:9> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "17/06/2026 03:18",
+          "<payer:9> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "17/06/2026 03:18",
+          "<payer:9> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ],
+        [
+          "17/06/2026 03:18",
+          "<payer:9> <email:none>",
+          "regular",
+          "RM10.00",
+          "Menunggu"
+        ]
+      ]
+    }
+  },
+  "S5_dunning": {
+    "default": {
+      "status": 200,
+      "stats": [
+        "21 Jumlah Log",
+        "0 7 Hari Lepas",
+        "7 3-Hari Amaran",
+        "0 Tamat Tempoh"
+      ],
+      "table": {
+        "heads": [
+          "ID",
+          "Jenis",
+          "Sub ID",
+          "Event",
+          "Dihantar"
+        ],
+        "rows": [
+          [
+            "#23",
+            "Individual",
+            "5600",
+            "1 Hari",
+            "21 Jul 2026 08:00"
+          ],
+          [
+            "#22",
+            "Individual",
+            "5600",
+            "3 Hari",
+            "19 Jul 2026 08:00"
+          ],
+          [
+            "#21",
+            "Individual",
+            "5600",
+            "7 Hari",
+            "15 Jul 2026 08:00"
+          ],
+          [
+            "#20",
+            "Individual",
+            "5475",
+            "1 Hari",
+            "14 Jul 2026 08:00"
+          ],
+          [
+            "#19",
+            "Individual",
+            "5475",
+            "3 Hari",
+            "12 Jul 2026 08:00"
+          ],
+          [
+            "#18",
+            "Individual",
+            "5475",
+            "7 Hari",
+            "08 Jul 2026 08:00"
+          ],
+          [
+            "#17",
+            "Individual",
+            "3614",
+            "1 Hari",
+            "21 Jun 2026 08:00"
+          ],
+          [
+            "#16",
+            "Individual",
+            "3614",
+            "3 Hari",
+            "19 Jun 2026 08:00"
+          ],
+          [
+            "#15",
+            "Individual",
+            "5451",
+            "1 Hari",
+            "18 Jun 2026 08:00"
+          ],
+          [
+            "#14",
+            "Individual",
+            "5450",
+            "1 Hari",
+            "18 Jun 2026 08:00"
+          ],
+          [
+            "#13",
+            "Individual",
+            "5451",
+            "3 Hari",
+            "16 Jun 2026 08:00"
+          ],
+          [
+            "#12",
+            "Individual",
+            "5450",
+            "3 Hari",
+            "16 Jun 2026 08:00"
+          ],
+          [
+            "#11",
+            "Individual",
+            "3614",
+            "7 Hari",
+            "15 Jun 2026 08:00"
+          ],
+          [
+            "#10",
+            "Individual",
+            "5451",
+            "7 Hari",
+            "12 Jun 2026 08:00"
+          ],
+          [
+            "#9",
+            "Individual",
+            "5450",
+            "7 Hari",
+            "12 Jun 2026 08:00"
+          ],
+          [
+            "#8",
+            "Individual",
+            "4373",
+            "1 Hari",
+            "06 Jun 2026 08:00"
+          ],
+          [
+            "#7",
+            "Individual",
+            "4373",
+            "3 Hari",
+            "04 Jun 2026 08:00"
+          ],
+          [
+            "#6",
+            "Individual",
+            "4373",
+            "7 Hari",
+            "31 May 2026 08:00"
+          ],
+          [
+            "#5",
+            "School",
+            "4",
+            "1 Hari",
+            "21 May 2026 08:00"
+          ],
+          [
+            "#4",
+            "School",
+            "4",
+            "3 Hari",
+            "19 May 2026 08:00"
+          ],
+          [
+            "#3",
+            "School",
+            "4",
+            "7 Hari",
+            "15 May 2026 08:00"
+          ]
+        ]
+      }
+    },
+    "type=school": {
+      "status": 200,
+      "stats": [
+        "21 Jumlah Log",
+        "0 7 Hari Lepas",
+        "7 3-Hari Amaran",
+        "0 Tamat Tempoh"
+      ],
+      "table": {
+        "rowCount": 3
+      }
+    },
+    "type=individual": {
+      "status": 200,
+      "stats": [
+        "21 Jumlah Log",
+        "0 7 Hari Lepas",
+        "7 3-Hari Amaran",
+        "0 Tamat Tempoh"
+      ],
+      "table": {
+        "rowCount": 18
+      }
+    },
+    "event=reminder_7d": {
+      "status": 200,
+      "stats": [
+        "21 Jumlah Log",
+        "0 7 Hari Lepas",
+        "7 3-Hari Amaran",
+        "0 Tamat Tempoh"
+      ],
+      "table": {
+        "rowCount": 7
+      }
+    },
+    "event=reminder_3d": {
+      "status": 200,
+      "stats": [
+        "21 Jumlah Log",
+        "0 7 Hari Lepas",
+        "7 3-Hari Amaran",
+        "0 Tamat Tempoh"
+      ],
+      "table": {
+        "rowCount": 7
+      }
+    },
+    "event=reminder_1d": {
+      "status": 200,
+      "stats": [
+        "21 Jumlah Log",
+        "0 7 Hari Lepas",
+        "7 3-Hari Amaran",
+        "0 Tamat Tempoh"
+      ],
+      "table": {
+        "rowCount": 7
+      }
+    },
+    "event=expired": {
+      "status": 200,
+      "stats": [
+        "21 Jumlah Log",
+        "0 7 Hari Lepas",
+        "7 3-Hari Amaran",
+        "0 Tamat Tempoh"
+      ],
+      "table": {
+        "rowCount": 0
+      }
+    },
+    "event=grace_start": {
+      "status": 200,
+      "stats": [
+        "21 Jumlah Log",
+        "0 7 Hari Lepas",
+        "7 3-Hari Amaran",
+        "0 Tamat Tempoh"
+      ],
+      "table": {
+        "rowCount": 0
+      }
+    },
+    "event=grace_end": {
+      "status": 200,
+      "stats": [
+        "21 Jumlah Log",
+        "0 7 Hari Lepas",
+        "7 3-Hari Amaran",
+        "0 Tamat Tempoh"
+      ],
+      "table": {
+        "rowCount": 0
+      }
+    }
+  },
+  "S6_pricing": {
+    "status": 200,
+    "prices": [
+      "RM10",
+      "RM30",
+      "RM90",
+      "RM200",
+      "Pendaftaran pukal melalui sekolah/PPD — semua RM30 per pelajar per sesi",
+      "RM30",
+      "RM30",
+      "RM30",
+      "RM30",
+      "RM10/bln",
+      "RM30/sesi",
+      "RM90/bln · RM200/sesi",
+      "Sekolah mendaftar secara pukal melalui PPD atau admin sekolah dengan harga RM30 per pelajar per sesi pembelajaran. Pelajar mendapat akses unlimited ke semua subjek dengan analisa prestasi bulk. Guru dan pentadbir mendapat akses percuma secara automatik."
+    ],
+    "forms": [
+      [
+        "POST",
+        "/subscribe/regular",
+        "billing=monthly"
+      ],
+      [
+        "POST",
+        "/subscribe/personal",
+        "billing=monthly"
+      ],
+      [
+        "POST",
+        "/subscribe/personal",
+        "billing=onetime"
+      ]
+    ],
+    "compare": {
+      "heads": [
+        "Ciri",
+        "Percuma",
+        "PelajarRM10/bln",
+        "SekolahRM30/sesi",
+        "PersonalRM90/bln · RM200/sesi"
+      ],
+      "rows": [
+        [
+          "Had Soalan",
+          "50 (sekali)",
+          "500/bulan",
+          "Unlimited",
+          "Unlimited"
+        ],
+        [
+          "Subjek",
+          "Campur",
+          "Semua",
+          "Semua",
+          "Semua"
+        ],
+        [
+          "Latih Tubi",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "Analisa Prestasi",
+          "",
+          "",
+          "Bulk",
+          "Individu"
+        ],
+        [
+          "Laporan Peribadi",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "Mini-Games",
+          "Terhad",
+          "",
+          "",
+          ""
+        ],
+        [
+          "Tempoh",
+          "Sekali",
+          "Sebulan",
+          "Per sesi",
+          "Per sesi"
+        ]
+      ]
+    }
+  },
+  "S7_invoices": {
+    "status": 200,
+    "leaves": [
+      "Sejarah Invois",
+      "Jumlah 0 invois dijumpai",
+      "Lihat Pakej",
+      "Tiada Invois Dijumpai",
+      "Anda belum mempunyai sebarang invois. Langgan pakej premium untuk mula belajar tanpa had.",
+      "Terokai Pakej",
+      "Dibayar"
+    ]
+  },
+  "M02_subscriptions": {
+    "status": 200,
+    "stats": [
+      "9 Aktif",
+      "0 Tempoh Ihsan",
+      "1 Tamat Tempoh",
+      "5,738 Jumlah Kuota Pelajar"
+    ],
+    "table": {
+      "heads": [
+        "Sekolah",
+        "Tingkatan",
+        "Pakej",
+        "Kuota",
+        "Status",
+        "Mula",
+        "Tamat",
+        ""
+      ],
+      "rows": [
+        [
+          "SAM HULU LANGAT BFT4001",
+          "T5",
+          "Pemantauan",
+          "150/1000",
+          "Aktif",
+          "12/05/2026",
+          "12/05/2027",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG JEB2037",
+          "T5",
+          "Pemantauan",
+          "59/1000",
+          "Aktif",
+          "12/05/2026",
+          "12/05/2027",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA BEA4628",
+          "T5",
+          "Penuh",
+          "776/1000",
+          "Batal",
+          "12/05/2026",
+          "12/05/2027",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN BEA4608",
+          "T5",
+          "Penuh",
+          "549/1000",
+          "Aktif",
+          "12/05/2026",
+          "12/05/2027",
+          "Lihat"
+        ],
+        [
+          "SMK Leqoe LEQ2325",
+          "T5",
+          "Pemantauan",
+          "2/1000",
+          "Aktif",
+          "11/05/2026",
+          "11/05/2027",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN BANDAR RINCHING BEA4632",
+          "T5",
+          "Penuh",
+          "562/500",
+          "Aktif",
+          "21/04/2026",
+          "08/05/2027",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN BANDAR BARU BANGI BEA4603",
+          "T5",
+          "Penuh",
+          "423/415",
+          "Aktif",
+          "13/04/2026",
+          "12/05/2027",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN KHIR JOHARI BEA4605",
+          "T5",
+          "Penuh",
+          "185/164",
+          "Aktif",
+          "11/03/2026",
+          "12/05/2027",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH BEA4616",
+          "T5",
+          "Penuh",
+          "386/354",
+          "Aktif",
+          "08/03/2026",
+          "08/05/2027",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN JALAN REKO BEA4613",
+          "T5",
+          "Penuh",
+          "312/305",
+          "Aktif",
+          "07/03/2026",
+          "19/04/2027",
+          "Lihat"
+        ],
+        [
+          "SAM HULU LANGAT BFT4001",
+          "T5",
+          "Pemantauan",
+          "150/150",
+          "Batal",
+          "03/03/2026",
+          "03/04/2026",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN BANDAR SERI PUTRA BEA4633",
+          "T5",
+          "Pemantauan",
+          "675/675",
+          "Tamat",
+          "03/03/2026",
+          "22/05/2026",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG JEB2037",
+          "T4",
+          "Pemantauan",
+          "59/120",
+          "Batal",
+          "20/02/2026",
+          "20/02/2027",
+          "Lihat"
+        ],
+        [
+          "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLANG BEB0102",
+          "T4",
+          "Pemantauan",
+          "13/150",
+          "Batal",
+          "20/02/2026",
+          "20/02/2027",
+          "Lihat"
+        ]
+      ]
+    },
+    "ids": [
+      14,
+      15,
+      13,
+      12,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      2,
+      1
+    ],
+    "schoolIdByCode": {
+      "BFT4001": 8277,
+      "JEB2037": 8880,
+      "BEA4628": 8102,
+      "BEA4608": 8082,
+      "LEQ2325": 10220,
+      "BEA4632": 8106,
+      "BEA4603": 8078,
+      "BEA4605": 8080,
+      "BEA4616": 8090,
+      "BEA4613": 8087,
+      "BEA4633": 8107,
+      "BEB0102": 8228
+    }
+  },
+  "payerCount": 30,
+  "layout": {
+    "/admin/payments @375": {
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 896,
+          "wrapperW": 318,
+          "wrapperOverflowX": "auto",
+          "cols": 8,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4",
+          "cols": 2
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 45,
+      "small": {
+        "9px": 5,
+        "10px": 40
+      },
+      "h1": null
+    },
+    "/admin/payments @768": {
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 896,
+          "wrapperW": 667,
+          "wrapperOverflowX": "auto",
+          "cols": 8,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4",
+          "cols": 5
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 40,
+      "small": {
+        "10px": 40
+      },
+      "h1": null
+    },
+    "/admin/payments @1280": {
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 910,
+          "wrapperW": 910,
+          "wrapperOverflowX": "auto",
+          "cols": 8,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4",
+          "cols": 5
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 40,
+      "small": {
+        "10px": 40
+      },
+      "h1": null
+    },
+    "/admin/payments/65 @375": {
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        }
+      ],
+      "panels": 1,
+      "panelsVisible": 1,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/payments/65 @768": {
+      "scrollWidth": 768,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        }
+      ],
+      "panels": 1,
+      "panelsVisible": 1,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/payments/65 @1280": {
+      "scrollWidth": 1280,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        }
+      ],
+      "panels": 1,
+      "panelsVisible": 1,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/payments/65/edit @375": {
+      "scrollWidth": 375,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-3 gap-3",
+          "cols": 3
+        }
+      ],
+      "panels": 2,
+      "panelsVisible": 2,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/payments/65/edit @768": {
+      "scrollWidth": 768,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-3 gap-3",
+          "cols": 3
+        }
+      ],
+      "panels": 2,
+      "panelsVisible": 2,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/payments/65/edit @1280": {
+      "scrollWidth": 1280,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-3 gap-3",
+          "cols": 3
+        }
+      ],
+      "panels": 2,
+      "panelsVisible": 2,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/billing @375": {
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 705,
+          "wrapperW": 318,
+          "wrapperOverflowX": "auto",
+          "cols": 5,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-1 gap-4",
+          "cols": 1
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/billing @768": {
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 705,
+          "wrapperW": 667,
+          "wrapperOverflowX": "auto",
+          "cols": 5,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-1 gap-4",
+          "cols": 1
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/billing @1280": {
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 910,
+          "wrapperW": 910,
+          "wrapperOverflowX": "auto",
+          "cols": 5,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6",
+          "cols": 4
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-1 gap-4",
+          "cols": 1
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/dunning @375": {
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 388,
+          "wrapperW": 340,
+          "wrapperOverflowX": "auto",
+          "cols": 5,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 sm:grid-cols-4 gap-4",
+          "cols": 2
+        }
+      ],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          9,
+          70,
+          110,
+          64
+        ]
+      }
+    },
+    "/admin/dunning @768": {
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 714,
+          "wrapperW": 714,
+          "wrapperOverflowX": "auto",
+          "cols": 5,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 sm:grid-cols-4 gap-4",
+          "cols": 4
+        }
+      ],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          19,
+          111,
+          138,
+          32
+        ]
+      }
+    },
+    "/admin/dunning @1280": {
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 957,
+          "wrapperW": 957,
+          "wrapperOverflowX": "auto",
+          "cols": 5,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 sm:grid-cols-4 gap-4",
+          "cols": 4
+        }
+      ],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          281,
+          111,
+          138,
+          32
+        ]
+      }
+    },
+    "/pricing @375": {
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 394,
+          "wrapperW": 340,
+          "wrapperOverflowX": "auto",
+          "cols": 5,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-4 sm",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3",
+          "cols": 1
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 11,
+      "small": {
+        "10px": 11
+      },
+      "h1": {
+        "fontPx": 20,
+        "box": [
+          9,
+          103,
+          342,
+          28
+        ]
+      }
+    },
+    "/pricing @768": {
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 666,
+          "wrapperW": 714,
+          "wrapperOverflowX": "auto",
+          "cols": 5,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-4 sm",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm",
+          "cols": 3
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3",
+          "cols": 2
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 11,
+      "small": {
+        "10px": 11
+      },
+      "h1": {
+        "fontPx": 30,
+        "box": [
+          19,
+          156,
+          715,
+          36
+        ]
+      }
+    },
+    "/pricing @1280": {
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 909,
+          "wrapperW": 957,
+          "wrapperOverflowX": "auto",
+          "cols": 5,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-4 sm",
+          "cols": 4
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm",
+          "cols": 3
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3",
+          "cols": 4
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 11,
+      "small": {
+        "10px": 11
+      },
+      "h1": {
+        "fontPx": 30,
+        "box": [
+          281,
+          111,
+          958,
+          36
+        ]
+      }
+    },
+    "/billing/invoices @375": {
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 2,
+      "panelsVisible": 2,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/billing/invoices @768": {
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 2,
+      "panelsVisible": 2,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/billing/invoices @1280": {
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 2,
+      "panelsVisible": 2,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    }
+  },
+  "layoutNote": "tools/jobs/M19-measure.js, 2026-09-27 (captured right after the inventory); page scrollWidth excludes the 15 px scrollbar on long pages"
+}

@@ -1,0 +1,954 @@
+# PrestasiPlus Rebuild — Project Tracker
+
+> Reverse-engineering `https://prestasiplus.my` (excluding the public landing page) into a new system.
+> Target FE: **Vue 3 + Vite + Tailwind CSS + Lucide**.
+> **Current scope: complete front-end prototype with dummy data** — every module's UI and flows clickable end-to-end, covered by Playwright E2E tests. **Backend is out of scope for now** (later phase).
+> Current phase: **G1 — Requirements (URS & SRS), module by module.**
+
+### Scope decisions
+| # | Decision | Date |
+|---|---|---|
+| D1 | Deliverable = FE prototype + dummy data + E2E tests for all 26 modules. No real backend. | 2026-09-25 |
+| D2 | Prototype talks to a **mock data/service layer** shaped like a future REST API (data contracts defined in SRS), so the real backend can replace it later without rewriting UI. | 2026-09-25 |
+| D3 | All 26 modules in scope, including `DEV`-tagged, Pusat AI, and Killer Features — they are part of the system being cloned. Kept in Phase F (last) because nothing depends on them. | 2026-09-25 |
+| D4 | AI features (M13, M25, parts of M06) are simulated with canned responses; payments (M19) simulated with fake gateway states. No external services. | 2026-09-25 |
+| D6 | **UI must be responsive across devices** — mobile (≥320px), tablet, desktop, wide screens; no horizontal page scroll; admin sidebar becomes a drawer on small screens. Every module is verified at 375px, 768px, and 1280px in discovery, design, and E2E (3 Playwright projects). | 2026-09-25 |
+| D7 | **Fidelity first.** The rebuild replicates prestasiplus.my exactly — every flow, epic, feature, function, field, button, message, and state. No new features and no "improvements". Deviations are allowed only for broken behaviour (404s, layout/responsive defects, contradictory rules needing one value) and each must be listed in the module's "Fidelity deviations" table and approved by the user. | 2026-09-25 |
+| D8 | **Completeness is proven, not claimed.** Each module gets an automated element inventory of the live site plus a link crawl; URS maps every element to a Function; an independent coverage audit re-checks live vs. docs. Any unmapped element blocks G1. | 2026-09-25 |
+| D9 | **Deviation rule (user, standing for all modules):** if the live site is broken or contradictory, the rebuild may fix/improvise it; if the live site works fine, replicate it exactly — no deviation. The Delivery Lead applies this rule directly; the user is not asked per item. "Broken" includes: 404/dead links, wrong labels/titles, visual bugs (e.g. active state not shown), layout/responsive breakage, controls unusable on touch devices, unreadable text, and contradictory rules. Working-but-improvable behaviour (e.g. accessibility enhancements) stays as live. | 2026-09-25 |
+| D11 | **Large collections are deterministic virtual datasets** (Delivery Lead, resolves XL-02). Where live shows large totals (questions ~130k, videos 2,260, schools 10,220, users, sessions…), the mock repository reports the live total and generates rows on demand deterministically (stable ids in the live id range, attributes distributed to match the observed per-subject/per-level/per-status counts). Observed anchor records (live ids/texts seen in discovery) override generated rows at their ids; module fixtures (e.g. M05/M08 practice questions) are anchors inside the same dataset, not additions to the total. Every count on every screen is computed from the dataset, so there is one source and no contradictions; where live itself showed contradictory totals, the approved D9 deviation picks the value and the dataset is built to it. **Exception (XL-34):** a few observed display figures that no dataset definition reproduces (e.g. M06 hub 20,529 / 14,673) are declared per module as documented display constants — outside the fit, never shown next to a contradicting computed figure. | 2026-09-25 |
+| D12 | **One owner per shared store.** Question store = M04 (incl. SPM pool, PKSK rows, structured bank); practice session + answer log + revision queue + mastery counters = M05; users/schools = M01/M02; curriculum = M03. Other modules read/write only through the owner's contract; no parallel schemas or virtual ids. | 2026-09-25 |
+| D13 | **All agents use Opus 5.5** (user, 2026-09-25: "aku nak prototaip dibina guna opus 5.5"). Every role in `.claude/agents/` is set to `model: opus`; every delegation passes `model: opus`. | 2026-09-25 |
+| D14 | **No payment-gateway or external-platform screens; simulate success / failed only** (user, 2026-09-27, at M19 G1: "payment gateway atau external platforms punya screen tak payah buat. tu nanti kita integrate saja. buat simulation success/failed je."). Applies to M19 payments, M20 WhatsApp redirect and any other external hand-off; real integration later. | 2026-09-27 |
+| D15 | **Release 1.0 build priority** (user, 2026-09-27): "aku nak tengok dulu prototaip screens yang di bawah label 1.0" — the screens ticked in columns *Murid 1.0 / Guru 1.0 / Admin Sekolah 1.0* of `roles-matrix/Matriks-Akses-Peranan .xlsx` are built first, **all 3 roles, full gates** (user chose over student-first / quick visual). Priority only — the rest of live is still rebuilt later. The 3 undiscovered 1.0 screens (Heatmap Topik Lemah, DSKP Heatmap, Laporan Bulanan) are discovered now. | 2026-09-27 |
+| D16 | **New module M27 "School Admin Portal"** owns the undocumented `/admin-sekolah/*` screens (10 of 17 Admin Sekolah 1.0 items + DSKP Heatmap, Laporan Bulanan). Module count 26 → 27; progress formula uses ÷ 27 from now. No school-admin/guru/murid test accounts exist: discover with the admin account only; anything not reachable is INFERRED/PROPOSED (user, 2026-09-27). | 2026-09-27 |
+| D17 | **G2 for replicate-live modules** (M10, M11, M12, M16, M17, M18 and later): approved SRS (§2, §8, §10 375/768/1280 tables, deviation tables) + live discovery screenshots + design-system + shells count as the design spec; only shells.md v1.2 (D-R1) is new design work (user, 2026-09-27). | 2026-09-27 |
+| D18 | **Model split** (user, 2026-09-30: "aku beri kau je guna Opus 5.5 sebagai ketua dan pengawal selia sahaja. apa2 task serahkan pada subagents dan guna Sonnet"): main session = Opus 5.5, lead and supervisor only; every task goes to a subagent on **Sonnet 5** (`model: sonnet`). Supersedes D13. CLAUDE.md §1 updated. | 2026-09-30 |
+| D22 | **No generated media; source only** (user, 2026-10-02: "jangan jana apa2 video, gambar, atau audio. ambil dari sumber sahaja"). No generated video/image/audio files and no fabricated media ids/links (fake YouTube ids, invented thumbnails, synthetic audio). Media comes only from live prestasiplus.my or the source server; where none was observed, show what live shows for "no media". M09 placeholder `SEED…` video rows are being replaced with live data. Relayed to all sessions. | 2026-10-02 |
+| D24 | **Server code/data is the authoritative source where live cannot be observed** (user, 2026-10-02: "akses je server dan rujuk kod/data"). For screens/behaviour our live account cannot reach (e.g. Admin Sekolah views behind 403), the server code and data (`/var/www/prestasiplus_cloud`, local copy `D:Dev Projectsprestasiplus-reference`) are the specification — tagged SERVER, not UNVERIFIED, and no school-admin account is requested. Live observation still wins where it exists. Privacy rule unchanged (no real names/personal data from server data into the repo). | 2026-10-02 |
+| D23 | **L45 Jemput Ibu Bapa + avatar** (user, 2026-10-02: "asalkan capai requirements aku, proceed saja"): (a) L45 parts not observable without a murid account are built as PROPOSED from the reference rebuild, marked "Perlu pengesahan"; observed items (route guard, 403 copy, POST generate route, `/ibu-bapa/terima/{token}` + "Link Tidak Sah" copy) are replicated exactly. (b) Owner: M02 = student screen, invite tokens, parent↔student link; M01 = acceptance page `/ibu-bapa/terima/{token}` and parent registration/login hand-off. (c) Initials avatar keeps the shell SVG data URL (no external ui-avatars.com call, D4); M01 SRS Q8 closed. | 2026-10-02 |
+| D10 | **Accessibility and scope follow D9 strictly** (Delivery Lead, applying the user's D9 rule): accessibility behaviour (ARIA, keyboard, focus, reduced motion) replicates live — no enhancements; only D9-broken items (unreadable text, touch-unusable controls, layout breakage) are fixed. Features that live limits deliberately and consistently (e.g. Peta Belajar Darjah 1–4) are replicated, not extended; completing a working filter with extra options is new scope, not a fix. Master SRS NFR-02 updated accordingly. | 2026-09-25 |
+| D5 | SRS still documents full system behaviour (incl. inferred server rules) so it can serve the backend phase later. | 2026-09-25 |
+> Last updated: 2026-09-25
+
+---
+
+## 00. RESUMED 2026-09-26 — all 6 items below relaunched (Opus); checklist kept for reference
+
+All agents were stopped mid-task. On resume, relaunch each item below (partial outputs may exist — tell each agent to inspect and continue/redo its own files, not start blind):
+1. **F-01 scaffold** (frontend-developer, Opus) — was writing .gitignore/README; package.json, configs and src may be partial. Re-run F-01: verify/complete scaffold, then run install/lint/typecheck/test/build/Playwright smoke. Then continue build-plan v1.2 wave W0.2 (F-02, F-03, F-04 in parallel).
+2. **XL batch 2 (M08–M11)** — restart the review; write `docs/qa/audit/cross-module-logic-M08-M11.md` (may be partial/absent).
+3. **M12 URS + SRS** — writer had coverage matrix clean (755/755) and was starting the URS body; docs may be absent/partial → redo writing.
+4. **M13 audit** (lane 3) — had just started reading; restart.
+5. **M14 discovery** (lane 2) — partial inventory/job files under `docs/discovery/inventory/M14/`, `_raw/M14/`, `tools/jobs/M14*`; resume and complete (was adjusting sanitize for S6 badges).
+6. **M15 discovery** (lane 1) — early stage; resume/redo.
+Pending decisions already made: M04-T6b in student slice; OQ-M13-08 voice simulated; D13 all agents Opus.
+## 0b. Overall progress metric (user asked for an update at every +10%)
+
+**Overall % = 40% × Requirements + 60% × Build**
+- Requirements = modules at G1 approved ÷ 27 (÷ 26 until D16 on 2026-09-27).
+- Build = 15% × (foundation tasks F-01..F-30 done ÷ 29, F-18 admin shell included) + 85% × (modules whose built screens passed G4 review + G5 QA ÷ 27; a module counts in proportion to its screens done, e.g. student-slice screens of M05 count toward M05).
+- A task/module counts only when done with evidence (tests green, review/QA passed) — never "in progress".
+
+| Date | Req | Build | **Overall** | Last announced |
+|---|---|---|---|---|
+| 2026-09-26 | 12/26 = 46.2% | F-01 only ≈ 0.5% | **≈ 18.8%** | baseline (next update at 20%) |
+| 2026-09-26 | 12/26 = 46.2% | F-01, F-04 (2/29 × 15%) ≈ 1.0% | **≈ 19.1%** | — |
+| 2026-09-26 | 12/26 = 46.2% | F-01..04 (4/29 × 15%) ≈ 2.1% | **≈ 19.7%** | — |
+| 2026-09-26 | 12/26 = 46.2% | F-01..05, F-17 (6/29 × 15%) ≈ 3.1% | **≈ 20.3%** | ✅ 20% announced |
+| 2026-09-26 | 12/26 = 46.2% | F-01..05, F-14, F-17 — all G4 Approve (7/29 × 15%) ≈ 3.6% | **≈ 20.6%** | — |
+| 2026-09-26 | 13/26 = 50.0% (M15 G1) | F-01..05, F-14, F-15, F-17 — G4 Approve (8/29 × 15%) ≈ 4.1% | **≈ 22.5%** | — |
+| 2026-09-26 | 14/26 = 53.8% (M14 G1) | 8/29 × 15% ≈ 4.1% | **≈ 24.0%** | — |
+| 2026-09-26 | 15/26 = 57.7% (M12 G1) | 8/29 × 15% ≈ 4.1% | **≈ 25.6%** | — |
+| 2026-09-27 | 15/26 = 57.7% | F-01..08, F-14, F-15, F-17 — G4 Approve (11/29 × 15%) ≈ 5.7% | **≈ 26.5%** | — |
+| 2026-09-27 | 16/26 = 61.5% (M16 G1) | 11/29 × 15% ≈ 5.7% | **≈ 28.0%** | — |
+| 2026-09-27 | 17/26 = 65.4% (M18 G1) | 11/29 × 15% ≈ 5.7% | **≈ 29.6%** | — |
+| 2026-09-27 | 18/26 = 69.2% (M17 G1) | 11/29 × 15% ≈ 5.7% | **≈ 31.1%** | ✅ 30% announced |
+| 2026-09-27 | 18/26 = 69.2% | F-01..08, F-10, F-14, F-15, F-17, F-24 — G4 Approve (13/29 × 15%) ≈ 6.7% | **≈ 31.7%** | — |
+| 2026-09-27 | 18/26 = 69.2% | + F-12, F-13, F-21 Approve (16/29 × 15%) ≈ 8.3% | **≈ 32.7%** | — |
+| 2026-09-27 | 18/26 = 69.2% | + F-11 Approve (17/29 × 15%) ≈ 8.8% | **≈ 33.0%** | — |
+| 2026-09-27 | 18/26 = 69.2% | + F-19 Approve (18/29 × 15%) ≈ 9.3% | **≈ 33.3%** | — |
+| 2026-09-27 | 18/26 = 69.2% | + F-20 Approve (19/29 × 15%) ≈ 9.8% | **≈ 33.6%** | — |
+| 2026-09-27 | 18/26 = 69.2% | + F-25 Approve (20/29 × 15%) ≈ 10.3% | **≈ 33.9%** | — |
+| 2026-09-27 | 18/26 = 69.2% | + F-22 Approve (21/29 × 15%) ≈ 10.9% | **≈ 34.2%** | — |
+| 2026-09-27 | 19/26 = 73.1% (M19 G1) | 21/29 × 15% ≈ 10.9% | **≈ 35.8%** | — |
+| 2026-09-27 | 20/26 = 76.9% (M20 G1) | + F-26b Approve (22/29 × 15%) ≈ 11.4% | **≈ 37.6%** | — |
+| 2026-09-27 | 21/26 = 80.8% (M21 G1) | 22/29 × 15% ≈ 11.4% | **≈ 39.1%** | — |
+| 2026-09-27 | 21/27 = 77.8% (D16: M27 added) | 22/29 × 15% ≈ 11.4% | **≈ 37.9%** | — |
+| 2026-09-30 | 21/27 = 77.8% | + F-26 Approve (23/29 × 15%) ≈ 11.9% | **≈ 38.3%** | — |
+| 2026-09-30 | 21/27 = 77.8% | + F-16 Approve (24/29 × 15%) ≈ 12.4% | **≈ 38.6%** | — |
+| 2026-09-30 | 21/27 = 77.8% | + F-23 Approve (25/29 × 15%) ≈ 12.9% | **≈ 38.9%** | — |
+| 2026-09-30 | 21/27 = 77.8% | + F-09 Approve (26/29 × 15%) ≈ 13.4% | **≈ 39.2%** | — |
+| 2026-09-30 | 21/27 = 77.8% | + F-18 Approve (27/29 × 15%) ≈ 14.0% | **≈ 39.5%** | — |
+| 2026-09-30 | 21/27 = 77.8% | + F-29 Approve (28/29 × 15%) ≈ 14.5% | **≈ 39.8%** | — |
+| 2026-09-30 | 21/27 = 77.8% | + F-30 Approve (29/29 × 15%) = 15.0% | **≈ 40.1%** | ✅ 40% announced; next: 50% |
+| 2026-10-01 | 21/27 = 77.8% | 15.0% + M02 G4+G5 (1/27 × 85% ≈ 3.1%) = 18.1% | **≈ 42.0%** | first module complete; next: 50% |
+| 2026-10-02 | 21/27 = 77.8% | 15.0% + M02, M04 G4+G5 (2/27 × 85% ≈ 6.3%) = 21.3% | **≈ 43.9%** | second module complete; next: 50% |
+| 2026-10-02 | 21/27 = 77.8% | 15.0% + M02, M04, M08 G4+G5 (3/27 × 85% ≈ 9.4%) = 24.4% | **≈ 45.8%** | third module complete (M08; D21 rows L08–L11, L23, L38, L44, L48 at 100%); next: 50% |
+
+## 0a. Roadmap to UI & prototype (user: "teruskan sampai dapat UI dan Prototype")
+
+Two tracks run in parallel:
+- **Requirements track (G1)** — M08–M26: discovery → URS/SRS → audit → G1, 3 browser lanes.
+- **Build track (G2→G5)** — modules that passed G1:
+  1. **XL** cross-module logic review of approved modules (flows connect, entities/APIs/seeds consistent, links resolve) → fixes routed to owners. First batch: M01–M07.
+  2. **G2 foundation** — `solution-architect`: `docs/architecture/overview.md`, ADRs, `build-plan.md`; `ui-ux-designer`: `docs/design/design-system.md` (tokens, FA→Lucide map, components), `docs/design/shells.md`.
+  3. **G3 foundation build** — scaffold Vue 3 + Vite + Tailwind + Lucide, shells, routing/guards, mock service layer + canonical seeds, shared components, test harness (Vitest + Playwright ×3 viewports).
+  4. **Per module** (phase order): design spec → build (frontend-developer) → G4 review (code-reviewer ∥ security-engineer where relevant) → G5 QA against every AC on 375/768/1280 → module ✅.
+  5. Provisional E2E (unobserved live states) stay tagged until the user approves live sessions / test accounts.
+## 0. Next actions (resume here)
+
+In flight (3 lanes active since reload):
+- M02 **G1 approved** (audit round 2 PASS; 12 D9 deviations incl. DV-M02-12 new BM copy "Sila kemaskini kod sekolah di halaman Sekolah terlebih dahulu." — reported to user).
+- M01/M02 role codes aligned (8 live codes) — done.
+- M07 **G1 approved** (round 2 PASS). v1.2 done (AUD-M07-11 fixed).
+- M11 **G1 approved** (round 3 PASS).
+- **XL batch 2 (M08–M11) round 1: FAIL** (0 Critical / 20 Major / 14 Minor; `docs/qa/audit/cross-module-logic-M08-M11.md`). Fixes routed to 9 owners in parallel: M04 v1.7 (createdBy, teacher-databank, write contracts, labels, report extras, dskpSpId), M05 v1.6 (answer log/sessions as D11 datasets; owns student mission/remedial/question-set endpoints + session modes; `mock.addAnswer`), M02 v1.8 (joint user allocation, subscriptions per M11, attendanceMirror = no-school students, guru 5 = classes 2001/2002 only), M01 v1.9 (`lastLoginAt`), M03 v1.8 (chapter 1281), M08 v1.5 (4533/551 = M02 users by role), M09 v1.4 (Article youtubeUrl/attachments), M10 v1.3, M11 v1.4 → XL batch 2 round 2. Student first milestone NOT blocked; M08-T1 and F-30 blocked until PASS.
+- **M15 URS + SRS**: writer (no browser). Discovery done: 9 screens, 250 elements, 54 states; snapshot 2026-09-26 (59 rewards, all Off → student shop empty); statuses pending_admin / pending_parent_consent / delivered / cancelled; parent consent; manual delivery; M14 owns wallet + cabutan admin. Tooling fix: `docs/discovery/tools/package.json` (`"type":"commonjs"`) so shared tools run despite the app's ESM package.json.
+- (M11 history): v1.1 fixed 13/14 audit findings from the dated snapshot (1,056 weekly cells, 0 diffs; DV-11/08 withdrawn; DV-20/21/22 new). OQ-M11-09 decided (Delivery Lead): **platform monitoring aggregates exclude reserved fixture schools 900001–900099** (keeps all observed S2 figures; explains live "Jumlah Sekolah" 57 = 60 − 3); M17 adopts the same rule. Requests for next XL batch: M02 monitoring users/subscriptions per SRS §6.7, M01 `lastLoginAt`, M05 monitoring answer segment.
+- **Next XL batch (M08–M11) requests to route after their audits:** M01 `User.lastLoginAt`; M02 monitoring schools/users blocks (100001+, 105001+), subscription at 8080, sub 12 reconciliation; M05 monitoring answers segment (472,261/7,586/86,587); M04/M03 chapter labels; M08 students without school + SEJ values; M10 own-class endpoint/enrolment/guard; M10 → M04 report reason `outdated`, source `teacher_databank`, structured fields; M10 → M05 mission/remedial ids on sessions; M09 36 admin-authored articles; M03 extra T5 chapters.
+- M03 **G1 approved** (audit round 2 PASS, 0 Critical/Major). v1.3 done (R2-22..25 fixed; 807/807).
+- M10 **G1 approved** (round 2 PASS). v1.2 ✅ (746 + 2 school + 2 designed = 750 classes). Requests for next XL batch: R-M02-01 `attendanceMirror`; R-M04-01..06.
+- **M14 URS + SRS**: writer. Discovery done: 22 screens, 1,759 elements, 118 states; wallet 256 reconciled; tiers Gangsa/Perak/Emas/Platinum; D-1..D-10 (two streak stores, 4 coin totals → reconcile with M08/M01). `/kombo` unreachable as admin.
+- **M17 discovery**: lane 1.
+- **M18 discovery**: lane 2.
+- **M20 discovery done** (lane 1, 2026-09-27): 12 screens, 691 el., 70 states; `docs/discovery/M20-marketplace.md`. Next: M20 URS + SRS writer. Seeds use pre-run product views (discovery added 6 views, §5.4).
+- **M19 discovery done** (lane 1, 2026-09-27): 7 screens, 395 el., 54 states; `docs/discovery/M19-finance.md`. **Route to M02:** its 14 subscription seed rows differ from live ids / tiers / T4 rows (M19 §5.3 C1–C3, now fully observed). Next: M19 URS + SRS writer.
+- **Build**: W0.3 built — F-05 store primitives (66 tests), F-14 icons (syncing to design-system v1.2: 236 rows), F-17 charts. W0.4 running: F-06 mock server, F-09 virtual dataset, F-15 feedback components. G4 review of F-02..F-05 + F-17 running. F-01 review fixes running. Full `verify` pending those (only icon tests red, by design until sync).
+- **Build carry-overs** (brief into later tasks): F-13 must register dev-only `@/styles/gallery/TokenGallery.vue` route; live global classes `.card`, `.smooth-hover`, `.avatar-ring`, `.coin-pill`, `.streak-pill`, RTL classes, `-hero` white text → add to `src/styles` in F-19 (shell-only ones scoped); F-21 404 uses `font-sans`; M01-T3 checks 4 INFERRED keyframes; F-05 persists clock offset via `clock.subscribe`/`anchorOffset`; currency renders "RM3,000.00" (no space, observed). F-08 reuses F-17's `window.__charts` registry (`src/components/chart/registry.ts`, no second declaration) and may use `__charts` as a demo-bundle marker; Chart.js registers line-only (add bar/doughnut only if an SRS needs it); e2e animation-off undecided (E2E reads config, not pixels). Pages using ChartCanvas (M05-T6, M08-T2) must define chart option callbacks and plugins as `setup`/module consts, not inline (functions compare by identity).
+- **F-15 carry-overs:** F-12 re-exports `confirmNative`/`alertNative` from `@/components/overlay` (no second copy) and wires `FlashOutlet` to its flash store using the `FlashMessage` type from `@/components/feedback`; F-13 registers dev-only routes for `TokenGallery` and `feedback/gallery/FeedbackGallery.vue`; F-19 copies live badge classes (design-system §4 being corrected); no `EmptyState` component (screens copy live markup). design-system v1.4 now has the exact live badge/toast classes; F-15 review must also fix `src/components/feedback/classes.ts` comment EL ids → EL-M02-S2-104 / EL-M10-S28-131 (toast box `rounded-xl` INFERRED, doc matches code).
+- **F-07 carry-overs:** F-13 wires `createMockPersistence()` into `bootMock` in `src/app/bootstrap.ts` (all mock modes incl. e2e; snippet in F-07 report). F-06 follow-up (batch with W0.4 review fixes): `runtime.reset(overrides)` → `persistence.clear(overrides)`; tolerate/drop stored diffs for unknown stores. F-22 writes two-page cross-tab E2E.
+- **F-11 hand-overs:** F-23 moves provisional `users` repo from `src/mock/core-data/users.ts` into M01 (drop `provisional`), fills `schoolSummaryOf` (until then `/api/me` school = null); F-26/M05-T1 fills `gamificationSummaryOf`; M01-T1 builds login/register/reset on `users.findByEmail/verifyPassword/recordLogin` + `issueSession`, logout via `sessions.revoke`; F-12 slides `pp.auth.expiresAt` (+120 min) after each authenticated response when `remember=false`; `UserMe` type goes in M01 `api/types.ts`. Perlu pengesahan (M01 SRS to record): designed `createdAt`/`updatedAt` 2026-02-06 09:00 for all 11 accounts; `recordLogin` leaves `updatedAt`.
+- **F-24 hand-overs:** M03-T1a adds handlers in separate files (don't overwrite `mock/index.ts`, `mock/handlers/lookups.ts`) and calls `connectAnswerLog({answersFor(userId, chapterId)})` once F-26 exists; F-25 reads `curriculum.subjectLevelPairs()` (194 pairs) only after M03 seed — if `specHash()` needs them at load, M03 exports a static constant; fixture regen: `node --experimental-strip-types scripts/fixtures/build-m03-curriculum.ts`.
+- **F-09 notes:** perf tests must be named `*.perf.test.ts` (serial perf project; `test:unit` / `test:perf` scripts); full-row `match` needs `cacheKey` (throws in dev/test) — F-23 must give `users.findByEmail` a `cacheKey` or cheap email field when users move to a virtual dataset.
+- **F-12 hand-overs to F-13:** `installTransport(withSessionSliding(runtime.transport))` after `startMock`; call `useSessionStore()` after `app.use(pinia)`; `setUnauthorizedRedirect(() => router.replace('/login'))`; guard step 1 `session.check()`; after-nav: `usePageMeta().reset()` + title, `useFlashStore().consume()`, `closeOverlays()`, `refreshUser()` + badge refresh; `/logout` route; F-19 bell badge `useIntervalWhileVisible(badge.refresh, 60_000)`. M01-T1 creates `api/types.ts` (UserMe, SchoolSummary, Role) → F-12 follow-up re-exports. Perlu pengesahan: `sidebarOpen` value format/default (INFERRED).
+- **Icon sweep pending** (batch after M12/M14/M16–M18 SRS land): designer adds rows for new FA names (known: `fa-store`→Store from M15) to design-system §6, then F-14 follow-up removes `KNOWN_GAPS`. Guard test `src/components/icon/__tests__/srs-coverage.test.ts` enforces it.
+- **XL batch 2: PASS (round 3).** All 4 residual Minors fixed (M02 v1.11, M05 v1.8, M10 v1.6, M11 v1.8, build-plan v1.5) → F-30 unblocked. Carry to XL batch 3 scan: M10 cites M11 v1.7 (now v1.8); M05 Q4 preview must show cancelled remedial tests read-only to their teacher/admin (M10 `remedialTests.get`). Previous status: done M01 v1.9, M02 v1.8, M03 v1.8, M08 v1.5, M04 v1.7, M09 v1.4, M10 v1.3, M11 v1.4; M05 v1.6 done (answer log 478,499 + sessions 32,122 as D11 datasets; named queries §6.14.2; mission/remedial/question_set modes; `mock.addAnswer`). Round-2 alignment in progress: M08 v1.6, M11 v1.6, M02 v1.9, M10 v1.4 (adopt M05 queries/modes). Then XL2 round 2. Follow-ups from M04 v1.7 routed: M10 → v1.4 (DSKP SP seeds 9001–9004/221…418/6191, active-on-create, join code DEMO-4S), M11 → v1.5 (anchors 700401–700931, `chapterLabel`). M04 id block split: M08 700001–700299, M10 700300–700399, M11 700400–700999. Known carry to XL2 round 2: M08 kept observed join code "DEMO-4S" vs M10 6-char join-code rule (XL2-23).
+- **XL review M01–M07: FAIL** (1 Critical / 18 Major / 9 Minor; `docs/qa/audit/cross-module-logic-M01-M07.md`). Decisions D11 (virtual datasets) + D12 (one owner per store). Fixes: M04 v1.2 ✅ (SPM pool view, PKSK fields, curriculumChapterId, report-modal props, one structured store 4,064/4,059, D11 counts) → v1.3 ✅ (endpoint = M02 `/api/schools?all=1`; named-count queries Q-ALL 465,278 / Q-ACTIVE 129,389 / Q-ELIGIBLE 128,989 / +PKSK 130,152 — admin and student counts from one dataset; DV-M04-18 Prinsip Perakaunan 2,329→2,970), M05 v1.2 ✅ (one session schema + BR-31 completion contract + `<PracticeQuiz>`/`<StructuredAnswer>` interfaces; live counts reconciled: 128,989 approved / 129,389 all / 130,152 incl. 763 PKSK → DV-05 withdrawn), M01 v1.6 ✅, M02 v1.3 ✅ (schools 900001/900002; `/api/schools?all=1`; no sticky column), M03 v1.5 ✅ (progress derived from M05 answer log) → M06 v1.3 ✅ (SPM pool from M04, sessions via M05, mocks stay M06 MockExam) → final alignment round: M05 v1.3 ✅ (list-by-mode endpoint #23 for M06 S10; 65 practice anchors 600001–600065), dataset-spec subsections (arch X-7/X-8) in M02 v1.4 ✅ (users 5,159 incl. 6 unmapped-role D9; comp students 90) / M03 v1.6 ✅ / M04 v1.4 / M05 v1.3, users id policy (X-9, M02 ✅, M01 v1.7 ✅) → XL re-check → **XL round 2: FAIL but much improved** (0 Critical / 6 Major / 8 Minor; 24/28 round-1 closed; dataset tables verified consistent). Round-2 fixes: M05 v1.4 ✅ (anchors dskpSpId = null), M04 v1.5 ✅ (Q-SPM-POOL facet + runtime rule; D1–D4 pinned to M05 = 32,204; Q-DIFFICULTY modelled exactly, no difficulty 5; runtime question ids ≥9,000,001; fit 0 violations), M05 v1.4, M06 v1.4, M07 v1.5 ✅ (PKSK difficulty 190/191/191/191), architecture v1.1 ✅, M01 v1.8 ✅, M02 v1.5 ✅, M06 v1.4 ✅ (align with SRS) → **XL round 3: 0 Critical / 2 Major / 2 Minor** (all round-2 Majors closed; every scripted data check passes). Final fixes done: M04 v1.6 ✅, M05 v1.5 ✅, M03 v1.7 ✅, M07 v1.6 ✅ → **XL round 4: PASS ✅** (0 Critical / 0 Major / 0 Minor). **M01–M07 cleared for build** (pending user G2 approval).. Build of M01–M07 waits for XL PASS.
+- **G2 (M01–M07):** design system + shells ✅ (`docs/design/design-system.md`, `docs/design/shells.md`; ~195 FA→Lucide mappings, 24 approximations, 4 brand icons deferred to M09). Decisions: no sticky columns (M02 FR-07 to align), shell header title derived from route (implements per-module title DVs), DV-SH-02/05 replicated. **G2 APPROVED by user (2026-09-25, "prototaip untuk pelajar dulu") — student portal first.** Architecture ✅ (`docs/architecture/overview.md`, `build-plan.md`, ADR-0001..0014: Vue 3.5 + Vite 8 + TS 5.9 strict + Tailwind v4 + `@lucide/vue` + Vue Router 5 + Pinia 3 + Chart.js 4; in-process mock + IndexedDB diff; virtual datasets; store repositories; F-01..F-28 + 37 module tasks). Build started on branch `feature/student-prototype`. **Build plan v1.2** (`docs/architecture/build-plan.md` §S): waves W0.1–W0.10 (foundation, up to 4 lanes) then W1–W9 (student modules). **First visible milestone (25 tasks):** F-01..06, 09..15, 17, 19, 21, 23..26, 29 + M01-T1, M01-T3, M05-T1, M05-T3 → log in as pelajar@demo.test → /dashboard. Critical path F-01→F-03→F-05→F-09→F-10→F-24→F-25→F-26→M05-T1→M05-T3. M04-T6b `/laporan-soalan` IN slice (Delivery Lead). F-29/F-30 + M08/M09 tasks wait for XL batch 2. **W0.1 F-01 ✅** (all green: lint, typecheck, 4 unit tests, build, Playwright smoke ×3). **W0.2:** F-04 API client ✅ (97 tests green; `api.raw` built → SQ-M13-01 resolvable) · F-02 tokens 🟡 · F-03 time/format 🟡 · F-01 code review 🟡. Doc follow-ups for architect (batch after W0.2): add M02 to slice registry text; Node ≥22.22.2 (jsdom 30); record `api.raw` exception + `responseType`; `api.list`/`api.multipart` helpers; array query encoding to confirm in backend phase. Student slice = M01 student flows, M05, M06 student, M03 /topics + /peta-belajar, M07 /pksk, M08 student screens, M09 reader screens, M04 report modal. Admin/teacher screens = next slice.
+- M05 **G1 approved** (round 2 PASS; admin figures re-verified on live; seeds match M06 v1.2). AUD-M05-16 (stale A1 mention in M06 SRS §6.10) fixed by Delivery Lead. M03 v1.4 done (live chapter ids kept).
+- **Queued cross-module items:** M01/M02 user ids → integer (M07 grant form takes a numeric id; M07 SQ-02). M04 store needs PKSK fields, excluded from M04 list/counts (M07 OQ-09).
+  M06 seed/history must align with M05 (14/40 session is Sejarah, not MATH; history badge "Latihan"). Earlier: M04 report modal needs `source` value + S7 failure text/tints (M05 OQ-13a); 577-question practice fixture changes M04 seeded total (13b); M03 must keep live chapter ids 1 and 3 (13c); M14 to adopt M05 streak/reward rules (13d). M05 discovery: 🎓 belongs to hero, trial card icon is `fa-hourglass-half`.
+- M04 **G1 approved** (audit round 2 PASS, nothing open). PROPOSED COPY in DV-01/07/12 reported to user.
+- **M08 v1.1** ✅ (16 findings fixed; 1,553/1,553; 22 approved / 5 replicated / 3 withdrawn DVs; canonical ids). v1.2 ✅ (dskpSpId claim dropped; users 3001–3008 + 3201–3215; class 2002 = T5 class using Sejarah T4 anchor questions). Round 2 audit: all 16 closed; 2 new Major (Above-band boundary vs live, tuned seed config 213; config 504 leaks into observed T4 aggregate) + 3 Minor → v1.3 ✅ (15 live pairs, band edges Above = AR > OTR; config 504 → T5) → round 3 **PASS** → **G1 approved**. v1.4 ✅ (R3-01: 11 distinct at-risk pupils). M02 v1.7 recording new M08 user anchors.
+- M01 v1.5 done: integer ids (canonical seed table below). Admin grade resolved: account grade Darjah 4 (M01 correct); public profile chip Darjah 6 is a separate field (M08).
+- M06 **G1 approved** (round 3 PASS). Minor AUD-M06-20 (M05/M06 shared-session seed) resolved via M05 v1.1.
+- M09 **G1 approved** (round 3 PASS, 0 findings; 2,054/2,054). Note for user: "Tentang" link keeps live 404 (no about page exists; not invented).
+- **M12 URS + SRS**: writer (no browser). Discovery done: 10 screens, 755 elements, 48 states; admin & guru views byte-identical (one component set, two prefixes); new `/kirkpatrick`, `/maklum-balas`, `/admin/kirkpatrick/pelajar/{id}`; 19 defects (intervention panel broken, correlation table missing band…). Lane 3 free.
+- M13 **G1 approved** (round 2 PASS). Build prerequisites: `api.raw` (in F-04), M05 `mock.addAnswer`. User FYI: simulated speech adds one new string "🔊 Cikgu sedang bercakap…" (OQ-M13-09).
+- **M16 discovery**: lane 3.
+- (M13 history): Voice in/out fully simulated (no Web Speech, no network). Requests for next XL / build: M05 `mock.addAnswer` hook (XR-M13-03b); architecture `api.raw` raw-body transport for `POST /api/cikgu/send` (XR-M13-05 / SQ-M13-01). Privacy: real name purged from M10 URS; M10 placeholder aligned to "Contoh: Cikgu Nur Demo".
+
+Then: M03/M04 URS+SRS writers → audits; next discoveries M05, M06 as lanes free up.
+Pending user answer: validation-probe permission (M01 OQ-1).
+### Canonical seed accounts (owner: M01 SRS v1.5 — every module uses these ids)
+
+| id | email | role | grade | school |
+|---|---|---|---|---|
+| 1 | admin@demo.test | admin | 4 (Darjah 4) | SK Demo (Johor) — school id 900002 |
+| 2 | pelajar@demo.test | student | 10 (Ting. 4) | SMK DEMO (Selangor, BEA4001) — school id 900001 |
+| 3 | pelajar2@demo.test | student (no activity) | 5 (Darjah 5) | — |
+| 4 | pelajarmaju@demo.test | student (advanced) | 1 (Darjah 1) | SK Demo Bestari 900004 (fixture, Johor) — moved from SK Demo 900002 on 2026-09-27 (XR-M08-01; final per XL3 R2-01, M02 v1.16; S1 school filter shows 61 vs live 60, recorded DV) |
+| 5 | guru@demo.test | teacher | — | SMK DEMO |
+| 6 | ibubapa@demo.test | parent | — | — |
+| 7 | penaja@demo.test | sponsor | — | — |
+| 8 | adminsekolah@demo.test | school_admin | — | SMK DEMO |
+| 9 | ppd@demo.test | ppd_officer | — | — |
+| 10 | jpn@demo.test | jpn_officer | — | — |
+| 11 | tidakaktif@demo.test | student (inactive) | 7 (Ting. 1) | 9167 (M02 v1.23 XR-M02-03) |
+
+Fictitious schools use reserved ids 900001–900099 (M02): 900001 SMK DEMO, 900002 SK Demo, 900003 SMK Demo Seri Putra (M09), 900004 SK Demo Bestari (canonical 4 pelajarmaju; 900002 holds only the admin). Users are a D11 virtual dataset with live-range ids 1–6,000 (canonical 1–11 and module fixtures — M02 5001–5990, M08 3001–3008 + 3201–3215, M09 3101–3109 — are anchors inside it). **Runtime-created users get ids from 9,000,001; runtime schools from 10,301** (M02 v1.4 §6.15). **Alignment:** M07 v1.3 ✅ · M02 v1.2 ✅ (M02-only users 5001–5999) · M08 after its audit.
+
+## 1. Status legend
+
+| Symbol | Meaning |
+|---|---|
+| ⬜ | Not started |
+| 🟡 | In progress |
+| 🔍 | Awaiting user review |
+| ✅ | Done |
+| ⛔ | Blocked (see notes) |
+| — | Not applicable yet |
+
+**Per-module stages (G1):** `DISC` Discovery (Playwright walkthrough + element inventory + link crawl) → `URS` User Requirements (Epic → Feature → Function + coverage matrix) → `SRS` Software Requirements → `AUD` independent coverage audit → `G1` User approval.
+**Later stages (G2+):** `DSN` Design → `BLD` Build → `REV` Review → `QA` Test.
+
+---
+
+## 2. Summary
+
+| Metric | Value |
+|---|---|
+| Modules | 26 |
+| Discovery done | 21 / 26 |
+| Audit passed | 12 / 26 |
+| URS done | 12 / 26 |
+| SRS done | 12 / 26 |
+| G1 approved | 12 / 26 |
+| Routes identified (menu-level) | ~210 |
+
+---
+
+## 3. Module board
+
+| ID | Module | Phase | Portal | Routes | DISC | URS | SRS | AUD | G1 | DSN | BLD | REV | QA |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| M01 | Authentication & Account | A | Public / All | 12 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ user | ◐ user | ◐ user | ◐ user |
+| M02 | Users & Schools Management | A | Admin | 16 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| M03 | Curriculum (Subjects, Levels, Topics) | A | Admin / Student | 14 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ admin | ◐ admin | ◐ admin | ◐ admin |
+| M04 | Question Bank | A | Admin / Student | 14 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| M05 | Practice & Drills (Latih Tubi) | B | Student | 15 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M06 | SPM | B | Admin / Student | 13 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M07 | Premium PKSK | B | Admin / Student | 8 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M08 | Student Performance & Analytics | B | Student | 23 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| M09 | Content (Articles, Notes, Video, Audio) | B | Admin / All | 28 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ reader | ◐ reader | ◐ reader | ◐ reader |
+| M10 | Teacher Portal — Class & Teaching | C | Teacher | 35 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M11 | Teacher Portal — Analytics & Reports | C | Teacher | 8 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M12 | Kirkpatrick Evaluation | C | Admin / Teacher | 10 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M13 | Cikgu Alesa (AI Teacher Assistant) | C | Teacher / Student | 8 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M14 | Gamification (Coins, Tokens, Challenges) | D | Admin / Student / Teacher | 22 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M15 | Rewards Shop & Redemption | D | Admin / Student / Teacher | 9 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M16 | Battle, Games & Competitions | D | Admin / Student | 30 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M17 | Admin Dashboard & Analytics | E | Admin | 11 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M18 | PPD & JPN (District/State) | E | PPD / JPN | 33 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M19 | Finance & Subscriptions | E | Admin / All | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M20 | Marketplace | E | Admin / Seller / Student | 12 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M21 | Sponsorship & Anak Angkat | E | Admin / Public / Student | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| M22 | Notifications & Support | E | Admin / All | 6 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
+| M23 | System Administration | E | Admin | 6 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
+| M24 | Ambassador Programme (Duta) | F | Admin / Duta | 7 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
+| M25 | AI Centre (Pusat AI) | F | All | 6 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
+| M26 | Vision & Special Features | F | All | 6 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
+| M27 | School Admin Portal (`/admin-sekolah/*`) | E | Admin Sekolah | 17 probed (2 aliases of M11/M12, 15 unrevealed) | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
+
+**Phases (recommended build order, foundation first):**
+- **A — Foundation:** M01–M04 (everything else depends on users, schools, curriculum, questions)
+- **B — Student learning:** M05–M09
+- **C — Teacher:** M10–M13
+- **D — Engagement:** M14–M16
+- **E — Admin, oversight & commerce:** M17–M23
+- **F — Special programmes:** M24–M26
+
+---
+
+## 4. Module detail
+
+Route checklist: `[ ]` not yet walked through · `[x]` documented in discovery.
+**Notation rule:** list every route separately in backticks — never use `|` alternation inside a route (the discovery tools turn it into a regex).
+Paths are relative to `https://prestasiplus.my`.
+
+### M01 — Authentication & Account
+- [x] `/login` — Log in (email + password, remember me)
+- [x] `/register` — Registration (types: Pelajar / Guru / Ibu Bapa; level 1–11; optional IC & school)
+- [x] `/password/reset` — Forgot password (email)
+- [x] `/password/reset/{token}` — Set new password _(newly found)_
+- [x] `/password/reset-ic` — Reset via email + IC number
+- [x] `/logout` — GET link, no confirmation
+- [x] `/profile` — My profile
+- [x] `/profile/edit` — Edit profile & change password _(newly found)_
+- [x] `/tetapan` — Personal settings
+- [x] `/settings` — **404 on live site** (menu link is dead; drop or merge into `/tetapan`)
+- [x] `/notifikasi` — Notifications inbox _(shared with M22)_
+- [x] Role-based redirect after login (admin → `/admin`; intended URL ignored)
+- [x] Global shells & design tokens → `docs/discovery/00-global-ui.md`
+
+Discovery: `docs/discovery/M01-authentication.md` · screenshots `docs/discovery/img/M01/` (24), `img/global/` (9).
+
+Notes:
+- Not observable read-only: post-submit success/error screens for register, reset, IC reset, and profile saves; landing pages of non-admin roles.
+- Live-site inconsistencies (don't copy; rebuild must pick one): min password 6 (register/reset) vs 8 (profile); IC max length 14 vs 20; question count 128,989 (login) vs 130,152 (admin); parents wrongly shown level picker; 1-2-3 stepper decorative only.
+- Live stack: Laravel + Alpine.js + Tailwind v4 + Font Awesome 6.5.1; fonts Inter + Outfit; single breakpoint at 1024px. Responsive bugs to avoid: `/tetapan` h-scroll at 375, register cramped at 768, `/dashboard` 9px overflow at 768, notification filter strip h-scroll.
+- Separate `/sponsor/register` exists → belongs to M21.
+
+URS/SRS: `docs/requirements/urs/M01-authentication.md` · `docs/requirements/srs/M01-authentication.md` — v1.1: 3 epics, 16 features, 110 functions, 26 stories, 97 active ACs, 67 FRs, 21 mock endpoints, 49 E2E; coverage 934/934 elements (363 content + 571 shell). Old DN list withdrawn (D7).
+Audit: `docs/qa/audit/M01-audit.md` — round 1 **FAIL** (0 Critical / 5 Major / 8 Minor; 56 claims checked, 9 wrong) → all 12 doc findings fixed in v1.1 → round 2 **PASS** (all closed, no regressions; AUD-M01-14 minor fixed by Delivery Lead). AUD-M01-13 fixed.
+Deviations resolved by user rule D9: DV-01..08, 10–14 approved (fix); DV-15 rejected (replicate live); DV-09 withdrawn. Docs → v1.2 "Approved (G1)". Still pending: validation-probe permission (OQ-1) — post-submit copy stays INFERRED until then.
+
+### M02 — Users & Schools Management
+- [x] `/admin/users` — User list
+- [x] `/admin/users/bulk-import` — Bulk user import
+- [x] `/admin/import-students` — Student import
+- [x] `/admin/comp-students` — Complimentary students
+- [x] `/admin/schools` — Schools
+- [x] `/admin/school-subscriptions` — School subscriptions _(links to M19)_
+- [x] Sub-screens found by crawl: users create / edit / `{id}/packages` (Assign Pakej SPM); comp-students create / show; schools create / edit; subscriptions create / show / `{id}/renewal-invoice`
+- [x] JSON endpoints: `/api/schools/search`, `/api/students/search`, `/api/jpn`, `/api/jpn/{id}/ppd`, `/admin/api/schools/{id}/quota`, `/admin/api/schools/{id}/students`, `/admin/comp-students/teacher/{id}/classrooms`
+
+Discovery: `docs/discovery/M02-users-schools.md` · inventory 1,056 elements / 16 screens / 139 states · 40 masked screenshots · 0 narrative gaps · 0 PII leaks.
+
+Notes:
+- Answers M01 Q8: parent↔child linking is admin-only (create/edit parent, student search chips, many children per parent). M01 Q12: school types SK, SMK, SJK(C), SJK(T), MRSM, SBP (data only SK/SMK).
+- 8 role codes incl. `jpn_officer` (create-only; missing from filter & edit select → defect).
+- Live defects to fix under D9: users table 1,881px wide (columns off-screen at 1280); comp-students table clipped at all widths; edit form sections don't react to role change; contradictory quota limits (2000 vs 5000) and package limits; inconsistent status labels; invoice h-scroll at 375.
+- **Security (live system, report to owner):** predictable generated logins with fixed default passwords for school-admin and complimentary-student accounts.
+
+### M03 — Curriculum
+- [ ] `/admin/curriculum` — Curriculum
+- [ ] `/admin/subjects` — Subjects (31 subjects observed)
+- [ ] `/admin/education-levels` — Education levels (D1–D6, T1–T5 observed)
+- [ ] `/topics` — Topics (student)
+- [ ] `/peta-belajar` — Learning map (student)
+
+### M04 — Question Bank
+- [ ] `/admin/questions` — Question list
+- [ ] `/admin/questions/import` — CSV import
+- [ ] `/admin/questions/quality` — Question quality
+- [ ] `/admin/question-reports` — Reported questions
+- [ ] `/admin/structured-questions` — Structured questions
+- [ ] `/admin/question-submissions` — Teacher question papers
+- [ ] `/admin/soalan-gambar` — Diagram questions
+- [ ] `/admin/master-notes` — Master notes review
+- [ ] `/laporan-soalan` — Report a question (student)
+
+### M05 — Practice & Drills
+- [ ] `/dashboard` — User-portal home (subject cards, level cards, quick links, articles) _(found by M01 crawl; unowned → assigned here)_
+- [ ] `/practice` — Start practice (filter `?subject=`, `?level=`)
+- [ ] `/practice/chapter` — Questions by chapter
+- [ ] `/practice/revision` — Questions I got wrong
+- [ ] `/practice/progress` — Progress
+- [ ] `/practice/history` — Practice history
+- [ ] `/latihan-berstruktur` — Structured practice
+- [ ] `/pembetulan` — Corrections
+- [ ] `/penguasaan` — Mastery
+- [ ] `/remedial/saya` — My remedial
+- [ ] `/misi-harian` — Daily mission
+- [ ] `/target-spm` — SPM target
+
+### M06 — SPM
+- [ ] `/spm` — SPM hub
+- [ ] `/spm/tahun-lepas` — Past-year question databank
+- [ ] `/spm/latih-tubi` — SPM drills
+- [ ] `/spm/ramalan` — Tracking A (prediction)
+- [ ] `/spm/subjektif` — Subjective questions
+- [ ] `/spm-mock` — SPM mock exam
+- [ ] `/pusat-ai/spm` — SPM walkthrough (AI)
+
+### M07 — Premium PKSK
+- [ ] `/pksk` — PKSK PRO (student)
+- [ ] `/admin/pksk/questions` — PKSK questions
+- [ ] `/admin/pksk/access` — PKSK access control
+
+### M08 — Student Performance & Analytics
+- [x] `/prestasi` — Performance
+- [x] `/analitik/pelajar` — Adaptive analytics
+- [x] `/analisa-item` — Item analysis
+- [x] `/laporan-mingguan` — Weekly report
+- [x] `/timeline` — My timeline
+- [x] `/headcount` — Headcount
+- [x] `/ranking` — Ranking
+- [x] `/leaderboard` — Leaderboard (coins; all/week/month)
+- [x] Sub-routes found by crawl: `/prestasi/sekolah`, `/prestasi/tingkatan`, `/prestasi/tingkatan/{t4}`, `/prestasi/tingkatan/{t5}`, `/prestasi/{userId}`, `/analitik/kelas`, `/analisa-item/sekolah`, `/analisa-item/kelas`, `/analisa-item/kelas/{id}`, `/headcount/dashboard`, `/headcount/create`, `/headcount/student/{id}`, `/timeline/create`, `/pelajar/{id}`
+
+### M09 — Content
+- [ ] `/admin/articles` — Manage articles
+- [ ] `/admin/notes` — Manage notes
+- [ ] `/admin/banners` — Banners
+- [ ] `/admin/audio-kbat` — Manage KBAT audio
+- [ ] `/admin/tools/screenshots` — Screenshot upload tool
+- [x] `/artikel`, `/artikel/{slug}` — Articles (reader)
+- [x] `/video`, `/video/{id}`, `/video/tambah`, `/video/{id}/edit` — Videos
+- [x] `/audio-kbat` — KBAT audio (student)
+- [ ] `/perutusan` — Announcements/messages
+- [x] `/panduan`, `/pusat-tuisyen/panduan` — User guide
+
+### M10 — Teacher Portal: Class & Teaching
+- [ ] `/guru` — Teacher dashboard
+- [ ] `/guru/command-center` — Command Center LIVE
+- [ ] `/guru/kelas` — Teacher classes
+- [ ] `/guru/pelajar` — My students
+- [ ] `/guru/kehadiran-digital` — Digital attendance
+- [ ] `/guru/jadual-belajar` — Study timetable
+- [ ] `/guru/broadcast` — Broadcast
+- [ ] `/guru/live-kelas` — Live class
+- [ ] `/guru/misi-harian` — Daily missions
+- [ ] `/guru/set-soalan` — Question sets
+- [ ] `/guru/soalan-guru` — Questions & references
+- [ ] `/guru/soalan-berstruktur` — Structured questions
+- [ ] `/guru/soalan` — Contribute questions
+- [ ] `/guru/databank` — Question databank
+- [ ] `/guru/artikel` — Contribute articles
+- [ ] `/kelas-saya` — My class (student side)
+- [ ] `/set-soalan-saya` — Teacher question sets (student side)
+
+### M11 — Teacher Portal: Analytics & Reports
+- [x] `/prestasi/kelas` — Class performance → **owned by M08** (captured as M08 S4/S5; M11 references)
+- [ ] `/guru/laporan` — Reports
+- [ ] `/guru/monitoring` — Monitoring
+- [ ] `/guru/analisis-item` — Item analysis
+- [ ] `/guru/perbandingan-kelas` — Class comparison
+- [x] `/guru/laporan-mingguan-kelas` — Weekly class report (403 for admin)
+- [x] `/guru/monitoring/sekolah/{id}` · `/guru/monitoring/sekolah/{id}/pelajar/{id}` · `/guru/monitoring/sekolah/{id}/guru/{id}` — drill-downs _(new; shared component with M17 `/admin/monitoring*`, owned by M11)_
+
+### M12 — Kirkpatrick Evaluation
+Admin (`/admin/kirkpatrick/...`) and Teacher (`/guru/kirkpatrick/...`) — same 8 views each:
+- [ ] Overview — `/admin/kirkpatrick` · `/guru/kirkpatrick`
+- [ ] T1 Reaction — `.../reaction`
+- [ ] T2 Learning — `.../learning`
+- [ ] T3 Behaviour — `.../behavior`
+- [ ] T4 Results — `.../results`
+- [ ] Impact chain — `.../chain`
+- [ ] Interventions — `.../interventions`
+- [x] Report — `/admin/laporan` → **owned by M17** ("Laporan Statistik", admin counterpart of M11 `/guru/laporan`)
+
+### M13 — Cikgu Alesa (AI Teacher Assistant)
+- [ ] `/cikgu` — AI chat
+- [ ] `/cikgu/rph` — Lesson plan (RPH) generator
+- [ ] `/cikgu/essay` — Essay marking
+- [ ] `/cikgu/pbd` — Classroom assessment (PBD)
+
+### M14 — Gamification
+- [ ] `/admin/gamification` — Overview
+- [ ] `/admin/gamification/tiers` — Tier config
+- [ ] `/admin/gamification/challenges` — Challenges
+- [ ] `/admin/gamification/students` — Students
+- [ ] `/admin/gamification/transactions` — Transactions
+- [ ] `/admin/gamifikasi/guru` — Teacher gamification
+- [ ] `/admin/reward-control` — Reward control
+- [ ] `/gamification` — Coins & tokens
+- [ ] `/gamification/convert` — Convert tokens
+- [ ] `/gamification/challenges` — Daily challenges
+- [ ] `/gamification/leaderboard` — Leaderboard
+- [ ] `/gamification/achievements` — Achievements
+- [ ] `/gamification/referral` — Refer a friend
+- [ ] `/guru/gamifikasi` — Teacher coins & rewards
+- [ ] `/kombo` — Streak / combo
+
+### M15 — Rewards Shop & Redemption
+- [ ] `/admin/hadiah` — Rewards shop / redemption admin
+- [ ] `/gamification/rewards` — Rewards shop (student)
+- [ ] `/gamification/mystery-box` — Mystery box
+- [ ] `/cabutan` — Lucky draw
+- [ ] `/cikgu/kelulusan-hadiah` — Reward approval (teacher)
+
+### M16 — Battle, Games & Competitions
+- [ ] `/battle` — Battle Live
+- [ ] `/battle/ranking-sekolah` — School ranking
+- [ ] `/battle/leaderboard` — Battle leaderboard
+- [ ] `/admin/permainan` — Game settings
+- [ ] `/permainan` — Games
+- [ ] `/tournament` — Tournament
+- [ ] `/liga` — Competition league
+- [ ] `/sekolah-bersaing` — Competing schools
+- [ ] `/battle/ranking-sekolah/{id}` — School ranking detail _(new)_
+- [ ] `/battle/history` — Battle history _(new, unlinked on live)_
+- [ ] `/battle/arena/{uuid}` — Battle arena _(new, unobserved)_
+- [ ] `/papan-bijak` — Papan Bijak lobby (+ `/{code}`, `/create`, `/join`, `/quick-match`) _(new)_
+- [ ] `/perang-fakta` — Perang Fakta lobby (+ `/{code}`, `/create`, `/join`) _(new)_
+- [ ] `/benteng-ilmu` — Benteng Ilmu lobby (+ `/{code}`, `/create`, `/join`) _(new)_
+- [ ] `/perlumbaan-matematik` — Perlumbaan Matematik lobby (+ `/{code}`, `/create`, `/join`) _(new)_
+- [ ] `/kuiz-relay` — Kuiz Relay lobby (+ `/{code}`, `/create`, `/join`) _(new)_
+- [ ] `/teka-silang-kata` — Teka Silang Kata lobby (+ `/{code}`, `/create`, `/join`) _(new)_
+- [ ] `/permainan/betul-salah` — Betul atau Salah _(new)_
+- [ ] `/permainan/cabaran-kilat` — Cabaran Kilat _(new)_
+- [ ] `/permainan/tembak-jawapan` — Tembak Jawapan _(new)_
+- [ ] `/permainan/susun-jawapan` — Susun Jawapan _(new)_
+- [ ] `/permainan/kad-memori` — Kad Memori _(new)_
+- [ ] `/permainan/roda-nasib` — Roda Nasib _(new)_
+- [ ] `/permainan/jutawan` — Jutawan _(new)_
+- [ ] `/permainan/pertandingan` — Pertandingan Mingguan _(new)_
+- [ ] `/permainan/uji-minda` — Uji Minda _(new)_
+- [ ] `/permainan/sambung-kata` — Sambung Kata _(new; 500 on live)_
+- [ ] `/tournament/admin/create` — Create tournament _(new)_
+- [ ] `/tournament/{uuid}` — Tournament detail _(new, unobserved)_
+- [ ] `/liga/cipta` — Create league _(new)_
+- [ ] `/liga/{id}` — League detail _(new)_
+- [ ] `/liga/sertai` — Join league _(new)_
+- [ ] Tournament banner (`GET /api/tournament/active`) on every user page — owned by M16
+- [x] `/ranking` → **owned by M08** (academic ranking, no battle data)
+
+### M17 — Admin Dashboard & Analytics
+- [x] `/admin` — Dashboard
+- [x] `/admin/command-center` — Command Center LIVE
+- [x] `/admin/command-center/daily-activity` — Daily activity
+- [x] `/admin/command-center/school/{id}` — School drill-down _(new)_
+- [x] `/admin/command-center/school/{sid}/teacher/{uid}` — Teacher drill-down _(new)_
+- [x] `/admin/command-center/classroom/{id}` — Class drill-down _(new)_
+- [x] `/admin/command-center/student/{id}` — Pupil drill-down _(new; same templates as M10 `/guru/command-center/*`; M17 owns them)_
+- [x] `/admin/laporan-eksekutif` — Executive report
+- [x] `/admin/laporan-eksekutif/sekolah/{id}` — School focus report _(new)_
+- [x] `/admin/analytics` — Analytics
+- [x] `/admin/monitoring` — Monitoring _(M11 component; identity re-verified by M17 discovery)_
+- [x] `/admin/monitoring/sekolah/{id}` — School drill-down _(M11 component, M17 mounts; XL2-27; documented in M11 discovery)_
+- [x] `/admin/monitoring/sekolah/{id}/pelajar/{id}` — Student drill-down _(M11 component; documented in M11 discovery)_
+- [x] `/admin/monitoring/sekolah/{id}/guru/{id}` — Teacher drill-down _(M11 component; documented in M11 discovery)_
+- [ ] `/admin/monitoring/export/pdf` — Monitoring PDF export _(M11 BR-M11-27)_
+- [ ] `/admin/monitoring/export/csv` — Monitoring CSV export _(M11 BR-M11-27)_
+- [x] `/admin/laporan` — Activity report
+- [x] `/admin/performance` — verified **system** performance & security → **M23** (not M17)
+
+### M18 — PPD & JPN
+- [ ] `/ppd/dashboard` — PPD dashboard
+- [ ] `/ppd/command-center` — Command Center LIVE
+- [ ] `/ppd/statistik-penggunaan` — Usage statistics
+- [ ] `/ppd/ranking-kebangsaan` — National ranking
+- [ ] `/ppd/benchmark-sekolah` — School benchmark
+- [ ] `/ppd/peta-haba` — Heat map
+- [ ] `/ppd/export-laporan` — Export report
+- [ ] `/ppd/leaderboard-sekolah` — School leaderboard
+- [ ] `/jpn/dashboard` — JPN dashboard
+- [ ] `/jpn/statistik-penggunaan`, `/jpn/ranking-kebangsaan`
+- [ ] `/amaran` — Early warning
+
+### M19 — Finance & Subscriptions
+- [x] `/admin/payments` — Payments
+- [x] `/admin/payments/{id}` — Payment detail _(found by M19 crawl)_
+- [x] `/admin/payments/{id}/edit` — Edit payment status _(found by M19 crawl; PUT never submitted)_
+- [ ] `/admin/payments/bulk-delete` — Bulk delete (POST; found by M19 crawl, never submitted)
+- [x] `/admin/billing` — Billing dashboard
+- [x] `/admin/dunning` — Dunning log
+- [x] `/pricing` — Packages
+- [ ] `/subscribe/regular` — Subscribe Pelajar RM10 (POST → ToyyibPay; found by M19 crawl, never submitted)
+- [ ] `/subscribe/personal` — Subscribe Personal (POST `billing=monthly` or `billing=onetime`; found by M19 crawl, never submitted)
+- [x] `/billing/invoices` — My invoices
+- [ ] `/admin/export/payments` — Payments CSV export _(M17 S1 link; download, never opened)_
+
+### M20 — Marketplace
+- [x] `/admin/marketplace/products` — Products
+- [x] `/admin/marketplace/products/create` — Admin add product _(found by M20 crawl)_
+- [x] `/admin/marketplace/products/{id}/edit` — Admin edit product _(found by M20 crawl; save button outside its form on live, D-M20-01)_
+- [x] `/admin/marketplace/sellers` — Sellers
+- [x] `/admin/marketplace/sellers/{id}` — Seller review / ban _(found by M20 crawl)_
+- [x] `/marketplace` — Marketplace (buyer)
+- [x] `/marketplace/{slug}` — Product page (each GET adds a live view; contact via WhatsApp only) _(found by M20 crawl)_
+- [x] `/marketplace/penjual/{id}` — Public seller shop _(found by M20 crawl)_
+- [x] `/seller/dashboard` — Seller portal "Kedai Saya" _(found by M20 probe; no menu link)_
+- [x] `/seller/produk` — Seller products _(found by M20 probe)_
+- [x] `/seller/produk/tambah` — Seller add product _(found by M20 probe)_
+- [x] `/seller/produk/{id}/edit` — Seller edit product _(found by M20 probe)_
+- [ ] `/seller/daftar` — Seller registration (302 to dashboard for the admin, who is already a seller; form not observable)
+- [ ] `/marketplace/{slug}/whatsapp` — Contact redirect (counts a click, redirects to wa.me; never opened)
+
+Discovery: `docs/discovery/M20-marketplace.md` · inventory 691 elements / 12 screens / 70 states · 43 masked screenshots · 0 narrative gaps · 0 PII leaks. No cart, order or online payment exists (probed 404s).
+
+### M21 — Sponsorship & Anak Angkat
+- [x] `/admin/sponsors` — Sponsors "Pengurusan Penaja" (sidebar "Pengguna" → "Penajaan"; row "Lihat" → 500, D-M21-01)
+- [x] `/admin/sponsors/create` — Add sponsor (auto-approved) _(found by M21 crawl)_
+- [x] `/admin/sponsors/{id}/edit` — Edit sponsor + "Aktifkan Semula" _(found by M21 crawl)_
+- [x] `/admin/anak-angkat` — Anak angkat assignments (assign / Graduate / Tarik)
+- [x] `/admin/anak-angkat/permohonan` — Foster-family applications (Lulus / Tolak)
+- [x] `/mohon-keluarga-angkat` — Apply for foster family (user menu "💎 KILLER FEATURES"; student / parent / teacher)
+- [x] `/sponsor/register` — Sponsor registration, 3-step wizard (public) _(found by M01 crawl)_
+- [ ] `/sponsor`, `/sponsor/anak-angkat`, `/sponsor/anak-angkat/pool`, `/sponsor/rewards` — Sponsor portal (403 for admin; content not observable) _(found by M21 probe)_
+
+Discovery: `docs/discovery/M21-sponsorship.md` · inventory 345 elements / 7 screens / 55 states · 32 masked screenshots · 0 narrative gaps · 0 PII leaks. No counters on M21 pages; guard cache kept every M21 URL to one server GET.
+
+### M22 — Notifications & Support
+- [ ] `/admin/notifications` — Push notifications
+- [ ] `/notifikasi` — Notification inbox
+- [ ] `/pusat-tuisyen/tiket` — Support tickets (user)
+- [ ] `/admin/tiket` — Manage tickets
+- [ ] `/admin/chatbot` — Chatbot
+- [ ] In-app notification bell (header)
+
+### M23 — System Administration
+- [ ] `/admin/settings` — Settings
+- [ ] `/admin/audit-logs` — Audit log
+- [ ] `/admin/audit-log` — Audit log (user-portal link; verify duplicate)
+- [ ] `/admin/performance` — System performance & security _(confirmed by M17 discovery: server metrics, threats, PHP info)_
+- [ ] Admin ⇄ Student view switch
+- [ ] Global layout: sidebar, header, search, logout
+
+### M24 — Ambassador Programme (Duta)
+- [ ] `/bilik-duta` — Ambassador room
+- [ ] `/akademi-duta` — Ambassador academy
+- [ ] `/admin/duta-applications` — Applications
+- [ ] `/duta-dashboard` — Ambassador dashboard
+- [ ] `/jemput-duta` — Invite ambassador
+- [ ] `/bilik-duta/kem` — Camp & bootcamp
+- [ ] `/bilik-duta/{slug}` — Ambassador room detail _(XL-28)_
+- [ ] Tagged `DEV` in menu — confirm whether in scope
+
+### M25 — AI Centre (Pusat AI)
+- [ ] `/pusat-ai/kamus` — AI dictionary
+- [ ] `/pusat-ai/aktiviti` — Activity advisor
+- [ ] `/pusat-ai/pendamping` — Motivation companion
+- [ ] `/pusat-ai/whiteboard` — Whiteboard → Quiz
+- [ ] `/pusat-ai/parent-whisperer` — Parent Whisperer
+- [ ] `/pusat-ai/doa` — Prayers & motivation
+- [ ] `/pusat-nota-ringkas` — Summary notes centre _(found by M06 crawl; XL-18)_
+
+### M26 — Vision & Special Features
+- [ ] `/profil-cerah` — Profil Cerah
+- [ ] `/cita-cita` — Cita-Cita Hijrah
+- [ ] `/cikgu-suara` — Cikgu Suara
+- [ ] `/wellbeing/alerts` — Wellbeing alerts
+- [ ] `/pusat-tuisyen/*` — Tuition centre area _(verify scope)_
+- [ ] Menu group "Killer Features" — confirm all items captured
+
+---
+
+## 5. User roles (to verify during M01/M02)
+
+| Role | Evidence | Verified |
+|---|---|---|
+| Admin | `/admin` panel | ⬜ |
+| Student (Pelajar) | `/dashboard`, `/practice` | ⬜ |
+| Teacher (Guru) | `/guru/*` | ⬜ |
+| Parent (Ibu Bapa) | "Parent Whisperer", parent guide articles | ⬜ |
+| PPD (District Education Office) | `/ppd/*` | ⬜ |
+| JPN (State Education Dept.) | `/jpn/*` | ⬜ |
+| Ambassador (Duta) | `/duta-dashboard` | ⬜ |
+| Seller | `/admin/marketplace/sellers` | ⬜ |
+| Sponsor | `/admin/sponsors` | ⬜ |
+| Tuition centre | `/pusat-tuisyen/*` | ⬜ |
+
+Note: we only have an admin account, which sees every menu. Role-specific behaviour (what each role can/can't see) must be inferred; flag uncertain rules in SRS.
+
+---
+
+## 6. Per-module workflow (G1)
+
+For each module, in order:
+1. **DISC** — Discovery agent (read-only, Playwright):
+   a. **Link crawl** from every module route: collect every internal link, form action, and detail/sub-route (e.g. `/x/{id}`, `/x/create`, `?tab=`) → any new route is added to the checklist here.
+   b. **Element inventory** per screen via a script (not judgement): every link, button, input/select/textarea (+ options), checkbox/radio, tab, dropdown/menu item, modal/drawer (incl. hidden `x-show`/`display:none` ones), table (+ columns, row actions, filters, sort, pagination), card/widget, heading, badge, empty/error message, form (+ method/action). Saved as `docs/discovery/inventory/Mxx/<screen>.json` with stable IDs `EL-Mxx-<screen>-nnn`.
+   c. Open every tab, dropdown, modal, accordion, and filter to reveal hidden UI (without submitting).
+   d. Narrative doc `docs/discovery/Mxx-<slug>.md` + screenshots `docs/discovery/img/Mxx/`.
+2. **URS** — `product-analyst` → `docs/requirements/urs/Mxx-<slug>.md`: Epic → Feature → Function breakdown, user stories, coverage matrix (every EL mapped), fidelity deviations.
+3. **SRS** — `product-analyst` (functional) + `solution-architect` (data model, interfaces) → `docs/requirements/srs/Mxx-<slug>.md`: every Function specified.
+4. **AUD** — an independent agent (not the author) re-walks the live screens against the inventory, URS, and SRS: finds unmapped elements, missing routes, wrong copy, missed states, and undocumented deviations. Gaps go back to step 1/2/3 until zero.
+5. **G1** — User reviews URS + SRS + audit report → ✅ in the board.
+
+Master indexes: `docs/requirements/URS.md` and `docs/requirements/SRS.md` link every module doc plus the shared sections (roles, glossary, global NFRs).
+
+**Discovery rules (live production, admin account):**
+- Read-only: open screens, forms, and modals; never click Save / Submit / Delete / Update / Approve / Send, or anything that changes data or triggers email/notifications.
+- Credentials never written to any file.
+- No real personal data in docs or screenshots — record structure only (column names, types, formats); blur or crop screenshots where needed.
+- One browser session → discovery runs one module at a time (no parallel browser agents).
+
+---
+
+## 7. Open questions
+
+| # | Question | Module | Status |
+|---|---|---|---|
+| Q1 | Backend stack for the rebuild? | All | Deferred — backend phase (D1) |
+| Q2 | Are `DEV`-tagged items (Bilik Duta group) in scope? | M24 | Closed — in scope, Phase F (D3) |
+| Q3 | Are "Killer Features" / "Pusat AI" in scope for v1, or later? | M25, M26 | Closed — in scope, Phase F (D3) |
+| Q4 | Which AI provider do AI features use today? | M13, M25 | Closed for prototype — simulated (D4) |
+| Q5 | Payment gateway used? | M19 | Closed for prototype — simulated (D4). Observed (M19 discovery): **ToyyibPay** (FPX + card; all 59 payments); filter also lists BizAppay (0 payments) |
+
+---
+
+## 8. Change log
+
+| Date | Change |
+|---|---|
+| 2026-10-02 | **Session 6 paused at Sonnet limit (21:4x; resets 01:00 MYT 2026-10-03).** Mock boot GREEN (registry-boot 3/3, DL-verified ~21:30). In flight when stopped (resume with context): M10-T5 (S4/S5/S6 guru — building, e2e build error under investigation), M10-T6 (S21–S24 G4 fixes: API client, tests, D10, switch to M04 `ArabicKeyboardPanel` export), M10-T1 (#63 template from source; full test run), M11-T1 (full suite re-run after M10 `extras.ts` mid-edit parse error, now fixed), M12-T1 (option D for 5551/5571 = permanent S8 403 DV-M12-25; 10-state test after M02 moved 1267 → Kedah; BR-M12-22 ALESA check), M17-T1a (full test run), M17-T3a (E2E run). M04 now exports CSV helpers and the Arabic keyboard (Session 1). Pending doc pass: M11/M12 §9 Admin Sekolah alias, M11 D9 rows (8765/8090/8106/8078/8087/8102/8277), M12 8880 D9 + option D wording, M17 D9 (8082 130,233/393, 8080 53,494), M10 UNVERIFIED copy, BR-M11-28 class-subject rule, `notPractisedAll`. |
+| 2026-10-02 | **Session 6 G4 round.** **M10-T7/T7b** (S33 `/kelas-saya`, S34 `/set-soalan-saya`) G4 **Approve** + D10 cleanups (no added ARIA; no invented disabled "Mula") — 13 unit (DL re-run), E2E 30/30 ×3 → **L31 85%** (L13 waits for guru side M10-T5). **M17-T3a** (S4–S7 component, `basePath` prop + `commandCenterDrillRoutes`) G4 **Approve** after one round ("Masa" label, D10 revert uniform, no Esc close, 320px week labels D9) — E2E pending. **M17-T1a / M12-T1 / M10-T1 / M11-T1**: G4 fixes done (teacher-scoped S4 cards + school_admin ATS 404; M12 trend now from M08 `subjectTrend()`, school_admin #1/#14 only, 8880 150 candidates D9, S8 403 for 5571/5551 via DV-M12-25 fallback; M10 CSV via M04 exports; M11 S3 cards computed from rows — D9 rows for 8765/8090/8106/8078/8087/8102/8277, M16 port per-user) — boot-dependent tests pending. **M10-T6** (S21–S24) built, 46 unit → G4 running; handlers #59/#60/#63 + image API being added. **Blocker for all sessions:** M05 class-228 build check (Session 1 `prime.ts` in flight). M01 absentIds change reverted by Session 2 (it shifted M10 class snapshot). Owner items: M02 (Selangor 28, 8300 code, 1267 state, hide 5551/5571), M05 (loggedTake anchors, 8080 bands 3/57/114, XR-M17-02), M03 (Student A Tajuk names). New CLAUDE.md rule: shared mock-data edits in a git worktree, merged after green registry-boot; checkpoint commits. |
+| 2026-10-02 | **M02 open data items (owner Session 2; requested by Session 6, M10/M11/M12):** (1) users 5551/5571 must not exist (M12 DV-M12-25 403) — first fix `absentIds` holes REVERTED because it shifted generated slots (M10 classroom:1001 teacher 3693→2245, classes-before-f30 snapshot); options being analysed: hide ids without shifting generation, else fallback M12 S8 explicit 403 (accepted by Session 6). (2) school 1267 generated in Sarawak → move to an observed state (M11/M12 show 10 states). (3) Selangor "Jumlah Sekolah" observed 28 vs 25 with users (M11 S2). (4) school 8300 must have no school code (M11). Rule for all: every other generated row byte-identical (M10/M05 snapshots) and observed totals hold, else options to the owner first. Mock boot currently blocked by Session 1 in-flight M05 work (class 228 check); L45 G5 QA waiting on it. |
+| 2026-10-02 | **L45 Jemput Ibu Bapa G4 passed** — L45-T1 M02 mock (`parentInvites` store, 4 endpoints, M02 #45–#48; 45 unit tests; M02 mock 425/425) code review Approve + security Pass; L45-T2 screens (S1 M02 `/jemput-ibu-bapa`, S2 M01 `/ibu-bapa/terima/:token`; unit 24/24, dev E2E 99/99 on 3 projects) code review Approve + final security Pass. DL verified eslint clean + unit tests. D23 accepted risks recorded as backend-only SEC-L45-03/04/09–16 (SRS L45 v0.3; M02 SRS v1.31). L45 → 85%; G5 QA started (port 4722, lane 3 local app). **M02 fixes for other sessions:** users 5571/5551 now `absentIds` holes (M01 plugin v8; totals 5,159 / 4,533 / 551 unchanged; M12 data.test.ts:823–825 needs M12 update); school 1267 (generated Sarawak) being moved to an observed state (M12/M11 show 10 states). registry-boot M05 "cannot place 138 on zero weights" confirmed NOT from M01/M02 (Session 1 M05 spec). Open M01/M02 item: user deactivation does not revoke sessions. |
+| 2026-10-02 | **Session 6 progress.** **M17-T1a** (drill-down handlers #6–#13, 66 tests) G4: Request changes (Major: S4 cards not limited to teacher scope; follow-up: Admin Sekolah ATS scope per M17 v1.13; Minor: Aktif 30h from answer timestamps) → fixing. **Open XR-M17-02 (M05, Session 1 implementing):** anchors for pupils 2022, 2013–2023, class 370 (Σ 13,641, 79.0%, 8 active), school accuracy 8082 82.3% / 8080 81.7%. **D9 (DL):** observed-vs-observed conflict — S4 8082 answers 130,002 / engaged 392 and 8080 answers 53,431 vs M11 observed weekly cells (130,233 / 393; 53,494) → M11 values win, M17 deviation row to add. **M12-T1** built (14 endpoints, 116 tests; observed T1 336 / NPS 8.4 etc.; XR-M17-21 school filter) → G4 running. M02 owner (Session 2): users 5571/5551 must not exist (M02 bug, fixing) → M12 S8 403 stands. **M17-T3a** (S4–S7 component) in build. M10-T1, M11-T1 in build. |
+| 2026-10-02 | **L06 Admin Sekolah Command Center G1 approved under D24** (user). Discovery + audit PASS (`docs/discovery/L06-command-center-sekolah.md`); merged into M17 SRS v1.13 / URS v1.11 (US-M17-36…42, FR-M17-101…118, AC-36.1…42.2, E2E-M17-100…128, BR-M17-34, SEC-M17-13, XR-M17-21 → M12-T1 school filter). DL decisions: school-scope "Pembetulan" zeros / "Engagement" = school daily answers (provisional); out-of-school and unknown drill-down ids → 404 (as BR-M17-30); S3 alias `/admin-sekolah/command-center/daily-activity`; "← Dashboard" → `/admin-sekolah`. Re-tag to SERVER (D24) in progress. L06 owner for the AS part = M17 (alias). |
+| 2026-10-02 | **L45 Jemput Ibu Bapa G1 approved** (user D23 "proceed"; no blocking OQs). URS/SRS `docs/requirements/{urs,srs}/L45-jemput-ibu-bapa.md` v0.2: 25 functions, 52 ACs, 32 active FRs, 4 mock endpoints, 24 E2E, coverage 63/63 (19 observed, 44 reference/PROPOSED), DV-L45-01..05. Audit `docs/qa/audit/L45-audit.md`: round 1 FAIL (2 Major: non-hex token shows "Link Tidak Sah" on live, not global 404; student 3 has no school) → round 2 PASS; AUD-L45-06/08 fixed by DL. M01 SRS v1.16 (Q8 avatar closed per D23c). L45 → 40%. Build started in parallel: L45-T1 M02 mock (`parentInvites` store + 4 endpoints) ∥ L45-T2 screens (S1 M02 `/jemput-ibu-bapa`, S2 M01 `/ibu-bapa/terima/:token`; E2E port 4704). |
+| 2026-10-02 | **Session 6 plan + user decisions.** Scan: none of the 8 rows has screens yet; M11/M12 stubs; M10 has F-30 store + API client only. Wave A launched (parallel): M10-T1 handlers (+ #75 for S34 = new task **M10-T7b**, row L31), M12-T1 store/handlers, M11-T1 store/handlers (M16 battle/game reads behind a reader port defaulting to 0 — M16 is Session 7). **DL decision:** `/admin-sekolah/monitoring` and `/admin-sekolah/kirkpatrick` are aliases scoped to the viewer's school (live 200, build-plan R.1.3) — M11/M12 SRS §9 to be amended. **User decision:** Session 6 first builds the Session 8 parts it needs — **M17-T1a** (drill-down handlers #6–#13, started) then **M17-T3a** (S4–S7 component) — before M10-T3/T4 (L06). **User decision:** L06 Admin Sekolah Command Center (live 403, no account) is specified from the server code/data — local copy `D:Dev Projectsprestasiplus-reference` (a reconstruction; facts tagged REFERENCE, never over live) → `docs/discovery/L06-command-center-sekolah.md` (analyst running) → audit → user G1. Open: M10-T2 Dashboard Guru stays with L07 (Session 8); M11-T4 vs L48 mapping. |
+| 2026-10-02 | **Session 6 (rows L06, L13, L15, L16, L31, L46, L47, L49; M10, M11, M12) started** by the session that finished Session 3 (user: Session 4 is handled by session 1, Session 5 reserved for session 2). Status/dependency scan running first (M16/M17/F-18/M08-T1b prerequisites); Session 1 asked which M10 data files it still has in flight. E2E ports for this session: 48xx (continuing). **M10 handed over by Session 1** (M08 G5 READY); invariants to keep: 752 class records (750 classrooms + sc-419, sc-806; CL-CLASSROOM = 750; bump mock version on build change), `classes-before-f30.json` snapshot, T5 subject set = M08 A.4 (26), nine observed T5 class names + 366 outside pinned schools 8080/8082/8880/8102/900001 (366 at 8080 only), teacher cards 442 / 1699 (76 pupils) / 4186 (89 pupils), F-30 remedial seeds 7601/7602 frozen while Session 4 runs; re-run M05 + M08 unit tests after any M10 change. |
+| 2026-10-02 | **Session 3 done — M09 reader scope G5 READY** (`docs/qa/M09-content.md`): rows **L03 Panduan, L12 Video, L25 Artikel, L32 Audio KBAT → 100%**. E2E 4 specs × 3 projects: 65/65 mobile, 65/65 tablet, 64/65 desktop (1 load flake on `?page=95`, 3/3 on re-run); unit 428/428 (perf suite passed); manual 11 routes × 375/768/1280 no h-scroll; D22 check pass (real img.youtube.com thumbnails + YouTube iframe, no invented media, fictitious names only); 0 bugs. Article #10 seed body now mirrors observed EL-M09-S16-027…039 (5 bullets = `ul` per screenshot). SRS M09 v1.8 E2E-49/51 orders verified by DL against the capture; SRS.md §4.4 D22 network exception added. Carry-overs: AC-11.1 UI side needs M05 `/dashboard` (L07); AC-11.2 needs M10 teacher article flow; player ACs 23.x provisional (L-3); perutusan (M09-T4b) incl. `SEEDPRT…` D22 gap; move shared helpers out of parked admin lib (audio/artikel); M09 admin stays parked (D21). Board shows "◐ reader". |
+| 2026-10-02 | **L45 Jemput Ibu Bapa discovery (lane 1, admin login, GET-only)** — `docs/discovery/L45-jemput-ibu-bapa.md` §8, img/L45/. OBSERVED: `/jemput-ibu-bapa` is murid-only (guest → /login, admin → 403 "Akses Ditolak"); `POST /jemput-ibu-bapa/generate` exists (405 on GET, not called); `/ibu-bapa/terima/{token}` exists — invalid token → 404 "Link Tidak Sah" with exact copy, so the token-link invite design is live-confirmed. NOT OBSERVED: page content, valid-token acceptance, real menu item (admin user shell shows no student items) — needs a murid account (credentials file has none). Reference-only: `prestasiplus-reference` blade (`pelajar-missing`, not captured from live). Owner proposal: M02 (student screen + parent link), M01 (acceptance page / parent registration). Blocked on user: murid account or approval to build PROPOSED. Server `/var/www/prestasiplus_cloud` confirmed = replica only. |
+| 2026-10-02 | **M01 G5 READY for rows L01 Profil Saya, L02 Tetapan Peribadi (user shell) and L05 Log Keluar** (Murid, Guru, Admin Sekolah; report `docs/qa/M01-authentication.md`). Re-run on a fresh build: E2E 104 pass / 1 skip (by design) / 0 fail on 3 projects (qa-account + smoke-account/profile/tetapan); M01 unit 203/203; typecheck clean; 37/38 ACs pass first run, AC-19.1 fixed. BUG-M01-01 High (`/tetapan` h1 dark on slate) and BUG-M01-03 (profile spec timeouts) fixed by DL (trivial). **Open, platform (not M01):** BUG-M01-04 `registry.test.ts` lazy-load timeout flake under load; BUG-M01-05 `/favicon.ico` 404. M01 SRS v1.15 / URS v1.13 (DV-14 ext., DV-19, INFERRED S8/S9 states, SEC-M01-13…23). L01/L02/L05 → 100%. **L45 corrected to 0%** (no SRS/G1): discovery partial, recommended owner M02; blocked on user (live admin login or server read access, PROPOSED states, owner). Admin-shell variants M01-T5b/T7b and M01-T8 Notifikasi remain outside the matrix rows. |
+| 2026-10-02 | **M08 Student Performance complete (G4 + G5 READY)** — Session 1 done. Re-run on a fresh build: mobile 336/337 (1 load timeout, passed 9/9 alone), tablet 337/337, desktop 337/337; 156/157 ACs Pass, 1 out of scope (AC-33.3, OQ-M08-01); BUG-01..08 closed (`docs/qa/M08-student-performance.md`). Board DSN/BLD/REV/QA ✅; roles-matrix rows L08–L11, L23, L38, L44, L48 → 100% (`docs/ROLES-MATRIX-LINES.md`; role averages Murid 51.4%, Guru 60.0%, Admin Sekolah 33.3%); §0b ≈ 45.8%. Mock versions: M04 6, M05 4, M08 3, M10 3. Note for the M01 owner: `e2e/m01-authentication/qa-account.spec.ts(13,15)` TS18048 breaks `tsc -p tsconfig.e2e.json`. |
+| 2026-10-02 | **Session 3 G4 results.** M09-T5 Panduan (L03) **Approve** after one round (D10: tabs/FAQ back to clickable divs, aria removed; invented heading icons removed, Pelajar/Guru icons observed; `✓` text; footer logo centred = D9) → L03 85%. M09-T2 Artikel (L25) **Approve** + **security Pass** (custom allow-list sanitiser OK for prototype; backend: DOMPurify + server-side sanitising, reject `//` URLs, CSP/Referrer-Policy); brand icons = FA Free 6.7.2 paths (DL verified vs jsdelivr) → L25 85%; 36 unit pass (DL re-run). M09-T3 Video screens **Approve** (E2E re-baseline to live data pending). **M09-T1b live video data Approve**: 2,260 rows from the live capture, 0 mismatches (reviewer script), order = captured list order (`listKey`), ages 2,260/2,260 match live, subjects 1,931 observed + D9 assignment (DV-M09-20), `GET /api/videos/:id?for=edit` (no view count). DL masked a leaked teacher name in `_live-videos.json` (id 2260). SRS M09 v1.8 / URS v1.7 (D22 videos, BR-M09-19, DV-M09-20/21, DN-M09-01…06, §8.2 audio player copy, NFR-06/07). Open: article #10 seed body to mirror observed EL-M09-S16-028…038 (incl. 5 list items); perutusan `SEEDPRT…` ids = D22 gap deferred to M09-T4b (SQ-M09-04); SRS.md §4.4 note on network for YouTube media; perf suite re-run on a quiet machine. Sonnet limit hit, resumed 14:14. |
+| 2026-10-02 | **Session 1 (D21, M08 rows L08–L11, L23, L38, L44, L48):** all 8 M08 G5 bugs fixed — BUG-01 S1 18 rows via D11 display constants (DV-M08-38; no data/config rule reproduces them), BUG-02 teacher cards 2·76 72.5% / 3·89 72.7% (M10 owners 1699/4186 + M05 shaping), BUG-03 T5 26 subjek (M10 T5 subject set = A.4), BUG-04 observed T5 class names (M10 renames + T1b mapping), BUG-06 750 classrooms + 2 school classes (M10 v1.18, M08 filters classrooms), BUG-07 class-228 top rows (M04 anchors 129601–3 + M05 slots). Timeline seed posts + generated SVG photos removed (user rule: no generated media; posts never observed). Combined G4 review **Approve** (997 unit pass in scope; no observed figure regressed); minors (M05 version bump, pinned-school guards, comments) in progress, then M08 G5 re-run. Server `/var/www/prestasiplus_cloud` confirmed to be a replica (same as the reference copy), secondary reference only. |
+| 2026-10-02 | **M01-T6 (Profil Saya S7/S8; row L01) G4: security Pass + code review Approve** after one fix round (radios/file input display:none as live, D10/DV-15; aria additions removed; school/grade edit race fixed; avatar flicker; flash clear; Darjah 3 cols below 360px, D9). DL verified eslint 0, pages unit 72/72; dev E2E 63/63. M01-T5a follow-ups done (badge reset on logout/401, push-event contract test, seed-independent E2E); DL verified 195/195 on re-run (1 flake on first run). L01 → 85%. **G5 QA (L01/L02/L05, user shell) started** (port 4721, lane 3 on the local app); M01 SRS as-built update started (DV-14 extension, 320px DV, INFERRED S9 states, merged real-backend SEC items). |
+| 2026-10-02 | **M09-T4a (L32 Audio KBAT: S21 `/audio-kbat` + provisional player) G4: Approve** after one fix round (Blocker: player route `:id(\d+)` unescaped → never matched; fixed + real-route test). 17 unit pass (DL re-run), eslint clean, E2E 15/15 ×3 (developer). Follow-ups: SRS §8.2 rows for 4 unverified player strings (doc pass); move `COPY`/`errorLines`/`isNotFoundError` out of parked admin lib. L32 → 85%. **M09-T5 (L03 Panduan)** built (17 unit, E2E 45/45 per developer) → G4 review running. **Live video data captured** (D22): `docs/discovery/inventory/M09/_live-videos.json` — 2,260 rows, real titles + 2,260 unique YouTube ids, categories match pills; 329 rows' subject unreachable (live `?subject=` pagination repeats ids — D9) → M09-T1b replacing the generated video rows. |
+| 2026-10-02 | **M01-T7a (Tetapan Peribadi, user shell; row L02) G4: security Pass + code review Approve** after one fix round (D10: aria-label/aria-describedby removed; saving keeps "Simpan Tetapan" + spinner). DL verified eslint 0, TetapanPage unit 8/8; tetapan E2E 12/12 (3 projects) on a scratch copy while M09 broke the main build (now fixed) — G5 re-runs on the real tree. INFERRED S9 states (load spinner, load-error alert + "Cuba lagi") owed to M01 SRS §8. Security: faith = PDPA special-category data → backend-only §14 items. L02 → 85%. **M01-T6 (Profil Saya; L01)**: security Pass; code review Request changes (sr-only radios/file input vs live display:none — D10/DV-15; school-edit race with refreshUser; minors) → fixing. Pending user: initials-avatar SVG vs live ui-avatars.com under the no-generated-media rule (DL keeps SVG meanwhile). |
+| 2026-10-02 | **M01-T5a (Log Keluar, user shell; row L05) G4: code review Approve + security Pass.** Most FRs already met by F-13/F-19/M01-T2; added bell refresh on `pp:notification-push` (UserShell) + `e2e/m01-authentication/smoke-account.spec.ts` (accounts 2, 5, 8; 15/15 with --workers=1, boot timeouts under load at workers=2). DL verified: eslint clean, src/shells unit 134/134. Follow-ups with the developer: badge store reset on logout (SEC F1 Low), single push-event constant, unmount test, seed-independent E2E counts, API timeout check. Proposed backend-only SEC-M01-13..18 for M01 SRS §14. L05 → 85%. L45 discovery partial (route exists, auth-guarded; POST `/jemput-ibu-bapa/generate`); content needs a live admin login — asked the user. |
+| 2026-10-02 | **Session 3 (rows L03, L12, L25, L32; M09 reader) started.** M09-T2 artikel S15/S16, M09-T3 video S17–S20, M09-T4a audio KBAT S21 + provisional player (perutusan half of M09-T4 is not in these rows), M09-T5 panduan S26/S27 in build in parallel (E2E ports 4801–4804). M09 admin stays parked (D21). |
+| 2026-10-02 | **Session 2 (rows L01, L02, L05, L45; M01/M02) started.** M01-T5a (logout, user shell), M01-T6 (Profil Saya S7/S8), M01-T7a (Tetapan Peribadi, user shell) in build in parallel (E2E ports 4701–4703). L45 Jemput Ibu Bapa has no discovery/SRS: discovery on lane 2 started (`docs/discovery/L45-jemput-ibu-bapa.md`). Admin-shell variants M01-T5b/T7b stay deferred (rows L02/L05 roles are M/G/AS, all user shell). |
+| 2026-10-02 | **User decision D21: build order is now the roles matrix (`roles-matrix/Matriks-Akses-Peranan .xlsx`), row by row (A1–A5, then 1–54), each row to 100% (G1→G5).** Supersedes D19 admin-first. Per-row % (G1 not done 0, G1 40, built+G4 85, G5 100) at the time of the decision: row 54 Laporan Soalan 100%; rows 3–6, 18, 33, 39, 43 (M08) 85%; rows A4, 45–53 (M22, M26, M27) 0%; all others 40%. Role averages (modules only): Murid 48.5% (1.0: 58.5%), Guru 55.0%, Admin Sekolah 30.0%. M09 admin (not in the matrix) parked. All Sonnet subagents stopped at the session limit (resets 2026-10-03 06:30 MYT). |
+| 2026-10-02 | D19 next admin module: **M09 Content (admin)** started — admin handlers (#1–#5, #10–#19, #21–#23, #41–#42) ∥ S1–S8 articles & notes ∥ S9–S14 banners, Audio KBAT, screenshots. BUG-07 plan approved: M04 anchors ids 129614/129650/129732 (3 observed EN F4 rows, discovery M08 l.1379-1382), then M05 deals class-228 wrong answers (pins unchanged). |
+| 2026-10-02 | **M03 Kurikulum admin scope G5 READY** (`docs/qa/M03-curriculum.md`): 89 pass / 2 viewport-guard skips / 0 fail per project; dev t2+t3 156/156; 179 unit pass; E2E-25/26/32/48/50 + cross-screen create→delete flow + 14-URL responsive sweep pass; no open bugs. Low obs: O2 non-numeric id on S8/S11 → global 404 vs S3/S5 redirect (spec silent). Student S12–S14 (#25–#27, M03-T1a/T4) not built, so M03 is not counted complete; board shows "◐ admin"; G5 re-run when student screens land. |
+| 2026-10-02 | M08 G5 fixes: BUG-05 fixed (S9 pills alphabetical per discovery M18 l.288; also "100.0% salah"); BUG-08 fixed (S15 fixed 1-decimal except trimmed Unjuran/Selisih; URS AC-27.3 wording amended). BUG-06 root cause = M10 model (750 incl. 2 school classes) → approved: 750 classrooms + 2 school classes (752 records), S1/S10/S11 count classrooms only; M10 implementing, then M08 filters `kind: 'classroom'`. BUG-02/03/04 root cause = M10 class data (teacher class/murid anchors, T5 subject set = discovery A.4, observed T5 class names) → M10 feasibility queued. BUG-07 needs M04 question anchor + M05 answer anchors (tie-break stays id asc) → M05 feasibility. BUG-01 (S1 GPS 18 rows) re-evaluated after BUG-03. Stale class-228 `test.fixme` removed. |
+| 2026-10-02 | **M08 G5 QA: NOT READY** (`docs/qa/M08-student-performance.md`). Per project 327 pass / 10 fail / 1 skip (stale fixme); 144/157 ACs Pass, 12 Fail, 1 blocked (OQ-M08-01); responsive sweep 76 route×role cases clean; no Critical/High. Bugs: BUG-01 S1 GPS 16 vs 18 rows, BUG-02 Prestasi Guru observed cards missing, BUG-03 T5 25 vs 26 subjek, BUG-04 T5 risk class labels, BUG-07 S11 class-228 first row (→ M08-T1); BUG-05 S9 pill order, BUG-06 S10/S11 748 vs 750 classes (→ M08-T5); BUG-08 S15 ".0" format (→ M08-T6, discovery wins). Fixes in progress. |
+| 2026-10-02 | **M03-T3 (S1–S5) G4 Approve** on re-review: E2E-M03-15 split (full t3 spec 93/93 with 3 workers, reviewer's own build), busy guard, error scroll + 404 reload, `useApi` deps on S3–S5, DV-M03-11 (touch targets, M02 precedent), §8 INFERRED row; 179 M03 unit pass, eslint + vue-tsc clean. **All M03 admin tasks (T1b, T2, T3) at G4**; M03 G5 QA (admin scope; student S12–S14 not built) started. |
+| 2026-10-02 | **M03-T2 (S6–S11 subjects/levels) G4 Approve** + minors applied: per-field red borders removed (FR-27 red box only), switch in-flight guard, S9–S11 pink focus rings, `expectTouchTarget` 0.1 px sub-pixel tolerance in shared helper. 165 M03 unit pass; T2 E2E 63/63; M04 t6 + M02 schools regression 23/23. **M03-T3 (S1–S5)** G4 Request changes (E2E-M03-15 timeout in full run + 5 minors), fixes in progress. **Open (F-owner):** shared `FORM_ERROR_MODIFIER` (`src/components/form/classes.ts:17`) never wins the cascade over `border-slate-200`, so the design-system §7.2 red field border never shows (used by M02 SchoolForm, M04 QuestionForm/SubmissionRow, M08 TimelineCreate); decide fix vs drop. Hub: +13 M03 links. |
+| 2026-10-02 | **M03-T1b admin handlers G4 Approve** (#1–#24; role guards on all routes; anchors Matematik 13872/11 levels, D1 11396; counts via M04 public `questions.groupCount`). Minor fixes applied: BR-02 icon default `fas fa-book`, subject PUT keeps omitted fields, colour rule INFERRED, orphan/clash tests. 89 mock unit tests pass, eslint + vue-tsc clean. |
+| 2026-10-02 | D19 next admin module: **M03 Curriculum (admin)** started. M03-T1b admin handlers (#1–#24) ∥ M03-T2 S6–S11 subjects/levels ∥ M03-T3 S1–S5 curriculum browser (frontend builds against SRS §7; E2E after handlers land). |
+| 2026-10-02 | **M08-T3 G4 passed:** code re-review **Approve** (Tahap = tier ordinal, INFERRED, SRS M08 v1.18; revoke/in-flight tests; 📸 headings per discovery; `photoSrc` allow-list incl. seeded `svg+xml`, `appendFiles` type filter). eslint, vue-tsc clean; M08 unit pass. All M08 tasks T1–T7 now at G4; M08 G5 QA (full module) started. |
+| 2026-10-02 | M04 Low flaky t6 modal touch-target test fixed (wait scoped to the modal's animations): 15/15 repeats, spec 33/33; e2e tsc + eslint clean. M08-T3 (S16–S18) G4: security **Pass** (SEC-M08-14..18 recorded, SRS M08 v1.17); code review **Request changes** (S18 "Tahap" = tier ordinal, INFERRED; tests; heading emoji); fixes with the developer. Hub: +4 T3 links. |
+| 2026-10-02 | **M04 Question Bank complete (G4 + G5 Ready).** QA re-run on a fresh build: desktop 151/1 skip/0 fail, tablet 149/2/1, mobile 149/2/1; BUG-01..04 closed (`docs/qa/M04-question-bank.md`). Only open item: Low flaky t6 modal touch-target test (timing), sent to the T6 developer. Board DSN/BLD/REV/QA ✅; §0b ≈ 43.9%. |
+| 2026-10-02 | M05 class-228 "Perlu Perhatian" = 57 (OBSERVED total + 3 observed top rows pinned as `ATTENTION_ANCHORS`; 11 under-50 + 46 idle split INFERRED). Code review **Approve** after one Request-changes round (fidelity); m05+m08 unit 504 pass, eslint clean. Docs: URS M08 v1.11 (DV-M08-36), SRS M08 v1.15 (CH-M08-01), SRS M05 v1.19 (DV-M05-C228-01/02). |
+| 2026-10-02 | Dataset `dense` layout option (M04-T1 fix for G5 BUG-01): re-review **Approve**. Fuzz probe 0/578 gaps (was 12/578), 948 unit tests pass, eslint clean. Still open: quiet-machine `npm run test:perf`; overview §6.6 doc note for `dense` (solution-architect). |
+| 2026-10-02 | **M04 G5: Not ready** (436/456 E2E pass; unit 417/417; report `docs/qa/M04-question-bank.md`): BUG-01 PKSK ids 404 at runtime (M04 mock), BUG-02 hard-coded "Gambar Rajah" nav badge (shell; DL approved minimal shared-nav change), BUG-03 structured part labels a/b/c vs "3(A)" (T7), BUG-04 extra drawer item (verify vs live); 2 flaky dev tests. M04-T6 reports feature G4 Approve + security Pass (SRS v1.19 with SEC-M04-11..15 backend requirements). **M08:** T6 Headcount (E2E 78/78) and T7 class S5/S8 (E2E 171/171) built; T7 G4 Approve, T6 minors in progress (shared `src/lib/save-blob.ts`, RS badge colour, export error). T2 S6/S7 fix in progress. **DL decisions:** class 228 sessions must sit in its subject (BI) — M05 fixing (S5 counts class subject per BR-M08-10); unknown S8 class → empty state per SRS §8; config 504/503/505 subjects made coherent with their classes (Option A; all designed values, anchors unchanged) — docs first, seed/tests after current M08 work; XR-M08-M10-01 M10 seeding observed + INFERRED-filler DSKP SPs. Preview hub: 41 screens. |
+| 2026-10-01 | **M04 screens all G4 Approve** (T3, T4 after DSKP-tag fix, T5, T7); M04 G5 QA running on the built scope; M04-T6a/b/c report feature (S7 admin triage, S13, S14 modal) in build (D19 brings T6c forward). **M08:** T1b headcount G4 Approve (198 tests; GPS 3.45 / 34-41 / 5.33 now asserted; generator in `scripts/generate-headcount-data.mjs`, byte-identical); S1/S3 memo removed (no clean cross-module write stamp, NFR-M08-08); T4 Kedudukan/Papan Pendahulu G4 Approve + live-fidelity fixes (2-col filter at 375, dark row dividers); T5 Prestasi/Analisa Item built (E2E 111/111) — G4 Request changes in progress (unknown school id → "Tiada Data Pelajar" per FR-M08-143). **Deferred by DL:** XR-M18-06 KLUANG coverage 65/64 → M18-T1a (only 8880 has M10 classes; it.todo tracked). DV-M08-33/34/35 recorded (SRS v1.13); build-plan v1.14 (S4/S10/S11 owned by M08-T5; boot budget 7–11 s vs 2 s logged as an open item for an F-34 boot-perf task). Preview hub: 29 screens. |
+| 2026-10-01 | **M02 Users & Schools: G5 READY — first module through G4 + G5** (targeted re-run 24/24; full regression 384 tests, 383 pass + 1 mobile load flake that passes alone; report `docs/qa/M02-users-schools.md`). Board row M02 set DSN/BLD/REV/QA ✅. Overall ≈ 42.0%. Note: E2E overrides must go through `mockInit.overrides` because a runtime `mock.reset(...)` is lost on page reload. **M04 screens G4:** T3, T5, T7 Approve; T4 Request changes (T4-1 Major: saved DSKP tag wiped when a lookup fails; touch-target minors). |
+| 2026-10-01 | **M08-T1 (read models) G4: Approve** after the M05 bulk-read switch (65 unit tests; cold S1 ~11 s → <1 s, class 228 ~40 s → 0.16–0.5 s, S9 computed table 42–75 s → 0.2–0.35 s; perf gates asserted; class 228 = 596 / 381 / 78 / 137). Minors in progress: cache S1/S3 per log stamp (S3 T5 cold flaked at 1,615 ms), stale comment. M05: `answerFacts` anchor bug fixed (XR-M08-M05-04), one-scan index, class-228 pool lazy. **D20 preview hub live** at `/admin` (19 screens: M02 ×9, M04 ×10). M04 screens G4: T3 Approve; T5/T7 changes routed (shared `LaravelPager` gets `pageParam`, DL-approved; helper consolidation; image-url rule). S11 handler memoised. SRS: M04 v1.18 (DV-M04-20, S11 2+1, fallback copy), M02 v1.30 (DOC-01/02, Q9/Q10), M17 v1.12 (AUD-04). |
+| 2026-10-01 | **User decision D20: preview module by module; do not wait for everything.** Until M17 (`/admin`) and M05 S1 (`/dashboard`) exist, those landing URLs show a temporary dev preview hub ("Pratonton Prototaip") listing finished screens, driven by `src/shells/dev/preview-hub-links.ts`; real module routes take precedence automatically. The Delivery Lead adds each module's screens to the hub as soon as they are verified. Work resumed: M02 G5 re-run, M04-T4, M04-T7, M08 bulk-read switch, M05 minor fixes. |
+| 2026-10-01 | **Paused at user request ("stop jap").** Stopped mid-task (resume each with its context): M02 G5 targeted re-run (QA); M04-T4 create/edit screens (a test file mid-edit); M04-T7 structured/papers/diagrams/notes screens; M08-T1 switch to M05 bulk reads + class-228 test fix; M05 lazy class-228 pool. App boot verified green after the stop. Done since last entry: all M02 G5 bugs fixed (BUG-01 shared router 404 title + `setTitle` guard, BUG-02 test hooks, BUG-03 empty text, BUG-04 S9 visuals, SJK(C) timeout); M05 bulk reads (`sessionTotals`, `answerFacts`, `subjectTotals`, `questionTallies`) G4-reviewed (legitimate; 5.5× faster; class 228 = 596; 8880 reproduced) with a stale M08 test and a 312 ms eager pool as follow-ups; quiet-machine perf run still owed. DL decision: the M17 8082/8080 accuracy drift (+0.24 pt) is recorded, not tuned (AUD-04 for M17-T1). |
+| 2026-10-01 | **M02 G5 (QA): Not ready** — no Critical/High; run 2 clean 352/369 passed (231 dev + 138 QA tests), unit 512/512; report `docs/qa/M02-users-schools.md`. Open: BUG-01 404 tab title on page-set outcomes (shared router fix in progress); BUG-02 missing test hooks `mock.reset({comp:0})` + `subscriptions-extra` profile (M02-T3 owner); BUG-03 comp-students page past last shows no empty text (T7); BUG-04 S9 visual gaps vs live (T8); SJK(C) dev E2E timeout (T6); DOC-01/02 SRS wording. G5 re-run of affected tests after fixes. **M04:** T1/T2 handlers G4 Approve + follow-ups done (331 tests, M10 dskp lazy, uploads stored as `blob:mock/` placeholders); T3 list/detail built (E2E 36/36, XSS-safe markdown) and T5 import/quality built (E2E 21/21) — both shown to the user; T4 create/edit and T7 structured/papers/diagrams/notes in build. DL correction: each module's own SRS overrides generic brief rules (M04 §8.2 load error "Maaf, berlaku ralat. Sila cuba semula." + "Cuba Semula"). |
+| 2026-09-30 | **M04-T1 (question handlers) + M04-T2 (workflow handlers) G4: Approve** (235 unit tests; anchors 465,278 / 146,330 / 318,948 / 130,152 / 129,752 / S6 buckets / 4,064 / 6,666 / 525 / 1,123). **DL decision: DSKP routes #39–#41 (`/api/guru/dskp/*`) stay in M04 `handlers/dskp.ts` reading M10's `dskp` store; M10-T1 must NOT register them (brief it on resume).** Open XRs: F-06/bootstrap to apply `M04_LATENCY_PATTERNS` (300 ms) via `runtime.latency.set`; M03 `index.ts` to re-export its lookup client; M04 SRS §7 #6 (200 + status, not 204), S10 seeded pending/rejected rows (6 vs live 4), audit-scores-runtime-rows note. **F-33 (M17 provisional stores) G4 Approve**; sponsors 5503–5505 are students in M02 (XR-M21-01, allow-listed). **M08-T1 built** (62 tests; cold S1 ≈ 11 s, class 228 ≈ 40 s, 8880 42–75 s): M05 bulk aggregate reads (XR-M08-M05-01/02) in progress; G4 review running. M04 screens T3, T5, T7 in build; M02 G5 QA running. |
+| 2026-09-30 | **M02 Users & Schools (admin): all 9 tasks G4 Approve** (T1–T3 handlers; T4 user list, T5 user form, T6 imports, T7 complimentary, T8 schools, T9 subscriptions/invoice/packages). T9 minor follow-ups in progress (S15 unit test, icon map, panel-error scroll, quota reset, clock pin). M02 SRS as-built notes routed to the analyst (defaults endpoint, own-account 422s, module-wide 404/alert-only/status-only rules, BR-09 Title Case, BR-18 `personal`). **Next: G5 (qa-engineer) full M02 E2E on a quiet machine**, blocked until the mock boot is green again: F-26c's user-5782 cap edit was interrupted by the Sonnet rate limit and left the M05 build check failing (T5 members 31,567 vs 29,971); F-26c is fixing it. |
+| 2026-09-30 | **F-26c G4: Approve** after one fix round (270 unit tests; Kirkpatrick aggregate now lazy, off the boot path; inactive pupils hold no rows; nine M18/BATANG PADANG schools excluded from other-P, shortfall filled from attendance-mirror pupils outside 19–25 Sep; 8880 90.1 % kept as INFERRED per DL decision). Remaining Minor: user 5782 holds 1,510 sessions (cap in progress). M10: 8765 answering pupils now active-only. SRS updates for M05/M10/M12/M18 routed to the analyst. **M02 screens G4:** T6, T7, T8 Approve; T4 minors done; T5 changes requested ("akun"→"akaun", inline errors removed, Title Case "(Cina)", 404 outcome, D10 removals). Module-wide DL decisions: unknown id → standard 404 outcome; validation errors only in the alert box; no ARIA additions; "Baris {n}" lines dropped from flashes. T9 (subscriptions) finishing. |
+| 2026-09-30 | **M02 mock handlers all G4 Approve:** M02-T1 (users), M02-T2 (schools/imports/quota), M02-T3 (subscriptions/packages/complimentary; BR-18 maps "full package" to `personal` until `packageExpiresAt`, INFERRED; seeded 5901–5990 `personal` until 2026-12-31 via M01 anchors, M01 plugin v7, M02 v5). Open XRs: M14 must register `setCompWalletSource` (S8 shows 0/0 until then); SRS §7 to add `GET /api/admin/config/defaults` and own-account 422s. **M02 screens built:** T4 user list, T6 imports, T8 schools (E2E pass at 3 sizes, re-run needed on a quiet machine); T5 user form, T7 complimentary, T9 subscriptions in build. **F-26c G4: Request changes** (4 Majors: eager Kirkpatrick build adds ~30–50 % of the ~10 s dev boot; inactive pupils hold rows via the M10 8765 pick; lower-form pupils at M18 schools get rows; 8880 accuracy tuned). Fixes routed to F-26c and M10 owners. `docs/AKAUN-DEMO.md` added for the user (demo accounts). Parallel Playwright runs share port 4173/`dist-e2e` and disrupt each other: future briefs assign each agent its own port. |
+| 2026-09-30 | **M09-T1 (reader handlers) G4: Approve** after one fix round (138 unit tests, eslint clean; `scheduledAt` now MYT; pin limit counts scheduled; video school source unified; audio fixture name made fictitious). M09 SRS/URS v1.6 (16 PROPOSED COPY rows, INFERRED notes, "Cikgu Demo 02"). **M01-T4 G4: Approve on code + unit tests**; the forgot→reset→auto-login E2E times out in `waitForApp` after navigation, pending re-run once the M05 boot failure is fixed. **M02-T1 (users handlers, 137 tests) and M02-T2 (schools/imports/quota handlers) built**; G4 review running. M02-T3 (subscriptions), M02-T4 (user list), M02-T5 (user form), M02-T8 (schools screens) in build. F-26c resuming to fix the mock boot failure ("population othP: 97 needed, 70 eligible") that blanks every page. |
+| 2026-09-30 | **User decision D19: build order changes to admin-first, module by module, so the user can preview each finished module.** Order: M02 Pengguna & Sekolah (admin) → M04 Bank Soalan (admin) → then the remaining admin modules by fewest dependencies → then Murid and Sekolah (Release 1.0 screens, D15). Each module is taken through handlers → screens → G4 before the next starts, and the user previews it on the local dev server. Also: all running agents (M05-T3, M08-T1, M09-T1, M10-T1, F-26c, M01-T4 re-review) stopped at the Sonnet session limit (resets 15:20 MYT); they resume with their context. M01-T1..T4 built (login, register, password pages previewable now). Reference copy of another team's PrestasiPlus reconstruction saved outside the repo at `D:\Dev Projects\prestasiplus-reference` (secondary reference only). |
+| 2026-09-30 | **M01-T3 (login + register UI) G4: Approve** (153 unit tests, eslint clean, smoke-auth E2E 21/21 at 375/768/1280 with `--workers=2`; accounts 2, 5, 8 log in via the UI form, so **Milestone A login path works**). Minors routed to the T3 developer: network-error text falls back to BM generic line, state select + school search side by side at 375 (SRS §10), placeholder name replaced with a fictitious one (privacy rule), extra tests. Open follow-ups: generic error line "Ralat berlaku. Sila cuba lagi." to be added to M01 SRS §8 UNVERIFIED COPY; M02 to export `searchSchools` + `SchoolSummary` from its public entry before M01-T6 (M01 `useSchoolSearch` currently calls the endpoint directly). **M01-T4 (password pages) in build.** Production server check: the Laravel app at `/var/www/pios_com_my` is a different Pios business app, not prestasiplus; the user removed the `claude-ro` account. |
+| 2026-09-30 | **M05-T1 G4: Approve** (179 unit tests, eslint + typecheck clean). Minors routed to the M05 developer (numeric `at` NaN, unknown-user check in hooks, `Object.hasOwn` period check, drop `difficultyLabel`, BR boundary tests, dashboard perf guard, dependsOn comment). Doc drift for later architect pass: build-plan rows 231/1036 (#22 belongs to M04-T6a; add `answerChapter`), overview §6.13 hook name `addSession`. **M01 G4 follow-ups done** (227 tests pass). M01 SRS v1.13 (BR-27..29 INFERRED + §14 real-backend security requirements SEC-M01-07..12). Source-code access: staging server runs no web app; a read-only `claude-ro` account on production was created by the user, but connecting to production was blocked by the Claude Code safety classifier — pending user decision. |
+| 2026-09-30 | **M01-T1 + M01-T2 G4: code-reviewer Approve + security-engineer Pass** (218 unit tests pass, eslint clean; demo bundle guard OK). Minor follow-ups sent to the M01 developer (real inactive-reset 403 test, owner-internal export comments, shared outbox constant, bulk-id test, demo-seed comments). Real-backend security requirements (IC-reset throttle + token delivery, session revoke on reset, neutral forgot reply, picture sniffing, email+IP throttle) are being added to M01 SRS as backend-only notes; the prototype keeps the live behaviour (D9). **M01-T3 (login/register UI + smoke-auth E2E) in build. M05-T1 built (179 tests, lint/typecheck/build green, e2e 9/9) and in G4.** M10 SRS v1.16 (as-built INFERRED notes); M10 F3/N1 tests added (54 pass). F-18 observed load 0.15 fixed. M01 exports `isAnchorUser`/`anchorUserIds`. |
+| 2026-09-30 | **F-30 G4: Approve — all 29 foundation tasks now G4-approved.** (231 unit + 5 tracked todos; keying 419 vs 419 correct; D12 clean; budget far below 50 ms.) Follow-ups: M10 test that every M01 anchor is reserved + duplicate-enrol test; M10 SRS as-built notes (T5 non-member rule INFERRED, `remedialTests.get(id, viewer)`, `designation()`, open XRs). Build currently red only from in-flight M05 test files (read-handlers / hooks) and admin-nav.test (F-18 follow-up). **Overall ≈ 40.1% — 40 % milestone announced.** |
+| 2026-09-30 | F-18 Fast follow-up done (observed disk 199.3 GB; pill mounted only ≥ lg; poll lifecycle / visibility / stale-response / row-click tests; exact-route walk test; 180 tests; eslint clean). Last fix requested: observed load 0.15 on sample 1. |
+| 2026-09-30 | **M25 URS/SRS v1.0 Draft — Heatmap Topik Lemah only** (`/buku-nota/heatmap`; 30 FN, 37 AC, 35 FR, 30 E2E / 13 provisional; 9 DV incl. DV-09 menu href fix, DV-06 cell rule R1+R2 minimum 5; 8 XR, XR-02..05 needed before build). DL ran coverage 24/24 + 372 shell excluded, trace 0 errors; index links URS.md / SRS.md fixed to `M25-ai-centre.md`. Next: independent audit, then G1. Server SSH: user shared root credentials; DL declined direct root access and stopped the agent before any connection — recommended rotating both passwords and providing a source-code copy / read-only repo access / schema-only dump instead. |
+| 2026-09-30 | **F-30 built** (M10 store: 750 classes, T4 149 / 356 memberships, T5 3,911, 8082 14 owners / 515 pupils, M18 table A.1, 187 DSKP pairs, class 1156 → 4627; M05 seams work end to end; 153 unit + 5 todo; full-registry boot OK; M10 < 100 ms boot) → **G4 review launched.** Cross-module finding: **M05 session placement ignores M10 `designation()`** (T4 38 sessions / 8 pupils vs SRS 11 / 4; T5 31,592 vs 29,971; means 80.1 / 79.8 vs 63.9 / 79.7; 8765 11 vs 6) → DL decision: M05 `dependsOn` M10 and its prime reads `classrooms.designation()`; added to F-26c scope. Other notes: `remedialTests.get(id, viewer)` (SRS gap), R2-06 "{n} GURU" enrolments not built (M17-T1 follow-up), M06 mission pools empty (XR-M10→M06), question set 7402 questions come from M08-T1. |
+| 2026-09-30 | **M01-T2 built** (notifications mock layer #13–#19: table + repository, deterministic §6.8 seeds (admin 167/166 unread, pelajar 45/12 …), `pushNotification` hook dispatching `pp:notification-push`; 38 unit tests; 3 smoke specs × 3 viewports pass; own files lint-clean). DL (trivial): F-23 test now asserts `users` is among M01 repositories (T1/T2 add more). G4 review with M01-T1 once T1 lands. Notes for T5a: bell must listen to `pp:notification-push`; guru unread 2 INFERRED; non-admin notification texts are placeholders. |
+| 2026-09-30 | **M08 v1.11 — OD-R3 / OD-R4 resolved** (Headcount: school admin → own-school admin view with empty state, INFERRED; pelajar → 403 page, PROPOSED, link stays visible as live. Analisa Item: school admin → `/analisa-item/sekolah` (S9, DV-02 extended); pelajar → `/dashboard`, `/analisa-item/kelas*` → 403). FR-M08-08/09/76, E2E-M08-04/72, SQ-M08-06 updated. DL (trivial): SRS header AC count 155 → 156; build-plan §R rows 3 and 6 marked resolved. Open low-priority user question: student Headcount 403 vs own view (check when a student account exists). |
+| 2026-09-30 | shells.md v1.2.1 (§2.2 item 12 and §2.11 agree: sidebar user block is the last child of the scroll content, `min-h-full flex-col`, INFERRED). M08 OD-R3 (Headcount for Murid / Admin Sekolah) + OD-R4 (Analisa Item for school admin) analyst started. |
+| 2026-09-30 | **F-29 G4: Approve** (round 2; 54 tests; eslint/typecheck/build clean). Carry-over for M05-T3 brief: map M09 `ActiveBanner.description` → M05 dashboard `body`. Quiet-window perf re-derive before QA (m09 caps mostly noisy). |
+| 2026-09-30 | **F-18 G4: Approve** (menu copy/icons/colours match shells §2.7 line by line; longest-match single active; teacher variant never calls `/api/admin/*`; server-status handler 401/403 + deterministic; typecheck + build clean). Fast follow-up: observed disk 199.3 GB, no polling below lg, poll-lifecycle tests, exact-route test. shells.md §2.2 vs §2.11 user block → designer v1.2.1. core.test.ts:503 false positive (`auth.passwordResets` table name) + 3 M01 lint errors → M01-T1 agent. |
+| 2026-09-30 | **F-29 G4 fixes done** (54 tests; scheduled/draft visible to author + admin; school post needs schoolId; Pomodoro body neutralised; plugin v2) → re-review. DL decision: "Teknik Feynman" (observed public article title naming a technique, no person credited) is kept. |
+| 2026-09-30 | **F-29 G4: Request changes** (1 Major: untested rules — perutusan create/pins/FORBIDDEN/scheduled/drafts/excerpt, whole audioKbat repo, banner CRUD, notes paging, screenshots; Minors: author cannot open own scheduled post, school post with null schoolId, `description` vs M05 `body`, unmeasured school-video path). Sound: fidelity (30 anchors literal), privacy, D12, determinism, video order. **DL decision (privacy):** neutralise the real person name in the Pomodoro article body. DL fixed M09 SRS "31 observed anchors" → 30 (trivial). **F-18 follow-up done** (`/api/admin/server-status` mock handler, admin-only, deterministic green/amber/red readings; dev preview `/__dev/shell/admin` for Admin and Guru-in-admin-chrome; 213 tests; typecheck + build clean) → **F-18 G4 review launched.** |
+| 2026-09-30 | **build-plan v1.12** (§R: Admin Sekolah Monitoring/Kirkpatrick = M11 S2 / M12 S1 aliases, buildable; 8 deferred = Command Center, Statistik Penggunaan, DSKP Heatmap, Laporan Aktiviti, Laporan Bulanan, Senarai Pelajar, Senarai Guru, Kelas Sekolah (xlsx 1.0 items — correct set); Heatmap → M25 `/buku-nota/heatmap`; F-19b unconditional (5 hrefs + Heatmap href); no sticky column in plan/overview). **1.0 counts: 54 items = 45 G1 + 1 awaiting (Heatmap) + 8 deferred.** Heatmap Topik Lemah URS/SRS (M25 partial) writer started. |
+| 2026-09-30 | **User: focus on Matriks-Akses-Peranan, especially 1.0.** Non-1.0 work held (M22–M26 discovery, F-28 CI, M19–M21 XRs). 1.0 status: Murid 17 items (16 G1; Heatmap Topik Lemah discovered → M25 `/buku-nota/heatmap`, SRS needed), Guru 19 (all G1), Admin Sekolah 18 (Monitoring + Kirkpatrick = M11/M12 aliases → buildable; 8 portal screens + Command Center deferred until school-admin account). Queue: Heatmap URS/SRS → audit → G1; M08 OD-R3/OD-R4 decisions; F-19b nav href fixes. build-plan v1.12 §R update dispatched. |
+| 2026-09-30 | F-09 Fast follow-up done (test-only `planStats` counters assert narrow vs bitmap path; N/32 boundary test; loadDiff / reset / rollback after the position list; in-place sort; 80 dataset tests; eslint clean). F-09 complete. |
+| 2026-09-30 | **F-18 admin shell built** (`admin-nav.ts` with longest-match single-active rule, teacher menu reused from USER_NAV; AdminShell / Sidebar / Header / ServerStatus pill (admin only, 30 s poll) / BottomNav / Lagi popover (44 px rows); layouts.ts `admin` entry real, placeholder removed; 67 new tests, 464 pass; typecheck + build clean; 320–1280 no h-scroll). DL authorised follow-up before G4: `/api/admin/server-status` mock handler in core-data (INFERRED `diskUsedGb`/`diskTotalGb`) + dev preview `/__dev/shell/admin` (admin + teacher variant). Spec note: sidebar user block follows shells.md §2.11 (end of scroll), not §2.2 (sticky) — designer to reconcile. |
+| 2026-09-30 | **F-09 G4: Approve** (F09-7 fixed: narrow plans O(cells + candidates); reviewer differential probe 40 random steps incl. rollback + loadDiff all match; id-window query 8.2 → 0.07 ms; 268 unit pass). Fast follow-up: assert narrow path taken, rollback/loadDiff/boundary tests. Quiet-window `test:perf` still pending (DL). |
+| 2026-09-30 | **Wave R1 started: M01-T1 + M01-T2** (first real module screens: login path to Milestone A). Running: F-09 G4 re-review, F-29 G4 review, F-30, F-18, M01-T1, M01-T2. |
+| 2026-09-30 | **F-23 G4: Approve** (round 2; all 7 findings fixed; 193 unit, typecheck + build clean). **F-29 content store built** (articles 72, banners, notes, videos D11 2,260 with 30 anchors, perutusan, audio KBAT, support; build check runs every named query; 43 unit; lint/typecheck/build clean) → **G4 review launched**. **M27 discovery**: only Monitoring and Kirkpatrick reachable (aliases of M11 S2 / M12 S1); 8 routes 302 → `/admin-sekolah/pilih-sekolah` → 500, Command Center 403, 5 inferred hrefs 404 (D-M27-02: fix `user-nav.ts`); Heatmap Topik Lemah = M25 `/buku-nota/heatmap` (R10). **User decision: M27 skipped for now; user will provide a school-admin account later.** DL asked user for further test accounts (Guru, Murid unsubscribed, Penaja; optional PPD/JPN) — read-only discovery only. |
+| 2026-09-30 | **M27 DISC ✅** (`docs/discovery/M27-school-admin.md`, lane 1, admin account only, D16): 17 routes probed (GET, no redirect followed). Only **2 reachable**, both aliases: `/admin-sekolah/monitoring` = `/admin/monitoring` (M11 S2) and `/admin-sekolah/kirkpatrick` = `/admin/kirkpatrick` (M12 S1), `<main>` text identical (0 differing chars). **Unrevealed:** 8 routes 302 → `/admin-sekolah/pilih-sekolah` = 500 (`/admin-sekolah`, pelajar, guru, kelas, pengguna, statistik-penggunaan, dskp-heatmap, laporan-bulanan), `command-center` 403, 5 INFERRED `user-nav.ts` hrefs 404 (laporan-aktiviti, import-pelajar, aktiviti-guru, langganan, invois; real hrefs unknown). 21 elements / 9 states, 13 screenshots, 0 PII, no live writes. R10 (Heatmap Topik Lemah → M25) re-verified complete, not redone. Follow-ups: URS writers mark all unrevealed M27 content PROPOSED; rebuild nav must drop the 5 wrong hrefs (D-M27-02); D-M27-01 (picker 500). |
+| 2026-09-30 | **F-09 F09-7 fix done** (bitmap only when candidates > N/32 or after a full search sweep, limited to the id window; narrow plans use `narrowPositions` over a lazy per-original-cell position list incl. edited rows; new differential `narrow-plans.test.ts`; 266 unit pass; lint + typecheck clean; M14 "#2 wallet summary" and M01 "lastActiveAt null at 8880" gates now pass). `test:perf` still not authoritative — machine loaded (skip share 36–100 %). **G4 re-review launched.** **TODO (DL): quiet-window `npm run test:perf` with all agents paused**, then re-check the tight cap "hc id window + cheap query". |
+| 2026-09-30 | **F-23 G4 fixes done** (setIcNumber creates secrets row with unusable password hash; outsideFixtureSchools rejects schoolId; boot check derives + counts 115/54; literal M19 payer expiries; 193 unit pass; M01 v4 unchanged — runtime-only change) → G4 re-review. Build/typecheck currently blocked only by M10 in-flight `tmp-profile.test.ts` (F-30 agent). |
+| 2026-09-30 | F-16 Fast follow-up done (pager `page` sanitised incl. NaN/0/-3/2.5; `pageHref` path doc; form-class tests; 53 tests; eslint clean). **M27 + R10 discovery started** (lane 1, admin account only, D16). |
+| 2026-09-30 | **design-system v1.11** (§7.2 = observed blue-focus input string; §7.4 pager 44 px + flex-wrap recorded). **F-18 admin shell started** (spec: shells.md v1.2 §2, incl. teacher variant §2.6 and checklist §2.12). |
+| 2026-09-30 | **F-14 icon map synced to design-system v1.10** (21 rows incl. 4 approximations; 31 approx marks = §6.10; count test 276; all 18 `SHELL_ICON_FALLBACKS` removed, constant kept empty; icon + shell tests 349/349; lint/prettier clean). F-18 admin shell ready to start (D-R1 + icons done) — next free slot. |
+| 2026-09-30 | **F-16 G4: Approve** (UrlWindow onEachSide 3 verified; edge cases; live markup and a11y; href building; 47 F-16 tests pass). Fast follow-up: sanitise `page` in the pager summary (NaN/fraction), `pageHref` path note, stronger form-class tests. design-system v1.11 (§7.2 = observed blue-focus input; §7.4 records 44 px + flex-wrap). Carry-over for architect: drop "sticky action column" from overview.md:749, build-plan.md:743 and :985 (stale vs design-system §7.4). Note: full lint/typecheck/build currently red only from in-flight M09 (`audio-support.ts`, `videos.ts`) and M10 (`tmp-profile.test.ts`) files. |
+| 2026-09-30 | **D-R1 done: shells.md v1.2 + design-system v1.10.** Route→shell map per role (student all user shell; teacher user shell except `/guru/monitoring*` + `/guru/kirkpatrick*` in admin chrome (teacher variant, PROPOSED, OD-R5 applied), `/guru/command-center` bare; school admin all user shell; admin `/admin/*` admin shell); full admin-shell spec for F-18 (§2, `admin-nav.ts` contract, acceptance checklist §2.12); DV-SH-10 (doc correction), DV-SH-11 ("Lagi" rows ≥ 44 px); 21 icon rows added (276 + 4). F-14 icon code-map sync dispatched. Carry-overs for analysts: `/admin/master-notes`, `/admin/audit-log`, `/admin/soalan-gambar` are teacher/school-admin menu targets denied by FR-M17-06; M11 FR-M11-03 breadcrumb should go to `/guru/monitoring` for teachers; F-19 `isActivePath` prefix match marks "Dashboard Guru" active on every `/guru/*` page (check vs live). |
+| 2026-09-30 | **M02 SRS/URS v1.27** (4627 `lastLoginAt` designed from own id — no figure change; new **DV-M02-16** privacy override: runtime-set ICs shown masked to admin; SEC-M02-07 note: salted SHA-256 IC hash is mock-only). DL verified header 1.27; SRS/URS/TRACKER copied to `pretasiplus-app-backups/latest-srs/`. |
+| 2026-09-30 | **F-23 G4: Request changes** (1 Major: `users.setIcNumber` throws for users without a secrets row → M02 admin IC edit would 500; Minors: 4627 `lastLoginAt` generated from own id (accept + SRS note), `outsideFixtureSchools` ignores caller schoolId, boot check typed `lastActiveAt` literals, tautological M19 payer test, IC-hash entropy note; lint/typecheck clean, 191 unit, build OK; perf skip-share red under load). Routed to F-23 dev + M02 SRS v1.27 (4627 note, runtime-IC privacy DV, SEC note). **Tracked follow-up:** M05 must contribute 4627 class-1156 sessions/mastery (pins.ts TODO). |
+| 2026-09-30 | **F-16 built** (`src/components/data/**`: `LaravelPager` (live Laravel markup, UrlWindow algorithm, 44 px targets, flex-wrap), `DataTableCard` (in-card scroll, no sticky column per design-system §7.4), `pagerWindow` / `pagerNumbers` / `pageHref`; `src/components/form/**` live class strings; 47 new tests, 401 components tests pass; lint/typecheck/build clean; Chromium 320–1280 no page h-scroll). **G4 review launched.** Carry-overs: overview §9 + build-plan F-16 still mention "sticky action column" (stale vs XL-21); M02-T4 builds "Tunjuk" page-size + Malay "Memaparkan…" counter; M04 S8 Malay counter page-level. |
+| 2026-09-30 | **F-23 updated to M02 v1.26** (5316 = teacher:101; 4202 → 8087 with login 2026-06-04 05:47; anchor 4627 at 8082 T5 with `lastActiveAt` 2026-09-15; 169 = 115 / 54; student anchors 591; account 2 trial 32 / 18; M01 plugin v4; 191 unit pass; typecheck + build clean; perf red only on skip-share under load). **F-23 G4 review launched.** Follow-ups: M05 must contribute 4627 sessions/mastery and exclude its slot from the 8082 pool (TODO in m05 pins.ts); 4627 `lastLoginAt` generated from own id (review to judge). |
+| 2026-09-30 | **Release 1.0 wave R0 started** (Sonnet subagents): F-29 content store (M09), F-30 classrooms/missions/remedial/question-set store (M10, incl. class 1156 → 4627), F-16 pager/table, D-R1 shells.md v1.2 (route→shell map, admin shell + teacher admin-shell menu for F-18). Still running: F-09 F09-7, F-23 v1.26 delta. Queued: F-28 CI, M27 + R10 discovery (browser). |
+| 2026-09-30 | **F-26 G4: Approve** (round 2; MJ-1 stored coins = BR-09 on all paths, M14 credit only in #6 response; MJ-2 `enforceNotAllCorrect` keeps counts; rollback test passes; M14 contract test 6/6 runs against real M05; lint/typecheck clean; 147 unit; build OK). Perf 14/21 gates skipped on loaded machine → quiet-machine rerun before G5. Nits (carry-over): re-wrap practice.ts:755 comment; comment that anchor sessions are outside the ≥3 rule. |
+| 2026-09-30 | **M05 SRS v1.17 restored** (re-applied after 3rd overwrite: §6.2 / §6.14.3 anchor-answer ids 500,001–999,999, BR-31 step 6 wording, §6.12 trial-32 request, §6.14.1 build notes, new §7.2 M14 read contract, SQ-14). DL check: v1.17 header, 295 ids / 0 duplicates. **Persistent backup** of `docs/` + CLAUDE.md at `D:\Dev Projects\pretasiplus-app-backups\20260930-1112` (outside repo and scratchpad; 531 MB). |
+| 2026-09-30 | **M21 v1.2 — Approved (G1)** recorded in URS + SRS (OQ-01 sponsor-portal minimum and OQ-02 Luluskan/Tolak resolved, PROPOSED approved at G1; D14 confirmed; citations current). DL check: 0 duplicate IDs (URS 117, SRS 206 defs); flagged cell mismatches are escaped `\|` rows (pre-existing format). |
+| 2026-09-30 | **Session resumed.** **D18** (user): main session = Opus 5.5 as lead/supervisor only; every task to Sonnet 5 subagents — CLAUDE.md §1 and all `.claude/agents/*.md` switched to `model: sonnet`. `node_modules` found empty → `npm ci` (311 packages; Node 22.16 engine warnings only). Dev-only shell preview added: `/__dev/shell` (pick Murid / Guru / Admin Sekolah via `setUser` hook) → `/__dev/shell/preview` in the real UserShell (DL convenience, not a build task; lint/prettier/typecheck clean). **M05 SRS found reverted to v1.16 a third time** (v1.17 §6.2 anchor-answer ids, §7.2 M14 read contract, SQ-14 lost; scratchpad backup also gone) → re-apply dispatched. Dispatched (Sonnet): M05 SRS v1.17 re-apply; F-26 G4 re-review; F-09 F09-7 fix; M21 v1.2 (record G1 decisions); F-23 M02 v1.24–1.26 delta + pelajar trial 32. Doc-regression monitor re-armed. |
+| 2026-09-27 | M21 discovery done (7 screens, 345 el., 55 states, 32 masked screenshots; guard aborted every non-GET and write-shaped GET, cached every M21 page after its first GET; 0 PII leaks; no live value changed). 2 new pages (`/admin/sponsors/create`, `/admin/sponsors/{id}/edit`) + role-gated sponsor portal `/sponsor`, `/sponsor/anak-angkat`, `/sponsor/anak-angkat/pool`, `/sponsor/rewards` (403 for admin). Figures: 6 sponsors (ids 6–11, all Digantung) = M17 provisional store and M02 6 sponsor users; 1 active anak angkat (sponsor #11); 3 pending applications (B40). Conflicts: S4 "Jumlah Penaja" 1 vs 6 (different definition); active sponsorship under a suspended sponsor; 4 student + 1 parent anchors needed from M02; sponsor landing `/sponsor` vs overview `/dashboard`. 11 D9 defects (sponsor "Lihat" → 500, S4 "Semua (n)" follows filter, 375 overflow on S3 / S4, 9–10 px text, raw enums in copy, S6 header "Dashboard" …). |
+| 2026-09-27 | M20 discovery done (12 screens, 691 el., 70 states, 43 masked screenshots; guard aborted every non-GET and write-shaped GET incl. the `/whatsapp` contact redirect; 0 PII leaks). 9 new routes: admin product create / edit, seller review, product page, public shop, seller portal (`/seller/dashboard`, `/seller/produk`, `/tambah`, `/{id}/edit`). No cart, order or payment (contact by WhatsApp). Figures: 10 products (all active, seller #1 = admin's shop "JomBelajar Official"), sellers 0 / 1 / 1 / 1, seller dashboard views 117 (111 pre-run) and "Klik WhatsApp" 16. Side effect: every product-page GET adds a live view; discovery added 6 (#1 +3, #7 +2, #5 +1), after which a guard cache stopped further increments; seeds use pre-run values. 8 D9 defects (admin edit save button outside its form and first image × submits PUT+DELETE, S5 broken thumbnails, seller stats follow the filter, 405 pages …). |
+| 2026-09-27 | **User decisions D16 / D17**: new module **M27 School Admin Portal** (27 modules; progress ÷ 27 → ≈ 37.9%); no test accounts — discover with admin only; G2 for replicate-live modules satisfied by SRS + screenshots + design-system + shells (only shells.md v1.2 new). OD-R1, OD-R9 closed. |
+| 2026-09-27 | **API weekly limit reached — all subagents stopped; resets 2 Oct 01:00 MYT.** State at stop: **M21 G1 ✅** (audit round 2 PASS; user approved sponsor-portal minimum + pending-sponsor actions Luluskan/Tolak only → M21 v1.2 doc record still TODO). **F-26 G4 fixes done** (MJ-1 stored coins = BR-09; MJ-2 generator rule; minors; 42 unit / 105 m14+core; perf 28 pass, 1 skipped on loaded machine) → G4 re-review TODO. **F-09** F09-7 fix in progress (typecheck clean; tests not run). **R10 discovery** (3 missing 1.0 screens, lane 3) stopped mid-way. **build-plan v1.11 §R Release 1.0 done**: 54 menu items (Murid 17, Guru 19, Admin Sekolah 18); 43 have G1 SRS, **11 not discovered — 10 of 17 Admin Sekolah screens (`/admin-sekolah/*` portal undocumented)**; 52 build tasks, waves R0–R11; F-18 admin shell now in 1.0 (+ D-R1 shells.md v1.2); open decisions OD-R1…R10 (OD-R1: new module M27 School Admin Portal + school-admin test account → user). Pending on reset: M21 v1.2 doc, F-26 re-review, F-09, F-23 v1.24–1.26 delta + G4, R10/M27 discovery, M22 discovery (paused), 1.0 build waves. |
+| 2026-09-27 | **User D15: Release 1.0 priority** — the 1.0 columns of `roles-matrix/Matriks-Akses-Peranan .xlsx` (Murid 13 + 4 basics, Guru 15 + 4 basics, Admin Sekolah 17 + Log Keluar), **all 3 roles, full gates**; 3 undiscovered 1.0 screens (Heatmap Topik Lemah, DSKP Heatmap, Laporan Bulanan) discovered now. Work resumed: solution-architect → build-plan v1.11 §R Release 1.0 (screen map, missing foundation, waves, design-spec decision); R10 discovery of the 3 screens (lane 3); F-09, F-26 and M21 audit round 2 resumed. M22 discovery stays paused (not 1.0). |
+| 2026-09-27 | **User: "stop jap" — all agents paused.** Stopped mid-task (resume via SendMessage): F-09 (F09-7 bitmap fix, typecheck clean, about to run tests/probes), F-26 (G4 fixes in progress: scanSessions full rows next), M22 discovery (lane 1; guest group G; M22 routes redirect guests to /login), M21 audit round 2 (doc-only). Doc version-regression monitor keeps running (passive). |
+| 2026-09-27 | **M21 v1.1** (all 12 audit items fixed; search rows name + e-mail · school source-derived; DV-07 evidence; required/maxlength/icon; footer order; citations; INFERRED "(CODE)"; strict scripts; 75 AC, 68 E2E / 29 provisional). DL ran cov / strict / trace-strict / coverage / trace: all 0 errors. **M21 audit round 2 (doc-only, incl. privacy of example names) launched.** |
+| 2026-09-27 | **M05 SRS v1.17 re-applied** (M05 had also been reset to v1.16 during editing — same overwrite pattern as M02); BR-09 stored coins = BR-09 (decision a), BR-31 step 6 reworded, §6.14.3 anchor-answer ids, teacher role for non-P users; M14 v1.8 note (BR-03 / XR-M14-01 restored). DL ran M05 check 0 errors, feas OK, M14 trace 0. **Protection:** full backup of docs/requirements + docs/architecture at 12:08 in scratchpad/backup/; a version-regression monitor watches every M*-*.md URS/SRS every 2 s. |
+| 2026-09-27 | **overview v1.8, build-plan v1.10**: stored vs credited coins (decision (a)) in §6.8 + F-26 Accept; declared ≤ 100 ms whole-log `match` exception for `practice.distinctUsers` only (§6.6 rule 4); M05-T1 must not re-contribute F-26 anchors; pelajar trial "32 used" → M01/F-23; anchor-answer id ranges in common rules. M05 BR-31 step (6) wording → doc analyst. |
+| 2026-09-27 | **Architecture docs**: overview v1.7, build-plan v1.9, ADR-0011 Am.3, ADR-0013 Am.3 (e2e clock contract; **F-34 boot budget ≤ 2,000 ms warm — approved by DL**; M05→M14 read contract; perf test policy; D14 as C13; doc-editing rule). DL fixed X-13 clock comments (contract.ts, hooks.ts, clock.ts; trivial; lint/prettier/typecheck/tests clean). **M14 SRS v1.8, M05 SRS v1.17** (as-built: modes, DATA-M14-23 sessionCredits, ledger owner table + designed balances, §7.2 read contract, anchor-answer ids 500,001+); DL ran M14 trace 0, M05 check 0 errors, feas PASS. **F-26 G4: Request changes** (MJ-1 stored coinsEarned: **DL decision (a) replicate live — store BR-09 value (= betul), M14 credit only in #6 response**; reverts the BR-09 doc edit; MJ-2 L549 generator rule (≥3 sessions not all correct) → implement now; 10 Minors). Routed to F-26 dev, M05/M14 doc analyst, architect. |
+| 2026-09-27 | **M21 audit: FAIL** (1 Major AUD-01: S4 student-search rows = name + e-mail · school (observed in markup) → API #9 / XR-M21-01 incomplete; 6 Minor: DV-07 evidence, missing required/maxlength/icon, S7 footer order, stale citations, INFERRED "(SUSPENDED)" rule, weak scripts; Nits incl. real `moe-dl.edu.my` domain in a fictitious e-mail). Coverage 934/934, figures confirmed live, "Jumlah Penaja" definition sound. → M21 v1.1. Architecture doc batch + M22 discovery (lane 1) + M14/M05 SRS doc batch running. |
+| 2026-09-27 | **M20 v1.2 — G1 ✅** (user decisions applied: seller registration minimum; "Kedai Saya" menu link for sellers (FN-M20-1.1.6, new scope, DV-M20-06 rewritten); 45 photos copied read-only at build into `public/images/marketplace/products/`; duplicate AC id fixed; DL ran coverage 0 / trace 0). **F-26b G4: Approve** (round 2; M05 contract test now runs and passes against real M05; 105 unit; perf 25 pass / 4 skipped; build OK). Residuals → M14 SRS doc batch (MINOR-7 designed balances must be recorded in §6.11.1/§6.11.4; `sessionCredits` DATA entry; BR-03 modes; etc.) + restore `#1 chips` perf cap after F09-7. **design-system v1.9** (3 M21 icons) + DL code map rows → icon + shell tests 328/328. |
+| 2026-09-27 | **F-26 built** (M05 practice store: sessions + D11 answer log 478,499 / 396,391, every M11 cell and M17 pin, Q-SESS-MEAN-ACC 79.8%; transactional completeSession → M14 once, rollback; trial +1 / 402 TRIAL_EXHAUSTED; M14 contract reads; no inactive user answers; handlers #4–#6/#23; 35 unit, 29 perf 0/26 skipped; lint/typecheck/build clean; warm boot 1.43 s, M05 +0.7 s). Account 2 summary 370/916/2 with real reads. **F-26 G4 review launched.** Icon guard red on 3 new M21 icons → design-system v1.9. Carry-overs: M05 SRS gaps (L400 anchor-answer id range 500,001+; L315 BR-09 vs stored M14 coins; L487 pelajar trial 32 needs F-23 anchor; L536/551 non-P owners; L544 M17 8082/8080 pins vs M11 segment (known AUD-04); L546 8880 modes; L548–550 need F-30; L545/587 StructuredAttempt; L574 F-26c; L526 sessionless cells). |
+| 2026-09-27 | **M20 audit round 2: PASS** (0/0/0; 1 Nit, 1 Info). **User G1 M20 decisions:** (1) seller registration + "Sahkan Penjual" PROPOSED minimum — approved; (2) seller portal **menu link added** (user-approved new scope, live has none); (3) **45 live product photos may be copied once, read-only** into `public/images/marketplace/` at build. → M20 v1.2 "Approved (G1)". **F-09 round 4: Request changes** (F09-7 Major: row bitmap O(N) on narrow cheap-field queries → M14 & M01 perf gates red; rest approved, bitmap correct over 2,160 comparisons). **F-26b fixes done** (13/13; v1.7 wallets; loud M05 contract + contract test; idempotent sessions) → G4 re-review. **M21 URS/SRS v1.0** (79 FN, 73 AC, 66 FR, 67 E2E / 26 provisional, 15 DV, 10 XR; DL ran coverage 934 / 0 errors, trace 0 errors) → **M21 audit (lane 2) launched.** M02 still v1.26. |
+| 2026-09-27 | **M20 v1.1** (all audit findings fixed: observed default tiles; WhatsApp `target=_blank` with D14 hand-off in new tab; no `rel`; S9/S5 new-tab links; citations M01 1.12 / M02 1.23 / M14 1.7 / M15 1.4 / M19 1.3 / DS 1.8; stronger scripts; 31/85 provisional). DL ran writer + auditor scripts: coverage 0 errors, trace 0 errors, auditor cov/trace clean (3 known nested-quote parser diffs). **M20 audit round 2 (doc-only) launched.** M02 still v1.26 (monitoring). |
+| 2026-09-27 | **M02 restored to v1.26** (3rd overwrite to v1.23 at 10:54:32; transcripts show no agent Write/Edit/script on M02 at those times → likely an editor buffer auto-save; DL restored from a hashed backup `scratchpad/backup/M02-srs-v1.26.md`, 207,729 bytes; `xl-b01/check.cjs` 29 PASS / 0 FAIL after fixing a variable clash in the script). M02 v1.24–1.26: 5316 = teacher:101; 4202 = teacher:137 at 8087 (1,559 split, login 04/06); 4627 = class-1156 pupil at 8082 T5 (MODELLED school), `lastActiveAt` 169 = 115 / 54; M10 v1.15 class 1156 member 4627. DL ran: M02 check [], M17 trace 0 / anchor 45 PASS, M18 trace 0 / recon 7/7, M10 t4check OK / guru-check OK. XR-M02-06 → M05 (4627 sessions inside 8082 cells). **F-09 round-4 fixes done** (deterministic per-call cost; row-bitmap cheap-field `where` in dataset.ts; `cap < 2 × min`; `proveRegression` 3/3 ×5 runs; perf file 54/54, 0 skipped) → G4 re-review. |
+| 2026-09-27 | **F-26b G4: Request changes** (MAJOR-1: teacher wallets follow M14 v1.5, not v1.7 — 5316 must be 42,600, generated 9/8; MAJOR-2: M05 seam silent on shape mismatch → DL fixed contract: `history(userId,{date,modes})` unpaged completed rows, `answers(userId,{date})`, `mastery(userId)` `{subjectId,correct,answered}` + contract test; 7 Minors incl. idempotent onSessionCompleted, input validation, tier-share assert). Lint/typecheck/87 unit/27 perf/build all green. Routed to F-26b; contract sent to F-26. Carry-overs: M05 SRS §7.1 + build-plan F-26 get the read contract; XR M02 `coinsEnabled` read; XR M01 `users.isAnchor`; M14 SRS gaps (BR-03 modes remedial/question_set, PKSK mirror label, coinLedger legacy/achievement cells, totalDays 2/4, §6.11.1 exclusions, BR-26 copy, §7.1 streak.get). |
+| 2026-09-27 | **M02 overwrite incident**: M02 SRS was reset to v1.23 twice (last at 10:47:26), erasing v1.24/v1.25 (5316 = teacher:101; 4202 = teacher:137 moved to 8087 with 1,559 split and login 04/06). No agent script touched it at that time; cause not yet identified (possible stale full-file Write, or an editor buffer). M04 v1.16, M14 v1.7, M17 v1.11 (DV-M17-32 listed rows 9,396 vs tile 11,414) intact. Analyst re-applying v1.24/v1.25 + v1.26 (class-1156 pupil = live id 4627 per M18 v1.8; M10 membership); all agents told Edit-only, re-read before edit, never write other modules' docs. **M20 audit: FAIL** (2 Major: create forms preselect tiles on live; WhatsApp link `target=_blank` on live → D14 hand-off in new tab) → M20 v1.1. F-23: payer 5600 expiry fixed, `computeExpiry` split rule, M01 v3; 42/42. |
+| 2026-09-27 | **F-23 rebuilt to M02 v1.23** (all 12 `used` hold; fixture schools in `schools.fixtures` outside counts, Johor 1,189; pins outside fixtures 3,152/1,371, 502/48, 1,708/269/289; v1.22 payers + placements; v1.23 moves; `lastActiveAt` cheap field seeded for 168 M18 pupils; `setSubscription`; provisional `computeExpiry` host; build check asserts every v1.23 figure; m01/m02 perf on harness 41/41; lint 0, typecheck clean, build OK). Fixes sent: payer 5600 expiry back to 2026-10-13 (M19 v1.3 split rule). Class-1156 pupil id → M18 owner. Account 11 → 9167 in canonical table. F-23 G4 after M02 v1.24/v1.25 delta (5316, 8087 teacher). Designed: 18 inactive login-only pupils at 8090 — **M05 must not give them answers.** |
+| 2026-09-27 | **F-26b built** (M14 store: wallets/ledger D11 datasets, tiers, challenges, achievements, learner badges, streak, referrals, teacher wallets, draws, settings; full §7.1 contract; designed replay computed by the engine: pelajar 370/916 streak 2, pelajarmaju 267/432, admin 256/8; 108 anchors Σ 2,564,844; `/api/me/gamification-summary` 370/916/2; 24 perf cases, last-ledger-page 58 → 4–8 ms; lint/typecheck/build clean). Unit fail was DL-caused: v1.8 global icon rows shadowed 3 `SHELL_ICON_FALLBACKS` (shopping-bag, user-tie, file-invoice) → removed (trivial), shells 48/48. **F-26b G4 review + F-26 (M05 practice store) started.** M14 SRS gaps (L435, L269, L22/L381, L433, L292, L713) and request M01 `users.isAnchor` → carry-over to M14/M01 doc batch. |
+| 2026-09-27 | **design-system v1.8 final** (all 8 M20 icons global; totals 252 + 0 + 4). DL added the 8 rows to `fa-to-lucide.ts` (+ LUCIDE_STATIC imports) and test count 252 (trivial): icon tests 277/277 (one earlier run hit a load-induced worker error; rerun clean). Carry-over: M20 SRS §10.1 still says "no §6 row — requested" → point to v1.8 at M20 audit fix. |
+| 2026-09-27 | **XL-B B-01/B-02 applied**: M02 v1.24 (teacher 5316 = observed `<teacher:101>`; B-02 note: `lastActiveAt` read by M18 only), M04 v1.15 (5,547 rows → 5316, 2,018 stay on 5801; per-teacher `teacherContributions({teacherId})`), M14 v1.6 (5316 wallet 42,600, questionsCount 0), M17 v1.10 (tile = M04 count; rows per teacher). DL ran checks: all B-01 arithmetic PASS (11,414; 42,617; 63,459), M17 trace 0 / anchor PASS, M14 trace 0, M02 check []. JALAN REKO = 8087 (audit premise corrected). **Open: `<teacher:137>` row (8087, 497/1,062, login 04/06) not reproduced — evidence = M14 wallet 4202 (1,559 q / 0 syiling)** → same analyst: M02 v1.25 / M04 v1.16 / M17 v1.11 + DV-M17 for the 9,396 vs 11,414 listed-row gap. |
+| 2026-09-27 | M21 discovery reviewed by DL (7 screens, 345 el., 55 states; 6 sponsors all Digantung, 1 anak angkat, 3 pending B40 applications; sponsor portal `/sponsor/*` 403 for admin; 11 D9 defects incl. "Lihat" 500 and 375 px h-scroll; 0 PII leaks; no live value changed). **M21 writer started.** design-system v1.8 (8 M20 icons) → DL asked for all-global rows (precedent v1.5/v1.7); approximations `UserRound`, `HandCoins`, `FileText` for invoice approved by DL. M22 discovery queued (concurrency). |
+| 2026-09-27 | **M20 URS/SRS v1.0 Draft** (6 epics, 95 FN, 25 US, 92 AC, 78 FR, 22 BR, 85 E2E (29 provisional), 16 named queries, 24 endpoints; 13 DV incl. DV-01 nested-form fix, DV-13 D14 WhatsApp; seeds use pre-discovery views 111; 7 XR). DL ran scripts: coverage 1,286 (670 mapped / 616 excluded, 0 errors), trace 0 errors. **M20 audit launched (lane 2; S7/S8 from inventory only — view counter).** 8 missing icon rows → design-system v1.8. G1 items to raise: seller registration + "Sahkan Penjual" PROPOSED minimum, no seller-portal menu entry (replicate), OQ-11 copy 45 product photos read-only from live (needs owner consent before build). |
+| 2026-09-27 | **M19 v1.3 — G1 ✅** (D14 applied: gateway screen, endpoints #10–#12, callback hook and "cancelled" outcome removed; S6 "Langgan" → #9 creates pending payment and resolves it by simulated outcome — success default, failed via `mock.billing.setOutcome('failed')`; S7 notices paid/failed kept; callback rules kept as backend notes). matrix 983/983, recon 25/0, trace 0. Requirements 19/26. |
+| 2026-09-27 | **User G1 M19: approved with amendment D14** — "payment gateway atau external platforms punya screen tak payah buat. tu nanti kita integrate saja. buat simulation success/failed je." → M19 v1.3 removes the simulated ToyyibPay screen, resolves payment as simulated success/failed; D14 also sent to M20 (WhatsApp). **XL Addendum B: FAIL** (B-01 Major: M17 "Jumlah Soalan" 11,414 defined by createdBy join vs M04 placeholder; M17 snapshot does show `<teacher:101>` 5,547 MCQ / 42,600 syiling and `<teacher:137>` JALAN REKO → M02 v1.24 / M04 v1.15 / M14 / M17 fix via one analyst; B-02 Minor: document `lastActiveAt` read by M18 only). All owner scripts pass; P/T/1,432/1,708/used/M11/T4 reconcile; no id collisions; nav 0 unresolved. |
+| 2026-09-27 | **M19 v1.2** (split personal expiry DV-M19-18: Bulanan +1 month, Setahun next 10 Jan; 5600 = 2026-10-13 12:35 = M02 anchor; reminders restored; DV-17 count 46; cites M02 v1.23). matrix 983/983, recon 25/0, trace 0. **Awaiting user G1 approval** (PROPOSED list SRS §8.2). |
+| 2026-09-27 | **M19 audit round 2: PASS** (0 Critical/Major; all 15 round-1 findings closed; 59/59 bill codes valid; cov 983/983; trace clean). R2-01/R2-02 personal expiry → **DL decision (D9)**: Personal Bulanan = +1 month (S6 "/bulan" copy), Personal Setahun = next 10 Jan (M02 BR-12) → payer 5600 keeps M02 2026-10-13; R2-03 count 46 → M19 v1.2, then G1 to user. |
+| 2026-09-27 | **XR-M02-01/02/03 applied**: M16 v1.6 (no-class players at 9167/9806/2418; battle rows keep battle-time school), M15 v1.4 (3151/3152 at 2418), M01 v1.12 (account 11 at 9167; `users.setSubscription` listed). No observed value/count change. DL ran traces: M16 0 errors, M15 0 errors, M01 0 unmapped. **XL Addendum B recheck launched** (M02 v1.21–1.23, M17 v1.7–1.9, M18 v1.7, M04 v1.14, M16/M15/M01, M19 v1.1). |
+| 2026-09-27 | **M17 v1.9**: six S11 rows — 5441/3390/853/3931/8030 use display constant **DC-M17-09** (no link on S11, no activity so not in any list, S4/S9 URL-only, S8 % rows fit, CSVs have no per-school total); **2418 → D9 DV-M17-31** (computed 4; its S4 page is one click away via S3 "Lihat penuh →"). Displayed Σ 4,372 vs live 4,373. OQ-M17-11 closed; anchor 45 PASS (only known AUD-04 infeasibility); trace 0. Next: XL batch-3 recheck once M16/M15/M01 XR updates land. |
+| 2026-09-27 | **M19 v1.1** (all 15 audit findings fixed: observed bill-code format with seeded ids + deterministic random parts; DV-M19-17 payer ids; DV-01 covers `/abc` 500; text-transform FN/FR/AC/E2E; DV-06 evidence; no `rel`; personal expiry = M02 next 10 Jan; RM200 INFERRED; cites M02 v1.22; 29/80 provisional). matrix 983/983, recon 25/0, trace 0. **M19 audit round 2 (doc-only) launched.** F-09 round-3 fixes sent. |
+| 2026-09-27 | **F-09 G4 round 3: Request changes** (Major F09-5: cheap-field where case cost varies per call (threshold cycling) → 2× regression passes 4/6, injection test flaky 2/4 even at quiet floors; fix = deterministic per-call cost, `cap < 2 × min` rule, multiplicative `slowdown(fn,2)` injection repeated. Minor F09-6: injection skips not counted in skip share). Search/match groups verified: real 2× fails 6/6. Queued to F-09 (concurrency). **F-23 follow-up sent**: apply M02 v1.20–v1.23 (incl. `lastActiveAt`) + convert m01/m02 perf tests to the harness. |
+| 2026-09-27 | **M02 v1.23** (265 outside-row students classified: 23 MODELLED moved — canonical 11 + M16 20 + M15 2 → 9167 / 9806 / 2418, no visible figure moves; 230 locked; S11 51/57 rows hold, 70 short at 6 rows; XR-M18-21 `lastActiveAt` applied — 115 dated / 54 null, recon V1–V7 pass; trace 0). **DL decision:** six S11 rows → D11 display constant only if no reachable screen shows a contradicting per-school total, else D9 computed → M17 v1.9. XR-M02-01/02/03 → M16/M15/M01 doc updates (1 analyst). XR-M02-04 (M09 3105–3109) optional — left as is. |
+| 2026-09-27 | **design-system v1.7** (3 global icon rows for M19: `fa-bell-slash` → BellOff, `fa-file-invoice` → FileText (approx, §6.10), `fa-credit-card` → CreditCard; totals 244 + 4; full SRS scan found no other gaps). DL added the 3 rows to `fa-to-lucide.ts` + test count 244 (trivial): icon tests 269/269, lint/prettier clean. Resumed M20 writer + M21 discovery (lane 1). |
+| 2026-09-27 | **M18 v1.7** (two-field model: `User.lastActiveAt` stored, independent of `lastLoginAt`; DV-M18-43 and DV-M18-45 **withdrawn**, every observed value restored — S1 86/49, 8880 rows, BATANG PADANG 29/4 · 97.6, HAMID KHAN first; BR-M18-13 A-rule corrected from live evidence). DL ran scripts: trace 0 errors; recon V1–V7 0 FAIL. XR-M18-21 (seed 169 pupils: 115 dated / 54 null; default = `lastLoginAt`) → M02 v1.23. |
+| 2026-09-27 | **F-22 G4: Approve** (round 2; Playwright 51/51, check:trace OK with 267 provisional rows parsed, scripts unit 21/21, e2e tsconfig clean). Full typecheck red only on in-flight F-26b `m14/mock/seeds/replay.ts:42`. Carry-overs: M08/M01 swap probe routes + drop @provisional; architect doc batch (clock contract, boot budget). |
+| 2026-09-27 | **F-09 fixes done** (no fixed slack; ≥ 5 ms batched samples; native floor; suggestCaps noisy iff cap ≥ 2× median; 3 regression-injection tests; assertSkipShare > 25 % fails; `npm run test` = unit only, `test:perf` separate; ESLint forbids testing helpers outside tests). Unit 1,280/1,281 (1 = icon guard: M19 uses fa-credit-card / fa-bell-slash / fa-file-invoice without design-system rows → ui-ux-designer v1.7 then code map). `test:perf` red only on skip-share (machine loaded, 34–43 %) — **authoritative perf run needs a quiet window (no agents), owned by DL.** F-09 code re-review launched. |
+| 2026-09-27 | **F-22 fixes done** (trace lib + 21 unit tests; Provisional column 215 rows + M17 suffix 17 ids parsed; anchored status; started = traced ids; guards start from /tiada-halaman; merged init scripts; 5 s expect + `gotoApp`/`waitForApp` 15 s boot budget; 3-sample no-h-scroll; probe tests @provisional). Playwright 51/51, check:trace OK, typecheck clean. DL added `scripts/**/__tests__/**/*.test.mjs` to vitest unit include (21/21). G4 re-review launched. |
+| 2026-09-27 | **M17 v1.8**: 4 definitions tested over 5 schools — none gives 8080 175 with 53,431 and the others' 392/341/307/134 → minimal D9 **DV-M17-30**: 8080 "Pelajar Aktif"/"plj" shows computed 174 (1 value; 53,431 and 185 exact; Top Sekolah order unchanged; display constant rejected as it would sit beside contradicting figures). E2E-56 no longer provisional. S11 93-short state recorded; OQ-M17-11 narrowed, waits M02 v1.23. Trace 0. |
+| 2026-09-27 | **M19 audit: FAIL** (1 Major AUD-01: invented bill-code format — live is `JB-{REGULAR|PERSONAL}-{MON|ONE}-{userId}-{8 alnum}`; 9 Minor incl. payer ids, `/admin/payments/abc` 500, CSS uppercase, DV-06 evidence, added `rel`, personal expiry vs M02 10 Jan, RM200 not observed). Coverage 983/983, trace clean, all figures match live. DL: keep M02 v1.22 payer ids (real ids collide with M09/M16/M02 anchors) as a deviation; bill code embeds seeded id. Routed → M19 v1.1, then doc-only audit round 2. |
+| 2026-09-27 | **M02 v1.22** (XR-M19-01 countByStatus/activeByPackage; XR-M19-02 30 payers at 8102 "Belum login" slots, no count moves, no collisions (5450/5451/5475/5600 reserved for M19); XR-M19-04 BR-12 setSubscription + computeExpiry; S11 49/57 rows hold, 93 short at 8 schools; 8080 unreachable by placement). **DL decisions:** S11 option (a) rejected (new visible contradiction); only MODELLED (unobserved) placements may move → M02 v1.23 classifies the 265 outside-row students and moves modelled ones with XRs to owners. 8080 → M17 v1.8 (definition across all schools, else minimal D9 = 174). Carry-over: M01 lists `users.setSubscription`. |
+| 2026-09-27 | **API session limit** (~05:00–07:10) stopped 8 agents. Resumed at 10:06 with ≤ 6 concurrent: F-26b, F-09, F-22, M02 v1.22, M18 v1.7, M19 audit (lane 2). Queued: M20 writer, M21 discovery (lane 1). |
+| 2026-09-27 | **M18 v1.6** (DV-M18-45: BATANG PADANG 29/4 → 25/8 by D9) — analysis showed a two-field model (stored activity date for risk "Terakhir aktif" vs `lastLoginAt` for M11/M17) reproduces **all** observed values with 0 visible changes for 7780 and 8880. **Delivery Lead decision: reverse the earlier rejection of DV-M18-43 option (c); replicate live.** → M18 v1.7 withdraws DV-43 and DV-45, restores observed values, and sends M02 an XR to add + seed `users.lastActiveAt` (D12 owner M02). F-25 Fast follow-up done (`where` throws; CONTRACT tests; 44/44; eslint clean) → F-25 complete. |
+| 2026-09-27 | **F-25 G4: Approve** (round 2; 44/44 unit, perf 41 pass / 10 skipped = 20% < 25%, all ratio gates enforced). Minor follow-up (Fast): `where` on count-only Q-TEACHER-CONTRIB must throw + CONTRACT tests; M04 SRS §7.1 count-only note added by DL (trivial). |
+| 2026-09-27 | **F-22 G4: Request changes** (3 Major: trace script ignores SRS Provisional column (215 rows) → false OK; M17 `@provisional` ID cells dropped (16 rows); guard tests can't detect blocked navigation. Minors: started rule vs dev smoke specs, init-script order, global 10 s expect timeout → boot-aware `gotoApp`, no-h-scroll helper, doc drift). Routed to F-22. **Architect doc batch (carry-over):** clock contract (e2e never sends `now`; context-wide bridge; `clockMode: 'none'`) in overview §6.13/§12.2 + ADR-0011 Am.2 + `contract.ts:26`; set a mock boot budget (measured 1.3–1.5 s alone, ~6 s ×12 workers). F-25 fixes done → G4 re-review. |
+| 2026-09-27 | **F-20 G4: Approve** (round 3; 96/96 ×3; last comment Nit rewrapped by DL). F-20 → G4 ✅; G5 via M09-T2/T3 E2E. |
+| 2026-09-27 | **M17 v1.7** (per-school Murid = all pupils per DV-M02-15; extras restated; 8090/8078 admin logins backed by M02; C-20 fixtures outside counts; trace 0). 2 observed figures fail (OQ-M17-11): 8080 engaged 175 vs computed 174 (E2E-56 provisional), S11 non-`used` rows ~105 pupils short (Σ 4,373). Routed to M02 v1.22 as placement fixes (no D9 yet). |
+| 2026-09-27 | **M20 discovery done** (12 screens S1–S12, 691 el., 70 states; 9 new routes incl. seller portal S9–S12 with no menu link; 10 products, seller #1 = platform shop on admin; no cart/checkout — WhatsApp only; 8 D9 defects incl. broken admin edit form, 405 on show routes). **Live side effect:** product pages count a view on every GET; discovery visits added 6 views on live (#1 +3, #7 +2, #5 +1; dashboard 111 → 117) before a guard cache stopped it — seeds use pre-run values; future discovery briefs load detail pages once with guard caching. M20 writer + M21 discovery (lane 1) started. F-20 round 2: 1 flaky test (vi.waitFor 1 s) fixed by DL + overview §5.2 `guestTitle` row + build-plan M09-T2/T3 note + comment rewrap (trivial); confirmation requested. |
+| 2026-09-27 | **M02 v1.21** (DV-M02-15: per-school pupil counts — BR-24 `used`, BR-16 quota, invoice, S14 list — count all pupils active or not; platform P stays active-only 3,152; reproduces all 12 `used`, 3,152/1,371, 1,432, 1,708, M11 4,158/522, 4,533, T4 149, 57). Extras trimmed to 8080 1 / 8090 1 / 8106 2 / 8880 6 / 8228 8; fixture schools 900001–900099 outside every register count (Johor 1,189); 2 school admins moved to 8090/8078; BATANG PADANG logins 25/8 (M18 said 29/4 — **M18 owner checking for a definition that keeps the observed value**). Routed: M17 v1.7 (per-school Murid, extras, admin logins), M18 v1.6 (BATANG PADANG), M02 v1.22 (M19 XR-01/02/04). Then F-23 re-applies v1.21/v1.22 and XL batch-3 recheck. |
+| 2026-09-27 | **M19 URS/SRS v1.0 Draft** (7 epics, 81 FN, 61 FR, 20 BR, 79 E2E (26 provisional); coverage 395/395, recon 22/0, trace 0; 59 payments / 21 dunning / 30 fictitious payers; 16 DV, 10 XR, 10 SEC, 12 OQ none blocking G1). **M19 audit launched (lane 2).** Queued for M02 after v1.21: XR-M19-01 (countByStatus/activeByPackage), XR-02 (place 30 payer anchors, no count change), XR-04 (setSubscription/computeExpiry). PROPOSED choices to report at G1: S7 invoices = all user payments (PDF only paid); lapsed package keeps value. |
+| 2026-09-27 | **F-22 E2E harness built** (fixtures: mockInit, Playwright clock, loginAs w/o requests, typed `mock`, newTab; support helpers; global specs 404 / user shell / guards+403 / cross-tab / harness; `check-e2e-trace.mjs` T1–T4, P1–P3). Playwright 51/51 ×3 projects, CI 51/51, repeat-each 3 153/153; check:trace OK; typecheck + build pass. G4 review launched. Follow-ups: F-21 drop `app-placeholder`; M08 swap probe route → `/dashboard`; M01 swap 404 check → login; F-18 admin smoke; F-28 CI runs check:trace. **Perf concern:** mock boot 1.3–1.5 s (≈6 s with 12 workers) before first paint → owners F-06/F-09/F-25 (466k dataset compile); `expect.timeout` 10 s meanwhile. |
+| 2026-09-27 | **F-20 fixes done** (no `<main>`, ids fixed, `/video` exact, `meta.guestTitle` set synchronously in guards — F-13 `meta.ts`/`guards.test.ts` edits ratified by Delivery Lead; ordered emoji tests; unit 96/96, lint/typecheck clean). G4 re-review launched. Carry-overs: M09-T2/T3 set `meta.guestTitle` from `PUBLIC_SECTIONS`; M09 deviation list gets the F-20 INFERRED responsive choices (hide "|"+label < sm, CTA emoji corners/size < sm, floatBounce, footer stack < lg). |
+| 2026-09-27 | **M04 v1.14** (doc-only, F-25 review): BR-38(c)/SQ-7 mark 4501–4504 done; 7,565 rows on placeholder 5801 + `contribSchoolId` 0 sentinel documented; `absentIds` wording; §7.1 lists `teacherContributions`; new SQ-8 (non-blocking XR to M02). §4.1 Q-TEACHER-CONTRIB definition reworded (trivial). No observed value changed; 128 FR / 69 E2E rows unchanged. |
+| 2026-09-27 | **F-23 built** to M02 v1.19 (users → M01 repository, schools → M02 with register 1,189 Johor / 1,102 Perak, JPN/PPD routes #38/#40/#41; core hands over; lint 0, typecheck clean, test 77 files / 1,391 pass, build OK; all queries < 4 ms). **SRS contradiction found:** BR-24 `used` = active pupils, 12 observed values Σ 4,092 > 3,152 pinned active (M17 per-school P Σ 4,373 same conflict); 4 schools infeasible (8277/8090/8087/8107). Also M18 vs M11 BATANG PADANG 29/4 vs 27/6, Johor facet 1,191 vs 1,189, M17 admin logins at 8090/8078 with no admin. → **M02 v1.21** (D9 minimal fix) then F-23 re-applies v1.20/v1.21, then XL recheck + F-23 G4. XL3 Addendum A recheck missed this. **F-26b (M14 gamification store) started** (users contract stable; keyed on anchors). |
+| 2026-09-27 | **F-25 G4: Request changes** (Major M1: `count('Q-TEACHER-CONTRIB')` = 10,131 objective-only ≠ SRS 11,414 → code fixed to SRS; Minors: perf skip share 22/51 unchecked, native floor + noisy caps, cross-boot determinism test; 5801/`contribSchoolId` 0 placeholder documented but SRS stale). Routed: F-25 code fix; M04 SRS v1.14 (placeholder, sentinel, absentIds wording, open XR to M02 for unobserved teacher ids). Lint/unit 43/43/perf exit 0. |
+| 2026-09-27 | **F-20 G4: Request changes** (Major: `<main>` wrapper not on live guest page, D10; Minors: traceability ids, `/video/*` match narrowed to `/video`, first-load title flicker → `meta.guestTitle` in guards, test gaps; Nits: logo object-contain, layouts.ts comment rewrap (done)). Copy exact, no h-scroll 320–1280, lint/typecheck clean. Routed to F-20. Carry-over: M09 deviation list gets F-20 INFERRED responsive choices. |
+| 2026-09-27 | **F-25 follow-up done** (perf test on F-09 harness, 49 cases; absentIds 108527/564156, S1 page 1 = live; createdBy 4501–4504 = 3,849 of 11,414, remaining 7,565 keep 5801 (no M02 ids published, open item); version 3; M04 43/43 unit pass; build OK). G4 review launched. Note: bootstrap.test.ts timed out once under load (8.5 s) → F-13 follow-up. |
+| 2026-09-27 | **XL3 Addendum A recheck: PASS** (0/0/0). A-01, A-02 closed; P 3,152 / T 502 / inactive 1,432 / logged-in 1,708 & 269 / all teachers 289 recomputed; M11 4,158/522, M10 pool 75, M17 per-school values unchanged. **Batch-3 XL PASS restored.** |
+| 2026-09-27 | **F-20 public layout built** (top bar, CTA Artikel/Video, footer; exact copy per M09; typecheck+build pass; 13 tests; 320–1280 no h-scroll; styling INFERRED, no guest markup captured). Lint/test failures only in F-23 in-progress files. layouts.ts header comment fixed (trivial). G4 review launched. |
+| 2026-09-27 | **M02 v1.20** (A-01 pins by M17 populations outside fixture 900001–900099: P 3,152/1,371, T 502/48, other 13; logged-in 1,708/269; fixture 5315 given designed login; A-02 33 v1.19 pupils lastLoginAt null; 1,056/1,056 trace) + **M17 v1.6** (C-05/XR-06 restated, no observed value changed). XL3 Addendum A recheck launched. |
+| 2026-09-27 | **F-09 re-review: Request changes** (F09-3 Major: ratio gate masks 2× in 27/38 cases — fixed slack + JS-vs-native floor; F09-4: skips can silence suite). Correctness (dictionary search, absentIds) verified 0 mismatches. **Decision:** `npm run test`/`verify` = unit only; `npm run test:perf` separate, required on a quiet machine at G4 (perf-sensitive tasks) and QA; perf run fails if >25% budget gates skipped. |
+| 2026-09-27 | M10 v1.14 (pool 75). **XL3 Addendum A: FAIL** (1 Major A-01: M02 isActive pins counted fixture-school accounts → M17 P/T 3,142/501 ≠ 3,152/502; latent since v1.12). Batch-3 PASS suspended until fixed (restored 2026-09-27, recheck PASS) → M02 v1.20 + M17 v1.6. |
+| 2026-09-27 | M02 v1.19: 14 subscription rows = live; BR-24 "used" = active pupils (reproduces all 12 live values); latent bug fixed (all 57 schools hold a pupil for M17 Jumlah Sekolah); `t4PoolSwappedOut` 20 → 0, T4 pool 78 → 75; DV-M02-14 personal RM200. No M11 figure changed. → M10 v1.14 align + targeted XL recheck; F-23 notified. |
+| 2026-09-27 | M19 discovery done (7 screens, 395 el., 54 states, 28 masked screenshots; guard aborted every non-GET; 0 PII leaks). New routes: `/admin/payments/{id}`, `/admin/payments/{id}/edit` (+ never-submitted `bulk-delete`, `/subscribe/regular`, `/subscribe/personal`). Figures: 59 payments (8 paid, 51 pending, RM240), billing 9 / 94 / 0 / RM90, dunning 21. Conflicts: M02 subscription seed ≠ live (ids, 7 Pemantauan rows, T4 rows cancelled, extra rows at 8277 / 8880 not 9726 / 8088); "Langganan Individu Aktif 94" undefined; M02 "Personal Per Sesi RM90" label vs pricing RM200. 8 D9 defects (create → 500, wrong headers on dunning / pricing, billing Jenis always "regular", 9–10 px text). |
+| 2026-09-26 | M17 discovery done (11 screens, 1,851 elements, 77 states; 5 new routes: Command Center school / teacher / classroom / student drill-downs + executive school focus). `/admin/performance` = system → M23; `/admin/monitoring` = M11 component (re-verified). Command Center drill-downs shared with M10 `/guru/command-center/*` (M17 owns). 24 D9 defects; count conflicts vs M04/M02/M11/M12 listed in narrative §5.1. |
+| 2026-09-27 | M10 v1.14 (pool 75). **XL3 Addendum A: FAIL** (1 Major A-01: M02 isActive pins counted fixture-school accounts → M17 P/T 3,142/501 ≠ 3,152/502; latent since v1.12). Batch-3 PASS suspended until fixed (restored 2026-09-27, recheck PASS) → M02 v1.20 + M17 v1.6. |
+| 2026-09-27 | M02 v1.19: 14 subscription rows = live; BR-24 "used" = active pupils (reproduces all 12 live values); latent bug fixed (all 57 schools hold a pupil for M17 Jumlah Sekolah); `t4PoolSwappedOut` 20 → 0, T4 pool 78 → 75; DV-M02-14 personal RM200. No M11 figure changed. → M10 v1.14 align + targeted XL recheck; F-23 notified. |
+| 2026-09-27 | M19 discovery done (7 screens, 395 el.; ToyyibPay; 59 payments, 21 dunning logs; 8 defects). Conflict: M02 subscription seed ≠ live (ids/tiers/T4/quotas) → M02 v1.19. "94 individu aktif" → display constant (OQ). M19 writer started; M20 discovery started on lane 1. |
+| 2026-09-27 | F-09 shared perf-calibration helper (`src/mock/dataset/testing/perf-calibration.ts`, `perf-caps.ts`, test-only). F-25 follow-up launched (helper, absentIds, createdBy 4501–4504). F-09 re-review launched. |
+| 2026-09-27 | **F-09 fixes done:** paired + capped (≤1.5×) calibration with explicit skip and always-on ratio gates (2× guarantee for search/match/where); case-sensitive index prebuilt; index build 1.7 s → 72–206 ms (interning); search early exit ("apakah" 95 → ~7 ms); `absentIds` holes. Full suite 1,319 green. Shared perf-calibration helper being extracted → then F-25 follow-up (helper, `absentIds` 108527/564156, `createdBy` 4501–4504) and F-09 re-review. |
+| 2026-09-27 | Launched F-22 E2E harness + global smoke (qa-engineer) and F-20 public layout. |
+| 2026-09-27 | **F-19 re-review: Approve** (teacher + school_admin menus verified against screenshots; responsive 320–1280). Progress ≈33.3%. |
+| 2026-09-27 | F-19 F19-1 fixed (teacher + school_admin menus transcribed from live `roles-matrix` screenshots; 42 tests) → re-review. Icon rows pending in design-system: door-open, table-cells + 19 earlier fallbacks. Admin-sekolah hrefs mostly INFERRED (route discovery for /admin-sekolah/* pending in its owner module). |
+| 2026-09-27 | M04 v1.13 (as-built names, placement decisions, holes, SQ-7). M10 v1.13 (187 generic SPs). M02 v1.18 (teacher anchors 4501–4504 for contribution schools). Carry-over: F-25 follow-up to set `createdBy` from 4501–4504 and adopt F-09 `holes`; check Q-TEACHER-CONTRIB 11,414 split vs these anchors at next XL scan. |
+| 2026-09-27 | **F-31 registry extension done** (M11–M18 stubs, `defineMockModule` per build-plan §2.9; full suite green: 70 files / 1,304 tests; build OK). Next on path: F-26b (M14 wallet) after F-23. |
+| 2026-09-27 | **G4:** F-11 re-review Approve (SHA-256 verified vs FIPS/Node; no plaintext in diff/IDB; password change survives reload). F-19 Request changes (F19-1: teacher + school_admin menus must follow live `roles-matrix/guru` and `roles-matrix/admin sekolah` screenshots — full menu content, ticks ignored). Unit test timeouts raised (30 s test / 60 s hook) for real-registry boots (Delivery Lead config fix). Progress ≈33.0%. |
+| 2026-09-27 | **F-25 questions store built** to M04 v1.11 (all named queries equal SRS; Q-SP-AVAILABLE; anchors; user-1 block; contributions from M05–M18 test plugins; jutawan; 42 unit + 44 perf isolated). Boot +~2 s (searchFields index) → F-09 defects routed (index build interning, search early exit, id-range `holes` for 108527/564156). Pending doc items for M04 owner: SP placement into pool rows, databank D3 +39 pool rows, source null 27,654, `contribSchoolId` facet (createdBy 5801 until M02 teacher ids), M10 missing generic SPs 8287/8288/8289/8547. Question-text names ("Fairuz", "Irfan") are exam-question characters, not personal data — accepted. F-24 test fix routed. |
+| 2026-09-27 | **XL batch 3 (M12–M18): PASS at round 6** (Majors 24 → 6 → 1 → 1 → 1 → 0). M12–M18 and requested owner changes cleared for build. Final session lists: M10 v1.12 / M05 v1.16 (display strings verified). Launched: F-23 users/schools store, F-31 registry extension, G4 review (F-11 re-review, F-19). |
+| 2026-09-27 | R4-01 fixes: M10 v1.11 (T4 session lists H1–H4 meet 64% / 93.3% / 51.3% / 81.7% / 63.9%), M08 v1.10 (Murid Terbaik = session mean; tie by user id; T5 100% rows constraint) → M05 v1.15 applying. Then XL round 5. |
+| 2026-09-27 | **XL batch 3 round 4: FAIL** (1 Major R4-01: T4 Murid Terbaik "4 sesi · 60 soalan 64%" is a session mean; equal sessions give 81.7%). All R3 findings closed. Routed: M08 v1.10 (Murid Terbaik = session mean), M10 v1.11 (unequal session lists meeting all class/level/row figures) → then M05 applies. |
+| 2026-09-27 | **F-19 user shell built** (31 tests; no horizontal scroll 320–1280; menu per role replicated from live murid/admin sidebars; `live-globals.css`; logo fetched once read-only from live → `public/images/logo-custom.png`). Scope rule reaffirmed by user: **replicate live fully, nothing omitted** — `docs/requirements/role-access-matrix.md` is NOT a scope source (not referenced by plan). F-11 hash/900004 verified (46 tests). |
+| 2026-09-27 | R3 fixes: M10 v1.9/v1.10 (session neutrality; 5/9 & 6/10 class swap — rows not observed per class), M02 v1.17 (pool 78 + `t4PoolSwappedOut` 20), M05 v1.13/v1.14 (feas 16/16 PASS), M08 v1.9, M11 v1.10, M09 v1.5, M14 v1.5, M16 v1.5. **XL batch 3 round 4 launched.** |
+| 2026-09-27 | Architect: overview v1.6, build-plan v1.8 (R2-11): M14 store joins student slice as **F-26b** (order F-31 registry ext → F-26b → F-26 → M05-T1 → M05-T3); new tasks F-24b, F-25b, F-26c, F-31, F-33 (M21/M26 provisional stores hosted in M17); batch-3 waves B3.0–B3.9; gates: M11 tasks before M17-T1/M18-T1. M13 doc status lines corrected to Approved (G1) v1.1 (audit r2 PASS; Delivery Lead trivial fix). M08 v1.9, M11 v1.10 done; M14 v1.5, M16 v1.5, M09 v1.5 minors routed; M10 v1.9 (R3-01) running. |
+| 2026-09-27 | **XL batch 3 round 3: FAIL** (0 Critical, 1 Major, 4 Minor; 11/12 R2 closed; t4check/guru-check/feas pass). R3-01 (Major, M10): swapped pupils' sessions must keep M08 T4 11·63.9% / T5 29,971·79.7% → M10 v1.9. Minors: R3-02 stale 900002 (M08, M14, M16), R3-03 M09 E2E-57, R3-04 `pksk` in M08/M11 rules, R2-11 architecture. Routed M10, M08 v1.9, M11 v1.10; queued M14, M16, M09. |
+| 2026-09-27 | M17 v1.5 (DV-M17-29). **XL batch 3 round 3 launched.** |
+| 2026-09-27 | More R2 fixes: M05 v1.12 (C9 N/A; 8 mission sessions; `pksk` mode + BR-34 completeSession + BR-35 count policy), M14 v1.4 (pksk rate precedence), M12 v1.5 (mood → M26), M16 v1.4 (DC-M16-02 retired; Jutawan via M04), M10 v1.8 (T4/T5 swaps at M18 schools; GURU enrolments; T4 card 149, T5 3,911 hold). Decision: M17 8284 monthly GURU = 0 (live contradiction, D9) → M17 v1.5. Then XL3 round 3. |
+| 2026-09-27 | R2 fixes delivered: M01 v1.11, M02 v1.16 (DV-M02-13 filter 61), M18 v1.5 (DATA-M18-07 display values), M04 v1.12 (Q-PKSK-DIFFICULTY); F-13 minors done (failed nav keeps current outcome — accepted). In progress: M05 v1.12, M10 v1.8, M16 v1.4, M14 v1.4, M12 v1.5, architect v1.6/v1.8. |
+| 2026-09-27 | **XL batch 3 round 2: FAIL** (0 Critical, 6 Major, 6 Minor; all 24 R1 Majors closed; arithmetic re-run passes). Decisions: R2-01 pelajarmaju → fixture 900004 (5441 would change M17 observed values; 900003 is SMK; filter 61 accepted as DV); R2-02 8765/2700 session figures → M18 display values; R2-03 8 class-813 sessions → mode `mission`; R2-04/R2-10 `pksk` mode + count policy in M05. Routed: M02 v1.16, M05 v1.12; queued: M01, F-11 (900004), M18, M10 (R2-05/06), M16, M04, M14, M12, architect. |
+| 2026-09-27 | **G4:** F-02 palette, F-12, F-13, F-21 Approve (Minors: F12-1 slide on non-401; F13-1 outcome commit in afterEach; F13-2 async shell import). F-09 Request changes (calibration uncapped/unpaired → paired floor, cap 1.5 with explicit skip, always-on ratio assertions). M01 FR-M01-50 wording indigo-800 → blue-900 (trivial, Delivery Lead). F-06 real-registry boot test isolated (waits on F-25 spec). Progress ≈32.7%. |
+| 2026-09-27 | M07 v1.7 (XL3-22): PKSK split 253/253/191/66 via M04 Q-PKSK-DIFFICULTY; new M05 session mode `pksk` (XR-M07-02). All XL3 owner fixes delivered → **XL batch 3 round 2 launched**. F-21 uses tokens. G4 review of F-02/F-09/F-12/F-13/F-21 running. |
+| 2026-09-27 | M04 v1.11 (XL3-10/11): `jutawanQuestions` store (143 cells, 149,911; unblocks M16); `coverageExcluded` (Q-M17-COV 127,643); ImportRun 1,123; Q-TEACHER-CONTRIB 11,414; M18 block 701001–701099; PKSK split 253/253/191/66 requested of M07. F-25 notified to build against v1.11. |
+| 2026-09-27 | **F-02 palette fix:** all 22 Tailwind scales overridden with exact v3.4 hex (242 vars from tailwindcss@3.4.17); `bg-error-page` + new `bg-forbidden-page`; design-system v1.6. F-21 switching to tokens. |
+| 2026-09-27 | M10 v1.7 (XL3-12): contribution hook → M14; `/guru/command-center/*` mounts M17 S4–S7 (teacher scope); classes 366–372, 813, 516, 517 (750 total unchanged); T4 joins only via 1:1 swap (149 holds); missions 7103/7104 (8 sessions). Residuals for XL r2: M05 mark 8 sessions as `mission`; M17 monthly "{n} GURU" counts; M02 swapped-out pool pupils. Waiting M04 + M07 → XL3 round 2. |
+| 2026-09-27 | M12 v1.4 (DC-M12-02 active; KirkpatrickIntervention rename; XR statuses). M03 v1.10 (XL3-24: 60 out-of-tree chapters as records `inTree=false`, CH-ALL-INCL-ORPHAN 1,311; chapter floor 1342) → F-24 code follow-up. M07 v1.7 (XL3-22) started. |
+| 2026-09-27 | M01 v1.10 final (account 4 → 5441). M12 v1.4 + M03 v1.10 (XL3-24) started; M07 (XL3-22) queued. |
+| 2026-09-27 | M02 v1.15: 900004 removed; pelajarmaju → existing SK 5441 (filter stays 60, 57 unchanged). F-11 code follow-up needed (accounts.ts school). |
+| 2026-09-27 | **F-21 error pages built** (404/403 exact live copy; 7 tests; no horizontal scroll 320–1280). Finding: live uses **Tailwind v3 hex palette**; v4 oklch renders more saturated → **decision: override v4 theme with exact v3.4 hex palette** (F-02 follow-up) + fix `bg-error-page` (blue-900→violet-600→pink-500) + new `bg-forbidden-page` (red-800→red-600→orange-500). M01 v1.10 (onLogin hook, referral provisional, F-11 as-built, IC handling). M02 v1.14 added 900004 but S1 filter 61≠60 → v1.15: place account 4 at an existing primary school instead (pending). |
+| 2026-09-27 | M08 v1.8 (XL3-02/06/07): accuracy = mean of session accuracies (Q-SESS-MEAN-ACC; 79.8/79.7/63.9 feasible); wallet read from M14 (S6 342,703 → 256, S18 103 → 256); 8880 grades fit; ItemStatistic store; S9 uses S30 template. **Decision XR-M08-01: canonical account 4 (pelajarmaju) moves 900002 → new fictitious school 900004 "SK Demo Bestari"** so admin S9 stays empty as observed → M01 v1.10, M02 v1.13, F-11 code follow-up. |
+| 2026-09-27 | M11 v1.9 (XL3-13): 12 early answers → 8765; 4664/4644 linked; zero-answer student page (PROPOSED); battle tiles read M16 `battles.countFor`/`gameResults.countFor`; 8880 row unchanged. M04 v1.11 started (Jutawan store, coverageExcluded, ImportRun, M18 id block). |
+| 2026-09-27 | M17 v1.4 (XL3-16/17/19/23/31): canonical week-pupil ids 2013–2023; battles via M16 queries; S11 "Syiling" = DC-M17-08; mood + tuition → M26, sponsors → M21 (provisional contracts); XR-08 rejection final (57). Follow-ups: M05 v1.11 (placement), M02 v1.13 (XR-M16-04). |
+| 2026-09-27 | M16 v1.3 (XL3-16/17/18/26): weekly ranking at project clock on M17 ids (dup ids 4359–4377 dropped); battle store 168 (66 finished / 5 forfeited / 97 abandoned PROPOSED) with named queries for M17; `canEarnSyiling`; bot 82.84%. Pending: XR-M16-04 (M02 T4 pool row 51→32), XR-M16-09 (M17). M17 v1.4 + M11 v1.9 in progress. |
+| 2026-09-27 | M18 v1.4: DV-M18-44 six school kombo means kept as display values (0 visible changes); DV-M18-43 accepted after (c′) activity-based alternative failed by script (106 rows at sessionless schools show login dates → risk engagement = `lastLoginAt`); 2 KPIs + 28 rows change, minimal within owners' records. |
+| 2026-09-27 | **F-13 router/guards/bootstrap built** (43 tests; demo guard PASS, dist-e2e guard FAIL as required; Playwright 3/3; `/` → landing path; dev galleries `/__dev/tokens`, `/__dev/feedback`). Decisions accepted: `access` defaults to `auth`, `layout` to `bare`; no guest-only guard (M01 FR-13/BR-08); inactive users not blocked by guards (BR-23). Ownership exception: F-13 edited `main.ts`, `App.vue`, `App.test.ts` (F-01 files) minimally. M14 v1.3 (XL3-14/15). M18 v1.3 (XL3-20/21; DV-M18-43) → v1.4 for XR-M14-10 + DV-43 minimality. M16 v1.3 started. F-19 user shell + F-21 error pages launched. |
+| 2026-09-27 | M05 v1.10 (XL3-01/03/04/05): correct 396,391 (P 395,873 = 82.9%); new Q-SESS-MEAN-ACC for M08; wallet → M14 (pelajar 370/916, pelajarmaju 267/432); `mock.addSession`; KirkpatrickSessionAggregate store; 6,604 answers without session; PupilSubjectAccuracy; Q-WEEK-RANK. Decision: M18 8765 practice sessions (309/242) read from KirkpatrickSessionAggregate. M18 v1.3 started. |
+| 2026-09-27 | M02 v1.12 (XL3-08): consolidated placement table §6.15 D — all M12–M18 anchors/pins placed, every observed total holds (4,533 / 551 / 57 / 900001 = 9 / T4 card 149 / M18 168); remainder pool fully used (no slack). Notes to M10 (T4 class joins), M14 (4201–4208 placement), M16 (10,218 stays DC). Wave B started: M14 v1.3. |
+| 2026-09-27 | **XL batch 3 round 1: FAIL** (0 Critical, 24 Major, 12 Minor; navigation + id ranges clean). Delivery Lead accepts all 10 recommendations: (1) M05 correct = 395,873 active / ~396,391 total, M08 accuracy = mean of session accuracies; (2) M12 segment = separate M05 aggregate store; (3) Rekod Headcount = DC-M12-02; (4) 3201–3215 at 8880 with answers without session; (5) M18 per-pupil subject accuracy = small M05 table; (6) Jutawan = separate M04 store; (7) M16 weekly ranking restated at project clock with M17 ids; (8) M14 teachers 4207/4208 inactive; (9) XR-M17-08 rejected (57 stays); (10) mood owner = M26. Fixes in waves (rate-limit safe): wave A M05 v1.10, M08 v1.8, M02 v1.12; wave B M14, M16, M17, M18, M11, M04, M01, M03, M07, M10, M12. F-09 calibrated perf done (3/3 green). |
+| 2026-09-27 | **F-12 global stores built** (52 tests; session/sliding/401/flash/shell/badge + composables). F-11 fixes in progress → decision: persist salted SHA-256 hashes only (no plaintext password/IC), runtime-entered IC shown masked to admin (privacy deviation). F-09 M-3 decision: substring predicates use `search` (+caseSensitive); arbitrary JS `match` on cheap field = budget exception ≤100 ms; perf assertions calibrated to measured raw floor (FLOOR_REF 30 ms) so machine load does not cause flakes. |
+| 2026-09-27 | **G4:** F-10 Approve, F-24 Approve (2 Minors fixing). F-09 Request changes (matchFields count still flaky 37–52 ms → target ≤30 ms best). F-11 Request changes (Major: IC persisted to IndexedDB → move to private secrets store, never persisted; tokens random outside e2e; slide ≤ once/min). Decision: IC never persisted in mock. Ownership exception recorded: F-09 edited `package.json` scripts + `vitest.config.ts` (coordinator-directed). Progress ≈31.7%. |
+| 2026-09-27 | **XL batch 3 round 1 launched** (M12–M18 + requested changes to M01–M11). F-24 follow-up done (38 kept ids; 23 tests). F-25 questions store (critical path) + F-12 global stores launched. |
+| 2026-09-27 | **M17 audit round 3: PASS → G1 approved** (single clock; C-17 cross-check reproduces 12:33 observations; 2 Minors → v1.3). All of M12–M18 now G1 → **XL batch 3 (M12–M18 + affected M01–M11) next**. **Progress ≈31.1% (30% announced).** |
+| 2026-09-27 | **F-09 review fixes done** (matchFields ≈39 ms; cold/cached asserted; searchFields index survives loadDiff; perf in serial project; full `npm run test` 3/3 green, 1,051 tests). M03 v1.9 (named queries; subtopics 133/134 kept). G4 round: re-review F-09/F-10 + first review F-11/F-24 launched. |
+| 2026-09-27 | **F-24 curriculum store built** (22 tests; 1,251 chapters / 2,423 topics / 234 subtopics; 36 kept live ids; 8 repositories; full lint/typecheck/build green, only F-09 perf test red). M03 → v1.9 to record named queries. |
+| 2026-09-27 | **M18 audit round 2: PASS → G1 approved** (doc-only; 5 Minors → v1.2 / XL3). OQ-M18-01 officer account non-blocking for G1 (provisional E2E; open for G5). Progress ≈29.6%. |
+| 2026-09-27 | **M17 audit round 2: FAIL** (1 Major: 16 PROPOSED "today" sessions contradict observed week/month caps; Minors: login shift alters observed S11 dates → re-date same-day before 15:40; accuracy band 395,811–396,287). Routed → M17 v1.2. F-10 review fixes done (`overrideSpec` guarded; `import.meta.glob` + `/src/` linted; 144 tests). |
+| 2026-09-27 | **F-11 core data built** (34 tests; canonical accounts 1–11, sessions 120-min sliding / remember 5 yr, `/api/me`, `setUser`). Full gate blocked only by F-24 import bug + F-09 perf work in progress. |
+| 2026-09-27 | **M16 audit round 2: PASS → G1 approved** (standings recomputed exactly from battles; TU-M16-01 captured, 3 cells corrected in v1.2). M18 v1.1 done → audit round 2 running. Progress ≈28.0%. |
+| 2026-09-27 | **G4 re-review W0.4/W0.5:** F-06, F-07, F-08 Approve (Minors deferred: nested-section effects, effects before settled, corrupt diff boot, cross-tab insert collision, reset race, `ready` ordering). F-09 Request changes (matchFields in wrong budget group; searchFields index lost after loadDiff; flaky perf in full run). F-10 Request changes (`overrideSpec` unguarded; `import.meta.glob` not linted). Progress ≈26.5%. |
+| 2026-09-27 | 6 agents stopped by API session rate limit on 26 Sep (F-11, F-24, G4 review F-06..F-10, M18 v1.1, M16 audit r2, M17 audit r2) → all resumed with context. M17 v1.1 done (project clock; AUD-04 partly reconcilable). M18 top-up captured (3 accuracy bases; "Jumlah Hari" is a stored counter). |
+| 2026-09-26 | **F-09 review fixes done** (95 tests; full repo lint/typecheck/939 tests green). Decision: query budget 50 ms for facet/id/cheap-field/search shapes; ≤1,500 ms cold for full-derivation queries (then 50 ms cached); screens' filter/sort/search fields must be cheap fields or facets; module `version` bumped on seed/derive code change. G4 review of F-06..F-10 launched. W0.6 started: F-11 core data + F-24 curriculum store (critical path). |
+| 2026-09-26 | **M18 audit round 1: FAIL** (6 Major: second clock → project clock; IC mask = live `xxxxxx-xx-xx`+last 2; accuracy base wrong (likely practice sessions); DV-41 rejected; XR-08 infeasible as written; S30 rule contradicted). Top-up capture (AUD-11) on lane 1; M18 v1.1 in progress. |
+| 2026-09-26 | **M16 audit round 1: FAIL** (2 Major: invented Sekolah Bersaing past-week rule → seed observed weeks; battle standings must be computed from battles (live counts 0–0 as B win) — D11). 10 Minor. Routed → M16 v1.1. Lane 3 free. |
+| 2026-09-26 | **M17 audit round 1: FAIL** (2 Major: second clock 26/09 12:33 → move to project clock; executive footer is request-time on live). Accuracy 82.9% confirmed = correct÷answered → M05/M08 must fix at XL3 (mandatory, not a user question). Routed → M17 v1.1. F-06 review fixes done (startMock, createMockPersistence re-export, conventions at boot, specHash required). Lane 2 free. |
+| 2026-09-26 | **M12 audit round 3: PASS → G1 approved** (doc-only round; 2 Minors fixed in v1.3; XR-02/05/09/10 → XL batch 3). M04 v1.10 (`countWhere`, `contributeCells`), M05 v1.9 (opaque session ids; M14 requests pending XL3). Architect: overview v1.4, build-plan v1.6. Progress ≈25.6%. |
+| 2026-09-26 | **M12 audit round 2: FAIL** (2 Major: S8 aliases 5571/5551 are 403 on live → remove alias; "no SPM history" school state unspecified). 10/12 round-1 findings closed; DV-M12-08 re-decision judged minimal. Routed → M12 v1.2. F-14 synced to design-system v1.5 (241 rows, guard green). F-15 minors fixed. **M18 audit started on lane 1.** |
+| 2026-09-26 | **M14 audit round 2: PASS → G1 approved** (2 doc Minors fixed in v1.2; "Siap Hari Ini" definition INFERRED, non-blocking). Shop-source decision applied to M14. Icon sweep → design-system v1.5 (241 rows; +broadcast-tower, boxes-stacked, store, ticket, percent). **M17 audit started on lane 2.** Progress ≈24.0%. |
+| 2026-09-26 | **User G1 decision M15 OQ-01: "ikut macam mana ada sekarang"** → student shop stays empty as live; M15 → Approved (G1) (audit round 2 PASS). F-08 test hooks, F-10 repositories built. **W0.4 review:** F-15 Approve; F-06 Request changes (seed version ignores datasets); F-09 Request changes (layout-block nudging; slow-path 7 s vs 50 ms) → fixes routed. Decision: reserved id ranges may lie above runtime floor (allocator skips). Icon test red (new SRS FA names) → icon sweep. M12 v1.1 → audit r2 (lane 1); M14 v1.1 → audit r2 (lane 2); M16/M17/M18 URS+SRS written → M16 audit (lane 3), M17/M18 audits queued. M17 blocking XR-03: accuracy 82.9% vs M05 381,842 correct → XL batch 3. Architect v1.4/v1.6 doc batch launched. |
+| 2026-09-26 | **M14 audit round 1: FAIL** (3 Major: pelajarmaju replay skips BR-16 → 267/432; S4 sort broken on live → D9 fix; admin mirror only held under E2E-only clock → single project clock 2026-09-25 15:40 enforced for all builds; 9 Minor). 63/64 live claims match; seeds/coverage/trace clean. Requests to M05/M08/M01/M02/M10 judged justified (M05 wallet values after fix). Routed to M14 writer → v1.1. Lane 2 free. M15 v1.1 done → audit round 2 on lane 3. |
+| 2026-09-26 | **F-07 persistence done** (15 tests; full repo lint/typecheck/735 tests/build green; devDep fake-indexeddb). |
+| 2026-09-26 | **M15 audit round 1: FAIL** (1 Major: DV-M15-14 must be approved → hint "1 token = RM1", per M14 XR-05; 7 Minor). Seeds, coverage, trace clean. Routed to M15 writer → v1.1. Lane 3 free. |
+| 2026-09-26 | **M12 audit round 1: FAIL** (5 Major: alert rule = 3 ordered lists; S4/S5 second definitions 951/307,049; ALESA per-school; students with two live ids 4664/5571, 4644/5551; live data moved 25→26 Sep). TU-01..08 captured. Decisions: keep 25 Sep baseline; one M02 id per person + route alias (XR to M02/M11 for XL batch 3). Routed to M12 writer → v1.1. Lane 1 free. |
+| 2026-09-26 | **F-09 virtual dataset done** (critical path; 60 tests; 478,499-row count ≈1 ms; full repo lint/test/build green). F-10 repositories launched (critical path) + G4 review of W0.4 (F-06, F-09, F-15). F-09 notes: anchors must be contributed before first read; M05 generated session ids may run to ~g32122 (confirm); `userId` facet choice → F-26. |
+| 2026-09-26 | M18 discovery done (33 screens, 2,264 el., 136 states; 22 new routes: /amaran/*, /jpn/*, /sekolah/{id}/*, /analisa-item/(ppd|jpn), /kombo/(ppd|jpn|sekolah/{id}) → M18; 38 defects incl. full IC in HTML (privacy/SEC); officer pages use user shell; /ppd/command-center 403 for admin). M18 writer started. **M14 audit started on lane 2.** |
+| 2026-09-26 | M16 discovery done (30 screens — far more than planned 8 routes; 1,571 el., 189 states; no WebSocket, HTTP polling; 31 defects; tournament banner on every user page → M16 owns). M16 writer started. **M15 audit started on lane 3.** F-06 mock server done (718 tests; lint/typecheck/build green) → F-07 persistence launched. Old unmasked lane-3 logs (2026-09-25) deleted. New M16 routes (lobbies, games, tournament, liga) to be added to checklist from narrative. |
+| 2026-09-26 | M17 discovery done (11 screens, 1,851 el., 77 states; 24 defects; many cross-module count conflicts in §5.1). Decisions: M17 owns Command Center incl. drill-downs (M10 `/guru/command-center/*` mounts it); `/admin/performance` → M23. M17 writer started. **M12 audit started on lane 1** (incl. TU-01..08 captures). |
+| 2026-09-26 | M14 URS+SRS v1.0 written (183 FN, 141 AC/63 prov., 135 FR, 97 E2E/49 prov., 43 endpoints, 1759/1759 covered; DV-01..13; DV-09 one wallet: M08 103/342,703 → derived 256, 26 stays). Answers M15 XR-01..08 (shop source = user decision, OQ-05). Requests to M05 (wallet repo → M14, designed wallets pelajar 370/916, pelajarmaju 242/419), M08, M01, M02 (anchors 4001–4108, 4201–4208), M10, M16 → **applied only after M14 audit/G1, via XL batch 3** (M05/M08 stay as approved meanwhile). Audits queued for next free lanes: M12, M15, M14. |
+| 2026-09-26 | **XL batch 2 (M08–M11): PASS at round 3** (0 Critical, 0 Major, 4 Minor). M08-T1 and F-29 unblocked; F-30 after Minors XL2-44/45/48 (routed: M02 v1.11, M05 v1.8, M10 v1.6, M11 v1.8, build-plan v1.5). |
+| 2026-09-26 | M10 v1.5 (XL2-36 fixed: no M10 question store; BR-M10-35 mission pool). **XL batch 2 round 3 launched.** F-15 feedback/overlay/badge built (47 tests; build + typecheck green). Design-system toast/badge correction launched. |
+| 2026-09-26 | **W0.1–W0.3 all G4 Approve:** F-17 re-review Approve; F-05 review fixes (74 tests), F-03 nits (75 tests; BM Aug short = "Ogs", M09 BR-M09-10 aligned), F-02 nit, F-14 guard test (261 tests; `fa-store` known gap). M05 v1.7, M08 v1.7, M11 v1.7, M02 v1.10, M04 v1.9 (XL2 round-2 fixes); build-plan XL2-29 done. Waiting M10 v1.5 → XL round 3. Progress ≈20.6%. |
+| 2026-09-26 | **G4 review W0.2/W0.3:** Approve F-02, F-03, F-04, F-05, F-14; F-17 Request changes (1 Major: watcher identity → re-create/flicker). Fixes routed (F-17 Major; F-05 2 Minor + nits; F-14 guard test; F-03/F-02 nits). Architect: overview v1.3, build-plan v1.4 (icon module rows → design-system §6.13; api null query). **XL batch 2 round 2: FAIL** (0 Critical, 2 Major: XL2-35 M02 pupils 3201–3215 at 900001, XL2-36 M10 youtube mission uses non-M04 question ids; 13 Minor). All 20 round-1 Majors resolved. Fixes routed to M02 v1.10, M04 v1.9, M05 v1.7, M08 v1.7, M10 v1.5, M11 v1.7, architect (XL2-29); XL2-27 done (M17 drill-down/export routes added). Targeted round 3 next. |
+| 2026-09-26 | M15 URS+SRS written (108 FN, 87 AC/34 prov., 66 FR, 57 E2E/25 prov., 250/250 covered; DV-01..15). XR-01..08 routed to M14 writer; XR-09/10 (M02 anchors 3151/3152, parent-children read) queued for XL batch 3. Blocking OQ-M15-01 (shop catalogue source). M15 audit queued for next free lane. |
+| 2026-09-26 | F-01 review fixes done: full verify green (lint, typecheck, 509/509 tests, build, Playwright 3/3). **F-01 re-review: Approve (G4 passed).** `.nvmrc` → 22.22.2 (docs aligned). F-14 synced to design-system v1.2 (258 icon tests). **Progress ≈20.3% (20% announced).** |
+| 2026-09-26 | F-05 done (lint/typecheck/build green; 66 tests). Icon docs → design-system v1.2 (236 rows; canonical Lucide names; approximations running→Footprints, futbol→Volleyball, magnifying-glass-chart→Search accepted by Delivery Lead). W0.4 launched (F-06, F-09, F-15) + G4 review F-02..F-05/F-17. |
+| 2026-09-26 | XL2 alignment complete: M02 v1.9, M04 v1.8, M08 v1.6, M10 v1.4, M11 v1.6 (+ M01 v1.9, M03 v1.8, M05 v1.6, M09 v1.4). **XL batch 2 round 2 launched.** F-14 icons + F-17 charts built (own-folder green; full verify pending F-05 + F-01 fix). Icon doc alignment (ui-ux-designer) launched; decision: BR-05 accepts FA6 `fa-solid`/`fa-regular`. |
+| 2026-09-26 | M12 URS+SRS written (93 FN, 115 AC, 91 FR, 62 E2E/12 prov., 755/755 covered, DV-01..24, TU-01..08 top-ups). M12 audit queued for next free browser lane (auditor also captures TU-01..08). M04 v1.7, M10 v1.3, M11 v1.5 (XL2). |
+| 2026-09-26 | F-01 code review: Request changes (2 Major: dynamic import() bypasses boundary lint; registry test asserts empty routes; 4 Minor). Fix task + architect doc batch (overview v1.2 / build-plan v1.3) launched. Decision: demo seed password stays in README. M02 v1.8 (XL2) done. |
+| 2026-09-26 | **F-02 tokens + F-03 time/number done** (lint/typecheck/170 tests/build green). W0.3 launched (F-05, F-14, F-17). M14 discovery done (22 screens, 1,759 el.) → writer. M17 (lane 1) + M18 (lane 2) discovery started. XL2 fixes: M01/M03/M08/M09/M11 done. Progress ≈19.7%. |
+| 2026-09-26 | M15 discovery done (9 screens, 250 elements). M15 writer started. Discovery tools scoped to CommonJS. |
+| 2026-09-26 | XL batch 2 round 1: FAIL (20 Major). Fixes routed to M01/M02/M03/M04/M05/M08/M09/M10/M11. |
+| 2026-09-26 | M13 audit round 2: PASS → G1 approved. M16 discovery on lane 3. |
+| 2026-09-26 | **F-01 scaffold done** (all green). W0.2 launched (F-02, F-03, F-04) + F-01 code review. |
+| 2026-09-26 | M13 audit round 1: FAIL (3 Major) → writer v1.1. Privacy scrub of 3 real names in M10 URS. |
+| 2026-09-26 | **Resumed.** Relaunched F-01 (resume), XL batch 2, M12 writer (resume), M13 audit (lane 3), M14 discovery (lane 2, resume), M15 discovery (lane 1, resume). |
+| 2026-09-25 | **PAUSED by user.** All 6 running agents stopped (F-01, XL batch 2, M12 writer, M13 audit, M14/M15 discovery). Resume checklist in §00. |
+| 2026-09-25 | M13 URS/SRS v1.0 (137/137) → audit on lane 3. Voice input simulated (D4). |
+| 2026-09-25 | Build plan v1.2 (student-first waves, first milestone = 25 tasks). |
+| 2026-09-25 | M11 audit round 3: PASS → G1 approved (M08–M11 all G1). XL batch 2 (M08–M11) started. M15 discovery on lane 1. |
+| 2026-09-25 | **User approved G2 — student prototype first.** Branch `feature/student-prototype`; F-01 scaffold + student-first build plan started. M11 v1.3 → round-3 check. |
+| 2026-09-25 | M11 v1.1 (13/14 findings; snapshot-based seeds). OQ-M11-09 → fixture schools excluded from platform monitoring aggregates. |
+| 2026-09-25 | M12 discovery done (10 screens, 755 elements). `/admin/laporan` → M17. M12 writer started. |
+| 2026-09-25 | M10 audit round 2: PASS → G1 approved. M14 discovery started on lane 2. |
+| 2026-09-25 | M11 top-up done (dated snapshot 2026-09-25 19:25 MYT). Lane-2 console log with student names deleted by agent. |
+| 2026-09-25 | M13 discovery done (8 screens, no AI calls). M13 writer + M10 re-audit (lane 1) started. Old lane-2 temp folder with a teacher name deleted. |
+| 2026-09-25 | M10 v1.1 (15 findings fixed). Real name in a live placeholder purged from 7 files; privacy-over-fidelity rule added. |
+| 2026-09-25 | M11 audit round 1: FAIL (1 Critical — DV-11 on false facts). Top-up snapshot on lane 2, then writer v1.1. |
+| 2026-09-25 | M08 audit round 3: PASS → G1 approved. M13 discovery started on lane 1. |
+| 2026-09-25 | M10 audit round 1: FAIL (8 Major) → writer v1.1. |
+| 2026-09-25 | M09 audit round 3: PASS → G1 approved. M12 discovery started on lane 3. |
+| 2026-09-25 | **XL M01–M07 PASS (round 4).** 40 cross-module findings resolved over 4 rounds. M01–M07 requirements are consistent and logical across modules; build can start on user G2 approval. |
+| 2026-09-25 | M09 audit round 2: PASS. M11 audit started on lane 2. |
+| 2026-09-25 | XL round 3: 2 Major left (XL-39 M04 anchors, XL-40 M05 difficulty query). Final fixes routed. |
+| 2026-09-25 | M11 URS/SRS v1.0 (coverage 819/819). Audit queued. |
+| 2026-09-25 | M10 URS/SRS v1.0 (coverage 3,150/3,150) → audit on lane 1. |
+| 2026-09-25 | M09 v1.1 (12 findings fixed). v1.2 privacy fix (fictitious authors). M02 v1.6 to add school 900003 + users 3101–3109. |
+| 2026-09-25 | XL round 2: FAIL (0 Critical / 6 Major) — Critical closed. Fixes routed to 7 owners + architect; D11 display-constant exception added. |
+| 2026-09-25 | M09 audit round 1: FAIL (4 Major). Writer → v1.1 incl. dataset spec + canonical seeds. Lane 3 free. |
+| 2026-09-25 | G2 foundation architecture done (14 ADRs, build plan). Awaiting user G2 approval. |
+| 2026-09-25 | M09 URS/SRS v1.0 (coverage 1,983/1,983) → audit on lane 3. |
+| 2026-09-25 | M08 top-up done (+405 elements, S22/S23). Writer → v1.1 with audit decisions; canonical ids 1–11 enforced (M08 draft had 1001–1007). Lane 3 free. |
+| 2026-09-25 | M11 discovery done (8 screens, 819 elements). Monitoring component owner = M11 (M17 reuses). Old lane-2 log with student names deleted. M11 URS/SRS writer started. |
+| 2026-09-25 | XL cross-module review M01–M07: FAIL (SPM pool outside question store; contradictory counts; two session schemas; id type mismatches; seed conflicts). Decisions D11/D12. Fixes routed to M01–M05 in parallel; M06 next. XL-18/28 routes added to checklist. |
+| 2026-09-25 | G2 foundation design done: design system + shells. |
+| 2026-09-25 | M10 discovery done (35 screens, 3,150 elements). M10 URS/SRS writer started. |
+| 2026-09-25 | M08 audit round 1: FAIL (5 Major). Discovery top-up on lane 3 before writer fixes. |
+| 2026-09-25 | User: continue to UI & prototype. Build track opened: G2 foundation (architecture, design system, shells) + cross-module logic review (XL) for M01–M07. |
+| 2026-09-25 | M02 v1.2 + M07 v1.3 aligned to canonical integer ids. Scratchpad collision found (M02 agent ran M05 check.js) → M05 checked: one line damaged (§3.1 totals) and restored from v1.1 sources; URS byte-identical; 860/860, trace 0 errors; scratchpad isolation rule added to CLAUDE.md. |
+| 2026-09-25 | M08 URS/SRS v1.0 (coverage 1,148/1,148, 27 deviations) → audit on lane 3. M01 → v1.5 integer user ids. |
+| 2026-09-25 | M09 discovery done (27 screens, 1,983 elements). Fixed tracker route notation (`|` alternation broke crawl classification). M09 URS/SRS writer started. |
+| 2026-09-25 | M07 audit round 2: PASS → G1 approved. M11 discovery started on lane 2. |
+| 2026-09-25 | M07 v1.1 (10 findings fixed). Round 2 re-audit on lane 2. |
+| 2026-09-25 | M07 audit round 1: FAIL (4 Major: placeholder pages, sticky column, invented question ids, extra access rows). Writer → v1.1. |
+| 2026-09-25 | M05 audit round 2: PASS → G1 approved. Lane 1 free. |
+| 2026-09-25 | M05 v1.1 (15 findings fixed). Round 2 re-audit on lane 1. |
+| 2026-09-25 | M08 discovery done (21 screens, 1,148 elements, 26 defects). Route owners settled (`/ranking`, `/prestasi/kelas*` → M08). M08 URS/SRS writer started. |
+| 2026-09-25 | M07 URS/SRS v1.0 (coverage 486/486, 12 deviations) → audit on lane 2. |
+| 2026-09-25 | M06 audit round 3: PASS → G1 approved. M09 discovery started on lane 3. |
+| 2026-09-25 | M06 audit round 2: 1 Major (hub contradiction from DV-01) → hub reverted to live; v1.2. New standing rule in CLAUDE.md §6: seeds mirror observation, minimal D9 fixes, no new contradictions. |
+| 2026-09-25 | M05 audit round 1: FAIL (5 Major, 10 Minor — invented seed session, SPM sessions mis-modelled, missing scope=spm variant, DV-04 created new contradiction). Writer → v1.1. Lane 2 free. |
+| 2026-09-25 | M06 v1.1 (16 findings fixed). Round 2 re-audit on lane 3. |
+| 2026-09-25 | M07 discovery done (8 screens, 486 elements). PKSK meaning confirmed → master URS glossary updated. M07 URS/SRS writer started. |
+| 2026-09-25 | M06 audit round 1: FAIL (7 Major, 9 Minor) → writer v1.1. M05 audit started on lane 2. |
+| 2026-09-25 | M05 URS/SRS v1.0 (coverage 860/860, 12 deviations) → audit queued (all lanes busy). |
+| 2026-09-25 | M06 URS/SRS v1.0 (coverage 1,315/1,315) → audit on lane 2. |
+| 2026-09-25 | M04 audit round 2: PASS → G1 approved (D9). Phase A (M01–M04) requirements complete. M08 discovery started on lane 1. |
+| 2026-09-25 | M04 v1.1 (19 findings fixed). Round 2 re-audit on lane 1. |
+| 2026-09-25 | M03 audit round 2: PASS → G1 approved under D9/D10. 4 minor fixes → v1.3. |
+| 2026-09-25 | M03 v1.2 (integer ids). Round 2 re-audit on lane 2. |
+| 2026-09-25 | M04 audit round 1: FAIL (5 Major, 14 Minor). M03 v1.1 done. Integer-id alignment M03↔M04 requested. |
+| 2026-09-25 | M03 audit round 1: FAIL (8 Major, 13 Minor). New decision D10 (accessibility replicates live; deliberate limits are not bugs). Master NFR-02 and M02 NFR-M02-05 updated; M05/M06 writers informed. |
+| 2026-09-25 | M06 discovery done (13 screens, 1,315 elements) → M06 URS/SRS writer. |
+| 2026-09-25 | M04 URS/SRS v1.0 (coverage 1,226/1,226, 14 deviations) → audit on lane 1. M05 discovery done (15 screens, 860 elements, LS-1..12 need live session) → M05 URS/SRS writer. Master SRS ID rule: numeric ids allowed where live exposes them. |
+| 2026-09-25 | M03 URS/SRS v1.0 (coverage 807/807, 9 deviations). M03 audit started on lane 2. M06 discovery started on lane 3. |
+| 2026-09-25 | M02 audit round 2: PASS (AUD-M02-22 minor fixed by Delivery Lead). M02 G1 approved under D9. |
+| 2026-09-25 | M02 v1.1 (21 audit findings fixed, 12 deviations). Round 2 re-audit on lane 3. M01 → v1.4 (school-search contract: default 20, no cap). |
+| 2026-09-25 | M04 discovery done (14 screens, 1,226 elements). M04 URS/SRS writer started. Real name removed from `tools/jobs/M04.js` redact rule. Note: 2 practice pages were GET-loaded ~3× each to read the report modal (may have created session records). |
+| 2026-09-25 | M02 audit round 1: FAIL (11 Major, 10 Minor, e.g. own-row actions, hidden active state, pre-filled default password, picker spinners). Sent to writer for v1.1 with 3 new D9 deviations. |
+| 2026-09-25 | M03 discovery done (14 screens, 807 elements, 11 defects). M03 URS/SRS writer + M05 discovery (lane 1) started. |
+| 2026-09-25 | M01 v1.3: aligned with M02 (8 live role codes, inactive-user refusal, 111 FN / 68 FR / 50 E2E). |
+| 2026-09-25 | M02 URS/SRS v1.0 written (coverage 1,056/1,056, 9 D9 deviations, 10 SEC items). M02 audit started on lane 3. M01 → v1.3 alignment with M02 role codes. |
+| 2026-09-25 | VS Code reloaded; 3 Playwright lanes live. Parallel run: M02 URS/SRS writer, M03 discovery (lane 1), M04 discovery (lane 2). |
+| 2026-09-25 | M02 discovery done (16 screens, 1,056 elements, 139 states, 0 gaps, 0 PII leaks). 3 Playwright lanes configured in .mcp.json (active after reload). |
+| 2026-09-25 | User set deviation rule D9 (fix broken/contradictory, replicate what works). M01 DVs resolved → G1 approved. M02 discovery started. |
+| 2026-09-25 | M01 audit round 2: PASS. M01 awaiting user G1 decision (DV list + probe permission). |
+| 2026-09-25 | M01 URS/SRS v1.1: all 12 audit findings fixed (49 E2E, 97 active ACs, coverage still 363/363). Round 2 re-audit started. |
+| 2026-09-25 | M01 audit round 1: FAIL (5 Major, 8 Minor — e.g. bio counter is static on live, DV-09 not reproducible, badge polls every 60s). Sent back to author for v1.1. |
+| 2026-09-25 | M01 URS/SRS rewritten under D7/D8: 3 epics, 16 features, 110 functions, 26 stories, 97 ACs, 67 FRs, 48 E2E; coverage 363/363 (0 unmapped); 15 fidelity deviations pending user decision. Independent audit started. |
+| 2026-09-25 | Process upgraded (D7 fidelity, D8 proven completeness, AUD stage). M01 re-discovered with scripted inventory: 363 content elements + 571 shell elements across 58 states, 238 crawled URLs; 55 items were missing from the first pass. Reusable tools in `docs/discovery/tools/`. `/dashboard` → M05, `/sponsor/register` → M21. M01 URS/SRS being rewritten. |
+| 2026-09-25 | M01 URS + SRS drafted → awaiting G1 review (17 decisions, 12 open questions). |
+| 2026-09-25 | M01 discovery done (12 screens, 33 screenshots) + global UI/design tokens. `/settings` is 404 on live. M01 URS/SRS started. |
+| 2026-09-25 | Master `docs/requirements/URS.md` + `SRS.md` v0.1 written (roles, glossary, UR-G-01..12, FR-G-01..12, NFRs incl. NFR-RESP-01..10, mock-API conventions, module templates). Responsive: no screen exemptions. |
+| 2026-09-25 | Scope set: FE prototype + dummy data + E2E, backend later (D1–D5). Q1–Q5 resolved. M01 discovery started. |
+| 2026-09-25 | Tracker created. Top-level module inventory from admin sidebar + student/teacher/PPD/JPN menus (~210 routes, 26 modules). |

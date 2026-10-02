@@ -1,0 +1,931 @@
+{
+ "screen": "S5",
+ "key": "S5-essay-baharu",
+ "route": "/cikgu/essay/baharu",
+ "name": "Mark Karangan Baharu",
+ "module": "M13",
+ "generatedAt": "2026-09-25T11:25:10.973Z",
+ "notes": "new route; client-side handoff to /cikgu",
+ "shell": "SHU",
+ "summary": {
+  "total": 28,
+  "visibleDefault": 21,
+  "conditional": 4,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 5,
+   "link": 2,
+   "card": 1,
+   "heading": 1,
+   "form": 1,
+   "label": 8,
+   "select": 1,
+   "input": 4,
+   "textarea": 3,
+   "alert": 1,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (rubric = first option; counter \"0 perkataan\")",
+   "file": "_raw/M13/S5-essay-baharu__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu/essay/baharu",
+   "finalUrl": "/cikgu/essay/baharu",
+   "httpStatus": 200,
+   "title": "Mark Karangan Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "rubric-general__1280",
+   "description": "rubric \"Rubric Am (default)\" selected",
+   "file": "_raw/M13/S5-essay-baharu__rubric-general__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu/essay/baharu",
+   "finalUrl": "/cikgu/essay/baharu",
+   "httpStatus": 200,
+   "title": "Mark Karangan Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "#rubric_key",
+      "general"
+     ]
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "too-short__1280",
+   "description": "\"Hantar ke Cikgu Alesa\" with < 50 chars → alert, stays on page",
+   "file": "_raw/M13/S5-essay-baharu__too-short__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu/essay/baharu",
+   "finalUrl": "/cikgu/essay/baharu",
+   "httpStatus": 200,
+   "title": "Mark Karangan Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { window.alert = function (m) { document.body.setAttribute('data-m13-alert', m); }; return 'alert hooked'; })()"
+    },
+    {
+     "fill": [
+      "#essay_text",
+      "terlalu pendek"
+     ]
+    },
+    {
+     "click": "button[onclick=\"submitToChat()\"]"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { return 'alert=' + (document.body.getAttribute('data-m13-alert') || '(none)'); })()"
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "alert hooked",
+    "alert=Karangan terlalu pendek (minimum 50 aksara).",
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "typed__1280",
+   "description": "essay text typed (word counter updates on input)",
+   "file": "_raw/M13/S5-essay-baharu__typed__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu/essay/baharu",
+   "finalUrl": "/cikgu/essay/baharu",
+   "httpStatus": 200,
+   "title": "Mark Karangan Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "type": [
+      "#essay_text",
+      "satu dua tiga empat lima"
+     ]
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { return document.getElementById('word-counter').textContent; })()"
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "5 perkataan",
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M13/S5-essay-baharu__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/cikgu/essay/baharu",
+   "finalUrl": "/cikgu/essay/baharu",
+   "httpStatus": 200,
+   "title": "Mark Karangan Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M13/S5-essay-baharu__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/cikgu/essay/baharu",
+   "finalUrl": "/cikgu/essay/baharu",
+   "httpStatus": 200,
+   "title": "Mark Karangan Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "Karangan terlalu pendek (minimum 50 aksara).",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/cikgu?",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M13-S5-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "← Senarai",
+   "href": "https://prestasiplus.my/cikgu/essay",
+   "absHref": "https://prestasiplus.my/cikgu/essay",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-005",
+   "kind": "card",
+   "tag": "div",
+   "text": "📝 Mark Karangan Baharu",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-006",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "📝 Mark Karangan Baharu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "Salin & tampal karangan pelajar di bawah. Cikgu Alesa akan mark berdasarkan rubric yang dipilih. Klik akan buka chat dengan prompt siap-siap untuk submit.",
+   "landmark": "main",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-008",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Hantar ke Cikgu Alesa",
+   "landmark": "main",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-009",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [],
+   "landmark": "main",
+   "section": "📝 Mark Karangan Baharu",
+   "domId": "essay-form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Rubric SPM Bahasa Melayu — Karangan (Bahagian B) (50 markah) SPM English — Continuous Writing (Section B) (50 markah) PT3 Bahasa Melayu — Karangan (30 markah) PT3 English — Essay (30 markah) Sejarah — Karangan Esei (20 markah) Rubric Am (default) (100 markah)",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-011",
+   "kind": "select",
+   "tag": "select",
+   "label": "Rubric SPM Bahasa Melayu — Karangan (Bahagian B) (50 markah) SPM English — Continuous Writing (Section B) (50 markah) PT3 Bahasa Melayu — Karangan (30 markah) PT3 English — Essay (30 markah) Sejarah — Karangan Esei (20 markah) Rubric Am (default) (100 markah)",
+   "options": [
+    {
+     "value": "spm_bm_karangan",
+     "text": "SPM Bahasa Melayu — Karangan (Bahagian B) (50 markah)"
+    },
+    {
+     "value": "spm_bi_continuous_writing",
+     "text": "SPM English — Continuous Writing (Section B) (50 markah)"
+    },
+    {
+     "value": "pt3_bm_karangan",
+     "text": "PT3 Bahasa Melayu — Karangan (30 markah)"
+    },
+    {
+     "value": "pt3_bi_essay",
+     "text": "PT3 English — Essay (30 markah)"
+    },
+    {
+     "value": "sejarah_essay",
+     "text": "Sejarah — Karangan Esei (20 markah)"
+    },
+    {
+     "value": "general",
+     "text": "Rubric Am (default) (100 markah)"
+    }
+   ],
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "domId": "rubric_key",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-013",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Subjek",
+   "placeholder": "cth: Bahasa Melayu",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "domId": "subject_name",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Level",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Level",
+   "placeholder": "T4",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "domId": "level",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Pelajar",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-017",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Nama Pelajar",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "domId": "student_name",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-018",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Karangan",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-019",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Tajuk Karangan",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "domId": "essay_title",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-020",
+   "kind": "label",
+   "tag": "label",
+   "text": "Teks Karangan 0 perkataan",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-021",
+   "kind": "textarea",
+   "tag": "textarea",
+   "label": "Teks Karangan 0 perkataan",
+   "placeholder": "Salin & tampal karangan pelajar di sini…",
+   "required": true,
+   "minlength": "50",
+   "rows": "14",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "domId": "essay_text",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-022",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Apa yang berlaku selepas klik: Kita akan ke chat Cikgu Alesa, butiran karangan akan auto-isi dalam mesej. Cikgu Alesa akan panggil tool mark_essay dan beri markah + komen membina. Hasil disimpan dalam senarai marking.",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-023",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Hantar ke Cikgu Alesa",
+   "icon": "fa-robot",
+   "form": "(no action)",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "alpine": {
+    "onclick": "submitToChat()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-024",
+   "kind": "link",
+   "tag": "a",
+   "text": "Batal",
+   "href": "https://prestasiplus.my/cikgu/essay",
+   "absHref": "https://prestasiplus.my/cikgu/essay",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "rubric-general__1280",
+    "too-short__1280",
+    "typed__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Teks Karangan 2 perkataan",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "too-short__1280"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-026",
+   "kind": "textarea",
+   "tag": "textarea",
+   "label": "Teks Karangan 2 perkataan",
+   "placeholder": "Salin & tampal karangan pelajar di sini…",
+   "required": true,
+   "minlength": "50",
+   "rows": "14",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "domId": "essay_text",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "too-short__1280"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "Teks Karangan 5 perkataan",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "typed__1280"
+   ]
+  },
+  {
+   "id": "EL-M13-S5-028",
+   "kind": "textarea",
+   "tag": "textarea",
+   "label": "Teks Karangan 5 perkataan",
+   "placeholder": "Salin & tampal karangan pelajar di sini…",
+   "required": true,
+   "minlength": "50",
+   "rows": "14",
+   "landmark": "form#essay-form",
+   "section": "📝 Mark Karangan Baharu",
+   "domId": "essay_text",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "typed__1280"
+   ]
+  }
+ ]
+}

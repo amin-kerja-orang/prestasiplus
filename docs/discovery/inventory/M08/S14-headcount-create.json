@@ -1,0 +1,1044 @@
+{
+ "screen": "S14",
+ "key": "S14-headcount-create",
+ "route": "/headcount/create",
+ "name": "Buat Headcount Baru",
+ "module": "M08",
+ "generatedAt": "2026-09-25T10:25:47.063Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 32,
+  "visibleDefault": 28,
+  "conditional": 0,
+  "hiddenOnly": 4,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 5,
+   "link": 1,
+   "heading": 1,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 12,
+   "select": 3,
+   "input": 1,
+   "radio": 6,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "form default (3 OTR, mode Auto)",
+   "file": "_raw/M08/S14-headcount-create__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/headcount/create",
+   "finalUrl": "/headcount/create",
+   "httpStatus": 200,
+   "title": "Buat Headcount Baru - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "manual__1280",
+   "description": "mode Manual picked + 5 OTR + subject/level chosen (NOT submitted)",
+   "file": "_raw/M08/S14-headcount-create__manual__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/headcount/create",
+   "finalUrl": "/headcount/create",
+   "httpStatus": 200,
+   "title": "Buat Headcount Baru - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    },
+    {
+     "check": "main input[name=mode][value=manual]"
+    },
+    {
+     "check": "main input[name=active_otrs][value=\"5\"]"
+    },
+    {
+     "select": [
+      "main select[name=subject_id]",
+      "3"
+     ]
+    },
+    {
+     "select": [
+      "main select[name=education_level_id]",
+      "11"
+     ]
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "form default @375",
+   "file": "_raw/M08/S14-headcount-create__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/headcount/create",
+   "finalUrl": "/headcount/create",
+   "httpStatus": 200,
+   "title": "Buat Headcount Baru - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "form default @768",
+   "file": "_raw/M08/S14-headcount-create__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/headcount/create",
+   "finalUrl": "/headcount/create",
+   "httpStatus": 200,
+   "title": "Buat Headcount Baru - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M08-S14-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-004",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/headcount",
+   "absHref": "https://prestasiplus.my/headcount",
+   "icon": "fa-arrow-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Buat Headcount Baru",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-006",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/headcount",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "classroom_id",
+    "subject_id",
+    "education_level_id",
+    "academic_year",
+    "active_otrs",
+    "active_otrs",
+    "active_otrs",
+    "active_otrs",
+    "mode",
+    "mode"
+   ],
+   "landmark": "main",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-007",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-008",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilih Kelas",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-009",
+   "kind": "select",
+   "tag": "select",
+   "name": "classroom_id",
+   "label": "Pilih Kelas",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "— Pilih kelas —"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilih Subjek",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-011",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Pilih Subjek",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "— Pilih subjek —"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab (BA)"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina (BC)"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris (BI)"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu (BM)"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil (BT)"
+    },
+    {
+     "value": "11",
+     "text": "Biologi (BIO)"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi (EKON)"
+    },
+    {
+     "value": "9",
+     "text": "Fizik (PHY)"
+    },
+    {
+     "value": "12",
+     "text": "Geografi (GEO)"
+    },
+    {
+     "value": "26",
+     "text": "Jawi (JAWI)"
+    },
+    {
+     "value": "10",
+     "text": "Kimia (CHEM)"
+    },
+    {
+     "value": "3",
+     "text": "Matematik (MATH)"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan (ADDMATH)"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita (PPW)"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah (PQS)"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam (PI)"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan (PJK)"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral (PM)"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik (MUZ)"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual (PSV)"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah (PSI)"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan (PERNIAGA)"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian (PN)"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan (AKAUN)"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi (RBT)"
+    },
+    {
+     "value": "4",
+     "text": "Sains (SCI)"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer (SK)"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga (SRT)"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan (SS)"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah (SEJ)"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam (TI)"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-013",
+   "kind": "select",
+   "tag": "select",
+   "name": "education_level_id",
+   "label": "Tingkatan",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "— Pilih tingkatan —"
+    },
+    {
+     "value": "10",
+     "text": "Tingkatan 4"
+    },
+    {
+     "value": "11",
+     "text": "Tingkatan 5"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahun Akademik",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "academic_year",
+   "label": "Tahun Akademik",
+   "required": true,
+   "min": "2020",
+   "max": "2100",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bilangan OTR",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "2 OTR",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-018",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "active_otrs",
+   "label": "2 OTR",
+   "optionValue": "2",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M08-S14-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "3 OTR",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-020",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "active_otrs",
+   "label": "3 OTR",
+   "optionValue": "3",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-021",
+   "kind": "label",
+   "tag": "label",
+   "text": "4 OTR",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-022",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "active_otrs",
+   "label": "4 OTR",
+   "optionValue": "4",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M08-S14-023",
+   "kind": "label",
+   "tag": "label",
+   "text": "5 OTR",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-024",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "active_otrs",
+   "label": "5 OTR",
+   "optionValue": "5",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "manual__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-025",
+   "kind": "text",
+   "tag": "p",
+   "text": "Minimum 2 OTR · Default 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas.",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-026",
+   "kind": "label",
+   "tag": "label",
+   "text": "Mod Pengiraan Markah",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "🤖 Auto Markah dikira automatik dari soalan latih tubi SPM + Tracking A pelajar di platform PrestasiPlus.",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "domId": "modeAutoLabel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-028",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "mode",
+   "label": "🤖 Auto Markah dikira automatik dari soalan latih tubi SPM + Tracking A pelajar di platform PrestasiPlus.",
+   "optionValue": "auto",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "alpine": {
+    "onchange": "document.getElementById('modeAutoLabel').classList.add('border-blue-500','bg-blue-50');document.getElementById('modeManualLabel').classList.remove('border-blue-500','bg-blue-50');"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-029",
+   "kind": "label",
+   "tag": "label",
+   "text": "✍️ Manual Cikgu key-in markah pelajar sendiri (cth: dari peperiksaan formal sekolah).",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "domId": "modeManualLabel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-030",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "mode",
+   "label": "✍️ Manual Cikgu key-in markah pelajar sendiri (cth: dari peperiksaan formal sekolah).",
+   "optionValue": "manual",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "alpine": {
+    "onchange": "document.getElementById('modeManualLabel').classList.add('border-blue-500','bg-blue-50');document.getElementById('modeAutoLabel').classList.remove('border-blue-500','bg-blue-50');"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "manual__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-031",
+   "kind": "text",
+   "tag": "p",
+   "text": "Boleh ada 1 Auto + 1 Manual untuk kelas + subjek + tahun yang sama.",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S14-032",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cipta Headcount",
+   "icon": "fa-plus",
+   "form": "https://prestasiplus.my/headcount",
+   "landmark": "form.card",
+   "section": "Buat Headcount Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "manual__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

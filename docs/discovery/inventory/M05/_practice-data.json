@@ -1,0 +1,2587 @@
+{
+ "generatedAt": "2026-09-25T08:01:48.644Z",
+ "source": "live https://prestasiplus.my (admin account), GET only",
+ "practiceSubjects": [
+  {
+   "code": "BM",
+   "name": "Bahasa Melayu",
+   "name_en": "Malay Language",
+   "core": true,
+   "icon": "fas fa-book-open",
+   "color": "#3B82F6",
+   "questions_listed": "11,688",
+   "config_total": 4833,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 958
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 2540
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 805
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 530
+    }
+   ],
+   "difficultyStats": {
+    "1": 792,
+    "2": 1868,
+    "3": 1727,
+    "4": 446,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 689,
+     "2": 211,
+     "3": 13,
+     "4": 45
+    },
+    "2": {
+     "1": 73,
+     "2": 1482,
+     "3": 632,
+     "4": 353
+    },
+    "3": {
+     "1": 15,
+     "2": 156,
+     "3": 601,
+     "4": 33
+    },
+    "4": {
+     "1": 15,
+     "2": 19,
+     "3": 481,
+     "4": 15
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "BI",
+   "name": "Bahasa Inggeris",
+   "name_en": "English Language",
+   "core": true,
+   "icon": "fas fa-globe",
+   "color": "#8B5CF6",
+   "questions_listed": "8,039",
+   "config_total": 3521,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 926
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 1225
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 846
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 524
+    }
+   ],
+   "difficultyStats": {
+    "1": 1333,
+    "2": 1412,
+    "3": 746,
+    "4": 30,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 737,
+     "2": 189
+    },
+    "2": {
+     "1": 596,
+     "2": 629
+    },
+    "3": {
+     "2": 296,
+     "3": 550
+    },
+    "4": {
+     "2": 298,
+     "3": 196,
+     "4": 30
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "MATH",
+   "name": "Matematik",
+   "name_en": "Mathematics",
+   "core": true,
+   "icon": "fas fa-calculator",
+   "color": "#EF4444",
+   "questions_listed": "13,872",
+   "config_total": 6538,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 2734
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 2129
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 682
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 993
+    }
+   ],
+   "difficultyStats": {
+    "1": 1340,
+    "2": 2130,
+    "3": 2511,
+    "4": 557,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 558,
+     "2": 695,
+     "3": 1402,
+     "4": 79
+    },
+    "2": {
+     "1": 278,
+     "2": 635,
+     "3": 780,
+     "4": 436
+    },
+    "3": {
+     "1": 316,
+     "2": 326,
+     "3": 27,
+     "4": 13
+    },
+    "4": {
+     "1": 188,
+     "2": 474,
+     "3": 302,
+     "4": 29
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "SCI",
+   "name": "Sains",
+   "name_en": "Science",
+   "core": true,
+   "icon": "fas fa-beaker",
+   "color": "#10B981",
+   "questions_listed": "12,165",
+   "config_total": 4903,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 3230
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 611
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 515
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 547
+    }
+   ],
+   "difficultyStats": {
+    "1": 1190,
+    "2": 1672,
+    "3": 1641,
+    "4": 400,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 689,
+     "2": 618,
+     "3": 1557,
+     "4": 366
+    },
+    "2": {
+     "1": 317,
+     "2": 266,
+     "3": 16,
+     "4": 12
+    },
+    "3": {
+     "1": 88,
+     "2": 393,
+     "3": 23,
+     "4": 11
+    },
+    "4": {
+     "1": 96,
+     "2": 395,
+     "3": 45,
+     "4": 11
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "SEJ",
+   "name": "Sejarah",
+   "name_en": "History",
+   "core": true,
+   "icon": "fas fa-clock",
+   "color": "#F59E0B",
+   "questions_listed": "6,508",
+   "config_total": 1931,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 650
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 451
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 418
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 412
+    }
+   ],
+   "difficultyStats": {
+    "1": 12,
+    "2": 1773,
+    "3": 100,
+    "4": 46,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 9,
+     "2": 641
+    },
+    "2": {
+     "2": 451
+    },
+    "3": {
+     "1": 3,
+     "2": 315,
+     "3": 75,
+     "4": 25
+    },
+    "4": {
+     "2": 366,
+     "3": 25,
+     "4": 21
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PI",
+   "name": "Pendidikan Islam",
+   "name_en": "Islamic Education",
+   "core": true,
+   "icon": "fas fa-moon",
+   "color": "#059669",
+   "questions_listed": "9,154",
+   "config_total": 3371,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 985
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 1124
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 893
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 369
+    }
+   ],
+   "difficultyStats": {
+    "1": 614,
+    "2": 1467,
+    "3": 1225,
+    "4": 65,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 318,
+     "2": 645,
+     "3": 11,
+     "4": 11
+    },
+    "2": {
+     "1": 296,
+     "2": 781,
+     "3": 30,
+     "4": 17
+    },
+    "3": {
+     "2": 33,
+     "3": 839,
+     "4": 21
+    },
+    "4": {
+     "2": 8,
+     "3": 345,
+     "4": 16
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PM",
+   "name": "Pendidikan Moral",
+   "name_en": "Moral Education",
+   "core": true,
+   "icon": "fas fa-heart",
+   "color": "#EC4899",
+   "questions_listed": "15,014",
+   "config_total": 3307,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 1013
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 1265
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 717
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 312
+    }
+   ],
+   "difficultyStats": {
+    "1": 2253,
+    "2": 729,
+    "3": 312,
+    "4": 13,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 1005,
+     "2": 8
+    },
+    "2": {
+     "1": 1248,
+     "2": 17
+    },
+    "3": {
+     "2": 545,
+     "3": 172
+    },
+    "4": {
+     "2": 159,
+     "3": 140,
+     "4": 13
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "ADDMATH",
+   "name": "Matematik Tambahan",
+   "name_en": "Additional Mathematics",
+   "core": false,
+   "icon": "fas fa-variable",
+   "color": "#DC2626",
+   "questions_listed": "2,101",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PHY",
+   "name": "Fizik",
+   "name_en": "Physics",
+   "core": false,
+   "icon": "fas fa-zap",
+   "color": "#2563EB",
+   "questions_listed": "1,261",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "CHEM",
+   "name": "Kimia",
+   "name_en": "Chemistry",
+   "core": false,
+   "icon": "fas fa-flask-round",
+   "color": "#7C3AED",
+   "questions_listed": "2,245",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "BIO",
+   "name": "Biologi",
+   "name_en": "Biology",
+   "core": false,
+   "icon": "fas fa-leaf",
+   "color": "#16A34A",
+   "questions_listed": "4,235",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "GEO",
+   "name": "Geografi",
+   "name_en": "Geography",
+   "core": false,
+   "icon": "fas fa-map",
+   "color": "#0891B2",
+   "questions_listed": "5,997",
+   "config_total": 800,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 200
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 200
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 200
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 200
+    }
+   ],
+   "difficultyStats": {
+    "1": 768,
+    "2": 8,
+    "3": 16,
+    "4": 8,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 192,
+     "2": 2,
+     "3": 4,
+     "4": 2
+    },
+    "2": {
+     "1": 192,
+     "2": 2,
+     "3": 4,
+     "4": 2
+    },
+    "3": {
+     "1": 192,
+     "2": 2,
+     "3": 4,
+     "4": 2
+    },
+    "4": {
+     "1": 192,
+     "2": 2,
+     "3": 4,
+     "4": 2
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PSV",
+   "name": "Pendidikan Seni Visual",
+   "name_en": "Visual Arts Education",
+   "core": false,
+   "icon": "fas fa-palette",
+   "color": "#F97316",
+   "questions_listed": "4,910",
+   "config_total": 0,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 0
+    }
+   ],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "MUZ",
+   "name": "Pendidikan Muzik",
+   "name_en": "Music Education",
+   "core": false,
+   "icon": "fas fa-music",
+   "color": "#A855F7",
+   "questions_listed": "1,800",
+   "config_total": 0,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 0
+    }
+   ],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PJK",
+   "name": "Pendidikan Jasmani & Kesihatan",
+   "name_en": "Physical & Health Education",
+   "core": false,
+   "icon": "fas fa-heart-pulse",
+   "color": "#F43F5E",
+   "questions_listed": "2,900",
+   "config_total": 0,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 0
+    }
+   ],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "RBT",
+   "name": "Reka Bentuk & Teknologi",
+   "name_en": "Design & Technology",
+   "core": false,
+   "icon": "fas fa-wrench",
+   "color": "#64748B",
+   "questions_listed": "200",
+   "config_total": 0,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 0
+    }
+   ],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "SK",
+   "name": "Sains Komputer",
+   "name_en": "Computer Science",
+   "core": false,
+   "icon": "fas fa-monitor",
+   "color": "#0EA5E9",
+   "questions_listed": "1,100",
+   "config_total": 0,
+   "config_levels": [
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 0
+    }
+   ],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "BA",
+   "name": "Bahasa Arab",
+   "name_en": "Arabic Language",
+   "core": false,
+   "icon": "fas fa-languages",
+   "color": "#047857",
+   "questions_listed": "5,400",
+   "config_total": 1700,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 400
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 400
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 400
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 500
+    }
+   ],
+   "difficultyStats": {
+    "1": 578,
+    "2": 561,
+    "3": 561,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 136,
+     "2": 132,
+     "3": 132
+    },
+    "2": {
+     "1": 136,
+     "2": 132,
+     "3": 132
+    },
+    "3": {
+     "1": 136,
+     "2": 132,
+     "3": 132
+    },
+    "4": {
+     "1": 170,
+     "2": 165,
+     "3": 165
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "BC",
+   "name": "Bahasa Cina",
+   "name_en": "Chinese Language",
+   "core": false,
+   "icon": "fas fa-languages",
+   "color": "#B91C1C",
+   "questions_listed": "0",
+   "config_total": 0,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 0
+    }
+   ],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "BT",
+   "name": "Bahasa Tamil",
+   "name_en": "Tamil Language",
+   "core": false,
+   "icon": "fas fa-languages",
+   "color": "#92400E",
+   "questions_listed": "6,300",
+   "config_total": 0,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 0
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 0
+    }
+   ],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "AKAUN",
+   "name": "Prinsip Perakaunan",
+   "name_en": "Principles of Accounting",
+   "core": false,
+   "icon": "fas fa-receipt",
+   "color": "#4338CA",
+   "questions_listed": "2,970",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "EKON",
+   "name": "Ekonomi",
+   "name_en": "Economics",
+   "core": false,
+   "icon": "fas fa-trending-up",
+   "color": "#065F46",
+   "questions_listed": "2,770",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PERNIAGA",
+   "name": "Perniagaan",
+   "name_en": "Business Studies",
+   "core": false,
+   "icon": "fas fa-briefcase",
+   "color": "#78350F",
+   "questions_listed": "2,732",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PQS",
+   "name": "Pendidikan Al-Quran & As-Sunnah",
+   "name_en": "Quranic & Sunnah Education",
+   "core": false,
+   "icon": "fas fa-fas fa-quran",
+   "color": "#059669",
+   "questions_listed": "1,000",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "TI",
+   "name": "Tasawwur Islam",
+   "name_en": "Islamic Worldview",
+   "core": false,
+   "icon": "fas fa-fas fa-mosque",
+   "color": "#7C3AED",
+   "questions_listed": "1,300",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "JAWI",
+   "name": "Jawi",
+   "name_en": "Jawi Script",
+   "core": false,
+   "icon": "fas fa-fas fa-pen-nib",
+   "color": "#D97706",
+   "questions_listed": "2,100",
+   "config_total": 1300,
+   "config_levels": [
+    {
+     "id": 1,
+     "name_bm": "Darjah 1",
+     "name_en": "Year 1",
+     "code": "D1",
+     "stage": "primary",
+     "question_count": 300
+    },
+    {
+     "id": 2,
+     "name_bm": "Darjah 2",
+     "name_en": "Year 2",
+     "code": "D2",
+     "stage": "primary",
+     "question_count": 300
+    },
+    {
+     "id": 3,
+     "name_bm": "Darjah 3",
+     "name_en": "Year 3",
+     "code": "D3",
+     "stage": "primary",
+     "question_count": 300
+    },
+    {
+     "id": 4,
+     "name_bm": "Darjah 4",
+     "name_en": "Year 4",
+     "code": "D4",
+     "stage": "primary",
+     "question_count": 400
+    }
+   ],
+   "difficultyStats": {
+    "1": 1248,
+    "2": 26,
+    "3": 13,
+    "4": 13,
+    "5": 0
+   },
+   "difficultyByLevel": {
+    "1": {
+     "1": 288,
+     "2": 6,
+     "3": 3,
+     "4": 3
+    },
+    "2": {
+     "1": 288,
+     "2": 6,
+     "3": 3,
+     "4": 3
+    },
+    "3": {
+     "1": 288,
+     "2": 6,
+     "3": 3,
+     "4": 3
+    },
+    "4": {
+     "1": 384,
+     "2": 8,
+     "3": 4,
+     "4": 4
+    }
+   },
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PSI",
+   "name": "Pendidikan Syariah Islamiah",
+   "name_en": "Islamic Syariah Education",
+   "core": false,
+   "icon": "fas fa-fas fa-scale-balanced",
+   "color": "#0f766e",
+   "questions_listed": "1,228",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "SRT",
+   "name": "Sains Rumah Tangga",
+   "name_en": "Home Science",
+   "core": false,
+   "icon": "fas fa-🍽",
+   "color": "#10B981",
+   "questions_listed": "0",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PPW",
+   "name": "Pembuatan Pakaian Wanita",
+   "name_en": "Womens Garment Making",
+   "core": false,
+   "icon": "fas fa-👗",
+   "color": "#EC4899",
+   "questions_listed": "0",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "PN",
+   "name": "Pertanian",
+   "name_en": "Agriculture",
+   "core": false,
+   "icon": "fas fa-",
+   "color": "#16A34A",
+   "questions_listed": "0",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  },
+  {
+   "code": "SS",
+   "name": "Sains Sukan",
+   "name_en": "Sports Science",
+   "core": false,
+   "icon": "fas fa-",
+   "color": "#F59E0B",
+   "questions_listed": "0",
+   "config_total": 0,
+   "config_levels": [],
+   "difficultyStats": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0
+   },
+   "difficultyByLevel": {},
+   "subjectiveLevelCounts": []
+  }
+ ],
+ "chapterIndex": [
+  {
+   "code": "BM",
+   "name": "Bahasa Melayu",
+   "chapters": "18 bab tersedia",
+   "questions": "4,833 soalan chapter"
+  },
+  {
+   "code": "BI",
+   "name": "Bahasa Inggeris",
+   "chapters": "14 bab tersedia",
+   "questions": "3,521 soalan chapter"
+  },
+  {
+   "code": "MATH",
+   "name": "Matematik",
+   "chapters": "25 bab tersedia",
+   "questions": "6,538 soalan chapter"
+  },
+  {
+   "code": "SCI",
+   "name": "Sains",
+   "chapters": "18 bab tersedia",
+   "questions": "4,903 soalan chapter"
+  },
+  {
+   "code": "SEJ",
+   "name": "Sejarah",
+   "chapters": "8 bab tersedia",
+   "questions": "1,931 soalan chapter"
+  },
+  {
+   "code": "PI",
+   "name": "Pendidikan Islam",
+   "chapters": "14 bab tersedia",
+   "questions": "3,371 soalan chapter"
+  },
+  {
+   "code": "PM",
+   "name": "Pendidikan Moral",
+   "chapters": "14 bab tersedia",
+   "questions": "3,307 soalan chapter"
+  },
+  {
+   "code": "GEO",
+   "name": "Geografi",
+   "chapters": "8 bab tersedia",
+   "questions": "800 soalan chapter"
+  },
+  {
+   "code": "BA",
+   "name": "Bahasa Arab",
+   "chapters": "17 bab tersedia",
+   "questions": "1,700 soalan chapter"
+  },
+  {
+   "code": "JAWI",
+   "name": "Jawi",
+   "chapters": "13 bab tersedia",
+   "questions": "1,300 soalan chapter"
+  }
+ ],
+ "chapterSubjects": {
+  "BA": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 400 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 400 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 400 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 500 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Kemahiran Mendengar dan Bertutur (الاستماع والتحدث)",
+     "progress": "0/100 soalan unik · Skor 0% · 100 baki"
+    },
+    {
+     "title": "Bab 2: Kemahiran Membaca (القراءة)",
+     "progress": "0/100 soalan unik · Skor 0% · 100 baki"
+    },
+    {
+     "title": "Bab 3: Kemahiran Menulis (الكتابة)",
+     "progress": "0/100 soalan unik · Skor 0% · 100 baki"
+    },
+    {
+     "title": "Bab 4: Perbendaharaan Kata (المفردات)",
+     "progress": "0/100 soalan unik · Skor 0% · 100 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    263
+   ],
+   "locked": 3
+  },
+  "BI": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 926 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 1,225 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 846 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 524 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Listening and Speaking",
+     "progress": "0/309 soalan unik · Skor 0% · 309 baki"
+    },
+    {
+     "title": "Bab 2: Reading",
+     "progress": "0/306 soalan unik · Skor 0% · 306 baki"
+    },
+    {
+     "title": "Bab 3: Writing",
+     "progress": "0/311 soalan unik · Skor 0% · 311 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    57
+   ],
+   "locked": 2
+  },
+  "BM": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 958 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 2,540 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 805 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 530 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Kemahiran Mendengar dan Bertutur",
+     "progress": "18/320 soalan unik · Skor 44.4% · 302 baki"
+    },
+    {
+     "title": "Bab 2: Kemahiran Membaca",
+     "progress": "5/317 soalan unik · Skor 60% · 312 baki"
+    },
+    {
+     "title": "Bab 3: Kemahiran Menulis",
+     "progress": "10/321 soalan unik · Skor 80% · 311 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    35
+   ],
+   "locked": 2
+  },
+  "GEO": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 200 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 200 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 200 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 200 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Asas Geografi D1",
+     "progress": "0/100 soalan unik · Skor 0% · 100 baki"
+    },
+    {
+     "title": "Bab 2: Cuaca Harian D1",
+     "progress": "0/100 soalan unik · Skor 0% · 100 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    179
+   ],
+   "locked": 1
+  },
+  "JAWI": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 300 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 300 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 300 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 400 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Mengenal Huruf Jawi",
+     "progress": "0/100 soalan unik · Skor 0% · 100 baki"
+    },
+    {
+     "title": "Bab 2: Suku Kata Terbuka",
+     "progress": "0/100 soalan unik · Skor 0% · 100 baki"
+    },
+    {
+     "title": "Bab 3: Menulis Huruf Jawi",
+     "progress": "0/100 soalan unik · Skor 0% · 100 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    325
+   ],
+   "locked": 2
+  },
+  "MATH": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 2,734 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 2,129 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 682 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 993 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Nombor Bulat hingga 100",
+     "progress": "0/464 soalan unik · Skor 0% · 464 baki"
+    },
+    {
+     "title": "Bab 2: Sukatan dan Geometri",
+     "progress": "0/302 soalan unik · Skor 0% · 302 baki"
+    },
+    {
+     "title": "Bab 3: Pecahan",
+     "progress": "0/316 soalan unik · Skor 0% · 316 baki"
+    },
+    {
+     "title": "Bab 4: Wang",
+     "progress": "0/319 soalan unik · Skor 0% · 319 baki"
+    },
+    {
+     "title": "Bab 5: Masa dan Waktu",
+     "progress": "0/352 soalan unik · Skor 0% · 352 baki"
+    },
+    {
+     "title": "Bab 6: Panjang, Jisim dan Isi Padu Cecair",
+     "progress": "0/316 soalan unik · Skor 0% · 316 baki"
+    },
+    {
+     "title": "Bab 7: Bentuk",
+     "progress": "0/329 soalan unik · Skor 0% · 329 baki"
+    },
+    {
+     "title": "Bab 8: Data",
+     "progress": "0/336 soalan unik · Skor 0% · 336 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    1
+   ],
+   "locked": 7
+  },
+  "PI": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 985 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 1,124 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 893 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 369 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Akidah D1",
+     "progress": "0/319 soalan unik · Skor 0% · 319 baki"
+    },
+    {
+     "title": "Bab 2: Ibadah D1",
+     "progress": "0/333 soalan unik · Skor 0% · 333 baki"
+    },
+    {
+     "title": "Bab 3: Adab dan Akhlak D1",
+     "progress": "0/333 soalan unik · Skor 0% · 333 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    120
+   ],
+   "locked": 2
+  },
+  "PM": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 1,013 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 1,265 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 717 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 312 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Nilai Diri D1",
+     "progress": "0/327 soalan unik · Skor 0% · 327 baki"
+    },
+    {
+     "title": "Bab 2: Nilai Keluarga D1",
+     "progress": "0/343 soalan unik · Skor 0% · 343 baki"
+    },
+    {
+     "title": "Bab 3: Nilai Sekolah D1",
+     "progress": "0/343 soalan unik · Skor 0% · 343 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    142
+   ],
+   "locked": 2
+  },
+  "SCI": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 3,230 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 611 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 515 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 547 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Sains Hayat",
+     "progress": "0/314 soalan unik · Skor 0% · 314 baki"
+    },
+    {
+     "title": "Bab 2: Sains Fizikal",
+     "progress": "0/343 soalan unik · Skor 0% · 343 baki"
+    },
+    {
+     "title": "Bab 3: Sains Bahan",
+     "progress": "0/330 soalan unik · Skor 0% · 330 baki"
+    },
+    {
+     "title": "Bab 4: Manusia",
+     "progress": "0/332 soalan unik · Skor 0% · 332 baki"
+    },
+    {
+     "title": "Bab 5: Haiwan",
+     "progress": "0/326 soalan unik · Skor 0% · 326 baki"
+    },
+    {
+     "title": "Bab 6: Tumbuhan",
+     "progress": "0/325 soalan unik · Skor 0% · 325 baki"
+    },
+    {
+     "title": "Bab 7: Magnet",
+     "progress": "0/307 soalan unik · Skor 0% · 307 baki"
+    },
+    {
+     "title": "Bab 8: Penyerapan",
+     "progress": "0/315 soalan unik · Skor 0% · 315 baki"
+    },
+    {
+     "title": "Bab 9: Bumi",
+     "progress": "0/319 soalan unik · Skor 0% · 319 baki"
+    },
+    {
+     "title": "Bab 10: Asas Binaan",
+     "progress": "0/319 soalan unik · Skor 0% · 319 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    18
+   ],
+   "locked": 9
+  },
+  "SEJ": {
+   "levels": [
+    {
+     "id": 1,
+     "label": "Darjah 1 — 650 soalan",
+     "selected": true
+    },
+    {
+     "id": 2,
+     "label": "Darjah 2 — 451 soalan",
+     "selected": false
+    },
+    {
+     "id": 3,
+     "label": "Darjah 3 — 418 soalan",
+     "selected": false
+    },
+    {
+     "id": 4,
+     "label": "Darjah 4 — 412 soalan",
+     "selected": false
+    }
+   ],
+   "chapters_level_default": [
+    {
+     "title": "Bab 1: Asas Sejarah D1",
+     "progress": "0/342 soalan unik · Skor 0% · 342 baki"
+    },
+    {
+     "title": "Bab 2: Sumber Sejarah D1",
+     "progress": "0/308 soalan unik · Skor 0% · 308 baki"
+    }
+   ],
+   "open_chapter_ids": [
+    164
+   ],
+   "locked": 1
+  }
+ },
+ "dashboardLevelPills": [
+  {
+   "code": "D1",
+   "name": "Darjah 1",
+   "questions": 11396
+  },
+  {
+   "code": "D2",
+   "name": "Darjah 2",
+   "questions": 10245
+  },
+  {
+   "code": "D3",
+   "name": "Darjah 3",
+   "questions": 5776
+  },
+  {
+   "code": "D4",
+   "name": "Darjah 4",
+   "questions": 4787
+  },
+  {
+   "code": "D5",
+   "name": "Darjah 5",
+   "questions": 3874
+  },
+  {
+   "code": "D6",
+   "name": "Darjah 6",
+   "questions": 4464
+  },
+  {
+   "code": "T1",
+   "name": "Tingkatan 1",
+   "questions": 19455
+  },
+  {
+   "code": "T2",
+   "name": "Tingkatan 2",
+   "questions": 15700
+  },
+  {
+   "code": "T3",
+   "name": "Tingkatan 3",
+   "questions": 13800
+  },
+  {
+   "code": "T4",
+   "name": "Tingkatan 4",
+   "questions": 19113
+  },
+  {
+   "code": "T5",
+   "name": "Tingkatan 5",
+   "questions": 20770
+  }
+ ],
+ "dashboardSubjectStats": [
+  {
+   "name": "Pendidikan Moral",
+   "icon": "fa-solid fa-heart",
+   "questions": 15414,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Matematik",
+   "icon": "fa-solid fa-calculator",
+   "questions": 13872,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Sains",
+   "icon": "fa-solid fa-beaker",
+   "questions": 12165,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Bahasa Melayu",
+   "icon": "fa-solid fa-book-open",
+   "questions": 11688,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Pendidikan Islam",
+   "icon": "fa-solid fa-moon",
+   "questions": 9154,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Bahasa Inggeris",
+   "icon": "fa-solid fa-globe",
+   "questions": 8039,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Sejarah",
+   "icon": "fa-solid fa-clock",
+   "questions": 6508,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Bahasa Tamil",
+   "icon": "fa-solid fa-languages",
+   "questions": 6300,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Geografi",
+   "icon": "fa-solid fa-map",
+   "questions": 5997,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Bahasa Arab",
+   "icon": "fa-solid fa-languages",
+   "questions": 5400,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Pendidikan Seni Visual",
+   "icon": "fa-solid fa-palette",
+   "questions": 4910,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Biologi",
+   "icon": "fa-solid fa-leaf",
+   "questions": 4235,
+   "difficultyStars": 3,
+   "used": "0x"
+  },
+  {
+   "name": "Prinsip Perakaunan",
+   "icon": "fa-solid fa-receipt",
+   "questions": 2970,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Pendidikan Jasmani & Kesihatan",
+   "icon": "fa-solid fa-heart-pulse",
+   "questions": 2900,
+   "difficultyStars": 1,
+   "used": "0x"
+  },
+  {
+   "name": "Ekonomi",
+   "icon": "fa-solid fa-trending-up",
+   "questions": 2770,
+   "difficultyStars": 3,
+   "used": "0x"
+  },
+  {
+   "name": "Perniagaan",
+   "icon": "fa-solid fa-briefcase",
+   "questions": 2732,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Kimia",
+   "icon": "fa-solid fa-flask-round",
+   "questions": 2245,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Matematik Tambahan",
+   "icon": "fa-solid fa-variable",
+   "questions": 2101,
+   "difficultyStars": 3,
+   "used": "0x"
+  },
+  {
+   "name": "Jawi",
+   "icon": "fa-solid fa-fas fa-pen-nib",
+   "questions": 2100,
+   "difficultyStars": 1,
+   "used": "0x"
+  },
+  {
+   "name": "Pendidikan Muzik",
+   "icon": "fa-solid fa-music",
+   "questions": 1800,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Tasawwur Islam",
+   "icon": "fa-solid fa-fas fa-mosque",
+   "questions": 1300,
+   "difficultyStars": 3,
+   "used": "0x"
+  },
+  {
+   "name": "Fizik",
+   "icon": "fa-solid fa-zap",
+   "questions": 1261,
+   "difficultyStars": 3,
+   "used": "0x"
+  },
+  {
+   "name": "Pendidikan Syariah Islamiah",
+   "icon": "fa-solid fa-fas fa-scale-balanced",
+   "questions": 1228,
+   "difficultyStars": 3,
+   "used": "0x"
+  },
+  {
+   "name": "Sains Komputer",
+   "icon": "fa-solid fa-monitor",
+   "questions": 1100,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Pendidikan Al-Quran & As-Sunnah",
+   "icon": "fa-solid fa-fas fa-quran",
+   "questions": 1000,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Reka Bentuk & Teknologi",
+   "icon": "fa-solid fa-wrench",
+   "questions": 200,
+   "difficultyStars": 2,
+   "used": "0x"
+  },
+  {
+   "name": "Sains Sukan",
+   "icon": null,
+   "questions": 0,
+   "difficultyStars": 0,
+   "used": "0x"
+  },
+  {
+   "name": "Pertanian",
+   "icon": null,
+   "questions": 0,
+   "difficultyStars": 0,
+   "used": "0x"
+  },
+  {
+   "name": "Bahasa Cina",
+   "icon": "fa-solid fa-languages",
+   "questions": 0,
+   "difficultyStars": 0,
+   "used": "0x"
+  },
+  {
+   "name": "Pembuatan Pakaian Wanita",
+   "icon": "fa-solid fa-👗",
+   "questions": 0,
+   "difficultyStars": 0,
+   "used": "0x"
+  },
+  {
+   "name": "Sains Rumah Tangga",
+   "icon": "fa-solid fa-🍽",
+   "questions": 0,
+   "difficultyStars": 0,
+   "used": "0x"
+  }
+ ],
+ "targetSpmSubjects": [
+  {
+   "subject_id": 18,
+   "name": "Bahasa Arab"
+  },
+  {
+   "subject_id": 2,
+   "name": "Bahasa Inggeris"
+  },
+  {
+   "subject_id": 1,
+   "name": "Bahasa Melayu"
+  },
+  {
+   "subject_id": 11,
+   "name": "Biologi"
+  },
+  {
+   "subject_id": 22,
+   "name": "Ekonomi"
+  },
+  {
+   "subject_id": 9,
+   "name": "Fizik"
+  },
+  {
+   "subject_id": 12,
+   "name": "Geografi"
+  },
+  {
+   "subject_id": 10,
+   "name": "Kimia"
+  },
+  {
+   "subject_id": 3,
+   "name": "Matematik"
+  },
+  {
+   "subject_id": 8,
+   "name": "Matematik Tambahan"
+  },
+  {
+   "subject_id": 24,
+   "name": "Pendidikan Al-Quran & As-Sunnah"
+  },
+  {
+   "subject_id": 6,
+   "name": "Pendidikan Islam"
+  },
+  {
+   "subject_id": 7,
+   "name": "Pendidikan Moral"
+  },
+  {
+   "subject_id": 13,
+   "name": "Pendidikan Seni Visual"
+  },
+  {
+   "subject_id": 27,
+   "name": "Pendidikan Syariah Islamiah"
+  },
+  {
+   "subject_id": 23,
+   "name": "Perniagaan"
+  },
+  {
+   "subject_id": 21,
+   "name": "Prinsip Perakaunan"
+  },
+  {
+   "subject_id": 4,
+   "name": "Sains"
+  },
+  {
+   "subject_id": 5,
+   "name": "Sejarah"
+  },
+  {
+   "subject_id": 25,
+   "name": "Tasawwur Islam"
+  }
+ ],
+ "structuredSubjectFilter": [
+  {
+   "id": 18,
+   "name": "Bahasa Arab"
+  },
+  {
+   "id": 19,
+   "name": "Bahasa Cina"
+  },
+  {
+   "id": 2,
+   "name": "Bahasa Inggeris"
+  },
+  {
+   "id": 1,
+   "name": "Bahasa Melayu"
+  },
+  {
+   "id": 20,
+   "name": "Bahasa Tamil"
+  },
+  {
+   "id": 11,
+   "name": "Biologi"
+  },
+  {
+   "id": 22,
+   "name": "Ekonomi"
+  },
+  {
+   "id": 9,
+   "name": "Fizik"
+  },
+  {
+   "id": 12,
+   "name": "Geografi"
+  },
+  {
+   "id": 26,
+   "name": "Jawi"
+  },
+  {
+   "id": 10,
+   "name": "Kimia"
+  },
+  {
+   "id": 3,
+   "name": "Matematik"
+  },
+  {
+   "id": 8,
+   "name": "Matematik Tambahan"
+  },
+  {
+   "id": 29,
+   "name": "Pembuatan Pakaian Wanita"
+  },
+  {
+   "id": 24,
+   "name": "Pendidikan Al-Quran & As-Sunnah"
+  },
+  {
+   "id": 6,
+   "name": "Pendidikan Islam"
+  },
+  {
+   "id": 15,
+   "name": "Pendidikan Jasmani & Kesihatan"
+  },
+  {
+   "id": 7,
+   "name": "Pendidikan Moral"
+  },
+  {
+   "id": 14,
+   "name": "Pendidikan Muzik"
+  },
+  {
+   "id": 13,
+   "name": "Pendidikan Seni Visual"
+  },
+  {
+   "id": 27,
+   "name": "Pendidikan Syariah Islamiah"
+  },
+  {
+   "id": 23,
+   "name": "Perniagaan"
+  },
+  {
+   "id": 30,
+   "name": "Pertanian"
+  },
+  {
+   "id": 21,
+   "name": "Prinsip Perakaunan"
+  },
+  {
+   "id": 16,
+   "name": "Reka Bentuk & Teknologi"
+  },
+  {
+   "id": 4,
+   "name": "Sains"
+  },
+  {
+   "id": 17,
+   "name": "Sains Komputer"
+  },
+  {
+   "id": 28,
+   "name": "Sains Rumah Tangga"
+  },
+  {
+   "id": 31,
+   "name": "Sains Sukan"
+  },
+  {
+   "id": 5,
+   "name": "Sejarah"
+  },
+  {
+   "id": 25,
+   "name": "Tasawwur Islam"
+  }
+ ],
+ "dashboardSubjectCards": [
+  {
+   "name": "Bahasa Melayu",
+   "questions": 11688,
+   "core": true,
+   "href": "/practice?subject=BM"
+  },
+  {
+   "name": "Bahasa Inggeris",
+   "questions": 8039,
+   "core": true,
+   "href": "/practice?subject=BI"
+  },
+  {
+   "name": "Matematik",
+   "questions": 13872,
+   "core": true,
+   "href": "/practice?subject=MATH"
+  },
+  {
+   "name": "Sains",
+   "questions": 12165,
+   "core": true,
+   "href": "/practice?subject=SCI"
+  },
+  {
+   "name": "Sejarah",
+   "questions": 6508,
+   "core": true,
+   "href": "/practice?subject=SEJ"
+  },
+  {
+   "name": "Pendidikan Islam",
+   "questions": 9154,
+   "core": true,
+   "href": "/practice?subject=PI"
+  },
+  {
+   "name": "Pendidikan Moral",
+   "questions": 15014,
+   "core": true,
+   "href": "/practice?subject=PM"
+  },
+  {
+   "name": "Matematik Tambahan",
+   "questions": 2101,
+   "core": false,
+   "href": "/practice?subject=ADDMATH"
+  },
+  {
+   "name": "Fizik",
+   "questions": 1261,
+   "core": false,
+   "href": "/practice?subject=PHY"
+  },
+  {
+   "name": "Kimia",
+   "questions": 2245,
+   "core": false,
+   "href": "/practice?subject=CHEM"
+  },
+  {
+   "name": "Biologi",
+   "questions": 4235,
+   "core": false,
+   "href": "/practice?subject=BIO"
+  },
+  {
+   "name": "Geografi",
+   "questions": 5997,
+   "core": false,
+   "href": "/practice?subject=GEO"
+  },
+  {
+   "name": "Pendidikan Seni Visual",
+   "questions": 4910,
+   "core": false,
+   "href": "/practice?subject=PSV"
+  },
+  {
+   "name": "Pendidikan Muzik",
+   "questions": 1800,
+   "core": false,
+   "href": "/practice?subject=MUZ"
+  },
+  {
+   "name": "Pendidikan Jasmani & Kesihatan",
+   "questions": 2900,
+   "core": false,
+   "href": "/practice?subject=PJK"
+  },
+  {
+   "name": "Reka Bentuk & Teknologi",
+   "questions": 200,
+   "core": false,
+   "href": "/practice?subject=RBT"
+  },
+  {
+   "name": "Sains Komputer",
+   "questions": 1100,
+   "core": false,
+   "href": "/practice?subject=SK"
+  },
+  {
+   "name": "Bahasa Arab",
+   "questions": 5400,
+   "core": false,
+   "href": "/practice?subject=BA"
+  },
+  {
+   "name": "Bahasa Cina",
+   "questions": 0,
+   "core": false,
+   "href": "/practice?subject=BC"
+  },
+  {
+   "name": "Bahasa Tamil",
+   "questions": 6300,
+   "core": false,
+   "href": "/practice?subject=BT"
+  },
+  {
+   "name": "Prinsip Perakaunan",
+   "questions": 2970,
+   "core": false,
+   "href": "/practice?subject=AKAUN"
+  },
+  {
+   "name": "Ekonomi",
+   "questions": 2770,
+   "core": false,
+   "href": "/practice?subject=EKON"
+  },
+  {
+   "name": "Perniagaan",
+   "questions": 2732,
+   "core": false,
+   "href": "/practice?subject=PERNIAGA"
+  },
+  {
+   "name": "Pendidikan Al-Quran & As-Sunnah",
+   "questions": 1000,
+   "core": false,
+   "href": "/practice?subject=PQS"
+  },
+  {
+   "name": "Tasawwur Islam",
+   "questions": 1300,
+   "core": false,
+   "href": "/practice?subject=TI"
+  },
+  {
+   "name": "Jawi",
+   "questions": 2100,
+   "core": false,
+   "href": "/practice?subject=JAWI"
+  },
+  {
+   "name": "Pendidikan Syariah Islamiah",
+   "questions": 1228,
+   "core": false,
+   "href": "/practice?subject=PSI"
+  },
+  {
+   "name": "Sains Rumah Tangga",
+   "questions": 0,
+   "core": false,
+   "href": "/practice?subject=SRT"
+  },
+  {
+   "name": "Pembuatan Pakaian Wanita",
+   "questions": 0,
+   "core": false,
+   "href": "/practice?subject=PPW"
+  },
+  {
+   "name": "Pertanian",
+   "questions": 0,
+   "core": false,
+   "href": "/practice?subject=PN"
+  },
+  {
+   "name": "Sains Sukan",
+   "questions": 0,
+   "core": false,
+   "href": "/practice?subject=SS"
+  }
+ ]
+}

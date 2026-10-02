@@ -1,0 +1,1949 @@
+{
+ "screen": "S13",
+ "key": "S13-admin-audio-kbat-create",
+ "route": "/admin/audio-kbat/create",
+ "name": "Cipta Set Audio KBAT",
+ "module": "M09",
+ "generatedAt": "2026-09-25T11:01:18.032Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 83,
+  "visibleDefault": 82,
+  "conditional": 0,
+  "hiddenOnly": 1,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 3,
+   "heading": 7,
+   "text": 8,
+   "form": 1,
+   "hidden-field": 1,
+   "card": 5,
+   "label": 28,
+   "input": 17,
+   "select": 4,
+   "textarea": 7,
+   "badge": 1,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (4 sections, 30 questions; status default approved)",
+   "file": "_raw/M09/S13-admin-audio-kbat-create__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/audio-kbat/create",
+   "finalUrl": "/admin/audio-kbat/create",
+   "httpStatus": 200,
+   "title": "Cipta Set Audio KBAT",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var f = [...document.querySelectorAll('main form')].find(x => (x.method || '').toLowerCase() === 'post' && !x.querySelector('input[name=_method][value=DELETE]')); if (!f) return 'no post form'; var inv = [...f.querySelectorAll(':invalid')].filter(e => e.name).map(e => e.name); return 'novalidate=' + f.noValidate + ' valid=' + f.checkValidity() + ' invalid(' + inv.length + ')=' + inv.slice(0, 12).join(','); })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main select')].filter(s => s.name).map(s => s.name + '=' + JSON.stringify(s.value) + (s.selectedIndex >= 0 ? '(' + s.options[s.selectedIndex].text.trim() + ')' : '')).concat([...document.querySelectorAll('main input[type=checkbox],main input[type=radio]')].filter(c => c.name).map(c => c.name + ':' + c.value + '=' + c.checked)).join(' ; '))()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main a, main button')].filter(b => /^(Batal|Kembali|Simpan|Kemaskini|Terbitkan|Hantar|Tapis|Cari|Reset|Tambah)/.test(b.textContent.trim())).map(b => { var r = b.getBoundingClientRect(); return b.textContent.trim().replace(/\\s+/g, ' ').slice(0, 26) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; ') + ' | docW=' + document.documentElement.scrollWidth)()"
+    },
+    {
+     "eval": "[...document.querySelectorAll('main input[name$=\"[title]\"]')].map(i => i.name + '=' + i.value).join(' ') + ' | q=' + document.querySelectorAll('main textarea[name$=\"[question_text]\"]').length + ' marks=' + document.querySelector('main input[name=\"questions[30][marks]\"]').value + ' kbat=' + document.querySelector('main input[name=\"questions[30][kbat_level]\"]').value"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=1 leaks=0",
+    "novalidate=false valid=false invalid(153)=title,education_level_id,subject_id,questions[1][question_text],questions[1][option_a],questions[1][option_b],questions[1][option_c],questions[1][option_d],questions[2][question_text],questions[2][option_a],questions[2][option_b],questions[2][option_c]",
+    "education_level_id=\"\"(Pilih Tahap) ; subject_id=\"\"(Pilih Subjek) ; status=\"approved\"(Approved) ; questions[1][correct_answer]=\"A\"(A) ; questions[2][correct_answer]=\"A\"(A) ; questions[3][correct_answer]=\"A\"(A) ; questions[4][correct_answer]=\"A\"(A) ; questions[5][correct_answer]=\"A\"(A) ; questions[6][correct_answer]=\"A\"(A) ; questions[7][correct_answer]=\"A\"(A) ; questions[8][correct_answer]=\"A\"(A) ; questions[9][correct_answer]=\"A\"(A) ; questions[10][correct_answer]=\"A\"(A) ; questions[11][correct_answer]=\"A\"(A) ; questions[12][correct_answer]=\"A\"(A) ; questions[13][correct_answer]=\"A\"(A) ; questions[14][correct_answer]=\"A\"(A) ; questions[15][correct_answer]=\"A\"(A) ; questions[16][correct_answer]=\"A\"(A) ; questions[17][correct_answer]=\"A\"(A) ; questions[18][correct_answer]=\"A\"(A) ; questions[19][correct_answer]=\"A\"(A) ; questions[20][correct_answer]=\"A\"(A) ; questions[21][correct_answer]=\"A\"(A) ; questions[22][correct_answer]=\"A\"(A) ; questions[23][correct_answer]=\"A\"(A) ; questions[24][correct_answer]=\"A\"(A) ; questions[25][correct_answer]=\"A\"(A) ; questions[26][correct_answer]=\"A\"(A) ; questions[27][correct_answer]=\"A\"(A) ; questions[28][correct_answer]=\"A\"(A) ; questions[29][correct_answer]=\"A\"(A) ; questions[30][correct_answer]=\"A\"(A)",
+    "Kembali@297,147 74x17 ; Simpan Set Audio KBAT@970,736 254x48 | docW=1265",
+    "sections[1][title]=Audio 1 sections[2][title]=Audio 2 sections[3][title]=Audio 3 sections[4][title]=Audio 4 | q=30 marks=1 kbat=3",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div.space-y-3 > div.rounded-xl": 30
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M09/S13-admin-audio-kbat-create__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/audio-kbat/create",
+   "finalUrl": "/admin/audio-kbat/create",
+   "httpStatus": 200,
+   "title": "Cipta Set Audio KBAT",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main a, main button')].filter(b => /^(Batal|Kembali|Simpan|Kemaskini|Terbitkan|Hantar|Tapis|Cari|Reset|Tambah)/.test(b.textContent.trim())).map(b => { var r = b.getBoundingClientRect(); return b.textContent.trim().replace(/\\s+/g, ' ').slice(0, 26) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; ') + ' | docW=' + document.documentElement.scrollWidth)()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=1 leaks=0",
+    "Kembali@17,90 74x17 ; Simpan Set Audio KBAT@89,736 254x48 | docW=360",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div.space-y-3 > div.rounded-xl": 30
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M09/S13-admin-audio-kbat-create__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/audio-kbat/create",
+   "finalUrl": "/admin/audio-kbat/create",
+   "httpStatus": 200,
+   "title": "Cipta Set Audio KBAT",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=1 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div.space-y-3 > div.rounded-xl": 30
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M09-S13-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/admin/audio-kbat",
+   "absHref": "https://prestasiplus.my/admin/audio-kbat",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-002",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Cipta Set Audio KBAT",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Format fixed: 4 audio section, 30 soalan MCQ, soalan dipaparkan serentak mengikut section.",
+   "landmark": "main",
+   "section": "Cipta Set Audio KBAT",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-004",
+   "kind": "text",
+   "tag": "p",
+   "text": "Apa yang cikgu perlu sediakan?",
+   "landmark": "main",
+   "section": "Cipta Set Audio KBAT",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Lengkapkan 30 soalan mengikut turutan asal. Upload audio untuk setiap bahagian: soalan 1-8, 9-16, 17-24 dan 25-30. Jangan randomkan nombor soalan kerana audio dirujuk mengikut range tetap.",
+   "landmark": "main",
+   "section": "Cipta Set Audio KBAT",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jika cikgu bekalkan bahan offline, Word lebih mudah untuk menulis soalan dan transkrip. XLSX pula lebih kemas untuk import/admin mapping.",
+   "landmark": "main",
+   "section": "Cipta Set Audio KBAT",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-007",
+   "kind": "link",
+   "tag": "a",
+   "text": "Template Word",
+   "href": "https://prestasiplus.my/admin/audio-kbat/template-word",
+   "absHref": "https://prestasiplus.my/admin/audio-kbat/template-word",
+   "icon": "fa-file-word",
+   "landmark": "main",
+   "section": "Cipta Set Audio KBAT",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-008",
+   "kind": "link",
+   "tag": "a",
+   "text": "Template XLSX",
+   "href": "https://prestasiplus.my/admin/audio-kbat/template",
+   "absHref": "https://prestasiplus.my/admin/audio-kbat/template",
+   "icon": "fa-file-excel",
+   "landmark": "main",
+   "section": "Cipta Set Audio KBAT",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-009",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/audio-kbat",
+   "method": "POST",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "title",
+    "education_level_id",
+    "subject_id",
+    "status",
+    "source_label",
+    "instructions",
+    "sections[1][title]",
+    "sections[1][audio]",
+    "sections[1][transcript]",
+    "questions[1][question_text]",
+    "questions[1][option_a]",
+    "questions[1][option_b]",
+    "questions[1][option_c]",
+    "questions[1][option_d]",
+    "questions[1][correct_answer]",
+    "questions[1][marks]",
+    "questions[1][kbat_level]",
+    "questions[1][dskp_sp_id]",
+    "questions[1][explanation]",
+    "questions[2][question_text]",
+    "questions[2][option_a]",
+    "questions[2][option_b]",
+    "questions[2][option_c]",
+    "questions[2][option_d]",
+    "questions[2][correct_answer]",
+    "questions[2][marks]",
+    "questions[2][kbat_level]",
+    "questions[2][dskp_sp_id]",
+    "questions[2][explanation]",
+    "questions[3][question_text]",
+    "questions[3][option_a]",
+    "questions[3][option_b]",
+    "questions[3][option_c]",
+    "questions[3][option_d]",
+    "questions[3][correct_answer]",
+    "questions[3][marks]",
+    "questions[3][kbat_level]",
+    "questions[3][dskp_sp_id]",
+    "questions[3][explanation]",
+    "questions[4][question_text]",
+    "questions[4][option_a]",
+    "questions[4][option_b]",
+    "questions[4][option_c]",
+    "questions[4][option_d]",
+    "questions[4][correct_answer]",
+    "questions[4][marks]",
+    "questions[4][kbat_level]",
+    "questions[4][dskp_sp_id]",
+    "questions[4][explanation]",
+    "questions[5][question_text]",
+    "questions[5][option_a]",
+    "questions[5][option_b]",
+    "questions[5][option_c]",
+    "questions[5][option_d]",
+    "questions[5][correct_answer]",
+    "questions[5][marks]",
+    "questions[5][kbat_level]",
+    "questions[5][dskp_sp_id]",
+    "questions[5][explanation]",
+    "questions[6][question_text]",
+    "questions[6][option_a]",
+    "questions[6][option_b]",
+    "questions[6][option_c]",
+    "questions[6][option_d]",
+    "questions[6][correct_answer]",
+    "questions[6][marks]",
+    "questions[6][kbat_level]",
+    "questions[6][dskp_sp_id]",
+    "questions[6][explanation]",
+    "questions[7][question_text]",
+    "questions[7][option_a]",
+    "questions[7][option_b]",
+    "questions[7][option_c]",
+    "questions[7][option_d]",
+    "questions[7][correct_answer]",
+    "questions[7][marks]",
+    "questions[7][kbat_level]",
+    "questions[7][dskp_sp_id]",
+    "questions[7][explanation]",
+    "questions[8][question_text]",
+    "questions[8][option_a]",
+    "questions[8][option_b]",
+    "questions[8][option_c]",
+    "questions[8][option_d]",
+    "questions[8][correct_answer]",
+    "questions[8][marks]",
+    "questions[8][kbat_level]",
+    "questions[8][dskp_sp_id]",
+    "questions[8][explanation]",
+    "sections[2][title]",
+    "sections[2][audio]",
+    "sections[2][transcript]",
+    "questions[9][question_text]",
+    "questions[9][option_a]",
+    "questions[9][option_b]",
+    "questions[9][option_c]",
+    "questions[9][option_d]",
+    "questions[9][correct_answer]",
+    "questions[9][marks]",
+    "questions[9][kbat_level]",
+    "questions[9][dskp_sp_id]",
+    "questions[9][explanation]",
+    "questions[10][question_text]",
+    "questions[10][option_a]",
+    "questions[10][option_b]",
+    "questions[10][option_c]",
+    "questions[10][option_d]",
+    "questions[10][correct_answer]",
+    "questions[10][marks]",
+    "questions[10][kbat_level]",
+    "questions[10][dskp_sp_id]",
+    "questions[10][explanation]",
+    "questions[11][question_text]",
+    "questions[11][option_a]",
+    "questions[11][option_b]",
+    "questions[11][option_c]",
+    "questions[11][option_d]",
+    "questions[11][correct_answer]",
+    "questions[11][marks]",
+    "questions[11][kbat_level]",
+    "questions[11][dskp_sp_id]",
+    "questions[11][explanation]",
+    "questions[12][question_text]",
+    "questions[12][option_a]",
+    "questions[12][option_b]",
+    "questions[12][option_c]",
+    "questions[12][option_d]",
+    "questions[12][correct_answer]",
+    "questions[12][marks]",
+    "questions[12][kbat_level]",
+    "questions[12][dskp_sp_id]",
+    "questions[12][explanation]",
+    "questions[13][question_text]",
+    "questions[13][option_a]",
+    "questions[13][option_b]",
+    "questions[13][option_c]",
+    "questions[13][option_d]",
+    "questions[13][correct_answer]",
+    "questions[13][marks]",
+    "questions[13][kbat_level]",
+    "questions[13][dskp_sp_id]",
+    "questions[13][explanation]",
+    "questions[14][question_text]",
+    "questions[14][option_a]",
+    "questions[14][option_b]",
+    "questions[14][option_c]",
+    "questions[14][option_d]",
+    "questions[14][correct_answer]",
+    "questions[14][marks]",
+    "questions[14][kbat_level]",
+    "questions[14][dskp_sp_id]",
+    "questions[14][explanation]",
+    "questions[15][question_text]",
+    "questions[15][option_a]",
+    "questions[15][option_b]",
+    "questions[15][option_c]",
+    "questions[15][option_d]",
+    "questions[15][correct_answer]",
+    "questions[15][marks]",
+    "questions[15][kbat_level]",
+    "questions[15][dskp_sp_id]",
+    "questions[15][explanation]",
+    "questions[16][question_text]",
+    "questions[16][option_a]",
+    "questions[16][option_b]",
+    "questions[16][option_c]",
+    "questions[16][option_d]",
+    "questions[16][correct_answer]",
+    "questions[16][marks]",
+    "questions[16][kbat_level]",
+    "questions[16][dskp_sp_id]",
+    "questions[16][explanation]",
+    "sections[3][title]",
+    "sections[3][audio]",
+    "sections[3][transcript]",
+    "questions[17][question_text]",
+    "questions[17][option_a]",
+    "questions[17][option_b]",
+    "questions[17][option_c]",
+    "questions[17][option_d]",
+    "questions[17][correct_answer]",
+    "questions[17][marks]",
+    "questions[17][kbat_level]",
+    "questions[17][dskp_sp_id]",
+    "questions[17][explanation]",
+    "questions[18][question_text]",
+    "questions[18][option_a]",
+    "questions[18][option_b]",
+    "questions[18][option_c]",
+    "questions[18][option_d]",
+    "questions[18][correct_answer]",
+    "questions[18][marks]",
+    "questions[18][kbat_level]",
+    "questions[18][dskp_sp_id]",
+    "questions[18][explanation]",
+    "questions[19][question_text]",
+    "questions[19][option_a]",
+    "questions[19][option_b]",
+    "questions[19][option_c]",
+    "questions[19][option_d]",
+    "questions[19][correct_answer]",
+    "questions[19][marks]",
+    "questions[19][kbat_level]",
+    "questions[19][dskp_sp_id]",
+    "questions[19][explanation]",
+    "questions[20][question_text]",
+    "questions[20][option_a]",
+    "questions[20][option_b]",
+    "questions[20][option_c]",
+    "questions[20][option_d]",
+    "questions[20][correct_answer]",
+    "questions[20][marks]",
+    "questions[20][kbat_level]",
+    "questions[20][dskp_sp_id]",
+    "questions[20][explanation]",
+    "questions[21][question_text]",
+    "questions[21][option_a]",
+    "questions[21][option_b]",
+    "questions[21][option_c]",
+    "questions[21][option_d]",
+    "questions[21][correct_answer]",
+    "questions[21][marks]",
+    "questions[21][kbat_level]",
+    "questions[21][dskp_sp_id]",
+    "questions[21][explanation]",
+    "questions[22][question_text]",
+    "questions[22][option_a]",
+    "questions[22][option_b]",
+    "questions[22][option_c]",
+    "questions[22][option_d]",
+    "questions[22][correct_answer]",
+    "questions[22][marks]",
+    "questions[22][kbat_level]",
+    "questions[22][dskp_sp_id]",
+    "questions[22][explanation]",
+    "questions[23][question_text]",
+    "questions[23][option_a]",
+    "questions[23][option_b]",
+    "questions[23][option_c]",
+    "questions[23][option_d]",
+    "questions[23][correct_answer]",
+    "questions[23][marks]",
+    "questions[23][kbat_level]",
+    "questions[23][dskp_sp_id]",
+    "questions[23][explanation]",
+    "questions[24][question_text]",
+    "questions[24][option_a]",
+    "questions[24][option_b]",
+    "questions[24][option_c]",
+    "questions[24][option_d]",
+    "questions[24][correct_answer]",
+    "questions[24][marks]",
+    "questions[24][kbat_level]",
+    "questions[24][dskp_sp_id]",
+    "questions[24][explanation]",
+    "sections[4][title]",
+    "sections[4][audio]",
+    "sections[4][transcript]",
+    "questions[25][question_text]",
+    "questions[25][option_a]",
+    "questions[25][option_b]",
+    "questions[25][option_c]",
+    "questions[25][option_d]",
+    "questions[25][correct_answer]",
+    "questions[25][marks]",
+    "questions[25][kbat_level]",
+    "questions[25][dskp_sp_id]",
+    "questions[25][explanation]",
+    "questions[26][question_text]",
+    "questions[26][option_a]",
+    "questions[26][option_b]",
+    "questions[26][option_c]",
+    "questions[26][option_d]",
+    "questions[26][correct_answer]",
+    "questions[26][marks]",
+    "questions[26][kbat_level]",
+    "questions[26][dskp_sp_id]",
+    "questions[26][explanation]",
+    "questions[27][question_text]",
+    "questions[27][option_a]",
+    "questions[27][option_b]",
+    "questions[27][option_c]",
+    "questions[27][option_d]",
+    "questions[27][correct_answer]",
+    "questions[27][marks]",
+    "questions[27][kbat_level]",
+    "questions[27][dskp_sp_id]",
+    "questions[27][explanation]",
+    "questions[28][question_text]",
+    "questions[28][option_a]",
+    "questions[28][option_b]",
+    "questions[28][option_c]",
+    "questions[28][option_d]",
+    "questions[28][correct_answer]",
+    "questions[28][marks]",
+    "questions[28][kbat_level]",
+    "questions[28][dskp_sp_id]",
+    "questions[28][explanation]",
+    "questions[29][question_text]",
+    "questions[29][option_a]",
+    "questions[29][option_b]",
+    "questions[29][option_c]",
+    "questions[29][option_d]",
+    "questions[29][correct_answer]",
+    "questions[29][marks]",
+    "questions[29][kbat_level]",
+    "questions[29][dskp_sp_id]",
+    "questions[29][explanation]",
+    "questions[30][question_text]",
+    "questions[30][option_a]",
+    "questions[30][option_b]",
+    "questions[30][option_c]",
+    "questions[30][option_d]",
+    "questions[30][correct_answer]",
+    "questions[30][marks]",
+    "questions[30][kbat_level]",
+    "questions[30][dskp_sp_id]",
+    "questions[30][explanation]"
+   ],
+   "landmark": "main",
+   "section": "Cipta Set Audio KBAT",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-010",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Cipta Set Audio KBAT",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-011",
+   "kind": "card",
+   "tag": "section",
+   "text": "Maklumat Set",
+   "landmark": "form",
+   "section": "Cipta Set Audio KBAT",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-012",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Maklumat Set",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Set",
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-014",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "title",
+   "label": "Tajuk Set",
+   "placeholder": "Contoh: BM T4 Ujian Mendengar Set 1",
+   "required": true,
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahap",
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-016",
+   "kind": "select",
+   "tag": "select",
+   "name": "education_level_id",
+   "label": "Tahap",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih Tahap"
+    },
+    {
+     "value": "1",
+     "text": "Darjah 1"
+    },
+    {
+     "value": "2",
+     "text": "Darjah 2"
+    },
+    {
+     "value": "3",
+     "text": "Darjah 3"
+    },
+    {
+     "value": "4",
+     "text": "Darjah 4"
+    },
+    {
+     "value": "5",
+     "text": "Darjah 5"
+    },
+    {
+     "value": "6",
+     "text": "Darjah 6"
+    },
+    {
+     "value": "7",
+     "text": "Tingkatan 1"
+    },
+    {
+     "value": "8",
+     "text": "Tingkatan 2"
+    },
+    {
+     "value": "9",
+     "text": "Tingkatan 3"
+    },
+    {
+     "value": "10",
+     "text": "Tingkatan 4"
+    },
+    {
+     "value": "11",
+     "text": "Tingkatan 5"
+    }
+   ],
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek",
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-018",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Subjek",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih Subjek"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "3",
+     "text": "Matematik"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "4",
+     "text": "Sains"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    }
+   ],
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "Status",
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-020",
+   "kind": "select",
+   "tag": "select",
+   "name": "status",
+   "label": "Status",
+   "options": [
+    {
+     "value": "approved",
+     "text": "Approved"
+    },
+    {
+     "value": "pending_review",
+     "text": "Pending Review"
+    },
+    {
+     "value": "draft",
+     "text": "Draft"
+    }
+   ],
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-021",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sumber / Penyumbang",
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-022",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "source_label",
+   "label": "Sumber / Penyumbang",
+   "placeholder": "Contoh: Cikgu <name>",
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-023",
+   "kind": "label",
+   "tag": "label",
+   "text": "Arahan Umum",
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-024",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "instructions",
+   "label": "Arahan Umum",
+   "placeholder": "Dengar audio bagi setiap bahagian dan jawab semua soalan.",
+   "rows": "3",
+   "landmark": "section",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-025",
+   "kind": "card",
+   "tag": "section",
+   "text": "Bahagian 1 · Soalan 1-8",
+   "landmark": "form",
+   "section": "Maklumat Set",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-026",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Bahagian 1 · Soalan 1-8",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "Audio section ini akan kekal bersama semua soalan dalam range ini.",
+   "landmark": "section",
+   "section": "Bahagian 1 · Soalan 1-8",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Audio",
+   "landmark": "section",
+   "section": "Bahagian 1 · Soalan 1-8",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-029",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "sections[1][title]",
+   "label": "Tajuk Audio",
+   "landmark": "section",
+   "section": "Bahagian 1 · Soalan 1-8",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-030",
+   "kind": "label",
+   "tag": "label",
+   "text": "Fail Audio",
+   "landmark": "section",
+   "section": "Bahagian 1 · Soalan 1-8",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-031",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "sections[1][audio]",
+   "label": "Fail Audio",
+   "accept": ".mp3,.m4a,.wav,.ogg,.aac,.mp4,audio/*",
+   "landmark": "section",
+   "section": "Bahagian 1 · Soalan 1-8",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-032",
+   "kind": "label",
+   "tag": "label",
+   "text": "Transkrip Audio Untuk Audit",
+   "landmark": "section",
+   "section": "Bahagian 1 · Soalan 1-8",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-033",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "sections[1][transcript]",
+   "label": "Transkrip Audio Untuk Audit",
+   "placeholder": "Wajib digalakkan untuk semakan admin.",
+   "rows": "3",
+   "landmark": "section",
+   "section": "Bahagian 1 · Soalan 1-8",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-034",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Soalan 1",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-035",
+   "kind": "badge",
+   "tag": "span",
+   "text": "KBAT Audio",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-036",
+   "kind": "label",
+   "tag": "label",
+   "text": "Teks Soalan",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-037",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[1][question_text]",
+   "required": true,
+   "rows": "2",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-038",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan A",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-039",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "questions[1][option_a]",
+   "label": "Pilihan A",
+   "required": true,
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-040",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan B",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-041",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "questions[1][option_b]",
+   "label": "Pilihan B",
+   "required": true,
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-042",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan C",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-043",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "questions[1][option_c]",
+   "label": "Pilihan C",
+   "required": true,
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-044",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan D",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-045",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "questions[1][option_d]",
+   "label": "Pilihan D",
+   "required": true,
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-046",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawapan",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-047",
+   "kind": "select",
+   "tag": "select",
+   "name": "questions[1][correct_answer]",
+   "label": "Jawapan",
+   "required": true,
+   "options": [
+    {
+     "value": "A",
+     "text": "A"
+    },
+    {
+     "value": "B",
+     "text": "B"
+    },
+    {
+     "value": "C",
+     "text": "C"
+    },
+    {
+     "value": "D",
+     "text": "D"
+    }
+   ],
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-048",
+   "kind": "label",
+   "tag": "label",
+   "text": "Markah",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-049",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "questions[1][marks]",
+   "label": "Markah",
+   "min": "1",
+   "max": "20",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-050",
+   "kind": "label",
+   "tag": "label",
+   "text": "KBAT Level",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-051",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "questions[1][kbat_level]",
+   "label": "KBAT Level",
+   "min": "1",
+   "max": "5",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-052",
+   "kind": "label",
+   "tag": "label",
+   "text": "DSKP SP ID",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-053",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "questions[1][dskp_sp_id]",
+   "label": "DSKP SP ID",
+   "placeholder": "Optional",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-054",
+   "kind": "label",
+   "tag": "label",
+   "text": "Skema / Penjelasan",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-055",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[1][explanation]",
+   "rows": "2",
+   "landmark": "section",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-056",
+   "kind": "card",
+   "tag": "section",
+   "text": "Bahagian 2 · Soalan 9-16",
+   "landmark": "form",
+   "section": "Soalan 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-057",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Bahagian 2 · Soalan 9-16",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-058",
+   "kind": "text",
+   "tag": "p",
+   "text": "Audio section ini akan kekal bersama semua soalan dalam range ini.",
+   "landmark": "section",
+   "section": "Bahagian 2 · Soalan 9-16",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-059",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Audio",
+   "landmark": "section",
+   "section": "Bahagian 2 · Soalan 9-16",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-060",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "sections[2][title]",
+   "label": "Tajuk Audio",
+   "landmark": "section",
+   "section": "Bahagian 2 · Soalan 9-16",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-061",
+   "kind": "label",
+   "tag": "label",
+   "text": "Fail Audio",
+   "landmark": "section",
+   "section": "Bahagian 2 · Soalan 9-16",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-062",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "sections[2][audio]",
+   "label": "Fail Audio",
+   "accept": ".mp3,.m4a,.wav,.ogg,.aac,.mp4,audio/*",
+   "landmark": "section",
+   "section": "Bahagian 2 · Soalan 9-16",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-063",
+   "kind": "label",
+   "tag": "label",
+   "text": "Transkrip Audio Untuk Audit",
+   "landmark": "section",
+   "section": "Bahagian 2 · Soalan 9-16",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-064",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "sections[2][transcript]",
+   "label": "Transkrip Audio Untuk Audit",
+   "placeholder": "Wajib digalakkan untuk semakan admin.",
+   "rows": "3",
+   "landmark": "section",
+   "section": "Bahagian 2 · Soalan 9-16",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-065",
+   "kind": "card",
+   "tag": "section",
+   "text": "Bahagian 3 · Soalan 17-24",
+   "landmark": "form",
+   "section": "Bahagian 2 · Soalan 9-16",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-066",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Bahagian 3 · Soalan 17-24",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-067",
+   "kind": "text",
+   "tag": "p",
+   "text": "Audio section ini akan kekal bersama semua soalan dalam range ini.",
+   "landmark": "section",
+   "section": "Bahagian 3 · Soalan 17-24",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-068",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Audio",
+   "landmark": "section",
+   "section": "Bahagian 3 · Soalan 17-24",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-069",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "sections[3][title]",
+   "label": "Tajuk Audio",
+   "landmark": "section",
+   "section": "Bahagian 3 · Soalan 17-24",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-070",
+   "kind": "label",
+   "tag": "label",
+   "text": "Fail Audio",
+   "landmark": "section",
+   "section": "Bahagian 3 · Soalan 17-24",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-071",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "sections[3][audio]",
+   "label": "Fail Audio",
+   "accept": ".mp3,.m4a,.wav,.ogg,.aac,.mp4,audio/*",
+   "landmark": "section",
+   "section": "Bahagian 3 · Soalan 17-24",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-072",
+   "kind": "label",
+   "tag": "label",
+   "text": "Transkrip Audio Untuk Audit",
+   "landmark": "section",
+   "section": "Bahagian 3 · Soalan 17-24",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-073",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "sections[3][transcript]",
+   "label": "Transkrip Audio Untuk Audit",
+   "placeholder": "Wajib digalakkan untuk semakan admin.",
+   "rows": "3",
+   "landmark": "section",
+   "section": "Bahagian 3 · Soalan 17-24",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-074",
+   "kind": "card",
+   "tag": "section",
+   "text": "Bahagian 4 · Soalan 25-30",
+   "landmark": "form",
+   "section": "Bahagian 3 · Soalan 17-24",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-075",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Bahagian 4 · Soalan 25-30",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-076",
+   "kind": "text",
+   "tag": "p",
+   "text": "Audio section ini akan kekal bersama semua soalan dalam range ini.",
+   "landmark": "section",
+   "section": "Bahagian 4 · Soalan 25-30",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-077",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Audio",
+   "landmark": "section",
+   "section": "Bahagian 4 · Soalan 25-30",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-078",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "sections[4][title]",
+   "label": "Tajuk Audio",
+   "landmark": "section",
+   "section": "Bahagian 4 · Soalan 25-30",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-079",
+   "kind": "label",
+   "tag": "label",
+   "text": "Fail Audio",
+   "landmark": "section",
+   "section": "Bahagian 4 · Soalan 25-30",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-080",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "sections[4][audio]",
+   "label": "Fail Audio",
+   "accept": ".mp3,.m4a,.wav,.ogg,.aac,.mp4,audio/*",
+   "landmark": "section",
+   "section": "Bahagian 4 · Soalan 25-30",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-081",
+   "kind": "label",
+   "tag": "label",
+   "text": "Transkrip Audio Untuk Audit",
+   "landmark": "section",
+   "section": "Bahagian 4 · Soalan 25-30",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-082",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "sections[4][transcript]",
+   "label": "Transkrip Audio Untuk Audit",
+   "placeholder": "Wajib digalakkan untuk semakan admin.",
+   "rows": "3",
+   "landmark": "section",
+   "section": "Bahagian 4 · Soalan 25-30",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S13-083",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan Set Audio KBAT",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/audio-kbat",
+   "landmark": "form",
+   "section": "Bahagian 4 · Soalan 25-30",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

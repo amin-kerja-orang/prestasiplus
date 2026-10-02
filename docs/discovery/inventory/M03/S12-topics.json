@@ -1,0 +1,2306 @@
+{
+ "screen": "S12",
+ "key": "S12-topics",
+ "route": "/topics",
+ "name": "Topik",
+ "module": "M03",
+ "generatedAt": "2026-09-25T07:23:14.755Z",
+ "notes": "first 6 of 125 topic cards inventoried",
+ "shell": "SHU",
+ "summary": {
+  "total": 119,
+  "visibleDefault": 33,
+  "conditional": 83,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 3,
+   "link": 77,
+   "badge": 14,
+   "heading": 24,
+   "empty-state": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "all (125 topic cards)",
+   "file": "_raw/M03/S12-topics__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/topics",
+   "finalUrl": "/topics",
+   "httpStatus": 200,
+   "title": "Topik - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href*=\"/topics/\"]": 125
+   }
+  },
+  {
+   "label": "d1-sains__1280",
+   "description": "grade D1 + SAINS (both chips; note: chip links drop the other filter)",
+   "file": "_raw/M03/S12-topics__d1-sains__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/topics?grade_level=DARJAH_1&subject=SAINS",
+   "finalUrl": "/topics?grade_level=DARJAH_1&subject=SAINS",
+   "httpStatus": 200,
+   "title": "Topik - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href*=\"/topics/\"]": 4
+   }
+  },
+  {
+   "label": "empty__1280",
+   "description": "no topics (empty state)",
+   "file": "_raw/M03/S12-topics__empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/topics?grade_level=TINGKATAN_2",
+   "finalUrl": "/topics?grade_level=TINGKATAN_2",
+   "httpStatus": 200,
+   "title": "Topik - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href*=\"/topics/\"]": 0
+   }
+  },
+  {
+   "label": "grade-d1__1280",
+   "description": "grade_level=DARJAH_1 (grade chip active)",
+   "file": "_raw/M03/S12-topics__grade-d1__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/topics?grade_level=DARJAH_1",
+   "finalUrl": "/topics?grade_level=DARJAH_1",
+   "httpStatus": 200,
+   "title": "Topik - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href*=\"/topics/\"]": 17
+   }
+  },
+  {
+   "label": "grade-t4-hidden__1280",
+   "description": "grade_level=TINGKATAN_4 (no chip exists; URL-only)",
+   "file": "_raw/M03/S12-topics__grade-t4-hidden__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/topics?grade_level=TINGKATAN_4",
+   "finalUrl": "/topics?grade_level=TINGKATAN_4",
+   "httpStatus": 200,
+   "title": "Topik - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href*=\"/topics/\"]": 19
+   }
+  },
+  {
+   "label": "subject-geografi-hidden__1280",
+   "description": "subject=GEOGRAFI (no chip exists; URL-only)",
+   "file": "_raw/M03/S12-topics__subject-geografi-hidden__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/topics?subject=GEOGRAFI",
+   "finalUrl": "/topics?subject=GEOGRAFI",
+   "httpStatus": 200,
+   "title": "Topik - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href*=\"/topics/\"]": 5
+   }
+  },
+  {
+   "label": "subject-sains__1280",
+   "description": "subject=SAINS (subject chip active)",
+   "file": "_raw/M03/S12-topics__subject-sains__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/topics?subject=SAINS",
+   "finalUrl": "/topics?subject=SAINS",
+   "httpStatus": 200,
+   "title": "Topik - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href*=\"/topics/\"]": 35
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "all @375",
+   "file": "_raw/M03/S12-topics__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/topics",
+   "finalUrl": "/topics",
+   "httpStatus": 200,
+   "title": "Topik - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href*=\"/topics/\"]": 125
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "all @768",
+   "file": "_raw/M03/S12-topics__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/topics",
+   "finalUrl": "/topics",
+   "httpStatus": 200,
+   "title": "Topik - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href*=\"/topics/\"]": 125
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Topik Pembelajaran",
+   "seenIn": [
+    "default__1280",
+    "d1-sains__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Admin PRESTASI+",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M03-S12-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Topik Pembelajaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "d1-sains__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Topik Pembelajaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "d1-sains__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Topik Pembelajaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "d1-sains__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua Darjah",
+   "href": "https://prestasiplus.my/topics",
+   "absHref": "https://prestasiplus.my/topics",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 1",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_1",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_1",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 2",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_2",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_2",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-007",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 3",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_3",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_3",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-008",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 4",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_4",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_4",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-009",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 5",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_5",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_5",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-010",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 6",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_6",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_6",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-011",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua Subjek",
+   "href": "https://prestasiplus.my/topics",
+   "absHref": "https://prestasiplus.my/topics",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-012",
+   "kind": "link",
+   "tag": "a",
+   "text": "MATEMATIK",
+   "href": "https://prestasiplus.my/topics?subject=MATEMATIK",
+   "absHref": "https://prestasiplus.my/topics?subject=MATEMATIK",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-013",
+   "kind": "link",
+   "tag": "a",
+   "text": "BAHASA MELAYU",
+   "href": "https://prestasiplus.my/topics?subject=BAHASA_MELAYU",
+   "absHref": "https://prestasiplus.my/topics?subject=BAHASA_MELAYU",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-014",
+   "kind": "link",
+   "tag": "a",
+   "text": "BAHASA INGGERIS",
+   "href": "https://prestasiplus.my/topics?subject=BAHASA_INGGERIS",
+   "absHref": "https://prestasiplus.my/topics?subject=BAHASA_INGGERIS",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-015",
+   "kind": "link",
+   "tag": "a",
+   "text": "SAINS",
+   "href": "https://prestasiplus.my/topics?subject=SAINS",
+   "absHref": "https://prestasiplus.my/topics?subject=SAINS",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-016",
+   "kind": "link",
+   "tag": "a",
+   "text": "PENDIDIKAN ISLAM",
+   "href": "https://prestasiplus.my/topics?subject=PENDIDIKAN_ISLAM",
+   "absHref": "https://prestasiplus.my/topics?subject=PENDIDIKAN_ISLAM",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-017",
+   "kind": "link",
+   "tag": "a",
+   "text": "PENDIDIKAN MORAL",
+   "href": "https://prestasiplus.my/topics?subject=PENDIDIKAN_MORAL",
+   "absHref": "https://prestasiplus.my/topics?subject=PENDIDIKAN_MORAL",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-018",
+   "kind": "link",
+   "tag": "a",
+   "text": "SEJARAH",
+   "href": "https://prestasiplus.my/topics?subject=SEJARAH",
+   "absHref": "https://prestasiplus.my/topics?subject=SEJARAH",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-019",
+   "kind": "link",
+   "tag": "a",
+   "text": "3 Subtopik Nombor MATEMATIK Belajar nombor 1 hingga 100 Subtopik: Tambah 1-10 Tolak 1-10 Kiraan 1-100 Lihat Topik",
+   "href": "https://prestasiplus.my/topics/1",
+   "absHref": "https://prestasiplus.my/topics/1",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-020",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3 Subtopik",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "d1-sains__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-021",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Nombor",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-022",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Huruf BAHASA MELAYU Mengenal huruf A-Z Subtopik: Huruf Besar Huruf Kecil Lihat Topik",
+   "href": "https://prestasiplus.my/topics/3",
+   "absHref": "https://prestasiplus.my/topics/3",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Nombor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-023",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2 Subtopik",
+   "landmark": "main",
+   "section": "Nombor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "d1-sains__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-024",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Huruf",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-025",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Haiwan SAINS Mengenal jenis-jenis haiwan Subtopik: Haiwan Peliharaan Haiwan Liar Lihat Topik",
+   "href": "https://prestasiplus.my/topics/4",
+   "absHref": "https://prestasiplus.my/topics/4",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Huruf",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "d1-sains__1280",
+    "grade-d1__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-026",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2 Subtopik",
+   "landmark": "main",
+   "section": "Huruf",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "d1-sains__1280",
+    "grade-d1__1280",
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-027",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Haiwan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "d1-sains__1280",
+    "grade-d1__1280",
+    "subject-sains__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-028",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Pendaraban MATEMATIK Sifir 2, 3, 4, 5 Subtopik: Sifir 2 Sifir 3 Lihat Topik",
+   "href": "https://prestasiplus.my/topics/6",
+   "absHref": "https://prestasiplus.my/topics/6",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Haiwan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-029",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2 Subtopik",
+   "landmark": "main",
+   "section": "Haiwan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-030",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendaraban",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-031",
+   "kind": "link",
+   "tag": "a",
+   "text": "4 Subtopik Nombor Bulat Hingga 100 MATEMATIK Mengenal, membilang dan menulis nombor 1 hingga 100 Subtopik: Membilang 1-20 Membilang 21-50 Membilang 51-100 +1 lagi... Lihat Topik",
+   "href": "https://prestasiplus.my/topics/7",
+   "absHref": "https://prestasiplus.my/topics/7",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Pendaraban",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-032",
+   "kind": "badge",
+   "tag": "span",
+   "text": "4 Subtopik",
+   "landmark": "main",
+   "section": "Pendaraban",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-033",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Nombor Bulat Hingga 100",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-034",
+   "kind": "link",
+   "tag": "a",
+   "text": "4 Subtopik Membaca dan Menulis BAHASA MELAYU Mengenal huruf, suku kata dan membaca perkataan mudah Subtopik: Huruf Vokal dan Konsonan Suku Kata KV dan KVK Membaca Perkataan Mudah +1 lagi... Lihat Topik",
+   "href": "https://prestasiplus.my/topics/10",
+   "absHref": "https://prestasiplus.my/topics/10",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Nombor Bulat Hingga 100",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-035",
+   "kind": "badge",
+   "tag": "span",
+   "text": "4 Subtopik",
+   "landmark": "main",
+   "section": "Nombor Bulat Hingga 100",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-036",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Membaca dan Menulis",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "grade-d1__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-037",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua Darjah",
+   "href": "https://prestasiplus.my/topics?subject=SAINS",
+   "absHref": "https://prestasiplus.my/topics?subject=SAINS",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-038",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 1",
+   "href": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_1",
+   "absHref": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_1",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-039",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 2",
+   "href": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_2",
+   "absHref": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_2",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-040",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 3",
+   "href": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_3",
+   "absHref": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_3",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-041",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 4",
+   "href": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_4",
+   "absHref": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_4",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-042",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 5",
+   "href": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_5",
+   "absHref": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_5",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-043",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 6",
+   "href": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_6",
+   "absHref": "https://prestasiplus.my/topics?subject=SAINS&grade_level=DARJAH_6",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-044",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua Subjek",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_1",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_1",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-045",
+   "kind": "link",
+   "tag": "a",
+   "text": "MATEMATIK",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=MATEMATIK",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=MATEMATIK",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-046",
+   "kind": "link",
+   "tag": "a",
+   "text": "BAHASA MELAYU",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=BAHASA_MELAYU",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=BAHASA_MELAYU",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-047",
+   "kind": "link",
+   "tag": "a",
+   "text": "BAHASA INGGERIS",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=BAHASA_INGGERIS",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=BAHASA_INGGERIS",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-048",
+   "kind": "link",
+   "tag": "a",
+   "text": "SAINS",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=SAINS",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=SAINS",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-049",
+   "kind": "link",
+   "tag": "a",
+   "text": "PENDIDIKAN ISLAM",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=PENDIDIKAN_ISLAM",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=PENDIDIKAN_ISLAM",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-050",
+   "kind": "link",
+   "tag": "a",
+   "text": "PENDIDIKAN MORAL",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=PENDIDIKAN_MORAL",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=PENDIDIKAN_MORAL",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-051",
+   "kind": "link",
+   "tag": "a",
+   "text": "SEJARAH",
+   "href": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=SEJARAH",
+   "absHref": "https://prestasiplus.my/topics?grade_level=DARJAH_1&subject=SEJARAH",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-052",
+   "kind": "link",
+   "tag": "a",
+   "text": "3 Subtopik Hidupan SAINS Mengenal haiwan dan tumbuhan di persekitaran Subtopik: Jenis-jenis Haiwan Bahagian Tumbuhan Keperluan Asas Hidupan Lihat Topik",
+   "href": "https://prestasiplus.my/topics/13",
+   "absHref": "https://prestasiplus.my/topics/13",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Haiwan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-053",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Hidupan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-054",
+   "kind": "link",
+   "tag": "a",
+   "text": "1 Subtopik Tumbuhan SAINS Mengenal bahagian-bahagian tumbuhan Subtopik: Bahagian Tumbuhan Lihat Topik",
+   "href": "https://prestasiplus.my/topics/5",
+   "absHref": "https://prestasiplus.my/topics/5",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Hidupan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-055",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1 Subtopik",
+   "landmark": "main",
+   "section": "Hidupan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280",
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-056",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tumbuhan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-057",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Fizikal dan Bahan SAINS Mengenal objek dan sifat bahan Subtopik: Sifat Bahan (Keras, Lembut) Timbul dan Tenggelam Lihat Topik",
+   "href": "https://prestasiplus.my/topics/14",
+   "absHref": "https://prestasiplus.my/topics/14",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Tumbuhan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-058",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Fizikal dan Bahan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "d1-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-059",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua Subjek",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-060",
+   "kind": "link",
+   "tag": "a",
+   "text": "MATEMATIK",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=MATEMATIK",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=MATEMATIK",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-061",
+   "kind": "link",
+   "tag": "a",
+   "text": "BAHASA MELAYU",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=BAHASA_MELAYU",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=BAHASA_MELAYU",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-062",
+   "kind": "link",
+   "tag": "a",
+   "text": "BAHASA INGGERIS",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=BAHASA_INGGERIS",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=BAHASA_INGGERIS",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "SAINS",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=SAINS",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=SAINS",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-064",
+   "kind": "link",
+   "tag": "a",
+   "text": "PENDIDIKAN ISLAM",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=PENDIDIKAN_ISLAM",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=PENDIDIKAN_ISLAM",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-065",
+   "kind": "link",
+   "tag": "a",
+   "text": "PENDIDIKAN MORAL",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=PENDIDIKAN_MORAL",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=PENDIDIKAN_MORAL",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-066",
+   "kind": "link",
+   "tag": "a",
+   "text": "SEJARAH",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=SEJARAH",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_2&subject=SEJARAH",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-067",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada topik tersedia buat masa ini.",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-068",
+   "kind": "link",
+   "tag": "a",
+   "text": "4 Subtopik Phonics and Vocabulary BAHASA INGGERIS Learn basic phonics and everyday vocabulary Subtopik: Alphabet Sounds Simple Words (CVC) Classroom Objects +1 lagi... Lihat Topik",
+   "href": "https://prestasiplus.my/topics/12",
+   "absHref": "https://prestasiplus.my/topics/12",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Membaca dan Menulis",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-069",
+   "kind": "badge",
+   "tag": "span",
+   "text": "4 Subtopik",
+   "landmark": "main",
+   "section": "Membaca dan Menulis",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-070",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Phonics and Vocabulary",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-d1__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-071",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua Subjek",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-072",
+   "kind": "link",
+   "tag": "a",
+   "text": "MATEMATIK",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=MATEMATIK",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=MATEMATIK",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-073",
+   "kind": "link",
+   "tag": "a",
+   "text": "BAHASA MELAYU",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=BAHASA_MELAYU",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=BAHASA_MELAYU",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-074",
+   "kind": "link",
+   "tag": "a",
+   "text": "BAHASA INGGERIS",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=BAHASA_INGGERIS",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=BAHASA_INGGERIS",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-075",
+   "kind": "link",
+   "tag": "a",
+   "text": "SAINS",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=SAINS",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=SAINS",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-076",
+   "kind": "link",
+   "tag": "a",
+   "text": "PENDIDIKAN ISLAM",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=PENDIDIKAN_ISLAM",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=PENDIDIKAN_ISLAM",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-077",
+   "kind": "link",
+   "tag": "a",
+   "text": "PENDIDIKAN MORAL",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=PENDIDIKAN_MORAL",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=PENDIDIKAN_MORAL",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-078",
+   "kind": "link",
+   "tag": "a",
+   "text": "SEJARAH",
+   "href": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=SEJARAH",
+   "absHref": "https://prestasiplus.my/topics?grade_level=TINGKATAN_4&subject=SEJARAH",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-079",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Kemahiran Bahasa Tingkatan 4 BAHASA MELAYU Subtopik: Penulisan karangan lanjutan Tatabahasa lanjutan Lihat Topik",
+   "href": "https://prestasiplus.my/topics/67",
+   "absHref": "https://prestasiplus.my/topics/67",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-080",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kemahiran Bahasa Tingkatan 4",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-081",
+   "kind": "link",
+   "tag": "a",
+   "text": "1 Subtopik Geografi Tingkatan 4 GEOGRAFI Subtopik: Geografi fizikal lanjutan Lihat Topik",
+   "href": "https://prestasiplus.my/topics/73",
+   "absHref": "https://prestasiplus.my/topics/73",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Kemahiran Bahasa Tingkatan 4",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-082",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Geografi Tingkatan 4",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280",
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-083",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Fungsi dan Persamaan Kuadratik MATEMATIK Subtopik: Fungsi Persamaan kuadratik Lihat Topik",
+   "href": "https://prestasiplus.my/topics/86",
+   "absHref": "https://prestasiplus.my/topics/86",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Geografi Tingkatan 4",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-084",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Fungsi dan Persamaan Kuadratik",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-085",
+   "kind": "link",
+   "tag": "a",
+   "text": "1 Subtopik Pendidikan Moral Tingkatan 4 PENDIDIKAN MORAL Subtopik: Nilai-nilai universal Lihat Topik",
+   "href": "https://prestasiplus.my/topics/94",
+   "absHref": "https://prestasiplus.my/topics/94",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Fungsi dan Persamaan Kuadratik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-086",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1 Subtopik",
+   "landmark": "main",
+   "section": "Fungsi dan Persamaan Kuadratik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-087",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendidikan Moral Tingkatan 4",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-088",
+   "kind": "link",
+   "tag": "a",
+   "text": "3 Subtopik Alat pemadam api SAINS Subtopik: Peralatan perlindungan diri Pelupusan bahan buangan Alat pemadam api Lihat Topik",
+   "href": "https://prestasiplus.my/topics/100",
+   "absHref": "https://prestasiplus.my/topics/100",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Pendidikan Moral Tingkatan 4",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-089",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Alat pemadam api",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-090",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Sejarah Tingkatan 4 SEJARAH Subtopik: Kemunculan tamadun awal Penjajahan dan penentangan Lihat Topik",
+   "href": "https://prestasiplus.my/topics/125",
+   "absHref": "https://prestasiplus.my/topics/125",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Alat pemadam api",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-091",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah Tingkatan 4",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "grade-t4-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-092",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua Darjah",
+   "href": "https://prestasiplus.my/topics?subject=GEOGRAFI",
+   "absHref": "https://prestasiplus.my/topics?subject=GEOGRAFI",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-093",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 1",
+   "href": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_1",
+   "absHref": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_1",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-094",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 2",
+   "href": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_2",
+   "absHref": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_2",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-095",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 3",
+   "href": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_3",
+   "absHref": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_3",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-096",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 4",
+   "href": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_4",
+   "absHref": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_4",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-097",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 5",
+   "href": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_5",
+   "absHref": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_5",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-098",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 6",
+   "href": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_6",
+   "absHref": "https://prestasiplus.my/topics?subject=GEOGRAFI&grade_level=DARJAH_6",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-099",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Kemahiran Geografi GEOGRAFI Subtopik: Peta dan skala Koordinat dan grid Lihat Topik",
+   "href": "https://prestasiplus.my/topics/69",
+   "absHref": "https://prestasiplus.my/topics/69",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Topik Pembelajaran",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-100",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kemahiran Geografi",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-101",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Bentuk Muka Bumi GEOGRAFI Subtopik: Bumi dan pembentukan muka bumi Tanah tinggi dan tanah rendah Lihat Topik",
+   "href": "https://prestasiplus.my/topics/70",
+   "absHref": "https://prestasiplus.my/topics/70",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Geografi Tingkatan 4",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-102",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bentuk Muka Bumi",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-103",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Cuaca dan Iklim GEOGRAFI Subtopik: Unsur cuaca Iklim Malaysia Lihat Topik",
+   "href": "https://prestasiplus.my/topics/71",
+   "absHref": "https://prestasiplus.my/topics/71",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Bentuk Muka Bumi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-104",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Cuaca dan Iklim",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-105",
+   "kind": "link",
+   "tag": "a",
+   "text": "2 Subtopik Sumber dan Kelestarian GEOGRAFI Subtopik: Sumber asli Kelestarian sumber Lihat Topik",
+   "href": "https://prestasiplus.my/topics/72",
+   "absHref": "https://prestasiplus.my/topics/72",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Cuaca dan Iklim",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-106",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2 Subtopik",
+   "landmark": "main",
+   "section": "Cuaca dan Iklim",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-107",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sumber dan Kelestarian",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-geografi-hidden__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-108",
+   "kind": "link",
+   "tag": "a",
+   "text": "3 Subtopik Bumi dan Alam Semesta SAINS Mengenal siang, malam, cuaca dan musim Subtopik: Siang dan Malam Cuaca Bumi, Bulan dan Matahari Lihat Topik",
+   "href": "https://prestasiplus.my/topics/25",
+   "absHref": "https://prestasiplus.my/topics/25",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Hidupan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-109",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3 Subtopik",
+   "landmark": "main",
+   "section": "Hidupan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-110",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bumi dan Alam Semesta",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-111",
+   "kind": "link",
+   "tag": "a",
+   "text": "3 Subtopik Daya dan Tenaga SAINS Mengenal daya tolakan, tarikan dan sumber tenaga Subtopik: Tolak dan Tarik Sumber Tenaga Magnet Lihat Topik",
+   "href": "https://prestasiplus.my/topics/34",
+   "absHref": "https://prestasiplus.my/topics/34",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Bumi dan Alam Semesta",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-112",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3 Subtopik",
+   "landmark": "main",
+   "section": "Bumi dan Alam Semesta",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-113",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Daya dan Tenaga",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-114",
+   "kind": "link",
+   "tag": "a",
+   "text": "3 Subtopik Penyiasatan Saintifik SAINS Kaedah saintifik, pemboleh ubah dan eksperimen Subtopik: Kaedah Saintifik Pemboleh Ubah Eksperimen Mudah Lihat Topik",
+   "href": "https://prestasiplus.my/topics/43",
+   "absHref": "https://prestasiplus.my/topics/43",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Daya dan Tenaga",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-115",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3 Subtopik",
+   "landmark": "main",
+   "section": "Daya dan Tenaga",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-116",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Penyiasatan Saintifik",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-117",
+   "kind": "link",
+   "tag": "a",
+   "text": "3 Subtopik Sistem dalam Hidupan SAINS Sistem respirasi, pencernaan dan peredaran darah Subtopik: Sistem Pencernaan Sistem Pernafasan Sistem Peredaran Darah Lihat Topik",
+   "href": "https://prestasiplus.my/topics/51",
+   "absHref": "https://prestasiplus.my/topics/51",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Penyiasatan Saintifik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-118",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3 Subtopik",
+   "landmark": "main",
+   "section": "Penyiasatan Saintifik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  },
+  {
+   "id": "EL-M03-S12-119",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sistem dalam Hidupan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-sains__1280"
+   ]
+  }
+ ]
+}

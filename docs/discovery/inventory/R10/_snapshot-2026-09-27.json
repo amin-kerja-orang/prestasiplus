@@ -1,0 +1,608 @@
+{
+  "capturedAt": "2026-09-27T04:39:12.534Z",
+  "account": "platform admin (id 1); the heatmap shows this account's own practice data",
+  "note": "R10 seed snapshot; GET only (guard-cached); the ambassador card person name / initials are never returned.",
+  "S1_heatmap": {
+    "status": 200,
+    "final": "/buku-nota/heatmap",
+    "title": "Heatmap Topik Lemah",
+    "shellHeaderH1": "Dashboard",
+    "h1": "Heatmap Topik Lemah",
+    "intro": "Topik mana anda kuat, mana lemah — semua dalam satu paparan. Klik kotak merah untuk fokus belajar.",
+    "legend": [
+      {
+        "text": "Lemah (< 50%)",
+        "cls": "pill pill-lemah",
+        "style": "display:inline-block;background:#fff!important;color:#b91c1c!important;padding:0.3rem 0.75rem;border-radius:999px;font-weight:700;border:2px solid #fca5a5;line-height:1;"
+      },
+      {
+        "text": "Sederhana (50-79%)",
+        "cls": "pill pill-sed",
+        "style": "display:inline-block;background:#fff!important;color:#92400e!important;padding:0.3rem 0.75rem;border-radius:999px;font-weight:700;border:2px solid #fcd34d;line-height:1;"
+      },
+      {
+        "text": "Mantap (≥ 80%)",
+        "cls": "pill pill-mantap",
+        "style": "display:inline-block;background:#fff!important;color:#047857!important;padding:0.3rem 0.75rem;border-radius:999px;font-weight:700;border:2px solid #6ee7b7;line-height:1;"
+      },
+      {
+        "text": "Belum cuba",
+        "cls": "pill pill-none",
+        "style": "display:inline-block;background:#fff!important;color:#475569!important;padding:0.3rem 0.75rem;border-radius:999px;font-weight:700;border:2px solid #cbd5e1;line-height:1;"
+      }
+    ],
+    "dutaBlock": {
+      "heading": "🌟 Cikgu Pakar Untuk Topik Lemah",
+      "href": "/bilik-duta/cikgu-maestro-math",
+      "cardClass": "duta-card tier-bintang",
+      "namePresent": true,
+      "initialsPresent": true,
+      "initialsLength": 2,
+      "tagline": "Maestro Matematik · 22 tahun ajar pelajar B40 capai cita-cita.",
+      "pills": [
+        {
+          "text": "🥇 Duta Bintang",
+          "cls": "pill tier-pill bintang"
+        },
+        {
+          "text": "📚 Matematik",
+          "cls": "pill"
+        },
+        {
+          "text": "📍 Johor",
+          "cls": "pill"
+        },
+        {
+          "text": "⭐ 4.92",
+          "cls": "pill"
+        }
+      ],
+      "cardCount": 1
+    },
+    "subjects": [
+      {
+        "subject": "Bahasa Melayu",
+        "cells": [
+          {
+            "topic": "Kemahiran Bahasa Tingkatan 4",
+            "acc": "5 cuba · 0% betul",
+            "attempts": 5,
+            "pct": 0,
+            "colour": "red",
+            "href": "/practice/chapter",
+            "title": null
+          },
+          {
+            "topic": "Kemahiran Bahasa Tingkatan 5",
+            "acc": "38 cuba · 32% betul",
+            "attempts": 38,
+            "pct": 32,
+            "colour": "red",
+            "href": "/practice/chapter",
+            "title": null
+          },
+          {
+            "topic": "Kemahiran Mendengar dan Bertutur",
+            "acc": "18 cuba · 44% betul",
+            "attempts": 18,
+            "pct": 44,
+            "colour": "red",
+            "href": "/practice/chapter",
+            "title": null
+          },
+          {
+            "topic": "Kemahiran Membaca",
+            "acc": "5 cuba · 60% betul",
+            "attempts": 5,
+            "pct": 60,
+            "colour": "amber",
+            "href": "/practice/chapter",
+            "title": null
+          },
+          {
+            "topic": "Kemahiran Menulis",
+            "acc": "10 cuba · 80% betul",
+            "attempts": 10,
+            "pct": 80,
+            "colour": "green",
+            "href": "/practice/chapter",
+            "title": null
+          }
+        ]
+      },
+      {
+        "subject": "Sejarah",
+        "cells": [
+          {
+            "topic": "Sejarah Tingkatan 5 KSSM",
+            "acc": "40 cuba · 35% betul",
+            "attempts": 40,
+            "pct": 35,
+            "colour": "red",
+            "href": "/practice/chapter",
+            "title": null
+          }
+        ]
+      }
+    ],
+    "forms": 0,
+    "inlineScriptsInMain": [
+      "function tournamentBanner() { return { tournaments: [], async fetchActive() { tr"
+    ],
+    "derived": {
+      "cellCount": 6,
+      "attemptsTotal": 116,
+      "correctEstimate": [
+        "Kemahiran Bahasa Tingkatan 4: round(0% × 5) = 0",
+        "Kemahiran Bahasa Tingkatan 5: round(32% × 38) = 12",
+        "Kemahiran Mendengar dan Bertutur: round(44% × 18) = 8",
+        "Kemahiran Membaca: round(60% × 5) = 3",
+        "Kemahiran Menulis: round(80% × 10) = 8",
+        "Sejarah Tingkatan 5 KSSM: round(35% × 40) = 14"
+      ],
+      "bandCheck": [
+        "Kemahiran Bahasa Tingkatan 4 0% → red ✓",
+        "Kemahiran Bahasa Tingkatan 5 32% → red ✓",
+        "Kemahiran Mendengar dan Bertutur 44% → red ✓",
+        "Kemahiran Membaca 60% → amber ✓",
+        "Kemahiran Menulis 80% → green ✓",
+        "Sejarah Tingkatan 5 KSSM 35% → red ✓"
+      ],
+      "orderWithinSubject": [
+        "Bahasa Melayu: 0 ≤ 32 ≤ 44 ≤ 60 ≤ 80",
+        "Sejarah: 35"
+      ]
+    }
+  },
+  "bukuNota": {
+    "status": 200,
+    "title": "Buku Nota Saya",
+    "h1": "Buku Nota Saya",
+    "tabs": [
+      "Senarai → /buku-nota []",
+      "Heatmap Topik Lemah → /buku-nota/heatmap []"
+    ],
+    "stats": [
+      "9Jumlah Nota",
+      "0Dikuasai",
+      "0Perlu Ulangkaji",
+      "Semua Belum dibaca Sudah dibaca Dikuasai"
+    ]
+  },
+  "M05_chapterBM": {
+    "status": 200,
+    "levelOptions": [
+      "1=Darjah 1 — 958 soalan",
+      "2=Darjah 2 — 2,540 soalan",
+      "3=Darjah 3 — 805 soalan",
+      "4=Darjah 4 — 530 soalan"
+    ],
+    "chapters": [
+      "Bab 1: Kemahiran Mendengar dan Bertutur 18/320 soalan unik · Skor 44.4% · 302 baki",
+      "Bab 2: Kemahiran Membaca 5/317 soalan unik · Skor 60% · 312 baki",
+      "Bab 3: Kemahiran Menulis 10/321 soalan unik · Skor 80% · 311 baki"
+    ]
+  },
+  "measure": {
+    "/buku-nota/heatmap @375": {
+      "chipSemua": null,
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "meta",
+          "cols": 1
+        },
+        {
+          "cls": "legend",
+          "cols": 1
+        },
+        {
+          "cls": "topic-grid",
+          "cols": 1
+        },
+        {
+          "cls": "topic-grid",
+          "cols": 1
+        }
+      ],
+      "panels": 9,
+      "panelsVisible": 9,
+      "smallN": 4,
+      "small": {
+        "11.52px": 4
+      },
+      "h1": {
+        "fontPx": 22.4,
+        "box": [
+          45,
+          446,
+          270,
+          34
+        ]
+      }
+    },
+    "/buku-nota/heatmap @768": {
+      "chipSemua": null,
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "meta",
+          "cols": 1
+        },
+        {
+          "cls": "legend",
+          "cols": 1
+        },
+        {
+          "cls": "topic-grid",
+          "cols": 3
+        },
+        {
+          "cls": "topic-grid",
+          "cols": 3
+        }
+      ],
+      "panels": 9,
+      "panelsVisible": 9,
+      "smallN": 4,
+      "small": {
+        "11.52px": 4
+      },
+      "h1": {
+        "fontPx": 22.4,
+        "box": [
+          55,
+          402,
+          643,
+          34
+        ]
+      }
+    },
+    "/buku-nota/heatmap @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "meta",
+          "cols": 1
+        },
+        {
+          "cls": "legend",
+          "cols": 1
+        },
+        {
+          "cls": "topic-grid",
+          "cols": 4
+        },
+        {
+          "cls": "topic-grid",
+          "cols": 4
+        }
+      ],
+      "panels": 9,
+      "panelsVisible": 9,
+      "smallN": 4,
+      "small": {
+        "11.52px": 4
+      },
+      "h1": {
+        "fontPx": 22.4,
+        "box": [
+          317,
+          356,
+          886,
+          34
+        ]
+      }
+    },
+    "/admin-sekolah/dskp-heatmap @375": {
+      "chipSemua": null,
+      "scrollWidth": 375,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          32,
+          346,
+          311,
+          32
+        ]
+      }
+    },
+    "/admin-sekolah/dskp-heatmap @768": {
+      "chipSemua": null,
+      "scrollWidth": 768,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          134,
+          386,
+          500,
+          32
+        ]
+      }
+    },
+    "/admin-sekolah/dskp-heatmap @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1280,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          390,
+          386,
+          500,
+          32
+        ]
+      }
+    },
+    "/admin-sekolah/laporan-bulanan @375": {
+      "chipSemua": null,
+      "scrollWidth": 375,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          32,
+          346,
+          311,
+          32
+        ]
+      }
+    },
+    "/admin-sekolah/laporan-bulanan @768": {
+      "chipSemua": null,
+      "scrollWidth": 768,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          134,
+          386,
+          500,
+          32
+        ]
+      }
+    },
+    "/admin-sekolah/laporan-bulanan @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1280,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          390,
+          386,
+          500,
+          32
+        ]
+      }
+    }
+  },
+  "ledger": {
+    "cacheOn": true,
+    "urlsCached": 18,
+    "serverHitsPerUrl": {
+      "/dashboard": {
+        "serverHits": 1,
+        "servedFromCache": 1,
+        "status": 200
+      },
+      "/admin-sekolah": {
+        "serverHits": 1,
+        "servedFromCache": 1,
+        "status": 302
+      },
+      "/admin/server-status": {
+        "serverHits": 1,
+        "servedFromCache": 13,
+        "status": 200
+      },
+      "/sitemap.xml": {
+        "serverHits": 1,
+        "servedFromCache": 0,
+        "status": 200
+      },
+      "/robots.txt": {
+        "serverHits": 1,
+        "servedFromCache": 0,
+        "status": 200
+      },
+      "/heatmap-topik-lemah": {
+        "serverHits": 1,
+        "servedFromCache": 0,
+        "status": 404
+      },
+      "/admin-sekolah/dskp-heatmap": {
+        "serverHits": 1,
+        "servedFromCache": 6,
+        "status": 302
+      },
+      "/admin-sekolah/laporan-bulanan": {
+        "serverHits": 1,
+        "servedFromCache": 6,
+        "status": 302
+      },
+      "/panduan": {
+        "serverHits": 1,
+        "servedFromCache": 0,
+        "status": 200
+      },
+      "/pusat-tuisyen/panduan": {
+        "serverHits": 1,
+        "servedFromCache": 0,
+        "status": 200
+      },
+      "/pusat-nota-ringkas": {
+        "serverHits": 1,
+        "servedFromCache": 1,
+        "status": 200
+      },
+      "/buku-nota/heatmap": {
+        "serverHits": 1,
+        "servedFromCache": 13,
+        "status": 200
+      },
+      "/notifikasi/unread-count": {
+        "serverHits": 1,
+        "servedFromCache": 12,
+        "status": 200
+      },
+      "/api/tournament/active": {
+        "serverHits": 1,
+        "servedFromCache": 11,
+        "status": 200
+      },
+      "/api/offline/snapshot": {
+        "serverHits": 1,
+        "servedFromCache": 9,
+        "status": 200
+      },
+      "/buku-nota": {
+        "serverHits": 1,
+        "servedFromCache": 1,
+        "status": 200
+      },
+      "/admin-sekolah/r10-control-nonexistent": {
+        "serverHits": 1,
+        "servedFromCache": 0,
+        "status": 404
+      },
+      "/practice/chapter/BM": {
+        "serverHits": 1,
+        "servedFromCache": 0,
+        "status": 200
+      }
+    },
+    "blocked": [
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK POST /__r10_probe",
+      "BLOCK DELETE /__r10_probe",
+      "BLOCK write-GET /__r10_probe/toggle",
+      "BLOCK write-GET /notifications/__r10_probe/mark-read",
+      "BLOCK download /__r10_probe/export?format=csv",
+      "BLOCK write-GET /logout",
+      "BLOCK ai /api/ai/__r10_probe",
+      "BLOCK write-GET /pusat-ai/__r10_probe/generate",
+      "BLOCK ai /cikgu-alesa/chat",
+      "BLOCK ai-host api.openai.com",
+      "BLOCK external fetch example.com/",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+      "BLOCK external script static.cloudflareinsights.com/beacon.min.js/v…",
+      "BLOCK ai /chatbot/history?session_id=cb_1790483729669_cbs75wl44",
+      "BLOCK external other www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"
+    ],
+    "passedBeforeCache": [
+      "GET /login",
+      "POST /login",
+      "GET /admin/server-status"
+    ],
+    "redirectFollowUps": {
+      "url": "/admin-sekolah/pilih-sekolah",
+      "status": 500,
+      "note": "Redirect follow-ups are not routed by Playwright, so the guard cache could not serve them: each load of /admin-sekolah, /admin-sekolah/dskp-heatmap or /admin-sekolah/laporan-bulanan reached /admin-sekolah/pilih-sekolah on the server (16 GETs during probe, crawl, inventory and measurement; the screenshots used one direct, cached navigation). Each is a read-only GET that returned the global 500 page (\"Pasukan teknikal telah dimaklumkan\" — the site may log each as an error)."
+    }
+  }
+}

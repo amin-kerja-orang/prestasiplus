@@ -1,0 +1,2755 @@
+{
+ "screen": "S2",
+ "key": "S2-databank",
+ "route": "/spm/tahun-lepas",
+ "name": "Databank Soalan SPM",
+ "module": "M06",
+ "generatedAt": "2026-09-25T08:07:43.482Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 168,
+  "visibleDefault": 165,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 76,
+   "link": 55,
+   "heading": 19,
+   "card": 18
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (18 subject cards, set 5/10/20 links)",
+   "file": "_raw/M06/S2-databank__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/spm/tahun-lepas",
+   "finalUrl": "/spm/tahun-lepas",
+   "httpStatus": 200,
+   "title": "Databank Soalan SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default (18 subject cards, set 5/10/20 links) @375",
+   "file": "_raw/M06/S2-databank__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/spm/tahun-lepas",
+   "finalUrl": "/spm/tahun-lepas",
+   "httpStatus": 200,
+   "title": "Databank Soalan SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default (18 subject cards, set 5/10/20 links) @768",
+   "file": "_raw/M06/S2-databank__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/spm/tahun-lepas",
+   "finalUrl": "/spm/tahun-lepas",
+   "httpStatus": 200,
+   "title": "Databank Soalan SPM - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Databank Soalan SPM",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M06-S2-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Databank Soalan SPM",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Databank Soalan SPM",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Databank Soalan SPM",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Mod SPM",
+   "href": "https://prestasiplus.my/spm",
+   "absHref": "https://prestasiplus.my/spm",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Databank Soalan SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Databank Soalan SPM",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih subjek dan mula jawab dari bank soalan",
+   "landmark": "main",
+   "section": "Databank Soalan SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Databank Soalan SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-008",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Malay Language",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-010",
+   "kind": "text",
+   "tag": "span",
+   "text": "514 soalan dalam databank",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-011",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-012",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/BM/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/BM/quiz?count=5",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-013",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/BM/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/BM/quiz?count=10",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-014",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/BM/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/BM/quiz?count=20",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-017",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "English Language",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,114 soalan dalam databank",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-021",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/BI/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/BI/quiz?count=5",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-022",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/BI/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/BI/quiz?count=10",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-023",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/BI/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/BI/quiz?count=20",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-024",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-025",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-026",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "Mathematics",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,681 soalan dalam databank",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-030",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/MATH/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/MATH/quiz?count=5",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-031",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/MATH/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/MATH/quiz?count=10",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-032",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/MATH/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/MATH/quiz?count=20",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-033",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-034",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-035",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sains",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "Science",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "2,076 soalan dalam databank",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-039",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/SCI/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/SCI/quiz?count=5",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-040",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/SCI/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/SCI/quiz?count=10",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-041",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/SCI/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/SCI/quiz?count=20",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-042",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-043",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-044",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-045",
+   "kind": "text",
+   "tag": "p",
+   "text": "History",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,539 soalan dalam databank",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-048",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/SEJ/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/SEJ/quiz?count=5",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-049",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/SEJ/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/SEJ/quiz?count=10",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-050",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/SEJ/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/SEJ/quiz?count=20",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-051",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-052",
+   "kind": "card",
+   "tag": "div",
+   "text": "Biologi",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-053",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Biologi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-054",
+   "kind": "text",
+   "tag": "p",
+   "text": "Biology",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-055",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,999 soalan dalam databank",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-056",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-057",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/BIO/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/BIO/quiz?count=5",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-058",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/BIO/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/BIO/quiz?count=10",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-059",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/BIO/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/BIO/quiz?count=20",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-061",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ekonomi",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-062",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ekonomi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-063",
+   "kind": "text",
+   "tag": "p",
+   "text": "Economics",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-064",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,986 soalan dalam databank",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-065",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-066",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/EKON/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/EKON/quiz?count=5",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-067",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/EKON/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/EKON/quiz?count=10",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-068",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/EKON/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/EKON/quiz?count=20",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-069",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-070",
+   "kind": "card",
+   "tag": "div",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-071",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Fizik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-072",
+   "kind": "text",
+   "tag": "p",
+   "text": "Physics",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-073",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,261 soalan dalam databank",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-074",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-075",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PHY/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PHY/quiz?count=5",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-076",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PHY/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PHY/quiz?count=10",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-077",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PHY/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PHY/quiz?count=20",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-078",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-079",
+   "kind": "card",
+   "tag": "div",
+   "text": "Geografi",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-080",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Geografi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-081",
+   "kind": "text",
+   "tag": "p",
+   "text": "Geography",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-082",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,228 soalan dalam databank",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-083",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-084",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/GEO/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/GEO/quiz?count=5",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-085",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/GEO/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/GEO/quiz?count=10",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-086",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/GEO/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/GEO/quiz?count=20",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-087",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-088",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-089",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kimia",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-090",
+   "kind": "text",
+   "tag": "p",
+   "text": "Chemistry",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-091",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,009 soalan dalam databank",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-092",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-093",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/CHEM/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/CHEM/quiz?count=5",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-094",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/CHEM/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/CHEM/quiz?count=10",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-095",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/CHEM/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/CHEM/quiz?count=20",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-096",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-097",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-098",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-099",
+   "kind": "text",
+   "tag": "p",
+   "text": "Additional Mathematics",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-100",
+   "kind": "text",
+   "tag": "span",
+   "text": "501 soalan dalam databank",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-101",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-102",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/ADDMATH/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/ADDMATH/quiz?count=5",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-103",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/ADDMATH/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/ADDMATH/quiz?count=10",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-104",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/ADDMATH/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/ADDMATH/quiz?count=20",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-105",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-106",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-107",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-108",
+   "kind": "text",
+   "tag": "p",
+   "text": "Islamic Education",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-109",
+   "kind": "text",
+   "tag": "span",
+   "text": "483 soalan dalam databank",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-110",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-111",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PI/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PI/quiz?count=5",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-112",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PI/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PI/quiz?count=10",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-113",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PI/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PI/quiz?count=20",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-114",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-115",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-116",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-117",
+   "kind": "text",
+   "tag": "p",
+   "text": "Moral Education",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-118",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,353 soalan dalam databank",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-119",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-120",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PM/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PM/quiz?count=5",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-121",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PM/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PM/quiz?count=10",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-122",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PM/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PM/quiz?count=20",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-123",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-124",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pendidikan Seni Visual",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-125",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendidikan Seni Visual",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-126",
+   "kind": "text",
+   "tag": "p",
+   "text": "Visual Arts Education",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-127",
+   "kind": "text",
+   "tag": "span",
+   "text": "545 soalan dalam databank",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-128",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-129",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PSV/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PSV/quiz?count=5",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-130",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PSV/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PSV/quiz?count=10",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-131",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PSV/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PSV/quiz?count=20",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-132",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-133",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pendidikan Syariah Islamiah",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-134",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pendidikan Syariah Islamiah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-135",
+   "kind": "text",
+   "tag": "p",
+   "text": "Islamic Syariah Education",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-136",
+   "kind": "text",
+   "tag": "span",
+   "text": "510 soalan dalam databank",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-137",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-138",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PSI/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PSI/quiz?count=5",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-139",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PSI/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PSI/quiz?count=10",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-140",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PSI/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PSI/quiz?count=20",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-141",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-142",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-143",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Perniagaan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-144",
+   "kind": "text",
+   "tag": "p",
+   "text": "Business Studies",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-145",
+   "kind": "text",
+   "tag": "span",
+   "text": "934 soalan dalam databank",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-146",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-147",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PERNIAGA/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PERNIAGA/quiz?count=5",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-148",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PERNIAGA/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PERNIAGA/quiz?count=10",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-149",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/PERNIAGA/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/PERNIAGA/quiz?count=20",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-150",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-151",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-152",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-153",
+   "kind": "text",
+   "tag": "p",
+   "text": "Principles of Accounting",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-154",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,770 soalan dalam databank",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-155",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-156",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/AKAUN/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/AKAUN/quiz?count=5",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-157",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/AKAUN/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/AKAUN/quiz?count=10",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-158",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/AKAUN/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/AKAUN/quiz?count=20",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-159",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-160",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-161",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-162",
+   "kind": "text",
+   "tag": "p",
+   "text": "Islamic Worldview",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-163",
+   "kind": "text",
+   "tag": "span",
+   "text": "530 soalan dalam databank",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-164",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilih set:",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-165",
+   "kind": "link",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/TI/quiz?count=5",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/TI/quiz?count=5",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-166",
+   "kind": "link",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/TI/quiz?count=10",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/TI/quiz?count=10",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-167",
+   "kind": "link",
+   "tag": "a",
+   "text": "20",
+   "href": "https://prestasiplus.my/spm/tahun-lepas/TI/quiz?count=20",
+   "absHref": "https://prestasiplus.my/spm/tahun-lepas/TI/quiz?count=20",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S2-168",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mula",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,4553 @@
+{
+ "screen": "S24",
+ "key": "S24-amaran-intervensi",
+ "route": "/amaran/intervensi/{studentId}",
+ "name": "Log Intervensi — <name> | PRESTASIPLUS",
+ "module": "M18",
+ "generatedAt": "2026-09-26T04:52:48.935Z",
+ "notes": "new route; POST/PATCH/DELETE forms never submitted",
+ "shell": "SHU",
+ "summary": {
+  "total": 62,
+  "visibleDefault": 43,
+  "conditional": 4,
+  "hiddenOnly": 15,
+  "mobileOnly": 1,
+  "desktopOnly": 1,
+  "byKind": {
+   "text": 15,
+   "card": 2,
+   "heading": 2,
+   "form": 5,
+   "hidden-field": 10,
+   "label": 6,
+   "select": 5,
+   "input": 1,
+   "textarea": 4,
+   "button": 5,
+   "badge": 2,
+   "toggle": 2,
+   "link": 3
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "intervention log of one student (2 records); forms NOT submitted",
+   "file": "_raw/M18/S24-amaran-intervensi__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/amaran/intervensi/2229",
+   "finalUrl": "/amaran/intervensi/2229",
+   "httpStatus": 200,
+   "title": "Log Intervensi — <name> | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(function (el) { el.classList.add('m18l'); n++; });\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 8",
+    "sanitized: cells=5 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0,
+    "main .divide-y > div.p-4.space-y-2": 0
+   }
+  },
+  {
+   "label": "followup__1280",
+   "description": "pencil toggle → follow-up textarea shown (Alpine only; nothing saved)",
+   "file": "_raw/M18/S24-amaran-intervensi__followup__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/amaran/intervensi/2229",
+   "finalUrl": "/amaran/intervensi/2229",
+   "httpStatus": 200,
+   "title": "Log Intervensi — <name> | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var b = Array.from(document.querySelectorAll('main button')).find(function (x) { return /showFollowUp = !showFollowUp/.test(x.getAttribute('@click') || x.getAttribute('x-on:click') || ''); }); if (b) { b.click(); return 'clicked'; } return 'no button'; })()"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(function (el) { el.classList.add('m18l'); n++; });\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m18mask: 8",
+    "sanitized: cells=5 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0,
+    "main .divide-y > div.p-4.space-y-2": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "intervention log of one student (2 records); forms NOT submitted @375",
+   "file": "_raw/M18/S24-amaran-intervensi__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/amaran/intervensi/2229",
+   "finalUrl": "/amaran/intervensi/2229",
+   "httpStatus": 200,
+   "title": "Log Intervensi — <name> | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(function (el) { el.classList.add('m18l'); n++; });\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 8",
+    "sanitized: cells=5 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0,
+    "main .divide-y > div.p-4.space-y-2": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "intervention log of one student (2 records); forms NOT submitted @768",
+   "file": "_raw/M18/S24-amaran-intervensi__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/amaran/intervensi/2229",
+   "finalUrl": "/amaran/intervensi/2229",
+   "httpStatus": 200,
+   "title": "Log Intervensi — <name> | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(function (el) { el.classList.add('m18l'); n++; });\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 8",
+    "sanitized: cells=5 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0,
+    "main .divide-y > div.p-4.space-y-2": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Log Intervensi",
+   "seenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ showFollowUp: false }",
+   "keys": [
+    "showFollowUp"
+   ],
+   "liveState": {
+    "showFollowUp": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Sejarah Intervensi",
+   "seenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Padam intervensi ini?",
+   "sources": [
+    "attr:onsubmit@form"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M18-S24-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Log Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Log Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Log Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-004",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "landmark": "main",
+   "section": "Log Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Intervensi",
+   "landmark": "main",
+   "section": "Log Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Log Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "Berkesan",
+   "landmark": "main",
+   "section": "Log Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "landmark": "main",
+   "section": "Log Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Belum Dinilai",
+   "landmark": "main",
+   "section": "Log Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "Rekod Intervensi Baru",
+   "landmark": "main",
+   "section": "Log Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-011",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Rekod Intervensi Baru",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-012",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/amaran/intervensi",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "student_id",
+    "type",
+    "intervention_date",
+    "classroom_id",
+    "status",
+    "notes",
+    "follow_up"
+   ],
+   "landmark": "main",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-013",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-014",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "student_id",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis Intervensi",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-016",
+   "kind": "select",
+   "tag": "select",
+   "name": "type",
+   "label": "Jenis Intervensi",
+   "required": true,
+   "options": [
+    {
+     "value": "kaunseling",
+     "text": "Sesi Kaunseling"
+    },
+    {
+     "value": "kelas_tambahan",
+     "text": "Kelas Tambahan"
+    },
+    {
+     "value": "tugasan_khas",
+     "text": "Tugasan Khas"
+    },
+    {
+     "value": "hubungi_ibubapa",
+     "text": "Hubungi Ibu Bapa"
+    },
+    {
+     "value": "mentor_rakan",
+     "text": "Mentor Rakan Sebaya"
+    },
+    {
+     "value": "bimbingan",
+     "text": "Bimbingan"
+    },
+    {
+     "value": "lain",
+     "text": "Lain-lain"
+    }
+   ],
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tarikh",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-018",
+   "kind": "input",
+   "tag": "input",
+   "type": "date",
+   "name": "intervention_date",
+   "label": "Tarikh",
+   "required": true,
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kelas (Pilihan)",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-020",
+   "kind": "select",
+   "tag": "select",
+   "name": "classroom_id",
+   "label": "Kelas (Pilihan)",
+   "options": [
+    {
+     "value": "",
+     "text": "— Tiada —"
+    },
+    {
+     "value": "1156",
+     "text": "5 CYBER"
+    },
+    {
+     "value": "1155",
+     "text": "sains rumah tangga"
+    },
+    {
+     "value": "1154",
+     "text": "Chaos Academy"
+    },
+    {
+     "value": "1153",
+     "text": "5 CAMELIA"
+    },
+    {
+     "value": "1152",
+     "text": "5 AZALEA"
+    },
+    {
+     "value": "1151",
+     "text": "TESTING"
+    },
+    {
+     "value": "1150",
+     "text": "5 SAINS TULEN"
+    },
+    {
+     "value": "1149",
+     "text": "5 PERNIAGAAN"
+    },
+    {
+     "value": "1148",
+     "text": "5 KAA"
+    },
+    {
+     "value": "1147",
+     "text": "5 PERNIAGAAN"
+    },
+    {
+     "value": "1146",
+     "text": "5 PRINSIP AKAUN"
+    },
+    {
+     "value": "1145",
+     "text": "5 PSV 2"
+    },
+    {
+     "value": "1144",
+     "text": "5 PRINSIP AKAUN"
+    },
+    {
+     "value": "1143",
+     "text": "5 PERNIAGAAN"
+    },
+    {
+     "value": "1142",
+     "text": "5 PSV 2"
+    },
+    {
+     "value": "1141",
+     "text": "5 KAA"
+    },
+    {
+     "value": "1140",
+     "text": "5 PSV 1"
+    },
+    {
+     "value": "1139",
+     "text": "5 RGD"
+    },
+    {
+     "value": "1138",
+     "text": "5 SAINS TULEN"
+    },
+    {
+     "value": "1137",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "1136",
+     "text": "5 JUJUR"
+    },
+    {
+     "value": "1135",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "1134",
+     "text": "5 IKHLAS"
+    },
+    {
+     "value": "1133",
+     "text": "5 HARMONI"
+    },
+    {
+     "value": "1132",
+     "text": "5 DAMAI"
+    },
+    {
+     "value": "1131",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "1130",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "1129",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "1128",
+     "text": "5 AMAN"
+    },
+    {
+     "value": "1127",
+     "text": "1 EHSAN"
+    },
+    {
+     "value": "1126",
+     "text": "1 ADIL"
+    },
+    {
+     "value": "1125",
+     "text": "5 IRIS"
+    },
+    {
+     "value": "1124",
+     "text": "5 GARDENIA"
+    },
+    {
+     "value": "1123",
+     "text": "5 AZALEA"
+    },
+    {
+     "value": "1122",
+     "text": "5 BETA - Matematik Tambahan"
+    },
+    {
+     "value": "1121",
+     "text": "5 MUSYTARI - Kimia - Kimia"
+    },
+    {
+     "value": "1120",
+     "text": "5 MPV BERKAT"
+    },
+    {
+     "value": "1119",
+     "text": "5 LEQOE"
+    },
+    {
+     "value": "1118",
+     "text": "5 LEQOE"
+    },
+    {
+     "value": "1117",
+     "text": "5 AMAN"
+    },
+    {
+     "value": "1116",
+     "text": "5 MURNI"
+    },
+    {
+     "value": "1115",
+     "text": "5 HARMONI"
+    },
+    {
+     "value": "1114",
+     "text": "5 FREESIA"
+    },
+    {
+     "value": "1113",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "1112",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "1111",
+     "text": "5 JASMIN"
+    },
+    {
+     "value": "1110",
+     "text": "5 FREESIA"
+    },
+    {
+     "value": "1109",
+     "text": "5 DAFFODIL"
+    },
+    {
+     "value": "1108",
+     "text": "5 JUJUR"
+    },
+    {
+     "value": "1107",
+     "text": "5 IKHLAS"
+    },
+    {
+     "value": "1106",
+     "text": "5 KALMIA"
+    },
+    {
+     "value": "1105",
+     "text": "5 CAMELIA"
+    },
+    {
+     "value": "1104",
+     "text": "5 JASMIN"
+    },
+    {
+     "value": "1103",
+     "text": "5 FREESIA"
+    },
+    {
+     "value": "1102",
+     "text": "5 BOUGAINVILLEA"
+    },
+    {
+     "value": "1101",
+     "text": "5 AZALEA"
+    },
+    {
+     "value": "1100",
+     "text": "5 BOUGAINVILLEA"
+    },
+    {
+     "value": "1099",
+     "text": "5 MIMOSA"
+    },
+    {
+     "value": "1098",
+     "text": "5 FREESIA"
+    },
+    {
+     "value": "1097",
+     "text": "5 BOUGAINVILLEA"
+    },
+    {
+     "value": "1096",
+     "text": "5 JASMIN"
+    },
+    {
+     "value": "1095",
+     "text": "5 HAZEL"
+    },
+    {
+     "value": "1094",
+     "text": "5 AZALEA"
+    },
+    {
+     "value": "1093",
+     "text": "5 JUJUR"
+    },
+    {
+     "value": "1092",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1091",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "1090",
+     "text": "5 KAA"
+    },
+    {
+     "value": "1089",
+     "text": "5 HARMONI"
+    },
+    {
+     "value": "1088",
+     "text": "5 JUJUR"
+    },
+    {
+     "value": "1087",
+     "text": "5 IKHLAS"
+    },
+    {
+     "value": "1086",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "1085",
+     "text": "5 Helium"
+    },
+    {
+     "value": "1084",
+     "text": "5 ALFA"
+    },
+    {
+     "value": "1083",
+     "text": "5 HELIUM - Matematik"
+    },
+    {
+     "value": "1082",
+     "text": "5 MARIKH - Kimia"
+    },
+    {
+     "value": "1081",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "1080",
+     "text": "5 URANUS"
+    },
+    {
+     "value": "1079",
+     "text": "5 MAGELLAN"
+    },
+    {
+     "value": "1078",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1077",
+     "text": "5 DAFFODIL"
+    },
+    {
+     "value": "1076",
+     "text": "5 CAMELIA"
+    },
+    {
+     "value": "1075",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "1074",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "1072",
+     "text": "5 NEPTUN"
+    },
+    {
+     "value": "1073",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "1071",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1070",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1069",
+     "text": "5 ANDROMEDA"
+    },
+    {
+     "value": "1068",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1067",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1066",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "1065",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "1064",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1063",
+     "text": "5 NEPTUN"
+    },
+    {
+     "value": "1062",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1061",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1060",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1059",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "1058",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1057",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1056",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1055",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1054",
+     "text": "5 AL KHAWARIZMI"
+    },
+    {
+     "value": "1053",
+     "text": "5 AL BIRUNI"
+    },
+    {
+     "value": "1052",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "1051",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "1050",
+     "text": "5 URANUS"
+    },
+    {
+     "value": "1049",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1048",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1047",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1046",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "1045",
+     "text": "5 ANDROMEDA"
+    },
+    {
+     "value": "1044",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1043",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1042",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1041",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "1040",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1039",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "1038",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1037",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1036",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1035",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "1034",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "1033",
+     "text": "5 NEPTUN"
+    },
+    {
+     "value": "1032",
+     "text": "5 ANDROMEDA"
+    },
+    {
+     "value": "1030",
+     "text": "5 URANUS"
+    },
+    {
+     "value": "1031",
+     "text": "5 ANDROMEDA"
+    },
+    {
+     "value": "1029",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1028",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "1027",
+     "text": "5 NEPTUN"
+    },
+    {
+     "value": "1026",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1025",
+     "text": "5 MAGELLAN"
+    },
+    {
+     "value": "1024",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "1023",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1022",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "1021",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1020",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "1019",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "1018",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "1017",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1016",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "1015",
+     "text": "5 ANDROMEDA"
+    },
+    {
+     "value": "1014",
+     "text": "5 URANUS"
+    },
+    {
+     "value": "1013",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "1012",
+     "text": "5 ANDROMEDA"
+    },
+    {
+     "value": "1011",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1010",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "1009",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "1008",
+     "text": "5 URANUS"
+    },
+    {
+     "value": "1007",
+     "text": "5 BOUGAINVILLEA"
+    },
+    {
+     "value": "1006",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "1005",
+     "text": "5 MAGELLAN"
+    },
+    {
+     "value": "1004",
+     "text": "5 DELIMA"
+    },
+    {
+     "value": "1003",
+     "text": "5 BAIDURI"
+    },
+    {
+     "value": "1002",
+     "text": "5 EFEKTIF"
+    },
+    {
+     "value": "1001",
+     "text": "5 DINAMIK"
+    },
+    {
+     "value": "1000",
+     "text": "5 CEMERLANG"
+    },
+    {
+     "value": "999",
+     "text": "5 BESTARI"
+    },
+    {
+     "value": "998",
+     "text": "5 INTEGRITI"
+    },
+    {
+     "value": "997",
+     "text": "5 KARISMA"
+    },
+    {
+     "value": "996",
+     "text": "5 CYGMA"
+    },
+    {
+     "value": "995",
+     "text": "5 ALFA"
+    },
+    {
+     "value": "994",
+     "text": "5 BETA"
+    },
+    {
+     "value": "993",
+     "text": "5 DAFFODIL"
+    },
+    {
+     "value": "992",
+     "text": "5 ALFA"
+    },
+    {
+     "value": "991",
+     "text": "5 LEQOE"
+    },
+    {
+     "value": "990",
+     "text": "5 LEQOE"
+    },
+    {
+     "value": "989",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "988",
+     "text": "5 MIMOSA"
+    },
+    {
+     "value": "987",
+     "text": "5 HAZEL"
+    },
+    {
+     "value": "986",
+     "text": "5 DAFFODIL"
+    },
+    {
+     "value": "985",
+     "text": "5 AZALEA"
+    },
+    {
+     "value": "984",
+     "text": "5 MIMOSA"
+    },
+    {
+     "value": "983",
+     "text": "5 AMAN"
+    },
+    {
+     "value": "982",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "981",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "980",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "979",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "978",
+     "text": "5 HAZEL"
+    },
+    {
+     "value": "977",
+     "text": "5 AZALEA"
+    },
+    {
+     "value": "976",
+     "text": "5 DAFFODIL"
+    },
+    {
+     "value": "975",
+     "text": "5 BESTARI"
+    },
+    {
+     "value": "974",
+     "text": "5 DINAMIK"
+    },
+    {
+     "value": "973",
+     "text": "5 KARISMA"
+    },
+    {
+     "value": "972",
+     "text": "5 ALFA"
+    },
+    {
+     "value": "971",
+     "text": "5 ASPIRASI"
+    },
+    {
+     "value": "970",
+     "text": "5 DELIMA"
+    },
+    {
+     "value": "969",
+     "text": "5 KARISMA"
+    },
+    {
+     "value": "968",
+     "text": "5 DELIMA"
+    },
+    {
+     "value": "967",
+     "text": "5 CYGMA"
+    },
+    {
+     "value": "966",
+     "text": "5 KARISMA"
+    },
+    {
+     "value": "965",
+     "text": "5 BESTARI"
+    },
+    {
+     "value": "964",
+     "text": "5 LEQOE"
+    },
+    {
+     "value": "963",
+     "text": "5 MPV BAKTI"
+    },
+    {
+     "value": "962",
+     "text": "5 MPV BAKTI"
+    },
+    {
+     "value": "809",
+     "text": "5 ALFA"
+    },
+    {
+     "value": "810",
+     "text": "5 BETA"
+    },
+    {
+     "value": "811",
+     "text": "5 CYGMA"
+    },
+    {
+     "value": "812",
+     "text": "5 KARISMA"
+    },
+    {
+     "value": "813",
+     "text": "5 CYBER"
+    },
+    {
+     "value": "814",
+     "text": "5 INTEGRITI"
+    },
+    {
+     "value": "815",
+     "text": "5 ASPIRASI"
+    },
+    {
+     "value": "816",
+     "text": "5 BESTARI"
+    },
+    {
+     "value": "817",
+     "text": "5 CEMERLANG"
+    },
+    {
+     "value": "818",
+     "text": "5 DINAMIK"
+    },
+    {
+     "value": "819",
+     "text": "5 EFEKTIF"
+    },
+    {
+     "value": "820",
+     "text": "5 BAIDURI"
+    },
+    {
+     "value": "821",
+     "text": "5 DELIMA"
+    },
+    {
+     "value": "822",
+     "text": "5 RIAS"
+    },
+    {
+     "value": "823",
+     "text": "5 ALFA - Bahasa Melayu"
+    },
+    {
+     "value": "824",
+     "text": "5 ALFA - Bahasa Inggeris"
+    },
+    {
+     "value": "825",
+     "text": "5 ALFA - Matematik"
+    },
+    {
+     "value": "826",
+     "text": "5 ALFA - Sejarah"
+    },
+    {
+     "value": "827",
+     "text": "5 ALFA - Pendidikan Islam"
+    },
+    {
+     "value": "828",
+     "text": "5 ALFA - Pendidikan Moral"
+    },
+    {
+     "value": "829",
+     "text": "5 ALFA - Fizik"
+    },
+    {
+     "value": "830",
+     "text": "5 ALFA - Kimia"
+    },
+    {
+     "value": "831",
+     "text": "5 ALFA - Biologi"
+    },
+    {
+     "value": "832",
+     "text": "5 ALFA - Matematik Tambahan"
+    },
+    {
+     "value": "833",
+     "text": "5 ALFA - Pendidikan Jasmani"
+    },
+    {
+     "value": "834",
+     "text": "5 BETA - Bahasa Melayu"
+    },
+    {
+     "value": "835",
+     "text": "5 BETA - Bahasa Inggeris"
+    },
+    {
+     "value": "836",
+     "text": "5 BETA - Matematik"
+    },
+    {
+     "value": "837",
+     "text": "5 BETA - Sejarah"
+    },
+    {
+     "value": "838",
+     "text": "5 BETA - Pendidikan Islam"
+    },
+    {
+     "value": "839",
+     "text": "5 BETA - Pendidikan Moral"
+    },
+    {
+     "value": "840",
+     "text": "5 BETA - Fizik"
+    },
+    {
+     "value": "841",
+     "text": "5 BETA - Kimia"
+    },
+    {
+     "value": "842",
+     "text": "5 BETA - Biologi"
+    },
+    {
+     "value": "843",
+     "text": "5 BETA - Matematik Tambahan"
+    },
+    {
+     "value": "844",
+     "text": "5 BETA - Pertanian"
+    },
+    {
+     "value": "845",
+     "text": "5 BETA - Pendidikan Jasmani"
+    },
+    {
+     "value": "846",
+     "text": "5 CYGMA - Bahasa Melayu"
+    },
+    {
+     "value": "847",
+     "text": "5 CYGMA - Bahasa Inggeris"
+    },
+    {
+     "value": "848",
+     "text": "5 CYGMA - Matematik"
+    },
+    {
+     "value": "849",
+     "text": "5 CYGMA - Sejarah"
+    },
+    {
+     "value": "850",
+     "text": "5 CYGMA - Pendidikan Islam"
+    },
+    {
+     "value": "851",
+     "text": "5 CYGMA - Pendidikan Moral"
+    },
+    {
+     "value": "852",
+     "text": "5 CYGMA - Fizik"
+    },
+    {
+     "value": "853",
+     "text": "5 CYGMA - Kimia"
+    },
+    {
+     "value": "854",
+     "text": "5 CYGMA - Sains Komputer"
+    },
+    {
+     "value": "855",
+     "text": "5 CYGMA - Matematik Tambahan"
+    },
+    {
+     "value": "856",
+     "text": "5 CYGMA - Pendidikan Jasmani"
+    },
+    {
+     "value": "857",
+     "text": "5 KARISMA - Bahasa Melayu"
+    },
+    {
+     "value": "858",
+     "text": "5 KARISMA - Bahasa Inggeris"
+    },
+    {
+     "value": "859",
+     "text": "5 KARISMA - Sains"
+    },
+    {
+     "value": "860",
+     "text": "5 KARISMA - Matematik"
+    },
+    {
+     "value": "861",
+     "text": "5 KARISMA - Sejarah"
+    },
+    {
+     "value": "862",
+     "text": "5 KARISMA - Pendidikan Islam"
+    },
+    {
+     "value": "863",
+     "text": "5 KARISMA - Pendidikan Moral"
+    },
+    {
+     "value": "864",
+     "text": "5 KARISMA - Prinsip Perakaunan"
+    },
+    {
+     "value": "865",
+     "text": "5 KARISMA - Ekonomi"
+    },
+    {
+     "value": "866",
+     "text": "5 KARISMA - Matematik Tambahan"
+    },
+    {
+     "value": "867",
+     "text": "5 KARISMA - Pendidikan Jasmani"
+    },
+    {
+     "value": "868",
+     "text": "5 CYBER - Bahasa Melayu"
+    },
+    {
+     "value": "869",
+     "text": "5 CYBER - Bahasa Inggeris"
+    },
+    {
+     "value": "870",
+     "text": "5 CYBER - Sains"
+    },
+    {
+     "value": "871",
+     "text": "5 CYBER - Matematik"
+    },
+    {
+     "value": "872",
+     "text": "5 CYBER - Sejarah"
+    },
+    {
+     "value": "873",
+     "text": "5 CYBER - Pendidikan Islam"
+    },
+    {
+     "value": "874",
+     "text": "5 CYBER - Pendidikan Moral"
+    },
+    {
+     "value": "875",
+     "text": "5 CYBER - Pendidikan Jasmani"
+    },
+    {
+     "value": "876",
+     "text": "5 CYBER - Sains Rumah Tangga"
+    },
+    {
+     "value": "877",
+     "text": "5 CYBER - Pertanian"
+    },
+    {
+     "value": "878",
+     "text": "5 CYBER - Sains Sukan"
+    },
+    {
+     "value": "879",
+     "text": "5 INTEGRITI - Bahasa Melayu"
+    },
+    {
+     "value": "880",
+     "text": "5 INTEGRITI - Bahasa Inggeris"
+    },
+    {
+     "value": "881",
+     "text": "5 INTEGRITI - Sains"
+    },
+    {
+     "value": "882",
+     "text": "5 INTEGRITI - Matematik"
+    },
+    {
+     "value": "883",
+     "text": "5 INTEGRITI - Sejarah"
+    },
+    {
+     "value": "884",
+     "text": "5 INTEGRITI - Pendidikan Islam"
+    },
+    {
+     "value": "885",
+     "text": "5 INTEGRITI - Pendidikan Moral"
+    },
+    {
+     "value": "886",
+     "text": "5 INTEGRITI - Pendidikan Jasmani"
+    },
+    {
+     "value": "887",
+     "text": "5 INTEGRITI - Prinsip Perakaunan"
+    },
+    {
+     "value": "888",
+     "text": "5 INTEGRITI - Perniagaam"
+    },
+    {
+     "value": "889",
+     "text": "5 INTEGRITI - Sains Komputer"
+    },
+    {
+     "value": "890",
+     "text": "5 INTEGRITI - Pertanian"
+    },
+    {
+     "value": "891",
+     "text": "5 ASPIRASI - Bahasa Melayu"
+    },
+    {
+     "value": "892",
+     "text": "5 ASPIRASI - Bahasa Inggeris"
+    },
+    {
+     "value": "893",
+     "text": "5 ASPIRASI - Sains"
+    },
+    {
+     "value": "894",
+     "text": "5 ASPIRASI - Matematik"
+    },
+    {
+     "value": "895",
+     "text": "5 ASPIRASI - Sejarah"
+    },
+    {
+     "value": "896",
+     "text": "5 ASPIRASI - Pendidikan Islam"
+    },
+    {
+     "value": "897",
+     "text": "5 ASPIRASI - Pendidikan Moral"
+    },
+    {
+     "value": "898",
+     "text": "5 ASPIRASI - Pendidikan Jasmani"
+    },
+    {
+     "value": "899",
+     "text": "5 ASPIRASI - Perniagaan"
+    },
+    {
+     "value": "901",
+     "text": "5 BESTARI - Bahasa Melayu"
+    },
+    {
+     "value": "902",
+     "text": "5 BESTARI - Bahasa Inggeris"
+    },
+    {
+     "value": "903",
+     "text": "5 BESTARI - Sains"
+    },
+    {
+     "value": "904",
+     "text": "5 BESTARI - Matematik"
+    },
+    {
+     "value": "905",
+     "text": "5 BESTARI - Sejarah"
+    },
+    {
+     "value": "906",
+     "text": "5 BESTARI - Pendidikan Islam"
+    },
+    {
+     "value": "907",
+     "text": "5 BESTARI - Pendidikan Moral"
+    },
+    {
+     "value": "908",
+     "text": "5 BESTARI - Pendidikan Jasmani"
+    },
+    {
+     "value": "909",
+     "text": "5 BESTARI - Perniagaam"
+    },
+    {
+     "value": "910",
+     "text": "5 BESTARI - Pendidikan Seni Visual"
+    },
+    {
+     "value": "911",
+     "text": "5 CEMERLANG - Bahasa Melayu"
+    },
+    {
+     "value": "912",
+     "text": "5 CEMERLANG - Bahasa Inggeris"
+    },
+    {
+     "value": "913",
+     "text": "5 CEMERLANG - Sains"
+    },
+    {
+     "value": "914",
+     "text": "5 CEMERLANG - Matematik"
+    },
+    {
+     "value": "915",
+     "text": "5 CEMERLANG - Sejarah"
+    },
+    {
+     "value": "916",
+     "text": "5 CEMERLANG - Pendidikan Islam"
+    },
+    {
+     "value": "917",
+     "text": "5 CEMERLANG - Pendidikan Moral"
+    },
+    {
+     "value": "918",
+     "text": "5 CEMERLANG - Pendidikan Jasmani"
+    },
+    {
+     "value": "919",
+     "text": "5 CEMERLANG - Pendidikan Seni Visual"
+    },
+    {
+     "value": "920",
+     "text": "5 DINAMIK - Bahasa Melayu"
+    },
+    {
+     "value": "921",
+     "text": "5 DINAMIK - Bahasa Inggeris"
+    },
+    {
+     "value": "922",
+     "text": "5 DINAMIK - Sains"
+    },
+    {
+     "value": "923",
+     "text": "5 DINAMIK - Matematik"
+    },
+    {
+     "value": "924",
+     "text": "5 DINAMIK - Sejarah"
+    },
+    {
+     "value": "925",
+     "text": "5 DINAMIK - Pendidikan Islam"
+    },
+    {
+     "value": "926",
+     "text": "5 DINAMIK - Pendidikan Moral"
+    },
+    {
+     "value": "927",
+     "text": "5 DINAMIK - Pendidikan Jasmani"
+    },
+    {
+     "value": "928",
+     "text": "5 DINAMIK - Pendidikan Seni Visual"
+    },
+    {
+     "value": "929",
+     "text": "5 EFEKTIF - Bahasa Melayu"
+    },
+    {
+     "value": "930",
+     "text": "5 EFEKTIF - Bahasa Inggeris"
+    },
+    {
+     "value": "931",
+     "text": "5 EFEKTIF - Sains"
+    },
+    {
+     "value": "932",
+     "text": "5 EFEKTIF - Matematik"
+    },
+    {
+     "value": "933",
+     "text": "5 EFEKTIF - Sejarah"
+    },
+    {
+     "value": "934",
+     "text": "5 EFEKTIF - Pendidikan Islam"
+    },
+    {
+     "value": "935",
+     "text": "5 EFEKTIF - Pendidikan Moral"
+    },
+    {
+     "value": "936",
+     "text": "5 EFEKTIF - Pendidikan Jasmani"
+    },
+    {
+     "value": "937",
+     "text": "5 EFEKTIF - Pendidikan Seni Visual"
+    },
+    {
+     "value": "938",
+     "text": "5 BAIDURI - Bahasa Melayu"
+    },
+    {
+     "value": "939",
+     "text": "5 BAIDURI - Bahasa Inggeris"
+    },
+    {
+     "value": "940",
+     "text": "5 BAIDURI - Sains"
+    },
+    {
+     "value": "941",
+     "text": "5 BAIDURI - Matematik"
+    },
+    {
+     "value": "942",
+     "text": "5 BAIDURI - Sejarah"
+    },
+    {
+     "value": "943",
+     "text": "5 BAIDURI - Pendidikan Islam"
+    },
+    {
+     "value": "944",
+     "text": "5 BAIDURI - Pendidikan Moral"
+    },
+    {
+     "value": "945",
+     "text": "5 BAIDURI - Pendidikan Jasmani"
+    },
+    {
+     "value": "946",
+     "text": "5 BAIDURI - Pendidikan Seni Visual"
+    },
+    {
+     "value": "947",
+     "text": "5 DELIMA - Bahasa Melayu"
+    },
+    {
+     "value": "948",
+     "text": "5 DELIMA - Bahasa Inggeris"
+    },
+    {
+     "value": "949",
+     "text": "5 DELIMA - Sains"
+    },
+    {
+     "value": "950",
+     "text": "5 DELIMA - Matematik"
+    },
+    {
+     "value": "951",
+     "text": "5 DELIMA - Sejarah"
+    },
+    {
+     "value": "952",
+     "text": "5 DELIMA - Pendidikan Islam"
+    },
+    {
+     "value": "953",
+     "text": "5 DELIMA - Pendidikan Moral"
+    },
+    {
+     "value": "954",
+     "text": "5 DELIMA - Pendidikan Jasmani"
+    },
+    {
+     "value": "955",
+     "text": "5 DELIMA - Pendidikan Seni Visual"
+    },
+    {
+     "value": "956",
+     "text": "5 RIAS - Bahasa Melayu"
+    },
+    {
+     "value": "957",
+     "text": "5 RIAS - Bahasa Inggeris"
+    },
+    {
+     "value": "958",
+     "text": "5 RIAS - Matematik MPAK"
+    },
+    {
+     "value": "959",
+     "text": "5 RIAS - Sejarah"
+    },
+    {
+     "value": "960",
+     "text": "5 RIAS - Pendidikan Islam MPAK"
+    },
+    {
+     "value": "961",
+     "text": "5 RIAS - Pendidikan Moral"
+    },
+    {
+     "value": "806",
+     "text": "4 Khawarizmi"
+    },
+    {
+     "value": "807",
+     "text": "1 Ross"
+    },
+    {
+     "value": "808",
+     "text": "4 Atlas"
+    },
+    {
+     "value": "805",
+     "text": "5 CAMELIA"
+    },
+    {
+     "value": "804",
+     "text": "5 BOUGAINVILLEA"
+    },
+    {
+     "value": "803",
+     "text": "9G"
+    },
+    {
+     "value": "802",
+     "text": "5 AZALEA"
+    },
+    {
+     "value": "801",
+     "text": "5 CAMELIA"
+    },
+    {
+     "value": "800",
+     "text": "5 KAA"
+    },
+    {
+     "value": "799",
+     "text": "5 PVMA - Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "768",
+     "text": "5 MARIKH - Matematik"
+    },
+    {
+     "value": "769",
+     "text": "5 MARIKH - Sains Komputer (Group B)"
+    },
+    {
+     "value": "770",
+     "text": "5 ALFA - Bahasa Inggeris"
+    },
+    {
+     "value": "771",
+     "text": "5 ALFA - Pendidikan Moral"
+    },
+    {
+     "value": "772",
+     "text": "5 ALFA - Tasawwur Islam"
+    },
+    {
+     "value": "773",
+     "text": "5 BETA - Sains"
+    },
+    {
+     "value": "774",
+     "text": "5 BETA - Tasawwur Islam"
+    },
+    {
+     "value": "775",
+     "text": "5 BETA - Geografi"
+    },
+    {
+     "value": "776",
+     "text": "5 BETA - Pendidikan Seni Visual"
+    },
+    {
+     "value": "777",
+     "text": "5 DELTA - Sejarah"
+    },
+    {
+     "value": "778",
+     "text": "5 DELTA - Pendidikan Moral"
+    },
+    {
+     "value": "779",
+     "text": "5 DELTA - Tasawwur Islam"
+    },
+    {
+     "value": "780",
+     "text": "5 DELTA - Geografi"
+    },
+    {
+     "value": "781",
+     "text": "5 GAMMA - Bahasa Melayu"
+    },
+    {
+     "value": "782",
+     "text": "5 GAMMA - Matematik"
+    },
+    {
+     "value": "783",
+     "text": "5 GAMMA - Pendidikan Islam"
+    },
+    {
+     "value": "784",
+     "text": "5 GAMMA - Pendidikan Moral"
+    },
+    {
+     "value": "785",
+     "text": "5 GAMMA - Sains"
+    },
+    {
+     "value": "786",
+     "text": "5 GAMMA - Tasawwur Islam"
+    },
+    {
+     "value": "787",
+     "text": "5 HELIUM - Bahasa Inggeris"
+    },
+    {
+     "value": "788",
+     "text": "5 HELIUM - Sejarah"
+    },
+    {
+     "value": "789",
+     "text": "5 HELIUM - Pendidikan Moral"
+    },
+    {
+     "value": "790",
+     "text": "5 HELIUM - Sains"
+    },
+    {
+     "value": "791",
+     "text": "5 LAMDA - Bahasa Melayu"
+    },
+    {
+     "value": "792",
+     "text": "5 LAMDA - Pendidikan Islam"
+    },
+    {
+     "value": "793",
+     "text": "5 LAMDA - Pendidikan Moral"
+    },
+    {
+     "value": "794",
+     "text": "5 LAMDA - Pendidikan Seni Visual"
+    },
+    {
+     "value": "795",
+     "text": "5 PVMA - Bahasa Melayu"
+    },
+    {
+     "value": "796",
+     "text": "5 PVMA - Matematik"
+    },
+    {
+     "value": "797",
+     "text": "5 PVMA - Sejarah"
+    },
+    {
+     "value": "798",
+     "text": "5 PVMA - Pendidikan Islam"
+    },
+    {
+     "value": "766",
+     "text": "5 MARIKH - Bahasa Melayu"
+    },
+    {
+     "value": "767",
+     "text": "5 MARIKH - Bahasa Inggeris"
+    },
+    {
+     "value": "739",
+     "text": "5 ASET - Bahasa Melayu"
+    },
+    {
+     "value": "740",
+     "text": "5 ASET - Sejarah"
+    },
+    {
+     "value": "741",
+     "text": "5 ASET - Prinsip Perakaunan"
+    },
+    {
+     "value": "742",
+     "text": "5 ASET - Ekonomi"
+    },
+    {
+     "value": "743",
+     "text": "5 ASET - Bahasa Cina"
+    },
+    {
+     "value": "744",
+     "text": "5 ABACUS - Bahasa Melayu"
+    },
+    {
+     "value": "745",
+     "text": "5 ABACUS - Bahasa Inggeris"
+    },
+    {
+     "value": "746",
+     "text": "5 ABACUS - Sejarah"
+    },
+    {
+     "value": "747",
+     "text": "5 ABACUS - Sains"
+    },
+    {
+     "value": "748",
+     "text": "5 ABACUS - Sains Komputer (Group B)"
+    },
+    {
+     "value": "749",
+     "text": "5 ABACUS - Bahasa Cina"
+    },
+    {
+     "value": "750",
+     "text": "5 NEPTUN - Bahasa Melayu"
+    },
+    {
+     "value": "751",
+     "text": "5 NEPTUN - Bahasa Inggeris"
+    },
+    {
+     "value": "752",
+     "text": "5 NEPTUN - Matematik"
+    },
+    {
+     "value": "753",
+     "text": "5 NEPTUN - Sejarah"
+    },
+    {
+     "value": "754",
+     "text": "5 NEPTUN - Pendidikan Islam"
+    },
+    {
+     "value": "755",
+     "text": "5 NEPTUN - Pendidikan Moral"
+    },
+    {
+     "value": "756",
+     "text": "5 NEPTUN - Kimia"
+    },
+    {
+     "value": "757",
+     "text": "5 NEPTUN - Fizik"
+    },
+    {
+     "value": "758",
+     "text": "5 NEPTUN - Biologi"
+    },
+    {
+     "value": "759",
+     "text": "5 NEPTUN - Matematik Tambahan"
+    },
+    {
+     "value": "760",
+     "text": "5 NEPTUN - Bahasa Cina"
+    },
+    {
+     "value": "761",
+     "text": "5 MUSYTARI - Pendidikan Islam"
+    },
+    {
+     "value": "762",
+     "text": "5 MUSYTARI - Pendidikan Moral"
+    },
+    {
+     "value": "763",
+     "text": "5 MUSYTARI - Fizik"
+    },
+    {
+     "value": "764",
+     "text": "5 MUSYTARI - Biologi"
+    },
+    {
+     "value": "765",
+     "text": "5 MUSYTARI - Matematik Tambahan"
+    },
+    {
+     "value": "737",
+     "text": "5 ABACUS - Sains Rumah Tangga (Group A)"
+    },
+    {
+     "value": "738",
+     "text": "5 ABACUS - Sains Rumah Tangga (Group B)"
+    },
+    {
+     "value": "736",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "735",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "734",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "733",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "732",
+     "text": "5 IKHLAS"
+    },
+    {
+     "value": "731",
+     "text": "5 IBN RUSD"
+    },
+    {
+     "value": "730",
+     "text": "5 MPV BAKTI"
+    },
+    {
+     "value": "729",
+     "text": "5 IBN SINA"
+    },
+    {
+     "value": "728",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "727",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "726",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "725",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "724",
+     "text": "5 AMAN"
+    },
+    {
+     "value": "723",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "722",
+     "text": "5 AMAN"
+    },
+    {
+     "value": "721",
+     "text": "5 AMAN"
+    },
+    {
+     "value": "720",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "719",
+     "text": "5 MURNI"
+    },
+    {
+     "value": "718",
+     "text": "5 HARMONI"
+    },
+    {
+     "value": "717",
+     "text": "5 HARMONI"
+    },
+    {
+     "value": "716",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "715",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "714",
+     "text": "5 AMAN"
+    },
+    {
+     "value": "713",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "712",
+     "text": "5 MURNI"
+    },
+    {
+     "value": "711",
+     "text": "5 MURNI"
+    },
+    {
+     "value": "710",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "709",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "708",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "707",
+     "text": "5 IKHLAS"
+    },
+    {
+     "value": "706",
+     "text": "5 BAKTI"
+    },
+    {
+     "value": "705",
+     "text": "5 HARMONI"
+    },
+    {
+     "value": "704",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "703",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "702",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "701",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "700",
+     "text": "5 IKHLAS"
+    },
+    {
+     "value": "699",
+     "text": "5 DAMAI"
+    },
+    {
+     "value": "698",
+     "text": "5 DAMAI"
+    },
+    {
+     "value": "697",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "696",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "695",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "694",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "693",
+     "text": "5 DAMAI"
+    },
+    {
+     "value": "692",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "691",
+     "text": "5 AMAN"
+    },
+    {
+     "value": "690",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "689",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "688",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "687",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "686",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "685",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "684",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "683",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "682",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "681",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "680",
+     "text": "5 LEQOE"
+    },
+    {
+     "value": "679",
+     "text": "5 LEQOE"
+    },
+    {
+     "value": "678",
+     "text": "5 LEQOE"
+    },
+    {
+     "value": "666",
+     "text": "5 AZALEA"
+    },
+    {
+     "value": "667",
+     "text": "5 BOUGAINVILLEA"
+    },
+    {
+     "value": "668",
+     "text": "5 CAMELIA"
+    },
+    {
+     "value": "669",
+     "text": "5 DAFFODIL"
+    },
+    {
+     "value": "670",
+     "text": "5 EDELWEISS"
+    },
+    {
+     "value": "671",
+     "text": "5 FREESIA"
+    },
+    {
+     "value": "672",
+     "text": "5 GARDENIA"
+    },
+    {
+     "value": "673",
+     "text": "5 HAZEL"
+    },
+    {
+     "value": "674",
+     "text": "5 IRIS"
+    },
+    {
+     "value": "675",
+     "text": "5 JASMIN"
+    },
+    {
+     "value": "676",
+     "text": "5 KALMIA"
+    },
+    {
+     "value": "677",
+     "text": "5 MIMOSA"
+    },
+    {
+     "value": "665",
+     "text": "5 MPV BERKAT"
+    },
+    {
+     "value": "664",
+     "text": "5 IBN RUSD"
+    },
+    {
+     "value": "663",
+     "text": "5 Sinar"
+    },
+    {
+     "value": "662",
+     "text": "5 Delima"
+    },
+    {
+     "value": "661",
+     "text": "5 MPV BAKTI"
+    },
+    {
+     "value": "660",
+     "text": "5 BAKTI"
+    },
+    {
+     "value": "659",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "658",
+     "text": "5 MPV BERKAT"
+    },
+    {
+     "value": "657",
+     "text": "5 IBN RUSD"
+    },
+    {
+     "value": "656",
+     "text": "5 KAA"
+    },
+    {
+     "value": "655",
+     "text": "5 AMAN"
+    },
+    {
+     "value": "654",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "653",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "652",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "651",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "650",
+     "text": "5 DAMAI"
+    },
+    {
+     "value": "649",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "648",
+     "text": "5 HARMONI"
+    },
+    {
+     "value": "647",
+     "text": "5 DAMAI"
+    },
+    {
+     "value": "646",
+     "text": "5 MURNI"
+    },
+    {
+     "value": "643",
+     "text": "5 IBN KHALDUN"
+    },
+    {
+     "value": "642",
+     "text": "5 IKHLAS"
+    },
+    {
+     "value": "641",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "640",
+     "text": "5 JUJUR"
+    },
+    {
+     "value": "639",
+     "text": "5 AL BIRUNI"
+    },
+    {
+     "value": "638",
+     "text": "5 AL BATTANI"
+    },
+    {
+     "value": "636",
+     "text": "5 MPV BAKTI"
+    },
+    {
+     "value": "633",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "632",
+     "text": "5 JUJUR"
+    },
+    {
+     "value": "631",
+     "text": "5 BAKTI"
+    },
+    {
+     "value": "628",
+     "text": "5 DAMAI"
+    },
+    {
+     "value": "627",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "626",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "625",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "624",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "623",
+     "text": "5 BAKTI"
+    },
+    {
+     "value": "622",
+     "text": "5 JUJUR"
+    },
+    {
+     "value": "621",
+     "text": "5 BAKTI"
+    },
+    {
+     "value": "620",
+     "text": "5 BAKTI"
+    },
+    {
+     "value": "619",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "618",
+     "text": "5 MURNI"
+    },
+    {
+     "value": "617",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "616",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "615",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "614",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "613",
+     "text": "5 HARMONI"
+    },
+    {
+     "value": "612",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "602",
+     "text": "5 ANDROMEDA"
+    },
+    {
+     "value": "603",
+     "text": "5 BUMI"
+    },
+    {
+     "value": "604",
+     "text": "5 MAGELLAN"
+    },
+    {
+     "value": "605",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "606",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "607",
+     "text": "5 NEPTUN"
+    },
+    {
+     "value": "608",
+     "text": "5 URANUS"
+    },
+    {
+     "value": "609",
+     "text": "5 UTARID DLP"
+    },
+    {
+     "value": "610",
+     "text": "5 ZUHAL"
+    },
+    {
+     "value": "611",
+     "text": "5 ZUHRAH"
+    },
+    {
+     "value": "526",
+     "text": "5 AMANAH"
+    },
+    {
+     "value": "528",
+     "text": "5 AZAM"
+    },
+    {
+     "value": "529",
+     "text": "5 BAKTI"
+    },
+    {
+     "value": "530",
+     "text": "5 CEKAL"
+    },
+    {
+     "value": "531",
+     "text": "5 DAMAI"
+    },
+    {
+     "value": "532",
+     "text": "5 HARMONI"
+    },
+    {
+     "value": "533",
+     "text": "5 IKHLAS"
+    },
+    {
+     "value": "534",
+     "text": "5 IMTIAZ"
+    },
+    {
+     "value": "535",
+     "text": "5 JUJUR"
+    },
+    {
+     "value": "536",
+     "text": "5 MURNI"
+    },
+    {
+     "value": "537",
+     "text": "5 NURANI"
+    },
+    {
+     "value": "524",
+     "text": "Kelas Tuition Demo 1"
+    },
+    {
+     "value": "525",
+     "text": "Kelas Tuition Demo 2"
+    },
+    {
+     "value": "516",
+     "text": "4 Simulasi"
+    },
+    {
+     "value": "517",
+     "text": "5 Simulasi"
+    },
+    {
+     "value": "490",
+     "text": "SEJARAH 5 NEPTUN"
+    },
+    {
+     "value": "489",
+     "text": "3 Jed"
+    },
+    {
+     "value": "366",
+     "text": "5 SAINS TULEN"
+    },
+    {
+     "value": "367",
+     "text": "5 KAA"
+    },
+    {
+     "value": "368",
+     "text": "5 PRINSIP AKAUN"
+    },
+    {
+     "value": "369",
+     "text": "5 RGD"
+    },
+    {
+     "value": "370",
+     "text": "5 PERNIAGAAN"
+    },
+    {
+     "value": "371",
+     "text": "5 PSV 1"
+    },
+    {
+     "value": "372",
+     "text": "5 PSV 2"
+    },
+    {
+     "value": "362",
+     "text": "2 Afdal"
+    },
+    {
+     "value": "363",
+     "text": "2 Afiat"
+    },
+    {
+     "value": "364",
+     "text": "2 Akrab"
+    },
+    {
+     "value": "361",
+     "text": "Matematik 5 Delima"
+    },
+    {
+     "value": "358",
+     "text": "DELIMA - Bahasa Melayu"
+    },
+    {
+     "value": "357",
+     "text": "MARIKH"
+    },
+    {
+     "value": "354",
+     "text": "5 MARIKH"
+    },
+    {
+     "value": "305",
+     "text": "5 MARIKH - Sejarah"
+    },
+    {
+     "value": "306",
+     "text": "5 ALFA - Sejarah"
+    },
+    {
+     "value": "307",
+     "text": "5 MARIKH - Matematik Tambahan"
+    },
+    {
+     "value": "308",
+     "text": "5 GAMMA - Bahasa Inggeris"
+    },
+    {
+     "value": "309",
+     "text": "5 ASET - Bahasa Inggeris"
+    },
+    {
+     "value": "310",
+     "text": "5 LAMDA - Sains"
+    },
+    {
+     "value": "311",
+     "text": "5 DELTA - Bahasa Inggeris"
+    },
+    {
+     "value": "312",
+     "text": "5 DELTA - Bahasa Melayu"
+    },
+    {
+     "value": "313",
+     "text": "5 HELIUM - Pendidikan Islam"
+    },
+    {
+     "value": "314",
+     "text": "5 ALFA - Sains"
+    },
+    {
+     "value": "315",
+     "text": "5 MUSYTARI - Bahasa Melayu"
+    },
+    {
+     "value": "316",
+     "text": "5 BETA - Bahasa Melayu"
+    },
+    {
+     "value": "317",
+     "text": "5 ALFA - Ekonomi"
+    },
+    {
+     "value": "318",
+     "text": "5 LAMDA - Matematik"
+    },
+    {
+     "value": "319",
+     "text": "5 ALFA - Perniagaan"
+    },
+    {
+     "value": "320",
+     "text": "5 NEPTUNE - Prinsip Perakaunan"
+    },
+    {
+     "value": "321",
+     "text": "5 NEPTUNE - Matematik Tambahan"
+    },
+    {
+     "value": "322",
+     "text": "5 MARIKH - Pendidikan Islam"
+    },
+    {
+     "value": "323",
+     "text": "5 BETA - Perniagaan"
+    },
+    {
+     "value": "324",
+     "text": "5 ALFA - Bahasa Melayu"
+    },
+    {
+     "value": "325",
+     "text": "GAMMA - Tasawwur Islam"
+    },
+    {
+     "value": "326",
+     "text": "5 MUSYTARI - Matematik"
+    },
+    {
+     "value": "327",
+     "text": "5 DELTA - Pendidikan Seni Visual"
+    },
+    {
+     "value": "328",
+     "text": "5 BETA - Pendidikan Islam"
+    },
+    {
+     "value": "329",
+     "text": "5 MARIKH - Sains Komputer"
+    },
+    {
+     "value": "330",
+     "text": "5 HELIUM - Bahasa Melayu"
+    },
+    {
+     "value": "331",
+     "text": "5 DELTA - Pendidikan Islam"
+    },
+    {
+     "value": "332",
+     "text": "5 ALFA - Pendidikan Islam"
+    },
+    {
+     "value": "333",
+     "text": "5 ASET - Perniagaan"
+    },
+    {
+     "value": "334",
+     "text": "5 MUSYTARI - Matematik Tambahan"
+    },
+    {
+     "value": "335",
+     "text": "5 NEPTUNE - Bahasa Inggeris"
+    },
+    {
+     "value": "336",
+     "text": "5 MUSYTARI - Sejarah"
+    },
+    {
+     "value": "337",
+     "text": "5 ABACUS - Pendidikan Islam"
+    },
+    {
+     "value": "338",
+     "text": "5 ABACUS - Matematik"
+    },
+    {
+     "value": "339",
+     "text": "5 DELTA - Matematik"
+    },
+    {
+     "value": "340",
+     "text": "5 ASET - Matematik"
+    },
+    {
+     "value": "341",
+     "text": "5 HELIUM - Matematik"
+    },
+    {
+     "value": "342",
+     "text": "5 MUSYTARI - Bahasa Inggeris"
+    },
+    {
+     "value": "343",
+     "text": "5 ABACUS - Pendidikan Moral"
+    },
+    {
+     "value": "344",
+     "text": "5 BETA - Bahasa Inggeris"
+    },
+    {
+     "value": "345",
+     "text": "5 LAMDA - Bahasa Inggeris"
+    },
+    {
+     "value": "346",
+     "text": "5 BETA - Sejarah"
+    },
+    {
+     "value": "347",
+     "text": "5 MARIKH - Pendidikan Moral"
+    },
+    {
+     "value": "348",
+     "text": "5 ASET - Pendidikan Moral"
+    },
+    {
+     "value": "349",
+     "text": "5 BETA - Pendidikan Moral"
+    },
+    {
+     "value": "350",
+     "text": "5 ASET - Pendidikan Islam"
+    },
+    {
+     "value": "351",
+     "text": "5 ABACUS - Sains Komputer"
+    },
+    {
+     "value": "353",
+     "text": "5 GAMMA - Pendidikan Seni Visual"
+    },
+    {
+     "value": "301",
+     "text": "5 BETA - Bahasa Cina"
+    },
+    {
+     "value": "302",
+     "text": "5 HELIUM - Bahasa Cina"
+    },
+    {
+     "value": "303",
+     "text": "5 MARIKH - Bahasa Cina"
+    },
+    {
+     "value": "304",
+     "text": "5 MUSYTARI - Bahasa Cina"
+    },
+    {
+     "value": "297",
+     "text": "BETA"
+    },
+    {
+     "value": "288",
+     "text": "BM 5 NEPTUN"
+    },
+    {
+     "value": "284",
+     "text": "5 MUSYTARI - Kimia"
+    },
+    {
+     "value": "281",
+     "text": "BM PVMA"
+    },
+    {
+     "value": "271",
+     "text": "PVMA"
+    },
+    {
+     "value": "268",
+     "text": "5 NEPTUN"
+    },
+    {
+     "value": "265",
+     "text": "SEJARAH 5 ABACUS"
+    },
+    {
+     "value": "264",
+     "text": "5 pvma"
+    },
+    {
+     "value": "254",
+     "text": "MUSYTARI"
+    },
+    {
+     "value": "247",
+     "text": "5 Helium"
+    },
+    {
+     "value": "238",
+     "text": "ABACUS"
+    },
+    {
+     "value": "235",
+     "text": "5 MUSYTARI"
+    },
+    {
+     "value": "228",
+     "text": "ALFA - Bahasa Inggeris"
+    },
+    {
+     "value": "227",
+     "text": "5 BETA"
+    },
+    {
+     "value": "224",
+     "text": "5 ABACUS"
+    },
+    {
+     "value": "205",
+     "text": "SEJARAH 5 DELTA"
+    },
+    {
+     "value": "203",
+     "text": "5 NEPTUNE"
+    },
+    {
+     "value": "198",
+     "text": "SEJARAH 5 HELIUM"
+    },
+    {
+     "value": "196",
+     "text": "ASET - Ekonomi"
+    },
+    {
+     "value": "197",
+     "text": "ASET - Prinsip Perakaunan"
+    },
+    {
+     "value": "195",
+     "text": "5 NEPTUNE 2026 - Fizik"
+    },
+    {
+     "value": "191",
+     "text": "5 LAMDA"
+    },
+    {
+     "value": "190",
+     "text": "5 ASET"
+    },
+    {
+     "value": "185",
+     "text": "5 GAMMA"
+    },
+    {
+     "value": "182",
+     "text": "ASET - Bahasa Inggeris"
+    },
+    {
+     "value": "175",
+     "text": "5 DELTA"
+    },
+    {
+     "value": "174",
+     "text": "MARIKH - Bahasa Melayu"
+    },
+    {
+     "value": "173",
+     "text": "HELIUM - Pendidikan Moral"
+    },
+    {
+     "value": "168",
+     "text": "ABACUS - Bahasa Inggeris"
+    },
+    {
+     "value": "163",
+     "text": "5 ALFA"
+    },
+    {
+     "value": "155",
+     "text": "5 MUSYTARI 2026 - Fizik"
+    },
+    {
+     "value": "121",
+     "text": "5 AL-FARABI - Geografi"
+    },
+    {
+     "value": "122",
+     "text": "5 AL-FARABI - Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "119",
+     "text": "5 AL-FARABI - Bahasa Arab"
+    },
+    {
+     "value": "117",
+     "text": "5 AL-KHAWARIZMI"
+    },
+    {
+     "value": "116",
+     "text": "5IBNU NAFIS MATEMATIK TAMBAHAN"
+    },
+    {
+     "value": "115",
+     "text": "4 IBNU SINA"
+    },
+    {
+     "value": "114",
+     "text": "5 AL-KHAWARIZMI - Bahasa Melayu"
+    },
+    {
+     "value": "112",
+     "text": "5 AL-FARABI - Sejarah"
+    },
+    {
+     "value": "111",
+     "text": "5 IBNU SINA - Sejarah"
+    },
+    {
+     "value": "109",
+     "text": "5 AL-KHAWARIZMI - Matematik"
+    },
+    {
+     "value": "107",
+     "text": "5 IBNU SINA - Biologi"
+    },
+    {
+     "value": "106",
+     "text": "5 AL-FARABI - Sains"
+    },
+    {
+     "value": "105",
+     "text": "5 AL-FARABI - Matematik"
+    },
+    {
+     "value": "104",
+     "text": "5 IBNU NAFIS - Matematik"
+    },
+    {
+     "value": "103",
+     "text": "5 AL-KHAWARIZMI - Sains"
+    },
+    {
+     "value": "102",
+     "text": "5 IBNU SINA - Bahasa Inggeris"
+    },
+    {
+     "value": "101",
+     "text": "5 IBNU NAFIS - Sejarah"
+    },
+    {
+     "value": "100",
+     "text": "5 AL-KHAWARIZMI - Bahasa Inggeris"
+    },
+    {
+     "value": "99",
+     "text": "5 IBNU NAFIS - Fizik"
+    },
+    {
+     "value": "98",
+     "text": "5 IBNU SINA - Matematik"
+    },
+    {
+     "value": "97",
+     "text": "5 AL-KHAWARIZMI - Prinsip Perakaunan"
+    },
+    {
+     "value": "96",
+     "text": "5 AL-KHAWARIZMI - Sejarah"
+    },
+    {
+     "value": "95",
+     "text": "5 AL-KHAWARIZMI - Matematik Tambahan"
+    },
+    {
+     "value": "94",
+     "text": "5 IBNU SINA - Fizik"
+    },
+    {
+     "value": "93",
+     "text": "5 AL-KHAWARIZMI - Ekonomi"
+    },
+    {
+     "value": "92",
+     "text": "5 IBNU NAFIS - Kimia"
+    },
+    {
+     "value": "89",
+     "text": "AMETIS - Biologi"
+    },
+    {
+     "value": "90",
+     "text": "MUMTAZ - Biologi"
+    },
+    {
+     "value": "469",
+     "text": "5 PSV 2"
+    },
+    {
+     "value": "87",
+     "text": "5 AL-FARABI - Bahasa Inggeris"
+    },
+    {
+     "value": "88",
+     "text": "5 AL-FARABI - Bahasa Melayu"
+    },
+    {
+     "value": "465",
+     "text": "5 AL-FARABI"
+    },
+    {
+     "value": "467",
+     "text": "5 IBNU NAFIS"
+    },
+    {
+     "value": "468",
+     "text": "5 IBNU SINA"
+    },
+    {
+     "value": "69",
+     "text": "5 AKIK"
+    },
+    {
+     "value": "70",
+     "text": "5 AMETIS"
+    },
+    {
+     "value": "71",
+     "text": "5 BAIDURI"
+    },
+    {
+     "value": "72",
+     "text": "5 BERLIAN"
+    },
+    {
+     "value": "73",
+     "text": "5 DELIMA"
+    },
+    {
+     "value": "74",
+     "text": "5 FIRUS"
+    },
+    {
+     "value": "75",
+     "text": "5 INTAN"
+    },
+    {
+     "value": "76",
+     "text": "5 JADE"
+    },
+    {
+     "value": "77",
+     "text": "5 KUARSA"
+    },
+    {
+     "value": "78",
+     "text": "5 MUMTAZ"
+    },
+    {
+     "value": "79",
+     "text": "5 MUTIARA"
+    },
+    {
+     "value": "80",
+     "text": "5 NILAM"
+    },
+    {
+     "value": "81",
+     "text": "5 OPAL"
+    },
+    {
+     "value": "82",
+     "text": "5 RUBI"
+    },
+    {
+     "value": "83",
+     "text": "5 TOPAZ"
+    },
+    {
+     "value": "84",
+     "text": "5 ZAMRUD"
+    },
+    {
+     "value": "85",
+     "text": "5 ZIRKON"
+    },
+    {
+     "value": "456",
+     "text": "5 AL BIRUNI"
+    },
+    {
+     "value": "457",
+     "text": "5 AL FARABI"
+    },
+    {
+     "value": "458",
+     "text": "5 AL KHAWARIZMI"
+    },
+    {
+     "value": "460",
+     "text": "5 IBN RUSD"
+    },
+    {
+     "value": "461",
+     "text": "5 IBN SINA"
+    },
+    {
+     "value": "462",
+     "text": "5 MPV BAKTI"
+    },
+    {
+     "value": "463",
+     "text": "5 MPV BERKAT"
+    },
+    {
+     "value": "464",
+     "text": "5 PVMA BUDI"
+    },
+    {
+     "value": "437",
+     "text": "ZIRKON"
+    },
+    {
+     "value": "436",
+     "text": "ZAMRUD"
+    },
+    {
+     "value": "435",
+     "text": "TOPAZ"
+    },
+    {
+     "value": "434",
+     "text": "RUBI"
+    },
+    {
+     "value": "433",
+     "text": "OPAL"
+    },
+    {
+     "value": "432",
+     "text": "NILAM"
+    },
+    {
+     "value": "431",
+     "text": "MUTIARA"
+    },
+    {
+     "value": "430",
+     "text": "MUMTAZ"
+    },
+    {
+     "value": "429",
+     "text": "KUARSA"
+    },
+    {
+     "value": "428",
+     "text": "JADE"
+    },
+    {
+     "value": "427",
+     "text": "INTAN"
+    },
+    {
+     "value": "426",
+     "text": "FIRUS"
+    },
+    {
+     "value": "425",
+     "text": "DELIMA"
+    },
+    {
+     "value": "424",
+     "text": "BERLIAN"
+    },
+    {
+     "value": "423",
+     "text": "BAIDURI"
+    },
+    {
+     "value": "422",
+     "text": "AMETIS"
+    },
+    {
+     "value": "421",
+     "text": "AKIK"
+    },
+    {
+     "value": "419",
+     "text": "4 Bestari"
+    },
+    {
+     "value": "25",
+     "text": "5 BEST"
+    },
+    {
+     "value": "24",
+     "text": "5 pentadbir"
+    },
+    {
+     "value": "12",
+     "text": "5 Cemerlang - BM"
+    },
+    {
+     "value": "13",
+     "text": "5 Cemerlang - SEJ"
+    },
+    {
+     "value": "7",
+     "text": "5 Bestari - BM"
+    },
+    {
+     "value": "8",
+     "text": "4 Bestari - SEJ"
+    },
+    {
+     "value": "9",
+     "text": "4 Cemerlang - SEJ"
+    },
+    {
+     "value": "10",
+     "text": "4 Dedikasi - SEJ"
+    },
+    {
+     "value": "11",
+     "text": "5 Bestari - SEJ"
+    },
+    {
+     "value": "4",
+     "text": "4 Bestari - BM"
+    },
+    {
+     "value": "5",
+     "text": "4 Cemerlang - BM"
+    },
+    {
+     "value": "6",
+     "text": "4 Dedikasi - BM"
+    }
+   ],
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-021",
+   "kind": "label",
+   "tag": "label",
+   "text": "Status",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-022",
+   "kind": "select",
+   "tag": "select",
+   "name": "status",
+   "label": "Status",
+   "options": [
+    {
+     "value": "done",
+     "text": "Selesai"
+    },
+    {
+     "value": "planned",
+     "text": "Dirancang"
+    }
+   ],
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-023",
+   "kind": "label",
+   "tag": "label",
+   "text": "Catatan / Apa Yang Dilakukan",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-024",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "notes",
+   "label": "Catatan / Apa Yang Dilakukan",
+   "placeholder": "Cth: Sesi kaunseling bersama pelajar tentang pengurusan masa...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tindakan Susulan (Pilihan)",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-026",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "follow_up",
+   "label": "Tindakan Susulan (Pilihan)",
+   "placeholder": "Cth: Jumpa semula minggu depan untuk semak kemajuan...",
+   "rows": "1",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-027",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan Intervensi",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/amaran/intervensi",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-028",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah Intervensi",
+   "landmark": "main",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-029",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah Intervensi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-030",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sesi Kaunseling",
+   "icon": "fa-comments",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "13 Apr 2026",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-033",
+   "kind": "text",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-034",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/amaran/intervensi/2",
+   "method": "POST",
+   "spoofedMethod": "PATCH",
+   "fields": [
+    "_token",
+    "_method",
+    "effectiveness",
+    "follow_up"
+   ],
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-035",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-036",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-037",
+   "kind": "select",
+   "tag": "select",
+   "name": "effectiveness",
+   "options": [
+    {
+     "value": "belum_dinilai",
+     "text": "Belum Dinilai"
+    },
+    {
+     "value": "berkesan",
+     "text": "Berkesan"
+    },
+    {
+     "value": "sederhana",
+     "text": "Sederhana"
+    },
+    {
+     "value": "tidak_berkesan",
+     "text": "Tidak Berkesan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "alpine": {
+    "onchange": "this.form.submit()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-038",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "follow_up",
+   "placeholder": "Tindakan susulan...",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "followup__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showFollowUp"
+  },
+  {
+   "id": "EL-M18-S24-039",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/amaran/intervensi/2",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "followup__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showFollowUp"
+  },
+  {
+   "id": "EL-M18-S24-040",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-pen",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "alpine": {
+    "@click": "showFollowUp = !showFollowUp"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-041",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/amaran/intervensi/2",
+   "method": "POST",
+   "spoofedMethod": "DELETE",
+   "fields": [
+    "_token",
+    "_method"
+   ],
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "alpine": {
+    "onsubmit": "return confirm('Padam intervensi ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-042",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-043",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-044",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/amaran/intervensi/2",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-045",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Mentor Rakan Sebaya",
+   "icon": "fa-user-friends",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "13 Apr 2026",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-047",
+   "kind": "text",
+   "tag": "p",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "<masked>",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-049",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/amaran/intervensi/3",
+   "method": "POST",
+   "spoofedMethod": "PATCH",
+   "fields": [
+    "_token",
+    "_method",
+    "effectiveness",
+    "follow_up"
+   ],
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-050",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-051",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-052",
+   "kind": "select",
+   "tag": "select",
+   "name": "effectiveness",
+   "options": [
+    {
+     "value": "belum_dinilai",
+     "text": "Belum Dinilai"
+    },
+    {
+     "value": "berkesan",
+     "text": "Berkesan"
+    },
+    {
+     "value": "sederhana",
+     "text": "Sederhana"
+    },
+    {
+     "value": "tidak_berkesan",
+     "text": "Tidak Berkesan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "alpine": {
+    "onchange": "this.form.submit()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-053",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "follow_up",
+   "placeholder": "Tindakan susulan...",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showFollowUp"
+  },
+  {
+   "id": "EL-M18-S24-054",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/amaran/intervensi/3",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showFollowUp"
+  },
+  {
+   "id": "EL-M18-S24-055",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-pen",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "alpine": {
+    "@click": "showFollowUp = !showFollowUp"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-056",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/amaran/intervensi/3",
+   "method": "POST",
+   "spoofedMethod": "DELETE",
+   "fields": [
+    "_token",
+    "_method"
+   ],
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "alpine": {
+    "onsubmit": "return confirm('Padam intervensi ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-057",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-058",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-059",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/amaran/intervensi/3",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "followup__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-060",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/admin/server-status",
+   "absHref": "https://prestasiplus.my/admin/server-status",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-061",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/chatbot/history?session_id=cb_1790394241305_xa1ssy7am",
+   "absHref": "https://prestasiplus.my/chatbot/history?session_id=cb_1790394241305_xa1ssy7am",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "followup__1280",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S24-062",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/notifikasi/unread-count",
+   "absHref": "https://prestasiplus.my/notifikasi/unread-count",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Sejarah Intervensi",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ]
+  }
+ ]
+}

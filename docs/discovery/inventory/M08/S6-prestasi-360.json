@@ -1,0 +1,4348 @@
+{
+ "screen": "S6",
+ "key": "S6-prestasi-360",
+ "route": "/prestasi/{userId}",
+ "name": "Prestasi 360 — {nama} — PRESTASIPLUS",
+ "module": "M08",
+ "generatedAt": "2026-09-25T10:25:46.633Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 213,
+  "visibleDefault": 113,
+  "conditional": 97,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 131,
+   "link": 21,
+   "badge": 14,
+   "heading": 15,
+   "card": 20,
+   "clickable": 7,
+   "empty-state": 2,
+   "tooltip": 3
+  }
+ },
+ "states": [
+  {
+   "label": "data__1280",
+   "description": "student with data (headcount card, mastery, weak topics, suggestions)",
+   "file": "_raw/M08/S6-prestasi-360__data__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/prestasi/1771",
+   "finalUrl": "/prestasi/1771",
+   "httpStatus": 200,
+   "title": "Prestasi 360 — <person> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 3",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main [\\@click*=\"activeDay =\"]": 90,
+    "main .grid.grid-cols-1.sm\\:grid-cols-2 > div.flex": 6
+   }
+  },
+  {
+   "label": "day-tooltip__1280",
+   "description": "heatmap cell clicked (activeDay tooltip)",
+   "file": "_raw/M08/S6-prestasi-360__day-tooltip__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/prestasi/1",
+   "finalUrl": "/prestasi/1",
+   "httpStatus": 200,
+   "title": "Prestasi 360 — <person> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    },
+    {
+     "click": "main [\\@click*=\"activeDay =\"] >> nth=10"
+    },
+    {
+     "wait": 300
+    }
+   ],
+   "actionLog": [
+    "m08mask: 2",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main [\\@click*=\"activeDay =\"]": 90,
+    "main .grid.grid-cols-1.sm\\:grid-cols-2 > div.flex": 0
+   }
+  },
+  {
+   "label": "empty__1280",
+   "description": "own account (no practice data)",
+   "file": "_raw/M08/S6-prestasi-360__empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/prestasi/1",
+   "finalUrl": "/prestasi/1",
+   "httpStatus": 200,
+   "title": "Prestasi 360 — <person> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 2",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main [\\@click*=\"activeDay =\"]": 90,
+    "main .grid.grid-cols-1.sm\\:grid-cols-2 > div.flex": 0
+   }
+  },
+  {
+   "label": "headcount-status__1280",
+   "description": "at-risk student: 5 headcount cards On Track/Below/—, chip row without AR checkpoints (audit top-up)",
+   "file": "_raw/M08/S6-prestasi-360__headcount-status__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/prestasi/2224",
+   "finalUrl": "/prestasi/2224",
+   "httpStatus": 200,
+   "title": "Prestasi 360 — <person> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main p').forEach(function (p) { if (/Guru:/.test(p.textContent)) { p.textContent = p.textContent.replace(/Guru:.*$/, 'Guru: <person>'); n++; } }); document.querySelectorAll('main a[href*=\"/headcount/student/\"]').forEach(function (a) { if (a.closest('tbody')) { a.classList.add('m08n'); n++; } }); document.querySelectorAll('main tbody input[type=checkbox][value]').forEach(function (c) { c.setAttribute('value', 'N'); }); return 'tmask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 7",
+    "tmask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main [\\@click*=\"activeDay =\"]": 90,
+    "main .grid.grid-cols-1.sm\\:grid-cols-2 > div.flex": 5
+   }
+  },
+  {
+   "label": "not-found__1280",
+   "description": "unknown user id (404)",
+   "file": "_raw/M08/S6-prestasi-360__not-found__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/prestasi/99999999",
+   "finalUrl": "/prestasi/99999999",
+   "httpStatus": 404,
+   "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "data__375",
+   "description": "student with data @375",
+   "file": "_raw/M08/S6-prestasi-360__data__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/prestasi/1771",
+   "finalUrl": "/prestasi/1771",
+   "httpStatus": 200,
+   "title": "Prestasi 360 — <person> — PRESTASIPLUS",
+   "horizontalOverflow": "392px > 375px",
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 3",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main [\\@click*=\"activeDay =\"]": 90,
+    "main .grid.grid-cols-1.sm\\:grid-cols-2 > div.flex": 6
+   }
+  },
+  {
+   "label": "data__768",
+   "description": "student with data @768",
+   "file": "_raw/M08/S6-prestasi-360__data__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/prestasi/1771",
+   "finalUrl": "/prestasi/1771",
+   "httpStatus": 200,
+   "title": "Prestasi 360 — <person> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 3",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main [\\@click*=\"activeDay =\"]": 90,
+    "main .grid.grid-cols-1.sm\\:grid-cols-2 > div.flex": 6
+   }
+  },
+  {
+   "label": "headcount-status__375",
+   "description": "at-risk student (audit top-up) @375",
+   "file": "_raw/M08/S6-prestasi-360__headcount-status__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/prestasi/2224",
+   "finalUrl": "/prestasi/2224",
+   "httpStatus": 200,
+   "title": "Prestasi 360 — <person> — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main p').forEach(function (p) { if (/Guru:/.test(p.textContent)) { p.textContent = p.textContent.replace(/Guru:.*$/, 'Guru: <person>'); n++; } }); document.querySelectorAll('main a[href*=\"/headcount/student/\"]').forEach(function (a) { if (a.closest('tbody')) { a.classList.add('m08n'); n++; } }); document.querySelectorAll('main tbody input[type=checkbox][value]').forEach(function (c) { c.setAttribute('value', 'N'); }); return 'tmask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 7",
+    "tmask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main [\\@click*=\"activeDay =\"]": 90,
+    "main .grid.grid-cols-1.sm\\:grid-cols-2 > div.flex": 5
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ activeDay: '' }",
+   "keys": [
+    "activeDay"
+   ],
+   "liveState": {
+    "activeDay": ""
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Aktiviti",
+   "seenIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "28/06 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "29/06 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "30/06 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "01/07 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "02/07 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "03/07 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "04/07 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "05/07 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "06/07 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "07/07 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "08/07 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "09/07 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "10/07 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "11/07 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "12/07 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "13/07 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "14/07 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "15/07 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "16/07 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "17/07 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "18/07 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "19/07 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "20/07 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "21/07 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "22/07 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "23/07 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "24/07 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "25/07 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "26/07 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "27/07 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "28/07 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "29/07 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "30/07 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "31/07 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "01/08 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "02/08 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "03/08 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "04/08 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "05/08 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "06/08 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "07/08 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "08/08 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "09/08 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "10/08 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "11/08 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "12/08 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "13/08 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "14/08 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "15/08 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "16/08 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "17/08 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "18/08 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "19/08 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "20/08 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "21/08 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "22/08 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "23/08 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "24/08 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "25/08 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "26/08 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "27/08 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "28/08 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "29/08 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "30/08 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "31/08 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "01/09 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "02/09 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "03/09 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "04/09 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "05/09 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "06/09 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "07/09 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "08/09 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "09/09 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "10/09 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "11/09 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "12/09 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "13/09 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "14/09 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "15/09 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "16/09 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "17/09 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "18/09 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "19/09 (Sabtu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "20/09 (Ahad) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "21/09 (Isnin) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "22/09 (Selasa) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "23/09 (Rabu) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "24/09 (Khamis) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "25/09 (Jumaat) — Tiada aktiviti",
+   "sources": [
+    "attr:@mouseenter@div",
+    "attr:@click@div"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M08-S6-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-004",
+   "kind": "link",
+   "tag": "a",
+   "href": "javascript:history.back()",
+   "absHref": "javascript:history.back()",
+   "icon": "fa-arrow-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-005",
+   "kind": "badge",
+   "tag": "div",
+   "text": "<in>",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-006",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "<masked>",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "Prestasi 360 — Dashboard Individu",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "74%",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280"
+   ],
+   "hiddenIn": [
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280"
+   ],
+   "hiddenIn": [
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "1",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280"
+   ],
+   "hiddenIn": [
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Hari Kombo",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280"
+   ],
+   "hiddenIn": [
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-012",
+   "kind": "card",
+   "tag": "div",
+   "text": "17",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-013",
+   "kind": "text",
+   "tag": "p",
+   "text": "17",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sesi Kuiz",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-015",
+   "kind": "card",
+   "tag": "div",
+   "text": "74.0%",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "74.0%",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-017",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-018",
+   "kind": "card",
+   "tag": "div",
+   "text": "540",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "540",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-020",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Dijawab",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-021",
+   "kind": "card",
+   "tag": "div",
+   "text": "2j 9m",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "2j 9m",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "Masa Belajar",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-024",
+   "kind": "card",
+   "tag": "div",
+   "text": "Headcount — Prestasi SPM",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-025",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Headcount — Prestasi SPM",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-026",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kimia",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "5 MARIKH - Kimia · 2026",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "—",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV: 69%",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "OTR1: 68%",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "OTR2: 43%",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "OTR3: 88%",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR: —",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-034",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Penuh",
+   "href": "https://prestasiplus.my/headcount/student/{id}",
+   "absHref": "https://prestasiplus.my/headcount/student/%7Bid%7D",
+   "icon": "fa-external-link-alt",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-035",
+   "kind": "card",
+   "tag": "div",
+   "text": "Penguasaan Subjek",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-036",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Penguasaan Subjek",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-037",
+   "kind": "card",
+   "tag": "div",
+   "text": "CH",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-038",
+   "kind": "text",
+   "tag": "div",
+   "text": "CH",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-039",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "69%",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-041",
+   "kind": "text",
+   "tag": "p",
+   "text": "6 sesi · 200 soalan",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-042",
+   "kind": "card",
+   "tag": "div",
+   "text": "SE",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-043",
+   "kind": "text",
+   "tag": "div",
+   "text": "SE",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-044",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-045",
+   "kind": "text",
+   "tag": "span",
+   "text": "53%",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-046",
+   "kind": "text",
+   "tag": "p",
+   "text": "3 sesi · 100 soalan",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-047",
+   "kind": "card",
+   "tag": "div",
+   "text": "PI",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "PI",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-049",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-050",
+   "kind": "text",
+   "tag": "span",
+   "text": "95%",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-051",
+   "kind": "text",
+   "tag": "p",
+   "text": "3 sesi · 80 soalan",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-052",
+   "kind": "card",
+   "tag": "div",
+   "text": "Aktiviti",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-053",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Aktiviti",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-054",
+   "kind": "text",
+   "tag": "p",
+   "text": "1",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-055",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kombo Hari",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-056",
+   "kind": "text",
+   "tag": "p",
+   "text": "3",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-057",
+   "kind": "text",
+   "tag": "p",
+   "text": "Rekod Terbaik",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-058",
+   "kind": "text",
+   "tag": "p",
+   "text": "479",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-059",
+   "kind": "text",
+   "tag": "p",
+   "text": "Koin",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-060",
+   "kind": "text",
+   "tag": "p",
+   "text": "4",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-061",
+   "kind": "text",
+   "tag": "p",
+   "text": "Hari Latihan",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-062",
+   "kind": "card",
+   "tag": "div",
+   "text": "Peta Aktiviti (90 Hari)",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "alpine": {
+    "x-data": "{ activeDay: '' }"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-063",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Peta Aktiviti (90 Hari)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-064",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "alpine": {
+    "@mouseenter": "activeDay='28/06 (Ahad) — Tiada aktiviti'",
+    "@mouseleave": "activeDay=''",
+    "@click": "activeDay = activeDay === '28/06 (Ahad) — Tiada aktiviti' ? '' : '28/06 (Ahad) — Tiada aktiviti'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-065",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "alpine": {
+    "@mouseenter": "activeDay='29/06 (Isnin) — Tiada aktiviti'",
+    "@mouseleave": "activeDay=''",
+    "@click": "activeDay = activeDay === '29/06 (Isnin) — Tiada aktiviti' ? '' : '29/06 (Isnin) — Tiada aktiviti'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-066",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "alpine": {
+    "@mouseenter": "activeDay='30/06 (Selasa) — Tiada aktiviti'",
+    "@mouseleave": "activeDay=''",
+    "@click": "activeDay = activeDay === '30/06 (Selasa) — Tiada aktiviti' ? '' : '30/06 (Selasa) — Tiada aktiviti'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-067",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "alpine": {
+    "@mouseenter": "activeDay='01/07 (Rabu) — Tiada aktiviti'",
+    "@mouseleave": "activeDay=''",
+    "@click": "activeDay = activeDay === '01/07 (Rabu) — Tiada aktiviti' ? '' : '01/07 (Rabu) — Tiada aktiviti'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-068",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "alpine": {
+    "@mouseenter": "activeDay='02/07 (Khamis) — Tiada aktiviti'",
+    "@mouseleave": "activeDay=''",
+    "@click": "activeDay = activeDay === '02/07 (Khamis) — Tiada aktiviti' ? '' : '02/07 (Khamis) — Tiada aktiviti'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-069",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "alpine": {
+    "@mouseenter": "activeDay='03/07 (Jumaat) — Tiada aktiviti'",
+    "@mouseleave": "activeDay=''",
+    "@click": "activeDay = activeDay === '03/07 (Jumaat) — Tiada aktiviti' ? '' : '03/07 (Jumaat) — Tiada aktiviti'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-070",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "alpine": {
+    "@mouseenter": "activeDay='04/07 (Sabtu) — Tiada aktiviti'",
+    "@mouseleave": "activeDay=''",
+    "@click": "activeDay = activeDay === '04/07 (Sabtu) — Tiada aktiviti' ? '' : '04/07 (Sabtu) — Tiada aktiviti'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-071",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-072",
+   "kind": "text",
+   "tag": "span",
+   "text": "1-1",
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-073",
+   "kind": "text",
+   "tag": "span",
+   "text": "2-2",
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-074",
+   "kind": "text",
+   "tag": "span",
+   "text": "3-3",
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-075",
+   "kind": "text",
+   "tag": "span",
+   "text": "4+",
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-076",
+   "kind": "text",
+   "tag": "span",
+   "text": "sesi/hari",
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-077",
+   "kind": "card",
+   "tag": "div",
+   "text": "Topik Perlu Perhatian",
+   "landmark": "main",
+   "section": "Peta Aktiviti (90 Hari)",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-078",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Topik Perlu Perhatian",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-079",
+   "kind": "text",
+   "tag": "span",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-080",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sifat Kimia dan Saling Pertukaran",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-081",
+   "kind": "text",
+   "tag": "span",
+   "text": "CHEM · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-082",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 7",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-083",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2530&count=7",
+   "absHref": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2530&count=7",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 7 soalan fokus",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-084",
+   "kind": "text",
+   "tag": "span",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-085",
+   "kind": "text",
+   "tag": "p",
+   "text": "Polimer",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-086",
+   "kind": "text",
+   "tag": "span",
+   "text": "CHEM · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-087",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 10",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-088",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2544&count=10",
+   "absHref": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2544&count=10",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 10 soalan fokus",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-089",
+   "kind": "text",
+   "tag": "span",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-090",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sel Elektrolisis",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-091",
+   "kind": "text",
+   "tag": "span",
+   "text": "CHEM · 3 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-092",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 25",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-093",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2513&count=25",
+   "absHref": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2513&count=25",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 25 soalan fokus",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-094",
+   "kind": "text",
+   "tag": "span",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-095",
+   "kind": "text",
+   "tag": "p",
+   "text": "Getah Asli",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-096",
+   "kind": "text",
+   "tag": "span",
+   "text": "CHEM · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-097",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 25",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-098",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2545&count=25",
+   "absHref": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2545&count=25",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 25 soalan fokus",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-099",
+   "kind": "text",
+   "tag": "span",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-100",
+   "kind": "text",
+   "tag": "p",
+   "text": "Siri Homolog",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-101",
+   "kind": "text",
+   "tag": "span",
+   "text": "CHEM · 2 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-102",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 25",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-103",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2526&count=25",
+   "absHref": "https://prestasiplus.my/practice/CHEM/quiz?level=11&dskp_sp_id=2526&count=25",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 25 soalan fokus",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-104",
+   "kind": "text",
+   "tag": "span",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-105",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Islam Tingkatan 4",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-106",
+   "kind": "text",
+   "tag": "span",
+   "text": "PI · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-107",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 2",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-108",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/PI/quiz?level=11&dskp_sp_id=2244&count=2",
+   "absHref": "https://prestasiplus.my/practice/PI/quiz?level=11&dskp_sp_id=2244&count=2",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 2 soalan fokus",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-109",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-110",
+   "kind": "text",
+   "tag": "span",
+   "text": "Klik untuk buka set latihan tertumpu pada topik lemah itu sahaja.",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-111",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cadangan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-112",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Cadangan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "data__375",
+    "data__768",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-113",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sudah 104 hari tiada latihan. Mulakan semula dengan 10 soalan mudah untuk pemanasan.",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "day-tooltip__1280",
+    "empty__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-114",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tingkatkan prestasi Sejarah (purata 53%) dengan 3 sesi latihan fokus minggu ini.",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-115",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tingkatkan prestasi Fizik (purata 65%) dengan 3 sesi latihan fokus minggu ini.",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-116",
+   "kind": "text",
+   "tag": "p",
+   "text": "Topik 'Sel Elektrolisis' (0% ketepatan) adalah titik lemah utama — buat latihan tertumpu untuk topik ini.",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "visible-default",
+   "visibleIn": [
+    "data__1280",
+    "data__375",
+    "data__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-117",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280"
+   ],
+   "hiddenIn": [
+    "headcount-status__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-118",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "conditional",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-119",
+   "kind": "card",
+   "tag": "div",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "conditional",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-120",
+   "kind": "text",
+   "tag": "p",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "conditional",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-121",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "conditional",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-122",
+   "kind": "card",
+   "tag": "div",
+   "text": "0m",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "conditional",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-123",
+   "kind": "text",
+   "tag": "p",
+   "text": "0m",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "conditional",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280",
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-124",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Belum ada data latihan.",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-125",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Berlatih",
+   "href": "https://prestasiplus.my/practice",
+   "absHref": "https://prestasiplus.my/practice",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-126",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada topik lemah! Teruskan usaha.",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-127",
+   "kind": "text",
+   "tag": "p",
+   "text": "Mulakan perjalanan belajar kamu — setiap sesi latihan membina asas yang kukuh!",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "day-tooltip__1280",
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-135",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-136",
+   "kind": "text",
+   "tag": "p",
+   "text": "4 Simulasi · 2026",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-137",
+   "kind": "text",
+   "tag": "span",
+   "text": "Below",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV: 67%",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-139",
+   "kind": "text",
+   "tag": "span",
+   "text": "OTR3: 56%",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-140",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR: 56%",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-141",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-142",
+   "kind": "text",
+   "tag": "p",
+   "text": "4 Simulasi · 2026",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-143",
+   "kind": "text",
+   "tag": "span",
+   "text": "Below",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-144",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV: 55%",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-145",
+   "kind": "text",
+   "tag": "span",
+   "text": "OTR3: 65%",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-146",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR: 65%",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-147",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Penuh",
+   "href": "https://prestasiplus.my/headcount/student/{id}",
+   "absHref": "https://prestasiplus.my/headcount/student/%7Bid%7D",
+   "icon": "fa-external-link-alt",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-148",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-149",
+   "kind": "text",
+   "tag": "p",
+   "text": "4 Simulasi · 2026",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-150",
+   "kind": "text",
+   "tag": "span",
+   "text": "On Track",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-151",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV: 58%",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-152",
+   "kind": "text",
+   "tag": "span",
+   "text": "OTR3: 60%",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-153",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR: 60%",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-154",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Penuh",
+   "href": "https://prestasiplus.my/headcount/student/{id}",
+   "absHref": "https://prestasiplus.my/headcount/student/%7Bid%7D",
+   "icon": "fa-external-link-alt",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-155",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sains",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-156",
+   "kind": "text",
+   "tag": "p",
+   "text": "4 Simulasi · 2026",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-157",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV: 70%",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-158",
+   "kind": "text",
+   "tag": "span",
+   "text": "OTR3: 61%",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-159",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR: 61%",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-160",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Penuh",
+   "href": "https://prestasiplus.my/headcount/student/{id}",
+   "absHref": "https://prestasiplus.my/headcount/student/%7Bid%7D",
+   "icon": "fa-external-link-alt",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-161",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-162",
+   "kind": "text",
+   "tag": "p",
+   "text": "4 Simulasi · 2026",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-163",
+   "kind": "text",
+   "tag": "span",
+   "text": "On Track",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-164",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV: 51%",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-165",
+   "kind": "text",
+   "tag": "span",
+   "text": "OTR3: 74%",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-166",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR: 74%",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-167",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Penuh",
+   "href": "https://prestasiplus.my/headcount/student/{id}",
+   "absHref": "https://prestasiplus.my/headcount/student/%7Bid%7D",
+   "icon": "fa-external-link-alt",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-168",
+   "kind": "card",
+   "tag": "div",
+   "text": "BM",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-169",
+   "kind": "text",
+   "tag": "div",
+   "text": "BM",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-170",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-171",
+   "kind": "text",
+   "tag": "span",
+   "text": "68%",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-172",
+   "kind": "text",
+   "tag": "p",
+   "text": "8 sesi · 94 soalan",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-173",
+   "kind": "text",
+   "tag": "p",
+   "text": "6 sesi · 68 soalan",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-174",
+   "kind": "card",
+   "tag": "div",
+   "text": "SC",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-175",
+   "kind": "text",
+   "tag": "div",
+   "text": "SC",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-176",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-177",
+   "kind": "text",
+   "tag": "span",
+   "text": "70%",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-178",
+   "kind": "text",
+   "tag": "p",
+   "text": "6 sesi · 67 soalan",
+   "landmark": "main",
+   "section": "Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-179",
+   "kind": "card",
+   "tag": "div",
+   "text": "Lencana (3)",
+   "landmark": "main",
+   "section": "Aktiviti",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-180",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Lencana (3)",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-181",
+   "kind": "tooltip",
+   "tag": "div",
+   "text": "Pemula Rajin",
+   "icon": "fa-seedling",
+   "landmark": "main",
+   "section": "Lencana (3)",
+   "title": "Pemula Rajin",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-182",
+   "kind": "tooltip",
+   "tag": "div",
+   "text": "Pelajar Aktif",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Lencana (3)",
+   "title": "Pelajar Aktif",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-183",
+   "kind": "tooltip",
+   "tag": "div",
+   "text": "Pengumpul",
+   "icon": "fa-coins",
+   "landmark": "main",
+   "section": "Lencana (3)",
+   "title": "Pengumpul",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-184",
+   "kind": "text",
+   "tag": "p",
+   "text": "3.1.6 — Membina pernyataan menggunakan pengkuanti \"semua\" dan \"sebilanga...",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-185",
+   "kind": "text",
+   "tag": "span",
+   "text": "MATH · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-186",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 4",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-187",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/MATH/quiz?dskp_sp_id=34&count=4",
+   "absHref": "https://prestasiplus.my/practice/MATH/quiz?dskp_sp_id=34&count=4",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 4 soalan fokus",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-188",
+   "kind": "text",
+   "tag": "p",
+   "text": "4.1.1 — Menentukan persilangan set menggunakan pelbagai perwakilan.",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-189",
+   "kind": "text",
+   "tag": "span",
+   "text": "MATH · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-190",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 9",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-191",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/MATH/quiz?dskp_sp_id=41&count=9",
+   "absHref": "https://prestasiplus.my/practice/MATH/quiz?dskp_sp_id=41&count=9",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 9 soalan fokus",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-192",
+   "kind": "text",
+   "tag": "p",
+   "text": "4.2.2 — Menentukan pelengkap bagi kesatuan set.",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-193",
+   "kind": "text",
+   "tag": "span",
+   "text": "MATH · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-194",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 6",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-195",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/MATH/quiz?dskp_sp_id=45&count=6",
+   "absHref": "https://prestasiplus.my/practice/MATH/quiz?dskp_sp_id=45&count=6",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 6 soalan fokus",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-196",
+   "kind": "text",
+   "tag": "p",
+   "text": "Warisan Negara Bangsa",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-197",
+   "kind": "text",
+   "tag": "span",
+   "text": "SEJ · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-198",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 14",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-199",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/SEJ/quiz?dskp_sp_id=347&count=14",
+   "absHref": "https://prestasiplus.my/practice/SEJ/quiz?dskp_sp_id=347&count=14",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 14 soalan fokus",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-200",
+   "kind": "text",
+   "tag": "p",
+   "text": "Warisan Negara Bangsa",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-201",
+   "kind": "text",
+   "tag": "span",
+   "text": "SEJ · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-202",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 16",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-203",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/SEJ/quiz?dskp_sp_id=364&count=16",
+   "absHref": "https://prestasiplus.my/practice/SEJ/quiz?dskp_sp_id=364&count=16",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 16 soalan fokus",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-204",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dunia mikroorganisma",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-205",
+   "kind": "text",
+   "tag": "span",
+   "text": "SCI · 1 percubaan",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-206",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fokus 9",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-207",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus",
+   "href": "https://prestasiplus.my/practice/SCI/quiz?dskp_sp_id=640&count=9",
+   "absHref": "https://prestasiplus.my/practice/SCI/quiz?dskp_sp_id=640&count=9",
+   "icon": "fa-bolt",
+   "landmark": "main",
+   "section": "Topik Perlu Perhatian",
+   "title": "Klik untuk 9 soalan fokus",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-208",
+   "kind": "text",
+   "tag": "p",
+   "text": "Belum ada sesi latihan lagi. Mulakan dengan subjek yang paling kamu minati!",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-209",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tingkatkan prestasi Matematik (purata 67.9%) dengan 3 sesi latihan fokus minggu ini.",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-210",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tingkatkan prestasi Bahasa Melayu (purata 68.1%) dengan 3 sesi latihan fokus minggu ini.",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-211",
+   "kind": "text",
+   "tag": "p",
+   "text": "Topik 'Penulisan karangan lanjutan' (33.3% ketepatan) adalah titik lemah utama — buat latihan tertumpu untuk topik ini.",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-212",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sejarah OTR3: markah sebenar (56.00) masih 26 mata di bawah sasaran (82.00). Fokus latihan untuk kejar target.",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-213",
+   "kind": "text",
+   "tag": "p",
+   "text": "Matematik OTR3: markah sebenar (65.00) masih 5 mata di bawah sasaran (70.00). Fokus latihan untuk kejar target.",
+   "landmark": "main",
+   "section": "Cadangan",
+   "status": "conditional",
+   "visibleIn": [
+    "headcount-status__1280",
+    "headcount-status__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-128",
+   "kind": "text",
+   "tag": "div",
+   "text": "404",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-129",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔍",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-130",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-131",
+   "kind": "text",
+   "tag": "p",
+   "text": "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-132",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-133",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "/latih-tubi",
+   "absHref": "https://prestasiplus.my/latih-tubi",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S6-134",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  }
+ ]
+}

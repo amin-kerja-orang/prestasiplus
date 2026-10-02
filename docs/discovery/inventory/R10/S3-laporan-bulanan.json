@@ -1,0 +1,198 @@
+{
+ "screen": "S3",
+ "key": "S3-laporan-bulanan",
+ "route": "/admin-sekolah/laporan-bulanan",
+ "name": "500 - Ralat Pelayan | PRESTASIPLUS (admin)",
+ "module": "R10",
+ "generatedAt": "2026-09-27T04:38:04.772Z",
+ "notes": "admin: 302 → /admin-sekolah/pilih-sekolah → 500; content not reachable with the only account available",
+ "shell": "none (global error page)",
+ "summary": {
+  "total": 7,
+  "visibleDefault": 7,
+  "conditional": 0,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 4,
+   "heading": 1,
+   "link": 2
+  }
+ },
+ "states": [
+  {
+   "label": "admin-500__1280",
+   "description": "admin: 302 → /admin-sekolah/pilih-sekolah → 500 \"Ralat Pelayan\" (content not reachable)",
+   "file": "_raw/R10/S3-laporan-bulanan__admin-500__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin-sekolah/pilih-sekolah",
+   "finalUrl": "/admin-sekolah/pilih-sekolah",
+   "httpStatus": 500,
+   "title": "500 - Ralat Pelayan | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el) { if (el && el.classList && !el.classList.contains('r10n')) { el.classList.add('r10n'); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('.duta-card .name, .duta-card .av-img').forEach(tag);\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,th')) tag(el);\n    });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile|duta)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'r10mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "r10mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "admin-500__375",
+   "description": "admin: 302 → 500 @375",
+   "file": "_raw/R10/S3-laporan-bulanan__admin-500__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin-sekolah/pilih-sekolah",
+   "finalUrl": "/admin-sekolah/pilih-sekolah",
+   "httpStatus": 500,
+   "title": "500 - Ralat Pelayan | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el) { if (el && el.classList && !el.classList.contains('r10n')) { el.classList.add('r10n'); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('.duta-card .name, .duta-card .av-img').forEach(tag);\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,th')) tag(el);\n    });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile|duta)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'r10mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "r10mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "admin-500__768",
+   "description": "admin: 302 → 500 @768",
+   "file": "_raw/R10/S3-laporan-bulanan__admin-500__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin-sekolah/pilih-sekolah",
+   "finalUrl": "/admin-sekolah/pilih-sekolah",
+   "httpStatus": 500,
+   "title": "500 - Ralat Pelayan | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el) { if (el && el.classList && !el.classList.contains('r10n')) { el.classList.add('r10n'); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('.duta-card .name, .duta-card .av-img').forEach(tag);\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,th')) tag(el);\n    });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile|duta)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'r10mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "r10mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-R10-S3-001",
+   "kind": "text",
+   "tag": "div",
+   "text": "500",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-R10-S3-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚙️",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-R10-S3-003",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-R10-S3-004",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.",
+   "section": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-R10-S3-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-R10-S3-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cuba Semula",
+   "href": "javascript:location.reload()",
+   "absHref": "javascript:location.reload()",
+   "section": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-R10-S3-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  }
+ ]
+}

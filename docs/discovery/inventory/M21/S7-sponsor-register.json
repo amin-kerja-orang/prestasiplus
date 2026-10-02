@@ -1,0 +1,2544 @@
+{
+ "screen": "S7",
+ "key": "S7-sponsor-register",
+ "route": "/sponsor/register",
+ "name": "Daftar Penaja - PRESTASIPLUS",
+ "module": "M21",
+ "generatedAt": "2026-09-27T02:22:47.352Z",
+ "notes": "3-step Alpine wizard; form POST /sponsor/register (never submitted); open to guest and logged-in users",
+ "shell": "none (standalone guest-style page)",
+ "summary": {
+  "total": 72,
+  "visibleDefault": 35,
+  "conditional": 33,
+  "hiddenOnly": 4,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 4,
+   "text": 5,
+   "badge": 3,
+   "form": 1,
+   "hidden-field": 2,
+   "card": 1,
+   "label": 17,
+   "input": 13,
+   "clickable": 13,
+   "textarea": 2,
+   "button": 5,
+   "select": 1,
+   "toggle": 2,
+   "link": 3
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "wizard step 1 \"Maklumat Organisasi\" (admin session)",
+   "file": "_raw/M21/S7-sponsor-register__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "guest__1280",
+   "description": "step 1 (guest)",
+   "file": "_raw/M21/S7-sponsor-register__guest__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "step-2__1280",
+   "description": "step 2 \"Maklumat Hubungan & Alamat\" (client-side)",
+   "file": "_raw/M21/S7-sponsor-register__step-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var t = Array.from(document.querySelectorAll('[\\\\@click]')).find(function (d) { return /selectedCategory = 'SYARIKAT_SWASTA'/.test(d.getAttribute('@click')); }); if (t) t.click(); var b = Array.from(document.querySelectorAll('button')).find(function (x) { return /step = 2; else alert/.test(x.getAttribute('@click') || ''); }); if (b) b.click(); return 'step2 ' + !!t + !!b; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "step2 truetrue",
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "step-3-eye__1280",
+   "description": "step 3, password eye toggled (client-side)",
+   "file": "_raw/M21/S7-sponsor-register__step-3-eye__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var t = Array.from(document.querySelectorAll('[\\\\@click]')).find(function (d) { return /selectedCategory = 'SYARIKAT_SWASTA'/.test(d.getAttribute('@click')); }); if (t) t.click(); var b = Array.from(document.querySelectorAll('button')).find(function (x) { return /step = 2; else alert/.test(x.getAttribute('@click') || ''); }); if (b) b.click(); return 'step2 ' + !!t + !!b; })()"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var b = Array.from(document.querySelectorAll('button')).find(function (x) { return (x.getAttribute('@click') || '') === 'step = 3'; }); if (b) b.click(); return 'step3 ' + !!b; })()"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var b = Array.from(document.querySelectorAll('button')).find(function (x) { return (x.getAttribute('@click') || '') === 'showPassword = !showPassword'; }); if (b) b.click(); return 'eye ' + !!b; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "step2 truetrue",
+    "step3 true",
+    "eye true",
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "step-3__1280",
+   "description": "step 3 \"Akaun Log Masuk\" (client-side)",
+   "file": "_raw/M21/S7-sponsor-register__step-3__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var t = Array.from(document.querySelectorAll('[\\\\@click]')).find(function (d) { return /selectedCategory = 'SYARIKAT_SWASTA'/.test(d.getAttribute('@click')); }); if (t) t.click(); var b = Array.from(document.querySelectorAll('button')).find(function (x) { return /step = 2; else alert/.test(x.getAttribute('@click') || ''); }); if (b) b.click(); return 'step2 ' + !!t + !!b; })()"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var b = Array.from(document.querySelectorAll('button')).find(function (x) { return (x.getAttribute('@click') || '') === 'step = 3'; }); if (b) b.click(); return 'step3 ' + !!b; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "step2 truetrue",
+    "step3 true",
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "tile__1280",
+   "description": "category tile NGO selected (client-side)",
+   "file": "_raw/M21/S7-sponsor-register__tile__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var t = Array.from(document.querySelectorAll('[\\\\@click]')).find(function (d) { return /selectedCategory = 'NGO'/.test(d.getAttribute('@click')); }); if (t) t.click(); return 'tile NGO ' + !!t; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "tile NGO true",
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "step 1 @375",
+   "file": "_raw/M21/S7-sponsor-register__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "step 1 @768",
+   "file": "_raw/M21/S7-sponsor-register__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "guest__375",
+   "description": "step 1 @375 (guest)",
+   "file": "_raw/M21/S7-sponsor-register__guest__375.json",
+   "width": 375,
+   "session": "guest",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "step-2__375",
+   "description": "step 2 @375",
+   "file": "_raw/M21/S7-sponsor-register__step-2__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var t = Array.from(document.querySelectorAll('[\\\\@click]')).find(function (d) { return /selectedCategory = 'SYARIKAT_SWASTA'/.test(d.getAttribute('@click')); }); if (t) t.click(); var b = Array.from(document.querySelectorAll('button')).find(function (x) { return /step = 2; else alert/.test(x.getAttribute('@click') || ''); }); if (b) b.click(); return 'step2 ' + !!t + !!b; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "step2 truetrue",
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "step-3__375",
+   "description": "step 3 @375",
+   "file": "_raw/M21/S7-sponsor-register__step-3__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/sponsor/register",
+   "finalUrl": "/sponsor/register",
+   "httpStatus": 200,
+   "title": "Daftar Penaja - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var t = Array.from(document.querySelectorAll('[\\\\@click]')).find(function (d) { return /selectedCategory = 'SYARIKAT_SWASTA'/.test(d.getAttribute('@click')); }); if (t) t.click(); var b = Array.from(document.querySelectorAll('button')).find(function (x) { return /step = 2; else alert/.test(x.getAttribute('@click') || ''); }); if (b) b.click(); return 'step2 ' + !!t + !!b; })()"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var b = Array.from(document.querySelectorAll('button')).find(function (x) { return (x.getAttribute('@click') || '') === 'step = 3'; }); if (b) b.click(); return 'step3 ' + !!b; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "step2 truetrue",
+    "step3 true",
+    "m21mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "xData": "{\n    step: 1,\n    loading: false,\n    selectedCategory: '',\n    showPassword: false,\n    showPasswordConfirm: false\n}",
+   "keys": [
+    "step",
+    "loading",
+    "selectedCategory",
+    "showPassword",
+    "showPasswordConfirm"
+   ],
+   "liveState": {
+    "step": 1,
+    "loading": false,
+    "selectedCategory": "",
+    "showPassword": false,
+    "showPasswordConfirm": false
+   },
+   "visible": true,
+   "region": "page",
+   "seenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Sila pilih kategori penaja.",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-M21-S7-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "PRESTASIPLUS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendaftaran Penaja",
+   "section": "PRESTASIPLUS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-003",
+   "kind": "badge",
+   "tag": "div",
+   "text": "Organisasi",
+   "icon": "fa-building",
+   "section": "PRESTASIPLUS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-004",
+   "kind": "badge",
+   "tag": "div",
+   "text": "Hubungan",
+   "icon": "fa-user",
+   "section": "PRESTASIPLUS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-005",
+   "kind": "badge",
+   "tag": "div",
+   "text": "Akaun",
+   "icon": "fa-lock",
+   "section": "PRESTASIPLUS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-006",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/sponsor/register",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "organization_name",
+    "category",
+    "registration_number",
+    "description",
+    "website",
+    "contact_person_name",
+    "contact_person_position",
+    "contact_email",
+    "contact_phone",
+    "address",
+    "city",
+    "state",
+    "postcode",
+    "name",
+    "email",
+    "password",
+    "password_confirmation"
+   ],
+   "section": "PRESTASIPLUS",
+   "alpine": {
+    "@submit": "loading = true"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-007",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Maklumat Organisasi",
+   "landmark": "form",
+   "section": "PRESTASIPLUS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-009",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Maklumat Organisasi",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Organisasi / Syarikat *",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-011",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "organization_name",
+   "label": "Nama Organisasi / Syarikat *",
+   "placeholder": "Contoh: Syarikat ABC Sdn Bhd",
+   "required": true,
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kategori Penaja *",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-013",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Individu / Peribadi",
+   "icon": "fa-user",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'INDIVIDU'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-014",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Syarikat Swasta",
+   "icon": "fa-building",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'SYARIKAT_SWASTA'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-015",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Syarikat Berkaitan Kerajaan",
+   "icon": "fa-landmark",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'GLC'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-016",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Pertubuhan Bukan Kerajaan",
+   "icon": "fa-hands-helping",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'NGO'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-017",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Badan / Agensi Kerajaan",
+   "icon": "fa-university",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'BADAN_KERAJAAN'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-018",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Bank / Institusi Kewangan",
+   "icon": "fa-piggy-bank",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'BANK'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-019",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Universiti / IPT",
+   "icon": "fa-graduation-cap",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'UNIVERSITI'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-020",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Persatuan / Kesatuan",
+   "icon": "fa-users",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'PERSATUAN'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-021",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Koperasi",
+   "icon": "fa-handshake",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'KOPERASI'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-022",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Kedai Buku / Alat Tulis",
+   "icon": "fa-book-reader",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'KEDAI_BUKU'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-023",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Restoran / F&B",
+   "icon": "fa-utensils",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'RESTORAN'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-024",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Syarikat Teknologi",
+   "icon": "fa-laptop-code",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'TEKNOLOGI'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-025",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Penyedia Pendidikan",
+   "icon": "fa-chalkboard-teacher",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "selectedCategory = 'PENDIDIKAN'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-026",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "category",
+   "label": "Kategori Penaja *",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    ":value": "selectedCategory"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "No. Pendaftaran (SSM/ROC)",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-028",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "registration_number",
+   "label": "No. Pendaftaran (SSM/ROC)",
+   "placeholder": "Contoh: 202001012345",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-029",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan Organisasi",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-030",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan Organisasi",
+   "placeholder": "Ringkasan tentang organisasi anda...",
+   "rows": "3",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-031",
+   "kind": "label",
+   "tag": "label",
+   "text": "Laman Web",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-032",
+   "kind": "input",
+   "tag": "input",
+   "type": "url",
+   "name": "website",
+   "label": "Laman Web",
+   "placeholder": "https://contoh.com",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-033",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Seterusnya",
+   "icon": "fa-arrow-right",
+   "form": "https://prestasiplus.my/sponsor/register",
+   "landmark": "form",
+   "section": "Maklumat Organisasi",
+   "alpine": {
+    "@click": "if(selectedCategory) step = 2; else alert('Sila pilih kategori penaja.')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375"
+   ],
+   "hiddenIn": [
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "showWhen": "step === 1"
+  },
+  {
+   "id": "EL-M21-S7-034",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Maklumat Hubungan & Alamat",
+   "landmark": "form",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-035",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Pegawai Perhubungan *",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-036",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "contact_person_name",
+   "label": "Nama Pegawai Perhubungan *",
+   "placeholder": "Nama penuh",
+   "required": true,
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-037",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawatan",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-038",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "contact_person_position",
+   "label": "Jawatan",
+   "placeholder": "Contoh: Pengurus",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-039",
+   "kind": "label",
+   "tag": "label",
+   "text": "E-mel Perhubungan *",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-040",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "name": "contact_email",
+   "label": "E-mel Perhubungan *",
+   "placeholder": "email@organisasi.com",
+   "required": true,
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-041",
+   "kind": "label",
+   "tag": "label",
+   "text": "No. Telefon *",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-042",
+   "kind": "input",
+   "tag": "input",
+   "type": "tel",
+   "name": "contact_phone",
+   "label": "No. Telefon *",
+   "placeholder": "012-3456789",
+   "required": true,
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-043",
+   "kind": "label",
+   "tag": "label",
+   "text": "Alamat *",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-044",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "address",
+   "label": "Alamat *",
+   "placeholder": "No. lot, jalan, taman...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-045",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bandar *",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-046",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "city",
+   "label": "Bandar *",
+   "placeholder": "Kluang",
+   "required": true,
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-047",
+   "kind": "label",
+   "tag": "label",
+   "text": "Negeri *",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-048",
+   "kind": "select",
+   "tag": "select",
+   "name": "state",
+   "label": "Negeri *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih negeri"
+    },
+    {
+     "value": "Johor",
+     "text": "Johor"
+    },
+    {
+     "value": "Kedah",
+     "text": "Kedah"
+    },
+    {
+     "value": "Kelantan",
+     "text": "Kelantan"
+    },
+    {
+     "value": "Melaka",
+     "text": "Melaka"
+    },
+    {
+     "value": "Negeri Sembilan",
+     "text": "Negeri Sembilan"
+    },
+    {
+     "value": "Pahang",
+     "text": "Pahang"
+    },
+    {
+     "value": "Perak",
+     "text": "Perak"
+    },
+    {
+     "value": "Perlis",
+     "text": "Perlis"
+    },
+    {
+     "value": "Pulau Pinang",
+     "text": "Pulau Pinang"
+    },
+    {
+     "value": "Sabah",
+     "text": "Sabah"
+    },
+    {
+     "value": "Sarawak",
+     "text": "Sarawak"
+    },
+    {
+     "value": "Selangor",
+     "text": "Selangor"
+    },
+    {
+     "value": "Terengganu",
+     "text": "Terengganu"
+    },
+    {
+     "value": "W.P. Kuala Lumpur",
+     "text": "W.P. Kuala Lumpur"
+    },
+    {
+     "value": "W.P. Putrajaya",
+     "text": "W.P. Putrajaya"
+    },
+    {
+     "value": "W.P. Labuan",
+     "text": "W.P. Labuan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-049",
+   "kind": "label",
+   "tag": "label",
+   "text": "Poskod *",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-050",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "postcode",
+   "label": "Poskod *",
+   "placeholder": "86000",
+   "required": true,
+   "maxlength": "5",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-051",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Kembali",
+   "icon": "fa-arrow-left",
+   "form": "https://prestasiplus.my/sponsor/register",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "alpine": {
+    "@click": "step = 1"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-052",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Seterusnya",
+   "icon": "fa-arrow-right",
+   "form": "https://prestasiplus.my/sponsor/register",
+   "landmark": "form",
+   "section": "Maklumat Hubungan & Alamat",
+   "alpine": {
+    "@click": "step = 3"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "step-2__1280",
+    "step-2__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 2"
+  },
+  {
+   "id": "EL-M21-S7-053",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Akaun Log Masuk",
+   "landmark": "form",
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-054",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Penuh Anda *",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-055",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama Penuh Anda *",
+   "placeholder": "Nama anda",
+   "required": true,
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-056",
+   "kind": "label",
+   "tag": "label",
+   "text": "E-mel Log Masuk *",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-057",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "name": "email",
+   "label": "E-mel Log Masuk *",
+   "placeholder": "anda@email.com",
+   "required": true,
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-058",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kata Laluan *",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-059",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "password",
+   "label": "Kata Laluan *",
+   "placeholder": "Minimum 6 aksara",
+   "required": true,
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "alpine": {
+    ":type": "showPassword ? 'text' : 'password'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-060",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-eye-slash",
+   "form": "https://prestasiplus.my/sponsor/register",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "alpine": {
+    "@click": "showPassword = !showPassword"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-061",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sahkan Kata Laluan *",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-062",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "name": "password_confirmation",
+   "label": "Sahkan Kata Laluan *",
+   "placeholder": "Taip semula kata laluan",
+   "required": true,
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "alpine": {
+    ":type": "showPasswordConfirm ? 'text' : 'password'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-063",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-eye",
+   "form": "https://prestasiplus.my/sponsor/register",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "alpine": {
+    "@click": "showPasswordConfirm = !showPasswordConfirm"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-064",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dengan mendaftar, anda bersetuju bahawa permohonan ini akan disemak oleh pentadbir PRESTASIPLUS. Anda akan dimaklumkan melalui e-mel apabila status permohonan dikemaskini.",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-065",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Kembali",
+   "icon": "fa-arrow-left",
+   "form": "https://prestasiplus.my/sponsor/register",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "alpine": {
+    "@click": "step = 2"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-066",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Hantar Permohonan",
+   "icon": "fa-paper-plane",
+   "form": "https://prestasiplus.my/sponsor/register",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "alpine": {
+    ":disabled": "loading"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "step-3-eye__1280",
+    "step-3__1280",
+    "step-3__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "step === 3"
+  },
+  {
+   "id": "EL-M21-S7-067",
+   "kind": "text",
+   "tag": "span",
+   "text": "Hantar Permohonan",
+   "icon": "fa-paper-plane",
+   "section": "Akaun Log Masuk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!loading"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-068",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menghantar...",
+   "icon": "fa-circle-notch",
+   "section": "Akaun Log Masuk",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=loading"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-069",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sudah ada akaun? ·",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-070",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk",
+   "href": "https://prestasiplus.my/login",
+   "absHref": "https://prestasiplus.my/login",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-071",
+   "kind": "link",
+   "tag": "a",
+   "text": "Daftar Sebagai Pelajar",
+   "href": "https://prestasiplus.my/register",
+   "absHref": "https://prestasiplus.my/register",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  },
+  {
+   "id": "EL-M21-S7-072",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Laman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "icon": "fa-home",
+   "landmark": "form",
+   "section": "Akaun Log Masuk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "step-2__1280",
+    "step-3-eye__1280",
+    "step-3__1280",
+    "tile__1280",
+    "default__375",
+    "default__768",
+    "guest__375",
+    "step-2__375",
+    "step-3__375"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,4083 @@
+{
+ "screen": "S5",
+ "key": "S5-import-students",
+ "route": "/admin/import-students",
+ "name": "Import Pelajar (ID Delima)",
+ "module": "M02",
+ "generatedAt": "2026-09-25T06:44:32.257Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 132,
+  "visibleDefault": 55,
+  "conditional": 26,
+  "hiddenOnly": 51,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 4,
+   "heading": 2,
+   "text": 58,
+   "badge": 2,
+   "form": 1,
+   "hidden-field": 3,
+   "label": 15,
+   "button": 4,
+   "select": 3,
+   "input": 4,
+   "clickable": 2,
+   "empty-state": 4,
+   "toggle": 2,
+   "table": 2,
+   "alert": 13,
+   "radio": 11,
+   "textarea": 1,
+   "link": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (mode paste)",
+   "file": "_raw/M02/S5-import-students__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "class-t5__1280",
+   "description": "class_level T5 ticked",
+   "file": "_raw/M02/S5-import-students__class-t5__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main label:has(input[name=class_level][value=T5])"
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "mode-csv__1280",
+   "description": "mode = csv",
+   "file": "_raw/M02/S5-import-students__mode-csv__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main button[\\@click=\"mode = 'csv'\"]"
+    },
+    {
+     "wait": 400
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "school-nosub-sk__1280",
+   "description": "SK school without subscription picked (no-quota panel, Darjah levels)",
+   "file": "_raw/M02/S5-import-students__school-nosub-sk__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main input[x-model=searchQuery]"
+    },
+    {
+     "type": [
+      "main input[x-model=searchQuery]",
+      "BBA4025"
+     ]
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "main [\\@click^=\"selectSchool\"]"
+    },
+    {
+     "wait": 2000
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "school-search-empty__1280",
+   "description": "school search no result",
+   "file": "_raw/M02/S5-import-students__school-search-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main input[x-model=searchQuery]"
+    },
+    {
+     "type": [
+      "main input[x-model=searchQuery]",
+      "zzqxv"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "school-search__1280",
+   "description": "school search results",
+   "file": "_raw/M02/S5-import-students__school-search__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main input[x-model=searchQuery]"
+    },
+    {
+     "type": [
+      "main input[x-model=searchQuery]",
+      "bangi"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=5 strings=5 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "school-state__1280",
+   "description": "state filter Perlis, empty query",
+   "file": "_raw/M02/S5-import-students__school-state__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "main select[x-model=stateFilter]",
+      "Perlis"
+     ]
+    },
+    {
+     "click": "main input[x-model=searchQuery]"
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=20 strings=20 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "school-students__1280",
+   "description": "subscribed school + existing students list opened (masked)",
+   "file": "_raw/M02/S5-import-students__school-students__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main input[x-model=searchQuery]"
+    },
+    {
+     "type": [
+      "main input[x-model=searchQuery]",
+      "BEA4603"
+     ]
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "main [\\@click^=\"selectSchool\"]"
+    },
+    {
+     "wait": 2000
+    },
+    {
+     "click": "main button[\\@click^=\"showStudents\"]"
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=583 strings=581 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 200
+   }
+  },
+  {
+   "label": "school-subscribed__1280",
+   "description": "school with subscription picked (quota panel)",
+   "file": "_raw/M02/S5-import-students__school-subscribed__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main input[x-model=searchQuery]"
+    },
+    {
+     "type": [
+      "main input[x-model=searchQuery]",
+      "BEA4603"
+     ]
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "main [\\@click^=\"selectSchool\"]"
+    },
+    {
+     "wait": 2000
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M02/S5-import-students__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M02/S5-import-students__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "school-subscribed__375",
+   "description": "school with subscription picked @375",
+   "file": "_raw/M02/S5-import-students__school-subscribed__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/import-students",
+   "finalUrl": "/admin/import-students",
+   "httpStatus": 200,
+   "title": "Import Pelajar (ID Delima) - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main input[x-model=searchQuery]"
+    },
+    {
+     "type": [
+      "main input[x-model=searchQuery]",
+      "BEA4603"
+     ]
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "main [\\@click^=\"selectSchool\"]"
+    },
+    {
+     "wait": 2000
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "importForm",
+   "xData": "importForm()",
+   "keys": [],
+   "liveState": {
+    "mode": "paste",
+    "fileName": "",
+    "searchQuery": "",
+    "stateFilter": "",
+    "schools": "array(0)",
+    "selectedSchool": null,
+    "showDropdown": false,
+    "searching": false,
+    "quota": null,
+    "loadingQuota": false,
+    "existingStudents": "array(0)",
+    "loadingStudents": false,
+    "studentsLoaded": false,
+    "studentSearch": "",
+    "studentClassFilter": ""
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Import Pelajar (ID Delima)",
+   "seenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ showStudents: false }",
+   "keys": [
+    "showStudents"
+   ],
+   "visible": false,
+   "region": "template",
+   "section": "Borang Import Pelajar",
+   "seenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Search error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Load school error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Quota fetch error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Fetch students error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  },
+  {
+   "text": "Baki kuota:",
+   "sources": [
+    "attr:x-text@p"
+   ]
+  },
+  {
+   "text": "Kuota penuh! Sila tingkatkan kuota dahulu.",
+   "sources": [
+    "attr:x-text@p"
+   ]
+  },
+  {
+   "text": "Fail dipilih:",
+   "sources": [
+    "attr:x-text@p"
+   ]
+  },
+  {
+   "text": "Tiada fail dipilih",
+   "sources": [
+    "attr:x-text@p"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/api/schools/search?${params}",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/api/schools/search?id=${id}",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/admin/api/schools/${schoolId}/quota",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/admin/api/schools/${this.selectedSchool.id}/students?${params}",
+   "sources": [
+    "script#3"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M02-S5-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "Import Pelajar via ID Delima",
+   "landmark": "main",
+   "section": "Import Pelajar (ID Delima)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-002",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Import Pelajar via ID Delima",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Import pelajar dari Darjah 1 hingga Tingkatan 5 menggunakan ID Delima KPM.",
+   "landmark": "main",
+   "section": "Import Pelajar via ID Delima",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-004",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Kata laluan DELIMa",
+   "icon": "fa-key",
+   "landmark": "main",
+   "section": "Import Pelajar via ID Delima",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-005",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Email DELIMa",
+   "icon": "fa-envelope",
+   "landmark": "main",
+   "section": "Import Pelajar via ID Delima",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-006",
+   "kind": "card",
+   "tag": "div",
+   "text": "Borang Import Pelajar",
+   "landmark": "main",
+   "section": "Import Pelajar via ID Delima",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-007",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Borang Import Pelajar",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-008",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/import-students",
+   "method": "POST",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "school_id",
+    "class_level",
+    "class_level",
+    "class_level",
+    "class_level",
+    "class_level",
+    "class_level",
+    "class_level",
+    "class_level",
+    "class_level",
+    "class_level",
+    "class_level",
+    "import_mode",
+    "csv_file",
+    "paste_content"
+   ],
+   "landmark": "main",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-009",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sekolah *",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "·",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "visibleIn": [
+    "school-nosub-sk__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S5-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "·",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool?.district"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-013",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times-circle",
+   "form": "https://prestasiplus.my/admin/import-students",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "@click": "clearSchool()"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "school-nosub-sk__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S5-014",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Negeri"
+    },
+    {
+     "value": "Johor",
+     "text": "Johor"
+    },
+    {
+     "value": "Kedah",
+     "text": "Kedah"
+    },
+    {
+     "value": "Kelantan",
+     "text": "Kelantan"
+    },
+    {
+     "value": "Kuala Lumpur",
+     "text": "KL"
+    },
+    {
+     "value": "Labuan",
+     "text": "Labuan"
+    },
+    {
+     "value": "Melaka",
+     "text": "Melaka"
+    },
+    {
+     "value": "Negeri Sembilan",
+     "text": "N. Sembilan"
+    },
+    {
+     "value": "Pahang",
+     "text": "Pahang"
+    },
+    {
+     "value": "Perak",
+     "text": "Perak"
+    },
+    {
+     "value": "Perlis",
+     "text": "Perlis"
+    },
+    {
+     "value": "Pulau Pinang",
+     "text": "P. Pinang"
+    },
+    {
+     "value": "Putrajaya",
+     "text": "Putrajaya"
+    },
+    {
+     "value": "Sabah",
+     "text": "Sabah"
+    },
+    {
+     "value": "Sarawak",
+     "text": "Sarawak"
+    },
+    {
+     "value": "Selangor",
+     "text": "Selangor"
+    },
+    {
+     "value": "Terengganu",
+     "text": "Terengganu"
+    }
+   ],
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-model": "stateFilter",
+    "@change": "searchSchools()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool"
+  },
+  {
+   "id": "EL-M02-S5-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Taip nama sekolah (min. 2 huruf)...",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-model": "searchQuery",
+    "@input.debounce.300ms": "searchSchools()",
+    "@focus": "showDropdown = true"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool"
+  },
+  {
+   "id": "EL-M02-S5-016",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=s in schools"
+   ],
+   "dataRow": true,
+   "repeatCount": 1,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S5-017",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada sekolah dijumpai",
+   "icon": "fa-search",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "schools.length === 0 && searchQuery.length >= 2 && !searching"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search-empty__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "schools.length === 0 && searchQuery.length >= 2 && !searching"
+  },
+  {
+   "id": "EL-M02-S5-018",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "school_id",
+   "required": true,
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    ":value": "selectedSchool?.id || ''",
+    "x-bind:required": "!selectedSchool"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "Memeriksa kuota...",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "loadingQuota"
+  },
+  {
+   "id": "EL-M02-S5-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kuota Pelajar",
+   "icon": "fa-users",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool && !loadingQuota && quota && quota.has_subscription"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-021",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.",
+   "icon": "fa-exclamation-triangle",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool && !loadingQuota && quota && !quota.has_subscription"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-022",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "text": "Pelajar Sedia Ada ( orang)",
+   "icon": "fa-users",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "@click": "showStudents = !showStudents; if(showStudents && !studentsLoaded) fetchStudents()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool && !loadingQuota && quota && quota.has_subscription && quota.used > 0"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-023",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Cari nama / email / ID...",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-model": "studentSearch",
+    "@input.debounce.300ms": "fetchStudents()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool && !loadingQuota && quota && quota.has_subscription && quota.used > 0"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-024",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Kelas"
+    }
+   ],
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-model": "studentClassFilter",
+    "@change": "fetchStudents()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool && !loadingQuota && quota && quota.has_subscription && quota.used > 0"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-025",
+   "kind": "text",
+   "tag": "option",
+   "text": "D1",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-026",
+   "kind": "text",
+   "tag": "option",
+   "text": "D2",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-027",
+   "kind": "text",
+   "tag": "option",
+   "text": "D3",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-028",
+   "kind": "text",
+   "tag": "option",
+   "text": "D4",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-029",
+   "kind": "text",
+   "tag": "option",
+   "text": "D5",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-030",
+   "kind": "text",
+   "tag": "option",
+   "text": "D6",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-031",
+   "kind": "text",
+   "tag": "option",
+   "text": "T1",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-032",
+   "kind": "text",
+   "tag": "option",
+   "text": "T2",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-033",
+   "kind": "text",
+   "tag": "option",
+   "text": "T3",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-034",
+   "kind": "text",
+   "tag": "option",
+   "text": "T4",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-035",
+   "kind": "text",
+   "tag": "option",
+   "text": "T5",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-036",
+   "kind": "text",
+   "tag": "div",
+   "text": "Memuatkan...",
+   "icon": "fa-circle-notch",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "loadingStudents"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool && !loadingQuota && quota && quota.has_subscription && quota.used > 0"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-037",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Nama",
+    "Email / ID Delima",
+    "Kelas"
+   ],
+   "rowCount": 0,
+   "firstRowActions": [],
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "!loadingStudents && existingStudents.length > 0"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool && !loadingQuota && quota && quota.has_subscription && quota.used > 0"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-038",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada pelajar dijumpai",
+   "icon": "fa-search",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "!loadingStudents && existingStudents.length === 0"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool && !loadingQuota && quota && quota.has_subscription && quota.used > 0"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-039",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Menunjukkan 200 pertama sahaja. Gunakan carian untuk cari pelajar tertentu.",
+   "icon": "fa-info-circle",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "!loadingStudents && existingStudents.length >= 200"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedSchool && !loadingQuota && quota && quota.has_subscription && quota.used > 0"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-040",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah / Tingkatan *",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-041",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah Rendah",
+   "icon": "fa-school",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-042",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 1",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-043",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Darjah 1",
+   "optionValue": "D1",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-044",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Darjah 1",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-045",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 2",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-046",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Darjah 2",
+   "optionValue": "D2",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-047",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Darjah 2",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-048",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 3",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-049",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Darjah 3",
+   "optionValue": "D3",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-050",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Darjah 3",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-051",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 4",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-052",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Darjah 4",
+   "optionValue": "D4",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-053",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Darjah 4",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-054",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 5",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-055",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Darjah 5",
+   "optionValue": "D5",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-056",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Darjah 5",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-057",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 6",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-058",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Darjah 6",
+   "optionValue": "D6",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-059",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Darjah 6",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type === 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-060",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah Menengah",
+   "icon": "fa-university",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-061",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan 1",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-062",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Tingkatan 1",
+   "optionValue": "T1",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-063",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Tingkatan 1",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-064",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan 2",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-065",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Tingkatan 2",
+   "optionValue": "T2",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-066",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Tingkatan 2",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-067",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan 3",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-068",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Tingkatan 3",
+   "optionValue": "T3",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-069",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Tingkatan 3",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-070",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan 4",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-071",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Tingkatan 4",
+   "optionValue": "T4",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S5-072",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Tingkatan 4",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-073",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan 5",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-074",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "class_level",
+   "label": "Tingkatan 5",
+   "optionValue": "T5",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'",
+   "checkedIn": [
+    "class-t5__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-075",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Tingkatan 5",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "school-nosub-sk__1280"
+   ],
+   "showWhen": "!selectedSchool || selectedSchool.type !== 'SK'"
+  },
+  {
+   "id": "EL-M02-S5-076",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kaedah Import *",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-077",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Upload CSV",
+   "icon": "fa-file-csv",
+   "form": "https://prestasiplus.my/admin/import-students",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "@click": "mode = 'csv'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-078",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Paste Manual",
+   "icon": "fa-paste",
+   "form": "https://prestasiplus.my/admin/import-students",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "@click": "mode = 'paste'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-079",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "import_mode",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    ":value": "mode"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-080",
+   "kind": "text",
+   "tag": "p",
+   "text": "Seret & Lepas fail CSV di sini",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mode-csv__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mode === 'csv'"
+  },
+  {
+   "id": "EL-M02-S5-081",
+   "kind": "text",
+   "tag": "p",
+   "text": "atau",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mode-csv__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mode === 'csv'"
+  },
+  {
+   "id": "EL-M02-S5-082",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilih Fail",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mode-csv__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mode === 'csv'"
+  },
+  {
+   "id": "EL-M02-S5-083",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "csv_file",
+   "label": "Pilih Fail",
+   "accept": ".csv,.txt",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "@change": "fileName = $event.target.files[0]?.name || ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "mode === 'csv'"
+  },
+  {
+   "id": "EL-M02-S5-084",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada fail dipilih",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-text": "fileName ? 'Fail dipilih: ' + fileName : 'Tiada fail dipilih'"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mode-csv__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mode === 'csv'"
+  },
+  {
+   "id": "EL-M02-S5-085",
+   "kind": "text",
+   "tag": "p",
+   "text": "Format CSV:",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mode-csv__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mode === 'csv'"
+  },
+  {
+   "id": "EL-M02-S5-086",
+   "kind": "text",
+   "tag": "code",
+   "text": "Nama, Email DELIMa, Kata Laluan, No KP (pilihan)",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mode-csv__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mode === 'csv'"
+  },
+  {
+   "id": "EL-M02-S5-087",
+   "kind": "text",
+   "tag": "code",
+   "text": "Contoh: Muhammad Fulan bin Fulan, <email>, katalaluan123, <digits:12>",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mode-csv__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mode === 'csv'"
+  },
+  {
+   "id": "EL-M02-S5-088",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "paste_content",
+   "placeholder": "Paste data dari DELIMa (3-4 baris per pelajar):\n\nNAMA PELAJAR\nm-XXXXXXXX@moe-dl.edu.my\nkatalaluan\n031215101234\n\nNAMA PELAJAR 2\nm-YYYYYYYY@moe-dl.edu.my\nkatalaluan2",
+   "rows": "12",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "mode-csv__1280"
+   ],
+   "showWhen": "mode === 'paste'"
+  },
+  {
+   "id": "EL-M02-S5-089",
+   "kind": "text",
+   "tag": "p",
+   "text": "Format DELIMa (3-4 baris per pelajar):",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "mode-csv__1280"
+   ],
+   "showWhen": "mode === 'paste'"
+  },
+  {
+   "id": "EL-M02-S5-090",
+   "kind": "text",
+   "tag": "p",
+   "text": "NAMA PELAJAR",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "mode-csv__1280"
+   ],
+   "showWhen": "mode === 'paste'"
+  },
+  {
+   "id": "EL-M02-S5-091",
+   "kind": "text",
+   "tag": "p",
+   "text": "<email>",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "mode-csv__1280"
+   ],
+   "showWhen": "mode === 'paste'"
+  },
+  {
+   "id": "EL-M02-S5-092",
+   "kind": "text",
+   "tag": "p",
+   "text": "katalaluan123",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "mode-csv__1280"
+   ],
+   "showWhen": "mode === 'paste'"
+  },
+  {
+   "id": "EL-M02-S5-093",
+   "kind": "text",
+   "tag": "p",
+   "text": "<digits:12>",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "mode-csv__1280"
+   ],
+   "showWhen": "mode === 'paste'"
+  },
+  {
+   "id": "EL-M02-S5-094",
+   "kind": "text",
+   "tag": "span",
+   "text": "(No. KP — pilihan)",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ],
+   "hiddenIn": [
+    "mode-csv__1280"
+   ],
+   "showWhen": "mode === 'paste'"
+  },
+  {
+   "id": "EL-M02-S5-095",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/admin",
+   "absHref": "https://prestasiplus.my/admin",
+   "icon": "fa-arrow-left",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-096",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Import",
+   "icon": "fa-users-cog",
+   "form": "https://prestasiplus.my/admin/import-students",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-097",
+   "kind": "card",
+   "tag": "div",
+   "text": "Nota Penting:",
+   "landmark": "main",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-098",
+   "kind": "text",
+   "tag": "p",
+   "text": "Nota Penting:",
+   "landmark": "main",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-099",
+   "kind": "text",
+   "tag": "li",
+   "text": "Pelajar login guna dan",
+   "landmark": "main",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-100",
+   "kind": "text",
+   "tag": "strong",
+   "text": "email DELIMa",
+   "landmark": "main",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-101",
+   "kind": "text",
+   "tag": "strong",
+   "text": "kata laluan DELIMa",
+   "landmark": "main",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-102",
+   "kind": "text",
+   "tag": "li",
+   "text": "ID yang sudah wujud akan dilangkau automatik",
+   "landmark": "main",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-103",
+   "kind": "text",
+   "tag": "li",
+   "text": "Nama pelajar akan ditukar ke Title Case",
+   "landmark": "main",
+   "section": "Borang Import Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "class-t5__1280",
+    "mode-csv__1280",
+    "school-nosub-sk__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-state__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "default__375",
+    "default__768",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-104",
+   "kind": "text",
+   "tag": "p",
+   "text": "SEKOLAH KEBANGSAAN BANDAR BARU BANGI",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-text": "selectedSchool?.name"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "school-nosub-sk__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S5-105",
+   "kind": "text",
+   "tag": "span",
+   "text": "SK",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-text": "selectedSchool?.type"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "school-nosub-sk__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S5-106",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selangor",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-text": "selectedSchool?.state"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "school-nosub-sk__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S5-107",
+   "kind": "text",
+   "tag": "span",
+   "text": "·",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "visibleIn": [
+    "school-nosub-sk__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S5-108",
+   "kind": "text",
+   "tag": "span",
+   "text": "PPD HULU LANGAT",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-text": "selectedSchool?.district"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "school-nosub-sk__1280",
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S5-109",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.",
+   "icon": "fa-exclamation-triangle",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-nosub-sk__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-110",
+   "kind": "card",
+   "tag": "div",
+   "text": "<name>",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "showDropdown && (schools.length > 0 || searchQuery.length >= 2)",
+    "x-transition": "",
+    "@click.outside": "showDropdown = false"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280",
+    "school-state__1280"
+   ],
+   "showWhen": "showDropdown && (schools.length > 0 || searchQuery.length >= 2)"
+  },
+  {
+   "id": "EL-M02-S5-111",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "<name> SK · Selangor · PPD HULU LANGAT",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280",
+    "school-state__1280"
+   ],
+   "showWhen": "showDropdown && (schools.length > 0 || searchQuery.length >= 2)",
+   "dataRow": true,
+   "repeatCount": 20,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S5-112",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kuota Pelajar",
+   "icon": "fa-users",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "status": "conditional",
+   "visibleIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-113",
+   "kind": "text",
+   "tag": "span",
+   "text": "423 / 415",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-text": "quota.used + ' / ' + quota.quota"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-114",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kuota penuh! Sila tingkatkan kuota dahulu.",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-text": "quota.remaining > 0 ? 'Baki kuota: ' + quota.remaining + ' pelajar' : 'Kuota penuh! Sila tingkatkan kuota dahulu.'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-115",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "text": "Pelajar Sedia Ada (423 orang)",
+   "icon": "fa-users",
+   "form": "https://prestasiplus.my/admin/import-students",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "@click": "showStudents = !showStudents; if(showStudents && !studentsLoaded) fetchStudents()"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-116",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Cari nama / email / ID...",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-model": "studentSearch",
+    "@input.debounce.300ms": "fetchStudents()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-students__1280"
+   ],
+   "hiddenIn": [
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showStudents"
+  },
+  {
+   "id": "EL-M02-S5-117",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Kelas"
+    },
+    {
+     "value": "T1",
+     "text": "T1",
+     "group": "Menengah"
+    },
+    {
+     "value": "T2",
+     "text": "T2",
+     "group": "Menengah"
+    },
+    {
+     "value": "T3",
+     "text": "T3",
+     "group": "Menengah"
+    },
+    {
+     "value": "T4",
+     "text": "T4",
+     "group": "Menengah"
+    },
+    {
+     "value": "T5",
+     "text": "T5",
+     "group": "Menengah"
+    }
+   ],
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-model": "studentClassFilter",
+    "@change": "fetchStudents()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-students__1280"
+   ],
+   "hiddenIn": [
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showStudents"
+  },
+  {
+   "id": "EL-M02-S5-118",
+   "kind": "text",
+   "tag": "option",
+   "text": "D1",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-119",
+   "kind": "text",
+   "tag": "option",
+   "text": "D2",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-120",
+   "kind": "text",
+   "tag": "option",
+   "text": "D3",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-121",
+   "kind": "text",
+   "tag": "option",
+   "text": "D4",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-122",
+   "kind": "text",
+   "tag": "option",
+   "text": "D5",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-123",
+   "kind": "text",
+   "tag": "option",
+   "text": "D6",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type === 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-124",
+   "kind": "text",
+   "tag": "option",
+   "text": "T1",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-125",
+   "kind": "text",
+   "tag": "option",
+   "text": "T2",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-126",
+   "kind": "text",
+   "tag": "option",
+   "text": "T3",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-127",
+   "kind": "text",
+   "tag": "option",
+   "text": "T4",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-128",
+   "kind": "text",
+   "tag": "option",
+   "text": "T5",
+   "section": "Borang Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedSchool || selectedSchool.type !== 'SK'"
+   ]
+  },
+  {
+   "id": "EL-M02-S5-129",
+   "kind": "text",
+   "tag": "div",
+   "text": "Memuatkan...",
+   "icon": "fa-circle-notch",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "loadingStudents"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "loadingStudents"
+  },
+  {
+   "id": "EL-M02-S5-130",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Nama",
+    "Email / ID Delima",
+    "Kelas"
+   ],
+   "rowCount": 200,
+   "firstRowActions": [],
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "!loadingStudents && existingStudents.length > 0"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-students__1280"
+   ],
+   "hiddenIn": [
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!loadingStudents && existingStudents.length > 0"
+  },
+  {
+   "id": "EL-M02-S5-131",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada pelajar dijumpai",
+   "icon": "fa-search",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "!loadingStudents && existingStudents.length === 0"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "school-students__1280",
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!loadingStudents && existingStudents.length === 0"
+  },
+  {
+   "id": "EL-M02-S5-132",
+   "kind": "alert",
+   "tag": "div",
+   "text": "Menunjukkan 200 pertama sahaja. Gunakan carian untuk cari pelajar tertentu.",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "Borang Import Pelajar",
+   "alpine": {
+    "x-show": "!loadingStudents && existingStudents.length >= 200"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-students__1280"
+   ],
+   "hiddenIn": [
+    "school-subscribed__1280",
+    "school-subscribed__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!loadingStudents && existingStudents.length >= 200"
+  }
+ ]
+}

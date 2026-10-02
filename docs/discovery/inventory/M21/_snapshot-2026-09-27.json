@@ -1,0 +1,1569 @@
+{
+  "capturedAt": "2026-09-27T02:24:58.674Z",
+  "note": "M21 seed snapshot; GET only (guard-cached); personal names / e-mails / phones / addresses / reasons never returned (flags and lengths only). Organisation names are companies.",
+  "S6_apply": {
+    "status": 200,
+    "header": {
+      "title": "Mohon Keluarga Angkat",
+      "h1": "Dashboard",
+      "sub": "Selamat datang kembali"
+    },
+    "h1": "Mohon Keluarga Angkat",
+    "examples": [
+      "• Keluarga berpendapatan rendah (B40). Bapa bekerja sebagai buruh am, ibu suri rumah. Tidak mampu membayar yuran tuisyen tambahan untuk persediaan SPM.",
+      "• Pelajar yatim piatu yang tinggal bersama nenek. Nenek sudah tua dan tiada pendapatan tetap. Pelajar ini berpotensi tetapi tiada akses kepada bahan pembelajaran digital.",
+      "• Anak asnaf yang menerima bantuan zakat. Keluarga mempunyai 6 orang anak dan pendapatan tidak mencukupi untuk perbelanjaan pendidikan tambahan.",
+      "• Pelajar OKU (masalah penglihatan) yang memerlukan akses digital kerana sukar membaca buku teks biasa. Platform digital lebih mesra OKU dengan saiz teks boleh dilaraskan.",
+      "• Pelajar cemerlang dari keluarga miskin. Mendapat 5A dalam PT3 tetapi ibu bapa tidak mampu hantar ke tuisyen. Dengan PrestasiPlus, pelajar ini boleh belajar sendiri dari rumah."
+    ],
+    "selects": [
+      "student_category: =Pilih kategori | B40=B40 — Pendapatan rendah | Asnaf=Asnaf — Layak bantuan zakat | Yatim=Yatim — Tiada ibu/bapa | OKU=OKU — Orang kurang upaya | Lain-lain=Lain-lain",
+      "family_income_range: =Pilih (pilihan) | < RM1,000=Bawah RM1,000 | RM1,000 - RM2,500=RM1,000 - RM2,500 | RM2,500 - RM4,000=RM2,500 - RM4,000 | > RM4,000=Atas RM4,000"
+    ],
+    "required": [
+      "student_email",
+      "student_category",
+      "reason"
+    ],
+    "textareaAttrs": {
+      "rows": "4",
+      "minlength": null,
+      "maxlength": null,
+      "required": true
+    },
+    "steps": [
+      "Admin semak dan luluskan permohonan (1-3 hari bekerja)",
+      "Pelajar masuk ke pool — sponsor/keluarga angkat boleh pilih",
+      "Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan",
+      "Keluarga angkat boleh pantau prestasi pelajar dari dashboard mereka",
+      "Pelajar sendiri — mohon untuk diri sendiri",
+      "Ibu bapa — mohon untuk anak",
+      "Guru / Kaunselor — mohon untuk pelajar yang dikenal pasti memerlukan"
+    ]
+  },
+  "S1_sponsors": {
+    "status": 200,
+    "header": {
+      "title": "Urus Penaja - Admin",
+      "h1": "Pengurusan Penaja",
+      "sub": "Semak dan urus permohonan penaja"
+    },
+    "stats": [
+      "6 Jumlah",
+      "0 Menunggu",
+      "0 Diluluskan",
+      "0 Ditolak",
+      "6 Digantung"
+    ],
+    "count": "6 penaja dijumpai",
+    "rows": [
+      {
+        "id": "11",
+        "organisation": "Alesa It Services",
+        "orgEmailPresent": true,
+        "orgEmailCloudflareProtected": true,
+        "category": "Syarikat Swasta",
+        "officer": {
+          "present": true,
+          "hasEmail": false,
+          "hasPhone": true,
+          "len": 16
+        },
+        "status": "Digantung",
+        "statusIcon": "fas fa-ban mr-0.5 sm:mr-1",
+        "date": "31/03/2026",
+        "actions": [
+          "Lihat /admin/sponsors/11",
+          "Edit /admin/sponsors/11/edit"
+        ]
+      },
+      {
+        "id": "6",
+        "organisation": "Kedai Buku Popular",
+        "orgEmailPresent": true,
+        "orgEmailCloudflareProtected": true,
+        "category": "Syarikat Swasta",
+        "officer": "-",
+        "status": "Digantung",
+        "statusIcon": "fas fa-ban mr-0.5 sm:mr-1",
+        "date": "06/02/2026",
+        "actions": [
+          "Lihat /admin/sponsors/6",
+          "Edit /admin/sponsors/6/edit"
+        ]
+      },
+      {
+        "id": "7",
+        "organisation": "Faber-Castell Malaysia",
+        "orgEmailPresent": true,
+        "orgEmailCloudflareProtected": true,
+        "category": "Syarikat Swasta",
+        "officer": "-",
+        "status": "Digantung",
+        "statusIcon": "fas fa-ban mr-0.5 sm:mr-1",
+        "date": "06/02/2026",
+        "actions": [
+          "Lihat /admin/sponsors/7",
+          "Edit /admin/sponsors/7/edit"
+        ]
+      },
+      {
+        "id": "8",
+        "organisation": "KidZania Kuala Lumpur",
+        "orgEmailPresent": true,
+        "orgEmailCloudflareProtected": true,
+        "category": "Syarikat Swasta",
+        "officer": "-",
+        "status": "Digantung",
+        "statusIcon": "fas fa-ban mr-0.5 sm:mr-1",
+        "date": "06/02/2026",
+        "actions": [
+          "Lihat /admin/sponsors/8",
+          "Edit /admin/sponsors/8/edit"
+        ]
+      },
+      {
+        "id": "9",
+        "organisation": "Petrosains Discovery Centre",
+        "orgEmailPresent": true,
+        "orgEmailCloudflareProtected": true,
+        "category": "Syarikat Swasta",
+        "officer": "-",
+        "status": "Digantung",
+        "statusIcon": "fas fa-ban mr-0.5 sm:mr-1",
+        "date": "06/02/2026",
+        "actions": [
+          "Lihat /admin/sponsors/9",
+          "Edit /admin/sponsors/9/edit"
+        ]
+      },
+      {
+        "id": "10",
+        "organisation": "PRESTASIPLUS Official",
+        "orgEmailPresent": true,
+        "orgEmailCloudflareProtected": true,
+        "category": "Syarikat Swasta",
+        "officer": "-",
+        "status": "Digantung",
+        "statusIcon": "fas fa-ban mr-0.5 sm:mr-1",
+        "date": "06/02/2026",
+        "actions": [
+          "Lihat /admin/sponsors/10",
+          "Edit /admin/sponsors/10/edit"
+        ]
+      }
+    ],
+    "filters": {
+      "status=PENDING": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [],
+        "texts": [
+          "0 penaja dijumpai"
+        ]
+      },
+      "status=APPROVED": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [],
+        "texts": [
+          "0 penaja dijumpai"
+        ]
+      },
+      "status=REJECTED": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [],
+        "texts": [
+          "0 penaja dijumpai"
+        ]
+      },
+      "status=SUSPENDED": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [
+          "11",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10"
+        ],
+        "texts": [
+          "6 penaja dijumpai"
+        ]
+      },
+      "status=pending": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [],
+        "texts": [
+          "0 penaja dijumpai"
+        ]
+      },
+      "status=suspended": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [
+          "11",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10"
+        ],
+        "texts": [
+          "6 penaja dijumpai"
+        ]
+      },
+      "category=INDIVIDU": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [],
+        "texts": [
+          "0 penaja dijumpai"
+        ]
+      },
+      "category=SYARIKAT_SWASTA": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [
+          "11",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10"
+        ],
+        "texts": [
+          "6 penaja dijumpai"
+        ]
+      },
+      "search=Kedai": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [
+          "6"
+        ],
+        "texts": [
+          "1 penaja dijumpai"
+        ]
+      },
+      "search=zzqxv": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [],
+        "texts": [
+          "0 penaja dijumpai"
+        ]
+      },
+      "page=2": {
+        "status": 200,
+        "stats": [
+          "6 Jumlah",
+          "0 Menunggu",
+          "0 Diluluskan",
+          "0 Ditolak",
+          "6 Digantung"
+        ],
+        "ids": [],
+        "texts": [
+          "6 penaja dijumpai",
+          "« Previous",
+          "Next »"
+        ]
+      }
+    }
+  },
+  "S3_sponsorFields": {
+    "6": {
+      "status": 200,
+      "header": {
+        "title": "Edit Penaja - Admin",
+        "h1": "Edit Penaja",
+        "sub": "Kedai Buku Popular"
+      },
+      "name": "Kedai Buku Popular",
+      "category": "SYARIKAT_SWASTA",
+      "description": "Rangkaian kedai buku terbesar Malaysia. Menyediakan buku-buku pendidikan berkualiti untuk semua peringkat umur.",
+      "tagline": "",
+      "website": "https://www.popular.com.my",
+      "logoUrl": "",
+      "registrationNumberPresent": false,
+      "contactNamePresent": false,
+      "contactPositionPresent": false,
+      "contactEmailPresent": false,
+      "contactPhonePresent": false,
+      "addressPresent": false,
+      "cityPresent": false,
+      "statePresent": false,
+      "postcodePresent": false,
+      "statusBlock": [
+        "SUSPENDED",
+        "Status",
+        "0",
+        "Hadiah",
+        "06/02/2026",
+        "Tarikh Daftar",
+        "Batal",
+        "Status Penaja:",
+        "Digantung",
+        "(SUSPENDED)"
+      ],
+      "reactivateForm": true,
+      "reactivateConfirm": "return confirm('Aktifkan semula penaja ini?')"
+    },
+    "7": {
+      "status": 200,
+      "header": {
+        "title": "Edit Penaja - Admin",
+        "h1": "Edit Penaja",
+        "sub": "Faber-Castell Malaysia"
+      },
+      "name": "Faber-Castell Malaysia",
+      "category": "SYARIKAT_SWASTA",
+      "description": "Penyedia alat tulis premium untuk pelajar. Pensil, pen warna, dan set lukisan berkualiti tinggi.",
+      "tagline": "",
+      "website": "https://www.faber-castell.com.my",
+      "logoUrl": "",
+      "registrationNumberPresent": false,
+      "contactNamePresent": false,
+      "contactPositionPresent": false,
+      "contactEmailPresent": false,
+      "contactPhonePresent": false,
+      "addressPresent": false,
+      "cityPresent": false,
+      "statePresent": false,
+      "postcodePresent": false,
+      "statusBlock": [
+        "SUSPENDED",
+        "Status",
+        "0",
+        "Hadiah",
+        "06/02/2026",
+        "Tarikh Daftar",
+        "Batal",
+        "Status Penaja:",
+        "Digantung",
+        "(SUSPENDED)"
+      ],
+      "reactivateForm": true,
+      "reactivateConfirm": "return confirm('Aktifkan semula penaja ini?')"
+    },
+    "8": {
+      "status": 200,
+      "header": {
+        "title": "Edit Penaja - Admin",
+        "h1": "Edit Penaja",
+        "sub": "KidZania Kuala Lumpur"
+      },
+      "name": "KidZania Kuala Lumpur",
+      "category": "SYARIKAT_SWASTA",
+      "description": "Taman tema pendidikan interaktif di mana kanak-kanak boleh bermain sambil belajar tentang pelbagai kerjaya.",
+      "tagline": "",
+      "website": "https://www.kidzania.com.my",
+      "logoUrl": "",
+      "registrationNumberPresent": false,
+      "contactNamePresent": false,
+      "contactPositionPresent": false,
+      "contactEmailPresent": false,
+      "contactPhonePresent": false,
+      "addressPresent": false,
+      "cityPresent": false,
+      "statePresent": false,
+      "postcodePresent": false,
+      "statusBlock": [
+        "SUSPENDED",
+        "Status",
+        "0",
+        "Hadiah",
+        "06/02/2026",
+        "Tarikh Daftar",
+        "Batal",
+        "Status Penaja:",
+        "Digantung",
+        "(SUSPENDED)"
+      ],
+      "reactivateForm": true,
+      "reactivateConfirm": "return confirm('Aktifkan semula penaja ini?')"
+    },
+    "9": {
+      "status": 200,
+      "header": {
+        "title": "Edit Penaja - Admin",
+        "h1": "Edit Penaja",
+        "sub": "Petrosains Discovery Centre"
+      },
+      "name": "Petrosains Discovery Centre",
+      "category": "SYARIKAT_SWASTA",
+      "description": "Pusat penemuan sains interaktif di KLCC. Jelajahi dunia sains dan teknologi melalui pameran menarik.",
+      "tagline": "",
+      "website": "https://www.petrosains.com.my",
+      "logoUrl": "",
+      "registrationNumberPresent": false,
+      "contactNamePresent": false,
+      "contactPositionPresent": false,
+      "contactEmailPresent": false,
+      "contactPhonePresent": false,
+      "addressPresent": false,
+      "cityPresent": false,
+      "statePresent": false,
+      "postcodePresent": false,
+      "statusBlock": [
+        "SUSPENDED",
+        "Status",
+        "0",
+        "Hadiah",
+        "06/02/2026",
+        "Tarikh Daftar",
+        "Batal",
+        "Status Penaja:",
+        "Digantung",
+        "(SUSPENDED)"
+      ],
+      "reactivateForm": true,
+      "reactivateConfirm": "return confirm('Aktifkan semula penaja ini?')"
+    },
+    "10": {
+      "status": 200,
+      "header": {
+        "title": "Edit Penaja - Admin",
+        "h1": "Edit Penaja",
+        "sub": "PRESTASIPLUS Official"
+      },
+      "name": "PRESTASIPLUS Official",
+      "category": "SYARIKAT_SWASTA",
+      "description": "Ganjaran rasmi dari PRESTASIPLUS — hadiah eksklusif untuk pelajar cemerlang!",
+      "tagline": "",
+      "website": "https://jombelajar.my",
+      "logoUrl": "",
+      "registrationNumberPresent": false,
+      "contactNamePresent": false,
+      "contactPositionPresent": false,
+      "contactEmailPresent": false,
+      "contactPhonePresent": false,
+      "addressPresent": false,
+      "cityPresent": false,
+      "statePresent": false,
+      "postcodePresent": false,
+      "statusBlock": [
+        "SUSPENDED",
+        "Status",
+        "0",
+        "Hadiah",
+        "06/02/2026",
+        "Tarikh Daftar",
+        "Batal",
+        "Status Penaja:",
+        "Digantung",
+        "(SUSPENDED)"
+      ],
+      "reactivateForm": true,
+      "reactivateConfirm": "return confirm('Aktifkan semula penaja ini?')"
+    },
+    "11": {
+      "status": 200,
+      "header": {
+        "title": "Edit Penaja - Admin",
+        "h1": "Edit Penaja",
+        "sub": "Alesa It Services"
+      },
+      "name": "Alesa It Services",
+      "category": "SYARIKAT_SWASTA",
+      "description": "Syarikat IT",
+      "tagline": "",
+      "website": "https://alesa.my",
+      "logoUrl": "",
+      "registrationNumberPresent": false,
+      "contactNamePresent": true,
+      "contactPositionPresent": true,
+      "contactEmailPresent": true,
+      "contactPhonePresent": true,
+      "addressPresent": true,
+      "cityPresent": true,
+      "statePresent": true,
+      "postcodePresent": true,
+      "statusBlock": [
+        "SUSPENDED",
+        "Status",
+        "0",
+        "Hadiah",
+        "31/03/2026",
+        "Tarikh Daftar",
+        "Batal",
+        "Status Penaja:",
+        "Digantung",
+        "(SUSPENDED)"
+      ],
+      "reactivateForm": true,
+      "reactivateConfirm": "return confirm('Aktifkan semula penaja ini?')"
+    }
+  },
+  "S3_unknown": {
+    "status": 404,
+    "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+  },
+  "S2_create": {
+    "status": 200,
+    "header": {
+      "title": "Tambah Penaja - Admin",
+      "h1": "Tambah Penaja Baru",
+      "sub": "Daftar penaja baru (auto-diluluskan)"
+    },
+    "required": [
+      "name",
+      "category"
+    ]
+  },
+  "S4_anakAngkat": {
+    "status": 200,
+    "header": {
+      "title": "Pengurusan Anak Angkat",
+      "h1": "Anak Angkat — Sponsorship",
+      "sub": "Selamat datang, Admin"
+    },
+    "stats": [
+      "Jumlah Penaja1",
+      "Pelajar Aktif Ditaja1",
+      "Graduated0",
+      "Withdrawn0"
+    ],
+    "tabs": [
+      "?status=all = Semua (1) [active]",
+      "?status=active = Aktif (1)",
+      "?status=graduated = Graduated (0)",
+      "?status=withdrawn = Withdrawn (0)",
+      "?status=expired = Expired (0)"
+    ],
+    "sponsorOptions": [
+      "=Pilih Penaja"
+    ],
+    "rows": [
+      {
+        "id": "2",
+        "sponsorOrganisation": "Alesa It Services",
+        "sponsorCategoryRaw": "SYARIKAT_SWASTA",
+        "student": {
+          "masked": true,
+          "hasEmail": true,
+          "hasPhone": false,
+          "len": 49,
+          "schoolLinePresent": false
+        },
+        "category": "B40",
+        "channel": "Direct",
+        "status": "Active",
+        "date": "31/03/2026",
+        "actions": [
+          "Graduate → POST /admin/anak-angkat/2/status status=graduated",
+          "Tarik → POST /admin/anak-angkat/2/status status=withdrawn"
+        ]
+      }
+    ],
+    "filters": {
+      "all": {
+        "status": 200,
+        "stats": [
+          "Jumlah Penaja1",
+          "Pelajar Aktif Ditaja1",
+          "Graduated0",
+          "Withdrawn0"
+        ],
+        "tabs": [
+          "?status=all = Semua (1) [active]",
+          "?status=active = Aktif (1)",
+          "?status=graduated = Graduated (0)",
+          "?status=withdrawn = Withdrawn (0)",
+          "?status=expired = Expired (0)"
+        ],
+        "rows": [
+          "row 2"
+        ]
+      },
+      "active": {
+        "status": 200,
+        "stats": [
+          "Jumlah Penaja1",
+          "Pelajar Aktif Ditaja1",
+          "Graduated0",
+          "Withdrawn0"
+        ],
+        "tabs": [
+          "?status=all = Semua (1)",
+          "?status=active = Aktif (1) [active]",
+          "?status=graduated = Graduated (0)",
+          "?status=withdrawn = Withdrawn (0)",
+          "?status=expired = Expired (0)"
+        ],
+        "rows": [
+          "row 2"
+        ]
+      },
+      "graduated": {
+        "status": 200,
+        "stats": [
+          "Jumlah Penaja1",
+          "Pelajar Aktif Ditaja1",
+          "Graduated0",
+          "Withdrawn0"
+        ],
+        "tabs": [
+          "?status=all = Semua (0)",
+          "?status=active = Aktif (1)",
+          "?status=graduated = Graduated (0) [active]",
+          "?status=withdrawn = Withdrawn (0)",
+          "?status=expired = Expired (0)"
+        ],
+        "rows": [
+          "empty: Tiada rekod"
+        ]
+      },
+      "withdrawn": {
+        "status": 200,
+        "stats": [
+          "Jumlah Penaja1",
+          "Pelajar Aktif Ditaja1",
+          "Graduated0",
+          "Withdrawn0"
+        ],
+        "tabs": [
+          "?status=all = Semua (0)",
+          "?status=active = Aktif (1)",
+          "?status=graduated = Graduated (0)",
+          "?status=withdrawn = Withdrawn (0) [active]",
+          "?status=expired = Expired (0)"
+        ],
+        "rows": [
+          "empty: Tiada rekod"
+        ]
+      },
+      "expired": {
+        "status": 200,
+        "stats": [
+          "Jumlah Penaja1",
+          "Pelajar Aktif Ditaja1",
+          "Graduated0",
+          "Withdrawn0"
+        ],
+        "tabs": [
+          "?status=all = Semua (0)",
+          "?status=active = Aktif (1)",
+          "?status=graduated = Graduated (0)",
+          "?status=withdrawn = Withdrawn (0)",
+          "?status=expired = Expired (0) [active]"
+        ],
+        "rows": [
+          "empty: Tiada rekod"
+        ]
+      }
+    }
+  },
+  "S5_applications": {
+    "status": 200,
+    "header": {
+      "title": "Permohonan Anak Angkat",
+      "h1": "Permohonan Keluarga Angkat",
+      "sub": "Selamat datang, Admin"
+    },
+    "tabs": [
+      "?status=pending = Menunggu 3",
+      "?status=approved = Dalam Pool 0",
+      "?status=matched = Ditaja 0",
+      "?status=rejected = Ditolak 0"
+    ],
+    "rows": [
+      {
+        "id": "3",
+        "student": {
+          "masked": true,
+          "hasEmail": true,
+          "hasPhone": false,
+          "len": 53,
+          "lines": 3,
+          "emailCloudflareProtected": true
+        },
+        "applicantRole": "parent",
+        "applicantIsStudentSelf": false,
+        "category": "B40",
+        "reason": {
+          "shownLength": 83,
+          "truncatedWithEllipsis": true,
+          "fullTextInTitle": false,
+          "equalsExample": null,
+          "text": "<free text masked>"
+        },
+        "status": "Pending",
+        "actions": [
+          "Lulus → POST /admin/anak-angkat/permohonan/3/lulus",
+          "Tolak → POST /admin/anak-angkat/permohonan/3/tolak confirm:return confirm('Tolak permohonan ini?')"
+        ]
+      },
+      {
+        "id": "2",
+        "student": {
+          "masked": true,
+          "hasEmail": true,
+          "hasPhone": false,
+          "len": 54,
+          "lines": 3,
+          "emailCloudflareProtected": true
+        },
+        "applicantRole": "parent",
+        "applicantIsStudentSelf": false,
+        "category": "B40",
+        "reason": {
+          "shownLength": 83,
+          "truncatedWithEllipsis": true,
+          "fullTextInTitle": false,
+          "equalsExample": null,
+          "text": "<free text masked>"
+        },
+        "status": "Pending",
+        "actions": [
+          "Lulus → POST /admin/anak-angkat/permohonan/2/lulus",
+          "Tolak → POST /admin/anak-angkat/permohonan/2/tolak confirm:return confirm('Tolak permohonan ini?')"
+        ]
+      },
+      {
+        "id": "1",
+        "student": {
+          "masked": true,
+          "hasEmail": true,
+          "hasPhone": false,
+          "len": 73,
+          "lines": 3,
+          "emailCloudflareProtected": true
+        },
+        "applicantRole": "student",
+        "applicantIsStudentSelf": true,
+        "category": "B40",
+        "reason": {
+          "shownLength": 83,
+          "truncatedWithEllipsis": true,
+          "fullTextInTitle": false,
+          "equalsExample": 2,
+          "text": "• Pelajar yatim piatu yang tinggal bersama nenek. Nenek sudah tua dan tiada pend..."
+        },
+        "status": "Pending",
+        "actions": [
+          "Lulus → POST /admin/anak-angkat/permohonan/1/lulus",
+          "Tolak → POST /admin/anak-angkat/permohonan/1/tolak confirm:return confirm('Tolak permohonan ini?')"
+        ]
+      }
+    ],
+    "filters": {
+      "pending": {
+        "status": 200,
+        "tabs": [
+          "?status=pending = Menunggu 3",
+          "?status=approved = Dalam Pool 0",
+          "?status=matched = Ditaja 0",
+          "?status=rejected = Ditolak 0"
+        ],
+        "rows": [
+          "row 3",
+          "row 2",
+          "row 1"
+        ]
+      },
+      "approved": {
+        "status": 200,
+        "tabs": [
+          "?status=pending = Menunggu 3",
+          "?status=approved = Dalam Pool 0",
+          "?status=matched = Ditaja 0",
+          "?status=rejected = Ditolak 0"
+        ],
+        "rows": [
+          "empty: Tiada permohonan approved"
+        ]
+      },
+      "matched": {
+        "status": 200,
+        "tabs": [
+          "?status=pending = Menunggu 3",
+          "?status=approved = Dalam Pool 0",
+          "?status=matched = Ditaja 0",
+          "?status=rejected = Ditolak 0"
+        ],
+        "rows": [
+          "empty: Tiada permohonan matched"
+        ]
+      },
+      "rejected": {
+        "status": 200,
+        "tabs": [
+          "?status=pending = Menunggu 3",
+          "?status=approved = Dalam Pool 0",
+          "?status=matched = Ditaja 0",
+          "?status=rejected = Ditolak 0"
+        ],
+        "rows": [
+          "empty: Tiada permohonan rejected"
+        ]
+      }
+    },
+    "observedNote": "Checked by eye during capture (names never stored): #1 applicant = the student herself (role student); #2 and #3 = the same parent account (role parent) applying for two siblings; #1 student line 3 = school name, #2/#3 line 3 = \"-\"."
+  },
+  "S7_register": {
+    "status": 200,
+    "header": {
+      "title": "Daftar Penaja - PRESTASIPLUS",
+      "h1": null,
+      "sub": null
+    },
+    "required": [
+      "organization_name",
+      "contact_person_name",
+      "contact_email",
+      "contact_phone",
+      "address",
+      "city",
+      "state",
+      "postcode",
+      "name",
+      "email",
+      "password",
+      "password_confirmation"
+    ]
+  },
+  "M17_sponsorCards": [
+    "",
+    "",
+    "Jumlah Penaja",
+    "6",
+    "",
+    "",
+    "Menunggu Kelulusan",
+    "0",
+    "",
+    "",
+    "Ditolak",
+    "0",
+    "",
+    "",
+    "Digantung",
+    "6"
+  ],
+  "M02_sponsorUsers": {
+    "status": 200,
+    "rowCount": 6,
+    "countTexts": [
+      "Penaja",
+      "Penaja",
+      "Penaja",
+      "Penaja",
+      "Penaja",
+      "Penaja",
+      "Penaja",
+      "Penaja",
+      "Padam Pengguna?",
+      "Anda pasti mahu memadam pengguna ini?",
+      "Padam Pengguna Terpilih?"
+    ]
+  },
+  "capturedAtMYT": "2026-09-27T10:25:26.966+08:00",
+  "layout": {
+    "/admin/sponsors @375": {
+      "chipSemua": null,
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 543,
+          "wrapperW": 318,
+          "wrapperOverflowX": "auto",
+          "cols": 7,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4 mb-3 sm:mb-6",
+          "cols": 2
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 73,
+      "small": {
+        "10px": 26,
+        "9px": 47
+      },
+      "h1": null
+    },
+    "/admin/sponsors @768": {
+      "chipSemua": null,
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 832,
+          "wrapperW": 667,
+          "wrapperOverflowX": "auto",
+          "cols": 7,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4 mb-3 sm:mb-6",
+          "cols": 5
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/sponsors @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 910,
+          "wrapperW": 910,
+          "wrapperOverflowX": "auto",
+          "cols": 7,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4 mb-3 sm:mb-6",
+          "cols": 5
+        }
+      ],
+      "panels": 7,
+      "panelsVisible": 7,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/sponsors/create @375": {
+      "chipSemua": null,
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-3 gap-4",
+          "cols": 1
+        }
+      ],
+      "panels": 1,
+      "panelsVisible": 1,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/sponsors/create @768": {
+      "chipSemua": null,
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-3 gap-4",
+          "cols": 3
+        }
+      ],
+      "panels": 1,
+      "panelsVisible": 1,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/sponsors/create @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-3 gap-4",
+          "cols": 3
+        }
+      ],
+      "panels": 1,
+      "panelsVisible": 1,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/sponsors/6/edit @375": {
+      "chipSemua": null,
+      "scrollWidth": 409,
+      "overflow": true,
+      "wide": [
+        "form. right=409",
+        "button.px-5.py-2.5 right=409"
+      ],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 1
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-3 gap-4",
+          "cols": 1
+        }
+      ],
+      "panels": 2,
+      "panelsVisible": 2,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/sponsors/6/edit @768": {
+      "chipSemua": null,
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-3 gap-4",
+          "cols": 3
+        }
+      ],
+      "panels": 2,
+      "panelsVisible": 2,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/sponsors/6/edit @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+          "cols": 2
+        },
+        {
+          "cls": "grid grid-cols-1 sm:grid-cols-3 gap-4",
+          "cols": 3
+        }
+      ],
+      "panels": 2,
+      "panelsVisible": 2,
+      "smallN": 0,
+      "small": {},
+      "h1": null
+    },
+    "/admin/anak-angkat @375": {
+      "chipSemua": null,
+      "scrollWidth": 397,
+      "overflow": true,
+      "wide": [
+        "a.px-3.py-1.5 right=397"
+      ],
+      "tables": [
+        {
+          "tableW": 702,
+          "wrapperW": 342,
+          "wrapperOverflowX": "auto",
+          "cols": 8,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-4 gap-3",
+          "cols": 2
+        }
+      ],
+      "panels": 6,
+      "panelsVisible": 6,
+      "smallN": 7,
+      "small": {
+        "10px": 7
+      },
+      "h1": null
+    },
+    "/admin/anak-angkat @768": {
+      "chipSemua": null,
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 702,
+          "wrapperW": 715,
+          "wrapperOverflowX": "auto",
+          "cols": 8,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-4 gap-3",
+          "cols": 4
+        }
+      ],
+      "panels": 6,
+      "panelsVisible": 6,
+      "smallN": 7,
+      "small": {
+        "10px": 7
+      },
+      "h1": null
+    },
+    "/admin/anak-angkat @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1280,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 925,
+          "wrapperW": 973,
+          "wrapperOverflowX": "auto",
+          "cols": 8,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-4 gap-3",
+          "cols": 4
+        }
+      ],
+      "panels": 6,
+      "panelsVisible": 6,
+      "smallN": 7,
+      "small": {
+        "10px": 7
+      },
+      "h1": null
+    },
+    "/admin/anak-angkat/permohonan @375": {
+      "chipSemua": null,
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 777,
+          "wrapperW": 342,
+          "wrapperOverflowX": "auto",
+          "cols": 7,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-4 gap-3",
+          "cols": 2
+        }
+      ],
+      "panels": 5,
+      "panelsVisible": 5,
+      "smallN": 18,
+      "small": {
+        "10px": 18
+      },
+      "h1": null
+    },
+    "/admin/anak-angkat/permohonan @768": {
+      "chipSemua": null,
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 777,
+          "wrapperW": 715,
+          "wrapperOverflowX": "auto",
+          "cols": 7,
+          "clipped": false,
+          "overflowsViewport": true
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-4 gap-3",
+          "cols": 4
+        }
+      ],
+      "panels": 5,
+      "panelsVisible": 5,
+      "smallN": 18,
+      "small": {
+        "10px": 18
+      },
+      "h1": null
+    },
+    "/admin/anak-angkat/permohonan @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1280,
+      "overflow": false,
+      "wide": [],
+      "tables": [
+        {
+          "tableW": 925,
+          "wrapperW": 973,
+          "wrapperOverflowX": "auto",
+          "cols": 7,
+          "clipped": false,
+          "overflowsViewport": false
+        }
+      ],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-4 gap-3",
+          "cols": 4
+        }
+      ],
+      "panels": 5,
+      "panelsVisible": 5,
+      "smallN": 18,
+      "small": {
+        "10px": 18
+      },
+      "h1": null
+    },
+    "/mohon-keluarga-angkat @375": {
+      "chipSemua": null,
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 1,
+      "small": {
+        "10px": 1
+      },
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          33,
+          127,
+          294,
+          32
+        ]
+      }
+    },
+    "/mohon-keluarga-angkat @768": {
+      "chipSemua": null,
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 1,
+      "small": {
+        "10px": 1
+      },
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          64,
+          180,
+          624,
+          32
+        ]
+      }
+    },
+    "/mohon-keluarga-angkat @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 1,
+      "small": {
+        "10px": 1
+      },
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          448,
+          135,
+          624,
+          32
+        ]
+      }
+    },
+    "/sponsor/register @375": {
+      "chipSemua": null,
+      "scrollWidth": 360,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3",
+          "cols": 2
+        }
+      ],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 20,
+      "small": {
+        "10px": 20
+      },
+      "h1": {
+        "fontPx": 24,
+        "box": [
+          12,
+          16,
+          336,
+          32
+        ]
+      }
+    },
+    "/sponsor/register @768": {
+      "chipSemua": null,
+      "scrollWidth": 753,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3",
+          "cols": 3
+        }
+      ],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 48,
+        "box": [
+          16,
+          32,
+          721,
+          48
+        ]
+      }
+    },
+    "/sponsor/register @1280": {
+      "chipSemua": null,
+      "scrollWidth": 1265,
+      "overflow": false,
+      "wide": [],
+      "tables": [],
+      "grids": [
+        {
+          "cls": "grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3",
+          "cols": 3
+        }
+      ],
+      "panels": 0,
+      "panelsVisible": 0,
+      "smallN": 0,
+      "small": {},
+      "h1": {
+        "fontPx": 48,
+        "box": [
+          16,
+          32,
+          1233,
+          48
+        ]
+      }
+    }
+  },
+  "sideEffectLedger": "No counters observed on any M21 page (no view / click counts are displayed). Server GETs per M21 URL: one per browser context thanks to the guard cache, except that the session expired mid-run; the guard cache survived (same context), so no M21 URL was requested twice. Non-M21 pages /admin and /admin/users?role=sponsor were read twice (snapshot run + re-run) for cross-checks."
+}

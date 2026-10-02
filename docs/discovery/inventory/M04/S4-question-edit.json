@@ -1,0 +1,2498 @@
+{
+ "screen": "S4",
+ "key": "S4-question-edit",
+ "route": "/admin/questions/{id}/edit",
+ "name": "Edit Soalan",
+ "module": "M04",
+ "generatedAt": "2026-09-25T07:37:18.257Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 91,
+  "visibleDefault": 61,
+  "conditional": 1,
+  "hiddenOnly": 29,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 2,
+   "heading": 4,
+   "text": 8,
+   "form": 1,
+   "hidden-field": 7,
+   "card": 3,
+   "label": 26,
+   "select": 6,
+   "button": 8,
+   "radio": 9,
+   "textarea": 2,
+   "input": 10,
+   "image": 5
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "MCQ with DSKP preselected (lists loaded)",
+   "file": "_raw/M04/S4-question-edit__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/questions/564159/edit",
+   "finalUrl": "/admin/questions/564159/edit",
+   "httpStatus": 200,
+   "title": "Edit Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "wait": 4000
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "sp-cleared__1280",
+   "description": "SP cleared → \"Buang tag DSKP\" button",
+   "file": "_raw/M04/S4-question-edit__sp-cleared__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/questions/564159/edit",
+   "finalUrl": "/admin/questions/564159/edit",
+   "httpStatus": 200,
+   "title": "Edit Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "wait": 4000
+    },
+    {
+     "select": [
+      "main select[name=dskp_sp_id]",
+      ""
+     ]
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "untagged__1280",
+   "description": "MCQ without DSKP",
+   "file": "_raw/M04/S4-question-edit__untagged__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/questions/129114/edit",
+   "finalUrl": "/admin/questions/129114/edit",
+   "httpStatus": 200,
+   "title": "Edit Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M04/S4-question-edit__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/questions/564159/edit",
+   "finalUrl": "/admin/questions/564159/edit",
+   "httpStatus": 200,
+   "title": "Edit Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "wait": 3000
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M04/S4-question-edit__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/questions/564159/edit",
+   "finalUrl": "/admin/questions/564159/edit",
+   "httpStatus": 200,
+   "title": "Edit Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "wait": 3000
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "dskpDropdown",
+   "xData": "dskpDropdown()",
+   "keys": [],
+   "liveState": {
+    "bidangId": "string(3)",
+    "skId": "string(4)",
+    "spId": "string(4)",
+    "bidangList": "array(10)",
+    "skList": "array(19)",
+    "spList": "array(1)"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Maklumat Soalan",
+   "seenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ preview: null, removeImg: false }",
+   "keys": [
+    "preview",
+    "removeImg"
+   ],
+   "liveState": {
+    "preview": null,
+    "removeImg": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Maklumat Soalan",
+   "seenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ optPreview0: null, removeOpt0: false }",
+   "keys": [
+    "optPreview0",
+    "removeOpt0"
+   ],
+   "liveState": {
+    "optPreview0": null,
+    "removeOpt0": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Pilihan Jawapan",
+   "seenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ optPreview1: null, removeOpt1: false }",
+   "keys": [
+    "optPreview1",
+    "removeOpt1"
+   ],
+   "liveState": {
+    "optPreview1": null,
+    "removeOpt1": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Pilihan Jawapan",
+   "seenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ optPreview2: null, removeOpt2: false }",
+   "keys": [
+    "optPreview2",
+    "removeOpt2"
+   ],
+   "liveState": {
+    "optPreview2": null,
+    "removeOpt2": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Pilihan Jawapan",
+   "seenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ optPreview3: null, removeOpt3: false }",
+   "keys": [
+    "optPreview3",
+    "removeOpt3"
+   ],
+   "liveState": {
+    "optPreview3": null,
+    "removeOpt3": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Pilihan Jawapan",
+   "seenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  },
+  {
+   "text": "Tukar gambar",
+   "sources": [
+    "attr:x-text@p"
+   ]
+  },
+  {
+   "text": "Klik untuk muat naik gambar",
+   "sources": [
+    "attr:x-text@p"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/guru/api/dskp/bidang?subject_id=${subjectId}&education_level_id=${levelId}",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/guru/api/dskp/sk?dskp_bidang_id=${this.bidangId}",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/guru/api/dskp/sp?dskp_sk_id=${this.skId}",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#2"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M04-S4-001",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/questions/564159",
+   "absHref": "https://prestasiplus.my/admin/questions/564159",
+   "icon": "fa-arrow-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-002",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "✏️ Edit Soalan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kemaskini maklumat soalan #564159",
+   "landmark": "main",
+   "section": "✏️ Edit Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-004",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/questions/564159",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "_method",
+    "subject_id",
+    "education_level_id",
+    "dskp_sp_id",
+    "difficulty_level",
+    "difficulty_level",
+    "difficulty_level",
+    "difficulty_level",
+    "difficulty_level",
+    "question_text",
+    "question_image",
+    "remove_question_image",
+    "correct_answer",
+    "options[]",
+    "option_images[0]",
+    "remove_option_image_0",
+    "correct_answer",
+    "options[]",
+    "option_images[1]",
+    "remove_option_image_1",
+    "correct_answer",
+    "options[]",
+    "option_images[2]",
+    "remove_option_image_2",
+    "correct_answer",
+    "options[]",
+    "option_images[3]",
+    "remove_option_image_3",
+    "explanation",
+    "language",
+    "points_value"
+   ],
+   "landmark": "main",
+   "section": "✏️ Edit Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-005",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "✏️ Edit Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-006",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "✏️ Edit Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "Maklumat Soalan",
+   "landmark": "form",
+   "section": "✏️ Edit Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-008",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Maklumat Soalan",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-009",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek *",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-010",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Subjek *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih Subjek"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "3",
+     "text": "Matematik"
+    },
+    {
+     "value": "4",
+     "text": "Sains"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-011",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahap Pendidikan *",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-012",
+   "kind": "select",
+   "tag": "select",
+   "name": "education_level_id",
+   "label": "Tahap Pendidikan *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih Tahap Pendidikan"
+    },
+    {
+     "value": "1",
+     "text": "Darjah 1"
+    },
+    {
+     "value": "2",
+     "text": "Darjah 2"
+    },
+    {
+     "value": "3",
+     "text": "Darjah 3"
+    },
+    {
+     "value": "4",
+     "text": "Darjah 4"
+    },
+    {
+     "value": "5",
+     "text": "Darjah 5"
+    },
+    {
+     "value": "6",
+     "text": "Darjah 6"
+    },
+    {
+     "value": "7",
+     "text": "Tingkatan 1"
+    },
+    {
+     "value": "8",
+     "text": "Tingkatan 2"
+    },
+    {
+     "value": "9",
+     "text": "Tingkatan 3"
+    },
+    {
+     "value": "10",
+     "text": "Tingkatan 4"
+    },
+    {
+     "value": "11",
+     "text": "Tingkatan 5"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "DSKP Tagging (Pilihan)",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bidang",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-015",
+   "kind": "select",
+   "tag": "select",
+   "label": "Bidang",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Bidang --"
+    },
+    {
+     "value": "515",
+     "text": "T5-SUB4-TEXTBOOK - Sains T5 - Sokongan Bab Buku Teks"
+    },
+    {
+     "value": "57",
+     "text": "1.0 - Mikroorganisma"
+    },
+    {
+     "value": "58",
+     "text": "2.0 - Nutrisi dan Teknologi Makanan"
+    },
+    {
+     "value": "59",
+     "text": "3.0 - Kelestarian Alam Sekitar"
+    },
+    {
+     "value": "60",
+     "text": "4.0 - Kadar Tindak Balas"
+    },
+    {
+     "value": "61",
+     "text": "5.0 - Sebatian Karbon"
+    },
+    {
+     "value": "62",
+     "text": "6.0 - Elektrokimia"
+    },
+    {
+     "value": "63",
+     "text": "7.0 - Cahaya dan Optik"
+    },
+    {
+     "value": "64",
+     "text": "8.0 - Daya dan Tekanan"
+    },
+    {
+     "value": "65",
+     "text": "9.0 - Teknologi Angkasa"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "x-model": "bidangId",
+    "@change": "loadSk()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Standard Kandungan",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-017",
+   "kind": "select",
+   "tag": "select",
+   "label": "Standard Kandungan",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih SK --"
+    },
+    {
+     "value": "2645",
+     "text": "T5S4.B1 - Menguasai konsep utama Bab 1: Dunia mikroorganisma berdasarkan buku teks Sains T5."
+    },
+    {
+     "value": "2716",
+     "text": "BAB1 - Sokongan pembelajaran BAB1: Dunia mikroorganisma"
+    },
+    {
+     "value": "2660",
+     "text": "T5SN.B2 - Menguasai konsep utama Bab 2: Diet seimbang dan nilai kalori berdasarkan buku teks Sains Tingkatan 5."
+    },
+    {
+     "value": "2713",
+     "text": "BAB2 - Sokongan pembelajaran BAB2: Diet seimbang dan nilai kalori"
+    },
+    {
+     "value": "2644",
+     "text": "T5S4.B3 - Menguasai konsep utama Bab 3: Kelestarian Alam Sekitar berdasarkan buku teks Sains T5."
+    },
+    {
+     "value": "2661",
+     "text": "T5SN.B3 - Menguasai konsep utama Bab 3: Kelestarian Alam Sekitar berdasarkan buku teks Sains Tingkatan 5."
+    },
+    {
+     "value": "2721",
+     "text": "BAB3 - Sokongan pembelajaran BAB3: Kelestarian Alam Sekitar"
+    },
+    {
+     "value": "2662",
+     "text": "T5SN.B4 - Menguasai konsep utama Bab 4: Aplikasi kadar tindak balas berdasarkan buku teks Sains Tingkatan 5."
+    },
+    {
+     "value": "2715",
+     "text": "BAB4 - Sokongan pembelajaran BAB4: Aplikasi kadar tindak balas"
+    },
+    {
+     "value": "2663",
+     "text": "T5SN.B5 - Menguasai konsep utama Bab 5: Alkohol berdasarkan buku teks Sains Tingkatan 5."
+    },
+    {
+     "value": "2714",
+     "text": "BAB5 - Sokongan pembelajaran BAB5: Alkohol"
+    },
+    {
+     "value": "2664",
+     "text": "T5SN.B6 - Menguasai konsep utama Bab 6: Sel elektrolisis berdasarkan buku teks Sains Tingkatan 5."
+    },
+    {
+     "value": "2718",
+     "text": "BAB6 - Sokongan pembelajaran BAB6: Sel elektrolisis"
+    },
+    {
+     "value": "2665",
+     "text": "T5SN.B7 - Menguasai konsep utama Bab 7: Alat optik berdasarkan buku teks Sains Tingkatan 5."
+    },
+    {
+     "value": "2720",
+     "text": "BAB7 - Sokongan pembelajaran BAB7: Alat optik"
+    },
+    {
+     "value": "2666",
+     "text": "T5SN.B8 - Menguasai konsep utama Bab 8: Tekanan dalam bendalir berdasarkan buku teks Sains Tingkatan 5."
+    },
+    {
+     "value": "2705",
+     "text": "BAB8 - Sokongan pembelajaran BAB8: Isotop"
+    },
+    {
+     "value": "2667",
+     "text": "T5SN.B9 - Menguasai konsep utama Bab 9: Satelit berdasarkan buku teks Sains Tingkatan 5."
+    },
+    {
+     "value": "2717",
+     "text": "BAB9 - Sokongan pembelajaran BAB9: Satelit"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "x-model": "skId",
+    "@change": "loadSp()",
+    ":disabled": "!bidangId"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-018",
+   "kind": "label",
+   "tag": "label",
+   "text": "Standard Pembelajaran",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-019",
+   "kind": "select",
+   "tag": "select",
+   "name": "dskp_sp_id",
+   "label": "Standard Pembelajaran",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih SP --"
+    },
+    {
+     "value": "6191",
+     "text": "T5SN.B9.1 - Menjawab soalan objektif berkaitan konsep dan aplikasi Bab 9: Satelit."
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "x-model": "spId",
+    ":disabled": "!skId"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-020",
+   "kind": "text",
+   "tag": "div",
+   "text": "DSKP tagged",
+   "icon": "fa-check-circle",
+   "section": "Maklumat Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=spId"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-021",
+   "kind": "text",
+   "tag": "div",
+   "text": "DSKP tagged",
+   "icon": "fa-check-circle",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-022",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Buang tag DSKP",
+   "icon": "fa-times",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "@click": "bidangId=''; skId=''; spId=''; skList=[]; spList=[];"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=bidangId && !spId"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-023",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahap Kesukaran *",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sangat Mudah",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-025",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "difficulty_level",
+   "label": "Sangat Mudah",
+   "required": true,
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "checkedIn": [
+    "untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-026",
+   "kind": "label",
+   "tag": "label",
+   "text": "Mudah",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-027",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "difficulty_level",
+   "label": "Mudah",
+   "required": true,
+   "optionValue": "2",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S4-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sederhana",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-029",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "difficulty_level",
+   "label": "Sederhana",
+   "required": true,
+   "optionValue": "3",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-030",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sukar",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-031",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "difficulty_level",
+   "label": "Sukar",
+   "required": true,
+   "optionValue": "4",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S4-032",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sangat Sukar",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-033",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "difficulty_level",
+   "label": "Sangat Sukar",
+   "required": true,
+   "optionValue": "5",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S4-034",
+   "kind": "label",
+   "tag": "label",
+   "text": "Teks Soalan *",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-035",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "question_text",
+   "label": "Teks Soalan *",
+   "placeholder": "Masukkan teks soalan di sini...",
+   "required": true,
+   "rows": "4",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "Minimum 10 aksara",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-037",
+   "kind": "label",
+   "tag": "label",
+   "text": "Gambar Soalan (Pilihan)",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-038",
+   "kind": "label",
+   "tag": "label",
+   "text": "Klik untuk muat naik gambar JPG, PNG, WebP — Maks 2MB",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-039",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "question_image",
+   "label": "Klik untuk muat naik gambar JPG, PNG, WebP — Maks 2MB",
+   "accept": "image/jpeg,image/png,image/webp",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "@change": "if($el.files[0]) { removeImg = false; const r = new FileReader(); r.onload = e => preview = e.target.result; r.readAsDataURL($el.files[0]); }"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-040",
+   "kind": "image",
+   "tag": "img",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    ":src": "preview"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=preview && !removeImg"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-041",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "@click": "removeImg = true; preview = null; $el.closest('[x-data]').querySelector('input[type=file]').value = ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=preview && !removeImg"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-042",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "remove_question_image",
+   "label": "Gambar Soalan (Pilihan)",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    ":value": "removeImg ? '1' : '0'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-043",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pilihan Jawapan",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-044",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Pilihan Jawapan",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-045",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "correct_answer",
+   "required": true,
+   "optionValue": "0",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-046",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan A *",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-047",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[]",
+   "placeholder": "Masukkan pilihan A",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-048",
+   "kind": "label",
+   "tag": "label",
+   "text": "Gambar",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-049",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "option_images[0]",
+   "label": "Gambar",
+   "accept": "image/jpeg,image/png,image/webp",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    "@change": "if($el.files[0]) { removeOpt0 = false; const r = new FileReader(); r.onload = e => optPreview0 = e.target.result; r.readAsDataURL($el.files[0]); }"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-050",
+   "kind": "image",
+   "tag": "img",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    ":src": "optPreview0"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=optPreview0 && !removeOpt0"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-051",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    "@click": "removeOpt0 = true; optPreview0 = null; $el.closest('[x-data]').querySelector('input[name=\\'option_images[0]\\']').value = ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=optPreview0 && !removeOpt0"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-052",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "remove_option_image_0",
+   "label": "Gambar",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    ":value": "removeOpt0 ? '1' : '0'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-053",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "correct_answer",
+   "required": true,
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S4-054",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan B *",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-055",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[]",
+   "placeholder": "Masukkan pilihan B",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-056",
+   "kind": "label",
+   "tag": "label",
+   "text": "Gambar",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-057",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "option_images[1]",
+   "label": "Gambar",
+   "accept": "image/jpeg,image/png,image/webp",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    "@change": "if($el.files[0]) { removeOpt1 = false; const r = new FileReader(); r.onload = e => optPreview1 = e.target.result; r.readAsDataURL($el.files[0]); }"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-058",
+   "kind": "image",
+   "tag": "img",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    ":src": "optPreview1"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=optPreview1 && !removeOpt1"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-059",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    "@click": "removeOpt1 = true; optPreview1 = null; $el.closest('[x-data]').querySelector('input[name=\\'option_images[1]\\']').value = ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=optPreview1 && !removeOpt1"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-060",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "remove_option_image_1",
+   "label": "Gambar",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    ":value": "removeOpt1 ? '1' : '0'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-061",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "correct_answer",
+   "required": true,
+   "optionValue": "2",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-062",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan C *",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-063",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[]",
+   "placeholder": "Masukkan pilihan C",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-064",
+   "kind": "label",
+   "tag": "label",
+   "text": "Gambar",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-065",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "option_images[2]",
+   "label": "Gambar",
+   "accept": "image/jpeg,image/png,image/webp",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    "@change": "if($el.files[0]) { removeOpt2 = false; const r = new FileReader(); r.onload = e => optPreview2 = e.target.result; r.readAsDataURL($el.files[0]); }"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-066",
+   "kind": "image",
+   "tag": "img",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    ":src": "optPreview2"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=optPreview2 && !removeOpt2"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-067",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    "@click": "removeOpt2 = true; optPreview2 = null; $el.closest('[x-data]').querySelector('input[name=\\'option_images[2]\\']').value = ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=optPreview2 && !removeOpt2"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-068",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "remove_option_image_2",
+   "label": "Gambar",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    ":value": "removeOpt2 ? '1' : '0'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-069",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "correct_answer",
+   "required": true,
+   "optionValue": "3",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S4-070",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan D *",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-071",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[]",
+   "placeholder": "Masukkan pilihan D",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-072",
+   "kind": "label",
+   "tag": "label",
+   "text": "Gambar",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-073",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "option_images[3]",
+   "label": "Gambar",
+   "accept": "image/jpeg,image/png,image/webp",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    "@change": "if($el.files[0]) { removeOpt3 = false; const r = new FileReader(); r.onload = e => optPreview3 = e.target.result; r.readAsDataURL($el.files[0]); }"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-074",
+   "kind": "image",
+   "tag": "img",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    ":src": "optPreview3"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=optPreview3 && !removeOpt3"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-075",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    "@click": "removeOpt3 = true; optPreview3 = null; $el.closest('[x-data]').querySelector('input[name=\\'option_images[3]\\']').value = ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=optPreview3 && !removeOpt3"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-076",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "remove_option_image_3",
+   "label": "Gambar",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "alpine": {
+    ":value": "removeOpt3 ? '1' : '0'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-077",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih butang radio di sebelah pilihan yang merupakan jawapan yang betul.",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-078",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Nota:",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-079",
+   "kind": "card",
+   "tag": "div",
+   "text": "Maklumat Tambahan",
+   "landmark": "form",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-080",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Maklumat Tambahan",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-081",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penjelasan",
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-082",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "explanation",
+   "label": "Penjelasan",
+   "placeholder": "Penjelasan untuk jawapan (pilihan)",
+   "rows": "3",
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-083",
+   "kind": "text",
+   "tag": "p",
+   "text": "Penjelasan akan ditunjukkan kepada pelajar selepas menjawab",
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-084",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bahasa",
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-085",
+   "kind": "select",
+   "tag": "select",
+   "name": "language",
+   "label": "Bahasa",
+   "options": [
+    {
+     "value": "bm",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "en",
+     "text": "English"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-086",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nilai Mata",
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-087",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "points_value",
+   "label": "Nilai Mata",
+   "min": "1",
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-088",
+   "kind": "text",
+   "tag": "p",
+   "text": "Mata yang diperoleh jika jawapan betul",
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-089",
+   "kind": "link",
+   "tag": "a",
+   "text": "Batal",
+   "href": "https://prestasiplus.my/admin/questions/564159",
+   "absHref": "https://prestasiplus.my/admin/questions/564159",
+   "icon": "fa-times",
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-090",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Kemaskini Soalan",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/questions/564159",
+   "landmark": "form",
+   "section": "Maklumat Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "sp-cleared__1280",
+    "untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S4-091",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Buang tag DSKP",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/questions/564159",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "@click": "bidangId=''; skId=''; spId=''; skList=[]; spList=[];"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sp-cleared__1280"
+   ]
+  }
+ ]
+}

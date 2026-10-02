@@ -1,0 +1,198 @@
+{
+ "screen": "S2",
+ "key": "S2-command-center",
+ "route": "/admin-sekolah/command-center",
+ "name": "403 - Akses Ditolak | PRESTASIPLUS",
+ "module": "M27",
+ "generatedAt": "2026-09-30T03:44:22.010Z",
+ "notes": "admin is refused (route exists, role-gated)",
+ "shell": "none (global error page)",
+ "summary": {
+  "total": 7,
+  "visibleDefault": 7,
+  "conditional": 0,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 4,
+   "heading": 1,
+   "link": 2
+  }
+ },
+ "states": [
+  {
+   "label": "admin-403__1280",
+   "description": "admin: 403 \"Akses Ditolak\"",
+   "file": "_raw/M27/S2-command-center__admin-403__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin-sekolah/command-center",
+   "finalUrl": "/admin-sekolah/command-center",
+   "httpStatus": 403,
+   "title": "403 - Akses Ditolak | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "M27MASK"
+    }
+   ],
+   "actionLog": [
+    "m27mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "admin-403__375",
+   "description": "admin-403 @375",
+   "file": "_raw/M27/S2-command-center__admin-403__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin-sekolah/command-center",
+   "finalUrl": "/admin-sekolah/command-center",
+   "httpStatus": 403,
+   "title": "403 - Akses Ditolak | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "M27MASK"
+    }
+   ],
+   "actionLog": [
+    "m27mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "admin-403__768",
+   "description": "admin-403 @768",
+   "file": "_raw/M27/S2-command-center__admin-403__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin-sekolah/command-center",
+   "finalUrl": "/admin-sekolah/command-center",
+   "httpStatus": 403,
+   "title": "403 - Akses Ditolak | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "M27MASK"
+    }
+   ],
+   "actionLog": [
+    "m27mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-M27-S2-001",
+   "kind": "text",
+   "tag": "div",
+   "text": "403",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-403__1280",
+    "admin-403__375",
+    "admin-403__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S2-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "🚫",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-403__1280",
+    "admin-403__375",
+    "admin-403__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S2-003",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-403__1280",
+    "admin-403__375",
+    "admin-403__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S2-004",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.",
+   "section": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-403__1280",
+    "admin-403__375",
+    "admin-403__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S2-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-403__1280",
+    "admin-403__375",
+    "admin-403__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S2-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk",
+   "href": "/login",
+   "absHref": "https://prestasiplus.my/login",
+   "section": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-403__1280",
+    "admin-403__375",
+    "admin-403__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S2-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Akses Ditolak",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-403__1280",
+    "admin-403__375",
+    "admin-403__768"
+   ]
+  }
+ ]
+}

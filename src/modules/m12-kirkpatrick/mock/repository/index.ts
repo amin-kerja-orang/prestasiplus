@@ -1,0 +1,15 @@
+/** The M12 repositories and read models (SRS M12 v1.6 §6). Read models are plain functions over the repositories. */
+
+export { alesaRepo } from './alesa'
+export { consistencyRepo, generatedKonsistensi } from './consistency'
+export { feedbackQueries, feedbackRepo, FEEDBACK_TOTAL, type FeedbackAggregates } from './feedback'
+export { interventionQueries, interventionsRepo, NOT_A_STUDENT, statusOf } from './interventions'
+export { schoolScoresRepo } from './scores'
+export { M12Error, type M12ErrorCode, bindM12Clock, m12Now } from './common'
+export { resolveScope, populationOf, type Scope, type ScopeInput } from './scope'
+export { alesaOf } from './models/alesa'
+export { chainOf, learningOf, behaviorOf, reactionOf } from './models/levels'
+export { filterOptionsOf, myOf, studentOf } from './models/people'
+export { predictionsOf } from './models/predictions'
+export { comparisonOf, overviewOf } from './models/overview'
+export { resultsOf } from './models/results'
