@@ -16,6 +16,7 @@ import { adminCurriculumRoutes } from './handlers/admin-curriculum'
 import { adminLevelRoutes } from './handlers/admin-levels'
 import { adminSubjectRoutes } from './handlers/admin-subjects'
 import { lookupRoutes } from './handlers/lookups'
+import { studentCurriculumRoutes } from './handlers/student-curriculum'
 import {
   curriculumLevelsRepo,
   curriculumRepo,
@@ -48,7 +49,14 @@ const plugin = defineMockModule({
   overrides: [INACTIVE_DEMO_OVERRIDE],
   seed: seedCurriculum,
   // M03-T1b: admin handlers #1–#24 (subjects, levels, curriculum tree).
-  routes: [...lookupRoutes, ...adminSubjectRoutes, ...adminLevelRoutes, ...adminCurriculumRoutes],
+  // M03-T1a: student handlers #25–#27 (topics, topic detail, Peta Belajar).
+  routes: [
+    ...lookupRoutes,
+    ...adminSubjectRoutes,
+    ...adminLevelRoutes,
+    ...adminCurriculumRoutes,
+    ...studentCurriculumRoutes,
+  ],
 })
 
 export default plugin

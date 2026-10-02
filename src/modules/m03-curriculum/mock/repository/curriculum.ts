@@ -405,6 +405,21 @@ export const curriculumRepo = defineRepository({
       chapters: chaptersOf,
       /** A tree chapter (`undefined` for unknown and out-of-tree ids: "Bab tidak dijumpai."). */
       chapter: treeChapter,
+      /**
+       * M25 XR-M25-04: `{id, name, subjectId}` of the tree chapters among `ids`, in the order given
+       * (unknown, out-of-tree and repeated ids are skipped). Read-only, any session.
+       */
+      chaptersByIds(ids: readonly number[]): { id: number; name: string; subjectId: number }[] {
+        const seen = new Set<number>()
+        const out: { id: number; name: string; subjectId: number }[] = []
+        for (const id of ids) {
+          if (seen.has(id)) continue
+          seen.add(id)
+          const c = treeChapter(id)
+          if (c?.name != null) out.push({ id: c.id, name: c.name, subjectId: c.subjectId })
+        }
+        return out
+      },
       /** Topics of a chapter, BR-08 natural order. */
       topics: topicsOf,
       topic: (id: number): TopicRow | undefined => topics.get(id),
