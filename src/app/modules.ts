@@ -21,6 +21,7 @@ import { manifest as m18 } from '@/modules/m18-ppd-jpn'
 import { manifest as m20 } from '@/modules/m20-marketplace'
 import { manifest as m21 } from '@/modules/m21-sponsorship'
 import { manifest as m25 } from '@/modules/m25-ai-centre'
+import { manifest as m27 } from '@/modules/m27-school-admin'
 
 /**
  * THE module registry (overview §4, ADR-0009).
@@ -61,4 +62,5 @@ export const modules: readonly ModuleManifest[] = [
   m20,
   m21,
   m25,
+  m27,
 ]

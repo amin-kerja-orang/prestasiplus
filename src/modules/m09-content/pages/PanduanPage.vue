@@ -61,7 +61,7 @@ function setRole(id: string): void {
         class="rounded-3xl bg-gradient-to-br from-indigo-700 via-purple-600 to-indigo-500 px-4 py-8 text-center text-white sm:py-10"
       >
         <div class="mb-2 text-5xl" aria-hidden="true">📖</div>
-        <h1 class="font-heading text-2xl font-extrabold sm:text-4xl">
+        <h1 class="font-heading text-2xl font-extrabold text-white sm:text-4xl">
           Panduan Pengguna PRESTASIPLUS
         </h1>
         <p class="mt-2 text-sm text-indigo-100 sm:text-base">

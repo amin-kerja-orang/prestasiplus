@@ -21,6 +21,13 @@ import { users } from '@/modules/m01-authentication/mock'
 import { classrooms, type ClassroomRow } from '@/modules/m10-teacher-class/mock'
 
 const roleGuard = requireRole('admin', 'teacher', 'school_admin')
+const boardRoleGuard = requireRole('admin', 'school_admin')
+
+/** A school admin whose user has no school is refused: a missing scope never means "all schools". */
+const refuseSchoollessSchoolAdmin: Middleware = (req) =>
+  req.session?.role === 'school_admin' && users.get(req.session.userId)?.schoolId == null
+    ? forbidden()
+    : undefined
 
 /**
  * Guard **ATS**: admin, teacher or school admin (401 without a session, 403 for any other role, and
@@ -29,10 +36,18 @@ const roleGuard = requireRole('admin', 'teacher', 'school_admin')
 export const adminTeacherOrSchoolAdmin: Middleware = (req, ctx) => {
   const refused = roleGuard(req, ctx)
   if (refused) return refused
-  if (req.session?.role === 'school_admin' && users.get(req.session.userId)?.schoolId == null) {
-    return forbidden()
-  }
-  return undefined
+  return refuseSchoollessSchoolAdmin(req, ctx)
+}
+
+/**
+ * Guard **AS** (M17-T1b, SRS §7 #3, #4): admin, or school admin with the school forced from the session
+ * (401 without a session, 403 for any other role, teacher included, and 403 for a school admin without a
+ * school, BR-M17-34, FR-M17-104). `boardScopeOf` reads the scope.
+ */
+export const adminOrSchoolAdmin: Middleware = (req, ctx) => {
+  const refused = boardRoleGuard(req, ctx)
+  if (refused) return refused
+  return refuseSchoollessSchoolAdmin(req, ctx)
 }
 
 /** The school a class counts for: its own, else its owner's. */

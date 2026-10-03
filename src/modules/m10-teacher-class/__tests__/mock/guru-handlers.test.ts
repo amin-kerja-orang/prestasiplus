@@ -20,6 +20,7 @@ import { teacherWallet } from '@/modules/m14-gamification/mock'
 
 import { classrooms, dskp, remedialTests, teacherProfiles } from '../../mock'
 import { M10_DISPLAY_CONSTANTS } from '../../mock/constants/display'
+import { crc32 } from '../../mock/handlers/docx'
 import { m10Hooks } from '../../mock/hooks'
 import { planImport, TEMPLATE_CSV } from '../../mock/handlers/csv'
 import { bootM10 } from './helpers'
@@ -1299,6 +1300,19 @@ describe('M08 teacher cards (F-30 invariants) through the handlers', () => {
   })
 })
 
+/** A minimal well-formedness check: declaration, balanced and correctly nested tags. */
+function wellFormed(xml: string): boolean {
+  const stack: string[] = []
+  const body = xml.replace(/<\?[\s\S]*?\?>/g, '')
+  for (const m of body.matchAll(/<(\/?)([\w:.-]+)[^>]*?(\/?)>/g)) {
+    if (m[3] === '/') continue
+    if (m[1] === '/') {
+      if (stack.pop() !== m[2]) return false
+    } else stack.push(m[2] as string)
+  }
+  return stack.length === 0 && !/<[^>]*$/.test(xml)
+}
+
 describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22)', () => {
   const pdf = (name = 'kertas.pdf', size = 10) =>
     new File([new Uint8Array(size)], name, { type: 'application/pdf' })
@@ -1397,21 +1411,58 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
     })
   })
 
-  it('#63 downloads the Audio KBAT templates with the fixed structure', async () => {
-    for (const [url, name, type] of [
-      ['/api/guru/audio-kbat/template', 'template-audio-kbat.csv', 'text/csv'],
-      ['/api/guru/audio-kbat/template-word', 'template-audio-kbat.txt', 'text/plain'],
-    ] as const) {
-      const a = await call('GET', url)
-      expect(a.status, url).toBe(200)
-      expect(a.res.headers['content-disposition']).toContain(name)
-      expect(a.res.headers['content-type']).toContain(type)
-      const text = (await (a.body as Blob).text()).replace(/^﻿/, '')
-      for (const part of ['Bahagian 1', '25-30', 'Teks Soalan', 'Pilihan D', 'KBAT Level (1-5)']) {
-        expect(text, `${url} ${part}`).toContain(part)
-      }
-      expect(text.split('\r\n').filter((l) => /^\d+[,\t]/.test(l))).toHaveLength(30)
+  it('#63 /template is the server CSV (BOM, four columns, one example row)', async () => {
+    const a = await call('GET', '/api/guru/audio-kbat/template')
+    expect(a.status).toBe(200)
+    expect(a.res.headers['content-disposition']).toContain('template-audio-kbat.csv')
+    expect(a.res.headers['content-type']).toContain('text/csv')
+    const bytes = new Uint8Array(await (a.body as Blob).arrayBuffer())
+    expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    expect(new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes)).toBe(
+      '﻿tajuk,kod_subjek,kod_tingkatan,nama_fail_audio\n"Contoh: KBAT Sains Bab 1",SCI,T4,kbat-sains-1.mp3\n',
+    )
+  })
+
+  it('#63 /template-word is a valid .docx with the four-column table', async () => {
+    const a = await call('GET', '/api/guru/audio-kbat/template-word')
+    expect(a.status).toBe(200)
+    expect(a.res.headers['content-disposition']).toContain('template-audio-kbat.docx')
+    expect(a.res.headers['content-type']).toContain('wordprocessingml.document')
+    const bytes = new Uint8Array(await (a.body as Blob).arrayBuffer())
+    const dv = new DataView(bytes.buffer)
+    // end of central directory: 3 entries
+    expect(dv.getUint32(bytes.length - 22, true)).toBe(0x06054b50)
+    expect(dv.getUint16(bytes.length - 12, true)).toBe(3)
+    const cdOffset = dv.getUint32(bytes.length - 6, true)
+    const dec = new TextDecoder()
+    const parts = new Map<string, string>()
+    let at = cdOffset
+    for (let i = 0; i < 3; i++) {
+      expect(dv.getUint32(at, true)).toBe(0x02014b50)
+      const crc = dv.getUint32(at + 16, true)
+      const size = dv.getUint32(at + 24, true)
+      const nameLen = dv.getUint16(at + 28, true)
+      const local = dv.getUint32(at + 42, true)
+      const name = dec.decode(bytes.subarray(at + 46, at + 46 + nameLen))
+      expect(dv.getUint32(local, true)).toBe(0x04034b50)
+      const start = local + 30 + dv.getUint16(local + 26, true)
+      const data = bytes.subarray(start, start + size)
+      expect(crc32(data), name).toBe(crc)
+      parts.set(name, dec.decode(data))
+      at += 46 + nameLen
     }
+    expect([...parts.keys()]).toEqual(['[Content_Types].xml', '_rels/.rels', 'word/document.xml'])
+    for (const [name, xml] of parts) {
+      expect(wellFormed(xml), name).toBe(true)
+    }
+    const xml = parts.get('word/document.xml') ?? ''
+    const rows = [...xml.matchAll(/<w:tr>([\s\S]*?)<\/w:tr>/g)].map((tr) =>
+      [...(tr[1] ?? '').matchAll(/<w:t [^>]*>([^<]*)<\/w:t>/g)].map((x) => x[1]),
+    )
+    expect(rows).toEqual([
+      ['Tajuk', 'Kod Subjek', 'Kod Tingkatan', 'Nama Fail Audio'],
+      ['KBAT Sains Bab 1', 'SCI', 'T4', 'kbat-sains-1.mp3'],
+    ])
   })
 })
 

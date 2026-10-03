@@ -119,7 +119,9 @@ export function myOf(userId: number, nowMs: number): MyKirkpatrick {
  * states of those schools. `onlySchoolId` (the school administrator, INFERRED) keeps that school alone.
  */
 export function filterOptionsOf(onlySchoolId: number | null = null): FilterOptions {
-  const ids = users.schoolsWithUsers({ excludeFixtures: true })
+  const base = users.schoolsWithUsers({ excludeFixtures: true })
+  // The school administrator's own school is included even when it is a fixture school (INFERRED, M17 BR-M17-02).
+  const ids = onlySchoolId !== null && !base.includes(onlySchoolId) ? [...base, onlySchoolId] : base
   const rows = ids
     .map((id) => schools.get(id))
     .filter((s): s is NonNullable<typeof s> => s !== undefined)

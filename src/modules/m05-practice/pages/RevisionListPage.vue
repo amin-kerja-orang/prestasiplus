@@ -54,7 +54,9 @@ const subjects = computed(() => data.value?.subjects ?? [])
               <RotateCw class="h-6 w-6" />
             </div>
             <div>
-              <h1 class="font-heading text-sm font-black sm:text-2xl">Soalan Aku Salah</h1>
+              <h1 class="font-heading text-sm font-black text-white sm:text-2xl">
+                Soalan Aku Salah
+              </h1>
               <p class="text-sm text-white/80">Ulang kaji soalan yang pernah dijawab salah</p>
             </div>
           </div>

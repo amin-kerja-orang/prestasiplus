@@ -90,7 +90,6 @@ const retry = (): void => {
     <div
       v-else-if="!summary.data.value"
       class="flex justify-center rounded-2xl bg-white px-4 py-10 text-slate-400 shadow-sm"
-      role="status"
       data-testid="soalan-loading"
     >
       <LoadingSpinner :size="24" />
@@ -125,7 +124,6 @@ const retry = (): void => {
       <div
         v-else-if="!list.data.value"
         class="flex justify-center rounded-2xl bg-white px-4 py-8 text-slate-400 shadow-sm"
-        role="status"
       >
         <LoadingSpinner :size="24" />
       </div>

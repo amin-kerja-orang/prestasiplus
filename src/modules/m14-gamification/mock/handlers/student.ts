@@ -61,6 +61,9 @@ export function ledgerView(r: LedgerRow) {
 }
 
 /** #2 body: the wallet summary without the internal `hasWallet` flag. */
+/** Share-link text as the live hrefs carry it: spaces become `%20`, everything else is raw. */
+const shareEncode = (s: string): string => s.replace(/ /g, '%20')
+
 function walletBody(userId: number) {
   const s = walletRepo.summary(userId)
   return {
@@ -263,8 +266,9 @@ export const studentRoutes: RouteDef[] = [
       rewardReferrer: REFERRAL_REWARD_REFERRER,
       rewardReferee: REFERRAL_REWARD_REFEREE,
       registerUrl,
-      whatsappUrl: `https://wa.me/?text=${encodeURIComponent(text)}`,
-      telegramUrl: `https://t.me/share/url?url=${encodeURIComponent(registerUrl)}&text=${encodeURIComponent(`Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}`)}`,
+      // As on live (S16-referral.json): only spaces are encoded; `:/?=&!` stay raw.
+      whatsappUrl: `https://wa.me/?text=${shareEncode(text)}`,
+      telegramUrl: `https://t.me/share/url?url=${registerUrl}&text=${shareEncode(`Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}`)}`,
       stats: referralsRepo.stats(userId),
     })
   }),

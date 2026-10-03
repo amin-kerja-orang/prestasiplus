@@ -82,7 +82,7 @@ const TAB_BASE =
       </div>
       <div class="relative">
         <div class="text-5xl" aria-hidden="true">🏆</div>
-        <h2 class="mt-2 font-heading text-2xl font-bold sm:text-3xl">Papan Pendahulu</h2>
+        <h2 class="mt-2 font-heading text-2xl font-bold text-white sm:text-3xl">Papan Pendahulu</h2>
         <p class="mt-1 text-sm text-white/80">Siapa juara minggu ini?</p>
       </div>
     </section>

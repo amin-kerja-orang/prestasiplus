@@ -20,8 +20,11 @@ export interface MonitoringPaths {
   school: (schoolId: number) => string
   student: (schoolId: number, userId: number) => string
   teacher: (schoolId: number, userId: number) => string
-  /** The M12 page of a pupil who has no answer (`…/kirkpatrick/pelajar/{id}`, FR-M11-58). */
-  kirkpatrickStudent: (userId: number) => string
+  /**
+   * The M12 page of a pupil who has no answer (`…/kirkpatrick/pelajar/{id}`, FR-M11-58); `null` on the
+   * school-admin alias, where Kirkpatrick is not open to the role (M12 rule), so no link is drawn.
+   */
+  kirkpatrickStudent: (userId: number) => string | null
   exportHref: (format: 'pdf' | 'csv', query: MonitoringFilterQuery) => string
 }
 
@@ -33,7 +36,8 @@ export function monitoringPaths(base: string = MONITORING_BASE): MonitoringPaths
     school: (id) => `${root}/sekolah/${String(id)}`,
     student: (id, uid) => `${root}/sekolah/${String(id)}/pelajar/${String(uid)}`,
     teacher: (id, uid) => `${root}/sekolah/${String(id)}/guru/${String(uid)}`,
-    kirkpatrickStudent: (uid) => `${kirkpatrick}/pelajar/${String(uid)}`,
+    kirkpatrickStudent: (uid) =>
+      root.startsWith('/admin-sekolah/') ? null : `${kirkpatrick}/pelajar/${String(uid)}`,
     exportHref: (format, query) => {
       const pairs = (['period', 'state', 'tahap'] as const)
         .filter((k) => query[k] !== '')

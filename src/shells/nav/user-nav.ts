@@ -111,6 +111,11 @@ export interface NavItem extends EntryBase {
   badge?: NavBadge
   /** Live `target` attribute. */
   target?: '_blank'
+  /**
+   * Sub-paths that do NOT keep this item active although they lie below `to` ("Latih Tubi" `/practice`
+   * is not active on `/practice/chapter` or `/practice/revision`; M05 FN-M05-9.1.6).
+   */
+  activeExcept?: readonly string[]
 }
 
 /** Collapsible group (drawer "Kirkpatrick", Alpine `kirkGuruOpen`, not persisted). */
@@ -202,9 +207,9 @@ const sub = (colour: string) => `text-[10px] font-bold uppercase tracking-wider 
 export const USER_NAV: readonly NavEntry[] = [
   // ── Top (OBSERVED sidebar; the drawer shows only "Dashboard") ──
   { kind: 'item', id: 'dashboard', label: 'Dashboard', to: '/dashboard', fa: 'fa-home', color: '', roles: DASH },
-  { kind: 'item', id: 'target-spm', label: 'Target SPM', to: '/target-spm', fa: 'fa-bullseye', color: 'text-rose-500', tip: 'Tetapkan target gred SPM dan pantau kemajuan', roles: SA_ },
-  { kind: 'item', id: 'misi-harian', label: 'Misi Harian', to: '/misi-harian', fa: 'fa-rocket', color: 'text-amber-500', tip: 'Misi latih tubi harian dari guru', roles: SA_ },
-  { kind: 'item', id: 'remedial', label: 'Remedial', to: '/remedial/saya', fa: 'fa-flask', color: 'text-rose-500', tip: 'Ujian pemulihan untuk topik lemah', roles: SA_ },
+  { kind: 'item', id: 'target-spm', label: 'Target SPM', to: '/target-spm', fa: 'fa-bullseye', color: 'text-rose-500', tip: 'Tetapkan target gred SPM dan pantau kemajuan', surfaces: ['sidebar'], roles: SA_ },
+  { kind: 'item', id: 'misi-harian', label: 'Misi Harian', to: '/misi-harian', fa: 'fa-rocket', color: 'text-amber-500', tip: 'Misi latih tubi harian dari guru', surfaces: ['sidebar'], roles: SA_ },
+  { kind: 'item', id: 'remedial', label: 'Remedial', to: '/remedial/saya', fa: 'fa-flask', color: 'text-rose-500', tip: 'Ujian pemulihan untuk topik lemah', surfaces: ['sidebar'], roles: SA_ },
 
   // ── SPM ──
   { kind: 'section', id: 'sec-spm', label: 'SPM', text: 'text-amber-700', rule: 'from-amber-300', roles: SA_ },
@@ -424,7 +429,7 @@ export const USER_NAV: readonly NavEntry[] = [
 
   // ── Pembelajaran ──
   { kind: 'section', id: 'sec-pembelajaran', label: 'Pembelajaran', text: 'text-blue-700', rule: 'from-blue-300', roles: SA_ },
-  { kind: 'item', id: 'latih-tubi', label: 'Latih Tubi', to: '/practice', fa: 'fa-brain', color: 'icon-brain', roles: SA_ },
+  { kind: 'item', id: 'latih-tubi', label: 'Latih Tubi', to: '/practice', fa: 'fa-brain', color: 'icon-brain', activeExcept: ['/practice/chapter', '/practice/revision', '/practice/progress', '/practice/history'], roles: SA_ },
   { kind: 'item', id: 'soalan-by-chapter', label: 'Soalan by Chapter', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: SA_ },
   { kind: 'item', id: 'soalan-berstruktur', label: 'Soalan Berstruktur', to: '/latihan-berstruktur', fa: 'fa-list-ol', color: 'text-cyan-500', roles: SA_ },
   { kind: 'item', id: 'kedudukan', label: 'Kedudukan', to: '/ranking', fa: 'fa-trophy', color: 'text-amber-500', roles: SA_ },
@@ -451,8 +456,9 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'kotak-misteri', label: 'Kotak Misteri', to: '/gamification/mystery-box', fa: 'fa-box-open', color: 'text-indigo-500', roles: SA_ },
   { kind: 'item', id: 'rujuk-kawan', label: 'Rujuk Kawan', to: '/gamification/referral', fa: 'fa-user-plus', color: 'text-green-500', roles: SA_ },
   { kind: 'item', id: 'cikgu-alesa', label: 'Cikgu Alesa', to: '/cikgu', fa: 'fa-robot', color: 'text-purple-500', badge: { text: 'AI', cls: B_AI }, roles: SA_ },
-  // Student only (murid screenshot); label (with 🎁) and "DIGITAL" OBSERVED, href/classes INFERRED.
-  { kind: 'item', id: 'kedai-hadiah-digital', label: 'Kedai Hadiah 🎁', to: '/kedai-hadiah', fa: 'fa-gift', color: 'text-emerald-500', badge: { text: 'DIGITAL', cls: B_DIGITAL_INFERRED }, roles: S },
+  // Student only (murid screenshot); label (with 🎁) and "DIGITAL" OBSERVED; href `/cikgu/hadiah` per L43 discovery
+  // (`/kedai-hadiah` is 404 on live, DV-M15-18 / XR-M15-13); classes INFERRED.
+  { kind: 'item', id: 'kedai-hadiah-digital', label: 'Kedai Hadiah 🎁', to: '/cikgu/hadiah', fa: 'fa-gift', color: 'text-emerald-500', badge: { text: 'DIGITAL', cls: B_DIGITAL_INFERRED }, roles: S },
 
   // ── Cikgu Alesa Tools (admin capture) ──
   { kind: 'section', id: 'sec-cikgu-alesa-tools', label: 'Cikgu Alesa Tools', text: 'text-purple-700', rule: 'from-purple-300', wrap: 'pt-2 pb-1', roles: A },
@@ -692,10 +698,15 @@ export function navFor(
  * active, M06 FN-1.2.1; `/cikgu/rph` keeps "Cikgu Alesa" active, M13 FN-1.1.4; `/topics/12`
  * keeps "Topik" active, M03 FN-6.2.1). `/dashboard` only matches itself and its sub-paths.
  */
-export function isActivePath(currentPath: string, to: string): boolean {
+export function isActivePath(
+  currentPath: string,
+  to: string,
+  except: readonly string[] = [],
+): boolean {
   const path = currentPath.replace(/\/+$/, '') || '/'
   const target = to.replace(/\/+$/, '') || '/'
   if (target === '/') return path === '/'
+  if (except.some((e) => path === e || path.startsWith(`${e}/`))) return false
   return path === target || path.startsWith(`${target}/`)
 }
 

@@ -44,6 +44,8 @@ import {
   OBSERVED_S3,
   OBSERVED_S4,
   OBSERVED_S5_ORDER,
+  OBSERVED_SUBJECTS_8080,
+  OBSERVED_SUBJECTS_PLATFORM,
 } from './observed'
 
 let h: M12Harness
@@ -367,6 +369,31 @@ describe('Q-M12 populations and practice figures', () => {
       answers: 30,
       status: 'Beginning',
     })
+  })
+
+  it('S3 subject order reproduces every observed list (exact accuracy desc, then name A-Z)', () => {
+    const rows = (scope: ReturnType<typeof resolveScope>) =>
+      learningOf(scope).subjects.map((r) => [r.name, r.accuracy.toFixed(1) + '%', r.answers])
+    // Platform: Sejarah 57,765 on 26 Sep, 57,695 on 25 Sep (the SRS pin), so compare names and accuracy only.
+    expect(rows(platform()).map((r) => [r[0], r[1]])).toEqual(
+      OBSERVED_SUBJECTS_PLATFORM.map((r) => [r[0], r[1]]),
+    )
+    expect(rows(school(8080))).toEqual(OBSERVED_SUBJECTS_8080.map((r) => [...r]))
+    expect(rows(school(8080))[0]).toEqual(['Bahasa Cina', '100.0%', 10])
+  })
+
+  it('S3 tie proof: Tasawwur Islam 697/738 before Pendidikan Moral 285/302 (both 94.4) by exact accuracy', () => {
+    const by = new Map(kirkpatrick.subjects(school(8080).ka).map((x) => [x.subjectId, x]))
+    const tasawwur = by.get(25)
+    const moral = by.get(7)
+    expect([tasawwur?.correct, tasawwur?.answered]).toEqual([697, 738])
+    expect([moral?.correct, moral?.answered]).toEqual([285, 302])
+    // Same displayed value, different exact value: 697/738 = 94.444% > 285/302 = 94.371%.
+    expect(Math.round(((697 / 738) * 1000) / 1)).toBe(944)
+    expect(Math.round(((285 / 302) * 1000) / 1)).toBe(944)
+    expect(697 * 302).toBeGreaterThan(285 * 738)
+    const names = learningOf(school(8080)).subjects.map((r) => r.name)
+    expect(names.indexOf('Tasawwur Islam')).toBe(names.indexOf('Pendidikan Moral') - 1)
   })
 
   it('S3: kpi and the school table in the observed order with the observed values (25-Sep drift only at 8880)', () => {

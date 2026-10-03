@@ -243,7 +243,8 @@ export function otherPCells(): [number, Band, number][] {
   spread(OTHER_P_BY_MONTH.aug, parts([25, 26, 27, 28], [5, 4]))
   const week = otherPWeek()
   out.push([LAST_WEEK, 1, week])
-  spread(OTHER_P_BY_MONTH.sep - week, parts([30, 31], [3, 2]))
+  // M17 R-20: no other-segment answer in last week (M31 = the segment cell alone, 7,571), so all of them sit in week 30.
+  spread(OTHER_P_BY_MONTH.sep - week, parts([30], [3]))
   if (sumOf(out.map(([, , n]) => n)) !== OTHER_P_TOTAL) fail('other-P months do not add up')
   return out
 }

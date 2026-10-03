@@ -22,7 +22,7 @@ import {
   ledger,
   createDraw,
 } from '../../mock/hooks'
-import { draws, teacherRewards } from '../../mock'
+import { draws, streak, teacherRewards } from '../../mock'
 
 let runtime: MockRuntime
 let admin: string
@@ -215,5 +215,38 @@ describe('test hooks (§6.14)', () => {
     expect(teacherRewards.list({ activeOnly: true }).map((r) => r.id)).toContain(1001)
     expect(m14LoadFixture('m14-cash-flow')).toBeNull()
     expect(createDraw({ title: 'Draf', closesAt: '2026-10-01' }).status).toBe('draft')
+    // idempotent: loading again returns the same draw, not a second "Cabutan Demo"
+    expect(m14LoadFixture('m14-draw-open')).toEqual(d)
+    expect(draws.list().filter((x) => x.title === 'Cabutan Demo')).toHaveLength(1)
+  })
+
+  it('#7 Kombo (streak) challenge is today-only; the streak read itself does not decay (BR-M14-14)', async () => {
+    const komboOf = async () =>
+      dataOf<{ id: number; progress: number }[]>(await get('/api/gamification/challenges', admin))
+        .find((c) => c.id === 8)?.progress
+    const original = streak.get(1)
+    try {
+      // clock anchor is 25/09 15:40
+      setStreak(1, { current: 2, best: 2, lastActivityDate: '2026-09-25' })
+      expect(await komboOf()).toBe(2)
+      setStreak(1, { current: 2, best: 2, lastActivityDate: '2026-09-24' })
+      expect(await komboOf()).toBe(0)
+      expect(streak.get(1).current).toBe(2)
+      setStreak(1, { current: 2, best: 2, lastActivityDate: null })
+      expect(await komboOf()).toBe(0)
+    } finally {
+      setStreak(1, {
+        current: original.current,
+        best: original.best,
+        lastActivityDate: original.lastActivityDate,
+      })
+    }
+  })
+
+  it('createDraw refuses a closesAt that is not a real date; the repository does too', () => {
+    expect(() => createDraw({ title: 'x', closesAt: '2026-02-31' })).toThrow(RangeError)
+    expect(() => createDraw({ title: 'x', closesAt: '2026-13-01' })).toThrow(RangeError)
+    expect(() => createDraw({ title: 'x', closesAt: '2026-02-28' })).not.toThrow()
+    expect(() => draws.create({ title: 'x', closesAt: '2026-04-31' })).toThrow(/Tarikh tutup/)
   })
 })

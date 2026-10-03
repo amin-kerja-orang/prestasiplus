@@ -370,8 +370,18 @@ describe('#14–#16 parent consent (BR-M15-20)', () => {
     expect(wallet.summary(PELAJAR_4).tokenBalance).toBe(25)
   })
 
+  it('approve / reject are parent-only: guest 401, student and admin 403, nothing changes (G4 F5)', async () => {
+    for (const verb of ['approve', 'reject']) {
+      const url = `/api/parent/hadiah-approvals/15102/${verb}`
+      expect((await call('POST', url, null)).status).toBe(401)
+      expect((await call('POST', url, PELAJAR)).status).toBe(403)
+      expect((await call('POST', url, ADMIN)).status).toBe(403)
+    }
+    expect(hadiah.getRedemption(15102)?.status).toBe('pending_parent_consent')
+  })
+
   it("answers 404 for a request that is not a linked child's (and for unknown ids)", async () => {
-    for (const who of [IBU_BAPA_TANPA_ANAK, PELAJAR, ADMIN]) {
+    for (const who of [IBU_BAPA_TANPA_ANAK]) {
       expect((await call('POST', '/api/parent/hadiah-approvals/15102/approve', who)).status).toBe(
         404,
       )

@@ -3,6 +3,7 @@ import type { ModuleManifest } from '@/app/modules'
 import routes from './routes'
 
 export * from './api/command-center'
+export * from './api/command-center-board'
 export * from './components/command-center'
 export { commandCenterDrillRoutes } from './routes/command-center'
 export type { CommandCenterDrillRouteOptions } from './routes/command-center'

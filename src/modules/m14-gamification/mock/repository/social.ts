@@ -183,6 +183,15 @@ export interface DrawInput {
   openNow?: boolean
 }
 
+/** `YYYY-MM-DD` naming a calendar date that exists (rejects 2026-02-31, 2026-13-01, …). */
+export function isRealDate(value: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!m) return false
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const t = new Date(Date.UTC(y, mo - 1, d))
+  return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d
+}
+
 /** V-M14-12: empty, or a JSON array of `{label, value_sen, qty}`. */
 function parsePool(pool: DrawInput['prizePool']): PrizeLine[] {
   if (pool === undefined || pool === null) return []
@@ -216,6 +225,8 @@ export const drawsRepo = defineRepository({
       create(input: DrawInput): Draw {
         if (input.title.trim() === '')
           throw new M14Error('VALIDATION_ERROR', 'Sila lengkapkan semua medan wajib.')
+        if (input.closesAt != null && !isRealDate(input.closesAt))
+          throw new M14Error('VALIDATION_ERROR', 'Tarikh tutup tidak sah.')
         const prizePool = parsePool(input.prizePool)
         const at = nowMs()
         return tx(() =>

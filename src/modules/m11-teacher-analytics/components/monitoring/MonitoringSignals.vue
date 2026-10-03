@@ -21,7 +21,8 @@ const empty = computed(
 
 function attention(s: Signal): string {
   const ratio = `${count(s.engaged)}/${count(s.registered)}`
-  if (s.kind === 'rendah') return `${s.name} — ${ratio} pelajar aktif (${pct(s.pct)}). Tahap rendah.`
+  if (s.kind === 'rendah')
+    return `${s.name} — ${ratio} pelajar aktif (${pct(s.pct)}). Tahap rendah.`
   if (s.kind === 'kritikal')
     return `${s.name} — Hanya ${ratio} pelajar aktif (${pct(s.pct)}). Tahap kritikal.`
   const base = `${s.name} — ${count(s.registered)} pelajar berdaftar tetapi tiada seorang pun yang menjawab soalan. Tiada sebarang tanda penggunaan platform.`
@@ -44,22 +45,38 @@ const H = 'mb-3 flex items-center gap-2 font-heading text-base font-bold text-sl
 
 <template>
   <section id="section-perhatian" class="scroll-mt-20" data-testid="mon-signals">
-    <div v-if="empty" :class="[CARD, 'p-5 text-center text-sm text-slate-500']" data-testid="mon-signals-empty">
+    <div
+      v-if="empty"
+      :class="[CARD, 'p-5 text-center text-sm text-slate-500']"
+      data-testid="mon-signals-empty"
+    >
       Tiada pemerhatian yang perlu diberi perhatian buat masa ini.
     </div>
     <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div v-if="signals.best.length > 0" :class="[BOX, 'border-green-500']" data-testid="mon-best">
         <h3 :class="H"><Trophy class="h-5 w-5 text-green-600" />Sekolah Terbaik</h3>
         <ul class="space-y-2 text-sm text-slate-600">
-          <li v-for="s in signals.best" :key="s.schoolId" class="flex items-start gap-2" data-testid="mon-best-item">
+          <li
+            v-for="s in signals.best"
+            :key="s.schoolId"
+            class="flex items-start gap-2"
+            data-testid="mon-best-item"
+          >
             <Star class="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
             <span class="min-w-0 break-words"
-              >{{ s.name }} — {{ pct(s.pct) }} penglibatan ({{ count(s.engaged) }}/{{ count(s.registered) }} pelajar aktif)</span
+              >{{ s.name }} — {{ pct(s.pct) }} penglibatan ({{ count(s.engaged) }}/{{
+                count(s.registered)
+              }}
+              pelajar aktif)</span
             >
           </li>
         </ul>
       </div>
-      <div v-if="signals.attention.length > 0" :class="[BOX, 'border-red-500']" data-testid="mon-attention">
+      <div
+        v-if="signals.attention.length > 0"
+        :class="[BOX, 'border-red-500']"
+        data-testid="mon-attention"
+      >
         <h3 :class="H"><TriangleAlert class="h-5 w-5 text-red-600" />Perhatian Segera</h3>
         <ul class="space-y-2 text-sm text-slate-600">
           <li

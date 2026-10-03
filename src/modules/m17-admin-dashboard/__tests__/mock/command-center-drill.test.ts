@@ -871,3 +871,19 @@ describe('observed figures (M17 SRS §6.7 B/C, XR-M17-02 landed in M05)', () => 
     expect(s.cards).toMatchObject({ answers, accuracy })
   })
 })
+
+describe('S4 of the other monitoring schools: M11 wins (lead decision, D9; M11 SRS v1.11 §6.7 S2 columns)', () => {
+  it.each([
+    [8078, 345, 88_968],
+    [8106, 306, 59_211],
+    [8090, 134, 120_782],
+  ])('school %i: %i engaged · %i answers', async (id, active, answers) => {
+    const s = await get<CcSchool>(ADMIN, `${cc}/school/${String(id)}`)
+    expect(s.cards).toMatchObject({ active, answers })
+  })
+
+  it('pupil totals 8078 423 and 8106 562 (M17 §6.4 Q-M17-SCH-PUPILS)', async () => {
+    expect((await get<CcSchool>(ADMIN, `${cc}/school/8078`)).cards.students).toBe(423)
+    expect((await get<CcSchool>(ADMIN, `${cc}/school/8106`)).cards.students).toBe(562)
+  })
+})

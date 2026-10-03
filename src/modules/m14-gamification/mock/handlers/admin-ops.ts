@@ -23,6 +23,7 @@ import {
   teacherGamificationRepo,
   teacherRewardsRepo,
 } from '../repository'
+import { isRealDate } from '../repository/social'
 import type {
   CashStatus,
   Draw,
@@ -41,6 +42,8 @@ const CATEGORIES: readonly string[] = ['general', 'digital', 'physical', 'vouche
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 /** SEC-M14-10 (backend phase) replicated cheaply: images only, bounded size. */
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024
+/** Raster formats only: SVG and anything else is refused (G4 F2). */
+const IMAGE_TYPES: readonly string[] = ['image/png', 'image/jpeg', 'image/webp']
 
 const idParam = { params: { id: int() } }
 
@@ -166,7 +169,7 @@ export const adminOpsRoutes: RouteDef[] = [
     })
     if (!parsed.ok) return parsed.response
     const image = imageOf(body.image)
-    if (image && (!image.type.startsWith('image/') || image.size > IMAGE_MAX_BYTES)) {
+    if (image && (!IMAGE_TYPES.includes(image.type) || image.size > IMAGE_MAX_BYTES)) {
       return validationError({ image: MSG.imageType }, MSG.summary)
     }
     const v = parsed.value
@@ -335,6 +338,9 @@ export const adminOpsRoutes: RouteDef[] = [
     const pool = poolText(body.prizePool)
     if (pool === false) return validationError({ prizePool: MSG.poolInvalid }, MSG.poolInvalid)
     const v = parsed.value
+    if (v.closesAt !== undefined && !isRealDate(v.closesAt)) {
+      return validationError({ closesAt: MSG.invalid }, MSG.summary)
+    }
     const draw = guarded(
       () =>
         drawsRepo.create({

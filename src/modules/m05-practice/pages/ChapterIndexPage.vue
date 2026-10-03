@@ -31,7 +31,9 @@ const subjects = computed(() => data.value?.data ?? [])
       <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p class="text-xs font-black tracking-[0.3em] text-cyan-100 uppercase">Mode Sistematik</p>
-          <h1 class="mt-2 font-heading text-2xl font-black sm:text-4xl">Soalan by Chapter</h1>
+          <h1 class="mt-2 font-heading text-2xl font-black text-white sm:text-4xl">
+            Soalan by Chapter
+          </h1>
           <p class="mt-3 max-w-2xl text-sm text-cyan-50 sm:text-base">
             Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap
             dan mencapai sekurang-kurangnya 70%.

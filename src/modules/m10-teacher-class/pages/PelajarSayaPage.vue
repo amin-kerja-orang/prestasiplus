@@ -59,7 +59,10 @@ const schoolSet = computed(
 const schoolRows = computed(() => school.data.value?.data ?? [])
 const loadError = computed(() => mine.error.value !== null || school.error.value !== null)
 
-/** Chip name → class id, only for names that identify one active class. */
+/**
+ * Chip name → class id, only for names that identify one active class. Known limitation: the API
+ * lists class names, not ids, so a chip of a duplicated class name has no remove button.
+ */
 const classIds = computed(() => {
   const seen = new Map<string, number>()
   const dup = new Set<string>()
@@ -102,9 +105,9 @@ const add = (studentId: number): Promise<void> =>
     PELAJAR_COPY.added,
   )
 
-function remove(studentId: number, classId: number): Promise<void> | undefined {
-  if (!confirmNative(PELAJAR_COPY.removeConfirm)) return undefined
-  return act(() => removeStudentFromClass(studentId, classId), PELAJAR_COPY.removed)
+async function remove(studentId: number, classId: number): Promise<void> {
+  if (!confirmNative(PELAJAR_COPY.removeConfirm)) return
+  await act(() => removeStudentFromClass(studentId, classId), PELAJAR_COPY.removed)
 }
 
 const TAB =

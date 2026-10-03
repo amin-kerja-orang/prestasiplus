@@ -99,14 +99,14 @@ describe('S4 KelasListPage', () => {
     expect(w.get('[data-testid="kelas-empty-create"]').attributes('href')).toBe('/guru/kelas/cipta')
   })
 
-  it('counts only active classes and renders one card per class', async () => {
+  it('lists and counts only the active classes', async () => {
     api.fetchGuruClasses.mockResolvedValue(
       list([cls(2001), cls(2002, { subjectName: null }), cls(2003, { isActive: false })]),
     )
     const w = await mountPage(KelasListPage)
     expect(w.get('[data-testid="kelas-active-count"]').text()).toBe('2 kelas aktif')
     const cards = w.findAll('[data-testid="class-card"]')
-    expect(cards).toHaveLength(3)
+    expect(cards).toHaveLength(2)
     expect(cards[0]?.text()).toContain('8 pelajar')
     expect(cards[0]?.text()).toContain('Ting. 5')
     expect(cards[1]?.get('[data-testid="class-subject"]').text()).toBe('Tiada Subjek')
@@ -294,7 +294,7 @@ describe('S5 KelasCreatePage', () => {
     await w.get('[data-testid="kelas-subject"]').setValue('4')
     await w.get('[data-testid="kelas-form"]').trigger('submit')
     await flushPromises()
-    expect(w.text()).toContain('Sila pilih tahap pendidikan.')
+    expect(w.text().split('Sila pilih tahap pendidikan.').length - 1).toBe(1)
     expect(router.currentRoute.value.path).toBe('/guru/kelas/cipta')
   })
 })

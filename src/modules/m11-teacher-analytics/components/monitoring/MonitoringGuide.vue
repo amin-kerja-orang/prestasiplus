@@ -70,7 +70,7 @@ const TITLE =
     >
       <button
         type="button"
-        class="absolute top-1 right-1 flex min-h-11 min-w-11 items-center justify-center text-slate-400 hover:text-slate-600"
+        class="absolute top-1 right-1 flex min-h-11 min-w-11 items-center justify-center text-slate-400 hover:text-slate-600 lg:min-h-9 lg:min-w-9"
         data-testid="mon-guide-close"
         @click="hide"
       >
@@ -165,7 +165,7 @@ const TITLE =
     <button
       v-else
       type="button"
-      class="flex min-h-11 items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+      class="flex min-h-11 items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-800 lg:min-h-9"
       data-testid="mon-guide-show"
       @click="show"
     >

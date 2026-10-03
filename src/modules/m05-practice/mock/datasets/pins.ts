@@ -145,7 +145,7 @@ export const OTHER_P_MONTH_SESSIONS = 27
 export const OTHER_P_USERS = {
   today: 0,
   week: 2,
-  d7: 3,
+  d7: 2,
   month: 5,
   d30: 6,
   m3: 40,

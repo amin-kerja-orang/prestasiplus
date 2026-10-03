@@ -54,10 +54,17 @@ async function save(): Promise<void> {
     const targets: Record<number, SpmGrade | ''> = {}
     for (const r of rows.value) targets[r.id] = chosen[r.id] ?? ''
     const res = await saveSpmTargets(targets)
-    await reload()
     success.value = res.status
   } catch {
     failure.value = SAVE_ERROR
+    saving.value = false
+    return
+  }
+  // A failed reload is not a failed save: the rows simply keep the chosen values.
+  try {
+    await reload()
+  } catch {
+    /* keep the page as it is */
   } finally {
     saving.value = false
   }
@@ -138,7 +145,6 @@ async function save(): Promise<void> {
             <select
               v-model="chosen[r.id]"
               :name="`targets[${String(r.id)}]`"
-              :aria-label="`Target ${r.name}`"
               class="min-h-11 w-24 shrink-0 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700"
               data-testid="target-select"
             >

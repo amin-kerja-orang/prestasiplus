@@ -12,6 +12,7 @@ import type { SeedContext } from '@/mock/define'
 import { importRunsRepo } from '../repository/import-runs'
 import { questionsRepo } from '../repository/questions'
 import { reportsRepo } from '../repository/reports'
+import { seedM10Anchors } from './m10-anchors'
 import { SEED_REPORTS } from './reports'
 
 export const QUESTION_STORE_OVERRIDE = 'questionStore'
@@ -20,6 +21,8 @@ export const IMPORT_RUNS_OVERRIDE = 'importRuns'
 
 export function seedQuestionBank(ctx: SeedContext): void {
   questionsRepo.applySeedOverrides(ctx.overrides[QUESTION_STORE_OVERRIDE])
+  // M10 contributed anchors (522425–522447, 700302), registered here; see m10-anchors.ts.
+  seedM10Anchors()
   reportsRepo.seedRows(SEED_REPORTS)
   importRunsRepo.seedDefault(ctx.overrides[IMPORT_RUNS_OVERRIDE])
 }

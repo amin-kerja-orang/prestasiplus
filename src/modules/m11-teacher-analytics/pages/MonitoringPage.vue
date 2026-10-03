@@ -14,18 +14,15 @@ import { LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
 import { saveBlob } from '@/lib/save-blob'
 
-import { fetchMonitoringExport } from '../api'
+import { fetchMonitoringExport, fetchMonitoringOverview } from '../api'
 import MonitoringEngagementTable from '../components/monitoring/MonitoringEngagementTable.vue'
 import MonitoringFilters from '../components/monitoring/MonitoringFilters.vue'
 import MonitoringGuide from '../components/monitoring/MonitoringGuide.vue'
 import MonitoringKpis from '../components/monitoring/MonitoringKpis.vue'
 import MonitoringSignals from '../components/monitoring/MonitoringSignals.vue'
 import MonitoringWeekly from '../components/monitoring/MonitoringWeekly.vue'
-import {
-  LOAD_ERROR_COPY,
-  count,
-  pct,
-} from '../components/monitoring/monitoring-format'
+import { buildCsv } from '../components/monitoring/monitoring-csv'
+import { LOAD_ERROR_COPY, pct } from '../components/monitoring/monitoring-format'
 import {
   MONITORING_BASE,
   monitoringPaths,
@@ -39,7 +36,8 @@ const route = useRoute()
 const router = useRouter()
 const paths = computed(() => monitoringPaths(props.basePath))
 
-const one = (v: unknown) => (typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : '')
+const one = (v: unknown) =>
+  typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : ''
 const query = computed<MonitoringFilterQuery>(() => ({
   period: one(route.query.period),
   state: one(route.query.state),
@@ -47,14 +45,9 @@ const query = computed<MonitoringFilterQuery>(() => ({
 }))
 
 const { data, error, loading, reload } = useApi(
-  (signal) => fetchMonitoringOverview(query.value, signal),
+  (signal) => fetchMonitoringOverview(query.value, { signal }),
   () => route.fullPath,
 )
-
-async function fetchMonitoringOverview(q: MonitoringFilterQuery, signal: AbortSignal) {
-  const { fetchMonitoringOverview: fetcher } = await import('../api')
-  return fetcher(q, { signal })
-}
 
 const refresh = useAutoRefresh(() => {
   void reload()
@@ -72,23 +65,26 @@ async function apply(next: MonitoringFilterQuery) {
   refresh.restart()
 }
 
-const csvEscape = (v: string | number | null) => `"${String(v ?? '').replace(/"/g, '""')}"`
-
 async function doExport(format: 'pdf' | 'csv') {
   if (format === 'pdf') {
     window.print()
     return
   }
   const result = await fetchMonitoringExport('csv', query.value)
-  const lines = [
-    ['#', 'Sekolah', 'Kod', 'Negeri', 'Daftar', 'Aktif', '%', 'Tahap'].map(csvEscape).join(','),
-    ...result.rows.map((r, i) =>
-      [i + 1, r.name, r.code ?? '-', r.state, r.registered, r.engaged, pct(r.pct), r.tahap]
-        .map(csvEscape)
-        .join(','),
-    ),
-  ]
-  saveBlob(new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' }), result.filename)
+  const csv = buildCsv(
+    ['#', 'Sekolah', 'Kod', 'Negeri', 'Daftar', 'Aktif', '%', 'Tahap'],
+    result.rows.map((r, i) => [
+      i + 1,
+      r.name,
+      r.code ?? '-',
+      r.state,
+      r.registered,
+      r.engaged,
+      pct(r.pct),
+      r.tahap,
+    ]),
+  )
+  saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), result.filename)
 }
 </script>
 
@@ -123,7 +119,6 @@ async function doExport(format: 'pdf' | 'csv') {
       <MonitoringEngagementTable kind="teacher" :rows="data.teacherRows" :paths="paths" />
       <MonitoringWeekly :weeks="data.weeks" :rows="data.weekly" :paths="paths" />
       <MonitoringSignals :signals="data.signals" />
-      <span class="hidden" data-testid="mon-schools-count">{{ count(data.studentRows.length) }}</span>
     </template>
   </div>
 </template>

@@ -35,7 +35,9 @@ const LINK =
         <div class="flex min-w-0 items-start gap-3">
           <Headphones class="mt-1 h-6 w-6 shrink-0 text-white/80" />
           <div class="min-w-0">
-            <h2 class="text-sm font-bold sm:text-base">Sumbang Set Audio KBAT / Ujian Mendengar</h2>
+            <h2 class="text-sm font-bold text-white sm:text-base">
+              Sumbang Set Audio KBAT / Ujian Mendengar
+            </h2>
             <p class="text-sm text-indigo-100">
               Format khas fixed sequence: 4 audio section, 30 soalan MCQ, skema A-D, dan transkrip
               untuk semakan admin.

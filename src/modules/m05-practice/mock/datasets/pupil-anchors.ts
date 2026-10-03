@@ -237,7 +237,7 @@ export function pupilChunks(class370: readonly number[]): PupilChunk[] {
   placeRecent(0, 31, 2, 20)
   placeRecent(1, 30, 3, 20)
   placeRecent(2, 31, 2, 20)
-  for (let i = 3; i < 7; i++) placeRecent(i, 28, 4, 10)
+  for (let i = 3; i < 7; i++) placeRecent(i, 29, 3, 10)
 
   members.forEach((u, i) => {
     const total = totals[i] as number

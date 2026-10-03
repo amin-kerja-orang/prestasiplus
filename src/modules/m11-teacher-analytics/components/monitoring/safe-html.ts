@@ -1,7 +1,12 @@
 /**
  * Minimal allow-list sanitiser for the question HTML of S4 (M04 `questionText`; SEC-M11-05 spirit).
  * Parsed into an inert document, rebuilt from a small tag list with every attribute dropped; `script`,
- * `style`, `iframe`, `object`, `embed` and `svg` are removed with their content.
+ * `style`, `iframe`, `object`, `embed` and `svg` are removed with their content (so are `noscript`,
+ * `template`, `link` and `meta`); unknown tags are unwrapped (their text stays).
+ *
+ * Known limitation (G4 check, 2026-10-03): no M04 question text in the seed (anchors or the generated
+ * datasets) contains `<img>` or `<table>`, so neither is allowed here; they are unwrapped to their text.
+ * If a later seed adds them, allow `img` with an https or relative `src` only, and `table` tags, with tests.
  */
 
 const ALLOWED = new Set([
@@ -20,7 +25,18 @@ const ALLOWED = new Set([
   'u',
   'ul',
 ])
-const DROPPED = new Set(['script', 'style', 'iframe', 'object', 'embed', 'svg', 'link', 'meta'])
+const DROPPED = new Set([
+  'script',
+  'style',
+  'iframe',
+  'object',
+  'embed',
+  'svg',
+  'link',
+  'meta',
+  'noscript',
+  'template',
+])
 
 function clean(node: Node, out: Document): Node[] {
   const result: Node[] = []

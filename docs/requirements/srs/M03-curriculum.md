@@ -5,8 +5,8 @@
 | Field | Value |
 |---|---|
 | Document | SRS — M03 Curriculum (Subjects, Levels, Topics) |
-| Version | 1.10 |
-| Date | 2026-09-25 |
+| Version | 1.11 |
+| Date | 2026-10-03 |
 | Status | Approved (G1) |
 | Authors | product-analyst (functional: §1–5, §8–10, §12–13) · solution-architect (data entities & mock API: §6–7, NFR §11) |
 | Source URS | [urs/M03-curriculum.md](../urs/M03-curriculum.md) (v1.10: 6 epics, 17 features, 138 Functions, 31 stories, 121 ACs, coverage 807/807) |
@@ -18,6 +18,7 @@
 
 | Version | Date | Change |
 |---|---|---|
+| 1.11 | 2026-10-03 | **Revision history — v1.11, XL-R10-04** (`docs/qa/audit/cross-module-logic-R10-M25.md`): new §7.1 documents the public mock read `curriculum.chaptersByIds(ids)` → `{id, name, subjectId}[]` (unknown and out-of-tree ids skipped) and its M25 consumer; closes XR-M25-04. Documentation only, no data or endpoint change. Status Approved (G1) kept. |
 | 1.10 | 2026-09-27 | **Revision history — v1.10, XL batch 3** (`docs/qa/audit/cross-module-logic-M12-M18.md` XL3-24, M17 XR-M17-19): 60 out-of-tree chapters added as records with `inTree = false` (Pendidikan Muzik 56, Pendidikan Syariah Islamiah 3, Sains Rumah Tangga 1; ids 1282–1341; only `subjectId` observed, other fields designed; no titles) — DATA-M03-03 `inTree`, BR-06, §6.9, §6.10 (alternatives recorded; tree total 1,251 unchanged), §6.11 new CH-ALL-INCL-ORPHAN 1,311 and CH-SUBJECT-INCL-ORPHAN, CH-* restricted to the tree, chapter runtime floor 1342, E2E-51. Status Approved (G1) kept. |
 | 1.9 | 2026-09-27 | **Revision history — v1.9, F-24 build alignment**: new §6.11 Named queries (LVL-, SUBJ-, LINK-, CH-, TP-, ST-, LT-, LS- with expected values; M06 "Subjek SPM" = LINK-LEVELS([10, 11]) distinct subjects = 25). The "Bab Tidak Aktif Demo" chapter and topic are test-only, behind the seed override `curriculumInactiveDemo: true` (off by default; E2E-06 sets it in `mockInit`). Runtime id floors recorded (chapter 1282, topic 2424, subtopic 235, subject 32, level 12; chapter ids 1250–1279 unused). Subtopics 133 and 134 added to the keep-live-id set (ids observed as form actions in the discovery capture; 38 named records). #28: an invalid `educationLevelId` is ignored, no error (INFERRED). Status Approved (G1) kept. |
 | 1.8 | 2026-09-26 | **Revision history — v1.8, XL batch 2** (`docs/qa/audit/cross-module-logic-M08-M11.md`, XL2-17): the chapters observed in the M10 chapter selects keep their live ids — Perniagaan T5 258–262, 1280 and 1281 (the M10 DV-M10-05 preload), Bahasa Melayu T5 413, Sains T5 347 and 362–369 (§6 intro, §6.9 anchor list (c), §6.10). 36 named tree records in total; chapter total unchanged at 1,251; no other id renumbered; M11 chapter labels stay outside M03 (M04 XL2-16). No other Minor is assigned to M03. Status Approved (G1) kept. |
@@ -502,6 +503,16 @@ Notes:
 - `status` fields carry the success flash text of §8 (UNVERIFIED COPY); the client shows it on the redirect target (FR-22).
 - Endpoint #5 replaces the live JSON `POST` + `_method` spoof; #11 likewise (`_toggle_only` is implied: only `isActive` changes).
 - Mock-only helpers (dev/E2E, not part of the REST contract): the M01 helpers (`mock.reset()`, `mock.setLatency(ms)`, `mock.failNext(path, code)`, `mock.expireSession()`) plus `mock.networkErrorNext(path)` (the next matching call rejects like a network failure, for "Ralat rangkaian"). Topic progress changes only through the M05 answer log (e.g. submitting a practice session through M05 §7); M03 never writes it.
+
+### 7.1 Public mock reads (repository contract, no HTTP path)
+
+Exported from `@/modules/m03-curriculum/mock` for other modules' mock code (read-only, any session, no role check inside the repository).
+
+| Function | Returns | Rules | Consumer |
+|---|---|---|---|
+| `curriculum.chaptersByIds(ids: readonly number[])` | `{id, name, subjectId}[]` | Result follows the order of `ids`. Unknown ids, out-of-tree ids (`inTree = false`, DATA-M03-03) and repeated ids are skipped (no error). Reads M03 tables only; never writes. Implementation: `src/modules/m03-curriculum/mock/repository/curriculum.ts` (`chaptersByIds`). | M25 `heatmap.forUser` (Q-M25-HM-CELLS) |
+
+Closes **XR-M25-04** (M25 SRS §6.8: read-only chapter lookup for any session, so the Heatmap Topik Lemah can name and group answered chapters by subject without an admin-only endpoint). Recorded per XL-R10-04 (`docs/qa/audit/cross-module-logic-R10-M25.md`).
 
 ## 8. States & messages
 

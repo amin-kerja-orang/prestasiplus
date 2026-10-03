@@ -111,6 +111,7 @@ describe('safeHref', () => {
     expect(safeHref('/profil/3')).toBe('/profil/3')
     expect(safeHref('javascript:alert(1)')).toBeNull()
     expect(safeHref('//evil.example')).toBeNull()
+    expect(safeHref('/\\evil.example')).toBeNull()
     expect(safeHref(null)).toBeNull()
   })
 })

@@ -49,9 +49,15 @@ export function learningOf(scope: Scope): Learning {
         accuracy: tenths / 10,
         status: statusOfAccuracy(tenths / 10),
         tenths,
+        correct: x.correct,
       }
     })
-    .sort((a, b) => b.tenths - a.tenths || b.answers - a.answers || a.subjectId - b.subjectId)
+    // Observed order (AC-M12-12.2, platform and 8080): exact accuracy descending (school 8080: Tasawwur Islam 697/738 = 94.444%
+    // before Pendidikan Moral 285/302 = 94.371%, both shown 94.4; asserted in data.test.ts), then the subject name A-Z (the three 100.0% rows of 8080 read
+    // Bahasa Cina, Reka Bentuk & Teknologi, Sains Komputer; answers ascending fits too, answers descending does not).
+    .sort(
+      (a, b) => b.correct * a.answers - a.correct * b.answers || a.name.localeCompare(b.name, 'ms'),
+    )
     .map((r) => ({
       subjectId: r.subjectId,
       name: r.name,

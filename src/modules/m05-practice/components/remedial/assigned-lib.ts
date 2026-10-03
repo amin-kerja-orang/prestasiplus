@@ -21,7 +21,7 @@ export function remedialChip(status: RemedialTestItem['status']): { label: strin
 /** `resourceUrl` is linked only when it is http(s) or an internal path (SEC: no `javascript:`). */
 export function safeResourceUrl(url: string | null | undefined): string | null {
   if (!url) return null
-  return /^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url) ? url : null
+  return /^https?:\/\//i.test(url) || /^\/(?![/\\])/.test(url) ? url : null
 }
 
 export const missionDone = (m: MissionItem): boolean => m.status === 'completed'

@@ -66,15 +66,7 @@ describe('KPIs (FR-M11-35/36, BR-M11-09; E2E-M11-22/23/51)', () => {
     expect(o.kpi.students).toBe(4158)
   })
 
-  it('characterisation: period 30d today has 92 active pupils (observed 89)', async () => {
-    expect(kpiOf(await overview('?period=30d'))).toEqual([
-      57, 4158, 92, 2.2, 22207, 241.4, 522, 277, 53.1,
-    ])
-  })
-
-  // Observed 89 · 2.1% · 249.5 (E2E-M11-51, M11 §6.7 column 5: 8080 18 · 8082 26 …). The M05 generator now
-  // admits 3 more distinct pupils into the 30-day window (8080 21). Owner: M05 (ladders / prime in flight).
-  it.fails('period 30d: 89 active · 2.1% · 249.5 per pupil (M05 ladder gap)', async () => {
+  it('period 30d: 89 active · 2.1% · 22,207 · 249.5 per pupil', async () => {
     expect(kpiOf(await overview('?period=30d'))).toEqual([
       57, 4158, 89, 2.1, 22207, 249.5, 522, 277, 53.1,
     ])
@@ -195,12 +187,7 @@ describe('student table (FR-M11-38, BR-M11-12/13/34; E2E-M11-24)', () => {
     expect(d30.studentRows.slice(0, 2).map((r) => r.schoolId)).toEqual([8284, 8080])
   })
 
-  it('characterisation: 30d 8080 shows 21 / 184 today (observed 18, 9.8%)', async () => {
-    const d30 = await overview('?period=30d')
-    expect(d30.studentRows[1]).toMatchObject({ schoolId: 8080, engaged: 21, pct: 11.4 })
-  })
-
-  it.fails('30d 8080 is 18 / 184, 9.8% (M05 ladder gap)', async () => {
+  it('30d 8080 is 18 / 184, 9.8%', async () => {
     const d30 = await overview('?period=30d')
     expect(d30.studentRows[1]).toMatchObject({ schoolId: 8080, engaged: 18, pct: 9.8 })
   })

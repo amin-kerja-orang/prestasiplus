@@ -4,7 +4,7 @@ import type { ForbiddenOutcome } from '@/app/router/meta'
 import type { Role } from '@/stores/session-types'
 
 /**
- * M17 route fragment: S2 `/admin/command-center`, S3 `/admin/command-center/daily-activity` (M17-T3, later)
+ * M17 route fragment: S2 `/admin/command-center`, S3 `/admin/command-center/daily-activity` (M17-T3b)
  * and the S4-S7 drill-down (M17-T3a). Teachers reach S4-S7 through the M10 mount (M10-T4, FR-M17-60) and the
  * Admin Sekolah through the alias (SRS §3.2); both call `commandCenterDrillRoutes` with their own prefix.
  */
@@ -74,12 +74,58 @@ export function commandCenterDrillRoutes(
   ]
 }
 
-/** Admin routes of S4-S7 (`/admin/command-center/...`); S2 and S3 are added by M17-T3. */
+/**
+ * The standalone boards S2 and S3 of one scope (M17-T3b): the admin at `/admin/command-center` and the Admin Sekolah
+ * alias at `/admin-sekolah/command-center` (SRS §2 S2-AS, S3-AS). The tab title is the route title (FR-M17-03):
+ * "PRESTASIPLUS COMMAND CENTER", "AKTIVITI PLATFORM — PRESTASIPLUS", and "AKTIVITI SEKOLAH — PRESTASIPLUS" for the
+ * alias. The alias answers any other role with the in-place 403 page (FR-M17-102); the admin keeps the default
+ * redirect to the role's landing page.
+ */
+function boardRoutes(alias: boolean): RouteRecordRaw[] {
+  const prefix = alias ? '/admin-sekolah/command-center' : '/admin/command-center'
+  const name = alias ? 'm17.ccsa' : 'm17.cc'
+  const meta = {
+    layout: 'bare' as const,
+    access: 'auth' as const,
+    roles: [alias ? 'school_admin' : 'admin'] as readonly Role[],
+    ...(alias ? { onForbidden: '403' as const } : {}),
+    module: 'M17' as const,
+  }
+  return [
+    {
+      path: prefix,
+      name: `${name}.board`,
+      component: () => import('../pages/CommandCenterBoardPage.vue'),
+      props: () => ({ alias }),
+      meta: { ...meta, title: 'PRESTASIPLUS COMMAND CENTER' },
+    },
+    {
+      path: `${prefix}/daily-activity`,
+      name: `${name}.daily`,
+      component: () => import('../pages/CommandCenterDailyPage.vue'),
+      props: () => ({ alias }),
+      meta: {
+        ...meta,
+        title: alias ? 'AKTIVITI SEKOLAH — PRESTASIPLUS' : 'AKTIVITI PLATFORM — PRESTASIPLUS',
+      },
+    },
+  ]
+}
+
+/** S2, S3 and S4-S7 of the admin, then the same for the Admin Sekolah alias (school scope from the session). */
 const routes: RouteRecordRaw[] = [
+  ...boardRoutes(false),
   ...commandCenterDrillRoutes({
     prefix: '/admin/command-center',
     namePrefix: 'm17.cc',
     roles: ['admin'],
+  }),
+  ...boardRoutes(true),
+  ...commandCenterDrillRoutes({
+    prefix: '/admin-sekolah/command-center',
+    namePrefix: 'm17.ccsa',
+    roles: ['school_admin'],
+    onForbidden: '403',
   }),
 ]
 

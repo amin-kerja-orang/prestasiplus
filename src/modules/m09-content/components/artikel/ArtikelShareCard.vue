@@ -46,7 +46,7 @@ const BUTTON =
     class="rounded-2xl bg-linear-to-br from-purple-500 to-pink-500 p-5 text-center text-white shadow-lg"
     data-testid="artikel-share"
   >
-    <h2 class="text-lg font-bold">{{ ARTIKEL_COPY.shareTitle }}</h2>
+    <h2 class="text-lg font-bold text-white">{{ ARTIKEL_COPY.shareTitle }}</h2>
     <p class="mt-1 text-sm">{{ ARTIKEL_COPY.shareBody }}</p>
     <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
       <a

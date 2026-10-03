@@ -263,7 +263,8 @@ export const adminEconomyRoutes: RouteDef[] = [
   route('POST', '/api/admin/gamification/challenges', [adminOnly], (req) => {
     const parsed = readFields(bodyOf(req), CHALLENGE_FIELDS)
     if (!parsed.ok) return parsed.response
-    return created(challengeView(challengesRepo.create(parsed.value as ChallengeInput)))
+    const input = parsed.value as ChallengeInput
+    return created(challengeView(guarded(() => challengesRepo.create(input))))
   }),
 
   // #28 (S4): filters kept by the caller in the URL; 20 a page; DV-M14-14 sorts.

@@ -76,23 +76,11 @@ describe('S3 school detail: 8080 (E2E-M11-31/32/34)', () => {
     const d = await school(8080)
     expect(count(d.students, (s) => s.lastLoginAt === null)).toBe(8)
     expect(count(d.students, (s) => s.status === 'aktif' || s.status === 'login')).toBe(
-      176 + (count(d.students, (s) => s.status === 'never' && s.lastLoginAt === null) - 6),
+      178 + (count(d.students, (s) => s.status === 'never' && s.lastLoginAt === null) - 6),
     )
   })
 
-  it('characterisation: 8080 status counts today are 174 · 3 · 7', async () => {
-    const d = await school(8080)
-    expect([
-      count(d.students, (s) => s.status === 'aktif'),
-      count(d.students, (s) => s.status === 'login'),
-      count(d.students, (s) => s.status === 'never'),
-    ]).toEqual([174, 3, 7])
-  })
-
-  // Observed: 174 Aktif · 4 Login sahaja · 6 Belum login (+2 answered without login). With the anchors of
-  // other modules M05's `loggedTake` does not subtract them, so 3 / 7 (+1) at 8080, and 8078 and 8082 lose
-  // the never-logged answerers likewise (reported with M11-T1; owner M05). Flips when M05 is fixed.
-  it.fails('8080 status counts are 174 · 4 · 6 (M05 never-logged answerers gap)', async () => {
+  it('8080 status counts are 174 · 4 · 6 (Aktif · Login sahaja · Belum login)', async () => {
     const d = await school(8080)
     expect([
       count(d.students, (s) => s.status === 'aktif'),
@@ -531,21 +519,15 @@ describe('S5 teacher detail (E2E-M11-42)', () => {
     expect(d.suggestions.answered).toBe(174)
   })
 
-  it('characterisation: 8080 has 0 pupils below 50%, 6 between 50 and 69.9, 168 at 70+', async () => {
+  it('S5: 3 answered pupils below 50%, 57 between 50 and 69.9, 114 at 70 or more', async () => {
     const d = await teacher(8080, 2012)
     const acc = d.students.flatMap((s) => (s.accuracy === null ? [] : [s.accuracy]))
     expect([
       acc.filter((a) => a < 50).length,
       acc.filter((a) => a >= 50 && a < 70).length,
       acc.filter((a) => a >= 70).length,
-    ]).toEqual([0, 6, 168])
-    expect(d.suggestions.lowAccuracy).toBe(0)
-  })
-
-  // Observed (snapshot): 3 answered pupils below 50%, 57 between 50 and 69.9, 114 at 70 or more. The M05
-  // generator does not pin the accuracy of each generated pupil. Owner: M05 (XR-M11-04).
-  it.fails('S5 red box 2: 3 pupils below 50% (M05 per-pupil accuracy gap)', async () => {
-    expect((await teacher(8080, 2012)).suggestions.lowAccuracy).toBe(3)
+    ]).toEqual([3, 57, 114])
+    expect(d.suggestions.lowAccuracy).toBe(3)
   })
 
   it('the list is the whole school by name, Student A first with 71 and 74.6; "Login sahaja" row has no accuracy', async () => {
@@ -609,17 +591,17 @@ describe('404 rules and the guards (FR-M11-07, §9)', () => {
     expect((await student(8080, 2008, GURU)).cards.answered).toBe(71)
   })
 
-  it('school admin (SMK DEMO 900001): own school only, 403 for any other (alias scope, INFERRED)', async () => {
+  it('school admin (SMK DEMO 900001): own school only, 404 for any other (alias scope, INFERRED)', async () => {
     expect((await school(900001, ADMIN_SEKOLAH)).cards.students).toBe(9)
-    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/8080')).toBe(403)
-    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/99999999')).toBe(403)
-    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/8080/students/2008')).toBe(403)
-    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/8080/teachers/2012')).toBe(403)
+    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/8080')).toBe(404)
+    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/99999999')).toBe(404)
+    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/8080/students/2008')).toBe(404)
+    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/8080/teachers/2012')).toBe(404)
   })
 
-  it('school admin: a pupil or teacher of another school under the own school id is 403 (SEC-M11-02 applied to this scope)', async () => {
-    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/900001/students/2008')).toBe(403)
-    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/900001/teachers/2012')).toBe(403)
+  it('school admin: a pupil or teacher of another school under the own school id is 404 (SEC-M11-02 applied to this scope)', async () => {
+    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/900001/students/2008')).toBe(404)
+    expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/900001/teachers/2012')).toBe(404)
     // Their own pupils and teacher open; an unknown person under the own school is a plain 404.
     expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/900001/students/3001')).toBe(200)
     expect(await status(ADMIN_SEKOLAH, '/api/monitoring/schools/900001/teachers/5')).toBe(200)

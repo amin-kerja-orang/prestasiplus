@@ -125,7 +125,6 @@ const LABEL = 'mb-1.5 block text-sm font-semibold text-slate-700'
     <div
       v-else-if="!data && !notFound"
       class="flex justify-center rounded-2xl bg-white px-4 py-10 text-slate-400 shadow-sm"
-      role="status"
     >
       <LoadingSpinner :size="24" />
     </div>

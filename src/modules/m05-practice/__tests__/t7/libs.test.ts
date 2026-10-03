@@ -58,6 +58,7 @@ describe('structured-lib', () => {
     expect(safeImageSrc('blob:http://x/1')).toBe('blob:http://x/1')
     expect(safeImageSrc('javascript:alert(1)')).toBeNull()
     expect(safeImageSrc('//evil.test/a.png')).toBeNull()
+    expect(safeImageSrc('/\\evil.com')).toBeNull()
     expect(safeImageSrc('data:image/png;base64,AA')).toBeNull()
     expect(safeImageSrc(null)).toBeNull()
   })
@@ -74,6 +75,7 @@ describe('assigned-lib', () => {
     expect(safeResourceUrl('/artikel/a')).toBe('/artikel/a')
     expect(safeResourceUrl('javascript:alert(1)')).toBeNull()
     expect(safeResourceUrl('//evil.test')).toBeNull()
+    expect(safeResourceUrl('/\\evil.com')).toBeNull()
     expect(safeResourceUrl(null)).toBeNull()
   })
 

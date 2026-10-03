@@ -41,7 +41,7 @@ import { M10_TABLES } from './tables/tables'
 const plugin = defineMockModule({
   id: 'M10',
   dependsOn: ['core', 'M01', 'M02', 'M03', 'M04'],
-  version: 4,
+  version: 5,
   tables: { ...M10_TABLES, teacherProfiles: teacherProfilesTable },
   repositories: {
     classrooms: classroomsRepo,

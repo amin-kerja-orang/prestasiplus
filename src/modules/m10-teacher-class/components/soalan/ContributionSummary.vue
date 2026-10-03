@@ -4,6 +4,7 @@
  * tiers with the next target (BR-M10-23) and "Pecahan Subjek". Text is never smaller than 12px
  * (FR-M10-129, DV-M10-28).
  */
+import { computed } from 'vue'
 import { Check, Globe, Medal, PieChart } from '@lucide/vue'
 
 import { AppIcon } from '@/components/icon'
@@ -11,7 +12,10 @@ import { formatCount } from '@/lib/number'
 
 import type { Contributions } from '../../api/types'
 
-defineProps<{ summary: Contributions }>()
+const props = defineProps<{ summary: Contributions }>()
+
+/** FR-M10-93: all chips by count descending ("Lain" takes its count position, stable for ties). */
+const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count - a.count))
 
 const CARD = 'min-w-0 rounded-2xl bg-white p-4 text-center shadow-sm'
 </script>
@@ -95,7 +99,7 @@ const CARD = 'min-w-0 rounded-2xl bg-white p-4 text-center shadow-sm'
       </h2>
       <ul class="flex flex-wrap gap-2">
         <li
-          v-for="row in summary.breakdown"
+          v-for="row in chips"
           :key="row.label"
           class="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-800"
           data-testid="breakdown-chip"

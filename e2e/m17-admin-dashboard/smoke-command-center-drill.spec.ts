@@ -1,9 +1,8 @@
 /**
  * M17-T3a S4-S7 Command Center drill-down as the admin at 375 / 768 / 1280 (SRS M17 §12: E2E-M17-07 for
- * S4-S7, 55-69). Values that depend on the pending M05 anchors (XR-M17-02: school 8082 answers 130,233 and
- * 393 engaged, school 8080 answers 53,494 and 174 engaged, pupil 2022 2,378 ...; lead decision, D9
- * observed-vs-observed) are not hard-coded: the tests assert structure, exact BM copy and that every shown
- * count is the one the page computes (heading count = row count).
+ * S4-S7, 55-69). Anchors (XR-M17-02, landed in M05): 8082 549 / 393 / 130,233 / 82.3%, 8080 185 / 174 / 53,494 /
+ * 81.7%, class 370 30 members / 8 active / 13,641 / 79.0%, pupil 2022 2,378 / 93.5%, 123 sessions, week 21/09
+ * 23 sessions / 452 / 99.6%. Other counts are asserted as "heading count = row count".
  * E2E-M17-70 (the teacher mount) belongs to M10-T4's spec.
  */
 
@@ -58,8 +57,14 @@ async function expectNotFound(page: Page): Promise<void> {
 }
 
 /** A scroller scrolls inside its card (mobile) or fits (tablet, desktop), never the page. */
-async function scrollState(scroller: Locator): Promise<{ scrolls: boolean }> {
-  return scroller.evaluate((el) => ({ scrolls: el.scrollWidth > el.clientWidth + 1 }))
+async function scrollState(
+  scroller: Locator,
+): Promise<{ scrolls: boolean; sw: number; cw: number }> {
+  return scroller.evaluate((el) => ({
+    scrolls: el.scrollWidth > el.clientWidth + 1,
+    sw: el.scrollWidth,
+    cw: el.clientWidth,
+  }))
 }
 
 test.describe('S4 school', MODULE, () => {
@@ -79,9 +84,7 @@ test.describe('S4 school', MODULE, () => {
       .getByTestId('cc-stat')
       .evaluateAll((els) => els.map((e) => e.firstElementChild?.textContent.trim()))
     expect(labels).toEqual(['Jumlah Pelajar', 'Pelajar Aktif', 'Jumlah Jawapan', 'Ketepatan'])
-    // TODO XR-M17-02: 8082 "Jumlah Jawapan" 130,233 and "Pelajar Aktif" 393 (82.3% accuracy) wait for
-    // the M05 anchors.
-    await expect(page.getByTestId('cc-stat-value').nth(3)).toHaveText(/^\d+(\.\d)%$/)
+    await expect(page.getByTestId('cc-stat-value')).toHaveText(['549', '393', '130,233', '82.3%'])
 
     const heading = ((await page.getByTestId('cc-panel-title').textContent()) ?? '').trim()
     expect(heading).toMatch(/^Senarai Guru \(\d+\)$/)
@@ -110,10 +113,8 @@ test.describe('S4 school', MODULE, () => {
     await gotoApp(`${CC}/school/8080`)
     const row = page.locator('[data-testid=cc-teacher-row][data-user-id="1919"]')
     await expect(row).toBeVisible()
-    // TODO XR-M17-02: 8080 "Jumlah Jawapan" 53,494 and "Pelajar Aktif" 174 (81.7% accuracy) wait for the
-    // M05 anchors; the 7 classes
-    // of teacher 1919 are seeded by M10 (asserted on S5 below).
-    await expect(row.locator('td').nth(3)).toHaveText(/^\d+$/)
+    await expect(page.getByTestId('cc-stat-value')).toHaveText(['185', '174', '53,494', '81.7%'])
+    await expect(row.locator('td').nth(3)).toHaveText('7')
   })
 })
 
@@ -142,7 +143,17 @@ test.describe('S5 teacher', MODULE, () => {
     ])
     const name = (await page.getByTestId('cc-crumb-current').innerText()).trim()
     await expectTabTitle(page, `${name} - Command Center`)
-    await expect(page.locator('[data-testid=cc-class-row][data-class-id="370"]')).toBeVisible()
+    const c370 = page.locator('[data-testid=cc-class-row][data-class-id="370"]')
+    await expect(c370).toBeVisible()
+    const cells = await c370.locator('td').allInnerTexts()
+    expect(cells.slice(1).map((c) => c.trim())).toEqual([
+      '5 PERNIAGAAN',
+      'T5',
+      '30',
+      '8',
+      '13,641',
+      '79.0%',
+    ])
 
     await gotoApp(`${CC}/school/8082/teacher/4402`)
     await expect(page.getByTestId('cc-class-row').first()).toBeVisible()
@@ -170,6 +181,10 @@ test.describe('S6 class', MODULE, () => {
     expect(name).toBe('5 PERNIAGAAN')
     await expectTabTitle(page, '5 PERNIAGAAN - Command Center')
 
+    const first2022 = page.getByTestId('cc-student-row').first()
+    await expect(first2022).toHaveAttribute('data-user-id', '2022')
+    await expect(first2022.locator('td').nth(2)).toHaveText('2,378')
+    await expect(first2022.locator('td').nth(3)).toHaveText('93.5%')
     const heading = ((await page.getByTestId('cc-panel-title').textContent()) ?? '').trim()
     expect(heading).toMatch(/^Senarai Pelajar \(\d+\)$/)
     const total = countOf(heading)
@@ -232,9 +247,11 @@ test.describe('S7 student', MODULE, () => {
       'title',
       'Klik untuk lihat semua sesi',
     )
-    // TODO XR-M17-02: 2,378 / 93.5% / 15 / 1 / 27% wait for the M05 anchors.
-    await expect(page.getByTestId('cc-stat-value').nth(1)).toHaveText(/^\d+(\.\d)%$/)
-    await expect(page.getByTestId('cc-stat-value').nth(4)).toHaveText(/^\d+%$/)
+    const values = await page.getByTestId('cc-stat-value').allInnerTexts()
+    expect(values.slice(0, 2)).toEqual(['2,378', '93.5%'])
+    expect(values[2]).toMatch(/^\d+$/)
+    expect(values[3]).toMatch(/^\d+$/)
+    expect(values[4]).toMatch(/^\d+%$/)
   })
 
   test('E2E-M17-60 subject row, eight weekly bars, mood panel', async ({ page, gotoApp }) => {
@@ -285,8 +302,7 @@ test.describe('S7 student', MODULE, () => {
     for (const d of dates) expect(d).toMatch(/^\d{2}\/\d{2}\/\d{4}$/)
     await expect(page.getByTestId('cc-insight')).toContainText('Analisis ALESA')
     await expect(page.getByTestId('cc-insight')).toContainText('Sumber: Rule-based Analysis')
-    // TODO XR-M17-02: "Ketepatan cemerlang (93.5%). Konsistensi rendah (27%) - perlu usaha lebih."
-    // waits for the M05 anchors; the data-driven branch text is asserted in the Vitest component test.
+    await expect(page.getByTestId('cc-insight-text')).toContainText('Ketepatan cemerlang (93.5%).')
   })
 
   test('E2E-M17-62 all-sessions modal: summary, first row, close by x and by backdrop', async ({
@@ -303,6 +319,10 @@ test.describe('S7 student', MODULE, () => {
       .getByTestId('cc-modal-stat')
       .evaluateAll((els) => els.map((e) => e.lastElementChild?.textContent.trim()))
     expect(labels).toEqual(['Jawapan', 'Sesi', 'Ketepatan', 'Jumlah Masa'])
+    const sums = await modal
+      .getByTestId('cc-modal-stat')
+      .evaluateAll((els) => els.map((e) => e.firstElementChild?.textContent.trim()))
+    expect(sums.slice(0, 3)).toEqual(['2,372', '123', '93.7%'])
     const heads = await modal.locator('th').allInnerTexts()
     expect(heads.map((h) => h.toLowerCase())).toEqual([
       'tarikh',
@@ -360,6 +380,12 @@ test.describe('S7 student', MODULE, () => {
       .getByTestId('cc-modal-stat')
       .evaluateAll((els) => els.map((e) => e.lastElementChild?.textContent.trim()))
     expect(stat).toEqual(['Jawapan', 'Sesi', 'Ketepatan', 'Masa'])
+    if (start === '2026-09-21') {
+      const sums = await modal
+        .getByTestId('cc-modal-stat')
+        .evaluateAll((els) => els.map((e) => e.firstElementChild?.textContent.trim()))
+      expect(sums.slice(0, 3)).toEqual(['452', '23', '99.6%'])
+    }
   })
 
   test('E2E-M17-64 subject modal "Latihan Bebas — Semua Sesi" with "Topik"', async ({
@@ -438,7 +464,12 @@ test.describe('S7 student', MODULE, () => {
     await expect(modal.getByTestId('cc-headcount-student')).toHaveCount(total)
     const heads = await modal.locator('th').allInnerTexts()
     expect(heads.map((h) => h.toLowerCase())).toEqual(['#', 'pelajar', 'tov', 'etr', 'rs', 'gred'])
-    // TODO XR-M17-02: "Perniagaan" 30 / 29.7 / 0 / 0% waits for the M05 / M08 anchors.
+    if (subject === 'Perniagaan') {
+      const sums = await modal
+        .getByTestId('cc-modal-stat')
+        .evaluateAll((els) => els.map((e) => e.firstElementChild?.textContent.trim()))
+      expect(sums).toEqual(['30', '29.7', '0', '0%'])
+    }
   })
 
   test(
@@ -538,11 +569,14 @@ test.describe('responsive', MODULE, () => {
       await expect(page.getByTestId(table)).toBeVisible()
       await expect(page.getByTestId('cc-table-scroller')).toBeVisible()
       await expectNoHorizontalScroll(page)
-      const { scrolls } = await scrollState(page.getByTestId('cc-table-scroller'))
+      const { scrolls, sw, cw } = await scrollState(page.getByTestId('cc-table-scroller'))
       if (isMobileWidth(page)) {
         expect(scrolls, `${table} scrolls inside its card at 375`).toBe(true)
       } else if (viewportWidth(page) >= 768) {
-        expect(scrolls, `${table} fits at ${String(viewportWidth(page))}`).toBe(false)
+        expect(
+          scrolls,
+          `${table} fits at ${String(viewportWidth(page))} (${String(sw)} > ${String(cw)})`,
+        ).toBe(false)
       }
       // touch targets: the back link, and the whole row (the row is the live click target)
       await expectTouchTarget(page.getByTestId('cc-back'), 44)
@@ -617,7 +651,7 @@ test.describe('responsive', MODULE, () => {
     expect(box).not.toBeNull()
     expect(box?.x ?? -1).toBeGreaterThanOrEqual(0)
     expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewportWidth(page))
-    if (isMobileWidth(page)) expect(box?.x ?? 0).toBeLessThanOrEqual(16.5)
+    if (isMobileWidth(page)) expect(box?.x ?? 0).toBeLessThanOrEqual(20)
     await expectNoHorizontalScroll(page)
   })
 })

@@ -60,7 +60,7 @@ const print = (): void => window.print()
     @close="emit('close')"
   >
     <div class="bg-linear-to-r from-indigo-500 to-purple-600 px-4 py-5 text-center text-white">
-      <h3 class="font-heading text-lg font-bold break-words" data-testid="qr-name">
+      <h3 class="font-heading text-lg font-bold break-words text-white" data-testid="qr-name">
         {{ data?.name ?? '-' }}
       </h3>
       <p class="text-sm break-words text-white/80" data-testid="qr-school">

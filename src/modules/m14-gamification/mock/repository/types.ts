@@ -236,6 +236,8 @@ export interface TeacherRedemption {
   rewardId: number
   costCoins: number
   status: RedemptionStatus
+  /** The DELIVERED debit and stock decrement have been written (BR-M14-27). */
+  debited: boolean
   createdAt: string
   updatedAt: string
 }

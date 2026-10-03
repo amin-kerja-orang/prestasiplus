@@ -378,10 +378,13 @@ describe('navFor (role filter: hidden, not disabled)', () => {
         .filter((i) => i.surfaces?.length === 1 && i.surfaces[0] === 'sidebar')
         .map((i) => i.id),
     )
-    // M04 FN-M04-6.2.3 / 6.2.4: "Kertas Soalan Guru" and "Gambar Rajah" are desktop-sidebar only.
+    // M04 FN-M04-6.2.3 / 6.2.4: "Kertas Soalan Guru" and "Gambar Rajah" are desktop-sidebar only; M05 FN-M05-9.1.4: so are "Target SPM", "Misi Harian" and "Remedial".
     expect(
-      [...sidebarOnly].every((id) =>
-        /profil-saya|panduan|kertas-soalan-guru|gambar-rajah/.test(id),
+      [...sidebarOnly].every(
+        (id) =>
+          /^(profil-saya|panduan|kertas-soalan-guru|gambar-rajah|target-spm|misi-harian|remedial)$/.test(
+            id,
+          ) || /profil-saya|panduan/.test(id),
       ),
     ).toBe(true)
     for (const role of ROLES) {
@@ -409,6 +412,15 @@ describe('navFor (role filter: hidden, not disabled)', () => {
 })
 
 describe('isActivePath', () => {
+  it('honours the exclusion list (M05: Latih Tubi is not active on chapter / revision pages)', () => {
+    const ex = ['/practice/chapter', '/practice/revision']
+    expect(isActivePath('/practice', '/practice', ex)).toBe(true)
+    expect(isActivePath('/practice/MATH/quiz', '/practice', ex)).toBe(true)
+    expect(isActivePath('/practice/chapter/MATH', '/practice', ex)).toBe(false)
+    expect(isActivePath('/practice/revision', '/practice', ex)).toBe(false)
+    expect(isActivePath('/practice/chapter/MATH', '/practice/chapter', [])).toBe(true)
+  })
+
   it('matches the path and its sub-paths only', () => {
     expect(isActivePath('/dashboard', '/dashboard')).toBe(true)
     expect(isActivePath('/spm/latih-tubi', '/spm')).toBe(true)

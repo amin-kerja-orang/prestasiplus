@@ -14,6 +14,7 @@ import { setUser } from '@/mock/core-data/set-user'
 import type { MockRuntime } from '@/mock/index'
 
 import { coinLedger, teacherRewards, teacherWallet, wallet, settings } from '../../mock'
+import { setTeacherWallet } from '../../mock/hooks'
 import { setPracticeReadsForTests, type PracticeReads } from '../../mock/repository/reads'
 import { bootM14, dataOf, send, stubStorage } from './helpers'
 
@@ -317,7 +318,7 @@ describe('#5 convert view', () => {
 })
 
 describe('#7 challenges', () => {
-  it('admin: 10 active, none completed, the streak challenge reads the M14 streak', async () => {
+  it('admin: 10 active, none completed, the streak challenge is today-only (last activity not today -> Kombo 0/2)', async () => {
     const res = await get('/api/gamification/challenges', admin)
     const items =
       dataOf<{ id: number; target: number; progress: number; pct: number; completed: boolean }[]>(
@@ -326,7 +327,7 @@ describe('#7 challenges', () => {
     expect((res.body as { meta: unknown }).meta).toEqual({ completed: 0, active: 10 })
     expect(items).toHaveLength(10)
     const kombo = items.find((c) => c.id === 8)
-    expect(kombo).toMatchObject({ target: 2, progress: 1, pct: 50, completed: false })
+    expect(kombo).toMatchObject({ target: 2, progress: 0, pct: 0, completed: false })
   })
 
   it('designed completions at the clock: pelajar 7/10, pelajarmaju 4/10 (Q-DAILY-FINISHERS 0)', async () => {
@@ -478,7 +479,13 @@ describe('#11 referral', () => {
     expect(decodeURIComponent(d.whatsappUrl)).toBe(
       'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT untuk dapat 25 syiling PERCUMA! https://prestasiplus.my/register?ref=4JURJTT',
     )
-    expect(d.telegramUrl.startsWith('https://t.me/share/url?url=')).toBe(true)
+    // Exactly the live hrefs (S16-referral.json): only spaces encoded, `:/?=&!` raw.
+    expect(d.whatsappUrl).toBe(
+      'https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT%20untuk%20dapat%2025%20syiling%20PERCUMA!%20https://prestasiplus.my/register?ref=4JURJTT',
+    )
+    expect(d.telegramUrl).toBe(
+      'https://t.me/share/url?url=https://prestasiplus.my/register?ref=4JURJTT&text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT',
+    )
   })
 
   it('every other user gets a stable 7-character code', async () => {
@@ -1396,6 +1403,11 @@ describe('#33 – #35 teacher rewards and redemptions', () => {
     expect((bad.body as { error: { fields: Record<string, string> } }).error.fields).toHaveProperty(
       'image',
     )
+    for (const type of ['image/svg+xml', 'image/gif', 'image/bmp']) {
+      expect((await post({ ...ok, image: { name: 'x', size: 5, type } })).status).toBe(422)
+    }
+    const big = { name: 'big.png', size: 5 * 1024 * 1024 + 1, type: 'image/png' }
+    expect((await post({ ...ok, image: big })).status).toBe(422)
     expect(teacherRewards.list()).toHaveLength(1)
   })
 
@@ -1491,6 +1503,81 @@ describe('#33 – #35 teacher rewards and redemptions', () => {
         await get('/api/admin/gamification/guru', admin),
       ).cards,
     ).toMatchObject({ rewards: 1, pendingRedemptions: 0 })
+  })
+
+  it('#35 is forward-only and debits once: DELIVERED is final, a repeat or backward move is 422, no second debit', async () => {
+    const patch = (id: number, status: string) =>
+      send(runtime, 'PATCH', `/api/admin/gamification/guru/redemptions/${String(id)}`, {
+        token: admin,
+        body: { status },
+      })
+    const before = teacherWallet.summary(1).balance
+    const stock = teacherRewards.list()[0]?.stock
+    for (const status of ['PENDING', 'PROCESSING', 'CANCELLED', 'DELIVERED']) {
+      expect((await patch(1, status)).status).toBe(422)
+    }
+    expect(teacherWallet.summary(1).balance).toBe(before)
+    expect(teacherRewards.list()[0]?.stock).toBe(stock)
+  })
+
+  it('#35 PENDING -> PROCESSING -> DELIVERED; CANCELLED from PENDING or PROCESSING never debits', async () => {
+    const patch = (id: number, status: string) =>
+      send(runtime, 'PATCH', `/api/admin/gamification/guru/redemptions/${String(id)}`, {
+        token: admin,
+        body: { status },
+      })
+    teacherRewards.createFixture(rewardFixture(2001, { stock: 10 }))
+    const base = teacherWallet.summary(1).balance
+    const a = teacherRewards.redeem(1, 2001).id
+    expect((await patch(a, 'CANCELLED')).status).toBe(200)
+    const b = teacherRewards.redeem(1, 2001).id
+    expect((await patch(b, 'PROCESSING')).status).toBe(200)
+    expect((await patch(b, 'CANCELLED')).status).toBe(200)
+    expect((await patch(a, 'DELIVERED')).status).toBe(422)
+    expect(teacherWallet.summary(1).balance).toBe(base)
+    expect(teacherRewards.list().find((r) => r.id === 2001)?.stock).toBe(10)
+
+    const c = teacherRewards.redeem(1, 2001).id
+    expect((await patch(c, 'PROCESSING')).status).toBe(200)
+    expect((await patch(c, 'PENDING')).status).toBe(422)
+    expect((await patch(c, 'DELIVERED')).status).toBe(200)
+    expect(teacherWallet.summary(1).balance).toBe(base - 10)
+    expect(teacherRewards.list().find((r) => r.id === 2001)?.stock).toBe(9)
+    expect((await patch(c, 'DELIVERED')).status).toBe(422)
+    expect(teacherWallet.summary(1).balance).toBe(base - 10)
+  })
+
+  it('#35 DELIVERED is refused when the balance no longer covers it, or the stock is gone, and changes nothing', async () => {
+    const patch = (id: number, status: string) =>
+      send(runtime, 'PATCH', `/api/admin/gamification/guru/redemptions/${String(id)}`, {
+        token: admin,
+        body: { status },
+      })
+    const bal = teacherWallet.summary(1).balance
+    // stock: two PENDING holds on a stock of 1; the second delivery finds it gone
+    teacherRewards.createFixture(rewardFixture(2002, { stock: 1 }))
+    const first = teacherRewards.redeem(1, 2002).id
+    const second = teacherRewards.redeem(1, 2002).id
+    expect((await patch(first, 'DELIVERED')).status).toBe(200)
+    const gone = await patch(second, 'DELIVERED')
+    expect(gone.status).toBe(409)
+    expect((gone.body as { error: { code: string } }).error.code).toBe('OUT_OF_STOCK')
+    expect(teacherWallet.summary(1).balance).toBe(bal - 10)
+
+    // balance: the wallet drops below the cost after the hold was taken
+    teacherRewards.createFixture(rewardFixture(2003, { stock: null }))
+    const poor = teacherRewards.redeem(1, 2003).id
+    setTeacherWallet(1, { balance: 5 })
+    const r = await patch(poor, 'DELIVERED')
+    expect(r.status).toBe(409)
+    expect((r.body as { error: { code: string } }).error.code).toBe('INSUFFICIENT_BALANCE')
+    expect(teacherWallet.summary(1).balance).toBe(5)
+    expect(
+      dataOf<{ id: number; status: string }[]>(
+        await get('/api/admin/gamification/guru/redemptions', admin, { status: 'PENDING' }),
+      ).some((x) => x.id === poor),
+    ).toBe(true)
+    setTeacherWallet(1, { balance: bal - 10 })
   })
 })
 
@@ -1668,6 +1755,12 @@ describe('#42 reward cost / #43 draw', () => {
     expect((await post({ ...base, prizePool: 5 })).status).toBe(422)
     expect((await post({ ...base, title: '' })).status).toBe(422)
     expect((await post({ ...base, closesAt: '30/09/2026' })).status).toBe(422)
+    const impossible = await post({ ...base, closesAt: '2026-02-31' })
+    expect(impossible.status).toBe(422)
+    expect((impossible.body as { error: { fields: object } }).error.fields).toHaveProperty(
+      'closesAt',
+    )
+    expect((await post({ ...base, closesAt: '2026-13-01' })).status).toBe(422)
     expect((await post({ ...base, ticketCostSyiling: 0 })).status).toBe(422)
     const list = dataOf<{ draws: { id: number }[] }>(
       await get('/api/admin/reward-control', admin),
@@ -1675,3 +1768,19 @@ describe('#42 reward cost / #43 draw', () => {
     expect(list.map((d) => d.id)).toEqual([2, 1])
   })
 })
+
+function rewardFixture(id: number, over: { stock: number | null }) {
+  return {
+    id,
+    name: `Hadiah ${String(id)}`,
+    category: 'general' as const,
+    costCoins: 10,
+    stock: over.stock,
+    maxPerUser: null,
+    maxPerMonth: null,
+    description: '',
+    imageUrl: null,
+    isActive: true,
+    createdAt: '2026-09-25T15:40:00.000+08:00',
+  }
+}

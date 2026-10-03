@@ -15,6 +15,11 @@ import type { KaScope } from '@/modules/m05-practice/mock'
 export interface ScopeInput {
   schoolId?: number | null
   state?: string | null
+  /**
+   * INFERRED (lead decision, M17 BR-M17-02 note): the school administrator's own school is included even when it
+   * is a fixture school (900001 SMK DEMO). Admin and teacher views keep excluding fixtures (BR-M12-01).
+   */
+  includeFixture?: boolean
 }
 
 export interface Scope {
@@ -34,7 +39,7 @@ export function resolveScope(input: ScopeInput = {}): Scope {
 
   if (schoolId !== null) {
     const school = schools.get(schoolId)
-    schoolIds = schools.isFixture(schoolId) ? [] : [schoolId]
+    schoolIds = schools.isFixture(schoolId) && input.includeFixture !== true ? [] : [schoolId]
     if (state !== null && school?.state !== state) schoolIds = []
   } else if (state !== null) {
     schoolIds = users
@@ -85,6 +90,16 @@ export function populationOf(scope: Scope): Population {
   const never = users.groupCount('Q-M11-T45-LOGGED', 'schoolId', false)
   const teachers = users.groupCount('Q-M11-TEACHERS', 'schoolId')
   const logged = users.groupCount('Q-M11-TEACHERS-LOGGED', 'schoolId')
+  // A fixture school in scope (the school administrator's own, INFERRED): the named queries exclude it, so
+  // its counts are read directly.
+  for (const id of scope.schoolIds ?? []) {
+    if (!schools.isFixture(id)) continue
+    const stu = { role: 'student', grade: [10, 11], schoolId: id } as const
+    t45.set(id, users.countWhere(stu))
+    never.set(id, users.countWhere({ ...stu, hasLoggedIn: false }))
+    teachers.set(id, users.countWhere({ role: 'teacher', schoolId: id }))
+    logged.set(id, users.countWhere({ role: 'teacher', schoolId: id, hasLoggedIn: true }))
+  }
 
   const rows: SchoolPopulation[] = []
   for (const [id, n] of t45) {

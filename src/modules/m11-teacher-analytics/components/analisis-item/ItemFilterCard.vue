@@ -34,7 +34,7 @@ defineEmits<{ change: [field: 'subject_id' | 'classroom_id', value: string] }>()
       }}</label>
       <select
         id="filter-subject"
-        :class="[FORM_SELECT_CLASS, 'min-h-11']"
+        :class="[FORM_SELECT_CLASS, 'min-h-11 lg:min-h-0']"
         name="subject_id"
         data-testid="filter-subject"
         @change="$emit('change', 'subject_id', ($event.target as HTMLSelectElement).value)"
@@ -56,7 +56,7 @@ defineEmits<{ change: [field: 'subject_id' | 'classroom_id', value: string] }>()
       }}</label>
       <select
         id="filter-classroom"
-        :class="[FORM_SELECT_CLASS, 'min-h-11']"
+        :class="[FORM_SELECT_CLASS, 'min-h-11 lg:min-h-0']"
         name="classroom_id"
         data-testid="filter-classroom"
         @change="$emit('change', 'classroom_id', ($event.target as HTMLSelectElement).value)"
@@ -75,7 +75,7 @@ defineEmits<{ change: [field: 'subject_id' | 'classroom_id', value: string] }>()
     <RouterLink v-if="showReset" v-slot="{ href, navigate }" custom to="/guru/analisis-item">
       <a
         :href="href"
-        class="inline-flex min-h-11 items-center gap-1.5 px-2 text-sm text-slate-500 hover:text-slate-700"
+        class="inline-flex min-h-11 items-center gap-1.5 px-2 text-sm text-slate-500 hover:text-slate-700 lg:min-h-0"
         data-testid="filter-reset"
         @click="navigate"
       >

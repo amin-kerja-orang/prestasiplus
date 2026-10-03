@@ -6,7 +6,7 @@ import { encodeQr } from './qr-code'
 
 const props = defineProps<{ text: string }>()
 const SIZE = 192
-const QUIET = 2
+const QUIET = 4
 const canvas = ref<HTMLCanvasElement | null>(null)
 
 function draw(): void {

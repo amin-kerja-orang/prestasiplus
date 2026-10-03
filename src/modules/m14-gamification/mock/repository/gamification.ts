@@ -512,7 +512,13 @@ export const challengesRepo = defineRepository({
         const now = nowMs()
         const date = localDate(now)
         const active = activeChallenges()
-        const metrics = dayMetrics(dayFacts(userId, date), streakState(userId).current)
+        // The streak metric is today-only: the stored streak counts only when the last activity
+        // is today (AC-09.1 / AC-10.3). Other readers keep the stored value (BR-M14-14).
+        const st = streakState(userId)
+        const metrics = dayMetrics(
+          dayFacts(userId, date),
+          st.lastActivityDate === date ? st.current : 0,
+        )
         const done = completionsOn(userId, date)
         const items = active.map((c) => {
           const completed = done.has(c.id)

@@ -4,14 +4,14 @@
  *
  * Guard: admin, teacher and school admin (INFERRED alias scope, see `./common.ts`). A school admin is
  * forced to the viewer's own school: the overview and the export are filtered to it; the school, pupil
- * and teacher pages of another school are 403 (the pupil / teacher must also belong to the school; the
+ * and teacher pages of another school, a pupil / teacher of another school and unknown ids are all 404
+ * (existence is not revealed; role refusals stay 403; the pupil / teacher must also belong to the school; the
  * SEC-M11-02 recommendation, applied to this scope only — admin and teacher keep the live rule that the
  * school segment is not validated, BR-M11-29). Unknown ids are 404; the export `format` is validated
  * (422, PROPOSED).
  */
 
 import {
-  forbidden,
   int,
   notFound,
   ok,
@@ -52,7 +52,7 @@ export const monitoringRoutes: RouteDef[] = [
     (req) => {
       const schoolId = req.params.schoolId as number
       const scope = scopeOf(viewerOf(req))
-      if (scope !== undefined && scope !== schoolId) return forbidden()
+      if (scope !== undefined && scope !== schoolId) return notFound()
       const detail = monitoringRepo.schoolDetail(schoolId)
       return detail ? ok(detail) : notFound()
     },
@@ -68,9 +68,9 @@ export const monitoringRoutes: RouteDef[] = [
       const userId = req.params.userId as number
       const scope = scopeOf(viewerOf(req))
       if (scope !== undefined) {
-        if (scope !== schoolId) return forbidden()
+        if (scope !== schoolId) return notFound()
         const pupil = users.get(userId)
-        if (pupil && pupil.schoolId !== scope) return forbidden()
+        if (pupil && pupil.schoolId !== scope) return notFound()
       }
       const detail = monitoringRepo.studentDetail(schoolId, userId)
       return detail ? ok(detail) : notFound()
@@ -87,9 +87,9 @@ export const monitoringRoutes: RouteDef[] = [
       const userId = req.params.userId as number
       const scope = scopeOf(viewerOf(req))
       if (scope !== undefined) {
-        if (scope !== schoolId) return forbidden()
+        if (scope !== schoolId) return notFound()
         const teacher = users.get(userId)
-        if (teacher && teacher.schoolId !== scope) return forbidden()
+        if (teacher && teacher.schoolId !== scope) return notFound()
       }
       const detail = monitoringRepo.teacherDetail(schoolId, userId)
       return detail ? ok(detail) : notFound()

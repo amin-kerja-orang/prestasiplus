@@ -45,6 +45,13 @@ import type {
 
 const HOLD_CASH: readonly CashStatus[] = ['PENDING', 'APPROVED', 'PROCESSING']
 const HOLD_REDEMPTION: readonly RedemptionStatus[] = ['PENDING', 'PROCESSING']
+/** BR-M14-27: the forward-only redemption status moves (#35). */
+const REDEMPTION_TRANSITIONS: Record<RedemptionStatus, readonly RedemptionStatus[]> = {
+  PENDING: ['PROCESSING', 'DELIVERED', 'CANCELLED'],
+  PROCESSING: ['DELIVERED', 'CANCELLED'],
+  DELIVERED: [],
+  CANCELLED: [],
+}
 
 function badges(): TeacherBadge[] {
   return teacherBadgesTable.query({ sort: 'id' }).rows
@@ -551,6 +558,7 @@ export const teacherRewardsRepo = defineRepository({
             rewardId,
             costCoins: reward.costCoins,
             status: 'PENDING',
+            debited: false,
             createdAt: isoAt(at),
             updatedAt: isoAt(at),
           }),
@@ -571,19 +579,33 @@ export const teacherRewardsRepo = defineRepository({
       redemptionCount(status: RedemptionStatus): number {
         return teacherRedemptionsTable.count({ status })
       },
-      /** #35 (BR-M14-27): DELIVERED debits "Tebusan: {name}" and takes one from stock. */
+      /**
+       * #35 (BR-M14-27): forward transitions only (PENDING → PROCESSING → DELIVERED, and
+       * PENDING | PROCESSING → CANCELLED; any other is a 422). DELIVERED debits "Tebusan: {name}"
+       * and takes one from stock exactly once (`debited`), refusing when the balance or the stock
+       * no longer covers it. CANCELLED just releases the hold (nothing was debited).
+       */
       setRedemptionStatus(id: number, status: RedemptionStatus): TeacherRedemption {
         const row = teacherRedemptionsTable.get(id)
         if (!row) throw new M14Error('NOT_FOUND', 'Tebusan tidak dijumpai.')
+        if (!REDEMPTION_TRANSITIONS[row.status].includes(status)) {
+          throw new M14Error('VALIDATION_ERROR', 'Status tebusan tidak boleh ditukar.')
+        }
         const at = nowMs()
         return tx(() => {
-          if (status === 'DELIVERED' && row.status !== 'DELIVERED') {
+          let debited = row.debited
+          if (status === 'DELIVERED' && !row.debited) {
             const reward = teacherRewardsTable.get(row.rewardId)
+            if (reward && reward.stock !== null && reward.stock < 1)
+              throw new M14Error('OUT_OF_STOCK', 'Stok habis.')
+            if ((teacherWalletOf(row.userId)?.balance ?? 0) < row.costCoins)
+              throw new M14Error('INSUFFICIENT_BALANCE', 'Baki syiling tidak mencukupi.')
             teacherCreditOp(row.userId, -row.costCoins, `Tebusan: ${reward?.name ?? ''}`, at)
             if (reward && reward.stock !== null)
               teacherRewardsTable.update(reward.id, { stock: reward.stock - 1 })
+            debited = true
           }
-          return teacherRedemptionsTable.update(id, { status, updatedAt: isoAt(at) })
+          return teacherRedemptionsTable.update(id, { status, debited, updatedAt: isoAt(at) })
         })
       },
     }

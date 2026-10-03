@@ -68,7 +68,9 @@ export function scopeOf(req: MockRequest, options: { allowState?: boolean } = {}
   const state =
     options.allowState === true ? (queryString(req.query, 'state')?.trim() ?? null) : null
   if (viewer.role === 'school_admin') {
-    return viewer.schoolId === null ? emptyScope() : resolveScope({ schoolId: viewer.schoolId })
+    return viewer.schoolId === null
+      ? emptyScope()
+      : resolveScope({ schoolId: viewer.schoolId, includeFixture: true })
   }
   return resolveScope({ schoolId, state })
 }

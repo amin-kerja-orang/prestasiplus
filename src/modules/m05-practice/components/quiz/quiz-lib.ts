@@ -107,7 +107,7 @@ export const OPTION_TEXT_CLASS: Record<OptionState, string> = {
 /** A `profileUrl` is a link only for http(s) or an internal path (no `javascript:` etc.). */
 export function safeHref(url: string | null | undefined): string | null {
   if (!url) return null
-  return /^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url) ? url : null
+  return /^https?:\/\//i.test(url) || /^\/(?![/\\])/.test(url) ? url : null
 }
 
 export type StartErrorPlan =

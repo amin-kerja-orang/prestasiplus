@@ -64,7 +64,7 @@ const errors = ref<string[]>([])
 const reportOpen = ref(false)
 
 // A new set starts with empty answers and no result.
-watch(id, () => {
+watch([id, variant], () => {
   for (const k of Object.keys(answers)) delete answers[Number(k)]
   result.value = null
   errors.value = []
@@ -154,7 +154,6 @@ async function submit(): Promise<void> {
             v-model="answers[s.id]"
             rows="4"
             :disabled="result !== null"
-            :aria-label="`Jawapan ${s.label}`"
             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 disabled:bg-slate-50"
             data-testid="sub-answer"
           ></textarea>

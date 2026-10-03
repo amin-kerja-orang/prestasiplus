@@ -49,7 +49,7 @@ export interface MockHandle {
 }
 
 /** Boot budget of {@link waitForApp}: mock boot alone takes ~1.5 s, up to ~6 s under full load. */
-export const APP_BOOT_TIMEOUT_MS = 15_000
+export const APP_BOOT_TIMEOUT_MS = Number(process.env.E2E_BOOT_TIMEOUT_MS) || 15_000
 
 export async function waitForMock(page: Page, timeout = APP_BOOT_TIMEOUT_MS): Promise<void> {
   await page.waitForFunction(() => window.__mock?.ready === true, null, { timeout })

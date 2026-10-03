@@ -101,7 +101,7 @@ function open(userId: number) {
 
       <CcPanel icon="👤" :title="`Senarai Pelajar (${data.students.length})`">
         <div class="overflow-x-auto" data-testid="cc-table-scroller">
-          <table :class="[T.table, 'min-w-[760px]']" data-testid="cc-students-table">
+          <table :class="[T.table, 'min-w-[560px]']" data-testid="cc-students-table">
             <thead>
               <tr>
                 <th v-for="c in COLUMNS" :key="c" :class="T.th">{{ c }}</th>

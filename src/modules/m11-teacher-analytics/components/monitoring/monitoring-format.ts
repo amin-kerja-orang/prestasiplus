@@ -91,3 +91,21 @@ export const STATUS_PILL = {
 export const LOAD_ERROR_COPY = 'Gagal memuatkan data. Sila cuba lagi.'
 
 export const CARD = 'rounded-2xl bg-white shadow-sm border border-indigo-500/10'
+
+export interface StatTone {
+  box: string
+  label: string
+  value: string
+}
+export const STAT_TONE = {
+  blue: { box: 'bg-blue-50 border-blue-100', label: 'text-blue-600', value: 'text-blue-900' },
+  green: { box: 'bg-green-50 border-green-100', label: 'text-green-600', value: 'text-green-900' },
+  purple: {
+    box: 'bg-purple-50 border-purple-100',
+    label: 'text-purple-600',
+    value: 'text-purple-900',
+  },
+  amber: { box: 'bg-amber-50 border-amber-100', label: 'text-amber-600', value: 'text-amber-900' },
+  rose: { box: 'bg-rose-50 border-rose-100', label: 'text-rose-600', value: 'text-rose-900' },
+  red: { box: 'bg-red-50 border-red-100', label: 'text-red-600', value: 'text-red-900' },
+} as const satisfies Record<string, StatTone>

@@ -56,7 +56,12 @@ import {
 } from './level-cells'
 import { poolQuestionIds } from './derive'
 import { M11_AKTIF } from './m11-cells'
-import { LATIH_TUBI_TODAY_SCHOOL, SESSIONLESS_2022, SESSION_MEAN_ACC_ALL } from './pins'
+import {
+  LATIH_TUBI_TODAY_SCHOOL,
+  OTHER_P_USERS,
+  SESSIONLESS_2022,
+  SESSION_MEAN_ACC_ALL,
+} from './pins'
 import { bucketKey, buckets, type Bucket } from './spec'
 import type { AnswerRow, PracticeMode, SessionRow, SpecFacets } from './types'
 
@@ -287,11 +292,47 @@ function buildPools(
       l = [...head, ...active, ...rest.slice(head.length), ...idle]
     }
     // Logged-in answerers first (at most Aktif − answered-without-login), then never-logged.
-    const loggedTake = Math.min(l.length, Math.max(0, all - awl))
-    bySchoolIds.set(s, [...l.slice(0, loggedTake), ...n, ...l.slice(loggedTake)])
+    // The Aktif count includes the school's anchor / designated answerers (kept out of the pool): the logged-in
+    // ones are already among the answerers, so fewer pool users are taken (M11 status split 174 · 4 · 6).
+    let anchorsLogged = 0
+    for (const id of exclude) {
+      const u = users.get(id)
+      if (u && u.isActive && u.schoolId === s && u.hasLoggedIn) anchorsLogged++
+    }
+    const before = Math.min(l.length, Math.max(0, all - awl))
+    const loggedTake = Math.min(l.length, Math.max(0, all - awl - anchorsLogged))
+    // The users left out of the answerers are the last generated ones of the old prefix (users other modules
+    // designed keep their place), and the first two class-228 members stay.
+    const dropped = new Set<number>()
+    for (let i = before - 1; i >= 0 && dropped.size < before - loggedTake; i--) {
+      const u = users.get(l[i] as number)
+      if (u && isGeneratedStudent(u) && !c228.has(u.id)) dropped.add(u.id)
+    }
+    const prefix = l.slice(0, before).filter((id) => !dropped.has(id))
+    bySchoolIds.set(s, [...prefix, ...n, ...l.filter((id, i) => i >= before || dropped.has(id))])
   }
   const othGenerated = [...order(oth.gen.logged), ...order(oth.gen.never)]
   const othDesigned = [...order(oth.other.logged), ...order(oth.other.never)]
+  // M17 §6.7 B (OBSERVED: 7 active schools in the week and the month): the other-segment pupils of the new windows (week 2,
+  // month 5, 30 days 6) are pupils without a school. The week and 7-day users are non-mirror ones (the mirror pupils
+  // answer only outside 19-25 Sep, M10 R-M02-01); the rest of the head takes the other schoolless pupils, then mirror ones.
+  const rest = [...othGenerated, ...othDesigned]
+  const mirrorOrdered = [
+    ...order(mirror.filter((u) => u.hasLoggedIn)),
+    ...order(mirror.filter((u) => !u.hasLoggedIn)),
+  ]
+  const schoolless = rest.filter((id) => users.get(id)?.schoolId === null)
+  // The week pupil of school 8088 (M17 week table: 8088 1 pupil, 20 answers) is the first of the head.
+  const at8088 = rest.filter((id) => users.get(id)?.schoolId === 8088).slice(0, 1)
+  const head = placement
+    ? [...at8088, ...schoolless, ...mirrorOrdered].slice(0, OTHER_P_USERS.d30)
+    : []
+  const headSet = new Set(head)
+  const othOrdered = [
+    ...head,
+    ...rest.filter((id) => !headSet.has(id)),
+    ...mirrorOrdered.filter((id) => !headSet.has(id)),
+  ]
   const nonP = [
     ...teachers.filter(
       (u) => u.isActive && u.hasLoggedIn && isGeneratedTeacher(u) && !FIXTURE(u.schoolId),
@@ -305,12 +346,7 @@ function buildPools(
   for (const id of nonP) level.set(id, 11)
   return {
     bySchool: bySchoolIds,
-    othP: [
-      ...othGenerated,
-      ...othDesigned,
-      ...order(mirror.filter((u) => u.hasLoggedIn)),
-      ...order(mirror.filter((u) => !u.hasLoggedIn)),
-    ],
+    othP: othOrdered,
     nonP,
     level,
     weak228,
@@ -734,6 +770,23 @@ const WEAK_228_SHARE = 0.4
 const shownTenths = (c: number, a: number) => Math.round((c * 1000) / a)
 /** Named M17 pupils and class 370 as designated sessions (XR-M17-02). */
 const PUPIL_ANCHORS = true
+/** M17 §6.7 B (OBSERVED): sessions and mean seconds per session of today / week / month (Q-M17-SESS). */
+const WINDOW_TOTALS = { today: 17, week: 152, month: 1250 } as const
+const WINDOW_MEAN_SECONDS = { today: 168, week: 168, month: 114 } as const
+/** Pupil 2022's time over all its sessions: 141 minutes (M17 S7 modal, OBSERVED). */
+const TIME_2022_SECONDS = 141 * 60
+/** A today session must start inside its slot (the slots are 10 or 15 minutes apart). */
+const TODAY_SLOT_MS = 9 * 60_000
+const keys228Of = (
+  members: ReadonlyMap<number, number[]>,
+  sUser: Int32Array,
+  c228Users: ReadonlySet<number>,
+): number[] => [...members.keys()].filter((k) => c228Users.has(sUser[k] as number))
+/** M11 S5 (BR-M11-24), OBSERVED at 8080: pupils below 50 % / at 50-69.9 % / at 70 % or more. */
+const BANDS_8080 = [3, 57, 114] as const
+/** INFERRED accuracy (percent) the shaped pupils of those two bands get. */
+const WEAK_8080_LOW = 42
+const WEAK_8080_MID = 64
 const SHED_CAP_PER_RECEIVER = 1_000_000
 
 /** Correct answers `c` of `n` whose 1-decimal half-up accuracy is `tenths`/10: [lo, hi]. */
@@ -2105,6 +2158,149 @@ export function buildPracticePrime(inputs: PrimeInputs): PracticePrime {
     }
   }
 
+  // --- 8080 pupil accuracy bands (M11 S5 red box 2, BR-M11-24; OBSERVED 3 below 50 %, 57 at 50-69.9 %, 114 at 70 % or more) ---
+  // Only generated pupils of 8080 are shaped (INFERRED targets: 45 % for the three, 62 % for the 57): correct
+  // answers move from their sessions to sessions of the same bucket and size of the generated pupils that stay
+  // at 70 % or more, so no bucket, session size, school or T5 total moves (the same swap as class 228).
+  if (placement) {
+    const pop = 8080
+    const wrongKeys = new Set<number>()
+    for (const g of all) for (const k of g.wrong) wrongKeys.add(k)
+    const bucketList = byPopulation.get(pop) ?? []
+    const keyBucket = new Map<number, GenBucket>()
+    for (const g of bucketList) for (const x of g.sessions) keyBucket.set(x.key, g)
+    const tally = new Map<number, { n: number; c: number }>()
+    const add = (u: number, n: number, c: number) => {
+      const t = tally.get(u) ?? { n: 0, c: 0 }
+      tally.set(u, { n: t.n + n, c: t.c + c })
+    }
+    for (const g of bucketList) {
+      for (const x of g.sessions)
+        add(sUser[x.key] as number, sCount[x.key] as number, sCorrect[x.key] as number)
+      for (const k of g.sessionless)
+        if ((aUser[k] as number) > 0) add(aUser[k] as number, 1, wrongKeys.has(k) ? 0 : 1)
+    }
+    for (const a of anchorAnswers) {
+      if (users.get(a.userId)?.schoolId === pop) add(a.userId, 1, a.isCorrect ? 1 : 0)
+    }
+    const isFree = (u: number) =>
+      !designatedUsers.has(u) &&
+      !pupilUsers.has(u) &&
+      !c228Users.has(u) &&
+      !cardUsers.has(u) &&
+      !anchorUsers.has(u)
+    const band = (t: { n: number; c: number }) =>
+      t.c * 100 < t.n * 50 ? 0 : t.c * 100 < t.n * 70 ? 1 : 2
+    const counts = [0, 0, 0]
+    const freeUsers: number[] = []
+    for (const [u, t] of tally) {
+      if (t.n === 0) continue
+      if (isFree(u) && sessionsOf8080(u)) freeUsers.push(u)
+      else counts[band(t)] = (counts[band(t)] as number) + 1
+    }
+    function sessionsOf8080(u: number): boolean {
+      for (const g of bucketList)
+        for (const x of g.sessions) if (sUser[x.key] === u && !fixed.has(x.key)) return true
+      return false
+    }
+    // Pupils with few sessions find too few partners of their session sizes: the weak roles go to the others first.
+    const sessionCount = new Map<number, number>()
+    for (const g of bucketList)
+      for (const x of g.sessions)
+        sessionCount.set(
+          sUser[x.key] as number,
+          (sessionCount.get(sUser[x.key] as number) ?? 0) + 1,
+        )
+    freeUsers.sort(
+      (a, b) =>
+        Number((sessionCount.get(b) ?? 0) >= 8) - Number((sessionCount.get(a) ?? 0) >= 8) ||
+        hashKey(a, 90) - hashKey(b, 90) ||
+        a - b,
+    )
+    const needLow = BANDS_8080[0] - (counts[0] as number)
+    const needMid = BANDS_8080[1] - (counts[1] as number)
+    if (needLow < 0 || needMid < 0 || needLow + needMid > freeUsers.length) {
+      issues.push(
+        `8080 bands: fixed pupils hold ${counts.join('/')}, ${String(freeUsers.length)} free pupils`,
+      )
+    } else {
+      // Candidates in order; the first needLow + needMid + SLACK are never partners (they may be shaped).
+      const candidates = freeUsers
+      const weakDone = new Set<number>()
+      const bySession = new Map<string, number[]>()
+      const sk = (g: GenBucket, size: number, t5: boolean) =>
+        `${bucketKey(g.bucket)}|${String(size)}|${t5 ? 1 : 0}`
+      for (const g of bucketList) {
+        for (const x of g.sessions) {
+          if (fixed.has(x.key) || x.missionId !== null) continue
+          const u = sUser[x.key] as number
+          if (!tally.has(u) || !isFree(u)) continue
+          const key = sk(g, sCount[x.key] as number, isT5(u))
+          const list = bySession.get(key) ?? []
+          list.push(x.key)
+          bySession.set(key, list)
+        }
+      }
+      const swapAns = (from: number, to: number): boolean => {
+        const lf = members.get(from) as number[]
+        const lt = members.get(to) as number[]
+        const i = lf.findIndex((k) => !wrongKeys.has(k))
+        const j = lt.findIndex((k) => wrongKeys.has(k))
+        if (i < 0 || j < 0) return false
+        const k = lf[i] as number
+        lf[i] = lt[j] as number
+        lt[j] = k
+        lf.sort((x, y) => x - y)
+        lt.sort((x, y) => x - y)
+        sCorrect[from] = (sCorrect[from] as number) - 1
+        sCorrect[to] = (sCorrect[to] as number) + 1
+        return true
+      }
+      let gotLow = 0
+      let gotMid = 0
+      for (const u of candidates) {
+        if (gotLow >= needLow && gotMid >= needMid) break
+        const wantLow = gotLow < needLow
+        const t = tally.get(u) as { n: number; c: number }
+        const goal = Math.floor((t.n * (wantLow ? WEAK_8080_LOW : WEAK_8080_MID)) / 100)
+        for (const g of bucketList) {
+          for (const x of g.sessions) {
+            if (sUser[x.key] !== u || fixed.has(x.key) || x.missionId !== null) continue
+            while (t.c > goal && (sCorrect[x.key] as number) > 0) {
+              let partner: number | undefined
+              for (const d of [0, 1, -1, 2, -2]) {
+                const list = bySession.get(sk(g, (sCount[x.key] as number) + d, isT5(u))) ?? []
+                partner = list.find(
+                  (k) =>
+                    (sCount[k] as number) - (sCorrect[k] as number) >= 1 &&
+                    !weakDone.has(sUser[k] as number) &&
+                    sUser[k] !== u,
+                )
+                if (partner !== undefined) break
+              }
+              if (partner === undefined || !swapAns(x.key, partner)) break
+              t.c--
+              const tp = tally.get(sUser[partner] as number) as { n: number; c: number }
+              tp.c++
+            }
+          }
+        }
+        const bnd = band(t)
+        if (bnd === 0 && gotLow < needLow) {
+          gotLow++
+          weakDone.add(u)
+        } else if (bnd <= 1 && gotMid < needMid) {
+          gotMid++
+          weakDone.add(u)
+        }
+      }
+      const got = [0, 0, 0]
+      for (const [, t] of tally) if (t.n > 0) got[band(t)] = (got[band(t)] as number) + 1
+      if (got[0] !== BANDS_8080[0] || got[1] !== BANDS_8080[1] || got[2] !== BANDS_8080[2])
+        issues.push(`8080 pupil bands ${got.join('/')}, not ${BANDS_8080.join('/')}`)
+    }
+  }
+
   // --- subjects, levels, modes -----------------------------------------------------------------
   const levelSubjects = subjectsByLevel()
   const levelOf = (userId: number) => pools.level.get(userId) ?? 11
@@ -2208,6 +2404,83 @@ export function buildPracticePrime(inputs: PrimeInputs): PracticePrime {
       for (const k of keys228) scale228.set(k, scale)
     }
   }
+  const bandOfKey = new Map<number, number>()
+  for (const g of all) for (const x of g.sessions) bandOfKey.set(x.key, g.bucket.band ?? -1)
+  // Mean session time of the M17 windows (SRS M17 §6.7 B / Q-M17-SESS, OBSERVED): today 168 s, week 168 s, month
+  // 114 s. The seconds between two answers of the sessions in each window group are scaled so that the means hold
+  // (class 228 keeps its own 10.4 min); pupil 2022's older sessions bring its all-sessions time to 141 min.
+  if (placement) {
+    const groupOf = (k: number): number => {
+      const b = bandOfKey.get(k) ?? -1
+      return b === 0 ? 0 : b === 1 ? 1 : b === 2 || b === 3 ? 2 : -1
+    }
+    const groups: number[][] = [[], [], []]
+    const other2022: number[] = []
+    for (const k of members.keys()) {
+      if (sPop[k] === -1 || scale228.has(k)) continue
+      const g = groupOf(k)
+      if (g >= 0) (groups[g] as number[]).push(k)
+      else if (sUser[k] === 2022) other2022.push(k)
+    }
+    const sumAt = (keys: readonly number[], scale: number) => {
+      let t = 0
+      for (const k of keys) for (const a of members.get(k) as number[]) t += scaledSeconds(a, scale)
+      return t
+    }
+    const solve = (keys: readonly number[], want: number): number => {
+      let lo2 = 0.001
+      let hi2 = 5
+      for (let i = 0; i < 40; i++) {
+        const mid = (lo2 + hi2) / 2
+        if (sumAt(keys, mid) < want) lo2 = mid
+        else hi2 = mid
+      }
+      return (lo2 + hi2) / 2
+    }
+    let c228Month = 0
+    for (const k of keys228Of(members, sUser, c228Users)) {
+      if (groupOf(k) === 2) {
+        for (const a of members.get(k) as number[])
+          c228Month += scaledSeconds(a, scale228.get(k) ?? 1)
+      }
+    }
+    // Anchor sessions of pupils (4627, M08 designs, ...) keep their own time: they are part of the window totals.
+    const anchorSecs = [0, 0, 0]
+    for (const a of anchorSessions) {
+      if (a.status !== 'completed' || !a.inP) continue
+      const g =
+        a.completedAtMs >= BAND_RANGE[0][0]
+          ? 0
+          : a.completedAtMs >= BAND_RANGE[1][0]
+            ? 1
+            : a.completedAtMs >= BAND_RANGE[3][0]
+              ? 2
+              : -1
+      if (g >= 0) anchorSecs[g] = (anchorSecs[g] as number) + a.timeSpent
+    }
+    const want0 = WINDOW_MEAN_SECONDS.today * WINDOW_TOTALS.today - (anchorSecs[0] as number)
+    const want1 =
+      WINDOW_MEAN_SECONDS.week * WINDOW_TOTALS.week -
+      WINDOW_MEAN_SECONDS.today * WINDOW_TOTALS.today -
+      (anchorSecs[1] as number)
+    const want2 =
+      WINDOW_MEAN_SECONDS.month * WINDOW_TOTALS.month -
+      WINDOW_MEAN_SECONDS.week * WINDOW_TOTALS.week -
+      c228Month -
+      (anchorSecs[2] as number)
+    groups.forEach((keys, i) => {
+      const sc = solve(keys, [want0, want1, want2][i] as number)
+      for (const k of keys) scale228.set(k, sc)
+    })
+    if (other2022.length > 0) {
+      let inWindow = 0
+      for (const [k] of members)
+        if (sUser[k] === 2022 && !other2022.includes(k))
+          inWindow += sumAt([k], scale228.get(k) ?? 1)
+      const sc = solve(other2022, TIME_2022_SECONDS - inWindow)
+      for (const k of other2022) scale228.set(k, sc)
+    }
+  }
   for (const [key, keys] of members) {
     let p = sAnsStart[key] as number
     let secs = 0
@@ -2218,6 +2491,32 @@ export function buildPracticePrime(inputs: PrimeInputs): PracticePrime {
   }
 
   // Times per session (window of its bucket) and per answer.
+  // Today's designated sessions (M17 §6.7 B): hour windows so the heatmap reads 9:00 20, 13:00 160, 14:00 160 and
+  // the live feed ends with the 8082 session of 14:59.
+  const todayEnds = new Map<number, number>()
+  {
+    const day0 = BAND_RANGE[0][0]
+    const at = (h: number, m: number) => day0 + (h * 60 + m) * 60_000
+    const slots: Record<number, readonly number[]> = {
+      2022: [at(9, 21)],
+      2016: [at(14, 14), at(14, 29), at(14, 44), at(14, 59)],
+      2018: [at(13, 9), at(13, 19), at(13, 29), at(13, 39), at(13, 49), at(13, 59)],
+      2019: [at(13, 9), at(13, 19), at(13, 29), at(13, 39), at(13, 49), at(13, 59)],
+    }
+    const byUser = new Map<number, number[]>()
+    for (const [key, d] of fixed) {
+      if (bandOfKey.get(key) !== 0 || slots[d.user] === undefined) continue
+      byUser.set(d.user, [...(byUser.get(d.user) ?? []), key])
+    }
+    for (const [u, keys] of byUser) {
+      keys
+        .sort((a, b) => a - b)
+        .forEach((k, i) => {
+          const e = (slots[u] as readonly number[])[i]
+          if (e !== undefined) todayEnds.set(k, e)
+        })
+    }
+  }
   const weekRange = BAND_RANGE[1]
   const oldRange: readonly [number, number] = [
     Date.parse('2026-03-01T00:00:00+08:00'),
@@ -2241,7 +2540,15 @@ export function buildPracticePrime(inputs: PrimeInputs): PracticePrime {
         issues.push(`session g${String(s.key)}: empty time window`)
         continue
       }
-      const end = placeEnd(range[0], range[1], dur, s.key, 47)
+      let end = placeEnd(range[0], range[1], dur, s.key, 47)
+      const slot = placement ? todayEnds.get(s.key) : undefined
+      if (slot !== undefined) {
+        end = slot
+        if (end - dur < slot - TODAY_SLOT_MS)
+          issues.push(
+            `today session g${String(s.key)}: ${String(dur / 1000)} s do not fit its slot`,
+          )
+      }
       sMs[s.key] = end
       const scale = scale228.get(s.key) ?? 1
       let t = end - dur

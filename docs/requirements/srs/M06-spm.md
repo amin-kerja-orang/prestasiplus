@@ -5,8 +5,8 @@
 | Field | Value |
 |---|---|
 | Document | SRS — M06 SPM |
-| Version | 1.4 |
-| Date | 2026-09-25 |
+| Version | 1.5 |
+| Date | 2026-10-03 |
 | Status | Approved (G1) — v1.4 XL round-2 alignment (D11, D12). Live-session states pending user approval (URS OQ-M06-01). |
 | Authors | product-analyst (functional: §1–5, 8–10, 12–13) and solution-architect (data entities §6, mock API §7, NFR/SEC §11) — agent |
 | Source URS | [urs/M06-spm.md](../urs/M06-spm.md) v1.0 |
@@ -17,6 +17,7 @@
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-10-03 | **Revision history — v1.5, XL-R10-05** (`docs/qa/audit/cross-module-logic-R10-M25.md`): §7 #21 now states the response `DutaCard \| null` (`null` when no `bintang` record is active), the seedable pick with no `subject` / `seed`, and 401 without a session. Matches `src/modules/m06-spm/mock/handlers/duta.ts`. M25 §7 #2 writes auth `U`; the handler uses `requireAuth()` (any session), so the two agree on "any signed-in user". Documentation only. |
 | 1.4 | 2026-09-25 | **Revision history — v1.4.** XL round 2 (`docs/qa/audit/cross-module-logic-M01-M07.md`): XL-35 — S10 reads M05 #23 (`GET /api/practice/sessions?modes=past_year,latih_tubi,ramalan&type=`); M06 #11 removed as an own endpoint. XL-34 — hub 20,529 / 14,673 declared documented display constants under DV-M06-01 (D11 exception); S1 shows no contradicting computed figure (chips ≤ total, E2E-M06-03). XL-29 — the SPM pool and the Tracking A sets use the M04 `spmPool` facet. XL-25 — stale "M05 A1" and "M05 SPM fixtures" notes removed. Trace re-run 0 errors. |
 | 1.3 | 2026-09-25 | **Revision history — v1.3, cross-module logic review** (`docs/qa/audit/cross-module-logic-M01-M07.md`; D11, D12). XL-01: SPM pool = M04 `questionStore.spmPool` (§6.2; M06 question schema and virtual ids removed); `question_id` sessions via `getEligible` (FR-87, E2E-41 uses active 570024); pool follows M04 creates/deactivations (new FR-89, AC-02.2, E2E-03); observed per-subject pool sizes supplied as M04 allocation inputs (§6.10). XL-02: S2–S4 counts are named `spmPool` queries; the hub constants cannot be derived and stay live under the approved minimal DV-M06-01 (BR-01, FR-06). XL-03/04: sessions are M05 PracticeSessions (§6.4 field map; no `mode = spm`), created/checked/completed through M05 #4–#6 with BR-31 (FR-20/21/32/34/51/53, BR-13/15/19); subjective sets are StructuredAttempts `scope = spm` (BR-17, FR-61); mock exams stay M06 records outside the session store, decision in §6.5. XL-10: `<PracticeQuiz>` / `<StructuredAnswer>` per M05 §7.1 (§13 Q2 closed). XL-11: `structuredStore` with only M04 §6.11 anchors, total 4,059 (§6.10; Q3 closed). XL-12: KBAT 1–6 (§6.9). XL-20: DV-SH-03 — fixed titles without subtitle (FR-10). XL-22: DV-M06-17 text ≥ 12px (FR-86). XL-24: M05 structured paths (§7 #18/#19). XL-25: stale references refreshed (§0, §13). Seeds A2–A5 / P1–P4 unchanged. 89 FRs. |
 | 1.2 | 2026-09-25 | **Revision history — v1.2, audit round 2 + M05 alignment.** AUD-M06-17: hub reverted to live values — "Jumlah Soalan" 20,529 and Databank / Latih Tubi chips 14,673 are live fixture constants; DV-M06-01 changes the S4 page only (BR-M06-01, FR-02 unchanged in scope, §6.10 hub values, E2E-01, E2E-03). AUD-M06-18: PERNIAGA S4 = 934 (URS AC-09.2). AUD-M06-19: the S4 seed split is labelled PROPOSED (E2E-11, E2E-13). M05 AUD-M05-02: the admin's 4 SPM sessions use the M05 ids and values A2–A5 (A2 = latih_tubi **Sejarah** 14/40, not MATH); the student's SPM sessions are P1–P4 (P1/P3 as M05; P2 and the new P4 proposed to M05); one session store shared with M05 (§6.4, §6.10, E2E-28). Traceability 0 errors. |
@@ -368,7 +369,7 @@ DSKP: `dskpTagged = dskpTotal` (100%) for every set, as live.
 | 18 | GET | `/api/practice/structured` | A | no | M05 #15 with `scope=spm` [`&track=bahasa`], `subjectId`, `kbatLevel` (1–6), `page` | M05 #15 (from M04 `structuredStore`) | — | **owned by M05** (`GET /latihan-berstruktur?…`) |
 | 19 | GET/POST | `/api/practice/structured/:id`, `/api/practice/structured/:id/attempts` | A | mixed | M05 #16/#17 with `scope`, `track` | M05 contract (StructuredAttempt) | — | **owned by M05** |
 | 20 | POST | `/api/question-reports` | A | yes | `ReportQuestionModal` (M04 FR-M04-118) with `source:'spm'` (MCQ) or `'structured_attempt'` (structured, via `<StructuredAnswer>`), `quizSessionId` | M04 #15 | — | **owned by M04** |
-| 21 | GET | `/api/duta/recommendations` | A | no | `?subject=&seed=` | 200 `{data: DutaCard}` | — | **owned by M24** (server-rendered card) |
+| 21 | GET | `/api/duta/recommendations` (provisional, owner M24) | A (any session) | no | `?subject=&seed=` | 200 `{data: DutaCard \| null}`: `null` when no `bintang` record is active (BR-M06-27; consumers treat it as "no card", e.g. M25 FR-M25-25 block absent). Pool = active `bintang` records (never `inspirasi` / `tetamu`); with `subject` and a match, the pick is among the matching records, otherwise among all `bintang` records; with no `subject` and no `seed`, the pick is from the seedable mock stream `m06.duta` (`setRandomSeed`); `seed` gives a deterministic pick | 401 (no session) | **owned by M24** (server-rendered card) |
 
 Total: 21 rows — 13 owned by M06 (#1–7, #12–17; 10 read, 3 mutating) and 8 referenced (M05 #4, #5, #6, #23, #15, #16/#17; M04 report; M24). Store functions used without an HTTP path: M04 `questionStore.spmPool`, `query`, `count`, `getEligible`, `structuredStore.query` (M04 §7.1).
 

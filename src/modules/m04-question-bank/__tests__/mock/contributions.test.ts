@@ -154,22 +154,9 @@ function m10Rows(): Question[] {
       }),
     )
   return [
-    ...bank(range(522425, 522447), 6, 4, {
-      createdBy: 1,
-      dskpTagged: true,
-      createdAt: '2026-05-02T10:00:00+08:00',
-    }),
+    // 522425–522447 and 700302 are registered by the M04 seed itself (seeds/m10-anchors.ts).
     ...bank(range(525431, 525433), 7, 1),
     ...bank(range(525428, 525430), 9, 3),
-    questions.anchorRow({
-      id: 700302,
-      subjectId: 1,
-      educationLevelId: 11,
-      difficultyLevel: 2,
-      spmPool: false,
-      createdBy: 5,
-      questionText: 'Pilih ayat yang menggunakan kata sendi nama dengan betul.',
-    }),
   ]
 }
 

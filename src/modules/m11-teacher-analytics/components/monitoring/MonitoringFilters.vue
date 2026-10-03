@@ -67,7 +67,7 @@ function submit() {
 }
 
 const SELECT =
-  'min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:w-auto'
+  'min-h-11 lg:min-h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:w-auto'
 const LABEL = 'text-xs font-semibold text-slate-500'
 </script>
 
@@ -99,7 +99,7 @@ const LABEL = 'text-xs font-semibold text-slate-500'
     </label>
     <button
       type="submit"
-      class="flex min-h-11 basis-[calc(50%-0.375rem)] items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 sm:basis-auto"
+      class="flex min-h-11 basis-[calc(50%-0.375rem)] items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 sm:basis-auto lg:min-h-9"
       data-testid="mon-apply"
     >
       <Funnel class="h-4 w-4" />Tapis
@@ -107,7 +107,7 @@ const LABEL = 'text-xs font-semibold text-slate-500'
     <RouterLink
       v-if="hasFilter()"
       :to="paths.overview"
-      class="flex min-h-11 items-center gap-1 px-2 text-sm text-slate-500 hover:text-slate-700"
+      class="flex min-h-11 items-center gap-1 px-2 text-sm text-slate-500 hover:text-slate-700 lg:min-h-9"
       data-testid="mon-reset"
     >
       <X class="h-4 w-4" />Reset
@@ -116,7 +116,7 @@ const LABEL = 'text-xs font-semibold text-slate-500'
     <div class="ml-auto flex flex-wrap items-center gap-2" data-testid="mon-tools">
       <a
         :href="paths.exportHref('pdf', query)"
-        class="flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-red-600 hover:bg-red-50"
+        class="flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-red-600 hover:bg-red-50 lg:min-h-9"
         data-testid="mon-export-pdf"
         @click.prevent="emit('export', 'pdf')"
       >
@@ -124,7 +124,7 @@ const LABEL = 'text-xs font-semibold text-slate-500'
       </a>
       <a
         :href="paths.exportHref('csv', query)"
-        class="flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-green-600 hover:bg-green-50"
+        class="flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-green-600 hover:bg-green-50 lg:min-h-9"
         data-testid="mon-export-csv"
         @click.prevent="emit('export', 'csv')"
       >
@@ -133,7 +133,7 @@ const LABEL = 'text-xs font-semibold text-slate-500'
       <button
         type="submit"
         name="refresh"
-        class="flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-slate-500 hover:bg-slate-50"
+        class="flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-slate-500 hover:bg-slate-50 lg:min-h-9"
         data-testid="mon-refresh"
       >
         <RefreshCw class="h-4 w-4" />Refresh
@@ -150,7 +150,7 @@ const LABEL = 'text-xs font-semibold text-slate-500'
       >
       <button
         type="button"
-        class="flex min-h-11 min-w-11 items-center justify-center text-slate-400 hover:text-slate-600"
+        class="flex min-h-11 min-w-11 items-center justify-center text-slate-400 hover:text-slate-600 lg:min-h-9 lg:min-w-9"
         data-testid="mon-refresh-toggle"
         @click="emit('toggle')"
       >

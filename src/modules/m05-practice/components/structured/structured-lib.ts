@@ -65,7 +65,7 @@ export function answerUrl(id: number, v: Variant): string {
 /** An image source is only http(s), an internal path or a `blob:` URL (M04 uploads); never `javascript:` or `data:`. */
 export function safeImageSrc(url: string | null | undefined): string | null {
   if (!url) return null
-  return /^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url) || /^blob:/i.test(url) ? url : null
+  return /^https?:\/\//i.test(url) || /^\/(?![/\\])/.test(url) || /^blob:/i.test(url) ? url : null
 }
 
 /** Q3 marks label (PROPOSED COPY, §8.3). */

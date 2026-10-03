@@ -1,7 +1,7 @@
 /**
- * Data, in-place 404 / 403 and tab title of one S3-S5 page. An unknown id answers 404 and a school
- * admin asking for another school answers 403 (alias scope, INFERRED): both render the standalone
- * error page in place (FR-M11-07, SRS §9).
+ * Data, in-place 404 / 403 and tab title of one S3-S5 page. An unknown id, and a school admin asking
+ * for another school's ids (alias scope, INFERRED), answer 404; a role the handlers refuse answers 403.
+ * Both render the standalone error page in place (FR-M11-07, SRS §9).
  */
 import { computed, watch, type WatchSource } from 'vue'
 

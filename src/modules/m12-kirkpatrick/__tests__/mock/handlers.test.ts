@@ -263,10 +263,24 @@ describe('#1 overview, #3 learning, #4 behavior, #5 results, #14 filter options'
 })
 
 describe('school administrator scope (INFERRED, build-plan v1.12 R.1.3)', () => {
-  it('SMK DEMO is a fixture school: the zero state, whatever the query says', async () => {
+  it('SMK DEMO (a fixture school) is included for its own administrator: own populations, whatever the query says', async () => {
     const o = data(await h.get('/api/kirkpatrick/overview?schoolId=8080', ADMIN_SEKOLAH))
-    expect(o.kpi).toMatchObject({ t4t5: 0, answers: 0, teachers: 0 })
-    expect(o.t3).toMatchObject({ active: 0, t4t5: 0 })
+    expect(o.scope.schoolId).toBe(900_001)
+    // Own school's populations (fixture students and teachers), no practice segment for fixtures.
+    expect(o.kpi.t4t5).toBeGreaterThan(0)
+    expect(o.kpi.teachers).toBeGreaterThan(0)
+    expect(o.t3.t4t5).toBe(o.kpi.t4t5)
+    expect(o.t3).toMatchObject({ active: 0, sessions: 0 })
+    const f = data(await h.get('/api/kirkpatrick/filter-options', ADMIN_SEKOLAH))
+    expect(f.schools.map((s: { id: number }) => s.id)).toEqual([900_001])
+  })
+
+  it('admin and teacher still exclude fixture schools (BR-M12-01)', async () => {
+    for (const as of [ADMIN, GURU]) {
+      const o = data(await h.get('/api/kirkpatrick/overview?schoolId=900001', as))
+      expect(o.kpi).toMatchObject({ t4t5: 0, teachers: 0 })
+    }
+    expect(data(await h.get('/api/kirkpatrick/overview', ADMIN)).kpi.t4t5).toBe(4158)
   })
 
   it('the account is forced to its own school: schoolId and state in the request cannot widen it', async () => {

@@ -19,7 +19,8 @@ defineProps<{
 }>()
 defineEmits<{ 'update:classroom': [value: string] }>()
 
-const PILL = 'inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold transition'
+const PILL =
+  'inline-flex min-h-11 items-center lg:min-h-0 lg:py-1 rounded-lg px-3 text-sm font-semibold transition'
 </script>
 
 <template>
@@ -31,7 +32,7 @@ const PILL = 'inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-sem
       <Funnel class="h-4 w-4 text-indigo-500" />{{ LAPORAN_COPY.filterLabel }}
     </div>
     <select
-      :class="[FORM_SELECT_CLASS, 'min-h-11 sm:w-64']"
+      :class="[FORM_SELECT_CLASS, 'min-h-11 sm:w-64 lg:min-h-0']"
       name="classroom_id"
       data-testid="filter-classroom"
       @change="$emit('update:classroom', ($event.target as HTMLSelectElement).value)"

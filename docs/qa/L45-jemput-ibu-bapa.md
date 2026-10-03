@@ -3,9 +3,9 @@
 Date: 2026-10-02. Branch: feature/student-prototype. Slug: L45-jemput-ibu-bapa.
 Scope: S1 `/jemput-ibu-bapa` (M02, user shell, murid only) and S2 `/ibu-bapa/terima/:token` (M01, public). Inputs: URS and SRS v0.3 (52 ACs, DV-L45-01..06, E2E-L45-01..24), observed copy in `docs/discovery/L45-jemput-ibu-bapa.md` and `docs/discovery/img/L45/`.
 
-## Verdict: NOT READY
+## Verdict: READY (after re-run, 2026-10-02)
 
-All 52 ACs pass as written (executed, see table), but one High bug is open: the H1 on the S2 gradient headers is unreadable (valid card 2.1-2.3:1; invalid page 1.4:1 at the dark end, and white on live). This is the same defect class as BUG-M01-01 (global heading colour overriding the gradient header). One Medium bug (S1 hero H1 is dark, SRS says white). Per G5 (no open Critical/High) the gate fails until BUG-L45-01 is fixed. Re-test needed: `e2e/m01-authentication/qa-l45-contrast.spec.ts` (3 tests x 3 projects) must go green, then re-run both L45 specs.
+The initial run was Not ready (BUG-L45-01 High, BUG-L45-02 Medium: dark H1 on gradient headers). The lead added `text-white` to the three H1s; the targeted re-run below is green, so no Critical/High bug is open. All 52 ACs pass. Original findings kept below for the record.
 
 ## Test runs (real tree, `vite build --mode e2e --outDir dist-e2e-s2-qa45`, preview on port 4722)
 
@@ -101,8 +101,8 @@ Coverage of SRS §12: E2E-L45-01..24 all executed (24/24). FR coverage claimed b
 
 | ID | Severity | Steps to reproduce | Expected | Actual | Screenshot | Owner |
 |---|---|---|---|---|---|---|
-| BUG-L45-01 | High | 1. Open `/ibu-bapa/terima/0000` (any viewer, any width). 2. Open a valid link as guest, teacher or parent (e.g. `/ibu-bapa/terima/{token of student 3}`). 3. Read the H1 in the gradient header. | White H1 on the header. Live (observed) shows "Link Tidak Sah" in white on the slate header (FR-L45-19, `terima-invalid-token-desktop.png`); the valid card header needs readable text (D9 unreadable text). | H1 colour is `rgb(30,41,59)` (the global `h1` rule in `src/styles/base.css`) on the gradient: valid card on indigo-600 to purple-700 = 2.1 to 2.3:1; invalid page on slate-500 to slate-700 = 1.4 to 3.1:1 (almost invisible at the dark end). Eyebrow and subtitle are fine. Same defect class as BUG-M01-01. | `.playwright-mcp/lane3/l45-invalid-375.png`, `l45-guest-375.png`, `l45-other-375.png`, `l45-linked-375.png` | L45-T2 (M01 screens: `InviteValidCard.vue` and the invalid card) |
-| BUG-L45-02 | Medium | Log in as pelajar2@demo.test, open `/jemput-ibu-bapa`, read the hero H1 "Jemput Ibu Bapa" at any width. | White text (SRS FR-L45-05; URS DV-L45-06 says the darkened gradient keeps white text readable). | H1 is `rgb(30,41,59)` on rose-600 to pink-600 (3.1:1, borderline); the `.user-shell [class*='-hero']` white rule does not match this hero (it has only `data-testid`). The subtitle line is white, so the hero text is inconsistent. | `.playwright-mcp/lane3/l45-s1-1280.png`, `l45-s1-320.png` | L45-T2 (M02 `JemputIbuBapaPage.vue`) |
+| BUG-L45-01 (FIXED, verified) | High | 1. Open `/ibu-bapa/terima/0000` (any viewer, any width). 2. Open a valid link as guest, teacher or parent (e.g. `/ibu-bapa/terima/{token of student 3}`). 3. Read the H1 in the gradient header. | White H1 on the header. Live (observed) shows "Link Tidak Sah" in white on the slate header (FR-L45-19, `terima-invalid-token-desktop.png`); the valid card header needs readable text (D9 unreadable text). | H1 colour is `rgb(30,41,59)` (the global `h1` rule in `src/styles/base.css`) on the gradient: valid card on indigo-600 to purple-700 = 2.1 to 2.3:1; invalid page on slate-500 to slate-700 = 1.4 to 3.1:1 (almost invisible at the dark end). Eyebrow and subtitle are fine. Same defect class as BUG-M01-01. | `.playwright-mcp/lane3/l45-invalid-375.png`, `l45-guest-375.png`, `l45-other-375.png`, `l45-linked-375.png` | L45-T2 (M01 screens: `InviteValidCard.vue` and the invalid card) |
+| BUG-L45-02 (FIXED, verified) | Medium | Log in as pelajar2@demo.test, open `/jemput-ibu-bapa`, read the hero H1 "Jemput Ibu Bapa" at any width. | White text (SRS FR-L45-05; URS DV-L45-06 says the darkened gradient keeps white text readable). | H1 is `rgb(30,41,59)` on rose-600 to pink-600 (3.1:1, borderline); the `.user-shell [class*='-hero']` white rule does not match this hero (it has only `data-testid`). The subtitle line is white, so the hero text is inconsistent. | `.playwright-mcp/lane3/l45-s1-1280.png`, `l45-s1-320.png` | L45-T2 (M02 `JemputIbuBapaPage.vue`) |
 | BUG-L45-03 | Low (not L45, known) | Any first page load: console shows `/favicon.ico` 404. | No console error. | 404. Already tracked as BUG-M01-05. | n/a | Platform / shell |
 
 Why the specs missed it: no L45 test asserts a colour. `e2e/m01-authentication/qa-l45-contrast.spec.ts` now does (S1 hero H1 white and at least 3:1 on every gradient stop; S2 invalid H1 white and at least 3:1; S2 valid H1 at least 3:1).
@@ -117,3 +117,18 @@ Why the specs missed it: no L45 test asserts a colour. `e2e/m01-authentication/q
 
 1. L45-T2 fixes BUG-L45-01 and BUG-L45-02 (white headings).
 2. Re-run `qa-l45-contrast.spec.ts` (9 tests) and both L45 specs on three projects with `--workers=1` or 2 on an unloaded machine.
+
+## Re-run after the H1 fix (2026-10-02)
+
+Fix: `text-white` on the H1 in `InviteInvalidCard.vue`, `InviteValidCard.vue`, `JemputIbuBapaPage.vue`. Fresh e2e build (`dist-e2e-s2-qa45`), port 4722, temp config, `--workers=2`.
+
+| Run | Result |
+|---|---|
+| `qa-l45-contrast.spec.ts` + both L45 specs, 3 projects (9 + 99 = 108 tests; the specs' md5 were unchanged since the first run, so the developer's admin menu-absence assertion (E2E-L45-13 admin, `data-nav-id` count 0) was already in the earlier run and passes again) | 98 passed, 10 failed. All 10 were the 15 s `gotoApp` boot timeout under heavy machine load (the run took 38 min; an earlier attempt was also polluted by two orphaned parallel Playwright runs of mine, which I killed and discarded). |
+| Re-run of those 10 on their projects, `--workers=1` | 10/10 passed (mobile: L45-08, 11, 13 parent, 22, 23, 24-flash, S1 hero contrast, S2 valid contrast; tablet: the same 5 plus 3 re-run separately: L45-11, 13 parent, 24-flash; the tablet ones were separately re-run in a second batch). |
+| Net | 108/108 pass; the 9 contrast tests now pass (they failed 9/9 before the fix). No assertion failures at any point. |
+| Lane 3 visual check | H1 computed colour `rgb(255, 255, 255)` for S1 hero, S2 valid card and S2 invalid page at 375 and 1280 (`.playwright-mcp/lane3/l45-fix-{hero,valid,invalid}-{375,1280}.png`); readable on the gradients. |
+
+Mock boot did not fail (no M05 error in this run). Cleanup: temp config, `dist-e2e-s2-qa45`, `test-results-s2-qa45` removed, 4722 server stopped.
+
+Final verdict: **READY**. Open items are not blockers: BUG-L45-03 (favicon 404, Low, platform) and the unexecuted roles/admin-record checks listed under "Not verified".

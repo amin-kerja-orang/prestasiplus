@@ -34,6 +34,7 @@ import {
 } from '../repository'
 import { nowMs } from '../repository/ops'
 import { insertSession } from '../repository/reads'
+import { isRealDate } from '../repository/social'
 import type { LedgerType } from '../repository/types'
 
 const isCount = (v: unknown): v is number =>
@@ -122,8 +123,8 @@ export function createDraw(input: DrawInput & { closesAt: string }) {
   if (typeof d.title !== 'string' || d.title.trim() === '') {
     throw new TypeError('createDraw: title is required')
   }
-  if (typeof d.closesAt !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.closesAt)) {
-    throw new RangeError('createDraw: closesAt must be YYYY-MM-DD')
+  if (typeof d.closesAt !== 'string' || !isRealDate(d.closesAt)) {
+    throw new RangeError('createDraw: closesAt must be a real date, YYYY-MM-DD')
   }
   for (const key of ['ticketCostSyiling', 'maxTicketsPerStudent'] as const) {
     const v = d[key]
@@ -268,7 +269,9 @@ export function m14LoadFixture(name: FixtureName) {
         isActive: true,
         createdAt: toIsoMyt(nowMs()),
       })
-    case 'm14-draw-open':
+    case 'm14-draw-open': {
+      const existing = drawsRepo.list().find((d) => d.title === 'Cabutan Demo')
+      if (existing) return existing
       return drawsRepo.create({
         title: 'Cabutan Demo',
         description: '',
@@ -278,6 +281,7 @@ export function m14LoadFixture(name: FixtureName) {
         closesAt: '2026-09-30',
         openNow: true,
       })
+    }
     default:
       return null
   }

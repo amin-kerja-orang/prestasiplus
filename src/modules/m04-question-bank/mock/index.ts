@@ -49,7 +49,7 @@ const plugin = defineMockModule({
   id: 'M04',
   // M01: creator names (`users`); M02: teacher schools. Handlers read them at request time.
   dependsOn: ['core', 'M01', 'M02', 'M03'],
-  version: 6,
+  version: 7,
   tables: {
     reports: reportsTable,
     importRuns: importRunsTable,

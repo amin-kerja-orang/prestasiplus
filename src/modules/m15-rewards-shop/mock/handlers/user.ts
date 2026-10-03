@@ -22,6 +22,7 @@ import {
   ok,
   unpaged,
   requireAuth,
+  requireRole,
   route,
   validationError,
   type MockRequest,
@@ -56,6 +57,7 @@ import { M15Error, type HadiahRedemption } from '../repository/types'
 import { refusal } from './admin'
 
 const signedIn = requireAuth()
+const parentOnly = requireRole('parent')
 
 const sessionUserId = (req: MockRequest): number => {
   if (!req.session) throw new Error('M15: no session (guard missing)')
@@ -260,8 +262,8 @@ export const userRoutes: RouteDef[] = [
     params: { drawId: int() },
   }),
   route('GET', '/api/parent/hadiah-approvals', [signedIn], listApprovals),
-  route('POST', '/api/parent/hadiah-approvals/:id/approve', [signedIn], approve, {
+  route('POST', '/api/parent/hadiah-approvals/:id/approve', [parentOnly], approve, {
     params: idParam,
   }),
-  route('POST', '/api/parent/hadiah-approvals/:id/reject', [signedIn], reject, { params: idParam }),
+  route('POST', '/api/parent/hadiah-approvals/:id/reject', [parentOnly], reject, { params: idParam }),
 ]

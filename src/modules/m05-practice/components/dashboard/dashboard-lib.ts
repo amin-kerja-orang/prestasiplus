@@ -2,7 +2,13 @@
  * Small pure helpers of the S1 dashboard blocks (M05-T3; SRS M05 v1.17 FR-M05-02…28, §6.10).
  */
 
-import type { DashboardBanner, QuestDifficulty } from '../../api/types'
+import type { DashboardBanner, PracticeSubject, QuestDifficulty } from '../../api/types'
+
+/** FR-M05-12 / 14: the widget counts out of 10 quests (the M14 catalogue). */
+export const QUEST_TOTAL = 10
+
+/** FR-M05-08: the carousel advances every 5,000 ms. */
+export const CAROUSEL_INTERVAL_MS = 5000
 
 /** FR-M05-12: the difficulty chip text and colours (DV-M05-11: 12 px, `text-xs`). */
 export const QUEST_DIFFICULTY: Record<QuestDifficulty, { label: string; chip: string }> = {
@@ -118,3 +124,36 @@ export const COUNT_RULES = {
   activeLevels: { delayMs: 300, intervalMs: 100, step: () => 1 },
   approvedQuestions: { delayMs: 400, intervalMs: 30, step: (t) => Math.ceil(t / 25) },
 } as const satisfies Record<string, CountUpRule>
+
+/** FR-M05-26: the colour of the level chip = the colour of the question's subject (looked up by name). */
+export function subjectColorByName(
+  subjects: readonly Pick<PracticeSubject, 'name' | 'color'>[],
+  name: string,
+): string {
+  return subjects.find((s) => s.name === name)?.color ?? '#64748B'
+}
+
+/** FR-M05-18: the red badge on "Soalan Aku Salah" shows the count, none when 0 (INFERRED). */
+export function revisionBadge(total: number): string | null {
+  return total > 0 ? String(total) : null
+}
+
+/** FR-M05-09 (INFERRED condition): a streak of at least 1 day and no practice today. */
+export function showKombo(streak: { count: number; practisedToday: boolean }): boolean {
+  return streak.count >= 1 && !streak.practisedToday
+}
+
+/** FR-M05-02: the h1 text (the wave emoji is a separate animated span). */
+export function greetingText(period: string, name: string): string {
+  return `Selamat ${period}, ${name}`
+}
+
+/** FR-M05-15 (PROPOSED, SRS §8.3): a completed quest is drawn with a full bar. */
+export function questBarPct(q: { progress: number; target: number; completed: boolean }): number {
+  return q.completed ? 100 : questPct(q.progress, q.target)
+}
+
+/** FR-M05-26: the displayed text of a recent question, cut at 100 characters + "..." (BR-29). */
+export function cutText(text: string, limit = 100): string {
+  return text.length > limit ? `${text.slice(0, limit)}...` : text
+}

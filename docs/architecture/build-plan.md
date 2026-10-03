@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document | Build plan (G2 → G3) |
-| Version | 1.14 |
+| Version | 1.16 |
 | Date | 2026-10-01 |
 | Status | G2 approved for the foundation and M01–M09. **Active priority: Release 1.0** (§R, user decision D15); §S (student slice) kept as the record of its tasks. The §R tasks of M10–M18 and the §R.8 decisions need the Delivery Lead's / user's G2 confirmation |
 | Author | solution-architect (agent) |
@@ -28,6 +28,8 @@
 | 1.12 | 2026-09-30 | **§R aligned with the M27 discovery and user decisions** (`docs/discovery/M27-school-admin.md`, R10). (1) Admin Sekolah Monitoring and Kirkpatrick are **aliases** of M11 S2 and M12 S1 (identical content on live): G1 yes, built through M11-T3 and M12-T2 as an alias route, school scope INFERRED; P-SA-MON and P-SA-KIRK are dropped. (2) The 8 other non-buildable Admin Sekolah items (incl. Command Center, 403) are **Deferred (user, 2026-09-30) — needs school-admin account** and leave the 1.0 waves; their P-SA-* placeholders are parked. (3) Heatmap Topik Lemah: owner M25, route `/buku-nota/heatmap`; P-HTL-T1/T2 kept. (4) **F-19b is now unconditional** and also fixes the 5 sidebar hrefs that 404 on live (D-M27-02) and the Heatmap href. (5) Foundation status per TRACKER 2026-09-30 (§R.2, §R.4). (6) §R.1.4 recounted: 54 items, 45 G1, 1 awaiting G1, 8 deferred. (7) Stale text removed: the "optional sticky action column" of `DataTableCard` (F-16 body; M02-T4 now says in-card scroll below the fit width), per design-system §7.4 (XL-21); overview.md updated to match. |
 | 1.14 | 2026-10-01 | **M08 build outcomes (doc only; Delivery Lead).** S4, S10 and S11 are built in M08-T5 (`routes/prestasi.ts`, `routes/analisa-item.ts`); M08-T7 adds S5, S8 and the teacher variants and extends those pages without recreating them, and its `routes/class.ts` claim for S4/S10/S11 is removed. §R.6a gains two items: the boot budget not met (F-34) and the M03 `fetchSubjects` export. |
 | 1.13 | 2026-09-30 | **G4 review follow-ups (doc only).** M08-T7 also owns endpoints #5 and #8 (files `mock/handlers/class*`, `mock/repository/class*`, `api/class*`; depends on M08-T1b; asserts the §6.10 S8 RiskProfile anchors); M08-T1 notes the same. M10-T1 does not register #39–#41 (served by M04 `handlers/dskp.ts`, Delivery Lead decision 2026-09-30). M05-T1 drops #22 (M04-T6a) and adds the `answerChapter` hook. New §R.6a lists the open cross-module items. |
+| 1.16 | 2026-10-03 | **XL-R10 fixes for M25 (`docs/qa/audit/cross-module-logic-R10-M25.md`; doc only).** §2.20 and the L19 row follow M25 SRS v1.2 (G1 approved 2026-10-03): access is student and admin only, other roles go to their landing page (XL-R10-02); M25 reads `practice.answers(userId)`, so the `chapterAggregates` blocker is removed and `curriculum.chaptersByIds` is recorded as existing; M25-T1 owns the `m25-bands` / `m25-ties` fixtures (XL-R10-03); the empty-state account is id 3 (XL-R10-07); the admin seed dependency is recorded as XR-M25-02b/03 on M05 and M04 with the D12-preferred option (XL-R10-01). |
+| 1.15 | 2026-10-03 | **Student-menu rows L18, L19, L20, L26, L28, L29, L30, L37, L42 (D21; doc only; solution-architect).** New foundation task F-31b (registry entries M20, M21, M25). New §2.18 M20, §2.19 M21 and §2.20 M25 with the student-slice tasks (M20-T1…T3, M21-T1…T2, M25-T1…T2; admin and seller parts deferred); M21-T1 takes over the provisional `sponsors` store from M17 (F-33) with a defined hand-over. M16 splits M16-T6b (S20–S22), M16-T6c (S23 + tournament detail) and M16-T7a (S30 banner). New §2.21 maps each of those rows (plus L18 and L42) to the exact screens and the tasks needed for 100%. P-HTL-T1/T2 are realised as M25-T1/T2. |
 
 ---
 
@@ -278,7 +280,7 @@ QA writes the full `E2E-Mxx-nn` suite of the 1.0 screens at G5.
 
 | ID | 1.0 item | Role | Entry gate | Tasks (after G1) |
 |---|---|---|---|---|
-| P-HTL | Heatmap Topik Lemah | Murid | R10 discovery → URS/SRS → AUD → G1 → XL-R10 (§R.6) | P-HTL-T1 mock (the owner's contract only), P-HTL-T2 UI |
+| P-HTL | Heatmap Topik Lemah | Murid | R10 discovery → URS/SRS → AUD → G1 → XL-R10 (§R.6) | P-HTL-T1 mock (the owner's contract only), P-HTL-T2 UI (**v1.15: realised as M25-T1 / M25-T2, §2.20**) |
 | P-SA-CC, P-SA-STAT, P-SA-DSKP, P-SA-LA, P-SA-LB, P-SA-PEL, P-SA-GURU, P-SA-KELAS (**parked**) | Command Center, Statistik Penggunaan, DSKP Heatmap, Laporan Aktiviti, Laporan Bulanan, Senarai Pelajar, Senarai Guru, Kelas Sekolah | Admin Sekolah | Deferred (user, 2026-09-30) — needs school-admin account. No wave slot until the account is provided; then discovery → URS/SRS → AUD → G1 → XL-R10 | T1, T2 each |
 
 P-SA-MON and P-SA-KIRK are **dropped** (v1.12): `/admin-sekolah/monitoring` and `/admin-sekolah/kirkpatrick` are aliases of M11 S2 and M12 S1. M11-T3 and M12-T2 each register the alias route (school scope INFERRED; user shell per `docs/design/shells.md` v1.2), with the same page component and a smoke assertion that the alias renders the same title.
@@ -1258,8 +1260,11 @@ Order: T1 → T2 ∥ T3 → T4.
 | M16-T5 | S13–S19 single-player games, Roda Nasib, Jutawan Ilmu | L | M16-T2, F-19 | |
 | M16-T6 | S20–S22 competition, Uji Minda, handled error page; S23–S28 tournaments, leagues, Sekolah Bersaing | L | M16-T1, M16-T2, F-19 | |
 | M16-T7 | S29 admin game settings; S30 tournament banner | M | M16-T1, M16-T2, F-18, F-19 | The banner is mounted as the first child of `<main>` by a small F-19 follow-up (§S.3 rule 7); M16 supplies the component and `tournaments.active()` |
+| M16-T6b (v1.15 split of T6) | S20 Pertandingan Mingguan, S21 Uji Minda, S22 handled error page | M | M16-T2, F-19 | `pages/Pertandingan*`, `UjiMinda*`, `SambungKata*` (500 page), `routes/permainan-extra.ts`; #40, #41; S20 reads `practice.weekRank` (exists, F-26c) |
+| M16-T6c (v1.15 split of T6) | S23 `/tournament` list and the provisional `/tournament/:uuid` detail | S | M16-T1, F-19, F-16 | `pages/Tournament{List,Detail}*`, `routes/tournament.ts`; #42, #45; empty state "Tiada tournament aktif buat masa ini."; "Cipta Tournament Baru" admin-only. S24 stays in the T6 remainder |
+| M16-T7a (v1.15 split of T7) | S30 `<TournamentBanner />` and `tournaments.active()` | S | M16-T1, F-19 | component exported from `index.ts` (§6.13); mounted by the F-19 follow-up of §S.3 rule 7; #1 |
 
-Order: T1 → T2 → T3 ∥ T4 ∥ T5 ∥ T6 → T7.
+Order: T1 → T2 → T3 ∥ T4 ∥ T5 ∥ T6 → T7. (v1.15) T6 remainder after the splits: S24 create tournament (admin) and S25–S27 leagues; T7 remainder: S29 admin settings.
 
 ### 2.15 M17 Admin Dashboard (`m17-admin-dashboard`)
 
@@ -1314,6 +1319,107 @@ flowchart LR
   F33[F-33 provisional M21/M26] & F24b & M12T1 & M16T1 & M11[M11 tasks] --> M17T1[M17-T1]
   F25b & F26c & M11 --> M18T1[M18-T1]
 ```
+
+### 2.18 M20 Marketplace (`m20-marketplace`), student slice (v1.15, row L37)
+
+Sources: M20 SRS v1.2 (G1 approved) §2, §6, §7, §10. Screens in the student slice: **S6** `/marketplace`, **S7** `/marketplace/:slug`, **W** `/marketplace/:slug/whatsapp` (no screen of its own, D14) and **S8** `/marketplace/penjual/:id`, all in the user shell for any signed-in role (FR-M20-08). The nav item "Marketplace" already exists in `user-nav.ts` (student and admin), so no shell task is needed.
+
+**Deferred (not needed for the student rows):** admin S1–S5 and endpoints #1–#12 (M20-T4 handlers, M20-T5 screens); seller side R, S9–S12 and endpoints #18–#24, plus the "Kedai Saya" menu link of FR-M20-79 (M20-T6). A student owns no Seller, so no student menu links to `/seller/*` (FR-M20-02).
+
+**F-31b Registry extension for M20, M21 and M25 (FE, S; depends F-31).** Appends M20, M21 and M25 in phase order to `src/app/modules.ts` and `src/mock/registry.ts` and creates their stub folders (`index.ts`, `routes.ts`, `mock/index.ts`; the M25 folder is `m25-ai-centre`), in one change, as F-31 did for M11–M18 (rule 1 exception; ADR-0009 Amendment 2 applies, a one-line note is added to the ADR). Today only M01–M18 exist in `src/modules` and in the registries. *Accept:* `registry.test.ts` and `registry-boot.test.ts` pass with 21 module entries; no other file edited.
+
+| ID | Title | Size | Depends on | Scope |
+|---|---|---|---|---|
+| M20-T1 | Marketplace stores, seed and buyer handlers | M | F-31b, F-10, F-23 | Owned stores `mpCategories` (6, constant), `mpProducts`, `mpImages`, `mpSellers` (DATA-M20-01…04) and the empty `ProductReview`/`SellerDocument` tables; seed §6.11 (1 seller "JomBelajar Official" owned by account 1; the 9 observed products with their views); named queries §6.8 (Q-M20-RELATED, Q-M20-SELLER-PRODUCTS, Q-M20-SELLER-REVIEWS and the visibility rule BR-M20-08); handlers **#13 categories, #14 product search/sort/pager (20 per page), #15 product by slug (`views` +1 on every call, BR-M20-12), #16 WhatsApp click (`whatsappClicks` +1, returns `{url}` of the simulated `wa.me` link, D14), #17 shop**; hooks of §6.13; `api/**` client; all `routes/*.ts` fragments created. Product photos: the one-time read-only copy into `public/images/marketplace/products/…` decided at G1 (nothing is generated, "no generated media"); the folder does not exist yet |
+| M20-T2 | S6 buyer marketplace and S8 public shop (with `ProductCard`) | M | M20-T1, F-16, F-17 | `pages/Marketplace*`, `PenjualShop*`, `components/product/**` (`ProductCard`, chips, filters), `routes/marketplace.ts`; FR-M20-49…54 and 62; "Tiada Produk Dijumpai" empty state; no horizontal scroll at 375/768/1280. Smoke `e2e/m20-marketplace/smoke-marketplace.spec.ts`: tab "Marketplace - PRESTASIPLUS" as account 2 |
+| M20-T3 | S7 product page and the W hand-off | M | M20-T2 | `pages/ProductDetail*`, `components/detail/**`, `routes/product.ts`; FR-M20-55…61: gallery swap, details card with the post-increment `views`, "Hubungi Penjual di WhatsApp" opening `/marketplace/:slug/whatsapp` in a new tab (`target="_blank"`), W route calls #16 then `location.replace(url)` (D14: no external screen is rendered; the tests stub `location.replace`), reviews empty state, related products. Smoke tab "{product} - Marketplace PRESTASIPLUS" |
+| M20-T4 | Admin handlers #1–#12 (**deferred**) | M | M20-T1 | |
+| M20-T5 | S1–S5 admin screens (**deferred**) | L | M20-T4, F-18, F-16 | |
+| M20-T6 | Seller: #18–#24, R, S9–S12, "Kedai Saya" link (**deferred**) | L | M20-T1 | |
+
+**Cross-module reads and contracts (student slice).**
+
+| Need | Owner | Exists today? |
+|---|---|---|
+| Session and route guard for any signed-in role | M01 (`manifest` route meta, session) | Yes |
+| `users.get(id)` for the seller owner (admin screens S2/S4/S5 only; S8 does not show the owner) | M01 `users` repository, public export of `@/modules/m01-authentication/mock` | Yes; not needed by T1–T3 |
+| Mock clock for "Bergabung {relative}" (FR-M20-12) | core | Yes |
+| Icon rows (`fa-shopping-bag`, `fa-whatsapp` …) | design-system v1.8 §6 (XR-M20-07 applied) | Yes |
+| M14, M15, M19 | none (XR-M20-03/04/05 are confirmations only) | n/a |
+| Product photo assets | copied from live, read-only | **No** (`public/images/marketplace` missing): task input, not a code contract |
+
+M20 exposes no contract to other modules in this slice. Of the 7 owner requests of M20 §6.12, only the route-meta part of XR-M20-01 applies to the student slice; the rest concern the admin and seller parts.
+
+### 2.19 M21 Sponsorship and Mohon Keluarga Angkat (`m21-sponsorship`), student slice (v1.15, row L20)
+
+Sources: M21 SRS v1.2 (G1 approved) §2, §6, §7. Student slice = **S6** `/mohon-keluarga-angkat` (user shell, every signed-in role, FR-M21-09, endpoint **#15** `POST /api/mohon-keluarga-angkat`). "Mohon Keluarga Angkat" already exists in `user-nav.ts` (student and admin).
+
+**Deferred:** admin S1–S5 and endpoints #1–#14 (M21-T3 handlers, M21-T4 screens); public S7 sponsor registration and endpoint #16 (needs M01 `users.create({role:'sponsor'})`, XR-M21-02a); the PROPOSED sponsor portal P0–P2 and #17–#19 (M21-T5). Not part of the student row.
+
+| ID | Title | Size | Depends on | Scope |
+|---|---|---|---|---|
+| M21-T1 | Owner stores, hand-over of `sponsors` from M17, application handler | M | F-31b, F-23, F-33 (G4 approved) | Owned stores `sponsors` (DATA-M21-01, taken over, see below), `anakAngkat` (DATA-M21-02) and `fosterApplications` (DATA-M21-03; runtime ids from 4; the seed rows 1–3 are loaded by M21-T3 once XR-M21-01 is applied); enumerations §6.5; named queries needed by S6; handler **#15** (BR-M21-13, V-M21-03: the `studentEmail` must resolve to a `student` user through `users.findByEmail`; 422 copy "Email pelajar tidak dijumpai dalam PrestasiPlus."); the exposed contract `sponsorship.sponsorSummary()` and `sponsorship.sponsorForUser(userId)` (§6.7); hooks §6.13; `api/**` client; all `routes/*.ts` fragments created |
+| M21-T2 | S6 Mohon Keluarga Angkat | S | M21-T1 | `pages/MohonKeluargaAngkatPage.vue`, `components/mohon/**`, `routes/mohon.ts`; FR-M21-46…49: hero, e-mail field with hint and the "sini" link to `/register`, category and income selects, reason textarea with the clickable examples ("• " prefix, no request), the static info box, submit with the PROPOSED success and 422 notices; header "Mohon Keluarga Angkat" / "Selamat datang kembali" (DV-M21-06). Smoke `e2e/m21-sponsorship/smoke-mohon.spec.ts`: tab "Mohon Keluarga Angkat" as account 2 |
+| M21-T3 | Admin handlers #1–#14 and the application / anak-angkat seeds (**deferred**) | L | M21-T1, XR-M21-01 applied in M02 | |
+| M21-T4 | S1–S5 admin screens (**deferred**) | L | M21-T3, F-18, F-16 | |
+| M21-T5 | S7 public registration, portal P0–P2, #16–#19 (**deferred**) | M | M21-T3, M01 `users.create` | |
+
+**How M21-T1 takes over the `sponsors` store without breaking M17 (D12).** Facts checked in the repository: the provisional store lives in M17 `mock/repository/provisional-sponsors.ts` (`defineSponsorsRepo(store, options)`, written to move: its header says `provisional: false`), `mock/tables/provisional-tables.ts`, `mock/seeds/provisional-{seed,data}.ts` and `provisional-types.ts`; the M17 plugin registers `sponsors: sponsorsRepo` and re-exports `sponsors` and the row types; **nothing outside M17's own files and tests imports `sponsors`**, and the consumer Q-M17-SPONSORS (M17-T1) is not built. Steps, in one change set:
+
+1. Work in an isolated git worktree (shared-store rule; M17 and M21 files both change). Merge only when `src/mock/server/__tests__/registry-boot.test.ts`, the M17 tests and the M21 tests are green.
+2. Move the four sponsor files into `src/modules/m21-sponsorship/mock/{tables,repository,seeds}` unchanged in content (the 6 observed rows, ids 6–11, 6 `SUSPENDED`) and register `defineSponsorsRepo(table, { provisional: false })` in the M21 plugin (`dependsOn: ['core', 'M01']`, `version: 1`).
+3. In M17: remove `sponsors` from `repositories`, the table from `M17_PROVISIONAL_TABLES`, the sponsor lines from the seed and finalise functions and the `sponsors` / sponsor type exports; bump the M17 plugin `version` (1 → 2). `moodCheckins` and `tuitionCentres` stay (owner M26).
+4. M21 exports `sponsorship.sponsorSummary()` → `{total: 6, active: 0, pending: 0, rejected: 0, suspended: 6}`. M17-T1 reads Q-M17-SPONSORS only through this contract (`@/modules/m21-sponsorship/mock`), at request time as it does for its other cross-module reads, so M17's `dependsOn` does not change (registry order M17 before M21 is fine).
+5. Tests: the "Q-M17-SPONSORS" and "move to the owner" blocks of `m17-admin-dashboard/__tests__/mock/provisional-stores.test.ts` move to the M21 tests (assert `owner: 'M21', provisional: false`); the M17 test keeps mood and tuition and gains one assertion on `sponsorSummary()`. The `PENDING_XR_M21_01` allow-list (users 5503–5505 are students in M02) moves with the sponsor test. E2E-M17-17 stays green because the figures are unchanged.
+
+**Cross-module reads and contracts (student slice).**
+
+| Need | Owner | Exists today? |
+|---|---|---|
+| `users.findByEmail(email)` and `users.get(id)` (resolve the pupil, check role `student`) | M01 `users` repository (public export) | Yes |
+| `students.search(q)` returning school (S4 admin search only) | M02 (`searchStudents`, `GET /api/students/search`) | Partly (no `school` field confirmed); admin part, deferred |
+| Seed anchors: students 5231–5234, parent 5412, sponsor logins `sponsor1…5@demo.test`, fixture school 900003 (XR-M21-01) | M02 / M01 | **No** (grep finds none); needed only for the application and anak-angkat seeds (M21-T3), not for S6 |
+| `rewards.countBySponsor(sponsorId)` (admin S3 "Hadiah", XR-M21-04) | M15 | **No**; admin part, deferred |
+| `sponsorForUser` consumed by the M01 landing (XR-M21-02c, PROPOSED) | M01 | **No**; sponsor portal, deferred |
+| Exposed: `sponsorship.sponsorSummary()` for M17 | M21 (new) | Created by M21-T1 |
+
+### 2.20 M25 AI Centre (`m25-ai-centre`), student slice: Heatmap Topik Lemah (v1.15, row L19)
+
+Sources: M25 SRS v1.2 (**Approved G1, 2026-10-03**, partial), §2, §6, §7. Screen: **S1** `/buku-nota/heatmap` (user shell, student menu item in "Pusat AI"; only `student` and `admin` may open it, every other role is redirected to its landing page, route meta `roles: ['student','admin']`, `onForbidden: 'landing'`, and handler #1 answers 403 through `requireRole`; derived read model, **no stored data**). Endpoints: **#1** `GET /api/buku-nota/heatmap` and **#2** `GET /api/duta/recommendations` (owned by M24; M25 only calls it). **Entry gate:** G1 is met and the XL-R10 fixes are applied here; the open items are XL-R10-01 (seed data, below) and F-19b. The tasks realise P-HTL-T1 and P-HTL-T2.
+
+**Deferred:** the rest of M25 (`/buku-nota`, `/pusat-nota-ringkas`, other Pusat AI screens), DSKP Heatmap and Laporan Bulanan (school admin; M27 owner, OD-R1).
+
+| ID | Title | Size | Depends on | Scope |
+|---|---|---|---|---|
+| M25-T1 | Heatmap read model and handlers | S | F-31b, the M05 and M03 reads below, M06-T1 (provides #2) | `mock/repository/heatmap.ts` exporting `heatmap.forUser(userId)` and `heatmap.hiddenForUser(userId)` (tests only); handler #1; named queries Q-M25-HM-ROWS / CELLS / HIDDEN with K-M25-01 = 5 (minimum answers per cell), bands red < 50, amber 50–79, green ≥ 80, ordering BR-M25-04; recomputed per request (FR-M25-29) from `practice.answers(userId)` and `curriculum.chaptersByIds`; **owns the test hook `mock.loadFixture('m25-bands' | 'm25-ties')`** (SRS §6.9, built on `mock.addAnswer`; used by E2E-M25-15 and 26); `api/**` client; `routes/*.ts` created; no store, nothing to reset |
+| M25-T2 | S1 Heatmap Topik Lemah screen | M | M25-T1, F-19b, F-17 | route meta `roles: ['student','admin']` with `onForbidden: 'landing'` (XR-M25-06); `pages/HeatmapTopikLemahPage.vue`, `components/heatmap/**`, `routes/heatmap.ts`; hero, legend, subject cards with 1 / 3 / 4 grid columns at 375 / 768 / 1280, cells linking to practice, Cikgu Pakar card (hidden when #2 is empty or fails); header "Heatmap Topik Lemah" / "Selamat datang kembali"; `/heatmap-topik-lemah` renders the global 404. Smoke `e2e/m25-ai-centre/smoke-heatmap.spec.ts` as account 3 (pelajar2, id 3, empty state) and as the canonical admin (6 cells, attempts 116) |
+
+**Cross-module reads and contracts.**
+
+| Need | Owner | Exists today? |
+|---|---|---|
+| Viewer's answers `practice.answers(userId)` (all time, grouped by chapter in M25; replaces the withdrawn `chapterAggregates` request) | M05 | Yes (exported); **no blocker** |
+| **XL-R10-01 seed (XR-M25-02b, XR-M25-03):** the admin's 84 chapterless answers in A2–A5 (BM 44, Sejarah 40) must link to chapter-bearing questions, and M04 needs questions in chapters 87, 382 and 413, so the mock yields the observed 6 cells (116 / 45 shown, 3 / 1 hidden; totals 119 / 46 unchanged) | M05 (pin the A2–A5 answers) and M04 (`questions.contributeAnchors('M05', rows)`: 40 + 38 + 5 SPM-pool rows plus one BM row with null chapter, each replacing a generated row) | **No** (no M04 question in 87, 382, 413). Minimal option, D12 choice: **the owners do it** (M04 contributes the anchors, M05 pins the answers), because those are their stores; M25 stays store-free. Fallback only if the owners are unavailable: M25 contributes via `questions.contributeAnchors('M25', rows)` in a reserved id block, which D12 disfavours (M25 writing M04's dataset). Worktree and `registry-boot.test.ts` green required. Blocks only the admin figures; the pelajarmaju and empty-state paths build now |
+| `curriculum.chaptersByIds(ids)` → `{id, name, subjectId}` (XR-M25-04) | M03 | **Yes**, `src/modules/m03-curriculum/mock/repository/curriculum.ts:412`; subjects via `curriculum.subjects()` (the public client export stays the R.6a item) |
+| `GET /api/duta/recommendations` (M06 #21, "owned by M24"), one `DutaCard` or `null`, default card `cikgu-demo-matematik` (XR-M25-05) | M24 (not specified) / M06 | **No handler.** M06 has only a mock stub. Proposal for the Delivery Lead: M06-T1 registers it as a provisional handler (`owner: 'M24'`, same pattern as F-33) because M06 S11–S13 need it too; M25-T1 must not register it |
+| Nav href `/heatmap-topik-lemah` → `/buku-nota/heatmap` and the active item (XR-M25-01) | F-19b | **No.** `user-nav.ts` still has `to: '/heatmap-topik-lemah'` |
+| Route meta `roles: ['student','admin']`, `onForbidden: 'landing'` (XR-M25-06) | M01 | Guard mechanism exists; M25-T2 declares the meta |
+
+### 2.21 Student-menu rows: screens and tasks needed for 100% (v1.15; D21, G1 to G5)
+
+Rule used: the reach rule of §R.0 (a, b): the screen the menu link opens, plus every sub-screen of the same SRS feature that it links to. The "100%" column lists the tasks that must be built and pass G4 and G5. Prerequisite tasks owned by other rows are named, not redefined.
+
+| Row | Menu → route | Exact screens (SRS) | Tasks needed for 100% | Notes |
+|---|---|---|---|---|
+| **L26** Permainan (#21) | `/permainan` (`user-nav.ts` ids `permainan`, drawer "Game") | M16 **S6** `/permainan` (#22) and every one of its 18 cards (SRS §2, discovery A.3): S1 Battle Arena `/battle` with S2–S5 and the arena (provisional); S7 `/papan-bijak` and S8–S12 lobbies with their rooms; S13–S17 single-player games; S18 Roda Nasib; S19 Jutawan Ilmu and `/permainan/jutawan/main`; S20 Pertandingan; S21 Uji Minda; S22 `/permainan/sambung-kata` (handled 500); "Peta Pengembaraan" → M03 S14 `/peta-belajar` | **M16-T1, M16-T2, M16-T3, M16-T4 (includes T4a), M16-T5, M16-T6b**, plus **M03-T1a + M03-T4** for the Peta Pengembaraan card. Prerequisites that exist: F-25b (`jutawanQuestions`), F-26b, F-26c (`practice.weekRank`), M14 `gamification.onGameResult` / `canEarnSyiling` | §R.1.1 row 21 maps only M16-T4a and accepts 404s for the card targets (OD-R6). That reaches S6 alone. Under D21 the cards must resolve (reach rule b), so the full list above is the 100% set. Minimum if the Delivery Lead keeps OD-R6: M16-T1, T2, T4a |
+| **L28** Tournament (#23) | `/tournament` (ids `tournament`; the student sees "Tournament", `fa-trophy`) | M16 **S23** `/tournament` ("Liga & Tournament", #42), the provisional `/tournament/:uuid` detail (#45) and **S30** the tournament banner on every user page (#1). S24 create is admin-only (not shown to students). S25–S27 leagues are not in the student menu | **M16-T1, M16-T6c, M16-T7a** (T6c needs only T1, F-19, F-16; none of the game tasks) | Seed is empty (SRS "Tiada tournament aktif…"); the registration / ongoing cards and the banner are checked with the fixture `tournaments` (E2E-M16-10, 77, 80). E2E-M16-11 (admin creates a tournament) needs S24 and stays outside the student row. Verify at G5 whether S23 links to `/liga` |
+| **L18** SPM (#13) | `/spm` | M06 S1 hub with its 4 module cards and "Sejarah Kuiz SPM": S2 databank + Q1; S3 latih tubi, S4 settings + Q2; S5 Tracking A, S6 set list + Q3; S8 subjektif; S10 history; S7 and S9 are M05 `/latihan-berstruktur` SPM variants (with the answer page) | **M06-T1, M06-T2, M06-T3** (T2: S1–S4, S10, Q1, Q2; T3: S5, S6, Q3, S8). Prerequisites from M05: M05-T4 (`QuizRunner`), M05-T7 (S7, S9, answer page, `scope=spm`) with M05-T2, and M04-T6a. **M06-T4 is not reachable from `/spm`** (S11 `/spm-mock`, Q4, S12 and S13 `/pusat-ai/spm` hang off the separate nav items "SPM Mock Exam" and "SPM Walkthrough", which are not matrix rows) | Recommendation: still build T4 inside the M06 1.0 part. §R.1.1 row 13 says "/spm and every M06 route", the two nav items would 404 otherwise, and the M06 G5 covers S1–S13. Strictly, T1–T3 give L18 100% |
+| **L42** Cikgu Alesa (#37) | `/cikgu` | M13 **S1** `/cikgu` only (pelajar is INFERRED, tier `pelajar`, 10 messages a day, endpoint #1). S2–S6, V1, V2 are teacher and admin; a pelajar opening them is sent to the M01 landing page (E2E-M13-10) | **M13-T1, M13-T2.** **M13-T3 and M13-T4 are not student-visible.** For E2E-M13-10 the S2–S6 paths must exist as guarded routes: M13-T2 registers them with the role guard and no page body until T3/T4 add it (scope note for T2). Prerequisites: F-26 (`practice` answer log), F-30 (`classrooms`), F-24, F-23 | M13 SRS v1.1 is G1 approved; every AI output is canned (D4) |
+| **L29** Topik (#24) | `/topics` | M03 **S12** `/topics` (`?grade_level=&subject=`) and **S13** `/topics/:id` | **M03-T1a, M03-T4** (T1b, T2, T3 are the admin part, already built and G5 READY). T1a prerequisites F-24, F-25, F-26 are G4 approved | The tracker says student S12–S14 handlers (#25–#27) are not built; G5 of M03 is re-run when they land |
+| **L30** Peta Belajar (#25) | `/peta-belajar` | M03 **S14** (`?subject=&grade=`), DV-M03-08 islands path at 769 px | **M03-T1a, M03-T4** (the same task as L29, so L29 and L30 are built together) | Also the target of the L26 card "Peta Pengembaraan" |
+| **L37** Marketplace (#32) | `/marketplace` | M20 S6, S7 (+ W), S8 | **F-31b, M20-T1, M20-T2, M20-T3** (§2.18) | Photos copied from live read-only |
+| **L20** Mohon Keluarga Angkat (#15) | `/mohon-keluarga-angkat` | M21 S6 | **F-31b, M21-T1, M21-T2** (§2.19) | M21-T1 includes the `sponsors` hand-over from M17 |
+| **L19** Heatmap Topik Lemah (#14) | `/buku-nota/heatmap` | M25 S1 | **F-19b, M25-T1, M25-T2, M06-T1 (#21)** (§2.20); SRS v1.2 G1 approved | Open: the M05 / M04 seed (XL-R10-01) for the admin's 6 cells, and F-19b. Access is student and admin only |
 
 ---
 

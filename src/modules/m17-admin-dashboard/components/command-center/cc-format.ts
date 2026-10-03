@@ -76,8 +76,8 @@ export function gradeTone(grade: string | null): AccuracyTone {
 /** Class strings of the dark tables (min 12 px text, NFR-M17-04). */
 export const CC_TABLE = {
   table: 'w-full border-collapse text-left',
-  th: 'px-3 py-3 text-xs font-semibold tracking-wider whitespace-nowrap text-slate-400 uppercase',
-  td: 'px-3 py-3 align-middle text-sm text-slate-300',
+  th: 'px-2 py-3 text-xs font-semibold tracking-wider text-slate-400 uppercase',
+  td: 'px-2 py-3 align-middle text-sm text-slate-300',
   row: 'border-t border-slate-700/60 transition hover:bg-slate-700/40',
   rowLink: 'cursor-pointer',
   mono: 'font-mono',

@@ -36,6 +36,7 @@ const subjectId = ref('')
 const level = ref<EducationLevelSlug | ''>('')
 const description = ref('')
 const submitting = ref(false)
+const INLINE_FIELDS = ['name', 'subjectId', 'educationLevel']
 const fields = ref<Record<string, string>>({})
 const failure = ref<string[]>([])
 
@@ -45,10 +46,6 @@ const tiles = computed(() => tilesForSchoolType(school.value?.type ?? null))
 watch(tiles, (next) => {
   if (level.value !== '' && !next.some((t) => t.slug === level.value)) level.value = ''
 })
-
-const errorLines = computed(() =>
-  failure.value.length > 0 ? failure.value : Object.values(fields.value),
-)
 
 async function submit(): Promise<void> {
   if (submitting.value) return
@@ -66,8 +63,13 @@ async function submit(): Promise<void> {
     flash.success(KELAS_COPY.created)
     await router.push('/guru/kelas')
   } catch (err) {
-    if (err instanceof ApiError && err.fields) fields.value = err.fields
-    else failure.value = [err instanceof Error ? err.message : KELAS_COPY.createFailed]
+    if (err instanceof ApiError && err.fields) {
+      fields.value = err.fields
+      // Fields without an inline slot (schoolId, description) go to the box, so no message is lost.
+      failure.value = Object.entries(err.fields)
+        .filter(([key]) => !INLINE_FIELDS.includes(key))
+        .map(([, message]) => message)
+    } else failure.value = [err instanceof Error ? err.message : KELAS_COPY.createFailed]
   } finally {
     submitting.value = false
   }
@@ -88,7 +90,7 @@ const fieldClass = (base: string, key: string): string =>
     </RouterLink>
 
     <form class="space-y-5" data-testid="kelas-form" @submit.prevent="submit">
-      <AlertBox :messages="errorLines" />
+      <AlertBox :messages="failure" />
 
       <SchoolPicker @select="school = $event" />
 

@@ -66,7 +66,7 @@ const plugin = defineMockModule({
   // (`handlers/dashboard.ts`, `repository/seams.ts`), never while seeding, so they are not
   // dependencies: the F-26 tests boot M05 without M14, and M14 in turn reads M05 (a cycle).
   dependsOn: ['core', 'M01', 'M02', 'M03', 'M04'],
-  version: 5,
+  version: 7,
   tables: { ...M05_TABLES, pupilSubjectAccuracy: pupilAccuracyTable, ...FIXTURE_TABLES },
   datasets: {
     practiceAnswers: answersDataset,

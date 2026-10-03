@@ -12,7 +12,7 @@ import {
   buildFeedbackRows,
   fitSeries,
 } from '../../mock/data/feedback'
-import { buildPdf, reportLines } from '../../mock/handlers/export'
+import { buildPdf, reportLines } from '../../mock/handlers/pdf'
 import { fmt1, mean1, pct1, pctTenths, round1 } from '../../mock/repository/common'
 import { statusOf } from '../../mock/repository/interventions'
 import {

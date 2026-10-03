@@ -5,11 +5,12 @@
 | Field | Value |
 |---|---|
 | Document | SRS — M15 Rewards Shop & Redemption |
-| Version | 1.4 |
-| Date | 2026-09-26 |
-| Status | **Approved (G1)** — 2026-09-26, together with the URS. The default seed mirrors live; S5 shows the empty state for every account by the user's decision on OQ-M15-01; other unobserved populated states remain provisional (OQ-M15-09). |
+| Version | 1.7 |
+| Date | 2026-10-03 |
+| Status | **Approved (G1)** for S1–S9 — 2026-09-26, together with the URS. **S10/S11 (roles-matrix row L43; v1.5, audit fixes v1.6): Approved (G1), 2026-10-02** — independent audit PASS ([L43-audit.md](../../qa/audit/L43-audit.md)); URS OQ-M15-13, 14, 16 closed (13 and 16 decided by the Delivery Lead under the user's standing instruction). The default seed mirrors live; S5 shows the empty state for every account by the user's decision on OQ-M15-01; other unobserved populated states remain provisional (OQ-M15-09). |
 | Author | product-analyst (agent) for §1–§5, §8–§10, §12–§13; solution-architect (agent) for §6 data entities, seeds, dataset spec and cross-module requests, §7 mock API, §11 |
-| Source URS | [urs/M15-rewards-shop.md](../urs/M15-rewards-shop.md) v1.0 (FN-M15-n.n.n, 21 stories, AC-M15-nn.m) |
+| Source URS | [urs/M15-rewards-shop.md](../urs/M15-rewards-shop.md) v1.6 (FN-M15-n.n.n, 25 stories, AC-M15-nn.m) |
+| Source discovery (v1.5, L43) | [L43-kedai-hadiah-digital.md](../../discovery/L43-kedai-hadiah-digital.md), screenshots `docs/discovery/img/L43/` |
 | Source discovery | [M15-rewards-shop.md](../../discovery/M15-rewards-shop.md), inventory `docs/discovery/inventory/M15/` (incl. `_snapshot-2026-09-26.json`), screenshots `docs/discovery/img/M15/` |
 | Related | [M14 SRS](M14-gamification.md) v1.0 (§6.13 answers to XR-M15-01…08, BR-M14-16/22/29/31, DATA-M14-17/18/19/21), [M01](M01-authentication.md) (User, guest redirect, landing pages BR-07, 404 page, canonical accounts 1–11), [M02](M02-users-schools.md) (users dataset §6.15 and id policy; DATA-M02-02 ParentStudentLink; parent 6 ↔ students 2, 4; parent 5401 without links), [M05](M05-practice.md) (BR-09/BR-31: practice coins go to the M14 wallet; no M15 dependency), M14 (discovery [M14-gamification.md](../../discovery/M14-gamification.md): wallet, ledger, conversion, `/admin/reward-control` S10 incl. draws and the syiling-priced catalogue), [M13](M13-cikgu-alesa.md) (neighbouring menu group), [design/shells.md](../../design/shells.md) (DV-SH-03, DV-SH-04), [architecture/overview.md](../../architecture/overview.md) (§6.6 datasets, §6.11 persistence, §6.12 clock, §6.13 hooks) |
 
@@ -17,6 +18,9 @@
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-10-03 | **As-built update after the G4 review of M15 (doc only; status stays Approved (G1)).** (1) New **DV-M15-20** (D9 unreadable text, Delivery Lead): the disabled S6 box button keeps its `#d1d5db` background, text white → `#4b5563` (FR-M15-49, §0.1). (2) #15/#16 use `requireRole('parent')`: any non-parent session gets `403 FORBIDDEN`; a parent whose child link does not match still gets `404 NOT_FOUND` (FR-M15-58, FR-M15-60, BR-M15-20, §7, §9; new E2E-M15-72). (3) FR-M15-65 and §8.3: as built, every failed action (redeem, box open, ticket, approve/reject, bulk, deliver, cancel, form save) shows the shared generic copy "Ralat berlaku. Sila cuba lagi." — the handler `message` is never displayed (wording confirmed against the shared convention used by M02/M03/M14). (4) §11.1: SEC-M15-11…18 added — real-backend requirements only (the prototype is unchanged). No FR added or removed (79 FRs); E2E 71 → 72 (provisional 29 → 30). |
+| 1.6 | 2026-10-02 | **L43 audit PASS — AUD-L43-01…05 applied; L43 additions Approved (G1).** FR-M15-69: the card labels are DOM "Token Anda" / "Syiling" rendered upper case by CSS (assert rendered text). FR-M15-70 and DV-M15-19: measured caption 9px, labels 10px, raised to 12px (card must still fit: 324px at 375, 369px at 768/1280). FR-M15-74: the 48px decorative "🎁" on S11 (EL-M15-S11-005; S11 = 5 elements, M15 content 274/274). FR-M15-71, BR-M15-27, E2E-M15-62/63 and AC-22.5/22.6: active-chip move (`flagship`) and unknown `cat` (200, no active chip) are OBSERVED, provisional tags dropped. §10 S11 row: one row at every width, button right, h1 may wrap at 375. E2E-M15-59 asserts rendered upper-case labels. XR-M15-13 **Applied** (`user-nav.ts:455` now `/cikgu/hadiah`). Counts: 79 FRs, 71 E2E (provisional 31 → 29), 18 endpoints; no id added or removed. |
+| 1.5 | 2026-10-02 | **Roles-matrix row L43 "Kedai Hadiah Digital".** New screens S10 `/cikgu/hadiah` and S11 `/cikgu/hadiah/saya` (both observed empty states, replicated for every account — precedent OQ-M15-01, OQ-M15-13 decided). New: FR-M15-67…79 (13), BR-M15-26…28, mock endpoints #19 `GET /api/hadiah-digital/items` and #20 `GET /api/hadiah-digital/redemptions` (reads only; the balance comes from M14 #17), named queries Q-M15-DIGITAL-ITEMS and Q-M15-DIGITAL-REDEMPTIONS, lookup §6.6 (L43 chips), XR-M15-13 (shell: student-nav href `/kedai-hadiah` → `/cikgu/hadiah`, 404 on live; no code edited here) and XR-M15-14 (M14: tier rate on the wallet read), E2E-M15-58…71 (14, 6 provisional), §8–§11 and §13 rows, DV-M15-16…19 referenced. No new owned entity. Existing numbering and S1–S9 unchanged. Counts: 66 → 79 FRs, 57 → 71 E2E (25 → 31 provisional); 16 → 18 endpoints (+ 2 referenced/reserved). |
 | 1.4 | 2026-09-27 | **M02 v1.23 change request XR-M02-02** (status stays Approved (G1)). XR-M15-09: users 3151 and 3152 are placed at school 2418 SEKOLAH KEBANGSAAN JELI (1), grade 6 (Darjah 6), no class (M02 §6.15 D); the superseded "no school" wording and the v1.11 check-line note are removed; status "Applied by M02". M15 shows only name and e-mail, so no visible value changes. Counts unchanged: 66 FRs, 57 E2E (25 provisional); 16 endpoints. |
 | 1.3 | 2026-09-26 | **Approved (G1).** OQ-M15-01 closed by the user ("ikut macam mana ada sekarang"): FR-47, BR-22, #18, §1, §2 and XR-04 reworded — S5 replicates live (empty for every account; activation does not populate it; no shop catalogue source modelled). Counts unchanged. |
 | 1.2 | 2026-09-26 | Audit round 2 PASS; minors fixed. R2-01: XR-M15-03 — M14 `buyTicket` debits the syiling itself and writes 'Tiket Cabutan: {title}'. R2-02: FR-M15-04 scoped — only the sidebar active icon loses its colour class (and "Kedai Hadiah" its `icon-gift`); the drawer keeps the colour. |
@@ -25,15 +29,15 @@
 
 ### 0.1 Fidelity deviations referenced here
 
-URS §7 is authoritative. Approved fixes: DV-M15-01 (tables scroll in their card), 04 ("Admin Tebusan" → queue; applied by the shell), 07 (out-of-range page message), 08 (405 → 404), 12 (header titles), 13 (text ≥ 12px), 14 (hint "1 token = RM1", v1.1). Privacy: DV-M15-15 (fictitious students 3151/3152). Rejected — replicate live: DV-M15-02, 05, 06, 09, 10, 11. Open: DV-M15-03 (shop catalogue source, OQ-M15-01).
+URS §7 is authoritative. Approved fixes: DV-M15-01 (tables scroll in their card), 04 ("Admin Tebusan" → queue; applied by the shell), 07 (out-of-range page message), 08 (405 → 404), 12 (header titles), 13 (text ≥ 12px), 14 (hint "1 token = RM1", v1.1). Privacy: DV-M15-15 (fictitious students 3151/3152). Rejected — replicate live: DV-M15-02, 05, 06, 09, 10, 11. Open: DV-M15-03 (shop catalogue source, OQ-M15-01). **v1.5 (L43), Approved (D9):** DV-M15-16 (S10 caption "{rate} syiling = 1 token" instead of "100 …"), 17 (S10/S11 header titles), 18 (student-nav href `/kedai-hadiah` → `/cikgu/hadiah`), 19 (caption/labels ≥ 12px, conditional on measurement). **v1.7 (G4 as-built), Approved (D9):** DV-M15-20 (S6 disabled box button text colour `#4b5563` instead of white on `#d1d5db`).
 
 ---
 
 ## 1. Scope
 
-The M15 prototype implements, against the mock service layer, the screens of URS §1: the admin catalogue S1 with its bulk actions, the reward form S3/S4, the redemption queue S2 with the PROPOSED fulfilment controls, the student shop S5 (observed empty state only), the mystery box S6 with the PROPOSED opening flow, the lucky-draw page S7 with the PROPOSED ticket flow over M14 draws, the parent consent page S8 with the PROPOSED approve/reject flow, and the 404 outcomes (incl. S9). M15 owns the hadiah rewards, the redemptions, the mystery-box configuration and the openings (D12). It reads and writes the wallet, the ledger and the draws only through M14's contract, and users and parent links only through M01/M02.
+The M15 prototype implements, against the mock service layer, the screens of URS §1: the admin catalogue S1 with its bulk actions, the reward form S3/S4, the redemption queue S2 with the PROPOSED fulfilment controls, the student shop S5 (observed empty state only), the mystery box S6 with the PROPOSED opening flow, the lucky-draw page S7 with the PROPOSED ticket flow over M14 draws, the parent consent page S8 with the PROPOSED approve/reject flow, and the 404 outcomes (incl. S9). **v1.5 (L43):** the digital student shop S10 and "Tebusan Saya" S11, both showing the observed empty state for every account (precedent OQ-M15-01). M15 owns the hadiah rewards, the redemptions, the mystery-box configuration and the openings (D12). It reads and writes the wallet, the ledger and the draws only through M14's contract, and users and parent links only through M01/M02.
 
-**Out of scope:** URS §8 — the wallet and conversion (M14), `/admin/reward-control` (M14), the teacher shop (M14), the populated student shop (not built, user decision OQ-M15-01), code display to students, the mystery-box configuration UI, winners, real delivery integrations, the backend.
+**Out of scope:** URS §8 — the wallet and conversion (M14), `/admin/reward-control` (M14), the teacher shop (M14), the populated student shop (not built, user decision OQ-M15-01), the populated S10 and S11 (reward cards, prices, stock, "Tebus", redemption list; NOT OBSERVED, not built, precedent applied, OQ-M15-13 decided), code display to students, the mystery-box configuration UI, winners, real delivery integrations, the backend.
 
 ---
 
@@ -50,6 +54,9 @@ The M15 prototype implements, against the mock service layer, the screens of URS
 | S7 | `/cabutan` | Lucky draw | Pelajar; any logged-in user | SHU · "Cabutan Bertuah" + "Selamat datang kembali" / "Cabutan Bertuah - PRESTASIPLUS" | #12, #13 |
 | S8 | `/cikgu/kelulusan-hadiah` | Parent consent | Ibu Bapa; any logged-in user (scoped) | SHU · "Kelulusan Tebusan Hadiah" + "Selamat datang kembali" / "Kelulusan Hadiah — Ibu Bapa" | #14, #15, #16 |
 | S9 | GET `/admin/hadiah/{id}` | 404 (DV-M15-08) | All | standalone · "404 - Halaman Tidak Dijumpai \| PRESTASIPLUS" | — |
+| S10 (v1.5) | `/cikgu/hadiah` (`?cat=`) | Digital shop: balance card, 10 chips, empty state (every account) | Pelajar; any logged-in user | SHU · "Kedai Hadiah Digital" + "Selamat datang kembali" / "Kedai Hadiah Digital" | #17, #19 |
+| S11 (v1.5) | `/cikgu/hadiah/saya` | Tebusan Saya (empty for every account) | Pelajar; any logged-in user | SHU · "Tebusan Saya" + "Selamat datang kembali" / "Tebusan Saya" | #20 |
+| — (v1.5) | `/kedai-hadiah`, `/hadiah`, `/kedai`, `/cikgu/hadiah/1` (any `/cikgu/hadiah/{id}` except `saya`) | 404 | All | standalone 404 | — |
 | — | `/gamification/rewards/1`, `/gamification/rewards/history`, `/gamification/redemptions`, `/gamification/mystery-box/1`, `/gamification/mystery-box/history`, `/cabutan/1`, `/cabutan/sejarah`, `/admin/cabutan`, `/admin/mystery-box`, `/admin/hadiah/tebusan/1`, `/admin/hadiah/{unknown or non-numeric}/edit` | 404 | All | standalone 404 | — |
 
 `{id}` is an integer. Query names keep the live names (`cat`, `page`, `status`); unknown values are handled as live (§4). No route exists for a reward detail, a redemption detail, a student history or a mystery-box/cabutan admin.
@@ -108,7 +115,7 @@ The M15 prototype implements, against the mock service layer, the screens of URS
 | FR-M15-46 | S5 SHALL render the hero, the balance tile ("{tokenBalance}" from M14 #17 / "Baki Token 🎫") and the empty state of URS FN-M15-5.1.1–5.1.3 with the live sizes; query parameters are ignored. | 5.1.1, 5.1.2, 5.1.3, 5.1.4 | 14.1, 14.2, 14.3 |
 | FR-M15-47 | **User decision (OQ-M15-01 closed, 2026-09-26: follow live):** S5 SHALL render the empty state for every account and every catalogue state; no reward card, claim control, shop catalogue source or shop endpoint is built (#18 not built). | 5.1.5 | 14.4 |
 | FR-M15-48 | S6 SHALL render the hero, the chip "🎫 Token Anda: {tokenBalance}", and the four box cards and forms of URS FN-M15-6.1.1–6.1.3 from DATA-M15-03, with the live hover behaviour (FN-6.1.5). | 6.1.1, 6.1.2, 6.1.3, 6.1.5 | 15.1, 15.2 |
-| FR-M15-49 | Each box button SHALL be disabled with "🔒 Token Tidak Cukup" (`#d1d5db`, `not-allowed`) when `tokenBalance < costTokens` (BR-M15-17). | 6.1.4 | 15.3, 16.1 |
+| FR-M15-49 | Each box button SHALL be disabled with "🔒 Token Tidak Cukup" (background `#d1d5db`, `not-allowed`; **text `#4b5563` instead of live white, DV-M15-20**: ≈4.9:1 against ≈1.5:1) when `tokenBalance < costTokens` (BR-M15-17). | 6.1.4 | 15.3, 16.1 |
 | FR-M15-50 | Otherwise the button SHALL be enabled with the PROPOSED label "Buka Kotak" on the box gradient (provisional). | 6.2.1 | 16.1 |
 | FR-M15-51 | Submitting an enabled box SHALL call #11 (BR-M15-18) and, on success, update the chip to the returned token balance (provisional). | 6.2.2 | 16.2, 16.4 |
 | FR-M15-52 | A successful opening SHALL show the result modal of URS FN-M15-6.2.3 (full-screen below `md`, 400px centred from `md`); "Tutup" and the overlay close it (provisional). | 6.2.3 | 16.2 |
@@ -117,15 +124,28 @@ The M15 prototype implements, against the mock service layer, the screens of URS
 | FR-M15-55 | S7 SHALL render one card per open draw (#12, BR-M15-19) with the PROPOSED content of URS FN-M15-7.1.3, ordered by close date then id (provisional). | 7.1.3, 7.1.5 | 18.1 |
 | FR-M15-56 | "🎟️ Beli Tiket" SHALL call #13 (M14 `draws.buyTicket`, which debits the syiling and writes its ledger row) and update the tile and "Tiket anda" from the response; it is disabled when the balance is below the ticket price or the cap is reached (provisional). | 7.1.4 | 18.2, 18.3 |
 | FR-M15-57 | S8 SHALL render h1, sub, "⏳ Menunggu Kelulusan ({n})" with its empty box and "📜 Sejarah Tebusan Anak" with its empty text (URS FN-M15-8.1.1–8.1.3), from #14. | 8.1.1, 8.1.2, 8.1.3 | 19.1 |
-| FR-M15-58 | #14–#16 SHALL be scoped to the redemptions of the viewer's linked children (M02 links, BR-M15-20); any other id → `404 NOT_FOUND` (provisional). | 8.1.7 | 19.2, 20.4 |
+| FR-M15-58 | #14–#16 SHALL be scoped to the redemptions of the viewer's linked children (M02 links, BR-M15-20); any other id → `404 NOT_FOUND`; **(v1.7, as built)** #15/#16 additionally require the parent role (`requireRole('parent')`): every non-parent session (admin, student, teacher, …) gets `403 FORBIDDEN` before the link check (provisional). | 8.1.7 | 19.2, 20.4 |
 | FR-M15-59 | Each pending request SHALL render the PROPOSED card of URS FN-M15-8.1.4 (provisional). | 8.1.4 | 20.1 |
 | FR-M15-60 | "✅ Lulus" → #15, "❌ Tolak" → #16 (BR-M15-09, BR-M15-20); the page refreshes both lists (provisional). | 8.1.5 | 20.2, 20.3 |
 | FR-M15-61 | The history SHALL list the children's redemptions that are not `pending_parent_consent`, newest first, with the PROPOSED row of URS FN-M15-8.1.6 (provisional). | 8.1.6 | 20.2, 20.3 |
 | FR-M15-62 | Every M15 screen SHALL follow §10: no horizontal page scroll at 320–1920px; the S1 and S2 tables scroll inside their card where they do not fit (DV-M15-01); other layouts as live. | 9.1.1 | 21.1, 21.2, 21.3 |
 | FR-M15-63 | No text inside M15 page content SHALL be smaller than 12px (DV-M15-13); icons and emoji keep their live size. | 9.1.2 | 21.4 |
 | FR-M15-64 | Accessibility SHALL replicate live (D10): browser `confirm`/`prompt`/`alert` for the bulk actions, native validation bubbles, no added ARIA beyond the live pager labels, unlabelled row checkboxes as live. | 9.1.3 | 21.5 |
-| FR-M15-65 | Loading and error states SHALL follow the shared conventions (SRS.md FR-G-10); M15 adds no error copy. | 9.1.4 | 21.6 |
+| FR-M15-65 | Loading and error states SHALL follow the shared conventions (SRS.md FR-G-10); M15 adds no error copy of its own. **(v1.7, as built)** Any failed action (redeem, box open, ticket purchase, approve/reject, bulk action, deliver, cancel, form save) shows the shared generic copy "Ralat berlaku. Sila cuba lagi."; the handler's error `message` is never displayed. | 9.1.4 | 21.6 |
 | FR-M15-66 | Every balance read and every token, syiling or XP movement SHALL go through the M14 wallet contract (XR-M15-01/02) inside the same atomic step as the M15 change; M15 stores no balance of its own (D12). | 9.1.5 | 13.2, 16.4 |
+| FR-M15-67 | **(v1.5, L43)** S10 SHALL render at `/cikgu/hadiah` in the user-portal shell for every logged-in role with the tab title "Kedai Hadiah Digital" and the shell header "Kedai Hadiah Digital" + "Selamat datang kembali" (DV-M15-17); no "Dashboard" header. | 10.1.1 | 22.1 |
+| FR-M15-68 | S10 SHALL show h1 "🎁 Kedai Hadiah Digital" and the subtitle "Tukar token kepada hadiah digital — terus dihantar, tanpa pos.". | 10.1.2 | 22.1 |
+| FR-M15-69 | S10 SHALL show the balance card (purple-to-pink gradient): label "Token Anda" (DOM mixed case, rendered "TOKEN ANDA" by CSS `text-transform: uppercase`) over the viewer's `tokenBalance`, a divider, label "Syiling" (rendered "SYILING") over `currentSyiling` (both from the M14 wallet read #17; admin 0 and 256), and the white button link "Tebusan Saya" (clipboard icon) → `/cikgu/hadiah/saya`. | 10.1.3, 10.1.5 | 22.2, 22.7 |
+| FR-M15-70 | The caption under the syiling value SHALL read "{conversionRate} syiling = 1 token" with the viewer's M14 tier rate (admin "50 syiling = 1 token"; DV-M15-16) at 12px (live measured 9px; the two labels 10px → 12px; DV-M15-19) while the card still fits (324px at 375, 369px at 768/1280). | 10.1.4 | 22.2 |
+| FR-M15-71 | S10 SHALL show the ten chips of BR-M15-27 as plain GET links in the stated order with the live labels and emoji; no `cat` or `cat=all` activates "🌟 Semua"; a known key activates its chip alone (OBSERVED for `flagship`); an unknown key activates none and the page is still shown (200; OBSERVED). | 10.1.6, 10.1.7 | 22.3, 22.5, 22.6 |
+| FR-M15-72 | S10 SHALL show "Tiada hadiah dalam kategori ini." (centred, grey) below the chips for every account and every `cat`, **including when rewards are active on S1**; no reward card, price, stock, "Tebus" control or confirm dialog is built (BR-M15-26; precedent OQ-M15-01, applied; OQ-M15-13 decided). | 10.1.8, 10.1.9 | 22.4, 22.8 |
+| FR-M15-73 | **(v1.5)** S11 SHALL render at `/cikgu/hadiah/saya` in the user-portal shell for every logged-in role with the tab title "Tebusan Saya" and the shell header "Tebusan Saya" + "Selamat datang kembali" (DV-M15-17). | 10.2.1 | 23.1 |
+| FR-M15-74 | S11 SHALL show h1 "📋 Tebusan Saya", the link button "🎁 Kedai Hadiah" → `/cikgu/hadiah`, a white card holding the decorative "🎁" (48px, EL-M15-S11-005), the text "Belum ada tebusan. Kumpul syiling dulu, lepas tukar token dan tebus hadiah." and the link "Layari Kedai Hadiah" → `/cikgu/hadiah`; no list, chip, filter or pager. | 10.2.2, 10.2.3 | 23.1, 23.2 |
+| FR-M15-75 | S11 SHALL show the empty state for every account (BR-M15-28; #20 returns an empty list); it SHALL NOT read HadiahRedemption (provisional; precedent OQ-M15-01). | 10.2.4 | 23.3 |
+| FR-M15-76 | (INFERRED) A guest opening S10 or S11 SHALL be sent to `/login` (M01 FR-M01-14), #19/#20 return `401 UNAUTHORIZED`; every logged-in role may open both (FR-M15-09 pattern); #19/#20 never answer 403. | 10.3.1, 10.3.2 | 24.1, 24.2 |
+| FR-M15-77 | The global 404 page SHALL render for `/kedai-hadiah`, `/hadiah`, `/kedai` and `/cikgu/hadiah/1` (any `/cikgu/hadiah/{id}` other than `saya`). | 10.3.3 | 24.3 |
+| FR-M15-78 | The student-nav entry "Kedai Hadiah 🎁" + badge "DIGITAL" SHALL target `/cikgu/hadiah` (DV-M15-18, XR-M15-13) and be active on S10 and S11 (INFERRED); the admin sidebar has no entry to S10 and its "Kedai Hadiah" entry keeps opening S5, which keeps its own content. | 10.3.4, 10.3.5, 10.3.6 | 24.4, 24.5 |
+| FR-M15-79 | S10 and S11 SHALL follow §10 (no horizontal page scroll at 320–1920px; layouts of URS §5), no text below 12px, and the shared loading/error convention (FR-M15-65: no L43-specific copy). | 9.1.6, 9.1.7 | 25.1, 25.2, 25.3 |
 
 ### 3.1 Traceability (US → FR → E2E)
 
@@ -150,8 +170,12 @@ The M15 prototype implements, against the mock service layer, the screens of URS
 | US-M15-17 | 54 | 47 |
 | US-M15-18 | 55, 56 | 48, 49 |
 | US-M15-19 | 57, 58 | 50, 51 |
-| US-M15-20 | 58–61 | 51, 52, 53 |
+| US-M15-20 | 58–61 | 51, 52, 53, 72 |
 | US-M15-21 | 62–65 | 54, 55, 56, 57 |
+| US-M15-22 | 67–72 | 58, 59, 60, 61, 62, 63, 64 |
+| US-M15-23 | 73, 74, 75 | 64, 65, 66 |
+| US-M15-24 | 76, 77, 78 | 67, 68, 69 |
+| US-M15-25 | 79 | 70, 71 |
 
 Checked by script (`trace.cjs`, author scratchpad `m15-writer/`): every FN of URS §3 has at least one FR; every AC has at least one FR and one E2E; every FR has at least one E2E; every provisional AC is covered only by provisional E2E and every provisional E2E covers at least one provisional AC; no table row has an unescaped `|`.
 
@@ -180,13 +204,15 @@ Checked by script (`trace.cjs`, author scratchpad `m15-writer/`): every FN of UR
 | BR-M15-17 | **Mystery-box availability:** a box is openable when the viewer's M14 token balance ≥ its `costTokens`; otherwise disabled with "🔒 Token Tidak Cukup". No daily limit (none observed). | OBSERVED (disabled at 0 < 2) / INFERRED (rule) |
 | BR-M15-18 | **Opening** (#11; one atomic step): re-check BR-M15-17 (`409 INSUFFICIENT_TOKENS`); M14 debits `costTokens` tokens (`source: 'mystery_box'`); coins and XP are drawn as integers in [`coinMin`, `coinMax`] and [`xpMin`, `xpMax`] — **prototype mechanism (PROPOSED): uniform, from a PRNG seeded by (userId, opening count); this is not a statement of the live odds, which are UNVERIFIED**; the hook `m15MysteryNext({coins, xp})` fixes the next result; M14 credits the coins with the ledger description "Kotak Misteri: {name}" (format OBSERVED in the M14 ledger) and the XP; an opening row is stored. | OBSERVED (ranges, ledger text) / UNVERIFIED (odds) / PROPOSED (mechanism) |
 | BR-M15-19 | **Draws** (M14 store DATA-M14-18/19, M14 BR-M14-29): S7 lists `draws.listOpenDraws(today)` = status `open` and `closesAt` ≥ today (Asia/Kuala_Lumpur). #13 calls `draws.buyTicket(drawId, userId)`: one ticket per call; refused with `DRAW_CLOSED` (draw not open), `TICKET_LIMIT` (the user already holds `maxTicketsPerStudent`) or `INSUFFICIENT_BALANCE` (`currentSyiling` < `ticketCostSyiling`); on success M14 itself debits the syiling and writes the ledger `spend` row "Tiket Cabutan: {title}" (M14 PROPOSED COPY, source `cabutan_ticket`) and a DrawTicket row. M15 makes no separate wallet call for tickets. Winner selection is M14's (not built). | OBSERVED (fields, syiling) / INFERRED / PROPOSED |
-| BR-M15-20 | **Parent scope.** The viewer's children = M02 ParentStudentLink rows with `parentId` = viewer. S8 pending = children's `pending_parent_consent` redemptions (newest first); history = children's other redemptions (newest first). #15/#16 accept only a `pending_parent_consent` redemption of a child (`404` otherwise, `409` if it is no longer pending). Approve → `pending_admin`, `parentDecisionBy` = viewer, `parentDecidedAt` = now. | INFERRED (provisional) |
+| BR-M15-20 | **Parent scope.** The viewer's children = M02 ParentStudentLink rows with `parentId` = viewer. S8 pending = children's `pending_parent_consent` redemptions (newest first); history = children's other redemptions (newest first). #15/#16 accept only a parent session (`requireRole('parent')`; any other role → `403 FORBIDDEN`, v1.7) and only a `pending_parent_consent` redemption of a child (`404` otherwise — unknown id or an unlinked child —, `409` if it is no longer pending). Approve → `pending_admin`, `parentDecisionBy` = viewer, `parentDecidedAt` = now. | INFERRED (provisional) |
 | BR-M15-21 | **Wallet atomicity:** every M15 step that moves tokens, syiling or XP calls the M14 contract once, inside the same mock transaction as the M15 write; if M14 refuses (`INSUFFICIENT_BALANCE`), nothing is written. | D12 / PROPOSED |
 | BR-M15-22 | **Shop:** S5 lists nothing for every account, including when rewards are active; the balance tile still reads the token balance. No shop catalogue source is modelled. | User decision (OQ-M15-01, 2026-09-26) |
 | BR-M15-23 | **Error outcomes:** GET `/admin/hadiah/{id}` and every unknown M15 path render the global 404 page (DV-M15-08); an unknown, deleted or non-numeric edit id → 404. | OBSERVED + DV-M15-08 |
 | BR-M15-24 | **Delete:** a reward with at least one redemption row of any status is kept; the others are removed with every field; the response lists the kept ids (not shown on the page). | SOURCE-DERIVED (dialog promise) / INFERRED ("history" = any row) |
 | BR-M15-25 | **Current month** for Q-M15-RED-MONTH and BR-M15-05 = the calendar month of the mock clock in Asia/Kuala_Lumpur (2026-09 at the anchor). | INFERRED |
-
+| BR-M15-26 | **(v1.5, L43) Digital shop S10.** The item list is empty for every account, every `cat` and every reward state (rewards active or not; stock, price and consent flags are never read); the balance card reads the viewer's M14 wallet (`tokenBalance`, `currentSyiling`; a user without a wallet row reads the M14 defaults 0 / 0, BR-M14-02) and the caption rate is the wallet's tier `conversionRate` (admin Gangsa 50; DV-M15-16). No shop-items source is modelled, S10 does not read the HadiahReward store. | OBSERVED (empty, admin balance) / user-decision precedent (OQ-M15-01; applied, OQ-M15-13 decided) |
+| BR-M15-27 | **(v1.5) S10 chips and `cat`** (key → label, in chip order): `all` "🌟 Semua", `flagship` "🏆 Mahkota", `ewallet` "💳 E-Wallet", `telco` "📱 Telco", `gaming` "🎮 Gaming", `streaming` "🎬 Streaming", `food_beverage` "🍔 Makan & Minum", `ecommerce` "🛒 Shopping", `education` "📚 Pembelajaran", `entertainment` "🎭 Hiburan" (the same nine keys as BR-M15-01; labels differ, DV-M15-02 logic). `cat` absent or `all` → "Semua" active; a known key → that chip active; unknown or repeated/other values → no chip active, no error; every other query parameter is ignored. The page layout and empty copy do not depend on `cat`. | OBSERVED (labels, order, keys, default; `all`, `flagship`, `gaming`, `ewallet`, `telco`, `entertainment` followed; `flagship` activates "Mahkota" alone; `bogus` → 200, no chip active; audit AUD-L43-04) |
+| BR-M15-28 | **(v1.5) Tebusan Saya S11.** The list is empty for every account, regardless of HadiahRedemption rows (the 3 seeded cancelled rows and the `queue` fixture are visible only on S2 and S8). | OBSERVED (empty, admin) / user-decision precedent (applied, OQ-M15-13 decided) |
 ---
 
 ## 5. Validation rules
@@ -210,6 +236,8 @@ Checked by script (`trace.cjs`, author scratchpad `m15-writer/`): every FN of UR
 | S3/S4 | `terms_text` | `maxlength=2000` | typing stops |
 | S1 bulk | Set Stok / Had/Bulan / Pelaras Token | BR-M15-12 | the three live alerts (§8.1) |
 | S2 | code field (PROPOSED) | `required`, `maxlength=100`, trimmed on the server | native |
+| S10 (v1.5) | `cat` (URL query only) | no input control; BR-M15-27 (unknown value → 200, no chip active) | — |
+| S11 (v1.5) | — | no input of any kind | — |
 
 Server-side (mock #3/#4/#5/#7) re-checks the same limits and returns `422 VALIDATION_ERROR` with field keys; the UI cannot reach these responses through the native checks, so no BM field copy is specified (none observed; Q-M15-7).
 
@@ -296,7 +324,7 @@ All values OBSERVED (snapshot `mysteryBox.boxes`). The M14 ledger shows real ope
 
 ### 6.6 Lookups (constants)
 
-Categories BR-M15-01; statuses and pill labels URS FN-M15-4.1.3/4.1.5/4.1.6; delivery methods §6.2; bulk actions `activate`, `deactivate`, `delete`, `set_stock`, `set_max_per_month`, `set_token_cost`.
+Categories BR-M15-01; **S10 chips BR-M15-27 (v1.5)**; statuses and pill labels URS FN-M15-4.1.3/4.1.5/4.1.6; delivery methods §6.2; bulk actions `activate`, `deactivate`, `delete`, `set_stock`, `set_max_per_month`, `set_token_cost`.
 
 ### 6.7 Seed — rewards (all 59, snapshot 2026-09-26 11:46 MYT; every value OBSERVED)
 
@@ -403,6 +431,8 @@ Queue order (newest first, then id descending) = 3, 2, 1 — the live order "Hot
 | Q-M15-OPENINGS(user) | the user's openings, newest first, first 10 | empty | S6 history |
 | Q-M15-OPENINGS-COUNT(user) | count(MysteryBoxOpening where userId = user) | 0 for every user | M14 achievement "Ahli Kotak Misteri" (M14 BR-M14-16; XR-M15-12) |
 | Q-M15-OPEN-DRAWS | M14 draws open with `closesAt` ≥ today (M14 contract) | 0 (no draw ever existed) | S7 |
+| Q-M15-DIGITAL-ITEMS(cat) | the empty set for every `cat` and every reward state (BR-M15-26; **not** a query over HadiahReward) | 0 | S10 empty state, #19 |
+| Q-M15-DIGITAL-REDEMPTIONS(user) | the empty set for every user (BR-M15-28; **not** a query over HadiahRedemption) | 0 | S11 empty state, #20 |
 
 No display constant is used (every figure above is computed).
 
@@ -444,12 +474,13 @@ Wallets set by the fixture (M14 hook): student 2 → 20 tokens; student 4 → 15
 | XR-M15-10 | M02 | **Parent-link read:** `childrenOf(parentId) → studentId[]` over DATA-M02-02 (existing links 1–2: parent 6 ↔ students 2 and 4; parent 5401 without links). No change to M02 data. | Existing data; confirm at XL batch 3 |
 | XR-M15-11 | Global shell / M23 | Add the M15 menu entries, badges and active rule (URS FN-M15-1.1.1–1.1.6), apply DV-M15-04 ("Admin Tebusan" → `/admin/hadiah/tebusan`) and the header titles of FN-1.1.7 (DV-SH-03). The live mobile menu lacks "Kelulusan Hadiah" and "Admin Tebusan"; M15 replicates the capture until DV-SH-04's single list (which would add both) is applied by the shell owner. | Open (shell owner) |
 | XR-M15-12 | M14 | **Consumer contract offered:** `mysteryBox.openingsCount(userId)` (Q-M15-OPENINGS-COUNT) for the achievement "Ahli Kotak Misteri" (M14 BR-M14-16, §6.1). Route to XL batch 3. | New (v1.1, AUD-M15-04) |
-
+| XR-M15-13 | Global shell / M23 (shell owner) | **(v1.5, L43) Student-nav href.** In `src/shells/nav/user-nav.ts` (line 455 at the time of writing) the student-only entry `kedai-hadiah-digital` ("Kedai Hadiah 🎁" + badge "DIGITAL") has `to: '/kedai-hadiah'`, which is 404 on live (also `/hadiah`, `/kedai`). Change the target to **`/cikgu/hadiah`** (DV-M15-18); label, badge, role filter and position unchanged; update the inline comment (href is now OBSERVED from the live route, classes still INFERRED); active on `/cikgu/hadiah` and `/cikgu/hadiah/saya`. Also apply the S10/S11 header titles (DV-M15-17). **No code is edited by this document.** | **Applied** (v1.6): the Delivery Lead changed `user-nav.ts:455` to `/cikgu/hadiah`; the active state and the S10/S11 header titles stay with the shell owner |
+| XR-M15-14 | M14 | **(v1.5, L43) Wallet read carries the tier rate.** S10's caption needs the viewer's `tier.conversionRate` (M14 #2 already returns `tier: {…, conversionRate}`); no change requested, M14 to confirm the field stays in the `GET /api/gamification/wallet` contract (#17). | Existing contract; confirm at XL |
 ---
 
 ## 7. Mock API endpoints
 
-*(solution-architect)* Base `/api`; envelope, error format and locale of SRS.md §7 (list meta extended with `from`, `to` as in M01/M02). **AD** = admin session (guest `401`; other roles `403 FORBIDDEN`); **S** = any logged-in user (guest `401`). Every mutating call runs in one mock transaction with its M14 wallet call (BR-M15-21). The page routes keep the live URLs; the mock endpoints are the REST shape of the same actions (live forms post `_token`; the mock uses the session token instead).
+*(solution-architect)* Base `/api`; envelope, error format and locale of SRS.md §7 (list meta extended with `from`, `to` as in M01/M02). **AD** = admin session (guest `401`; other roles `403 FORBIDDEN`); **S** = any logged-in user (guest `401`); **PA** = parent session (`requireRole('parent')`; guest `401`, other roles `403 FORBIDDEN`; v1.7, used by #15 and #16 only — #14 stays S). Every mutating call runs in one mock transaction with its M14 wallet call (BR-M15-21). The page routes keep the live URLs; the mock endpoints are the REST shape of the same actions (live forms post `_token`; the mock uses the session token instead).
 
 | # | Method | Path | Auth | Mut. | Request | Response | Errors | Live equivalent |
 |---|---|---|---|---|---|---|---|---|
@@ -467,10 +498,14 @@ Wallets set by the fixture (M14 hook): student 2 → 20 tokens; student 4 → 15
 | 12 | GET | `/api/cabutan` | S | no | — | 200 `{data: {syilingBalance, draws: {id, title, description, ticketCostSyiling, maxTicketsPerStudent, ticketsOwned, closesAt, prizePool: {label, valueSen, qty}[]}[]}}` (M14 XR-03) | 401 | GET `/cabutan` (HTML) |
 | 13 | POST | `/api/cabutan/:drawId/tickets` | S | yes | — | 201 `{data: {drawId, ticketsOwned, syilingBalance}}` | 409 `DRAW_CLOSED` (draw missing or not open) \| `TICKET_LIMIT` \| `INSUFFICIENT_BALANCE` (M14 BR-M14-29 codes), 401 | not rendered (Q-M15-5) |
 | 14 | GET | `/api/parent/hadiah-approvals` | S (scoped) | no | — | 200 `{data: {pending: ParentItem[], history: ParentItem[]}}`; `ParentItem` = `{id, child: {id, name}, rewardTitle, rewardIcon, tokenCost, status, createdAt}` | 401 | GET `/cikgu/kelulusan-hadiah` (HTML) |
-| 15 | POST | `/api/parent/hadiah-approvals/:id/approve` | S (scoped) | yes | — | 200 `{data: {id, status: 'pending_admin'}}` | 404 (not a child's), 409 (not pending consent), 401 | not rendered (Q-M15-3) |
-| 16 | POST | `/api/parent/hadiah-approvals/:id/reject` | S (scoped) | yes | — | 200 `{data: {id, status: 'cancelled', refundedTokens}}` | 404, 409, 401 | not rendered |
+| 15 | POST | `/api/parent/hadiah-approvals/:id/approve` | PA (parent, scoped; v1.7) | yes | — | 200 `{data: {id, status: 'pending_admin'}}` | 403 `FORBIDDEN` (non-parent role), 404 (unknown id or not a linked child's), 409 (not pending consent), 401 | not rendered (Q-M15-3) |
+| 16 | POST | `/api/parent/hadiah-approvals/:id/reject` | PA (parent, scoped; v1.7) | yes | — | 200 `{data: {id, status: 'cancelled', refundedTokens}}` | 403, 404, 409, 401 | not rendered |
 | 17 | GET | `/api/gamification/wallet` | S | no | — | M14 (XR-M15-01) | 401 | — |
 | 18 | GET | `/api/hadiah/shop` | — | — | — | **Not built (user decision, OQ-M15-01)** | — | — |
+| 19 | GET | `/api/hadiah-digital/items` | S | no | `?cat=` (optional; unknown values accepted) | 200 `{data: [], meta: {activeCat: key \| 'all' \| null, totalItems: 0}}` — `data` is the future list of shop items; **always empty** (BR-M15-26, Q-M15-DIGITAL-ITEMS); `activeCat` = `'all'` when `cat` is absent or `all`, the key when known (BR-M15-27), `null` when unknown. The page gets the balances and the tier rate from #17, the chip list is a client constant (§6.6) | 401 | GET `/cikgu/hadiah?cat=` (server-rendered HTML; no JSON endpoint on live) |
+| 20 | GET | `/api/hadiah-digital/redemptions` | S | no | — | 200 `{data: [], meta: {totalItems: 0}}` — the viewer's redemptions; **always empty** (BR-M15-28, Q-M15-DIGITAL-REDEMPTIONS) | 401 | GET `/cikgu/hadiah/saya` (HTML) |
+
+#17 (M14 wallet read) is also used by S10: `tokenBalance`, `currentSyiling`, `tier.conversionRate`. No mutating endpoint exists for S10/S11 (no POST was observed or built; the reference rebuild's `POST /gamification/rewards/{gift}/tebus` is unverified and out of scope). The two new endpoints are reads shaped so a populated list can be added later without changing the path; they never return 403 (every logged-in role may read).
 
 ---
 
@@ -491,6 +526,8 @@ Wallets set by the fixture (M14 hook): student 2 → 20 tokens; student 4 → 15
 | S6 | default | "📦 Kotak Misteri" · "Buka kotak & menang ganjaran rawak — nasib baik menanti!" · "🎫 Token Anda:" · box texts of DATA-M15-03 · "{n} Token" · "🪙" · "⭐ … XP" · "🔒 Token Tidak Cukup" |
 | S7 | default | "🎟️ Cabutan Bertuah" · "Guna syiling untuk beli tiket & menangi hadiah hebat!" · "Syiling anda" · "{n} 🪙" · "Cabutan Dibuka" · "Tiada cabutan dibuka buat masa ini. Nanti datang lagi! 🎈" |
 | S8 | default | "👨‍👩‍👧 Kelulusan Tebusan Hadiah" · "Anak anda nak tebus hadiah yang memerlukan kelulusan ibu bapa. Sila semak." · "⏳ Menunggu Kelulusan ({n})" · "Tiada tebusan menunggu kelulusan." · "📜 Sejarah Tebusan Anak" · "Belum ada sejarah tebusan." |
+| S10 (v1.5) | default / every `cat` | "🎁 Kedai Hadiah Digital" · "Tukar token kepada hadiah digital — terus dihantar, tanpa pos." · "Token Anda" · "Syiling" (rendered upper case by CSS) · caption "{rate} syiling = 1 token" (live "100 syiling = 1 token", DV-M15-16) · "Tebusan Saya" · "🌟 Semua" · "🏆 Mahkota" · "💳 E-Wallet" · "📱 Telco" · "🎮 Gaming" · "🎬 Streaming" · "🍔 Makan & Minum" · "🛒 Shopping" · "📚 Pembelajaran" · "🎭 Hiburan" · "Tiada hadiah dalam kategori ini." |
+| S11 (v1.5) | default | "📋 Tebusan Saya" · "🎁 Kedai Hadiah" · decorative "🎁" (48px) · "Belum ada tebusan. Kumpul syiling dulu, lepas tukar token dan tebus hadiah." · "Layari Kedai Hadiah" |
 | 404 | all | M01 404 page (URS FN-M15-1.2.4) |
 
 ### 8.2 PROPOSED COPY and layouts (report at G1; URS OQ-M15-10)
@@ -504,13 +541,14 @@ Wallets set by the fixture (M14 hook): student 2 → 20 tokens; student 4 → 15
 | S6 | enabled button "Buka Kotak"; modal: box icon, box name, "+{coins} 🪙 · +{xp} XP", "Tutup", full-screen below `md` and 400px centred from `md`; history heading "Sejarah Kotak Misteri", rows "Kotak Misteri: {name}" · "+{coins} 🪙 · +{xp} XP" · "dd/mm HH:MM", at most 10 rows |
 | S7 | draw card: title, description, "Harga tiket: {n} 🪙", "Tiket anda: {owned}/{max}", "Tutup: dd/mm/yyyy", "{label} × {qty}", "🎟️ Beli Tiket"; cards ordered by close date then id |
 | S8 | request card: child name, "{icon} {title}", "{token} token", "dd/mm HH:MM", "✅ Lulus", "❌ Tolak" (no confirm); history row: child name, "{icon} {title}", the S2 pill, "dd/mm HH:MM" |
+| S10, S11 (v1.5) | the header titles of DV-M15-17; the caption number (DV-M15-16); no populated state, no PROPOSED copy for cards, prices, stock, redeem or a redemption list (none invented) |
 | Rules | Pelaras Token rounding and the server parse of the raw text (BR-M15-11); mystery-box draw mechanism (BR-M15-18); one ticket per purchase (BR-M15-19); code length 1–100 (BR-M15-10); date formats of S7/S8 (BR-M15-16); runtime ids (BR-M15-14) |
 
 No flash, success or error message is added after any action (none observed; Q-M15-7).
 
 ### 8.3 Loading and errors
 
-Lists and forms show the shared loading behaviour while the mock responds (default latency per architecture). A failed list or save shows the shared error convention (SRS.md FR-G-10); M15 adds no copy. Bulk actions and form submits disable their trigger while in flight (shared convention).
+Lists and forms show the shared loading behaviour while the mock responds (default latency per architecture). A failed list or save shows the shared error convention (SRS.md FR-G-10); M15 adds no copy of its own. **As built (v1.7):** a failed action (redeem, box open, ticket, approve/reject, bulk, deliver, cancel, form save) shows the shared generic copy "Ralat berlaku. Sila cuba lagi."; the handler's `message` (e.g. `OUT_OF_STOCK`, `TICKET_LIMIT`) is never displayed (FR-M15-65). Bulk actions and form submits disable their trigger while in flight (shared convention).
 
 ---
 
@@ -518,11 +556,20 @@ Lists and forms show the shared loading behaviour while the mock responds (defau
 
 | Role | S1–S4 catalogue (#1–#5) | S2 queue (#6–#8) | S5 shop (#17) | S6 box (#10, #11) | S7 draw (#12, #13) | S8 consent (#14–#16) | Notes |
 |---|---|---|---|---|---|---|---|
-| Admin | view, create, edit, bulk (incl. delete) | view, deliver, cancel | view (own wallet) | view, open (own tokens) | view, buy (own syiling) | view (no children → empty) | OBSERVED screens; actions INFERRED/PROPOSED |
-| Pelajar | → M01 landing / 403 | → landing / 403 | view | view, open | view, buy | view (empty) | INFERRED (provisional) |
-| Ibu Bapa | → landing / 403 | → landing / 403 | view | view, open | view, buy | view, approve, reject (own children only) | INFERRED (provisional); menu entry visible to parent and admin (INFERRED, DV-M15-05) |
-| Guru, Admin Sekolah, Penaja, PPD, JPN | → landing / 403 | → landing / 403 | view | view, open | view, buy | view (empty) | INFERRED / UNVERIFIED |
+| Admin | view, create, edit, bulk (incl. delete) | view, deliver, cancel | view (own wallet) | view, open (own tokens) | view, buy (own syiling) | view (no children → empty); #15/#16 → 403 | OBSERVED screens; actions INFERRED/PROPOSED |
+| Pelajar | → M01 landing / 403 | → landing / 403 | view | view, open | view, buy | view (empty); #15/#16 → 403 | INFERRED (provisional) |
+| Ibu Bapa | → landing / 403 | → landing / 403 | view | view, open | view, buy | view, approve, reject (own children only; unlinked child → 404) | INFERRED (provisional); menu entry visible to parent and admin (INFERRED, DV-M15-05) |
+| Guru, Admin Sekolah, Penaja, PPD, JPN | → landing / 403 | → landing / 403 | view | view, open | view, buy | view (empty); #15/#16 → 403 | INFERRED / UNVERIFIED |
 | Guest | → `/login` | → `/login` | → `/login` | → `/login` | → `/login` | → `/login` | INFERRED |
+
+**S10 / S11 (v1.5, L43)**
+
+| Role | S10 `/cikgu/hadiah` (#17, #19) | S11 `/cikgu/hadiah/saya` (#20) | Notes |
+|---|---|---|---|
+| Admin | view (own wallet 0 / 256) | view (empty) | OBSERVED (GET only) |
+| Pelajar | view (own wallet) | view (empty) | INFERRED (provisional); the live student nav entry targets S10; murid view Perlu pengesahan |
+| Ibu Bapa, Guru, Admin Sekolah, Penaja, PPD, JPN | view | view | INFERRED (as S5–S7); no menu entry for them (student-only entry, FR-M15-78) |
+| Guest | → `/login` | → `/login` | INFERRED; #19/#20 → 401 |
 
 The mock enforces the same checks as the routes (403/404); these are prototype rules, not a security boundary (§11.1).
 
@@ -530,7 +577,7 @@ The mock enforces the same checks as the routes (403/404); these are prototype r
 
 ## 10. Responsive behaviour
 
-Shell switch at 1024px (sidebar → drawer/"Lagi" + bottom nav) per design/shells.md. Tables use NFR-RESP-05 (b): horizontal scroll inside their card, no sticky column (DV-M15-01). Control sizes replicate live (D10); text ≥ 12px (DV-M15-13). **Icon note (FA → Lucide, design-system):** besides the existing mappings, M15 uses `fa-store` ("Kembali ke Catalog") → Lucide `Store`; the designer adds it to the design-system map (with `fa-ticket`, `fa-gift`, `fa-box-open`, `fa-shield-halved`, `fa-cogs`, `fa-clipboard-list`, `fa-boxes-stacked`, `fa-calendar-day`, `fa-percent`, `fa-pause`, `fa-trash` if not already mapped).
+Shell switch at 1024px (sidebar → drawer/"Lagi" + bottom nav) per design/shells.md. Tables use NFR-RESP-05 (b): horizontal scroll inside their card, no sticky column (DV-M15-01). Control sizes replicate live (D10); text ≥ 12px (DV-M15-13). **Icon note (FA → Lucide, design-system):** besides the existing mappings, M15 uses `fa-store` ("Kembali ke Catalog") → Lucide `Store`; the designer adds it to the design-system map (with `fa-ticket`, `fa-gift`, `fa-box-open`, `fa-shield-halved`, `fa-cogs`, `fa-clipboard-list`, `fa-boxes-stacked`, `fa-calendar-day`, `fa-percent`, `fa-pause`, `fa-trash` if not already mapped). **v1.5:** the S10 "Tebusan Saya" button shows a clipboard icon (FA class not captured; same mapping as `fa-clipboard-list` → Lucide `ClipboardList`, Perlu pengesahan); the chips and the S11 buttons use emoji as text. No images or generated media (D22).
 
 | Screen | 375 | 768 | 1280 |
 |---|---|---|---|
@@ -541,6 +588,8 @@ Shell switch at 1024px (sidebar → drawer/"Lagi" + bottom nav) per design/shell
 | S6 | 1 box per row; modal full-screen (NFR-RESP-07) | 3 per row (4th on row 2); modal 400px centred | 4 per row |
 | S7 | balance tile under the title; draw cards full width | tile beside the title | idem |
 | S8 | one column | idem | idem |
+| S10 (v1.5) | h1 on one line, subtitle on two; balance card full width (token block, divider, syiling block with caption, "Tebusan Saya" button wrapping to two lines); chips wrap to 4 rows (3 + 3 + 2 + 2); empty line centred; chat button bottom right above the bottom nav | card under the subtitle at natural width (369px), left-aligned; chips 2 rows (6 + 4) | title block left and card right on one row; chips 2 rows (8 + 2); no horizontal scroll at any width (a chip never overflows; the row wraps) |
+| S11 (v1.5) | title row on **one row**: h1 left (wraps to two lines at 375, 174×64) and the "🎁 Kedai Hadiah" button right (150×64), no overlap; below, a white card with the centred 🎁 (48px), text and link; no horizontal scroll | idem (h1 188×32, button 160×40, right-aligned) | idem (measured, audit AUD-L43-05) |
 | 404 | centred card | idem | idem |
 
 ---
@@ -556,6 +605,8 @@ Shell switch at 1024px (sidebar → drawer/"Lagi" + bottom nav) per design/shell
 | NFR-M15-05 | Accessibility replicates live (D10; FR-M15-64). | NFR-02 |
 | NFR-M15-06 | Locale: dates per BR-M15-16 in Asia/Kuala_Lumpur; money "RM{n}" without decimals as live. | NFR-08 |
 | NFR-M15-07 | No external service: no reseller, API or instant delivery call; `api`/`instant` are stored values only (D4). | D4 |
+| NFR-M15-08 | (v1.5, L43) No generated media or images on S10/S11 (emoji and the icon map only, D22); no personal name anywhere (the screenshots show avatar initials only); balances shown as plain integers (thousands separator not observed; Perlu pengesahan); copy in Bahasa Melayu exactly as observed, apart from DV-M15-16/17. | D22, NFR-05, NFR-08 |
+| NFR-M15-09 | (v1.5, L43) S10 and S11 build only what was observed: no populated-state UI, no endpoint beyond the two empty reads, no new seed record; the default seed (59 inactive rewards) is not read by S10. | D7, D11 |
 
 ### 11.1 Security notes (backend phase)
 
@@ -571,6 +622,14 @@ Shell switch at 1024px (sidebar → drawer/"Lagi" + bottom nav) per design/shell
 | SEC-M15-08 | **Minors' personal data in the queue** (names and e-mails of students on S2). | Admin-only access; data minimisation (e.g. mask e-mail); no export; PDPA notice and retention. |
 | SEC-M15-09 | **`image_url` accepts any URL** (browser `type=url` also accepts `javascript:` and tracking hosts); it is stored though no screen shows it. | Allow only `https:` on an allow-listed host or an uploaded asset; never render it unsanitised; content-security policy. |
 | SEC-M15-10 | **Framework error page** (405) reveals the stack and gives no navigation. | Custom error pages; no framework banner in production. |
+| SEC-M15-11 | **(v1.7, G4) Redeem is not atomic server-side.** The prototype's single mock transaction is not a security boundary. | Server-side atomic redeem: stock guard `UPDATE … SET stock = stock − 1 WHERE id = ? AND stock > 0` (0 rows → `OUT_OF_STOCK`), the token debit and the redemption insert in one transaction; unique constraint on (user, reward, month) to enforce the monthly cap. |
+| SEC-M15-12 | **(v1.7) Parent consent.** Consent must not depend on client-supplied flags or ids. | Consent derived from the verified M02 parent link plus the server-held student age and reward flag; consent tokens (if used) authenticated, bound to the redemption and parent, expiring and single-use; `requireRole('parent')` plus link check on approve/reject (as the prototype's 403/404). |
+| SEC-M15-13 | **(v1.7) Voucher codes** (extends SEC-M15-01). | Encrypted at rest; shown only to the redeeming student; every read and paste access-logged; retention rule for vendor and voucher data (delete or anonymise after expiry plus a defined period). |
+| SEC-M15-14 | **(v1.7) Mystery-box randomness.** The mock's deterministic seed (BR-M15-18) is test-only. | CSPRNG with server-side odds in production; the client never supplies or sees the outcome before the open; every opening logged (extends SEC-M15-06). |
+| SEC-M15-15 | **(v1.7) Lucky-draw limits.** | Maximum tickets enforced at DB level (constraint or locked count); draw closing and winner selection in one transaction (extends SEC-M15-07). |
+| SEC-M15-16 | **(v1.7) Replay and double submission** of redeem, box open and ticket purchase. | `Idempotency-Key` header on all three; repeated key returns the first result without a second debit. |
+| SEC-M15-17 | **(v1.7) Concurrent admin transitions** (deliver / cancel). | Compare-and-set on status (`WHERE status = 'pending_admin'`), so deliver and cancel cannot both succeed and a refund happens once (extends SEC-M15-05). |
+| SEC-M15-18 | **(v1.7) Reward image upload/URL** (extends SEC-M15-09). | Allowlist png / jpeg / webp, magic-byte check, re-encode on the server, SVG refused. |
 
 ---
 
@@ -633,12 +692,32 @@ Every scenario runs on the three Playwright projects mobile 375×812, tablet 768
 | E2E-M15-51 | Fixture `queue`, parent 6: "(1)", the 15102 card content, history 15101 and 15103; admin and parent 5401 still "(0)". | 58, 59 | 19.2, 20.1 | yes |
 | E2E-M15-52 | Parent 6 "✅ Lulus" on 15102 → "(0)", history pill "⏳ Pending Admin", S2 default lists 15102; after reset, "❌ Tolak" → history "❌ Dibatalkan", student 4 tokens 25, reward 1 Tebusan 0. | 60, 61 | 20.2, 20.3 | yes |
 | E2E-M15-53 | Parent 5401 posts approve for 15102 → 404; 15102 unchanged. | 58 | 20.4 | yes |
+| E2E-M15-72 | **(v1.7)** Admin, student 2 and a teacher post approve and reject for 15102 (#15/#16) → `403 FORBIDDEN`; 15102 stays `pending_parent_consent`; a guest gets 401; parent 5401 (no links) still gets 404. | 58, 60 | 20.5 | yes |
 | E2E-M15-54 | Responsive sweep: S1 (with toolbar), S2, S3, S4, S5, S6, S7, S8, 404 at 375/768/1280 have `scrollWidth` ≤ viewport; S1/S2 table containers scroll at 375/768 (`scrollWidth` > `clientWidth`) and "Edit" / "TARIKH" / "TINDAKAN" become visible after scrolling; no scroll at 1280; S1 cards 2×2 vs 1×4, toolbar rows, S3 one column, S6 1/3/4 columns. | 62 | 21.1, 21.2, 21.3 | |
 | E2E-M15-55 | Computed font sizes: no text node in M15 page content below 12px on S1–S8 at every width (incl. "Off", "❌ Dibatalkan", the hint, the ribbons). | 63 | 21.4 | |
 | E2E-M15-56 | Dialogs are native (`page.on('dialog')` types confirm/prompt/alert); invalid form fields report `validity` natively; no `role`/`aria-*` attributes on M15 controls except the pager's live labels. | 64 | 21.5 | |
-| E2E-M15-57 | `failNext('/api/admin/hadiah')` and `failNext('/api/admin/hadiah/redemptions')` → the shared error state; no horizontal scroll. | 65 | 21.6 | |
+| E2E-M15-57 | `failNext('/api/admin/hadiah')` and `failNext('/api/admin/hadiah/redemptions')` → the shared error state; a failed action shows "Ralat berlaku. Sila cuba lagi." and never the handler message (v1.7); no horizontal scroll. | 65 | 21.6 | |
 
-Provisional: E2E-M15-05, 06, 07, 19, 20, 21, 23, 24, 26, 29, 32, 36, 37, 38, 39, 40, 42, 44, 45, 46, 48, 49, 51, 52, 53 (25 of 57)
+**Row L43 (v1.5).** Default user the admin (`setUser(1)`); "student 2" = `setUser(2)` with M14 `setWallet(2, {syiling: 300, tokens: 20})`. Run at 375×812, 768×1024 and 1280×800.
+
+| ID | Scenario | FR | AC | Provisional |
+|---|---|---|---|---|
+| E2E-M15-58 | Admin opens `/cikgu/hadiah`: user shell, tab title "Kedai Hadiah Digital", header "Kedai Hadiah Digital" + "Selamat datang kembali" (no "Dashboard"), h1 "🎁 Kedai Hadiah Digital", subtitle "Tukar token kepada hadiah digital — terus dihantar, tanpa pos.". | 67, 68 | 22.1 | |
+| E2E-M15-59 | Admin S10 balance card: rendered (visible) label text "TOKEN ANDA" over "0" and "SYILING" over "256" (DOM text "Token Anda" / "Syiling" with CSS upper case), caption "50 syiling = 1 token" (no "100 syiling"), gradient, button "Tebusan Saya" with its icon → `/cikgu/hadiah/saya`; clicking it opens S11. | 69, 70 | 22.2 | |
+| E2E-M15-60 | Student 2 with 20 tokens / 300 syiling: card "20" / "300" and the caption with that student's tier rate; the wallet is read through #17 (`lastRequest`). | 69 | 22.7 | yes |
+| E2E-M15-61 | S10 default chips: ten labels in order, `href`s `?cat=all` … `entertainment`, only "🌟 Semua" active; below them exactly "Tiada hadiah dalam kategori ini."; no card, price, stock or "Tebus" element in the DOM. | 71, 72 | 22.3, 22.4 | |
+| E2E-M15-62 | Follow each of the ten chips: URL `?cat={key}`, same title, card and empty copy; the followed chip alone is active. | 71 | 22.5 | |
+| E2E-M15-63 | `?cat=bogus`: 200, page shown, empty copy, no chip active; #19 answers 200 with `activeCat: null`. | 71 | 22.6 | |
+| E2E-M15-64 | `m15SetReward(1, {isActive: true})` then S10 for any `cat`: still the empty state and no card; fixture `queue`, student 2 opens S11: still "Belum ada tebusan. …" and #20 returns `data: []`. | 72, 75 | 22.8, 23.3 | yes |
+| E2E-M15-65 | Admin opens `/cikgu/hadiah/saya`: tab title and header "Tebusan Saya" + "Selamat datang kembali", h1 "📋 Tebusan Saya", button "🎁 Kedai Hadiah", exact empty text and link "Layari Kedai Hadiah"; no list, chip, filter or pager. | 73, 74 | 23.1 | |
+| E2E-M15-66 | On S11 follow "🎁 Kedai Hadiah" and (separately) "Layari Kedai Hadiah": both open S10 with "🌟 Semua" active. | 74 | 23.2 | |
+| E2E-M15-67 | Guest opens `/cikgu/hadiah`, `?cat=gaming`, `/cikgu/hadiah/saya` → `/login`, #19/#20 → 401; student, parent (6) and a teacher open both pages in the user shell. | 76 | 24.1, 24.2 | yes |
+| E2E-M15-68 | Admin opens `/kedai-hadiah`, `/hadiah`, `/kedai`, `/cikgu/hadiah/1`: exact 404 page and tab title; the admin sidebar holds no link to `/cikgu/hadiah`, its "Kedai Hadiah" → `/gamification/rewards` opens S5 with title "Kedai Hadiah" and its own copy. | 77, 78 | 24.3, 24.5 | |
+| E2E-M15-69 | Student at 1280: sidebar entry "Kedai Hadiah 🎁" + badge "DIGITAL" has `href="/cikgu/hadiah"` (no `/kedai-hadiah` anywhere in the nav), following it opens S10 (not 404) and the entry is active on S10 and S11; at 375 the same target wherever the shell lists it. | 78 | 24.4 | yes |
+| E2E-M15-70 | Responsive sweep S10 and S11 at 375/768/1280: `scrollWidth` ≤ viewport; S10 card full width at 375, natural width under the subtitle at 768, right of the title block at 1280; chips 4 / 2 / 2 rows. | 79 | 25.1 | |
+| E2E-M15-71 | Computed font sizes on S10/S11: no text node below 12px (incl. the caption, live 9px, and the two card labels, live 10px); the card still fits (324px at 375, 369px at 768/1280); `failNext('/api/gamification/wallet')` and `failNext('/api/hadiah-digital/items')` → the shared error state, no L43-specific copy, no sideways scroll. | 79 | 25.2, 25.3 | |
+
+Provisional: E2E-M15-05, 06, 07, 19, 20, 21, 23, 24, 26, 29, 32, 36, 37, 38, 39, 40, 42, 44, 45, 46, 48, 49, 51, 52, 53 (25 of 57); v1.5 added 60, 62, 63, 64, 67, 69; **v1.6 drops 62 and 63** (observed by the audit) → L43 provisional 60, 64, 67, 69 → 29 of 71; **v1.7 adds 72** → **30 of 72**
 
 ---
 
@@ -650,3 +729,4 @@ URS §9 OQ-M15-01…12 apply unchanged. Additional SRS points:
 2. **SQ-M15-02 Token ledger — CLOSED (M14 SRS §6.13, BR-M14-22):** token debits and refunds from M15 go to M14's internal TokenMovement log (DATA-M14-21), not to the coin ledger and not to any screen; M15 passes `source` and `refId`. Syiling credits of the mystery box appear in the coin ledger as `earn` rows "Kotak Misteri: {name}".
 3. **SQ-M15-03 Redemption ids.** Live never shows a redemption id; the seed uses 1–3 (fictitious) and fixtures 15101–15199. If a later live observation exposes ids (e.g. in the fulfilment form action), the seed will adopt them.
 4. **SQ-M15-04 S2 paging.** The live queue never had more than 3 rows; 50 per page with the S1 pager is INFERRED from the empty paginator slot and the S1 paginator.
+5. **SQ-M15-05 (v1.5, L43) Open items for S10/S11** (full wording: URS OQ-M15-13…16). **Closed in v1.6:** OQ-M15-14 (audit PASS), OQ-M15-13 and OQ-M15-16 (decided by the Delivery Lead under the user's standing instruction: S10/S11 empty for every account, populated states not built, murid view Perlu pengesahan, DV-M15-16 kept, "Tebusan Saya" is part of row L43). **Accepted risk:** OQ-M15-15 (S11 empty while S2/S8 hold redemptions for the same users). XR-M15-13 Applied; XR-M15-14 M14 already satisfies it (#2 returns `tier.conversionRate`).

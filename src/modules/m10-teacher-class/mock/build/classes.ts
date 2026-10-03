@@ -63,6 +63,7 @@ import type {
   EnrolmentSource,
 } from '../repository/types'
 import type { People, Pupil, Teacher } from './people'
+import { designGuruEnrolments } from './guru'
 import { planSchoolSets, planT4, type SchoolPlan, type T4Holders, type T4Plan } from './sets'
 import { byHash, h32, shuffled, splitTotal, unit } from './util'
 
@@ -782,6 +783,43 @@ export function buildClasses(people: People): BuildResult {
     { teacherId: cardB, classes: 3, students: 89 },
   ]
   const cardOwners = new Set(teacherCards.map((t) => t.teacherId))
+
+  // ---- XR to M17 (R2-06): the designed "{n} GURU" enrolments (data/guru.ts, build/guru.ts) -------------
+  // Enrolments of the answering pupils only, in generated T5 classes: the at-risk classes and every class
+  // of a teacher-card owner keep their members; no class, owner or id changes and no pupil leaves T5.
+  const atRiskIds = new Set(atRiskClasses.map((c) => c.classId))
+  const cardOwnerClassIds = new Set(
+    [...cardOwners].flatMap((o) => (ownerClasses.get(o) ?? []).map((r) => r.classId)),
+  )
+  const t5Distinct = (): Set<number> => {
+    const out = new Set<number>()
+    for (const r of rows)
+      if (r.educationLevel === 'tingkatan-5')
+        for (const id of members.get(r.id) as number[]) out.add(id)
+    return out
+  }
+  const t5BeforeGuru = t5Distinct()
+  const genericIds = new Set(gens.map((g) => g.id))
+  const protectedOwners = new Set<number>(cardOwners)
+  for (const r of rows) {
+    if (r.kind !== 'classroom' || r.teacherId === null) continue
+    if (!genericIds.has(r.classId) || atRiskIds.has(r.classId)) protectedOwners.add(r.teacherId)
+  }
+  designGuruEnrolments({
+    members,
+    ownerClasses,
+    eligible: new Set(
+      [...genT5Ids].filter((id) => !atRiskIds.has(id) && !cardOwnerClassIds.has(id)),
+    ),
+    ownersBySchool: owners.bySchool,
+    protectedOwners,
+  })
+  const t5AfterGuru = t5Distinct()
+  if (
+    t5AfterGuru.size !== t5BeforeGuru.size ||
+    [...t5BeforeGuru].some((id) => !t5AfterGuru.has(id))
+  )
+    fail('the guru enrolments changed the T5 member set')
 
   for (const g of gens) if (g.t5) t5Add(members.get(classKey('classroom', g.id)) as number[])
 

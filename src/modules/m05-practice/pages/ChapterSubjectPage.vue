@@ -86,7 +86,7 @@ function onLevelChange(event: Event): void {
               Progressive Unlock
             </p>
             <h1
-              class="mt-2 font-heading text-2xl font-black sm:text-4xl"
+              class="mt-2 font-heading text-2xl font-black text-white sm:text-4xl"
               data-testid="chapter-subject-name"
             >
               {{ data.subject.name }}

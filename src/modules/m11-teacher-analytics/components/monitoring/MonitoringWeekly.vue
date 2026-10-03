@@ -106,7 +106,8 @@ const TH = 'px-2 py-2 text-center text-xs font-bold text-slate-500'
             </td>
             <td class="px-2 py-1.5 text-center whitespace-nowrap" data-testid="mon-weekly-best">
               <template v-if="r.best">
-                <span class="font-semibold text-amber-600">M{{ r.best.k }}</span>
+                <span class="font-semibold text-amber-600">M{{ r.best.k }}</span
+                >{{ ' ' }}
                 <span class="ml-1 text-xs text-slate-400">{{ count(r.best.count) }}</span>
               </template>
               <span v-else class="text-slate-300">-</span>

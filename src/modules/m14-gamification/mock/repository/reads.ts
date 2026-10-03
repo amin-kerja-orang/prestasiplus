@@ -290,10 +290,7 @@ export function subjectNames(): { name(id: number): string; order(id: number): n
 
 /** M15 `mysteryBox.openingsCount(userId)` (Q-M15-OPENINGS-COUNT), 0 until M15 exists. */
 export function mysteryOpenings(userId: number): number {
-  const repo = Reflect.get(m15, 'mysteryBox') as Loose | undefined
-  const fn = repo?.openingsCount
-  const n = typeof fn === 'function' ? (fn as Fn)(userId) : 0
-  return typeof n === 'number' ? n : 0
+  return m15.mysteryBox.openingsCount(userId)
 }
 
 /** The M01 user row (role, complimentary flag, school), or undefined. */

@@ -11,18 +11,16 @@
  *   files of `.pdf/.doc/.docx/.xls/.xlsx`, each ≤ 20 MB. M04 requires a year, but the form's "Tahun"
  *   is optional, so an empty one is stored as the year of the mock clock (SRS gap, reported). Nothing
  *   of the files is stored but their name, size and type.
- * - #63 (DV-M10-08, OQ-M09-03): no source file exists to serve byte for byte (the server copy builds
- *   its templates on request; M09's are text placeholders), and the project has no office-document
- *   writer. A text file named `.xlsx` / `.docx` is a broken file, so the templates are served
- *   with an honest type: `/template` as `template-audio-kbat.csv` (`text/csv`, UTF-8 with a BOM so
- *   Excel reads it) and `/template-word` as `template-audio-kbat.txt` (`text/plain`). Both carry
- *   the template **structure** (set fields, the 4 fixed sections, the 30 question rows; FN-M10-7.6)
- *   and no media. A recorded deviation (the live links download XLSX / DOCX).
+ * - #63 (DV-M10-08, D24): the templates are those of the server copy. `/template` is
+ *   `template-audio-kbat.csv` (`text/csv`, UTF-8 BOM, columns tajuk, kod_subjek, kod_tingkatan,
+ *   nama_fail_audio and one example row, quoted as PHP `fputcsv` does); `/template-word` is a valid `.docx` (built by `docx.ts`, a
+ *   stored ZIP) with a title, an intro line and a table of the same four columns and the example.
  */
 
 import { blob, created, raw, route, validationError, type RouteDef } from '@/mock/define'
 import { submissions } from '@/modules/m04-question-bank/mock'
 
+import { tableDocx } from './docx'
 import { bodyOf, fileOf, intOf, listOf, textOf, viewerId, teacherOnly } from './common'
 
 export const PAPER_TYPES = [
@@ -53,49 +51,15 @@ const PAPER_MSG = {
   file: (name: string): string => `${name}: format atau saiz tidak dibenarkan.`,
 } as const
 
-/** The fixed Audio KBAT layout (FN-M10-7.6.3, BR-M10-26). */
-const SECTIONS = [
-  ['Bahagian 1', '1-8'],
-  ['Bahagian 2', '9-16'],
-  ['Bahagian 3', '17-24'],
-  ['Bahagian 4', '25-30'],
-] as const
-
-/** The template: the set fields, the four sections and the 30 question rows, one `row` per line. */
-const tsv = (cells: readonly string[]): string => cells.join('\t')
-const csvRow = (cells: readonly string[]): string =>
-  cells.map((c) => (/[",\r\n]/.test(c) ? `"${c.replaceAll('"', '""')}"` : c)).join(',')
-
-function templateText(row: (cells: readonly string[]) => string): string {
-  const lines = [
-    'Template Set Audio KBAT',
-    '',
-    row(['Tajuk Set', 'Tahap', 'Subjek', 'Sumber / Penyumbang', 'Arahan Umum']),
-    row(['', '', '', '', '']),
-    '',
-    row(['Bahagian', 'Soalan', 'Tajuk Audio', 'Fail Audio', 'Transkrip Audio']),
-    ...SECTIONS.map(([name, range]) => row([name, range, '', '', ''])),
-    '',
-    row([
-      'No',
-      'Teks Soalan',
-      'Pilihan A',
-      'Pilihan B',
-      'Pilihan C',
-      'Pilihan D',
-      'Jawapan (A/B/C/D)',
-      'Markah (1-20)',
-      'KBAT Level (1-5)',
-      'DSKP SP ID',
-      'Skema / Penjelasan',
-    ]),
-    ...Array.from({ length: 30 }, (_, i) =>
-      row([String(i + 1), '', '', '', '', '', '', '', '', '', '']),
-    ),
-    '',
-  ]
-  return lines.join('\r\n')
-}
+/** The Audio KBAT bulk-import template of the server copy (TeacherQuestionToolsController, D24). */
+const HEADINGS = ['tajuk', 'kod_subjek', 'kod_tingkatan', 'nama_fail_audio'] as const
+const EXAMPLE = ['Contoh: KBAT Sains Bab 1', 'SCI', 'T4', 'kbat-sains-1.mp3'] as const
+const csvCell = (c: string): string => (/[\s,"]/.test(c) ? `"${c.replaceAll('"', '""')}"` : c)
+const BOM = String.fromCharCode(0xfeff)
+export const TEMPLATE_CSV_TEXT = `${BOM}${HEADINGS.join(',')}\n${EXAMPLE.map(csvCell).join(',')}\n`
+const WORD_HEADINGS = ['Tajuk', 'Kod Subjek', 'Kod Tingkatan', 'Nama Fail Audio'] as const
+const WORD_EXAMPLE = ['KBAT Sains Bab 1', 'SCI', 'T4', 'kbat-sains-1.mp3'] as const
+const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
 export const extraRoutes: RouteDef[] = [
   route('GET', '/api/guru/galeri-rajah', [teacherOnly], (req) => {
@@ -167,15 +131,19 @@ export const extraRoutes: RouteDef[] = [
 
   route('GET', '/api/guru/audio-kbat/template', [teacherOnly], () =>
     blob(
-      new Blob(['﻿', templateText(csvRow)], { type: 'text/csv; charset=UTF-8' }),
+      new Blob([TEMPLATE_CSV_TEXT], { type: 'text/csv; charset=UTF-8' }),
       'template-audio-kbat.csv',
     ),
   ),
 
-  route('GET', '/api/guru/audio-kbat/template-word', [teacherOnly], () =>
-    blob(
-      new Blob([templateText(tsv)], { type: 'text/plain; charset=UTF-8' }),
-      'template-audio-kbat.txt',
-    ),
-  ),
+  route('GET', '/api/guru/audio-kbat/template-word', [teacherOnly], () => {
+    const bytes = new Uint8Array(
+      tableDocx(
+        'Template Set Audio KBAT',
+        'Isi satu baris bagi setiap set. Muat naik fail audio melalui borang "Cipta Set" di /guru/audio-kbat.',
+        [WORD_HEADINGS, WORD_EXAMPLE],
+      ),
+    )
+    return blob(new Blob([bytes], { type: DOCX_TYPE }), 'template-audio-kbat.docx')
+  }),
 ]

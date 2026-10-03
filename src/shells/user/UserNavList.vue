@@ -31,7 +31,7 @@ const badgeText = useNavBadgeText()
 const isDrawer = () => props.surface === 'drawer'
 
 function active(item: NavItem): boolean {
-  return isActivePath(props.currentPath, item.to)
+  return isActivePath(props.currentPath, item.to, item.activeExcept)
 }
 
 function badgeClass(item: NavItem): string {

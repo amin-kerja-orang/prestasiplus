@@ -16,8 +16,9 @@ import { KELAS_COPY } from '../components/kelas/copy'
 import QrModal from '../components/kelas/QrModal.vue'
 
 const { data, error } = useApi((signal) => fetchGuruClasses({ signal }))
-const classes = computed(() => data.value?.data ?? [])
-const activeCount = computed(() => classes.value.filter((c) => c.isActive).length)
+// Only active classes are listed, as the "n kelas aktif" counter counts them.
+const classes = computed(() => (data.value?.data ?? []).filter((c) => c.isActive))
+const activeCount = computed(() => classes.value.length)
 const qrClassId = ref<number | null>(null)
 
 const CTA =

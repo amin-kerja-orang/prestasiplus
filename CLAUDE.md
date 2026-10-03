@@ -94,6 +94,7 @@ Pick the lightest track that fits; state which one you picked.
 ### Shared working tree (multi-session safety)
 Several sessions work in this one folder at the same time.
 - **Shared store data:** an agent that changes another module's shared mock data (M01 users, M05 practice, M10 classes, M04 questions, or any `datasets/`, `seeds/` or `spec` file) works in an isolated git worktree (`isolation: "worktree"`). The change is merged back only once `src/mock/server/__tests__/registry-boot.test.ts` and the owning module's tests pass.
+- **Processes:** never kill all `node.exe` (or all Playwright/vite) processes; other sessions and the dev server on 5173 depend on them. Stop only the processes or ports you started.
 - **Half-done edits:** never leave half-done data edits in the shared tree. A failing boot blocks every session.
 - **Checkpoints:** commit a checkpoint on the feature branch after each green boot milestone. The user approved this on 2026-10-02.
 

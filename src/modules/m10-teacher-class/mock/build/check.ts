@@ -19,6 +19,7 @@ import {
   T4_MEMBERSHIPS,
   T5_DISTINCT,
 } from '../data/spec'
+import { GURU_PLANS } from '../data/guru'
 import type { ClassroomRow, EnrolmentRow } from '../repository/types'
 
 export function checkClassBuild(
@@ -81,6 +82,38 @@ export function checkClassBuild(
   const c1156 = enrolments.filter((e) => e.classKey === 'classroom:1156')
   if (c1156.length !== 1 || c1156[0]?.studentId !== PUPIL_1156) {
     issues.push(`class 1156 must have the single member ${String(PUPIL_1156)}`)
+  }
+
+  // "{n} GURU" (M17 BR-M17-11): distinct owners of a classroom with an active enrolment of the pupils of a
+  // window (today ⊂ week ⊂ month), per plan school (data/guru.ts).
+  const ownerOf = new Map(
+    classes.flatMap((c) =>
+      c.kind === 'classroom' && c.teacherId !== null ? [[c.id, c.teacherId] as const] : [],
+    ),
+  )
+  const ownersByPupil = new Map<number, Set<number>>()
+  for (const e of enrolments) {
+    if (e.status !== 'active') continue
+    const owner = ownerOf.get(e.classKey)
+    if (owner === undefined) continue
+    const set = ownersByPupil.get(e.studentId) ?? new Set<number>()
+    set.add(owner)
+    ownersByPupil.set(e.studentId, set)
+  }
+  const distinctOwners = (pupils: readonly number[]): number => {
+    const out = new Set<number>()
+    for (const p of pupils) for (const o of ownersByPupil.get(p) ?? []) out.add(o)
+    return out.size
+  }
+  for (const plan of GURU_PLANS) {
+    const week = [...plan.today, ...plan.week]
+    eq(`GURU ${String(plan.school)} today`, distinctOwners(plan.today), plan.targets.today)
+    eq(`GURU ${String(plan.school)} week`, distinctOwners(week), plan.targets.week)
+    eq(
+      `GURU ${String(plan.school)} month`,
+      distinctOwners([...week, ...plan.month]),
+      plan.targets.month,
+    )
   }
   return issues
 }

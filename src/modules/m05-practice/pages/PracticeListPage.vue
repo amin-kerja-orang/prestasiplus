@@ -111,7 +111,9 @@ const HERO_CIRCLES = [
                 <p class="text-xs font-black tracking-[0.25em] text-cyan-100 uppercase">
                   Mode Baru
                 </p>
-                <h2 class="mt-1 font-heading text-xl font-black sm:text-2xl">Soalan by Chapter</h2>
+                <h2 class="mt-1 font-heading text-xl font-black text-white sm:text-2xl">
+                  Soalan by Chapter
+                </h2>
                 <p class="mt-2 text-sm text-cyan-50">
                   Jawab bab demi bab ikut buku teks dan DSKP. Bab seterusnya terkunci sehingga bab
                   semasa lengkap.
