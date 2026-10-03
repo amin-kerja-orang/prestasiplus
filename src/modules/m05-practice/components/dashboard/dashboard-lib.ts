@@ -152,8 +152,3 @@ export function greetingText(period: string, name: string): string {
 export function questBarPct(q: { progress: number; target: number; completed: boolean }): number {
   return q.completed ? 100 : questPct(q.progress, q.target)
 }
-
-/** FR-M05-26: the displayed text of a recent question, cut at 100 characters + "..." (BR-29). */
-export function cutText(text: string, limit = 100): string {
-  return text.length > limit ? `${text.slice(0, limit)}...` : text
-}

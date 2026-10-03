@@ -41,7 +41,7 @@ defineProps<{ count: number }>()
       >
         <RouterLink
           to="/practice"
-          class="block min-h-11 rounded-xl bg-white/25 px-5 py-2 text-center text-xs font-bold text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-white/40 md:inline-flex md:items-center md:py-2.5 md:text-sm"
+          class="relative block rounded-xl bg-white/25 px-5 py-2 text-center text-xs font-bold text-white shadow-md backdrop-blur-sm transition-all after:absolute after:inset-x-0 after:-inset-y-1.5 hover:scale-105 hover:bg-white/40 md:inline-flex md:items-center md:py-2.5 md:text-sm"
           data-testid="dash-kombo-link"
         >
           <Play class="mr-1 inline h-3.5 w-3.5" /> Mula Latihan

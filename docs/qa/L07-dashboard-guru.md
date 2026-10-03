@@ -3,11 +3,15 @@
 Date: 2026-10-03. Branch: feature/student-prototype. Slug: L07-dashboard-guru (task M10-T2, roles-matrix row L07 Guru part).
 Inputs: SRS M10 (FR-M10-03, 08..13, 129; BR-M10-05/06; DV-M10-12/28; section 9 and 10), URS M10 (AC-M10-03.1 to 05.4, 48.1/48.2).
 
-## Verdict: NOT READY (1 Medium bug open, 0 Critical/High)
+## Verdict: READY (after re-test, 2026-10-03)
 
-10 ACs executed: 8 Pass, 2 Fail (AC-04.1 and AC-04.2, both for the same defect BUG-L07-01: the "Soalan" caption lacks the literal "✅" glyph). Everything else passes at 375, 768 and 1280 (and 320). G5 needs every AC Pass, so the gate stays open until BUG-L07-01 is fixed (one-line change) or the SRS/URS is amended to accept an icon. No layout, font-size, touch-target or role-access defect found.
+Initial run was Not ready: 10 ACs executed, 8 Pass and 2 Fail (AC-04.1, AC-04.2) for BUG-L07-01 (Soalan caption lacked the literal "✅"). The Delivery Lead fixed `StatCards.vue` (caption now the text "✅ {n} diluluskan"); the re-test below is green. **Final: 10/10 ACs Pass, no open bug of any severity.** No layout, font-size, touch-target or role-access defect found at 375, 768, 1280 (and 320).
 
-## Test runs
+## Re-test after fix (2026-10-03)
+
+Fresh `vite build --mode e2e --outDir dist-e2e-5022` of the fixed tree, preview on 5022, temporary config on 5022 (deleted afterwards; the committed `playwright.5022.config.ts` of another session was restored with git checkout), `E2E_BOOT_TIMEOUT_MS=90000 --workers=2`: smoke-dashboard.spec.ts + qa-l07-dashboard.spec.ts, 3 projects: **102 passed, 2 skipped (320px, mobile-only by design), 1 failed**. The 1 failure was my "slow response" test (mobile): its check that the checklist is absent during loading ran after the 1.5 s mock latency had already elapsed on the loaded machine. It passes alone; I raised the test latency to 6 s and it passes on all 3 projects (3/3). Net: every test passes (smoke 12/12, QA spec 93/93 incl. 2 skipped by design). Unit 8/8 pass (reported by the Delivery Lead).
+
+## Test runs (initial run, before the fix)
 
 Environment: real tree (shared, dirty working tree) built with `vite build --mode e2e --outDir dist-e2e-5022`, `vite preview` on port 5022, own config copy `playwright.5022.config.ts` (port/outDir/outputDir changed from the 5021 config). Machine was heavily loaded (about 20 to 40 s per test), so `E2E_BOOT_TIMEOUT_MS=90000` and `--workers=2` (workers=1 for one re-run). Config copy, `dist-e2e-5022`, `test-results-5022` deleted and the 5022 server stopped; 4173/5173 and live prestasiplus.my never touched.
 
@@ -29,8 +33,8 @@ Evidence: Q = `qa-l07-dashboard.spec.ts` test, S = `smoke-dashboard.spec.ts` tes
 |---|---|---|---|
 | AC-03.1 guide content | Open `/guru` as admin and guru; check h3, intro, 3 badges, titles, texts, link labels and hrefs (`/guru/kelas`, `/guru/pelajar`, `/guru/monitoring`), tip "Tip: Hover atas mana-mana menu ..." | Pass | Q AC-03.1 (x2 accounts), S E2E-M10-05; M screenshot |
 | AC-03.2 close/pill persistence | Close: key `hideGuruGuide` = "true", card gone, pill "Tunjuk panduan Mula Di Sini"; reload keeps pill; click pill: key removed, guide back; reload keeps guide; close again and reload. Also value "false" keeps guide; blocked storage (getItem/setItem throw): guide shown, close raises no page error | Pass | Q AC-03.2, FR-08 other value, FR-08 storage failure; S E2E-M10-05 |
-| AC-04.1 admin checklist and cards | 0/3, 0%, bar width 0, 3 rows with subtitles and "Lihat" hrefs; cards Kelas Aktif 0 / "0 jumlah kelas", Pelajar 0 / "Merentasi semua kelas", Soalan 20719 (no separator) / "19361 diluluskan", Tugasan 0 / "Jumlah tugasan dibuat" | **Fail** (literal text) | Everything matches except the caption is "19361 diluluskan", not "✅ 19361 diluluskan" (BUG-L07-01). Q AC-04.1 passes without the glyph; Q glyph test red |
-| AC-04.2 guru checklist and cards | 3/3, 100%, bar 100%, Kelas Aktif 2 / "2 jumlah kelas", Pelajar 8, Soalan 1 / "1 diluluskan", Tugasan 0; after `createQuestionFixture` (id 700301) Soalan 2 / diluluskan 1 | **Fail** (same glyph) | Values and the fixture behaviour pass: Q AC-04.2 x2, S E2E-M10-07 (provisional). Glyph missing, BUG-L07-01 |
+| AC-04.1 admin checklist and cards | 0/3, 0%, bar width 0, 3 rows with subtitles and "Lihat" hrefs; cards Kelas Aktif 0 / "0 jumlah kelas", Pelajar 0 / "Merentasi semua kelas", Soalan 20719 (no separator) / "19361 diluluskan", Tugasan 0 / "Jumlah tugasan dibuat" | Pass (after fix) | First run Fail on the missing glyph (BUG-L07-01); re-test: caption "✅ 19361 diluluskan", glyph test green on 3 projects |
+| AC-04.2 guru checklist and cards | 3/3, 100%, bar 100%, Kelas Aktif 2 / "2 jumlah kelas", Pelajar 8, Soalan 1 / "1 diluluskan", Tugasan 0; after `createQuestionFixture` (id 700301) Soalan 2 / diluluskan 1 | Pass (after fix) | Values and fixture behaviour passed on the first run; glyph fixed, re-test green on 3 projects (Q AC-04.2 x2, Q glyph test, S E2E-M10-07) |
 | AC-05.1 Tindakan Hari Ini | Admin: label, h2, description, counters Pelajar 0 / Topik 0 / Tindakan 0, "Top 3", "Analitik Kelas →" `/analitik/kelas`, "Rule-based", both empty texts, action card, "Permulaan", text, "Buka Kelas →" `/guru/kelas`; guru sees the same (FR-11) | Pass | Q AC-05.1 x2, S E2E-M10-02/06 |
 | AC-05.2 peer + quick tiles | "PEER TUTOR MATCHING" computed `text-transform: uppercase`, title, text, empty box exact; 4 tiles with subtitles and hrefs (`/guru/kelas/cipta`, `/guru/soalan/cipta`, `/guru/pelajar`, `/guru/profil/edit`), admin and guru | Pass | Q AC-05.2 x2, S |
 | AC-05.3 admin Kelas Saya / Penghantaran | "Semua →" `/guru/kelas`, "Belum ada kelas. Cipta sekarang!", both submission empty texts | Pass | Q AC-05.3, S |
@@ -53,9 +57,9 @@ Other requirements checked (not separate ACs): FR-03 header ("Dashboard Guru", "
 
 | ID | Severity | Steps to reproduce | Expected vs actual | Evidence | Suspected owner |
 |---|---|---|---|---|---|
-| BUG-L07-01 | Medium | Log in as admin (or guru), open `/guru`, read the "Soalan" stat card caption | Expected (AC-M10-04.1/04.2, EL-M10-S1-043, live inventory `docs/discovery/inventory/M10/S1-guru-dashboard.json` line 1090): text "✅ 19361 diluluskan" (guru: "✅ 1 diluluskan"). Actual: the literal "✅" is replaced by a lucide `CircleCheck` icon, so the text is "19361 diluluskan". The existing smoke spec asserts only "19361 diluluskan", which hides the gap. No DV entry covers this replacement (CLAUDE.md section 6: replicate exact copy) | Failing test `AC-04.1/04.2 Soalan caption carries the literal "✅" glyph` (3 projects); actual text "Soalan2071919361 diluluskan" | frontend-developer (`components/dashboard/StatCards.vue`: render "✅ " in the caption text, drop the `CircleCheck` icon; or product-analyst if the icon is to be a documented deviation) |
+| BUG-L07-01 | Medium, **FIXED and verified 2026-10-03** | Log in as admin (or guru), open `/guru`, read the "Soalan" stat card caption | Expected (AC-M10-04.1/04.2, EL-M10-S1-043, live inventory `docs/discovery/inventory/M10/S1-guru-dashboard.json` line 1090): text "✅ 19361 diluluskan" (guru: "✅ 1 diluluskan"). Actual: the literal "✅" is replaced by a lucide `CircleCheck` icon, so the text is "19361 diluluskan". The existing smoke spec asserts only "19361 diluluskan", which hides the gap. No DV entry covers this replacement (CLAUDE.md section 6: replicate exact copy) | Failing test `AC-04.1/04.2 Soalan caption carries the literal "✅" glyph` (3 projects); actual text "Soalan2071919361 diluluskan" | frontend-developer (`components/dashboard/StatCards.vue`: render "✅ " in the caption text, drop the `CircleCheck` icon; or product-analyst if the icon is to be a documented deviation) |
 
-No Critical or High bug. Medium so G5 not passed.
+No Critical or High bug; BUG-L07-01 closed by the re-test, so no bug is open.
 
 ## Known dependencies (not S1 bugs)
 

@@ -98,6 +98,13 @@ test.describe('M05 S1 dashboard smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     await expect(stat('dash-stat-streak')).toHaveText('1')
     await expect(stat('dash-stat-sessions')).toHaveText('0')
     await expect(stat('dash-stat-accuracy')).toHaveText('0%')
+    // The live sizes are kept (md:text-5xl = 48 px) and the 6-digit totals fit the page.
+    if (viewportWidth(page) >= 768) {
+      await expect(tid(page, 'dash-platform-total').getByTestId('dash-platform-value')).toHaveCSS(
+        'font-size',
+        '48px',
+      )
+    }
     await expect(tid(page, 'dash-platform-total').getByTestId('dash-platform-value')).toHaveText(
       '130152',
     )

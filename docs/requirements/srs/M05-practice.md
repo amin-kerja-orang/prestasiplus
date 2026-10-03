@@ -60,6 +60,8 @@ Approved under user rule D9 (fix broken or contradictory, replicate what works) 
 - DV-M05-14 quiz secondary controls ("Lapor Soalan", "Lapor soalan ini", the review toggle, the S2 "Mula Latihan" button) have a minimum 44 px touch height; live renders them 28–36 px high (M05-T4; touch-unusable control, D9).
 - DV-M05-15 chapter and revision secondary controls (S4 "Latih Tubi Rawak", S5 "Semua Subjek" and the "5 / 10 / 15 / 20 soalan" links, S6 "Kembali ke Latihan") have a minimum 44 px touch height below `lg`; live renders them 20–36 px high (M05-T5; touch-unusable control, D9).
 - DV-M05-16 structured, remedial and target controls (S10 "Subjek" / "Aras KBAT" selects and "Cari", the Q3 "Lapor" and "Hantar" buttons, the S15 grade selects and "Simpan", the S13 / S14 action buttons and the S14 resource link) have a minimum 44 px touch height; live renders the S10 filter controls and the S15 select about 30–40 px high (M05-T7; touch-unusable control, D9). S10 "Mula" is already 44 × 44 px on live (FR-M05-93).
+- DV-M05-17 S1 touch targets (carousel arrows, dots and "Baca Selanjutnya" / "Tutup" toggle, the trial link, the Kombo link, "Lihat Semua", the aside link, the subject card "Mula Latihan 🚀") have an invisible hit area of at least 44 px high; the visible size and spacing stay as live, which renders them 10–40 px high (FR-M05-03…07, 21…23; touch-unusable control, D9; Session 8, M05-T3, 2026-10-03).
+- DV-M05-18 S1 "Statistik Platform" numbers keep the live size and the 1280 px look but are centred in their card (the number box is widened by the card padding), so a 6-digit total no longer runs past the page edge at 768 px; the residual overflow comes from the rebuild's font metrics, live does not overflow (FR-M05-24; layout breakage, D9; Session 8, M05-T3, 2026-10-03).
 
 ---
 
@@ -807,7 +809,7 @@ No user can see another user's sessions, answers, queue, targets or attempts (mo
 
 ## 10. Responsive behaviour
 
-The user shell switches at 1024 px (sidebar ≥1024; header + drawer + bottom nav below; tablet 768 uses the mobile shell). No horizontal page scroll at 320–1920 px (live has none on any of the 68 captured states). Breakpoints are the live Tailwind classes; only DV-M05-09, 11 and 12 change a layout.
+The user shell switches at 1024 px (sidebar ≥1024; header + drawer + bottom nav below; tablet 768 uses the mobile shell). No horizontal page scroll at 320–1920 px (live has none on any of the 68 captured states). Breakpoints are the live Tailwind classes; only DV-M05-09, 11, 12 and 18 change a layout (DV-M05-17 adds invisible hit areas and changes no layout).
 
 | Screen | 375 (mobile) | 768 (tablet) | 1280 (desktop) | Breakpoints | Deviation |
 |---|---|---|---|---|---|

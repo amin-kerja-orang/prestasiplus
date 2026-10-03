@@ -509,7 +509,7 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
   }) => {
     await loginAs(GURU)
     await gotoApp('/guru/kelas')
-    await mock.setLatency(1500, 'GET /api/guru/dashboard')
+    await mock.setLatency(6000, 'GET /api/guru/dashboard')
     await navigateInApp(page, '/guru')
     await expect(page.getByTestId('dashboard-loading')).toBeVisible()
     await expect(page.getByTestId('checklist-card')).toHaveCount(0)

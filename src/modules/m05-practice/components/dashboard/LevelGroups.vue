@@ -40,7 +40,7 @@ const groups = computed(() =>
             v-for="p in g.pills"
             :key="p.code"
             :to="`/practice?level=${p.code}`"
-            class="level-pill min-h-11"
+            class="level-pill"
             data-testid="dash-level-pill"
           >
             {{ p.name }}

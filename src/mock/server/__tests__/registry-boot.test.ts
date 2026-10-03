@@ -29,7 +29,7 @@ describe('full registry boot (core + every registered module)', () => {
     })
   }, FULL_BOOT_TIMEOUT_MS)
 
-  it('loads the real core and all 21 registered modules in registry order', () => {
+  it('loads the real core and all 22 registered modules in registry order', () => {
     expect(runtime.plugins.map((p) => p.id)).toEqual([
       'core',
       'M01',
@@ -53,6 +53,7 @@ describe('full registry boot (core + every registered module)', () => {
       'M20',
       'M21',
       'M25',
+      'M27',
     ])
     expect(runtime.core.resolveSession).not.toBeNull()
   })

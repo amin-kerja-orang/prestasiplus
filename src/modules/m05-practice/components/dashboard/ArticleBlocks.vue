@@ -27,7 +27,7 @@ const when = (a: DashboardArticle): string => (a.publishedAt ? diffForHumans(a.p
       </h2>
       <RouterLink
         to="/artikel"
-        class="flex min-h-11 items-center gap-2 text-base font-black whitespace-nowrap text-indigo-600 transition hover:text-indigo-700"
+        class="relative flex items-center gap-2 text-base font-black whitespace-nowrap text-indigo-600 transition after:absolute after:inset-x-0 after:-inset-y-2.5 hover:text-indigo-700"
         data-testid="dash-articles-all"
       >
         Lihat Semua <ArrowRight class="h-4 w-4" />
@@ -106,7 +106,7 @@ const when = (a: DashboardArticle): string => (a.publishedAt ? diffForHumans(a.p
     </div>
     <RouterLink
       to="/artikel"
-      class="mt-4 block min-h-11 rounded-xl py-3 text-center text-sm font-bold text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-700"
+      class="relative mt-4 block rounded-xl py-2 text-center text-sm font-bold text-indigo-600 transition after:absolute after:inset-x-0 after:-inset-y-1 hover:bg-indigo-50 hover:text-indigo-700"
       data-testid="dash-aside-all"
     >
       Lihat Semua Artikel <ArrowRight class="ml-1 inline h-4 w-4" />

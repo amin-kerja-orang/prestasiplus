@@ -706,6 +706,8 @@ export function isActivePath(
   const path = currentPath.replace(/\/+$/, '') || '/'
   const target = to.replace(/\/+$/, '') || '/'
   if (target === '/') return path === '/'
+  // M27 FR-M27-02: the school admin "Dashboard" is active on exactly `/admin-sekolah`, not on `/admin-sekolah/*`.
+  if (target === '/admin-sekolah') return path === target
   if (except.some((e) => path === e || path.startsWith(`${e}/`))) return false
   return path === target || path.startsWith(`${target}/`)
 }

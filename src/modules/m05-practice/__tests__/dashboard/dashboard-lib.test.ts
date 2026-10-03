@@ -6,7 +6,6 @@ import {
   bannerStyle,
   chestDots,
   COUNT_RULES,
-  cutText,
   greetingText,
   questBarPct,
   questPct,
@@ -68,11 +67,6 @@ describe('dashboard-lib', () => {
     expect(QUEST_DIFFICULTY.hard.chip).toContain('red')
     expect(subjectColorByName([{ name: 'Sains', color: '#10B981' }], 'Sains')).toBe('#10B981')
     expect(subjectColorByName([], 'Sains')).toBe('#64748B')
-  })
-
-  it('cuts text at 100 characters + "..."', () => {
-    expect(cutText('a'.repeat(100))).toHaveLength(100)
-    expect(cutText('a'.repeat(101))).toBe(`${'a'.repeat(100)}...`)
   })
 
   it('keeps the live count-up steps (FN-M05-1.3.3 / 1.7.2)', () => {

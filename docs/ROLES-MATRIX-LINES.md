@@ -34,8 +34,8 @@ Status di bawah ialah status pada 2026-10-02.
 | L12 | Video (7) | M★ G★ AS★ | M09 | **100%** |
 | L13 | Kelas Saya (8) | M★ G★ | M10 | **100%** |
 | L14 | Soalan by Chapter (9) | M★ G★ | M05 | **100%** |
-| L15 | Monitoring (10) | G★ AS★ | M11 | 85% |
-| L16 | Kirkpatrick (11) | G★ AS★ | M12 | 85% |
+| L15 | Monitoring (10) | G★ AS★ | M11 | **100%** |
+| L16 | Kirkpatrick (11) | G★ AS★ | M12 | **100%** |
 | L17 | Remedial (12) | M★ | M05 | **100%** |
 | L18 | SPM (13) | M★ | M06 | 40% |
 | L19 | Heatmap Topik Lemah (14) | M★ | M25 (`/buku-nota/heatmap`; URS/SRS v1.2, G1 lulus 2026-10-03) | 40% |
@@ -66,7 +66,7 @@ Status di bawah ialah status pada 2026-10-02.
 | L44 | Timeline Saya (39) | M | M08 | **100%** |
 | L45 | Jemput Ibu Bapa (40) | M | M02 (skrin, token, pautan) + M01 (halaman terima), D23 | **100%** |
 | L46 | Pelajar Saya (41) | G★ | M10 | **100%** |
-| L47 | Laporan (42) | G★ | M11 | 85% |
+| L47 | Laporan (42) | G★ | M11 | **100%** |
 | L48 | Laporan Mingguan (43) | G★ | M08 | **100%** |
 | L49 | Sumbang Soalan (44) | G★ | M04 | **100%** |
 | L50 | Sekolah Bersaing (45) | AS★ | M16 (S28 `/sekolah-bersaing`, M16-T6a; bukan M26) — Sesi 7 | 40% |
@@ -100,8 +100,8 @@ Satu modul hanya dipegang oleh satu sesi. Jangan biarkan dua sesi menyentuh data
 | 4 | L14, L17, L21, L22 | M05, M04 (bahagian murid) | **Selesai 2026-10-03 (sesi "1"):** M05-T2, T4, T5, T7 lulus G4; G5 READY (`docs/qa/M05-practice.md`); keempat-empat baris 100%. |
 | 5 | L27, L33, L34, L35, L36, L39, L40, L41, L43 | M14, M15 | |
 | 6 | L06, L13, L15, L16, L31, L46, L47, L49 | M10, M11, M12 | Selaras dengan Sesi 1 jika menyentuh data M10 |
-| 7 | L18, L19, L20, L24, L26, L28, L29, L30, L37, L42 | M06, M07, M16, M03, M20, M21, M13, M25 (Heatmap sahaja) | **Bermula 2026-10-03.** Gelombang 1: M03-T1a, M06-T1, M07-T1a, M13-T1, M16-T1 (worktree), tugasan binaan M20/M21/M25, audit M25 (lorong 3). Port E2E 50xx. |
-| 8 | L07 | M17 | Bergantung pada banyak modul lain, jadi buat kemudian |
+| 7 | L18, L19, L20, L24, L26, L28, L29, L30, L37, L42 | M06, M07, M16, M03, M20, M21, M13, M25 (Heatmap sahaja) | **Dijeda 2026-10-03** (PC ditutup). Termasuk L50 (M16 S28, diambil daripada Sesi 2). Pengendali M03/M06/M07/M13/M16 (T1+T2)/M20/M21 dan skrin M03-T4, M06-T2, M06-T4, M07-T2, M13-T2 sudah digabungkan; G3 belum lulus (E2E M03 gagal, M06/M07/M13 belum diuji). M25 G1 lulus; XL-R10 terbuka. Langkah sambung: lihat log TRACKER 2026-10-03 "Session 7 PAUSED". Port E2E 50xx. |
+| 8 | L07 | M10-T2 (Guru `/guru`), M05-T3 (Murid `/dashboard`, dengan izin Sesi 1), M27 S0 (Admin Sekolah `/admin-sekolah`, dikongsi dengan Sesi 2) | **Dijeda 2026-10-03:** Guru lulus G5; Murid lulus G4, G5 separuh jalan; Admin Sekolah lulus G1 dan sedang dibina. Bukan M17 S1, kerana `/admin` ialah admin platform, bukan peranan L07. Lihat log TRACKER. |
 | Disekat → Sesi 2 | L04, L51 hingga L58 (L50 → Sesi 7, M16 S28) | M22, M27 (teras + S1+; S0/L07 milik Sesi 8) | Dinyahsekat oleh D24 (kod server sebagai spesifikasi). Penemuan bermula 2026-10-03. |
 
 ## Peraturan untuk setiap sesi

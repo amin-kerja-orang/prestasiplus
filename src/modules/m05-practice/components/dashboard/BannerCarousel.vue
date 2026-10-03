@@ -115,7 +115,7 @@ onBeforeUnmount(pause)
                 <button
                   type="button"
                   :class="[
-                    'inline-flex min-h-11 items-center gap-1.5 text-sm font-bold transition lg:min-h-0',
+                    'relative inline-flex items-center gap-1.5 text-sm font-bold transition after:absolute after:inset-x-0 after:-inset-y-3',
                     bannerStyle(banner).toggle,
                   ]"
                   data-testid="dash-slide-toggle"
@@ -134,7 +134,7 @@ onBeforeUnmount(pause)
             <div class="flex flex-shrink-0 items-center gap-1">
               <button
                 type="button"
-                class="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/70 shadow transition after:absolute after:-inset-1.5 after:content-[''] hover:scale-110 hover:bg-white"
+                class="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/70 shadow transition after:absolute after:-inset-x-0.5 after:-inset-y-1.5 hover:scale-110 hover:bg-white"
                 data-testid="dash-prev"
                 @click="prev"
               >
@@ -142,7 +142,7 @@ onBeforeUnmount(pause)
               </button>
               <button
                 type="button"
-                class="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/70 shadow transition after:absolute after:-inset-1.5 after:content-[''] hover:scale-110 hover:bg-white"
+                class="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/70 shadow transition after:absolute after:-inset-x-0.5 after:-inset-y-1.5 hover:scale-110 hover:bg-white"
                 data-testid="dash-next"
                 @click="next"
               >
@@ -160,7 +160,7 @@ onBeforeUnmount(pause)
         :key="i"
         type="button"
         :class="[
-          'rounded-full transition-all duration-300',
+          'relative rounded-full transition-all duration-300 after:absolute after:-inset-x-1 after:-inset-y-[17px]',
           current === i
             ? 'h-2.5 w-6 bg-linear-to-r from-pink-500 to-amber-400 shadow-md'
             : 'h-2.5 w-2.5 bg-slate-300 hover:bg-slate-400',

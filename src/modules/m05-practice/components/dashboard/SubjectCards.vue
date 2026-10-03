@@ -66,7 +66,7 @@ defineProps<{ subjects: PracticeSubject[] }>()
         </div>
         <RouterLink
           :to="`/practice?subject=${s.code}`"
-          class="block min-h-11 w-full transform rounded-xl py-2.5 text-center text-sm font-black text-white shadow-lg transition hover:scale-105 hover:shadow-2xl sm:rounded-2xl sm:py-4 sm:text-lg"
+          class="relative block w-full transform rounded-xl py-2.5 text-center text-sm font-black text-white shadow-lg transition after:absolute after:inset-x-0 after:-inset-y-0.5 hover:scale-105 hover:shadow-2xl sm:rounded-2xl sm:py-4 sm:text-lg"
           :style="{ background: `linear-gradient(135deg, ${s.color} 0%, ${s.color} 100%)` }"
           data-testid="dash-subject-start"
         >

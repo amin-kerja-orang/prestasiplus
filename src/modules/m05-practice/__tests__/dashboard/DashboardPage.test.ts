@@ -422,6 +422,47 @@ describe('S1 DashboardPage', () => {
     }
   })
 
+  it.each(['teacher', 'school_admin'])(
+    'renders for role %s without Panel Admin (FR-M05-19)',
+    async (role) => {
+      const w = await render(
+        dash({
+          user: { id: 5, name: 'Cikgu Demo', role },
+          trial: { active: false, used: 0, limit: 50, remaining: 50 },
+        }),
+      )
+      expect(t(w, 'dash-greeting').text()).toBe('Selamat Petang, Cikgu Demo 👋')
+      expect(w.find('[data-testid=dash-quick]').exists()).toBe(true)
+      expect(w.find('[data-testid=dash-quick-admin]').exists()).toBe(false)
+    },
+  )
+
+  it('clears every timer when the page unmounts (carousel, count-up, difficulty bars)', async () => {
+    const w = await render()
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+    w.unmount()
+    wrapper = null
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('leaves no timer once everything finished and the page unmounts', async () => {
+    const w = await render()
+    await vi.advanceTimersByTimeAsync(5000)
+    w.unmount()
+    wrapper = null
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('stops the carousel timer while the pointer is over it (FR-M05-08)', async () => {
+    const w = await render()
+    await vi.advanceTimersByTimeAsync(5000)
+    const running = vi.getTimerCount()
+    await t(w, 'dash-carousel').trigger('mouseenter')
+    expect(vi.getTimerCount()).toBe(running - 1)
+    await t(w, 'dash-carousel').trigger('mouseleave')
+    expect(vi.getTimerCount()).toBe(running)
+  })
+
   it('shows an error with a retry that reloads the data', async () => {
     api.fetchDashboard.mockRejectedValueOnce(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }),

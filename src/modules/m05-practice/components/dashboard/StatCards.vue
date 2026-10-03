@@ -1,9 +1,5 @@
 <script setup lang="ts">
-/**
- * FR-M05-10 / 11: the five gamification stat cards, each number counting up from 0. D9 (DV-M05-17,
- * proposed): the live `md:text-5xl` crowds the ~100 px content box of the 5-across cards at 1280 px,
- * so the size steps down at `lg` and the number box grows by the card padding (`sm:-mx-4`).
- */
+/** FR-M05-10 / 11: the five gamification stat cards, each number counting up from 0. */
 import type { Dashboard } from '../../api/types'
 import CountNumber from './CountNumber.vue'
 import { COUNT_RULES } from './dashboard-lib'
@@ -17,7 +13,7 @@ defineProps<{ wallet: Dashboard['wallet']; streak: Dashboard['streak']; week: Da
       <div class="text-center">
         <div class="icon-sparkle mb-2 text-2xl sm:mb-4 sm:text-5xl md:text-6xl">🪙</div>
         <div
-          class="number-display mb-1 text-xl text-amber-700 sm:-mx-4 sm:mb-3 sm:text-3xl md:text-5xl lg:text-3xl 2xl:text-5xl"
+          class="number-display mb-1 text-xl text-amber-700 sm:mb-3 sm:text-3xl md:text-5xl"
           data-testid="dash-stat-value"
         >
           <CountNumber :target="wallet.coins" :rule="COUNT_RULES.coins" />
@@ -35,7 +31,7 @@ defineProps<{ wallet: Dashboard['wallet']; streak: Dashboard['streak']; week: Da
       <div class="text-center">
         <div class="icon-sparkle mb-2 text-2xl sm:mb-4 sm:text-5xl md:text-6xl">⭐</div>
         <div
-          class="number-display mb-1 text-xl text-violet-700 sm:-mx-4 sm:mb-3 sm:text-3xl md:text-5xl lg:text-3xl 2xl:text-5xl"
+          class="number-display mb-1 text-xl text-violet-700 sm:mb-3 sm:text-3xl md:text-5xl"
           data-testid="dash-stat-value"
         >
           <CountNumber :target="wallet.points" :rule="COUNT_RULES.points" />
@@ -60,7 +56,7 @@ defineProps<{ wallet: Dashboard['wallet']; streak: Dashboard['streak']; week: Da
       <div class="text-center">
         <div class="icon-sparkle mb-2 text-2xl sm:mb-4 sm:text-5xl md:text-6xl">🔥</div>
         <div
-          class="number-display mb-1 text-xl text-orange-700 sm:-mx-4 sm:mb-3 sm:text-3xl md:text-5xl lg:text-3xl 2xl:text-5xl"
+          class="number-display mb-1 text-xl text-orange-700 sm:mb-3 sm:text-3xl md:text-5xl"
           data-testid="dash-stat-value"
         >
           <CountNumber :target="streak.count" :rule="COUNT_RULES.streak" />
@@ -78,7 +74,7 @@ defineProps<{ wallet: Dashboard['wallet']; streak: Dashboard['streak']; week: Da
       <div class="text-center">
         <div class="icon-sparkle mb-2 text-2xl sm:mb-4 sm:text-5xl md:text-6xl">📋</div>
         <div
-          class="number-display mb-1 text-xl text-blue-700 sm:-mx-4 sm:mb-3 sm:text-3xl md:text-5xl lg:text-3xl 2xl:text-5xl"
+          class="number-display mb-1 text-xl text-blue-700 sm:mb-3 sm:text-3xl md:text-5xl"
           data-testid="dash-stat-value"
         >
           <CountNumber :target="week.sessions" :rule="COUNT_RULES.sessions" />
@@ -96,7 +92,7 @@ defineProps<{ wallet: Dashboard['wallet']; streak: Dashboard['streak']; week: Da
       <div class="text-center">
         <div class="icon-sparkle mb-2 text-2xl sm:mb-4 sm:text-5xl md:text-6xl">🎯</div>
         <div
-          class="number-display mb-1 text-xl text-emerald-700 sm:-mx-4 sm:mb-3 sm:text-3xl md:text-5xl lg:text-3xl 2xl:text-5xl"
+          class="number-display mb-1 text-xl text-emerald-700 sm:mb-3 sm:text-3xl md:text-5xl"
           data-testid="dash-stat-value"
         >
           <CountNumber :target="week.accuracyPct" :rule="COUNT_RULES.accuracy" /><span

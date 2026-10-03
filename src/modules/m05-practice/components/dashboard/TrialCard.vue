@@ -31,7 +31,7 @@ defineProps<{ trial: TrialStatus }>()
       </div>
       <RouterLink
         to="/pricing"
-        class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:from-amber-600 hover:to-orange-600"
+        class="relative inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-semibold text-white transition after:absolute after:inset-x-0 after:-inset-y-1 hover:from-amber-600 hover:to-orange-600"
         data-testid="dash-trial-link"
       >
         <Rocket class="h-4 w-4" />
