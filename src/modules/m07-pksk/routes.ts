@@ -1,9 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import student from './routes/student'
+
 /**
- * M07 routes (F-01 stub, build-plan §S.3 rule 2).
- * The module's mock task (T1) creates the `routes/<group>.ts` fragments and spreads them here.
+ * M07 routes (build-plan §S.3 rule 2): only spreads the `routes/<group>.ts` fragments.
+ * `student` (M07-T2: S1-S4, S4a, S4b). The admin fragments come with M07-T3 / T4 (deferred).
  */
-const routes: RouteRecordRaw[] = []
+const routes: RouteRecordRaw[] = [...student]
 
 export default routes
