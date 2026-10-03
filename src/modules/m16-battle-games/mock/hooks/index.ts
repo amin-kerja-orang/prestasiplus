@@ -5,26 +5,42 @@
  * |---|---|
  * | `battleSim({mode, afterPolls?})` | the NEXT battle queue: `match` (default, 3rd poll), `incoming` (challenge on the 2nd), `never`, `expired`, `not_found`, `error:<status>` (every poll answers that HTTP status) |
  * | `battleWaiting({targetUserId, outcome, viewerId?})` | DV-M16-06: a waiting queue of `targetUserId` with a join request of `viewerId` (default 1) whose decision is `matched`, `rejected` or `expired`; returns `{queueId}` |
- * | `m16Fixture(name, options?)` | `tournaments`, `invitation` (`{viewerId?}`, default 1), `anonymousSchool` (`{week?, rank?}`) — the §6.11.7 fixtures of M16-T1 |
+ * | `m16Fixture(name, options?)` | `tournaments`, `invitation` (`{viewerId?}`, default 1), `anonymousSchool` (`{week?, rank?}`), `openRoom` (Papan Bijak `PB1234`, waiting, host 4320), `settingCoins` (M14 `games_award_syiling` = 1), `spinNothing` / `spinSyiling5` (the next spin lands on segment 5 / 2) — the §6.11.7 fixtures |
  * | `setBattleScores(uuid, {a, b})` | sets the scores of a battle |
  * | `m16Standings()` | the standings of every period, for assertions |
- * | `resetM16()` | forgets the pending `battleSim` |
+ * | `pbQuickMatch({mode})` | the NEXT Papan Bijak quick match: `match` (3rd poll, default) or `expired` (first poll) |
+ * | `roomBots({count, code?})` | adds `count` bots to the waiting room `code` (default the newest); returns how many joined |
+ * | `spinNext(segmentIndex)` | the next Roda Nasib spin lands on this 0-based segment (0-7) |
+ * | `resetM16()` | forgets the pending `battleSim`, `pbQuickMatch` and `spinNext` |
  *
  * `battleSim` mode `network` is not a hook: use the mock core's `networkErrorNext('/api/battle/poll-match/*')`.
- * `pbQuickMatch`, `roomBots`, `spinNext` and the game fixtures belong to M16-T2. Each hook validates its input.
+ * Each hook validates its input.
  */
+
+import { settings } from '@/modules/m14-gamification/mock'
 
 import {
   battleStandingsRepo,
   battlesRepo,
+  gameResultsRepo,
+  m16Prng,
   PERIODS,
+  roomsRepo,
   setPendingSim,
   sekolahBersaingRepo,
   tournamentsRepo,
 } from '../repository'
 import type { SimSpec } from '../types'
 
-const FIXTURES = ['tournaments', 'invitation', 'anonymousSchool'] as const
+const FIXTURES = [
+  'tournaments',
+  'invitation',
+  'anonymousSchool',
+  'openRoom',
+  'settingCoins',
+  'spinNothing',
+  'spinSyiling5',
+] as const
 
 export function battleSim(opts: { mode: string; afterPolls?: number }): void {
   if (typeof opts !== 'object' || opts === null || typeof opts.mode !== 'string') {
@@ -69,7 +85,7 @@ export function m16Fixture(
   options: { viewerId?: number; week?: string; rank?: number } = {},
 ): void {
   if (!(FIXTURES as readonly string[]).includes(name)) {
-    throw new RangeError(`m16Fixture: unknown fixture '${name}' (M16-T1: ${FIXTURES.join(', ')})`)
+    throw new RangeError(`m16Fixture: unknown fixture '${name}' (${FIXTURES.join(', ')})`)
   }
   if (name === 'tournaments') tournamentsRepo.insertFixtures(1)
   else if (name === 'invitation') {
@@ -80,7 +96,32 @@ export function m16Fixture(
       pkskTargetLevel: null,
       openToAll: false,
     })
-  } else sekolahBersaingRepo.markAnonymous(options.week ?? '2026-09-21', options.rank ?? 1)
+  } else if (name === 'openRoom') roomsRepo.insertOpenRoom()
+  else if (name === 'settingCoins') settings.update([{ key: 'games_award_syiling', value: 1 }])
+  else if (name === 'spinNothing') gameResultsRepo.setSpinNext(5)
+  else if (name === 'spinSyiling5') gameResultsRepo.setSpinNext(2)
+  else sekolahBersaingRepo.markAnonymous(options.week ?? '2026-09-21', options.rank ?? 1)
+}
+
+export function pbQuickMatch(opts: { mode: string }): void {
+  if (opts?.mode !== 'match' && opts?.mode !== 'expired') {
+    throw new RangeError("pbQuickMatch: mode must be 'match' or 'expired'")
+  }
+  roomsRepo.setPbSim(opts.mode)
+}
+
+export function roomBots(opts: { count: number; code?: string }): number {
+  if (!Number.isInteger(opts?.count) || opts.count < 1) {
+    throw new RangeError('roomBots: count must be a positive integer')
+  }
+  return roomsRepo.addBots(opts.count, m16Prng(), opts.code)
+}
+
+export function spinNext(segmentIndex: number): void {
+  if (!Number.isInteger(segmentIndex) || segmentIndex < 0 || segmentIndex > 7) {
+    throw new RangeError('spinNext: segmentIndex must be an integer 0-7')
+  }
+  gameResultsRepo.setSpinNext(segmentIndex)
 }
 
 export function setBattleScores(uuid: string, scores: { a: number; b: number }): void {
@@ -99,6 +140,8 @@ export function m16Standings() {
 
 export function resetM16(): void {
   setPendingSim(null)
+  roomsRepo.resetSim()
+  gameResultsRepo.setSpinNext(null)
 }
 
 export const m16Hooks = {
@@ -107,5 +150,8 @@ export const m16Hooks = {
   m16Fixture,
   setBattleScores,
   m16Standings,
+  pbQuickMatch,
+  roomBots,
+  spinNext,
   resetM16,
 }

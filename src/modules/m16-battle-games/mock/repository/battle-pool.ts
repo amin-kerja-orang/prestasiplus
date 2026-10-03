@@ -8,9 +8,9 @@ import type { Prng, PrngRegistry } from '@/mock/determinism'
 import { users, type UserRow } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { questions } from '@/modules/m04-question-bank/mock'
+import { pkskDomains } from '@/modules/m07-pksk/mock'
 import { practiceAnswers } from '@/modules/m05-practice/mock'
 
-import { PKSK_DOMAINS } from '../data/constants'
 import type { PkskLevel, QuestionType } from '../types'
 import { ARENA_QUESTIONS, arenaPoints, M16Error } from './common'
 
@@ -60,7 +60,7 @@ export function parseBattleParams(body: unknown, viewer: UserRow | undefined): B
   if (type === 'pksk') {
     const domain = isInt(b.pksk_domain_id) ? b.pksk_domain_id : null
     const level = b.pksk_target_level
-    if (domain === null || domain < 1 || domain > PKSK_DOMAINS.length) {
+    if (domain === null || domain < 1 || !pkskDomains.get(domain)?.isActive) {
       throw new M16Error('VALIDATION_ERROR', 'Domain PKSK tidak sah.', 'pksk_domain_id')
     }
     if (level !== 'T1' && level !== 'T4') {
