@@ -1,7 +1,8 @@
 /**
- * F-33: the provisional stores hosted in M17 (mood check-ins and tuition centres, owner M26;
- * sponsors, owner M21) against M17 SRS §6.4 (Q-M17-MOOD, Q-M17-TUITION, Q-M17-SPONSORS), XR-M17-16/17/18
- * and M21 SRS §6.11 A.
+ * F-33: the provisional stores hosted in M17 (mood check-ins and tuition centres, owner M26) against
+ * M17 SRS §6.4 (Q-M17-MOOD, Q-M17-TUITION), XR-M17-17/18. The sponsors store moved to M21 (M21-T1);
+ * its tests are in `m21-sponsorship/__tests__/mock/sponsors.test.ts`; here only the contract
+ * `sponsorship.sponsorSummary()` that Q-M17-SPONSORS reads is asserted.
  */
 
 import { beforeAll, describe, expect, it } from 'vitest'
@@ -17,16 +18,15 @@ import {
   RepositoryError,
 } from '@/mock/repository'
 import { fnv1a32 } from '@/mock/determinism/hash'
-import m01, { users } from '@/modules/m01-authentication/mock'
+import m01 from '@/modules/m01-authentication/mock'
 import m02 from '@/modules/m02-users-schools/mock'
+import m21, { sponsorship } from '@/modules/m21-sponsorship/mock'
 
-import m17, { moodCheckins, sponsors, tuitionCentres } from '../../mock'
+import m17, { moodCheckins, tuitionCentres } from '../../mock'
 import { defineMoodCheckinsRepo } from '../../mock/repository/provisional-mood'
-import { defineSponsorsRepo } from '../../mock/repository/provisional-sponsors'
 import { defineTuitionCentresRepo } from '../../mock/repository/provisional-tuition'
 import type {
   MoodCheckinRow,
-  SponsorRow,
   TuitionCentreRow,
 } from '../../mock/repository/provisional-types'
 import { EXCLUDED_MOOD_USERS } from '../../mock/seeds/provisional-data'
@@ -108,7 +108,6 @@ describe('determinism and boot safety', () => {
   it('boots without M02 (M17 depends on core and M01 only)', async () => {
     await boot([m01, m17])
     expect(moodCheckins.total()).toBe(750)
-    expect(sponsors.count('Q-M17-SPONSORS')).toBe(6)
     expect(tuitionCentres.count('Q-M17-TUITION')).toBe(2)
   }, 120_000)
 })
@@ -129,69 +128,23 @@ describe('Q-M17-TUITION (M26, provisional; XR-M17-17)', () => {
   })
 })
 
-describe('Q-M17-SPONSORS (M21, provisional; XR-M17-16)', () => {
-  it('holds 6 sponsors, all suspended', () => {
-    expect(sponsors.count('Q-M17-SPONSORS')).toBe(6)
-    expect(sponsors.count('Q-M17-SPONSORS', 'APPROVED')).toBe(0)
-    expect(sponsors.count('Q-M17-SPONSORS', 'PENDING')).toBe(0)
-    expect(sponsors.count('Q-M17-SPONSORS', 'REJECTED')).toBe(0)
-    expect(sponsors.count('Q-M17-SPONSORS', 'SUSPENDED')).toBe(6)
-    expect(sponsors.statusCounts()).toEqual({
+describe('Q-M17-SPONSORS through the M21 contract (XR-M21-03)', () => {
+  it('reads the unchanged figures from sponsorship.sponsorSummary()', async () => {
+    await boot([m01, m02, m17, m21])
+    expect(sponsorship.sponsorSummary()).toEqual({
       total: 6,
       active: 0,
       pending: 0,
       rejected: 0,
       suspended: 6,
     })
-  })
-
-  it('uses the observed ids 6-11 and the M21 §6.11 A values', () => {
-    const list = sponsors.list()
-    expect(list.map((s) => s.id)).toEqual([6, 7, 8, 9, 10, 11])
-    expect(list.every((s) => s.category === 'SYARIKAT_SWASTA' && s.status === 'SUSPENDED')).toBe(
-      true,
-    )
-    expect(list.map((s) => s.userId)).toEqual([5501, 5502, 5503, 5504, 5505, 7])
-    expect(list.map((s) => s.name)).toEqual([
-      'Kedai Buku Popular',
-      'Faber-Castell Malaysia',
-      'KidZania Kuala Lumpur',
-      'Petrosains Discovery Centre',
-      'PRESTASIPLUS Official',
-      'Alesa It Services',
-    ])
-    expect(list.slice(0, 5).every((s) => s.createdAt === '2026-02-06T12:00:00+08:00')).toBe(true)
-    expect(sponsors.get(11)?.createdAt).toBe('2026-03-31T12:00:00+08:00')
-  })
-})
-
-describe('sponsor logins', () => {
-  // Users 5503-5505 exist in the M02 users dataset today as students, not sponsors: M21 XR-M21-01
-  // (sponsor logins 5501-5505) is not applied in M02 yet. Delete entries when M02 lands XR-M21-01.
-  const PENDING_XR_M21_01 = [5503, 5504, 5505]
-
-  it('links every sponsor to a sponsor user, or to an id on the pending allow-list', () => {
-    for (const s of sponsors.list()) {
-      if (s.userId === null || PENDING_XR_M21_01.includes(s.userId)) continue
-      expect(users.get(s.userId)?.role, 'sponsor ' + String(s.id)).toBe('sponsor')
-    }
-  })
-
-  it('keeps the allow-list honest: its ids are not sponsor users yet', () => {
-    // Fails when M02 lands XR-M21-01, which is the signal to delete the entries.
-    for (const id of PENDING_XR_M21_01) expect(users.get(id)?.role).not.toBe('sponsor')
-  })
-
-  it('keeps sponsor 11 contact person name empty (no person name is seeded)', () => {
-    expect(sponsors.get(11)?.contactPersonName).toBeNull()
-  })
+  }, 120_000)
 })
 
 describe('registration and ownership (D12)', () => {
   it('records the true owner and the provisional flag; the conventions pass', () => {
     expect(repositoryInfo(moodCheckins)).toMatchObject({ owner: 'M26', provisional: true })
     expect(repositoryInfo(tuitionCentres)).toMatchObject({ owner: 'M26', provisional: true })
-    expect(repositoryInfo(sponsors)).toMatchObject({ owner: 'M21', provisional: true })
     expect(checkRepositoryConventions([m17])).toEqual([])
     expect(() => {
       assertRepositoryConventions([m17])
@@ -199,8 +152,8 @@ describe('registration and ownership (D12)', () => {
   })
 
   it('rejects a write from outside the repository (single owner)', () => {
-    const table = m17.tables.sponsors as unknown as { insert(row: unknown): unknown }
-    expect(() => table.insert({ name: 'Tanpa kebenaran', status: 'APPROVED' })).toThrow(
+    const table = m17.tables.tuitionCentres as unknown as { insert(row: unknown): unknown }
+    expect(() => table.insert({ name: 'Tanpa kebenaran', city: 'X', state: 'Y', activePupils: 1 })).toThrow(
       RepositoryError,
     )
   })
@@ -218,30 +171,25 @@ describe('move to the owner (overview §6.7.2)', () => {
         name: `t.tuition.${String(provisional)}`,
         ids: floor({ start: 3 }),
       })
-      const sponsor = defineTable<SponsorRow>({
-        name: `t.sponsors.${String(provisional)}`,
-        ids: floor({ start: 12 }),
-      })
       const reg = provisional ? registry : createRepositoryRegistry()
       const opts = { provisional, registry: reg }
       return {
-        tables: { mood, tuition, sponsor },
+        tables: { mood, tuition },
         repos: {
           moodCheckins: defineMoodCheckinsRepo(mood, opts),
           tuitionCentres: defineTuitionCentresRepo(tuition, opts),
-          sponsors: defineSponsorsRepo(sponsor, opts),
         },
       }
     }
     const hosted = make(true)
     const moved = make(false)
 
-    // Before: M17 hosts all three. After: M26 owns two, M21 owns one, M17 registers none.
+    // Before: M17 hosts both. After: M26 owns both, M17 registers none (sponsors moved to M21, M21-T1).
     expect(
       checkRepositoryConventions([
         defineMockModule({
           id: 'M17',
-          tables: { a: hosted.tables.mood, b: hosted.tables.tuition, c: hosted.tables.sponsor },
+          tables: { a: hosted.tables.mood, b: hosted.tables.tuition },
           repositories: hosted.repos,
         }),
       ]),
@@ -249,11 +197,6 @@ describe('move to the owner (overview §6.7.2)', () => {
     expect(
       checkRepositoryConventions([
         defineMockModule({ id: 'M17' }),
-        defineMockModule({
-          id: 'M21',
-          tables: { sponsor: moved.tables.sponsor },
-          repositories: { sponsors: moved.repos.sponsors },
-        }),
         defineMockModule({
           id: 'M26',
           tables: { mood: moved.tables.mood, tuition: moved.tables.tuition },
@@ -274,7 +217,13 @@ describe('move to the owner (overview §6.7.2)', () => {
       expect(set.repos.tuitionCentres.count('Q-M17-TUITION')).toBe(1)
       expect(set.repos.moodCheckins.countByMood().sad).toBe(1)
     }
-    expect(repositoryInfo(hosted.repos.sponsors)).toMatchObject({ owner: 'M21', provisional: true })
-    expect(repositoryInfo(moved.repos.sponsors)).toMatchObject({ owner: 'M21', provisional: false })
+    expect(repositoryInfo(hosted.repos.tuitionCentres)).toMatchObject({
+      owner: 'M26',
+      provisional: true,
+    })
+    expect(repositoryInfo(moved.repos.tuitionCentres)).toMatchObject({
+      owner: 'M26',
+      provisional: false,
+    })
   })
 })
