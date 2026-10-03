@@ -2,7 +2,7 @@
  * Seed of the provisional stores hosted in M17 (F-33), written through their repositories only
  * (overview §3 rule 3a):
  *
- * - `seedM17Provisional()` (seed phase): tuition centres (2) and sponsors (6), all observed.
+ * - `seedM17Provisional()` (seed phase): tuition centres (2), observed. (Sponsors moved to M21.)
  * - `finaliseM17Provisional()` (after the users dataset has compiled): the 750 mood check-ins,
  *   drawn over active pupils, then the build check (a mismatch stops the boot).
  */
@@ -12,7 +12,6 @@ import { mulberry32 } from '@/mock/determinism/prng'
 import { users } from '@/modules/m01-authentication/mock'
 
 import { moodCheckinsRepo, MOOD_TOTAL, MOOD_TOTALS } from '../repository/provisional-mood'
-import { sponsorsRepo } from '../repository/provisional-sponsors'
 import { tuitionCentresRepo } from '../repository/provisional-tuition'
 import { MOODS, type Mood, type MoodCheckinRow } from '../repository/provisional-types'
 import {
@@ -20,7 +19,6 @@ import {
   MOOD_PUPILS,
   MOOD_REASONS,
   MOOD_WINDOW,
-  SPONSORS,
   TUITION_CENTRES,
 } from './provisional-data'
 
@@ -34,7 +32,6 @@ function isoDay(offset: number): string {
 
 export function seedM17Provisional(): void {
   tuitionCentresRepo.seed(TUITION_CENTRES)
-  sponsorsRepo.seed(SPONSORS)
 }
 
 /** The 750 check-ins: the observed mood counts exactly, everything else INFERRED (see the data file). */
@@ -80,8 +77,6 @@ export function finaliseM17Provisional(): void {
   expectCount('mood check-ins from 2026-09-01', moodCheckinsRepo.total({ from: '2026-09-01' }), 0)
   expectCount('mood check-ins of pupil 2022', moodCheckinsRepo.total(undefined, 2022), 0)
   expectCount('Q-M17-TUITION', tuitionCentresRepo.count('Q-M17-TUITION'), 2)
-  expectCount('Q-M17-SPONSORS', sponsorsRepo.count('Q-M17-SPONSORS'), 6)
-  expectCount('Q-M17-SPONSORS SUSPENDED', sponsorsRepo.count('Q-M17-SPONSORS', 'SUSPENDED'), 6)
   if (issues.length > 0) {
     throw new Error(
       `M17 provisional store build check failed:\n${issues.map((m) => `- ${m}`).join('\n')}`,

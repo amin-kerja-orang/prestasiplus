@@ -1,20 +1,21 @@
 /**
- * The `sponsors` repository: PROVISIONAL, owner **M21** (SRS v1.2 DATA-M21-01), hosted by M17
- * (F-33, overview §6.7.2, XL3-23). Serves Q-M17-SPONSORS (M17 §6.4): 6 · 0 active · 0 pending ·
- * 0 rejected · 6 suspended. Other modules read it only through the M17 public entry (D12).
- * "Active" is the M21 status `APPROVED`.
+ * The `sponsors` repository, owner **M21** (SRS v1.2 DATA-M21-01). Taken over from M17's provisional
+ * host (F-33, M21-T1, overview §6.7.2) with the definition unchanged; the M21 plugin registers it
+ * with `provisional: false`. Serves Q-M17-SPONSORS (M17 §6.4): 6 · 0 active · 0 pending · 0 rejected
+ * · 6 suspended. Other modules read it only through the M21 public entry (D12). "Active" is the M21
+ * status `APPROVED`.
  *
- * The definition is a function of the store and the `provisional` flag, so the owner's build task
- * moves it unchanged (`defineSponsorsRepo(table, { provisional: false })`).
+ * The definition is a function of the store and the `provisional` flag (`defineSponsorsRepo(table,
+ * { provisional: false })`).
  */
 
 import { defineNamedQueries } from '@/mock/dataset'
 import type { Table } from '@/mock/define'
 import { defineRepository } from '@/mock/repository'
 
-import { sponsorsTable } from '../tables/provisional-tables'
-import type { ProvisionalOptions } from './provisional-options'
-import type { SponsorRow, SponsorStatus, SponsorStatusCounts } from './provisional-types'
+import { sponsorsTable } from '../tables/tables'
+import type { ProvisionalOptions } from './options'
+import type { SponsorRow, SponsorStatus, SponsorStatusCounts } from './types'
 
 export function defineSponsorsRepo(store: Table<SponsorRow>, options: ProvisionalOptions = {}) {
   return defineRepository({
@@ -44,6 +45,18 @@ export function defineSponsorsRepo(store: Table<SponsorRow>, options: Provisiona
         })
       },
 
+      /** Added by M21-T1 for the test fixtures (§6.13); the id is kept. */
+      insertMany(input: readonly SponsorRow[]): void {
+        transaction(() => {
+          for (const r of input) rows.insert({ ...r })
+        })
+      },
+
+      /** Added by M21-T1: a raw patch for the test fixtures (§6.13). The real transitions are M21-T3. */
+      patch(id: number, patch: Partial<SponsorRow>): SponsorRow | undefined {
+        return transaction(() => (rows.get(id) ? rows.update(id, patch) : undefined))
+      },
+
       get(id: number): SponsorRow | undefined {
         return rows.get(id)
       },
@@ -68,6 +81,6 @@ export function defineSponsorsRepo(store: Table<SponsorRow>, options: Provisiona
   })
 }
 
-export const sponsorsRepo = defineSponsorsRepo(sponsorsTable)
+export const sponsorsRepo = defineSponsorsRepo(sponsorsTable, { provisional: false })
 
 export type SponsorsRepository = typeof sponsorsRepo
