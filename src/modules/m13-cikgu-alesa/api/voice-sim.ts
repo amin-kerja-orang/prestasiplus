@@ -4,6 +4,8 @@
  * screen (M13-T2) reads it. Plain module state: it carries no data of the mock store.
  */
 
+import { shallowRef } from 'vue'
+
 export interface VoiceConfig {
   /** `false` renders the live "browser does not support voice" state (FR-M13-31). */
   supported: boolean
@@ -20,7 +22,8 @@ export const DEFAULT_VOICE_CONFIG: Readonly<VoiceConfig> = Object.freeze({
   delays: Object.freeze({ interim: 600, final: 1200 }),
 })
 
-let config: VoiceConfig = clone(DEFAULT_VOICE_CONFIG)
+/** Reactive so S1 reacts when a test hook flips `supported` while the screen is open. */
+const state = shallowRef<VoiceConfig>(clone(DEFAULT_VOICE_CONFIG))
 const spoken: string[] = []
 const errorListeners = new Set<() => void>()
 
@@ -29,7 +32,7 @@ function clone(c: Readonly<VoiceConfig>): VoiceConfig {
 }
 
 export function getVoiceConfig(): Readonly<VoiceConfig> {
-  return config
+  return state.value
 }
 
 /** `cikguVoice(...)`: merges the given parts into the configuration. */
@@ -46,16 +49,17 @@ export function configureVoice(patch: {
       throw new RangeError(`cikguVoice: invalid delay ${k}`)
     }
   }
-  config = {
-    supported: patch.supported ?? config.supported,
-    transcript: { ...config.transcript, ...patch.transcript },
-    delays: { ...config.delays, ...patch.delays },
+  const prev = state.value
+  state.value = {
+    supported: patch.supported ?? prev.supported,
+    transcript: { ...prev.transcript, ...patch.transcript },
+    delays: { ...prev.delays, ...patch.delays },
   }
-  return config
+  return state.value
 }
 
 export function resetVoice(): void {
-  config = clone(DEFAULT_VOICE_CONFIG)
+  state.value = clone(DEFAULT_VOICE_CONFIG)
   spoken.length = 0
 }
 
