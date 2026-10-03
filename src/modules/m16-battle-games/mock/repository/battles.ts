@@ -12,13 +12,13 @@ import { defineRepository } from '@/mock/repository'
 import { users, type UserRow } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { questions } from '@/modules/m04-question-bank/mock'
+import { pkskDomains } from '@/modules/m07-pksk/mock'
 import { gamification } from '@/modules/m14-gamification/mock'
 
 import {
   INCOMING_ON_POLL,
   INVITATION_EXPIRES_MS,
   MATCH_ON_POLL,
-  PKSK_DOMAINS,
   QUEUE_ABANDONED_MS,
   QUEUE_EXPIRES_MS,
 } from '../data/constants'
@@ -590,7 +590,10 @@ export const battlesRepo = defineRepository({
               colour: s.color,
               core: s.id <= 7,
             })),
-          pkskDomains: PKSK_DOMAINS.map((d) => ({ ...d })),
+          pkskDomains: pkskDomains
+            .list()
+            .filter((d) => d.isActive)
+            .map((d) => ({ id: d.id, name: d.name, icon: d.icon, colour: d.color })),
           ...(unlocked
             ? {
                 spmSubjects: curriculum

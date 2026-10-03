@@ -21,17 +21,22 @@ import {
   seedGameSessions,
   STORED_STANDINGS,
 } from '../data/battles'
+import { SEED_ROOM_PLAYERS, standingUserIds } from '../data/games'
 import {
   battleQueries,
   battleStandingsRepo,
   battlesRepo,
   bindM16Clock,
+  bindM16Prng,
   gameResultQueries,
   gameResultsRepo,
   leagueQueries,
   leaguesRepo,
   resetBotAccuracy,
+  roomQueries,
+  roomsRepo,
   sekolahBersaingQueries,
+  standingQueries,
   sekolahBersaingRepo,
   setPendingSim,
   tournamentQueries,
@@ -39,8 +44,12 @@ import {
 
 export function seedM16(ctx: SeedContext): void {
   bindM16Clock(ctx.clock)
+  bindM16Prng(ctx.prng)
   resetBotAccuracy()
   setPendingSim(null)
+  roomsRepo.resetSim()
+  gameResultsRepo.setSpinNext(null)
+  roomsRepo.seedStandings()
   battlesRepo.seed([
     ...observedBattleRows(),
     ...abandonedBattleRows(ctx.prng.fresh('m16:seed-abandoned')),
@@ -88,7 +97,23 @@ export function finaliseM16(ctx: SeedContext): void {
     ),
   )
   sekolahBersaingRepo.seedWeeks()
+  // The 160 closed rooms: 189 distinct users = the 38 standing users + 151 generated students (§6.11.0).
+  const standing = new Set(standingUserIds())
+  const generated = users
+    .sample('U-ROLE-ACTIVE', 800, ctx.prng.fresh('m16:seed-rooms:users'), 'student', true)
+    .filter((u) => !isAnchorUser(u.id) && !standing.has(u.id))
+    .map((u) => u.id)
+    .slice(0, SEED_ROOM_PLAYERS - standing.size)
+  roomsRepo.seedRooms(ctx.prng.fresh('m16:seed-rooms'), generated)
+  const roomUsers = roomsRepo.distinctPlayers()
+  if (roomUsers !== SEED_ROOM_PLAYERS) {
+    throw new Error(
+      `M16 build check failed: ${String(roomUsers)} room players, need ${String(SEED_ROOM_PLAYERS)}`,
+    )
+  }
   const issues = [
+    ...checkNamedQueries(roomQueries),
+    ...checkNamedQueries(standingQueries),
     ...checkNamedQueries(battleQueries),
     ...checkNamedQueries(gameResultQueries),
     ...checkNamedQueries(tournamentQueries),

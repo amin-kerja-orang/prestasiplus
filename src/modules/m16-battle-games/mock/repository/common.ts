@@ -4,6 +4,7 @@
  */
 
 import { toIsoMyt, type Clock } from '@/lib/time'
+import type { PrngRegistry } from '@/mock/determinism'
 import { users } from '@/modules/m01-authentication/mock'
 import { schools } from '@/modules/m02-users-schools/mock'
 
@@ -37,6 +38,18 @@ let boundClock: Clock | null = null
 /** Bound by the M16 seed (every boot and reset). */
 export function bindM16Clock(clock: Clock): void {
   boundClock = clock
+}
+
+let boundPrng: PrngRegistry | null = null
+
+/** Bound by the M16 seed: the registry the test hooks draw from (hooks run outside a request). */
+export function bindM16Prng(prng: PrngRegistry): void {
+  boundPrng = prng
+}
+
+export function m16Prng(): PrngRegistry {
+  if (!boundPrng) throw new Error('M16: not booted (no PRNG bound)')
+  return boundPrng
 }
 
 /** Now (epoch ms) of the runtime being served. */

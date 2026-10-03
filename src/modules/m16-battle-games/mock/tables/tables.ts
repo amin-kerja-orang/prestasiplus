@@ -12,11 +12,20 @@ import type {
   BattleInvitationRow,
   BattleQueueRow,
   BattleRow,
+  GameRoomRow,
   GameSessionRow,
+  GameSettingsRow,
+  GameStandingRow,
+  JutawanStatsRow,
   LeagueRow,
   LeagueSchoolRow,
   LeagueStandingRow,
+  PbSearchRow,
+  PersonalBestRow,
+  RoomPlayerRow,
   SekolahBersaingRow,
+  SpinRow,
+  SpinStatsRow,
   StoredStandingRow,
   TournamentRow,
 } from '../types'
@@ -76,7 +85,53 @@ export const gameSessionsTable = defineTable<GameSessionRow>({
   indexes: ['userId'],
 })
 
-/** Every M16-T1 table, for the plugin's `tables`. */
+export const gameRoomsTable = defineTable<GameRoomRow>({
+  name: 'm16.gameRooms',
+  // Codes are drawn by the repository from the stream `m16:room-code` (BR-M16-18) and stored explicitly.
+  ids: opaque('', 'm16:room-code-unused', 8),
+  indexes: ['status', 'game', 'hostId'],
+})
+export const roomPlayersTable = defineTable<RoomPlayerRow>({
+  name: 'm16.roomPlayers',
+  ids: maxPlusOne(),
+  indexes: ['roomCode', 'userId'],
+})
+export const gameStandingsTable = defineTable<GameStandingRow>({
+  name: 'm16.gameStandings',
+  ids: maxPlusOne(),
+  indexes: ['game', 'userId'],
+})
+export const personalBestsTable = defineTable<PersonalBestRow>({
+  name: 'm16.personalBests',
+  ids: maxPlusOne(),
+  indexes: ['userId'],
+})
+export const jutawanStatsTable = defineTable<JutawanStatsRow>({
+  name: 'm16.jutawanStats',
+  ids: maxPlusOne(),
+  indexes: ['userId'],
+})
+export const spinsTable = defineTable<SpinRow>({
+  name: 'm16.spins',
+  ids: maxPlusOne(),
+  indexes: ['userId'],
+})
+export const spinStatsTable = defineTable<SpinStatsRow>({
+  name: 'm16.spinStats',
+  ids: maxPlusOne(),
+  indexes: ['userId'],
+})
+export const pbSearchesTable = defineTable<PbSearchRow>({
+  name: 'm16.pbSearches',
+  ids: maxPlusOne(),
+  indexes: ['userId'],
+})
+export const gameSettingsTable = defineTable<GameSettingsRow>({
+  name: 'm16.gameSettings',
+  ids: maxPlusOne(),
+})
+
+/** Every M16 table, for the plugin's `tables`. */
 export const M16_TABLES = {
   battles: battlesTable,
   battleQueues: battleQueuesTable,
@@ -89,4 +144,13 @@ export const M16_TABLES = {
   leagueStandings: leagueStandingsTable,
   sekolahBersaing: sekolahBersaingTable,
   gameSessions: gameSessionsTable,
+  gameRooms: gameRoomsTable,
+  roomPlayers: roomPlayersTable,
+  gameStandings: gameStandingsTable,
+  personalBests: personalBestsTable,
+  jutawanStats: jutawanStatsTable,
+  spins: spinsTable,
+  spinStats: spinStatsTable,
+  pbSearches: pbSearchesTable,
+  gameSettings: gameSettingsTable,
 } as const

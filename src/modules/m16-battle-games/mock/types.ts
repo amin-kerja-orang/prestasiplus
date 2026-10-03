@@ -214,7 +214,23 @@ export interface SekolahBersaingRow {
 export type GameKey =
   'betul-salah' | 'cabaran-kilat' | 'tembak-jawapan' | 'susun-jawapan' | 'kad-memori'
 
-/** DATA-M16-08 GameSession (T1 seeds the 47 submitted results; T2 adds the play flow). */
+/** Jutawan play state of a `jut_` session (PROVISIONAL, BR-M16-30). */
+export interface JutawanPlay {
+  subjectId: number
+  level: number
+  /** Correct answers in a row so far (= the level reached). */
+  answered: number
+  lifelines: number
+  /** Option ids already removed by 50:50 on the current question. */
+  removed: number[]
+  over: boolean
+}
+
+/**
+ * DATA-M16-08 GameSession: the single-player sessions (`tf_`, `speed_`, `shoot_`, `ws_`, `mem_`) and
+ * the Jutawan games (`jut_`). Payload items are not stored (re-derived from the stream); `itemCount`
+ * and `maxScore` keep what a submit is checked against (BR-M16-27). The 47 seed rows leave them unset.
+ */
 export interface GameSessionRow {
   id: string
   userId: number
@@ -226,4 +242,151 @@ export interface GameSessionRow {
   coinsComputed: number
   coinsCredited: number
   isNewRecord: boolean
+  itemIds?: number[]
+  itemCount?: number
+  maxScore?: number
+  jutawan?: JutawanPlay
+}
+
+// --- rooms (DATA-M16-06/07), spins (DATA-M16-10), settings (DATA-M16-14) ---------------------------
+
+export type RoomGame =
+  | 'papan-bijak'
+  | 'perang-fakta'
+  | 'benteng-ilmu'
+  | 'perlumbaan-matematik'
+  | 'kuiz-relay'
+  | 'teka-silang-kata'
+export type RoomSubject = 'MATEMATIK' | 'BAHASA_MELAYU' | 'BAHASA_INGGERIS' | 'SAINS' | 'SEJARAH'
+export type MatchMode = 'same_grade' | 'same_level' | 'custom'
+export type RoomStatus = 'waiting' | 'playing' | 'finished' | 'closed'
+
+/** The game state of a room (PROVISIONAL rules, BR-M16-20); JSON-able. */
+export interface RoomState {
+  round: number
+  total: number
+  /** The question pool drawn at start. */
+  qIds: number[]
+  /** Next unused pool index. */
+  cursor: number
+  /** The viewer whose action is awaited (the host). */
+  humanId: number
+  awaiting: 'roll' | 'answer' | null
+  /** The pending question id. */
+  pendingQ: number | null
+  /** Papan Bijak: the 50 tile kinds. */
+  board: string[]
+  /** Papan Bijak positions by user id. */
+  positions: Record<string, number>
+  /** Benteng Ilmu HP / Perlumbaan steps / crossword words by user id. */
+  meter: Record<string, number>
+  /** Crossword words: question id and answer text. */
+  words: { qId: number; answer: string }[]
+  /** Perang Fakta statements `"{question} → {option}"` and whether each is true. */
+  facts: { qId: number; text: string; isTrue: boolean }[]
+  /** Papan Bijak turn index (join order). */
+  turn: number
+  /** Kuiz Relay team scores `{1: n, 2: n}`. */
+  teamScores: Record<string, number>
+  winnerId: number | null
+  mvpId: number | null
+  /** Draw counter of the room's dice and bot streams. */
+  draws: number
+  log: string[]
+}
+
+/** DATA-M16-06 GameRoom. The id is the 6-character code. */
+export interface GameRoomRow {
+  id: string
+  game: RoomGame
+  subject: RoomSubject
+  gradeLevel: string
+  matchMode: MatchMode
+  gradeMin: number | null
+  gradeMax: number | null
+  maxPlayers: number
+  hostId: number
+  status: RoomStatus
+  createdAtMs: number
+  startedAtMs: number | null
+  finishedAtMs: number | null
+  state: RoomState | null
+}
+
+export interface RoomPlayerRow {
+  id: number
+  roomCode: string
+  userId: number
+  team: number | null
+  points: number
+  correct: number
+  isBot: boolean
+  joinedAtMs: number
+}
+
+/** DATA-M16-07 GameStanding: lobby `wins` (Kuiz Relay `mvp`); Papan Bijak also `jumlah`, `skor`, `betul`. */
+export interface GameStandingRow {
+  id: number
+  game: RoomGame
+  userId: number
+  wins: number
+  jumlah: number
+  skor: number
+  betul: number
+  /** Stored order (seed: the observed order; runtime rows come after). */
+  orderKey: number
+  /** When the value was last raised (DV-M16-08 tie order). */
+  reachedAtMs: number
+}
+
+export interface PersonalBestRow {
+  id: number
+  userId: number
+  game: string
+  bestScore: number
+}
+
+export interface JutawanStatsRow {
+  id: number
+  userId: number
+  bestLevel: number
+  games: number
+}
+
+export interface SpinRow {
+  id: number
+  userId: number
+  /** MYT `YYYY-MM-DD`. */
+  date: string
+  segmentIndex: number
+  type: string
+  value: number
+  credited: number
+  createdAtMs: number
+}
+
+export interface SpinStatsRow {
+  id: number
+  userId: number
+  spins: number
+  won: number
+  lastSpinDate: string | null
+}
+
+export interface PbSearchRow {
+  id: number
+  userId: number
+  subject: RoomSubject
+  matchMode: MatchMode
+  status: 'searching' | 'matched' | 'expired' | 'cancelled'
+  polls: number
+  roomCode: string | null
+  createdAtMs: number
+  /** Hook: `expired` makes the first poll answer `expired`. */
+  sim: 'match' | 'expired'
+}
+
+export interface GameSettingsRow {
+  id: number
+  boardgameQuizTiles: number
 }

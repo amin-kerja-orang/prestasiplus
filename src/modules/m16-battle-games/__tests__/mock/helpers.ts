@@ -13,6 +13,7 @@ import m02 from '@/modules/m02-users-schools/mock'
 import m03 from '@/modules/m03-curriculum/mock'
 import m04 from '@/modules/m04-question-bank/mock'
 import m05 from '@/modules/m05-practice/mock'
+import m07 from '@/modules/m07-pksk/mock'
 import m14 from '@/modules/m14-gamification/mock'
 
 import m16 from '../../mock'
@@ -31,7 +32,7 @@ export async function bootM16(at: string = NOW): Promise<Booted> {
     clock,
     latencyMs: 0,
     onWarn: null,
-    plugins: [m01, m02, m03, m04, m05, m14, m16],
+    plugins: [m01, m02, m03, m04, m05, m07, m14, m16],
   })
   return { runtime, clock }
 }
