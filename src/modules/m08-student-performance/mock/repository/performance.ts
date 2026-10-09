@@ -227,6 +227,7 @@ export function studentStatuses(entries: readonly HeadcountEntryView[]): {
  * NOT detected: an edit that keeps every count equal (a user moved or renamed, a class renamed or its
  * teacher / subject changed, a student swapped between classes, a direct edit of a stored SPM history
  * row) until the next seed / reset or `resetReadCache()`; the tests that edit owner data call it.
+ * Count-preserving-edit limit also covers M01 user renames and M10 class renames / subject changes.
  */
 function ownerStamp(scope: Scope): string {
   const classes = classesOf(scope)
