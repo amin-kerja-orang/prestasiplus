@@ -48,8 +48,8 @@ Status di bawah ialah status pada 2026-10-02.
 | L26 | Permainan (21) | M★ | M16 | 40% |
 | L27 | Cabutan Bertuah (22) | M | M15 | **100%** |
 | L28 | Tournament (23) | M | M16 | 40% |
-| L29 | Topik (24) | M | M03 (S12–S13; G4 lulus 2026-10-10) | 85% |
-| L30 | Peta Belajar (25) | M | M03 (S14; G4 lulus 2026-10-10) | 85% |
+| L29 | Topik (24) | M | M03 (S12–S13; G5 READY 2026-10-10, `docs/qa/M03-curriculum.md`) | **100%** |
+| L30 | Peta Belajar (25) | M | M03 (S14; G5 READY 2026-10-10, `docs/qa/M03-curriculum.md`) | **100%** |
 | L31 | Set Soalan Guru (26) | M | M10 (perlu pengesahan) | **100%** |
 | L32 | Audio KBAT (27) | M | M09 | **100%** |
 | L33 | Syiling & Token (28) | M | M14 | **100%** |

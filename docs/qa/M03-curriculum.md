@@ -174,3 +174,12 @@ Checked and fine: the "Bentuk" island emoji tile is empty for pelajarmaju (known
 - The browser lane only resized the viewport (no touch device); the Playwright projects at 375 and 768 use `isMobile` and `hasTouch`.
 - Visual comparison with live was done on screenshots by eye, not pixel-compared.
 - The 3 F3 failures are intentional until BUG-M03S-01 is fixed; the QA spec stays red for that one test.
+
+## Re-test 2026-10-10 (student scope, after e3ffe29)
+
+| Item | Fix | Evidence | Status |
+|---|---|---|---|
+| BUG-M03S-01 | S14 hero title is `h1` (classes unchanged) | `qa-g5-student.spec.ts` F3 green at 375 / 768 / 1280; `t4-student-catalogue` + `qa-g5-student` 21/21 per project (one cold-start flake on mobile F2 passed on rerun); unit 14 files / 210 pass | Closed |
+| OBS-M03S-01 | S13 hero book icon shown at every width in a filled `bg-white/20` circle, white icon | Delivery Lead compared with `docs/discovery/img/M03/topic-show-mobile.png`: matches | Closed |
+
+No bug open. Verdict for the student scope stays **READY**; rows L29 and L30 at 100%.
