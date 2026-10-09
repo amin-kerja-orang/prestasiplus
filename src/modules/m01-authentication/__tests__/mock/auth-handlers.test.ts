@@ -767,7 +767,11 @@ describe('GET /api/public/stats (#21)', () => {
 describe('expireSession hook and the API contract', () => {
   it('registers expireSession on the plugin', () => {
     const m01 = runtime.modules.find((m) => m.id === 'M01')!
-    expect(Object.keys(m01.hooks).sort()).toEqual(['expireSession', 'pushNotification'])
+    expect(Object.keys(m01.hooks).sort()).toEqual([
+      'expireSession',
+      'impersonationAudit',
+      'pushNotification',
+    ])
   })
 
   it('expireSession ends a token, or every session of a user', async () => {

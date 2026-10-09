@@ -154,10 +154,17 @@ describe('#5 access (BR-M08-26)', () => {
     expect((await getAs(runtime, ADMIN, '/api/performance/classes/228')).status).toBe(200)
   })
 
-  it('pelajar and school admin: 404; no session: 401', async () => {
+  it('pelajar: 404; no session: 401', async () => {
     expect((await getAs(runtime, PELAJAR, '/api/performance/classes/2001')).status).toBe(404)
-    expect((await getAs(runtime, ADMIN_SEKOLAH, '/api/performance/classes/2001')).status).toBe(404)
     expect((await getAs(runtime, null, '/api/performance/classes/2001')).status).toBe(401)
+  })
+
+  it('school admin (school 900001, M27-T0c): own-school class 200, another school class 404', async () => {
+    expect((await getAs(runtime, ADMIN_SEKOLAH, '/api/performance/classes/2001')).status).toBe(200)
+    // class 366 belongs to school 8080.
+    expect((await getAs(runtime, ADMIN_SEKOLAH, '/api/performance/classes/366')).status).toBe(404)
+    // a school class (sc-) and an unknown id stay refused.
+    expect((await getAs(runtime, ADMIN_SEKOLAH, '/api/performance/classes/99999999')).status).toBe(404)
   })
 })
 

@@ -7,7 +7,7 @@
 
 import type { Page } from '@playwright/test'
 
-import { expect, test } from '../fixtures/test'
+import { expect, test } from './fixtures'
 import { open } from './mock-exam-nav'
 import {
   acceptNextDialog,
@@ -81,6 +81,7 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
       buffer: Buffer.from('x'),
     })
     await expect(tid(page, 'walk-image-label')).toHaveText('📎 soalan.png')
+    await expect(tid(page, 'walk-image-label')).toHaveCSS('text-transform', 'uppercase')
     await expect(page.getByTestId('walk-result')).toHaveCount(0)
     await expect(tid(page, 'duta-title')).toHaveText('🎓 Cikgu Maestro SPM')
     await expect(tid(page, 'duta-text')).toHaveText(

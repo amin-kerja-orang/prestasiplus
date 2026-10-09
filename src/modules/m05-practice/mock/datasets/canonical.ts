@@ -58,6 +58,11 @@ export type DesignedQuestion = { questionId: number } | { pool: number; draw: nu
 export interface DesignedAnswer {
   question: DesignedQuestion
   isCorrect: boolean
+  /**
+   * The M03 chapter this answer counts in, when it is not the question's own link (XR-M25-02 b,
+   * XL-R10-01). `undefined` = the question's chapter; `null` = no chapter link.
+   */
+  chapterId?: number | null
 }
 
 export interface DesignedSession {
@@ -90,10 +95,23 @@ const drawn = (pool: number, from: number, n: number, correct: number): Designed
  * in A4 and again in A5: 47 wrong BM answers → 46 queued questions, live S6).
  */
 const BM_ADMIN = SUBJECT.BM
-const A5: DesignedAnswer[] = [
-  { question: { pool: BM_ADMIN, draw: 35 }, isCorrect: false },
-  ...drawn(BM_ADMIN, 39, 4, 0),
+/**
+ * XR-M25-02 b / XL-R10-01 (M25 SRS §6.7 B): the chapter link of the admin's SPM answers, which the
+ * pool questions do not carry. A2 goes to SEJ T5 Bab 1 (382); A3's first 33 and all of A4 to BM T5
+ * Bab 99 (413); A3's last (wrong) answer has none; A5 goes to BM T4 Bab 1 (87). It is set on the
+ * answer, so no M04 question, SPM pool or draw changes (A5's repeated question counts in 87 there
+ * and in 413 in A4).
+ */
+const inChapter = (rows: DesignedAnswer[], chapterId: number | null): DesignedAnswer[] =>
+  rows.map((r) => ({ ...r, chapterId }))
+const A3: DesignedAnswer[] = [
+  ...inChapter(drawn(BM_ADMIN, 0, 33, 11), 413),
+  ...inChapter([{ question: { pool: BM_ADMIN, draw: 33 }, isCorrect: false }], null),
 ]
+const A5: DesignedAnswer[] = inChapter(
+  [{ question: { pool: BM_ADMIN, draw: 35 }, isCorrect: false }, ...drawn(BM_ADMIN, 39, 4, 0)],
+  87,
+)
 
 /** pelajarmaju's queue after M3 and the M4 revision answers (§6.12 resulting anchors). */
 const MJ_BAB1 = ids(600036, 600055)
@@ -125,7 +143,7 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     setNo: null,
     completedAt: '2026-05-11T14:22:00+08:00',
     timeSpent: 131,
-    answers: drawn(SUBJECT.SEJ, 0, 40, 14),
+    answers: inChapter(drawn(SUBJECT.SEJ, 0, 40, 14), 382),
   },
   {
     id: 'A3',
@@ -138,7 +156,7 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     setNo: null,
     completedAt: '2026-05-11T14:27:00+08:00',
     timeSpent: 105,
-    answers: drawn(BM_ADMIN, 0, 34, 11),
+    answers: A3,
   },
   {
     id: 'A4',
@@ -151,7 +169,7 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     setNo: null,
     completedAt: '2026-05-19T03:26:00+08:00',
     timeSpent: 36,
-    answers: drawn(BM_ADMIN, 34, 5, 1),
+    answers: inChapter(drawn(BM_ADMIN, 34, 5, 1), 413),
   },
   {
     id: 'A5',

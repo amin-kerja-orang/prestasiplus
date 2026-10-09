@@ -96,6 +96,7 @@ import {
   userQueueAll,
   type AnswerFilter,
   type HistoryFilter,
+  type MasteryItem,
   type SessionSummary,
 } from './reads'
 import {
@@ -1069,6 +1070,31 @@ export const practiceRepo = defineRepository({
 
       /** BR-20 counters per subject: `{subjectId, correct, answered, lastAnsweredAt}`. */
       mastery: (userId: number) => userMastery(userId),
+
+      /**
+       * Bulk read of the STORED BR-20 counters (the rows `mastery` returns when a user has stored rows),
+       * without scanning the answer log. Users without stored rows map to an empty list (the caller
+       * falls back to `subjectTotals` / `mastery`, exactly as `mastery` does per user).
+       */
+      storedMastery: (userIds: readonly number[]): Map<number, MasteryItem[]> => {
+        const out = new Map<number, MasteryItem[]>()
+        if (!practiceReady()) return out
+        for (const userId of userIds) {
+          const rows = masteryTable.query({ where: { userId } }).rows
+          out.set(
+            userId,
+            rows
+              .map((m) => ({
+                subjectId: m.subjectId,
+                correct: m.correct,
+                answered: m.answered,
+                lastAnsweredAt: m.lastAnsweredAt,
+              }))
+              .sort((x, y) => x.subjectId - y.subjectId),
+          )
+        }
+        return out
+      },
 
       /** BR-16 per chapter: total, answered, correct (latest answer), score, remaining, complete. */
       chapterStats: (userId: number, chapterId: number) => chapterStats(userId, chapterId),

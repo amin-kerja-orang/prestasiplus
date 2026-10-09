@@ -56,7 +56,7 @@ async function generate(): Promise<void> {
         class="rounded-2xl bg-gradient-to-br from-amber-700 to-orange-500 p-5 text-white shadow sm:p-8"
         data-testid="mock-hero"
       >
-        <h1 class="font-heading text-2xl font-bold break-words">📝 SPM Mock Exam</h1>
+        <h1 class="font-heading text-2xl font-bold break-words text-white">📝 SPM Mock Exam</h1>
         <p class="mt-2 text-sm text-orange-50">
           Mock SPM penuh dengan timer + auto-grade + weakness analysis. Boleh attempt setiap bulan.
         </p>
@@ -170,8 +170,11 @@ async function generate(): Promise<void> {
               </p>
             </div>
             <span
-              class="grade rounded-full px-3 py-1 text-[0.85rem] font-bold"
-              :class="GRADE_CHIP_CLASS[m.status === 'in_progress' ? 'pending' : (m.grade ?? 'G')]"
+              class="grade rounded-full px-3 py-1 font-bold"
+              :class="[
+                m.status === 'in_progress' ? 'text-[0.85rem]' : 'text-2xl',
+                GRADE_CHIP_CLASS[m.status === 'in_progress' ? 'pending' : (m.grade ?? 'G')],
+              ]"
               data-testid="mock-row-grade"
               >{{ m.status === 'in_progress' ? 'Belum' : m.grade }}</span
             >

@@ -155,7 +155,6 @@ const ON = 'border-blue-500 bg-blue-50 shadow-md'
               :key="l.key"
               type="button"
               :class="[OPTION, selectedLevel === l.key ? ON : OFF]"
-              :aria-pressed="selectedLevel === l.key"
               :data-testid="`level-${String(l.key)}`"
               @click="toggleLevel(l.key)"
             >
@@ -176,7 +175,6 @@ const ON = 'border-blue-500 bg-blue-50 shadow-md'
               :key="d.key"
               type="button"
               :class="[OPTION, 'min-w-0 break-words', selectedDifficulty === d.key ? d.on : OFF]"
-              :aria-pressed="selectedDifficulty === d.key"
               :data-testid="`difficulty-${String(d.key)}`"
               @click="toggleDifficulty(d.key)"
             >

@@ -15,7 +15,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      roles: ['admin', 'teacher'],
+      roles: ['admin', 'teacher', 'school_admin'],
       onForbidden: '404',
       title: 'Dashboard Kelas',
       module: 'M08',

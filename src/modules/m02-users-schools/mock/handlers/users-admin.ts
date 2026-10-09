@@ -27,12 +27,9 @@ import { API_ERROR_CODES } from '@/api/errors'
 import { issueSession } from '@/mock/core-data/client-session'
 import { sessions } from '@/mock/auth/sessions'
 import {
-  confirmed,
-  email,
   fail,
   int,
   max,
-  min,
   notFound,
   ok,
   oneOf,
@@ -46,7 +43,6 @@ import {
   requireRole,
   route,
   rule,
-  unique,
   validate,
   validationError,
   type MockContext,
@@ -68,6 +64,13 @@ import { schoolsRepo } from '../repository/schools'
 import { parentInvitesRepo } from './parent-invites-store'
 import { parentLinksRepo } from './parent-links-store'
 import { schoolAdminPackagesRepo } from './school-admin-packages-store'
+import {
+  changedPasswordRules,
+  emailRules,
+  nameRules,
+  newUserPasswordRules,
+  phoneRules,
+} from './users-rules'
 import { bodyOf, intList, intOrNull, textOrNull, toBool, type Body } from './users-input'
 import { toDetail, toListItem, toStudentItem } from './users-shape'
 
@@ -265,15 +268,10 @@ function createUser(req: MockRequest, ctx: MockContext): MockResponse {
     body,
     {
       role: roleRule,
-      name: [required(), max(255)],
-      email: [
-        required(),
-        email(),
-        max(255),
-        unique((value) => users.findByEmail(String(value)) !== undefined),
-      ],
-      phone: [max(14)],
-      password: [required(), min(6), confirmed()],
+      name: nameRules(),
+      email: emailRules(),
+      phone: phoneRules(),
+      password: newUserPasswordRules(),
       grade: [
         rule(
           'grade',
@@ -354,17 +352,9 @@ function updateUser(req: MockRequest, ctx: MockContext): MockResponse {
   const invalid = validate(
     body,
     {
-      name: [required(), max(255)],
-      email: [
-        required(),
-        email(),
-        max(255),
-        unique((value) => {
-          const other = users.findByEmail(String(value))
-          return other !== undefined && other.id !== id
-        }),
-      ],
-      phone: [max(14)],
+      name: nameRules(),
+      email: emailRules(id),
+      phone: phoneRules(),
       role: roleRule,
       // BR-08 / BR-11: `grade` and `schoolId` are required only when the record would end up without one.
       grade: [
@@ -401,7 +391,7 @@ function updateUser(req: MockRequest, ctx: MockContext): MockResponse {
         ),
       ],
       linkedStudentIds: [linkedStudentsRule],
-      newPassword: [min(6), confirmed()],
+      newPassword: changedPasswordRules(),
     },
     { attributes: { icNumber: 'ic number' } },
   )

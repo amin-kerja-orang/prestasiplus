@@ -266,7 +266,8 @@ function trackingSubject(code: string): TrackingASubject | { redirect: string } 
     summary: {
       bersih: sets.filter((s) => s.status === 'bersih').length,
       bankBesar: sets.filter((s) => s.status === 'bank_besar').length,
-      readyQuestions: sumReady(startable),
+      // Σ readyCount of ALL the subject's sets (live GEO "309", AC-M06-14.1), unlike the S5 open card.
+      readyQuestions: sumReady(sets),
       belumCukup: sets.filter((s) => s.status === 'belum_cukup').length,
     },
     // Startable first, then locked, each by set number (FR-M06-49).

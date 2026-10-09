@@ -247,7 +247,7 @@ describe('#5 / #6 Tracking A (S5, S6)', () => {
 
   it('S6 GEO: startable first, then locked by set number; chips', async () => {
     const s = await get<TrackingASubject>(PELAJAR, '/api/spm/tracking-a/GEO')
-    expect(s.summary).toEqual({ bersih: 0, bankBesar: 1, readyQuestions: 40, belumCukup: 9 })
+    expect(s.summary).toEqual({ bersih: 0, bankBesar: 1, readyQuestions: 309, belumCukup: 9 })
     expect(s.sets.map((x) => x.setNo)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     expect(s.sets[0]).toEqual({
       setNo: 1,
@@ -266,7 +266,7 @@ describe('#5 / #6 Tracking A (S5, S6)', () => {
     expect(psi.sets.map((x) => x.setNo)).toEqual([4, 3, 5, 6, 7, 8])
     expect(psi.sets[0]?.status).toBe('bersih')
     const math = await get<TrackingASubject>(PELAJAR, '/api/spm/tracking-a/MATH')
-    expect(math.summary).toMatchObject({ belumCukup: 11, readyQuestions: 0 })
+    expect(math.summary).toMatchObject({ belumCukup: 11, readyQuestions: 362 })
     const empty = await get<TrackingASubject>(PELAJAR, '/api/spm/tracking-a/PERNIAGA')
     expect(empty.sets).toEqual([])
     expect(empty.summary).toEqual({ bersih: 0, bankBesar: 0, readyQuestions: 0, belumCukup: 0 })

@@ -113,6 +113,7 @@ export type {
   SpmTargetRow,
   StructuredAttemptRow,
 } from './datasets/types'
+export { MASTERY_THRESHOLDS, masteryLevel } from './handlers/learner'
 export type { AnswerAnchorInput, SessionAnchorInput } from './repository/anchors'
 export type {
   CheckResult,

@@ -72,6 +72,12 @@ export interface SessionRow {
   expiresAt: number
   /** Epoch ms. */
   createdAt: number
+  /**
+   * Impersonation (XR-M27-21): the token of the actor's own session while this row is an
+   * impersonated session; `null` for every ordinary session. Set only through
+   * `create(..., parentToken)`; the actor's row is never touched while this one is open.
+   */
+  parentToken: string | null
 }
 
 export const sessionsTable = defineTable<SessionRow>({
@@ -96,10 +102,24 @@ export const sessions = defineRepository({
   name: 'sessions',
   store: sessionsTable,
   methods: ({ store, transaction }) => ({
-    /** Opens a session for `userId` (login, register, token reset, `setUser`). */
-    create(userId: number, remember: boolean, now: number): SessionRow {
+    /**
+     * Opens a session for `userId` (login, register, token reset, `setUser`). `parentToken` is set
+     * only by the M01 impersonation switch (XR-M27-21).
+     */
+    create(
+      userId: number,
+      remember: boolean,
+      now: number,
+      parentToken: string | null = null,
+    ): SessionRow {
       return transaction(() => {
-        const row = { userId, remember, expiresAt: initialExpiry(now, remember), createdAt: now }
+        const row = {
+          userId,
+          remember,
+          expiresAt: initialExpiry(now, remember),
+          createdAt: now,
+          parentToken,
+        }
         if (sessionTokenSource() === 'deterministic') return store.insert(row)
         let id = randomSessionToken()
         while (store.get(id)) id = randomSessionToken()

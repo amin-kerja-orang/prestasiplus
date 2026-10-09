@@ -90,6 +90,7 @@ watch(
         >
           <h1
             class="font-heading text-lg font-bold break-words sm:text-xl"
+            :class="data.heroClass === 'mid' ? 'text-slate-900' : 'text-white'"
             data-testid="result-title"
           >
             {{ data.subject }} · Paper {{ data.paperNumber }}
@@ -199,3 +200,11 @@ watch(
     </div>
   </div>
 </template>
+
+<style scoped>
+/* DV-M06-19: the global user-shell rule forces white onto every `-hero`; the amber `mid` hero
+   keeps dark text (white on amber is ~1.7:1). Local override with higher specificity. */
+.user-shell .mr-hero.mid :is(h1, h2, h3, p, span, a) {
+  color: #0f172a !important;
+}
+</style>
