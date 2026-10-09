@@ -1,62 +1,71 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 /**
- * M13 route fragment: the teacher-only paths S2 to S6 (SRS M13 v1.1 §2, FR-M13-06, 07). M13-T2
- * registers them with the guard (teacher and admin; any other role goes to its landing page, guest
- * to `/login`) and **no page body** (an empty component): M13-T3 (S2, S3) and M13-T4 (S4, S5, S6)
- * replace the component of their own entries and add V1 / V2. Headers and tab titles are the live
- * ones (URS FN-M13-1.1.5, 1.1.6).
+ * M13 route fragment: the teacher-only paths S2 to S6 and the proposed views V1 / V2 (SRS M13 v1.1
+ * §2, FR-M13-06, 07, 47, 48). Guard: teacher and admin; any other role goes to its landing page, a
+ * guest to `/login`. Headers and tab titles are the live ones (URS FN-M13-1.1.5, 1.1.6). The id of
+ * V1 / V2 is numeric only (`\d+`): `/cikgu/rph/abc` matches nothing and is the catch-all 404 (S7);
+ * an unknown or foreign numeric id is raised by the page (404 outcome). `/cikgu/rph/baharu` is
+ * declared before the id route and cannot be confused with it (digits only).
  */
 const roles = ['teacher', 'admin'] as const
-const component = () => import('../components/NoBody.vue')
 
-function teacherRoute(
-  path: string,
-  name: string,
-  title: string,
-  header: string,
-): RouteRecordRaw {
+function meta(title: string, header: string) {
   return {
-    path,
-    name,
-    component,
-    meta: {
-      layout: 'user',
-      access: 'auth',
-      roles,
-      title,
-      header: { title: header, subtitle: 'Selamat datang kembali' },
-      module: 'M13',
-    },
+    layout: 'user' as const,
+    access: 'auth' as const,
+    roles,
+    title,
+    header: { title: header, subtitle: 'Selamat datang kembali' },
+    module: 'M13',
   }
 }
 
 const routes: RouteRecordRaw[] = [
-  teacherRoute(
-    '/cikgu/rph',
-    'cikgu-rph',
-    'RPH — Cikgu Alesa',
-    'Rancangan Pengajaran Harian (RPH)',
-  ),
-  teacherRoute(
-    '/cikgu/rph/baharu',
-    'cikgu-rph-baharu',
-    'Jana RPH Baharu',
-    'Jana RPH dengan Cikgu Alesa',
-  ),
-  teacherRoute('/cikgu/essay', 'cikgu-essay', 'Marking Karangan', 'Marking Karangan AI'),
-  teacherRoute(
-    '/cikgu/essay/baharu',
-    'cikgu-essay-baharu',
-    'Mark Karangan Baharu',
-    'Mark Karangan Baharu',
-  ),
-  teacherRoute(
-    '/cikgu/pbd',
-    'cikgu-pbd',
-    'PBD Auto-Tag Queue',
-    'PBD Auto-Tag — Antrian Semakan',
-  ),
+  {
+    path: '/cikgu/rph',
+    name: 'cikgu-rph',
+    component: () => import('../pages/RphListPage.vue'),
+    meta: meta('RPH — Cikgu Alesa', 'Rancangan Pengajaran Harian (RPH)'),
+  },
+  {
+    path: '/cikgu/rph/baharu',
+    name: 'cikgu-rph-baharu',
+    component: () => import('../pages/RphFormPage.vue'),
+    meta: meta('Jana RPH Baharu', 'Jana RPH dengan Cikgu Alesa'),
+  },
+  {
+    path: '/cikgu/rph/:id(\\d+)',
+    name: 'cikgu-rph-view',
+    component: () => import('../pages/RphViewPage.vue'),
+    props: (route) => ({ id: Number(route.params.id) }),
+    meta: meta('RPH — Cikgu Alesa', 'Rancangan Pengajaran Harian (RPH)'),
+  },
+  {
+    path: '/cikgu/essay',
+    name: 'cikgu-essay',
+    component: () => import('../pages/EssayListPage.vue'),
+    meta: meta('Marking Karangan', 'Marking Karangan AI'),
+  },
+  {
+    path: '/cikgu/essay/baharu',
+    name: 'cikgu-essay-baharu',
+    component: () => import('../pages/EssayFormPage.vue'),
+    meta: meta('Mark Karangan Baharu', 'Mark Karangan Baharu'),
+  },
+  {
+    path: '/cikgu/essay/:id(\\d+)',
+    name: 'cikgu-essay-view',
+    component: () => import('../pages/EssayViewPage.vue'),
+    props: (route) => ({ id: Number(route.params.id) }),
+    meta: meta('Marking Karangan', 'Marking Karangan AI'),
+  },
+  {
+    path: '/cikgu/pbd',
+    name: 'cikgu-pbd',
+    component: () => import('../pages/PbdQueuePage.vue'),
+    meta: meta('PBD Auto-Tag Queue', 'PBD Auto-Tag — Antrian Semakan'),
+  },
 ]
 
 export default routes

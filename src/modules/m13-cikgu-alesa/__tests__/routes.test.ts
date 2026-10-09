@@ -33,6 +33,23 @@ describe('M13 404 outcomes (S7, S8)', () => {
   })
 })
 
+describe('M13 view routes (V1, V2): numeric ids only', () => {
+  it.each(['/cikgu/rph/abc', '/cikgu/essay/abc', '/cikgu/rph/13101/print', '/cikgu/essay/1/edit'])(
+    '%s is the catch-all 404',
+    (path) => {
+      expect(router.resolve(path).name).toBe('core.not-found')
+    },
+  )
+
+  it('passes the numeric id as a prop and keeps /baharu on the form', () => {
+    const v1 = router.resolve('/cikgu/rph/13101')
+    expect(v1.name).toBe('cikgu-rph-view')
+    expect(v1.params.id).toBe('13101')
+    expect(router.resolve('/cikgu/rph/baharu').name).toBe('cikgu-rph-baharu')
+    expect(router.resolve('/cikgu/essay/baharu').name).toBe('cikgu-essay-baharu')
+  })
+})
+
 describe('M13 registered routes (S1 to S6)', () => {
   const byName = (name: string) => router.getRoutes().find((r) => r.name === name)
 
@@ -51,6 +68,8 @@ describe('M13 registered routes (S1 to S6)', () => {
     ['/cikgu/essay', 'Marking Karangan'],
     ['/cikgu/essay/baharu', 'Mark Karangan Baharu'],
     ['/cikgu/pbd', 'PBD Auto-Tag Queue'],
+    ['/cikgu/rph/13101', 'RPH — Cikgu Alesa'],
+    ['/cikgu/essay/13201', 'Marking Karangan'],
   ])('%s is teacher / admin only with the live tab title', (path, title) => {
     const r = router.resolve(path)
     expect(r.name).not.toBe('core.not-found')
