@@ -109,3 +109,18 @@ No student-side bug. No Critical or High bug.
 ## Housekeeping
 
 Scratch folder: `C:\Users\hp\AppData\Local\Temp\claude\d--Dev-Projects-pretasiplus-app\6b12bffb-2834-479a-8490-417467c285d2\scratchpad\m07-g5\` (config `pw.config.ts`, logs `pass1-*`, `p2*-*`, `p3-*`, `vitest.log`, `sum.mjs`). Preview server on 5107 stopped. No `node_modules` junction created, no repo file changed except the two new specs and this report.
+
+## Re-test after fix (2026-10-10)
+
+BUG-M07-01 is **closed**. The fix is commit d15f160: each S5 checkbox is wrapped in a `<label>`, `min-h-11 min-w-11` below lg and reset at lg. It passed the fast-track code review (Approve).
+
+| Check | Result |
+|---|---|
+| Unit tests (`__tests__/pages`) | 51/51 |
+| eslint | clean |
+| `vue-tsc` (m07) | clean |
+| Targeted E2E: `qa-g5-guards-responsive.spec.ts -g "S5"`, mobile + tablet | 8/8 |
+
+The four S5 screens covered by the E2E are the list, the bulk bar, `?page=39` and the empty list.
+
+**Admin (S5–S8) verdict: Ready, with no open bugs.**
