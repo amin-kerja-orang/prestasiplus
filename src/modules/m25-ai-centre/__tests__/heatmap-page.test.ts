@@ -141,7 +141,7 @@ describe('HeatmapTopikLemahPage', () => {
     )
     const button = w.get('[data-testid="heatmap-empty-button"]')
     expect(button.text()).toBe('Mula Latih Tubi')
-    expect(button.attributes('href')).toBe('/latih-tubi')
+    expect(button.attributes('href')).toBe('/practice')
   })
 
   it('shows the error box and no partial cell when #1 fails', async () => {

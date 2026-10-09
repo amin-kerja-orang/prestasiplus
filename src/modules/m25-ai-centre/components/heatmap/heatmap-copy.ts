@@ -18,7 +18,7 @@ export const HEATMAP_COPY = {
 
 /** DV-M25-02: every cell keeps the live link, whatever its band or subject. */
 export const CELL_HREF = '/practice/chapter'
-export const EMPTY_HREF = '/latih-tubi'
+export const EMPTY_HREF = '/practice'
 
 /** Legend pills in order (FR-M25-14); `gray` is legend only, never a cell (FR-M25-17). */
 export const LEGEND: readonly { key: HeatmapBand | 'gray'; label: string; cls: string }[] = [
