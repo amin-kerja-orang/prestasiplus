@@ -8,7 +8,7 @@
 
 import type { Page } from '@playwright/test'
 
-import { expect, test } from '../fixtures/test'
+import { APP_BOOT_TIMEOUT_MS, expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, viewportWidth } from '../support'
 
 const PELAJAR = 'pelajar@demo.test'
@@ -87,7 +87,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
   test('E2E-M20-57 seller card, reviews and no review form', async ({ page, gotoApp, loginAs }) => {
     await loginAs(PELAJAR)
     await gotoApp(`/marketplace/${SLUG_1}`)
-    await expect(page.getByTestId('seller-initial')).toHaveText('J')
+    await expect(page.getByTestId('seller-initial')).toHaveText('J', { timeout: APP_BOOT_TIMEOUT_MS })
     await expect(page.getByTestId('seller-name')).toHaveText('JomBelajar Official')
     await expect(page.getByTestId('seller-verified')).toBeVisible()
     await expect(page.getByTestId('seller-rating')).toHaveText('☆☆☆☆☆')
@@ -238,7 +238,8 @@ test.describe('M20 W WhatsApp hand-off (D14)', MODULE, () => {
     const popupPromise = page.waitForEvent('popup')
     await page.getByTestId('product-whatsapp').click()
     const popup = await popupPromise
-    await expect.poll(() => urls.length).toBe(1)
+    // The new tab boots the whole app before it hands over, so wait as long as a boot.
+    await expect.poll(() => urls.length, { timeout: APP_BOOT_TIMEOUT_MS }).toBe(1)
     expect(urls[0]).toBe(
       'https://wa.me/60100000000?text=' +
         encodeURIComponent(
@@ -257,7 +258,8 @@ test.describe('M20 W WhatsApp hand-off (D14)', MODULE, () => {
     const secondPromise = page.waitForEvent('popup')
     await page.getByTestId('product-whatsapp').click()
     const second = await secondPromise
-    await expect.poll(() => urls.length).toBe(2)
+    // The new tab boots the whole app before it hands over, so wait as long as a boot.
+    await expect.poll(() => urls.length, { timeout: APP_BOOT_TIMEOUT_MS }).toBe(2)
     await second.close()
     await expect(page.getByTestId('product-name')).toBeVisible()
   })
