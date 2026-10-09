@@ -12,8 +12,7 @@
  * as live renders them per page); the bell from the `notificationBadge` store (the router
  * refreshes it after each navigation; this shell adds the live 60 s poll, FR-M01-53).
  *
- * Not rendered (overview §10): the M22 chatbot FAB and the M16 tournament banner (see the mount
- * point comment in `main`), and the live PWA install banner.
+ * Not rendered (overview §10): the M22 chatbot FAB and the live PWA install banner.
  */
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -147,7 +146,8 @@ onBeforeUnmount(() => {
         data-testid="shell-user-main"
       >
         <!-- M16 S30: live `tournamentBanner()` block (`mb-4`, hidden while
-             `GET /api/tournament/active` returns []); mounted once per page (`:key` above). -->
+             `GET /api/tournament/active` returns []); mounted once per page (`:key` above).
+             Order agreed with Session 2: ImpersonationBanner (M27) first, then TournamentBanner (M16). -->
         <TournamentBanner />
         <FlashOutlet :flash="flash" class="mb-4" />
         <slot />
