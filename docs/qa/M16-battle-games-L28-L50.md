@@ -6,10 +6,10 @@ Slug: M16-battle-games (task M16-T6, roles-matrix rows L28 and L50, plus the S20
 
 | Row | Screens | Verdict | Reason |
 |---|---|---|---|
-| L28 Tournament (Murid) | S23 `/tournament`, tournament detail (provisional), S30 banner | **Ready** | Every in-scope AC passes (S24-dependent AC-M16-03.5 is Deferred), 3 viewports green, no Critical/High bug. 1 Low fidelity difference listed for the lead (F-1). |
-| L50 Sekolah Bersaing (Admin Sekolah) | S28 `/sekolah-bersaing`, `?week=` | **Ready** | AC-M16-38.1..38.6 all pass as student and as school_admin, no Critical/High bug. 1 Medium and 2 Low fidelity differences listed for the lead to rule on (F-2, F-3, F-4). |
+| L28 Tournament (Murid) | S23 `/tournament`, tournament detail (provisional), S30 banner | **Ready** (re-tested) | Every in-scope AC passes (S24-dependent AC-M16-03.5 stays Deferred), 3 viewports green after the fidelity fixes; F-1 Pass. No Critical/High bug. One Low residual at 375 (O-6). |
+| L50 Sekolah Bersaing (Admin Sekolah) | S28 `/sekolah-bersaing`, `?week=` | **Ready** (re-tested) | AC-M16-38.1..38.6 pass, 3 viewports green after the fidelity fixes; F-2, F-3, F-4 Pass. No Critical/High bug. Two Low residuals (O-7, O-8). |
 
-L26 input (S20-S22): all pass except one data finding, AC-M16-29.5 rows 6-20 (B-1, Medium). See "Note for L26".
+L26 input (S20-S22): all pass except one data finding, AC-M16-29.5 rows 6-20 (B-1, now covered by DV-M16-38 (extended)); S20/S21 F-4 re-tested Pass. See "Note for L26".
 
 ## Environment and runs
 
@@ -78,7 +78,7 @@ Severity rule: Critical/High block a row. None found.
 
 | ID | Sev | Screen | Steps | Expected | Actual | Evidence | Owner |
 |---|---|---|---|---|---|---|---|
-| B-1 | Medium | S20 `/permainan/pertandingan` | Log in as student or admin at the project clock, open S20, read rows 6-20 | AC-M16-29.5 row 6 "100 betul · 75.0%"; live rows 6-20 (screenshot `pertandingan-desktop.png`): 100/75.0%, 93/72.8%, 84/80.7%, 78/97.5% ... | Row 6 96 betul, 85.2%, 6 sesi; rows 7-20 take other values (65/77.6%, 45/67.5% ...). Same cause and class as DV-M16-38 (M05 weekRank seed), but DV-38 and the `test.fail` cover only rows 3 and 4 (see `s-pertandingan-1280.png`) | `s-pertandingan-1280.png` vs live image | M05 owner (seed), M16 spec owner to extend DV-M16-38 |
+| B-1 | Medium | S20 `/permainan/pertandingan` | Log in as student or admin at the project clock, open S20, read rows 6-20 | AC-M16-29.5 row 6 "100 betul · 75.0%"; live rows 6-20 (screenshot `pertandingan-desktop.png`): 100/75.0%, 93/72.8%, 84/80.7%, 78/97.5% ... | Row 6 96 betul, 85.2%, 6 sesi; rows 7-20 take other values (65/77.6%, 45/67.5% ...). Same cause and class as DV-M16-38 (M05 weekRank seed), but DV-38 and the `test.fail` cover only rows 3 and 4 (see `s-pertandingan-1280.png`) | `s-pertandingan-1280.png` vs live image | M05 owner (seed). **Status (re-test): covered by DV-M16-38 (extended); not a blocking bug.** |
 
 ## Fidelity differences from live for the lead to rule on (none listed as a DV)
 
@@ -99,6 +99,43 @@ Severity rule: Critical/High block a row. None found.
 
 ## Re-test notes
 
-- If the lead rules F-2 a defect, re-test S28 at 375/768/1280 against `sekolah-bersaing-*.png` and E2E-M16-89.
-- If DV-M16-38 is extended or the M05 weekRank seed is reconciled (B-1), re-run E2E-M16-73/73b/73c; the two `test.fail` tests will then flip to unexpected passes and need their `test.fail` removed.
+Re-test 2026-10-10 on branch `s3-qa-l28-retest` (after commit 2068076, fidelity fixes F-1..F-4). Build `vite build --mode e2e`, preview on port 5122, student account `pelajar@demo.test` at the project clock. Screenshots and raw measurements (scratch, not in the repo): the folder shots/ under the QA scratchpad, files s20-375.png ... s28-1280.png and measure.json. Live references: `docs/discovery/img/M16/` in the main tree. 768 px has no live reference: layout checked for breakage only (no clipping, no overlap, no horizontal scroll; all four screens look sound).
+
+### E2E (smoke-competition, smoke-tournament, smoke-sekolah-bersaing; 27 tests x 3 projects = 81)
+
+| Viewport | Result |
+|---|---|
+| mobile 375x812 | 26 of 27 first run; the one failure (E2E-M16-72 header ..., first test after the cold start) was `Failed to fetch dynamically imported module .../PertandinganPage-*.js` inside `gotoApp`, a cold-server timing flake. Re-run alone: **pass**. Effective 27 of 27. |
+| tablet 768x1024 | 27 of 27 pass |
+| desktop 1280x800 | 27 of 27 pass |
+
+No real failure. No spec was changed. Total first run: 80 passed, 1 flake (47 min with --workers=1).
+
+### Horizontal scroll at 320
+
+S20, S21, S23, S28: `scrollWidth` = `clientWidth` = 320. Pass. Also equal at 375, 768 and 1280.
+
+### Fidelity items
+
+| Item | Result | Measured (ours) vs live |
+|---|---|---|
+| F-1 S23 hero | **Pass** | 1280: hero 973 x 136 px (live 136), title at 32 px inset (x 314 vs hero x 282), gradient `#5a3cf5 -> #9a14ff -> #f5399f` (rgb 90,60,245 / 154,20,255 / 245,57,159) matches live. 375: title wraps to two lines (72 px block, 30 px font) like live. Title white (DV-M16-39, accepted). 768 one-line title, no breakage. |
+| F-2 S28 | **Pass** | 1280: hero 158 px (live 158), h1 26 px; week card text 16 px, card 60 px (live 60); right header labels "% AKTIF / STREAK AVG / NOTA/PELAJAR" 14 px dark (live same, visual compare); rows 69 px (live 69-70). 375: h1 30 px on two lines. Hero text dark amber (DV-M16-40, accepted). |
+| F-3 S28 hero corners | **Pass** | computed `border-radius: 6px 6px 24px 24px`: top almost square, bottom strongly rounded, as live. |
+| F-4 S20/S21 | **Pass** | 375: content left edge x = 25 px on S20 and S21 (live about 25). S20 mobile title 18 px (live about 18). S21 1280: back link at y 170 vs live 171, so the offset is fixed; body text and the help box text now light grey/rose like live. |
+
+### New residual observations (Low, none blocking, none in the first-round list)
+
+- O-6 S23 at 375: hero 196 px high vs about 179 px on live (vertical padding about 8 px more at top and bottom on ours). 1280 is exact.
+- O-7 S28: gaps are tighter than live at 1280 (hero to week card 16 px vs about 25 px, week card to table 16 px vs about 22 px). At 375 the hero is 220 px vs about 243 px on live (live h1 has a taller line-height on its two lines). Sizes and rows otherwise match.
+- O-8 S21 at 1280: the brain illustration is about 60 px wide vs about 72 px on live, so the card sits about 31 px higher than live below the title. Back link position matches.
+
+### Still open
+
+- If the M05 weekRank seed is reconciled, re-run E2E-M16-73/73b/73c; the two `test.fail` tests will then flip to unexpected passes and need their `test.fail` removed. B-1 itself is covered by DV-M16-38 (extended).
 - After S24 is built, execute AC-M16-03.5 and the S24 redirect half of AC-M16-02.2, and click "Cipta Tournament Baru".
+
+### Verdicts after re-test
+
+- **L28 Tournament: Ready.**
+- **L50 Sekolah Bersaing: Ready.**
