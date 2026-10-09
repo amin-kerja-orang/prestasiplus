@@ -91,21 +91,22 @@ test.describe('S23 Tournament list', () => {
 })
 
 test.describe('S30 Tournament banner', () => {
-  test(
-    'E2E-M16-09 hidden by default: one request per page load, no banner',
-    MODULE,
-    async ({ page, gotoApp, loginAs, mock }) => {
-      await loginAs(STUDENT)
-      for (const path of ['/dashboard', '/tournament', '/sekolah-bersaing']) {
+  // One page load per test (three loads in one test exceed the 120 s timeout on a loaded machine).
+  for (const path of ['/dashboard', '/tournament', '/sekolah-bersaing']) {
+    test(
+      `E2E-M16-09 hidden by default on ${path}: one request per page load, no banner`,
+      MODULE,
+      async ({ page, gotoApp, loginAs, mock }) => {
+        await loginAs(STUDENT)
         await gotoApp(path)
         await expect(page.getByTestId('shell-user-main')).toBeVisible()
         await expect.poll(async () => (await mock.requests(BANNER)).length).toBe(1)
         const last = await mock.lastRequest(BANNER)
         expect(last?.status).toBe(200)
         await expect(page.getByTestId('tournament-banner')).toHaveCount(0)
-      }
-    },
-  )
+      },
+    )
+  }
 
   test(
     'E2E-M16-09 a failing request shows no banner and no message',
