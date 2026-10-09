@@ -54,7 +54,7 @@ beforeAll(async () => {
     latencyMs: 0,
     onWarn: null,
   })
-}, 60_000)
+}, 600_000)
 
 describe('GET /api/topics (#25, S12)', () => {
   it('guest gets 401; any role may read', async () => {

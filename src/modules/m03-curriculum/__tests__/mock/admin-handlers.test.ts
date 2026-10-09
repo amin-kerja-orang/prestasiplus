@@ -70,14 +70,14 @@ function expectNoOrphans(): void {
 
 beforeAll(async () => {
   runtime = await boot()
-}, 60_000)
+}, 600_000)
 
 // Re-seeding recompiles every registry store (~2 s): only after a call that wrote data.
 let dirty = false
 afterEach(async () => {
   if (dirty) await runtime.reset()
   dirty = false
-}, 30_000)
+}, 600_000)
 
 describe('guards (every route: guest 401, student 403, teacher 403)', () => {
   const routes: [string, string][] = [

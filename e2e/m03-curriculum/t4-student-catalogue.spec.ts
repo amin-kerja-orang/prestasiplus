@@ -116,6 +116,7 @@ test.describe('M03 S12 Topik', MODULE, () => {
     loginAs,
     gotoApp,
   }) => {
+    test.slow() // reloads the whole app six times
     await loginAs(PELAJAR)
     await openTopics(page, gotoApp, '?grade_level=DARJAH_1&subject=SAINS')
     await expect(page.getByTestId('topic-card')).toHaveCount(4)
@@ -278,6 +279,7 @@ test.describe('M03 S13 Topic detail', MODULE, () => {
     loginAs,
     gotoApp,
   }) => {
+    test.slow() // reloads the whole app eight times
     await loginAs(PELAJAR)
     const map: [number, string][] = [
       [7, 'MATH'],
