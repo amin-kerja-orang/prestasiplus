@@ -48,7 +48,7 @@ const bell = useNotificationBadgeStore()
 const pageMeta = usePageMeta()
 const { flash } = useFlash()
 const { summary, refresh: refreshSummary } = useGamificationSummary()
-const { refresh: refreshNavBadges } = provideNavBadges()
+const { refresh: refreshNavBadges } = provideNavBadges(() => session.role === 'admin')
 
 const role = computed(() => session.role)
 const user = computed(() => session.user)

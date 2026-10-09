@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { provideNavBadges, useNavBadgeText } from '../user/nav-badges'
+import { isBadgeHidden, provideNavBadges, useNavBadgeText } from '../user/nav-badges'
 
 const api = vi.hoisted(() => ({ get: vi.fn() }))
 vi.mock('@/api', () => ({ api }))
@@ -85,5 +85,47 @@ describe('nav badges (M22 "Urus Tiket" open-ticket count)', () => {
     await refresh()
     await flushPromises()
     expect(w.get('#t').text()).toBe('2')
+  })
+})
+
+describe('nav badges (G4: role guard and hide-at-0 scope)', () => {
+  it('a non-admin makes no open-count request', async () => {
+    api.get.mockReset()
+    api.get.mockResolvedValue({})
+    let refresh: () => Promise<void> = () => Promise.resolve()
+    const Parent = defineComponent({
+      setup() {
+        refresh = provideNavBadges(() => false).refresh
+        return () => h('span')
+      },
+    })
+    mount(Parent)
+    await refresh()
+    await flushPromises()
+    const urls = api.get.mock.calls.map((c) => c[0] as string)
+    expect(urls).not.toContain('/api/admin/tiket/open-count')
+  })
+
+  it('an admin reads the open count', async () => {
+    api.get.mockReset()
+    api.get.mockResolvedValue({})
+    let refresh: () => Promise<void> = () => Promise.resolve()
+    const Parent = defineComponent({
+      setup() {
+        refresh = provideNavBadges(() => true).refresh
+        return () => h('span')
+      },
+    })
+    mount(Parent)
+    await refresh()
+    await flushPromises()
+    expect(api.get.mock.calls.map((c) => c[0] as string)).toContain('/api/admin/tiket/open-count')
+  })
+
+  it('only "Urus Tiket" is hidden at 0; another badge with "0" still shows', () => {
+    expect(isBadgeHidden('urus-tiket', '0')).toBe(true)
+    expect(isBadgeHidden('urus-tiket', '2')).toBe(false)
+    expect(isBadgeHidden('gambar-rajah', '0')).toBe(false)
+    expect(isBadgeHidden('streak-saya', '0')).toBe(false)
   })
 })

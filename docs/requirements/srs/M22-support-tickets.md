@@ -7,7 +7,7 @@
 | Document | SRS — M22 Support Tickets. Row L04 "Tiket Bantuan" (matrix A4; Murid, Guru, Admin Sekolah) and the admin queue "Urus Tiket". Other M22 rows (notification inbox, push, chatbot) are not covered |
 | Version | 1.2 |
 | Date | 2026-10-09 |
-| Status | **v1.1 — G1 approved (user, 2026-10-09, D27).** Audit round 2 PASS (`docs/qa/audit/M22-audit.md`). OQ-M22-01 decided: admin read-only (no reply or status write path). OQ-M22-02 decided: school admin has no access to the queue. |
+| Status | **v1.2 — G1 approved (user, 2026-10-09, D27).** Audit round 2 PASS (`docs/qa/audit/M22-audit.md`). OQ-M22-01 decided: admin read-only (no reply or status write path). OQ-M22-02 decided: school admin has no access to the queue. |
 | Author | product-analyst (agent) |
 | Source URS | [urs/M22-support-tickets.md](../urs/M22-support-tickets.md) v1.1 (13 stories, 38 Functions, 58 acceptance criteria) |
 | Source discovery | [M22-support-tickets.md](../../discovery/M22-support-tickets.md); SERVER files re-read 2026-10-09: `backend/app/Http/Controllers/ContentController.php` (408-510), `Admin/ChatbotSupportController.php` (100-122), `resources/views/content/tiket.blade.php`, `admin/tiket.blade.php`. No SERVER-DECK image exists for tickets |
@@ -240,6 +240,7 @@ Default seed: tickets #1 and #2 of URS §1.5 (DL-M22-11: the live badge "2" is c
 | XR-M22-03 | Shell owner / router | `/pusat-tuisyen/tiket` guard `auth` (every role), layout user shell; `/admin/tiket` guard `admin`, admin shell with no active menu entry (the admin shell has no "Urus Tiket" item; the item sits in the user-shell sidebar, a cross-shell link as "Ke Admin Panel"). Confirm the admin-shell header shows no title (the page carries its own heading). | request (confirm) |
 | XR-M22-04 | M01 | Confirm users 3 (`pelajar2@demo.test`, "Pelajar Dua Demo") and 4 (`pelajarmaju@demo.test`, "Pelajar Maju Demo") as owners of the seed tickets and that their names stay as in M01 §6.8. | none expected |
 | XR-M22-05 | Delivery Lead | Relabel the roles-matrix row L04 owner and TRACKER M22 route checklist after approval (this document covers `/pusat-tuisyen/tiket` and `/admin/tiket` only). | request |
+| XR-M22-06 | M01 | Owner gap found in the build: `pushNotification` is registered only as a hook on the M01 plugin (`plugin.hooks`), not exported as a typed function, so M22 calls `m01.hooks.pushNotification` through a cast to a local signature. Request a typed public export from `@/modules/m01-authentication/mock` (for example `pushNotification(userId, {type, category, title, body}, {push})`), after which M22 drops the cast. No M22 behaviour changes. | request |
 
 ---
 

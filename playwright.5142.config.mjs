@@ -5,7 +5,7 @@ const PORT = 5142
 const baseURL = `http://localhost:${PORT}`
 
 export default defineConfig({
-  testDir: 'e2e',
+  testDir: 'e2e/m22-support-tickets',
   testMatch: '**/*.spec.ts',
   fullyParallel: true,
   workers: 2,

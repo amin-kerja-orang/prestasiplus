@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Document | URS — M22 Support Tickets. Row L04 "Tiket Bantuan" (matrix A4; roles Murid, Guru, Admin Sekolah) plus the admin processing side "Urus Tiket". Other M22 rows (notification inbox, push, chatbot) are separate rows and not in this document |
-| Version | 1.1 |
+| Version | 1.2 |
 | Date | 2026-10-09 |
 | Status | **v1.1 — G1 approved (user, 2026-10-09, D27).** Audit round 2 PASS (`docs/qa/audit/M22-audit.md`). OQ-M22-01 decided: admin read-only (no reply or status write path). OQ-M22-02 decided: school admin has no access to the queue. |
 | Author | product-analyst (agent) |
@@ -22,6 +22,7 @@
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 | 2026-10-09 | Test-profile selection recorded in §1.5: the reset override `ticketsProfile` and the hook `m22LoadProfile(name)` replace `profile` (owned by M02). No behaviour, copy or count changed. |
 | 1.1 | 2026-10-09 | **Audit round 1 fixes (`docs/qa/audit/M22-audit.md`: 2 Major, 8 Minor, 4 Info).** AUD-M22-01: S2 date zone is not SERVER (the server prints raw UTC, `config/app.php:72`); display in Asia/Kuala_Lumpur is the D9 fix DV-M22-09 (FN-2.3.2, AC-07.2). AUD-M22-02: S1's own form posts to `/tiket` (R5), so S1 now follows R5: status `dibuka`, limits 255/5000, flash "Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin." verbatim (FN-1.2.1, 1.3.2, AC-04.x); DV-M22-02 folded into DL-M22-04; DV-M22-03 rewritten (only deviation: after submit the user stays on `/pusat-tuisyen/tiket`; `/tiket` renders the same view). AUD-M22-03: `maxlength` 255/5000 PROPOSED (S1 markup has none), E2E-12 provisional in part. AUD-M22-04: S2 header cells in capitals by CSS (FN-2.3.1). AUD-M22-05/06: seed is DL-M22-11 (justified by the live badge and D11), M01 inbox difference noted, OQ-M22-03 closed. AUD-M22-07: 12 px cites D9 + DV-M17-25. AUD-M22-08: DV table holds real divergences only, with a Type column; decisions and gaps moved to §7.1 (DL-M22-xx, same numeric suffix as the former DV id). AUD-M22-09: story wording. AUD-M22-10: sidebar-active step provisional. AUD-M22-11/12: role tags, PPD clause. AUD-M22-13/14: XR-M22-01 names functions and full path. Totals: 13 stories, 38 FN, 58 AC. |
 | 1.0 | 2026-10-09 | First issue. |
 

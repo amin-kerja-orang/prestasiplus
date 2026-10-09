@@ -17,7 +17,16 @@ export type NavBadgeTexts = Readonly<Record<string, string>>
 const KEY: InjectionKey<Ref<NavBadgeTexts>> = Symbol('nav-badge-texts')
 
 /** Called once by the shell: owns the map and refreshes it. */
-export function provideNavBadges() {
+/** M22 FR-M22-43: only the "Urus Tiket" count is hidden at 0; every other live badge keeps showing its text. */
+export function isBadgeHidden(id: string, text: string): boolean {
+  return id === 'urus-tiket' && text === '0'
+}
+
+/**
+ * `canSeeTickets`: the open-ticket count is read only when the viewer can see "Urus Tiket" (the platform
+ * admin); any other role makes no request, so no 403 is produced (G4). Default: allowed.
+ */
+export function provideNavBadges(canSeeTickets: () => boolean = () => true) {
   const texts = ref<NavBadgeTexts>({})
   provide(KEY, texts)
   let seq = 0
@@ -35,7 +44,7 @@ export function provideNavBadges() {
 
   async function refresh(): Promise<void> {
     const id = ++seq
-    void refreshTickets(id)
+    if (canSeeTickets()) void refreshTickets(id)
     try {
       const body = await api.get<{ meta?: { unfilteredMcq?: unknown } }>('/api/diagram-audit', {
         query: { mcqPage: 1 },
