@@ -92,7 +92,10 @@ const BADGES = [
               {{ topic.description }}
             </p>
           </div>
-          <BookOpen class="hidden h-16 w-16 shrink-0 text-white/30 sm:block" aria-hidden="true" />
+          <!-- INFERRED from screenshot (no live classes in inventory): filled bg-white/20 circle, white icon, all widths -->
+          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 sm:h-16 sm:w-16">
+            <BookOpen class="h-7 w-7 text-white sm:h-8 sm:w-8" aria-hidden="true" />
+          </div>
         </div>
       </section>
 
