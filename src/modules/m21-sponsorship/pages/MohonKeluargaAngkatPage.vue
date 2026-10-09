@@ -188,7 +188,7 @@ async function onSubmit(): Promise<void> {
 
       <button
         type="submit"
-        class="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-linear-to-r from-pink-500 to-purple-600 px-4 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+        class="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         :disabled="sending"
         data-testid="mohon-submit"
       >
