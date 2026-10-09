@@ -5,14 +5,14 @@ import { MOHON_COPY } from './mohon-copy'
 
 <template>
   <section
-    class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-slate-700"
+    class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-600"
     data-testid="mohon-info"
   >
-    <h2 class="font-bold text-blue-800">{{ MOHON_COPY.afterTitle }}</h2>
+    <h2 class="font-bold text-blue-700">{{ MOHON_COPY.afterTitle }}</h2>
     <ol class="mt-2 list-decimal space-y-1 pl-5">
       <li v-for="step in MOHON_COPY.afterSteps" :key="step">{{ step }}</li>
     </ol>
-    <h2 class="mt-4 font-bold text-blue-800">{{ MOHON_COPY.whoTitle }}</h2>
+    <h2 class="mt-4 font-bold text-blue-700">{{ MOHON_COPY.whoTitle }}</h2>
     <ul class="mt-2 list-disc space-y-1 pl-5">
       <li v-for="w in MOHON_COPY.who" :key="w.strong">
         <strong>{{ w.strong }}</strong

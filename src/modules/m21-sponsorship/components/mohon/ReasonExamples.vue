@@ -11,16 +11,16 @@ const emit = defineEmits<{ pick: [text: string] }>()
 </script>
 
 <template>
-  <div class="rounded-xl bg-slate-50 p-3" data-testid="mohon-examples">
+  <div class="rounded-xl border border-slate-200 bg-slate-50 p-3" data-testid="mohon-examples">
     <p class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
       <Lightbulb class="h-4 w-4 shrink-0 text-amber-500" />
       {{ MOHON_COPY.examplesTitle }}
     </p>
-    <ul class="mt-2 space-y-1.5">
+    <ul class="mt-2 space-y-0">
       <li v-for="(text, i) in REASON_EXAMPLES" :key="i">
         <button
           type="button"
-          class="block min-h-11 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 focus:ring-2 focus:ring-blue-300 focus:outline-none"
+          class="block min-h-11 w-full cursor-pointer rounded-lg bg-transparent px-1 py-2 text-left text-xs text-slate-500 transition hover:bg-blue-50 focus:ring-2 focus:ring-blue-300 focus:outline-none"
           data-testid="mohon-example"
           @click="emit('pick', text)"
         >
