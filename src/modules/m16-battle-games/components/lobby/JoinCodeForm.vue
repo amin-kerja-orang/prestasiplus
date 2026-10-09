@@ -55,7 +55,7 @@ function onSubmit(): void {
         <label
           v-if="label"
           :for="inputId"
-          class="mb-1 block text-xs font-bold tracking-wide text-emerald-700 uppercase"
+          class="mb-1 block text-xs font-bold tracking-wide text-emerald-600 uppercase"
           >{{ label }}</label
         >
         <input

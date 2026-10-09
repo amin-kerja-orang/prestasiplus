@@ -118,7 +118,7 @@ onBeforeUnmount(() => {
       >
       <div>
         <h2 class="font-heading text-lg font-bold text-slate-800">Cari Lawan Auto</h2>
-        <p class="text-xs text-orange-700">Sistem cari pemain sepadan secara automatik</p>
+        <p class="text-xs text-amber-600">Sistem cari pemain sepadan secara automatik</p>
       </div>
     </div>
 

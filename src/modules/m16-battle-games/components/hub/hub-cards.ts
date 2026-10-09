@@ -259,87 +259,92 @@ export const HUB_NO_ROOMS = {
  * banner emoji and a solid button in the card colour. `solid` marks buttons whose Font Awesome icon is a
  * solid glyph on live (Lucide `fill-current` gives the matching look).
  *
- * DV-M16-49 (D9, contrast): live paints white 14 px bold button text on amber-500 (about 2.1:1), sky-500
- * (2.8:1) and orange-500 (2.8:1); the rebuild uses the 600 shade of each (3.2:1, 4.1:1, 3.6:1). The chip
- * text slate-400 on slate-50 (about 2.4:1) is slate-500 (about 4.6:1).
+ * Buttons are gradients from the card colour to its darker shade, as live. DV-M16-49 (D9, contrast)
+ * changes only the items measured below 3:1 on live: white 14 px bold text on the Roda Nasib and Jutawan
+ * amber buttons (live 2.3-2.8:1) uses amber-600 to amber-700 (3.2:1 and up), and the chip text slate-400
+ * on slate-50 (live 2.43:1) is slate-500 (about 4.6:1). Every other card keeps its live colours.
  */
 export const HUB_THEME: Readonly<
   Record<string, { banner: string; button: string; solid?: boolean }>
 > = {
   'papan-bijak': {
     banner: 'from-violet-600 to-violet-300',
-    button: 'bg-violet-600 hover:bg-violet-700',
+    button: 'bg-linear-to-r from-violet-600 to-violet-700 hover:brightness-95',
     solid: true,
   },
-  battle: { banner: 'from-red-600 to-red-400', button: 'bg-red-600 hover:bg-red-700', solid: true },
+  battle: {
+    banner: 'from-red-600 to-red-400',
+    button: 'bg-linear-to-r from-red-600 to-red-700 hover:brightness-95',
+    solid: true,
+  },
   'perang-fakta': {
     banner: 'from-red-700 to-rose-400',
-    button: 'bg-red-700 hover:bg-red-800',
-    solid: true,
+    button: 'bg-linear-to-r from-red-700 to-red-800 hover:brightness-95',
   },
   'benteng-ilmu': {
     banner: 'from-emerald-700 to-emerald-500',
-    button: 'bg-emerald-600 hover:bg-emerald-700',
+    button: 'bg-linear-to-r from-emerald-500 to-emerald-600 hover:brightness-95',
     solid: true,
   },
   'perlumbaan-matematik': {
     banner: 'from-blue-700 to-blue-500',
-    button: 'bg-blue-600 hover:bg-blue-700',
+    button: 'bg-linear-to-r from-blue-600 to-blue-700 hover:brightness-95',
   },
   'kuiz-relay': {
     banner: 'from-violet-700 to-purple-400',
-    button: 'bg-violet-600 hover:bg-violet-700',
+    button: 'bg-linear-to-r from-violet-600 to-violet-700 hover:brightness-95',
     solid: true,
   },
   'teka-silang-kata': {
     banner: 'from-amber-700 to-orange-500',
-    button: 'bg-amber-600 hover:bg-amber-700',
+    button: 'bg-linear-to-r from-orange-600 to-amber-700 hover:brightness-95',
     solid: true,
   },
   'betul-salah': {
     banner: 'from-indigo-950 to-purple-700',
-    button: 'bg-violet-600 hover:bg-violet-700',
+    button: 'bg-linear-to-r from-violet-600 to-violet-700 hover:brightness-95',
   },
   'roda-nasib': {
     banner: 'from-amber-500 to-yellow-300',
-    button: 'bg-amber-600 hover:bg-amber-700',
+    button: 'bg-linear-to-r from-amber-600 to-amber-700 hover:brightness-95',
   },
   pertandingan: {
     banner: 'from-emerald-500 to-emerald-300',
-    button: 'bg-emerald-600 hover:bg-emerald-700',
-    solid: true,
+    button: 'bg-linear-to-r from-emerald-500 to-emerald-600 hover:brightness-95',
   },
   'peta-pengembaraan': {
     banner: 'from-violet-500 to-violet-300',
-    button: 'bg-violet-600 hover:bg-violet-700',
-    solid: true,
+    button: 'bg-linear-to-r from-violet-600 to-violet-700 hover:brightness-95',
   },
-  'uji-minda': { banner: 'from-pink-500 to-pink-300', button: 'bg-pink-600 hover:bg-pink-700' },
+  'uji-minda': {
+    banner: 'from-pink-500 to-pink-300',
+    button: 'bg-linear-to-r from-pink-500 to-pink-600 hover:brightness-95',
+  },
   'cabaran-kilat': {
     banner: 'from-slate-900 to-indigo-950',
-    button: 'bg-sky-600 hover:bg-sky-700',
+    button: 'bg-linear-to-r from-sky-500 to-blue-500 hover:brightness-95',
     solid: true,
   },
   jutawan: {
     banner: 'from-slate-900 to-blue-950',
-    button: 'bg-amber-600 hover:bg-amber-700',
+    button: 'bg-linear-to-r from-amber-600 to-amber-700 hover:brightness-95',
     solid: true,
   },
   'susun-jawapan': {
     banner: 'from-slate-900 to-teal-900',
-    button: 'bg-teal-600 hover:bg-teal-700',
+    button: 'bg-linear-to-r from-teal-500 to-teal-600 hover:brightness-95',
     solid: true,
   },
   'tembak-jawapan': {
     banner: 'from-orange-950 to-orange-700',
-    button: 'bg-orange-600 hover:bg-orange-700',
+    button: 'bg-linear-to-r from-orange-500 to-orange-600 hover:brightness-95',
   },
   'sambung-kata': {
     banner: 'from-emerald-950 to-emerald-700',
-    button: 'bg-emerald-600 hover:bg-emerald-700',
+    button: 'bg-linear-to-r from-emerald-500 to-emerald-600 hover:brightness-95',
   },
   'kad-memori': {
     banner: 'from-purple-900 to-violet-500',
-    button: 'bg-violet-600 hover:bg-violet-700',
+    button: 'bg-linear-to-r from-violet-600 to-violet-700 hover:brightness-95',
   },
 }

@@ -142,19 +142,19 @@ describe('S8-S12 lobby template (FR-M16-62..65)', () => {
   it('looks like live: a game-coloured hero, the code box and "Masuk" on ONE row, a coloured button', async () => {
     await mountPage('perang-fakta')
     expect(wrapper!.get('header').classes()).toContain('from-red-700')
-    expect(get('create-submit').classes()).toContain('bg-red-600')
+    expect(get('create-submit').classes()).toContain('from-red-600')
     const form = get('join-form')
     expect(form.classes()).toContain('flex') // input and button side by side, not stacked
     expect(form.classes()).not.toContain('space-y-4')
     expect(form.element.children).toHaveLength(2)
-    expect(get('join-submit').classes()).toContain('bg-red-600')
+    expect(get('join-submit').classes()).toContain('from-red-600')
     expect(wrapper!.get('[data-testid="leaders-row"] span:last-child').classes()).toContain(
       'text-red-600',
     )
     wrapper!.unmount()
     await mountPage('benteng-ilmu')
     expect(wrapper!.get('header').classes()).toContain('from-emerald-600')
-    expect(get('join-submit').classes()).toContain('bg-emerald-600')
+    expect(get('join-submit').classes()).toContain('from-emerald-600')
   })
 
   it('join: not required, upper case, placeholder "Contoh: ABC123", "Masuk"', async () => {

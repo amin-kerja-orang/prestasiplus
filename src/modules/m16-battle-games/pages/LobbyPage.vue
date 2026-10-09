@@ -81,7 +81,7 @@ async function join(code: string): Promise<void> {
         </p>
         <p class="mt-2 text-xs" data-testid="lobby-rule">{{ meta.rule }}</p>
         <span
-          class="pointer-events-none absolute top-1/2 right-6 -translate-y-1/2 text-7xl opacity-20 select-none sm:text-8xl"
+          class="pointer-events-none absolute top-1/2 right-6 hidden -translate-y-1/2 text-7xl opacity-20 select-none sm:block sm:text-8xl"
           >{{ meta.emoji }}</span
         >
       </header>

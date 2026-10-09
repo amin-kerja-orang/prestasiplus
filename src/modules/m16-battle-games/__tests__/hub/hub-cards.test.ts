@@ -93,14 +93,22 @@ describe('S6 per-card colours (live screenshots, DV-M16-49)', () => {
       const t = HUB_THEME[c.id]
       expect(t, c.id).toBeDefined()
       expect(t!.banner).toMatch(/^from-\S+ to-\S+$/)
-      expect(t!.button).toMatch(/^bg-\S+-\d{3} hover:bg-\S+-\d{3}$/)
+      expect(t!.button).toMatch(/^bg-linear-to-r from-\S+-\d{3} to-\S+-\d{3} hover:brightness-95$/)
     }
     expect(Object.keys(HUB_THEME)).toHaveLength(HUB_CARDS.length)
   })
 
-  it('does not paint white button text on the 500 shades that live contrasts at about 2-3:1', () => {
-    for (const t of Object.values(HUB_THEME)) {
-      expect(t.button).not.toMatch(/^bg-(amber|sky|orange)-500/)
+  it('DV-M16-49 changes only the Roda Nasib and Jutawan buttons (live 2.3-2.8:1) to amber-600 and up', () => {
+    expect(HUB_THEME['roda-nasib']?.button).toContain('from-amber-600 to-amber-700')
+    expect(HUB_THEME.jutawan?.button).toContain('from-amber-600 to-amber-700')
+    // The rejected items keep their live colours: sky Cabaran Kilat, orange Tembak Jawapan.
+    expect(HUB_THEME['cabaran-kilat']?.button).toContain('from-sky-500')
+    expect(HUB_THEME['tembak-jawapan']?.button).toContain('from-orange-500')
+  })
+
+  it('does not fill the open-path icons (HandFist, MapPinned, Trophy)', () => {
+    for (const id of ['perang-fakta', 'peta-pengembaraan', 'pertandingan']) {
+      expect(HUB_THEME[id]?.solid, id).toBeFalsy()
     }
   })
 })

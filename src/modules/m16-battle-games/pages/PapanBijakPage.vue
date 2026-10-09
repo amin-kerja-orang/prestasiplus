@@ -73,7 +73,7 @@ async function join(code: string): Promise<void> {
           {{ meta.subtitle }}
         </p>
         <span
-          class="pointer-events-none absolute top-1/2 right-6 -translate-y-1/2 text-8xl opacity-20 select-none"
+          class="pointer-events-none absolute top-1/2 right-6 hidden -translate-y-1/2 text-8xl opacity-20 select-none sm:block"
           >🎲</span
         >
       </header>
@@ -97,7 +97,7 @@ async function join(code: string): Promise<void> {
         >
           <div class="mt-5" data-testid="pb-how-to">
             <h2 class="text-sm font-bold text-slate-800">Cara Bermain:</h2>
-            <ul class="mt-2 space-y-1.5 text-xs font-semibold text-emerald-700 sm:text-sm">
+            <ul class="mt-2 space-y-1.5 text-xs font-semibold text-emerald-600 sm:text-sm">
               <li v-for="line in PB_HOW_TO" :key="line">{{ line }}</li>
             </ul>
           </div>

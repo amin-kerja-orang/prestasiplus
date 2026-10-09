@@ -35,7 +35,7 @@ const loading = computed(() => hub.value === null && error.value === null)
         </h1>
         <p class="mt-1 max-w-xl text-sm sm:text-base">{{ HUB_INTRO }}</p>
         <span
-          class="pointer-events-none absolute top-1/2 right-6 -translate-y-1/2 text-7xl opacity-20 select-none sm:text-8xl"
+          class="pointer-events-none absolute top-1/2 right-6 hidden -translate-y-1/2 text-7xl opacity-20 select-none sm:block sm:text-8xl"
           >🎮</span
         >
       </header>

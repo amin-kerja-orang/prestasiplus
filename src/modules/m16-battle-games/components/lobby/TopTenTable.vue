@@ -69,7 +69,12 @@ defineProps<{ rows: NonNullable<GameLobby['top10']> }>()
               >
             </td>
             <td class="px-3 py-2.5 font-bold text-violet-700">{{ row.skor }}</td>
-            <td class="px-3 py-2.5 font-bold text-emerald-700">{{ row.betul }}</td>
+            <td
+              class="px-3 py-2.5 font-bold"
+              :class="row.rank === 3 ? 'text-emerald-800' : 'text-emerald-600'"
+            >
+              {{ row.betul }}
+            </td>
           </tr>
         </tbody>
       </table>
