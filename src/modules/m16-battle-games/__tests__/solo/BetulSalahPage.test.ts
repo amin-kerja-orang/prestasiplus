@@ -108,7 +108,8 @@ describe('S13 Betul atau Salah (FR-M16-71..75)', () => {
     expect(wrapper.get('[data-testid="solo-feedback"]').text()).toBe('❌')
     await vi.advanceTimersByTimeAsync(700)
     expect(wrapper.find('[data-testid="solo-combo"]').exists()).toBe(false)
-    await vi.advanceTimersByTimeAsync(45_000)
+    // 45 s after the game began (2400 ms countdown + 1400 ms spent so far): the coin-fly (1.4 s) is still on.
+    await vi.advanceTimersByTimeAsync(45_000 - 1400)
     expect(text()).toContain('1/2')
     expect(text()).toContain('3 🪙')
     expect(text()).not.toContain('REKOD BARU')
