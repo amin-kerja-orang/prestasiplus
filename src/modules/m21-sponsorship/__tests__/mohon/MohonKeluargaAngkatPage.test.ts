@@ -30,8 +30,6 @@ vi.mock('../../api/foster-application', () => ({
 }))
 
 let wrapper: VueWrapper | undefined
-/** Errors that reach the app's global handler (what a non-422 failure must do). */
-const caught: unknown[] = []
 
 async function mountPage() {
   const router = createRouter({
@@ -45,7 +43,7 @@ async function mountPage() {
   await router.isReady()
   wrapper = mount(MohonKeluargaAngkatPage, {
     attachTo: document.body,
-    global: { plugins: [router], config: { errorHandler: (e: unknown) => void caught.push(e) } },
+    global: { plugins: [router] },
   })
   await flushPromises()
   return wrapper
@@ -72,7 +70,6 @@ function validation(fields: Record<string, string>): ApiError {
 
 beforeEach(() => {
   submit.mockReset()
-  caught.length = 0
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -250,16 +247,20 @@ describe('S6 submit (FR-M21-49)', () => {
     expect(submit).toHaveBeenCalledWith(expect.objectContaining({ reason: '   ' }))
   })
 
-  it('a failure without a field map shows no page notice and reaches the global handler', async () => {
-    const boom = new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' })
+  it.each([
+    ['a 500', new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' })],
+    [
+      'a network error',
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
+    ],
+  ])('%s shows the generic error box', async (_name, boom) => {
     submit.mockReturnValue(failure(boom))
     await mountPage()
     await fill()
     await wrapper!.get('form').trigger('submit')
     await flushPromises()
-    expect(caught).toEqual([boom])
-    expect(notice().text()).toBe('')
-    expect(wrapper!.find('[data-variant]').exists()).toBe(false)
+    expect(wrapper!.get('[data-variant="error"]').isVisible()).toBe(true)
+    expect(notice().text()).toBe('Ralat berlaku. Sila cuba lagi.')
     expect(wrapper!.get('[data-testid="mohon-submit"]').attributes('disabled')).toBeUndefined()
   })
 

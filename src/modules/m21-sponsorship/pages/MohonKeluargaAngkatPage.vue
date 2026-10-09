@@ -26,6 +26,9 @@ import MohonInfoBox from '../components/mohon/MohonInfoBox.vue'
 import ReasonExamples from '../components/mohon/ReasonExamples.vue'
 import { CATEGORY_OPTIONS, INCOME_OPTIONS, MOHON_COPY } from '../components/mohon/mohon-copy'
 
+/** Generic failure line; INFERRED copy, same text as M01 `GENERIC_ERROR` (not in M01's public entry). */
+const GENERIC_ERROR = 'Ralat berlaku. Sila cuba lagi.'
+
 const form = reactive<{
   studentEmail: string
   studentCategory: ApplicationCategory | ''
@@ -85,9 +88,8 @@ async function onSubmit(): Promise<void> {
       errors.value = [...new Set(Object.values(err.fields))]
       failedFields.value = new Set(Object.keys(err.fields))
     } else {
-      // Not a field rejection (network, 401, 5xx): no M21-specific copy exists (SRS §8.3), so the
-      // error goes to the app's global handler instead of a page notice.
-      throw err
+      // Not a field rejection (network, 401, 5xx): generic line as the m01 pages show (no M21 copy, SRS §8.3).
+      errors.value = [GENERIC_ERROR]
     }
   } finally {
     sending.value = false
