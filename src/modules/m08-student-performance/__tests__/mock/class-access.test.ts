@@ -36,7 +36,7 @@ describe('mayOpenClassDashboard (S5)', () => {
 
   it('school admin: a school class (not a classroom) is refused', () => {
     expect(
-      mayOpenClassDashboard(viewer('school_admin', 8, 900_001), cls({ kind: 'school' } as Partial<ClassroomRow>)),
+      mayOpenClassDashboard(viewer('school_admin', 8, 900_001), cls({ kind: 'school' } as unknown as Partial<ClassroomRow>)),
     ).toBe(false)
   })
 
