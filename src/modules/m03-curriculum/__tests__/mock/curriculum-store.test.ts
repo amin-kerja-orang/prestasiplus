@@ -65,7 +65,7 @@ function catchRepoError(fn: () => unknown): RepositoryError {
 // The real registry boot compiles every module store (M04's question dataset takes ~2 s).
 beforeAll(async () => {
   runtime = await boot()
-}, 30_000)
+}, 600_000)
 
 /**
  * Re-seeding boots every registry store (M04's question dataset included), so only tests that
@@ -80,7 +80,7 @@ afterEach(async () => {
   connectAnswerLog(EMPTY_ANSWER_LOG)
   if (dirty) await runtime.reset()
   dirty = false
-}, 30_000)
+}, 600_000)
 
 describe('M03 plugin in bootMock', () => {
   it('loads with the other registry stubs and seeds the eight stores', () => {

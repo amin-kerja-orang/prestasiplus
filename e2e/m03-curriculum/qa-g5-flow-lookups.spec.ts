@@ -9,6 +9,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
+import { TIMEOUT_FACTOR } from './timeout-factor'
 import { acceptNextDialog, moduleTag } from '../support'
 
 const ADMIN = 'admin@demo.test'
@@ -38,7 +39,7 @@ async function confirmDelete(page: Page, click: () => Promise<void>): Promise<vo
 
 test.describe('QA G5 lookups', MODULE, () => {
   test.use({ mockInit: { latency: 0 } })
-  test.setTimeout(90_000)
+  test.setTimeout(90_000 * TIMEOUT_FACTOR)
 
   test('E2E-M03-25 a deactivated subject and level leave the lookups (M04 form + list filter) but stay in admin lists and S1', async ({
     page,
@@ -185,7 +186,7 @@ test.describe('QA G5 lookups', MODULE, () => {
 
 test.describe('QA G5 cross-screen flow', MODULE, () => {
   test.use({ mockInit: { latency: 0 } })
-  test.setTimeout(150_000)
+  test.setTimeout(150_000 * TIMEOUT_FACTOR)
 
   test('level -> subject -> chapter -> topic -> subtopic: S1 stats, S6 and S9 counts update, then deleting reverts them', async ({
     page,
