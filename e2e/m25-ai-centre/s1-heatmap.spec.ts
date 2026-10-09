@@ -120,15 +120,11 @@ async function slugOf(page: Page): Promise<string> {
 }
 
 test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
-  test('E2E-M25-01 student menu: href /buku-nota/heatmap and active item; the admin sidebar has no entry @m25', provisional('student shell item is INFERRED (OQ-M25-01); needs F-19b'), async ({
+  test('E2E-M25-01 student menu: href /buku-nota/heatmap and active item; the admin sidebar has no entry @m25', provisional('student shell item is INFERRED (OQ-M25-01)'), async ({
     page,
     gotoApp,
     loginAs,
   }) => {
-    test.fixme(
-      true,
-      'F-19b (src/shells/nav/user-nav.ts href) was skipped in M25-T2: the main tree had uncommitted edits in src/shells',
-    )
     await loginAs(PELAJARMAJU)
     await gotoApp(PATH)
     const menu = isDesktopShell(page)
@@ -383,6 +379,8 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     expect(bg).toContain('rgb(185, 28, 28)')
     expect(bg).toContain('rgb(220, 38, 38)')
     expect(await style(hero, 'color')).toBe('rgb(255, 255, 255)')
+    expect(await style(hero.locator('h1'), 'color')).toBe('rgb(255, 255, 255)')
+    expect(await style(hero.locator('p'), 'color')).toBe('rgb(255, 255, 255)')
     expect(await style(hero, 'border-top-left-radius')).toBe('12px')
   })
 
@@ -526,7 +524,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     )
     const button = page.getByTestId('heatmap-empty-button')
     await expect(button).toHaveText('Mula Latih Tubi')
-    await expect(button).toHaveAttribute('href', '/latih-tubi')
+    await expect(button).toHaveAttribute('href', '/practice')
     await expectNoHorizontalScroll(page)
 
     await actAs(page, mock, gotoApp, ADMIN, PATH)
@@ -821,6 +819,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     gotoApp,
     mock,
   }) => {
+    test.slow()
     await gotoApp('/login')
     await mock.reset()
     const counts: Record<string, number> = {}

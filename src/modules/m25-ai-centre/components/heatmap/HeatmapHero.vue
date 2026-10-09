@@ -8,8 +8,8 @@ import { HEATMAP_COPY, LEGEND } from './heatmap-copy'
     class="rounded-xl bg-linear-to-br from-red-700 to-red-600 p-5 text-white"
     data-testid="heatmap-hero"
   >
-    <h1 class="text-[1.4rem] leading-tight font-bold">{{ HEATMAP_COPY.title }}</h1>
-    <p class="mt-1 text-sm">{{ HEATMAP_COPY.intro }}</p>
+    <h1 class="text-[1.4rem] leading-tight font-bold text-white">{{ HEATMAP_COPY.title }}</h1>
+    <p class="mt-1 text-sm text-white">{{ HEATMAP_COPY.intro }}</p>
     <ul class="mt-3 flex flex-wrap gap-2" data-testid="heatmap-legend">
       <li
         v-for="pill in LEGEND"
