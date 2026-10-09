@@ -47,7 +47,7 @@ const CHIP = 'inline-flex min-h-11 flex-1 items-center justify-center rounded-xl
       >
         <div class="flex items-center justify-between gap-4">
           <div class="min-w-0">
-            <h2 class="font-heading text-2xl font-bold sm:text-3xl">🗺️ Peta Belajar</h2>
+            <h1 class="font-heading text-2xl font-bold sm:text-3xl">🗺️ Peta Belajar</h1>
             <p class="mt-1 text-sm text-white/90 sm:text-base" data-testid="map-subtitle">
               Terokai perjalanan {{ map.subjectLabel }} — takluki setiap pulau! 🏝️
             </p>
