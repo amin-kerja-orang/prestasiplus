@@ -6,34 +6,31 @@
  * (FN-M20-4.3.3, FN-M20-4.2.8; no badge, no seller, no shipping line, as live).
  */
 import { CircleCheck, Gift, HandCoins, MapPin, Package, Store, Truck } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, type Component } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import type { ProductCard } from '../../api'
-import { MARKETPLACE_COPY, formatPrice } from './copy'
+import { MARKETPLACE_COPY, formatPrice, shippingKindOf, type ShippingKind } from './copy'
 
 const props = withDefaults(
   defineProps<{ product: ProductCard; variant?: 'full' | 'simple' | 'related' }>(),
   { variant: 'full' },
 )
 
-/**
- * Shipping-line icon as live: fa-truck (postage), fa-gift (free), fa-hand-holding-usd (cod),
- * fa-map-marker-alt (pickup). #14 carries only the line (BR-M20-17), so the method is read from it.
- */
-const shippingIcon = computed(() => {
-  const line = props.product.shippingLine
-  if (line.startsWith('Pos')) return Truck
-  if (line.startsWith('Penghantaran Percuma')) return Gift
-  if (line.startsWith('Cash on Delivery')) return HandCoins
-  return MapPin
-})
+/** Live icon and colour per method: indigo-grey truck, grey-blue gift / COD, red pin. */
+const SHIPPING_ICONS: Record<ShippingKind, { icon: Component; color: string }> = {
+  postage: { icon: Truck, color: 'text-indigo-400' },
+  free: { icon: Gift, color: 'text-slate-400' },
+  cod: { icon: HandCoins, color: 'text-slate-400' },
+  pickup: { icon: MapPin, color: 'text-red-500' },
+}
+const shipping = computed(() => SHIPPING_ICONS[shippingKindOf(props.product.shippingLine)])
 </script>
 
 <template>
   <RouterLink
     :to="`/marketplace/${product.slug}`"
-    class="group flex min-w-0 flex-col overflow-hidden rounded-2xl bg-white p-4 shadow-md transition hover:-translate-y-1 hover:shadow-lg"
+    class="group flex min-w-0 flex-col overflow-hidden rounded-2xl bg-white p-4 shadow-md transition sm:p-6 hover:-translate-y-1 hover:shadow-lg"
     data-testid="product-card"
     :data-product-id="product.id"
   >
@@ -72,7 +69,7 @@ const shippingIcon = computed(() => {
         >
       </div>
     </div>
-    <div class="flex min-w-0 flex-1 flex-col gap-1.5 px-0.5 pt-3 pb-1">
+    <div class="flex min-w-0 flex-1 flex-col gap-1.5 px-3 pt-3 pb-1">
       <h4
         class="line-clamp-2 text-sm leading-snug font-semibold break-words text-slate-800"
         data-testid="product-card-name"
@@ -110,8 +107,9 @@ const shippingIcon = computed(() => {
         data-testid="product-card-shipping"
       >
         <component
-          :is="shippingIcon"
+          :is="shipping.icon"
           class="mt-0.5 h-3.5 w-3.5 shrink-0"
+          :class="shipping.color"
           aria-hidden="true"
           data-testid="product-card-shipping-icon"
         />

@@ -4,10 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CategoryChips from '../../components/product/CategoryChips.vue'
-import { formatPrice, readBuyerQuery, readPage } from '../../components/product/copy'
+import {
+  formatPrice,
+  readBuyerQuery,
+  readPage,
+  shippingKindOf,
+} from '../../components/product/copy'
 import ProductCard from '../../components/product/ProductCard.vue'
 import ProductFilters from '../../components/product/ProductFilters.vue'
 import ShopCard from '../../components/product/ShopCard.vue'
+import { shippingLine } from '../../mock/repository/format'
 import { CARD_1, CARD_3, CARD_5, CATEGORIES, SHOP_1 } from '../fixtures'
 
 function router() {
@@ -185,5 +191,29 @@ describe('ShopCard', () => {
     expect(w.get('[data-testid="shop-rating"]').text()).toBe('☆☆☆☆☆ (0)')
     expect(w.get('[data-testid="shop-products"]').text()).toBe('10 produk')
     expect(w.get('[data-testid="shop-joined"]').text()).toBe('Bergabung 7 bulan yang lepas')
+  })
+})
+
+describe('shipping icon per method', () => {
+  it('maps every shipping line the formatter produces to its method', () => {
+    expect(shippingKindOf(shippingLine('postage', '8.00'))).toBe('postage')
+    expect(shippingKindOf(shippingLine('postage', null))).toBe('postage')
+    expect(shippingKindOf(shippingLine('free', null))).toBe('free')
+    expect(shippingKindOf(shippingLine('cod', null))).toBe('cod')
+    expect(shippingKindOf(shippingLine('pickup', null))).toBe('pickup')
+  })
+
+  it('renders the matching icon colour on the card', () => {
+    const colour = (line: string) => {
+      const w = mount(ProductCard, {
+        props: { product: { ...CARD_1, shippingLine: line } },
+        global: { plugins: [router()] },
+      })
+      return w.get('[data-testid="product-card-shipping-icon"]').classes()
+    }
+    expect(colour(shippingLine('postage', '8.00'))).toContain('text-indigo-400')
+    expect(colour(shippingLine('free', null))).toContain('text-slate-400')
+    expect(colour(shippingLine('cod', null))).toContain('text-slate-400')
+    expect(colour(shippingLine('pickup', null))).toContain('text-red-500')
   })
 })

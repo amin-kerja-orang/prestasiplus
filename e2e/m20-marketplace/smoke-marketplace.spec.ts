@@ -98,6 +98,17 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
       expect(Math.abs(cond!.y - sort!.y)).toBeLessThan(2)
       expect(cond!.x + cond!.width).toBeLessThanOrEqual(sort!.x)
       expect(cond!.y).toBeGreaterThanOrEqual(cat!.y + cat!.height - 1)
+      // Live: auto-width selects, not a full-width grid.
+      expect(cat!.width).toBeLessThan(0.75 * (await page.getByTestId('marketplace-search').boundingBox())!.width)
+    } else if (viewportWidth(page) < 1024) {
+      // Live at 768: search, category and condition on one row, then sort and the button.
+      const q = await page.getByTestId('marketplace-q').boundingBox()
+      const cat = await page.getByTestId('marketplace-category').boundingBox()
+      const cond = await page.getByTestId('marketplace-condition').boundingBox()
+      const sort = await page.getByTestId('marketplace-sort').boundingBox()
+      expect(Math.abs(q!.y - cat!.y)).toBeLessThan(2)
+      expect(Math.abs(cat!.y - cond!.y)).toBeLessThan(2)
+      expect(sort!.y).toBeGreaterThan(cond!.y + cond!.height - 1)
     }
     await expect(page.getByTestId('marketplace-submit')).toHaveText('Cari')
     await expect(page.getByTestId('marketplace-chip-all')).toHaveAttribute('data-active', 'true')
@@ -150,10 +161,17 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
       await expect(card.getByTestId('product-card-shipping-icon')).toBeVisible()
     }
     await expect(c1.getByTestId('product-card-verified')).toHaveClass(/fill-blue-500/)
+    await expect(c1.getByTestId('product-card-shipping-icon')).toHaveClass(/text-indigo-400/)
+    await expect(cards(page).nth(8).getByTestId('product-card-shipping-icon')).toHaveClass(
+      /text-red-500/,
+    )
     const cardBox = await c3.boundingBox()
     const imgBox = await c3.getByTestId('product-card-image').boundingBox()
-    expect(imgBox!.x - cardBox!.x).toBeGreaterThanOrEqual(12)
-    expect(imgBox!.y - cardBox!.y).toBeGreaterThanOrEqual(12)
+    // Live inset: 16 px at 375, 24 px at 768 / 1280.
+    const inset = viewportWidth(page) < 640 ? 16 : 24
+    expect(Math.abs(imgBox!.x - cardBox!.x - inset)).toBeLessThanOrEqual(1.5)
+    expect(Math.abs(imgBox!.y - cardBox!.y - inset)).toBeLessThanOrEqual(1.5)
+    await expectNoHorizontalScroll(page)
     const disc = await c3.getByTestId('product-card-discount').boundingBox()
     const used = await c3.getByTestId('product-card-used').boundingBox()
     expect(used!.y).toBeGreaterThanOrEqual(disc!.y + disc!.height - 1)

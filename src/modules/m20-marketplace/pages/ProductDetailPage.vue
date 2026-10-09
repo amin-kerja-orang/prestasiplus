@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
  * S7 `/marketplace/:slug` (FR-M20-55..61; URS FT-M20-4.2): back link, gallery, details card, "Penjual"
- * card (right column under the details card), "Ulasan ({n})" and "Produk Berkaitan". The page fetches #15 once per slug; #15 adds a view on
- * every call (BR-M20-12), so the page shows the post-increment `views` and never refetches on its own.
+ * card (right column under the details card), "Ulasan ({n})" and "Produk Berkaitan". The page
+ * fetches #15 once per slug; #15 adds a view on every call (BR-M20-12), so the page shows the
+ * post-increment `views` and never refetches on its own.
  * The shell header is "Marketplace" / {category} and the tab "{product} - Marketplace PRESTASIPLUS".
  * An unknown or hidden slug renders the in-place 404 page.
  */

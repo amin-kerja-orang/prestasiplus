@@ -29,7 +29,7 @@ watch(
 )
 
 const FIELD =
-  'min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-indigo-500 focus:outline-none'
+  'min-h-11 min-w-0 max-w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-indigo-500 focus:outline-none'
 
 function submit(): void {
   emit('search', {
@@ -45,11 +45,11 @@ function submit(): void {
   <form
     action="/marketplace"
     method="get"
-    class="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 shadow-md lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_auto]"
+    class="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 shadow-md sm:p-6"
     data-testid="marketplace-search"
     @submit.prevent="submit"
   >
-    <div class="relative col-span-2 min-w-0 lg:col-span-1">
+    <div class="relative min-w-0 basis-full md:flex-1 md:basis-56">
       <Search
         class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
         aria-hidden="true"
@@ -59,14 +59,14 @@ function submit(): void {
         type="text"
         name="q"
         :placeholder="MARKETPLACE_COPY.searchPlaceholder"
-        :class="[FIELD, 'pl-9']"
+        :class="[FIELD, 'w-full pl-9']"
         data-testid="marketplace-q"
       />
     </div>
     <select
       v-model="category"
       name="category"
-      :class="[FIELD, 'col-span-2 sm:col-span-1']"
+      :class="FIELD"
       data-testid="marketplace-category"
     >
       <option value="">{{ MARKETPLACE_COPY.allCategories }}</option>
@@ -81,7 +81,7 @@ function submit(): void {
     </select>
     <button
       type="submit"
-      class="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-500 px-6 text-sm font-semibold text-white hover:bg-indigo-600 lg:col-span-1"
+      class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-500 px-6 text-sm font-semibold text-white hover:bg-indigo-600"
       data-testid="marketplace-submit"
     >
       <Search class="h-4 w-4" aria-hidden="true" />
