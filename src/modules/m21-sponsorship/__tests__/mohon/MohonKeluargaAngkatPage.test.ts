@@ -14,7 +14,20 @@ import { REASON_EXAMPLES } from '../../components/mohon/mohon-copy'
 import MohonKeluargaAngkatPage from '../../pages/MohonKeluargaAngkatPage.vue'
 
 const submit = vi.hoisted(() => vi.fn())
-vi.mock('../../api/foster-application', () => ({ submitFosterApplication: submit }))
+/** A spy result that the module mock turns into a rejection (the spy itself never holds a rejected promise). */
+const { Failure, failure } = vi.hoisted(() => {
+  class FailureResult {
+    constructor(readonly error: Error) {}
+  }
+  return { Failure: FailureResult, failure: (error: Error) => new FailureResult(error) }
+})
+vi.mock('../../api/foster-application', () => ({
+  submitFosterApplication: (...args: unknown[]): Promise<unknown> => {
+    const r: unknown = submit(...args)
+    if (r instanceof Failure) return Promise.reject(r.error)
+    return Promise.resolve(r)
+  },
+}))
 
 let wrapper: VueWrapper | undefined
 
@@ -179,9 +192,7 @@ describe('S6 submit (FR-M21-49)', () => {
   })
 
   it('shows the 422 messages, keeps the typed values and marks the rejected field', async () => {
-    submit.mockImplementation(() =>
-      Promise.reject(validation({ studentEmail: MSG.studentNotFound })),
-    )
+    submit.mockReturnValue(failure(validation({ studentEmail: MSG.studentNotFound })))
     await mountPage()
     await fill({ email: 'tiada.pelajar@demo.test' })
     await wrapper!.get('form').trigger('submit')
@@ -195,8 +206,8 @@ describe('S6 submit (FR-M21-49)', () => {
   })
 
   it('lists one line per rejected field', async () => {
-    submit.mockImplementation(() =>
-      Promise.reject(validation({ studentEmail: MSG.invalidEmail, reason: MSG.required })),
+    submit.mockReturnValue(
+      failure(validation({ studentEmail: MSG.invalidEmail, reason: MSG.required })),
     )
     await mountPage()
     await fill()
@@ -210,8 +221,8 @@ describe('S6 submit (FR-M21-49)', () => {
   })
 
   it('a failure without a field map shows the generic notice', async () => {
-    submit.mockImplementation(() =>
-      Promise.reject(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' })),
+    submit.mockReturnValue(
+      failure(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' })),
     )
     await mountPage()
     await fill()
@@ -223,7 +234,7 @@ describe('S6 submit (FR-M21-49)', () => {
   it('a new submit clears the previous notice', async () => {
     submit
       .mockResolvedValueOnce({ id: 4 })
-      .mockImplementationOnce(() => Promise.reject(validation({ reason: MSG.required })))
+      .mockReturnValueOnce(failure(validation({ reason: MSG.required })))
     await mountPage()
     await fill()
     await wrapper!.get('form').trigger('submit')

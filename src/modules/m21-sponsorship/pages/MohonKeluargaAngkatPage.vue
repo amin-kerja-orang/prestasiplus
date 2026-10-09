@@ -26,10 +26,15 @@ import MohonInfoBox from '../components/mohon/MohonInfoBox.vue'
 import ReasonExamples from '../components/mohon/ReasonExamples.vue'
 import { CATEGORY_OPTIONS, INCOME_OPTIONS, MOHON_COPY } from '../components/mohon/mohon-copy'
 
-const form = reactive({
+const form = reactive<{
+  studentEmail: string
+  studentCategory: ApplicationCategory | ''
+  familyIncomeRange: FamilyIncomeRange | ''
+  reason: string
+}>({
   studentEmail: '',
-  studentCategory: '' as ApplicationCategory | '',
-  familyIncomeRange: '' as FamilyIncomeRange | '',
+  studentCategory: '',
+  familyIncomeRange: '',
   reason: '',
 })
 
