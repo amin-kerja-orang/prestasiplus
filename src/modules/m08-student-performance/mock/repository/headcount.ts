@@ -90,13 +90,23 @@ export function entryView(c: HeadcountConfigRow, e: HeadcountEntryRow): Headcoun
   }
 }
 
+/** Write sections of the headcount stores since the module loaded (a data stamp of the M08 memos). */
+let headcountRevision = 0
+export const headcountRevisionOf = (): number => headcountRevision
+
 export const headcountRepo = defineRepository({
   owner: 'M08',
   name: 'headcount',
   store: headcountConfigsTable,
   stores: { entries: headcountEntriesTable },
-  methods: ({ store, stores, transaction }) => {
+  methods: ({ store, stores, transaction: tx }) => {
     const entriesStore = stores.entries
+    // Every write below runs inside `transaction`; counting those sections gives the S1 memo
+    // (`schoolPerformance`) a revision of the headcount stores.
+    const transaction: typeof tx = (fn) => {
+      headcountRevision++
+      return tx(fn)
+    }
 
     const view = entryView
 

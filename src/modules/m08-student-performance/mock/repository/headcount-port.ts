@@ -37,6 +37,9 @@ export interface HeadcountReads {
 const EMPTY: HeadcountReads = { entries: () => [] }
 
 let reader: HeadcountReads = EMPTY
+/** Bumped whenever the reader is replaced (a data stamp of the S1 memo). */
+let readerGeneration = 0
+export const headcountReaderGeneration = (): number => readerGeneration
 
 /**
  * Called by M08-T1b: replaces the reader. The T1 seed does NOT reset it, so a T1b registration is never
@@ -45,11 +48,13 @@ let reader: HeadcountReads = EMPTY
  */
 export function registerHeadcountReads(next: HeadcountReads): void {
   reader = next
+  readerGeneration++
 }
 
 /** Test helper and seed reset: back to the empty reader. */
 export function resetHeadcountReads(): void {
   reader = EMPTY
+  readerGeneration++
 }
 
 export const headcountReads: HeadcountReads = {
