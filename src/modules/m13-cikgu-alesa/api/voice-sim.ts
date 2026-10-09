@@ -10,7 +10,7 @@ export interface VoiceConfig {
   /** `false` renders the live "browser does not support voice" state (FR-M13-31). */
   supported: boolean
   transcript: { interim: string; final: string }
-  delays: { interim: number; final: number }
+  delays: { interim: number; final: number; errorHold: number }
 }
 
 export const DEFAULT_VOICE_CONFIG: Readonly<VoiceConfig> = Object.freeze({
@@ -19,7 +19,7 @@ export const DEFAULT_VOICE_CONFIG: Readonly<VoiceConfig> = Object.freeze({
     interim: 'Terangkan pecahan',
     final: 'Terangkan pecahan setara dengan contoh',
   }),
-  delays: Object.freeze({ interim: 600, final: 1200 }),
+  delays: Object.freeze({ interim: 600, final: 1200, errorHold: 1000 }),
 })
 
 /** Reactive so S1 reacts when a test hook flips `supported` while the screen is open. */
@@ -39,7 +39,7 @@ export function getVoiceConfig(): Readonly<VoiceConfig> {
 export function configureVoice(patch: {
   supported?: boolean
   transcript?: { interim?: string; final?: string }
-  delays?: { interim?: number; final?: number }
+  delays?: { interim?: number; final?: number; errorHold?: number }
 }): VoiceConfig {
   if (patch.supported !== undefined && typeof patch.supported !== 'boolean') {
     throw new TypeError('cikguVoice: supported must be a boolean')
