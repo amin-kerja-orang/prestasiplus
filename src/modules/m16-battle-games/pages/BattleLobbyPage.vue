@@ -181,9 +181,10 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <!-- Hero (DV-M16-41 rejected for S1: the title is dark on the red-orange gradient, as on live) -->
+      <!-- Hero (DV-M16-41 rejected for S1: only the title is dark on the red-orange gradient, as on live;
+           the icon, badge and subtitle stay white) -->
       <div
-        class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 p-5 text-slate-900 shadow-lg sm:p-6"
+        class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 p-5 text-white shadow-lg sm:p-6"
       >
         <span class="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10" />
         <span class="absolute -bottom-10 -left-6 h-24 w-24 rounded-full bg-white/10" />
@@ -192,7 +193,7 @@ onBeforeUnmount(() => {
           <h2 class="text-2xl font-bold text-slate-900 sm:text-3xl">Battle Arena</h2>
           <span class="rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold">BARU</span>
         </div>
-        <p class="relative mt-2 text-sm text-slate-900/90 sm:text-base">
+        <p class="relative mt-2 text-sm text-white/90 sm:text-base">
           Cabar kawan, cari lawan, atau wakili sekolah anda!
         </p>
       </div>
