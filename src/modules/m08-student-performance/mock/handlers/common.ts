@@ -67,6 +67,20 @@ export function mayOpenClass(viewer: Viewer, cls: ClassroomRow): boolean {
   return viewer.role === 'teacher' && cls.teacherId === viewer.id
 }
 
+/**
+ * S5 only (M27-T0c, XR-M27-13b): `mayOpenClass` plus a school admin opening a classroom of OWN school.
+ * A school admin without a school, or a class of another school, is refused as before.
+ */
+export function mayOpenClassDashboard(viewer: Viewer, cls: ClassroomRow): boolean {
+  if (mayOpenClass(viewer, cls)) return true
+  return (
+    viewer.role === 'school_admin' &&
+    cls.kind === 'classroom' &&
+    viewer.schoolId !== null &&
+    cls.schoolId === viewer.schoolId
+  )
+}
+
 /** BR-M08-26 list of the classes a viewer owns / may pick from (S4 own classes: admin none). */
 export function ownClasses(viewer: Viewer): ClassroomRow[] {
   if (viewer.role !== 'teacher') return []

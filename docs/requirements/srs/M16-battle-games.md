@@ -29,6 +29,12 @@
 
 URS §7 is authoritative. Approved fixes: DV-M16-01 (header titles), 02 (`/sekolah-bersaing` in the user shell), 26 (student standings computed), 35 (0–0 = win for B, list colour), 36 (8082 all time from its records), 37 (S4 list scrolls in its card), 03 (Sambung Kata handled 500), 04 (S2 pills work), 06 (Cabaran Masuk opens itself), 07 (room flash at the top), 09 (podium = table rows 1–3), 10 (S4 period boxes from S3 standings), 12 (BM enum labels), 13 (S27 table scrolls in its card), 14 (Papan Bijak chip from the standings), 15 (admin card "2-6 pemain"), 17 (week ends in MYT), 18 (no game under the picker), 20 (quick-match error visible), 23 (syiling shown = syiling credited), 24 (text ≥ 12 px), 27 ("Simpan Draf" visible), 30 (invalid `week` ignored), 31 (PKSK labels "Tingkatan 1/4"), 32 (DC-M16-01 10,218), 33 (405/500 GET routes → 404), 34 (fictitious names). Rejected — replicate live: DV-M16-05, 08, 11, 16, 19, 21, 22, 25, 28, 29.
 
+Documented data deviation (DL decision 2026-10-09): **DV-M16-38** — S20 Pertandingan weekly ranking shows the values **computed** from the M05 practice store (row 3 = 93.5%); live shows 90.7% (row 3) and 61.4% (row 4). No tuning of M05 or M16 values (D11). The M05 seed reconciliation is deferred to the M05 owner (TRACKER XR-M16-10, not blocking); E2E keeps the live targets as `test.fail`.
+
+Unreadable-text fixes (D9, M16-T6 G4, 2026-10-09; colour only, layout and gradients as live): **DV-M16-39** — S23 hero title "Liga & Tournament" is dark on the violet gradient on live (≈2.7–2.9:1, below 3:1 for large text); the rebuild paints it white like the subtitle and icon. **DV-M16-40** — S28 hero h1 and subtitle are white on the yellow-400→amber-500 gradient on live (≈1.5–2.2:1); the rebuild paints them dark amber-brown.
+
+Deferred (release 1.0 = student scope): S24 `/tournament/admin/create` and the other admin/seller tournament screens. The admin-only "Cipta Tournament Baru" link on S23 stays as observed and resolves only once S24 is built (TRACKER XR-M16-11; not a D9 fix, does not block L28).
+
 ---
 
 ## 1. Scope
@@ -149,7 +155,7 @@ Column "FN" lists URS Functions (prefix `FN-M16-` omitted); column "AC" lists UR
 | FR-M16-65 | S8–S12 "🏆 Pendahulu" SHALL list up to 10 standings of the game (value desc, stable ties; "{n} menang" or "{n} kali MVP"). | 5.4.4 | 18.4 |
 | FR-M16-66 | `/{game}/{unknown code}` for S8–S12 SHALL redirect to the lobby and render "Bilik tidak dijumpai." at the top of the content (DV-M16-07). | 5.4.5 | 18.5 |
 | FR-M16-67 | Room creation and join SHALL follow BR-M16-18 (code, status, capacity, grade fit). | 5.5.1 | 19.1 |
-| FR-M16-68 | The room page SHALL poll §7 #26 every 3 s and render the PROPOSED waiting room; bots join per BR-M16-19; the host starts through §7 #27. | 5.5.2 | 19.1 |
+| FR-M16-68 | The room page SHALL poll §7 #26 every 3 s and render the PROPOSED waiting room; bots join per BR-M16-19; the host starts through §7 #27. INFERRED (M16-T4 G4, 2026-10-09): opening a room link as a non-player calls the join endpoint first (same grade, capacity and status checks as BR-M16-18), so the hub strip chips resolve; a refused join follows the unknown-room path. Round and game clocks come from the server view (`roundSecondsLeft`, `secondsLeft`) and expired time is resolved on poll, so a reload never restarts a clock. | 5.5.2 | 19.1 |
 | FR-M16-69 | Room play SHALL follow the per-game rules of BR-M16-20 through §7 #28, using `boardgame_quiz_tiles` for Papan Bijak. | 5.5.3 | 19.2, 19.4 |
 | FR-M16-70 | A finished room SHALL show the winner and points, set status `finished` and update the game standings per BR-M16-21, and report each player to M14. | 5.5.4 | 19.3 |
 | FR-M16-71 | S13–S16 and S19 SHALL show the darjah picker without `?darjah` and start nothing until a darjah is chosen (DV-M16-18); the list is Darjah 1–4 and "← Kembali ke Hub" (DV-M16-19). | 6.1.1 | 20.1, 20.2, 20.3 |

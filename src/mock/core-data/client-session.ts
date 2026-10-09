@@ -24,10 +24,20 @@ export interface ClientSession {
   /** ISO 8601 (+08:00): remember → +5 years; otherwise +120 min (sliding on the server). */
   expiresAt: string
   user: UserMe
+  /**
+   * Present only on an impersonated session (XR-M27-21): the actor (school admin) and the path
+   * "Kembali ke Admin" returns to. Not derived from `UserMe`; the shell renders the banner from it.
+   */
+  impersonator?: { id: number; name: string; returnTo: string }
 }
 
-export function issueSession(user: SessionUserRow, remember: boolean, now: number): ClientSession {
-  const row = sessions.create(user.id, remember, now)
+export function issueSession(
+  user: SessionUserRow,
+  remember: boolean,
+  now: number,
+  parentToken: string | null = null,
+): ClientSession {
+  const row = sessions.create(user.id, remember, now, parentToken)
   return {
     token: row.id,
     remember: row.remember,

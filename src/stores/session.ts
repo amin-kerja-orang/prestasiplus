@@ -118,7 +118,26 @@ export function parseClientSession(raw: string | null): ClientSession | null {
   if (typeof expiresAt !== 'string' || Number.isNaN(Date.parse(expiresAt))) return null
   if (!isRecord(user) || typeof user.id !== 'number' || typeof user.role !== 'string') return null
   if (typeof user.landingPath !== 'string') return null
-  return value as unknown as ClientSession
+  const { impersonator, ...rest } = value
+  const session = rest as unknown as ClientSession
+  if (impersonator === undefined) return session
+  // A malformed impersonator is dropped (the session stays usable); a valid one round-trips.
+  if (
+    isRecord(impersonator) &&
+    typeof impersonator.id === 'number' &&
+    typeof impersonator.name === 'string' &&
+    typeof impersonator.returnTo === 'string'
+  ) {
+    return {
+      ...session,
+      impersonator: {
+        id: impersonator.id,
+        name: impersonator.name,
+        returnTo: impersonator.returnTo,
+      },
+    }
+  }
+  return session
 }
 
 export function readStoredSession(): ClientSession | null {
@@ -154,6 +173,8 @@ export const useSessionStore = defineStore('session', () => {
   const landingPath = computed<string | null>(() => auth.value?.user.landingPath ?? null)
   const remember = computed(() => auth.value?.remember ?? false)
   const expiresAt = computed<string | null>(() => auth.value?.expiresAt ?? null)
+  /** The actor of an impersonated session (XR-M27-21); `null` otherwise. The shell banner reads it. */
+  const impersonator = computed(() => auth.value?.impersonator ?? null)
 
   function commit(next: ClientSession | null): void {
     auth.value = next
@@ -259,6 +280,7 @@ export const useSessionStore = defineStore('session', () => {
     landingPath,
     remember,
     expiresAt,
+    impersonator,
     check,
     setSession,
     setUser,

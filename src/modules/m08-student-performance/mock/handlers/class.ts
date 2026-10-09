@@ -25,7 +25,7 @@ import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import { classAnalytics, parseRiskLevel } from '../repository/class-analytics'
 import { classDashboard } from '../repository/class-performance'
-import { mayOpenClass, ownClasses, viewerOf } from './common'
+import { mayOpenClass, mayOpenClassDashboard, ownClasses, viewerOf } from './common'
 
 export const classRoutes: RouteDef[] = [
   route(
@@ -34,7 +34,7 @@ export const classRoutes: RouteDef[] = [
     [requireAuth()],
     (req, ctx) => {
       const cls = classrooms.get('classroom', req.params.id as number)
-      if (!cls || !mayOpenClass(viewerOf(req), cls)) return notFound()
+      if (!cls || !mayOpenClassDashboard(viewerOf(req), cls)) return notFound()
       return ok(classDashboard(cls, ctx.clock.now()))
     },
     { params: { id: int() } },
