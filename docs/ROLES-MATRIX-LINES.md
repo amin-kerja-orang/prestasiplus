@@ -23,7 +23,7 @@ Status di bawah ialah status pada 2026-10-02.
 | L01 | Profil Saya (A1) | M★ G★ AS | M01 | **100%** |
 | L02 | Tetapan Peribadi (A2) | M★ G★ AS | M01 | **100%** |
 | L03 | Panduan (A3) | M★ G★ AS | M09 | **100%** |
-| L04 | Tiket Bantuan (A4) | M G AS | M22 | 0% |
+| L04 | Tiket Bantuan (A4) | M G AS | M22 | 40% |
 | L05 | Log Keluar (A5) | M★ G★ AS★ | M01 | **100%** |
 | L06 | Command Center (1) | G★ AS★ | M11 | **100%** |
 | L07 | Dashboard / Dashboard Guru (2) | M★ G★ AS | M17 / M05 | 40% |
@@ -38,18 +38,18 @@ Status di bawah ialah status pada 2026-10-02.
 | L16 | Kirkpatrick (11) | G★ AS★ | M12 | **100%** |
 | L17 | Remedial (12) | M★ | M05 | **100%** |
 | L18 | SPM (13) | M★ | M06 | 40% |
-| L19 | Heatmap Topik Lemah (14) | M★ | M25 (`/buku-nota/heatmap`; URS/SRS v1.2, G1 lulus 2026-10-03) | 40% |
-| L20 | Mohon Keluarga Angkat (15) | M | M21 | 40% |
+| L19 | Heatmap Topik Lemah (14) | M★ | M25 (`/buku-nota/heatmap`; G4 lulus 2026-10-10; F-19b href menu belum) | 85% |
+| L20 | Mohon Keluarga Angkat (15) | M | M21 (S6; G4 lulus 2026-10-09) | 85% |
 | L21 | Latih Tubi (16) | M | M05 | **100%** |
 | L22 | Soalan Berstruktur (17) | M | M04 / M05 | **100%** |
 | L23 | Kedudukan (18) | M | M08 | **100%** |
-| L24 | PKSK (19) | M | M07 | 40% |
+| L24 | PKSK (19) | M | M07 | **100%** |
 | L25 | Artikel (20) | M | M09 | **100%** |
 | L26 | Permainan (21) | M★ | M16 | 40% |
 | L27 | Cabutan Bertuah (22) | M | M15 | **100%** |
 | L28 | Tournament (23) | M | M16 | 40% |
-| L29 | Topik (24) | M | M03 | 40% |
-| L30 | Peta Belajar (25) | M | M03 | 40% |
+| L29 | Topik (24) | M | M03 (S12–S13; G4 lulus 2026-10-10) | 85% |
+| L30 | Peta Belajar (25) | M | M03 (S14; G4 lulus 2026-10-10) | 85% |
 | L31 | Set Soalan Guru (26) | M | M10 (perlu pengesahan) | **100%** |
 | L32 | Audio KBAT (27) | M | M09 | **100%** |
 | L33 | Syiling & Token (28) | M | M14 | **100%** |
@@ -61,7 +61,7 @@ Status di bawah ialah status pada 2026-10-02.
 | L39 | Pencapaian (34) | M | M14 | **100%** |
 | L40 | Kotak Misteri (35) | M | M15 | **100%** |
 | L41 | Rujuk Kawan (36) | M | M14 | **100%** |
-| L42 | Cikgu Alesa (37) | M | M13 | 40% |
+| L42 | Cikgu Alesa (37) | M | M13 (S1–S6; G4 lulus 2026-10-10) | 85% |
 | L43 | Kedai Hadiah Digital (38) | M | M15 (S10 `/cikgu/hadiah`, S11 `/cikgu/hadiah/saya`) | **100%** |
 | L44 | Timeline Saya (39) | M | M08 | **100%** |
 | L45 | Jemput Ibu Bapa (40) | M | M02 (skrin, token, pautan) + M01 (halaman terima), D23 | **100%** |
@@ -70,14 +70,14 @@ Status di bawah ialah status pada 2026-10-02.
 | L48 | Laporan Mingguan (43) | G★ | M08 | **100%** |
 | L49 | Sumbang Soalan (44) | G★ | M04 | **100%** |
 | L50 | Sekolah Bersaing (45) | AS★ | M16 (S28 `/sekolah-bersaing`, M16-T6a; bukan M26) — Sesi 7 | 40% |
-| L51 | Statistik Penggunaan (46) | AS★ | M27 (Sesi 2; Part B S1–S11) | 0% |
-| L52 | DSKP Heatmap (47) | AS★ | M27 (Sesi 2; Part B S1–S11) | 0% |
-| L53 | Laporan Aktiviti (48) | AS★ | M27 (Sesi 2; Part B S1–S11) | 0% |
-| L54 | Amaran Awal (49) | AS★ | M27 (Sesi 2; Part B S1–S11) | 0% |
-| L55 | Laporan Bulanan (50) | AS★ | M27 (Sesi 2; Part B S1–S11) | 0% |
-| L56 | Senarai Pelajar (51) | AS★ | M27 (Sesi 2; Part B S1–S11) | 0% |
-| L57 | Senarai Guru (52) | AS★ | M27 (Sesi 2; Part B S1–S11) | 0% |
-| L58 | Kelas Sekolah (53) | AS★ | M27 (Sesi 2; Part B S1–S11) | 0% |
+| L51 | Statistik Penggunaan (46) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
+| L52 | DSKP Heatmap (47) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
+| L53 | Laporan Aktiviti (48) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
+| L54 | Amaran Awal (49) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
+| L55 | Laporan Bulanan (50) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
+| L56 | Senarai Pelajar (51) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
+| L57 | Senarai Guru (52) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
+| L58 | Kelas Sekolah (53) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
 | L59 | Laporan Soalan (54) | M★ | M04 | **100%** |
 
 Purata semasa (dikira semula 2026-10-03 daripada lajur % di atas):
