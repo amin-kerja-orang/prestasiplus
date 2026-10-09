@@ -95,8 +95,8 @@ test.describe('S30 Tournament banner', () => {
     'E2E-M16-09 hidden by default: one request per page load, no banner',
     MODULE,
     async ({ page, gotoApp, loginAs, mock }) => {
-      await loginAs(ADMIN)
-      for (const path of ['/dashboard', '/permainan', '/tournament']) {
+      await loginAs(STUDENT)
+      for (const path of ['/dashboard', '/tournament', '/sekolah-bersaing']) {
         await gotoApp(path)
         await expect(page.getByTestId('shell-user-main')).toBeVisible()
         await expect.poll(async () => (await mock.requests(BANNER)).length).toBe(1)

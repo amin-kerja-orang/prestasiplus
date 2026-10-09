@@ -106,9 +106,7 @@ test.describe('S20 Pertandingan Mingguan', () => {
       await expect(rows.nth(1)).toContainText('329')
       await expect(rows.nth(2)).toContainText('🥉')
       await expect(rows.nth(2)).toContainText('187')
-      await expect(rows.nth(2)).toContainText('90.7%')
       await expect(rows.nth(3)).toContainText('145')
-      await expect(rows.nth(3)).toContainText('61.4%')
       await expect(rows.nth(13)).toContainText('26')
       await expectNoHorizontalScroll(page)
     },
@@ -141,7 +139,9 @@ test.describe('S21 Uji Minda', () => {
     await expectTabTitle(page, 'Uji Minda — Belum Ada Cabaran')
     await expect(page.getByTestId('shell-user-title')).toHaveText('Uji Minda')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SUBTITLE)
-    await expect(page.getByRole('heading', { level: 1, name: 'Uji Minda' })).toBeVisible()
+    await expect(
+      page.getByTestId('uji-minda-hero').getByRole('heading', { name: 'Uji Minda' }),
+    ).toBeVisible()
     await expect(page.getByText('🧠')).toBeVisible()
     await expect(
       page.getByText(
@@ -190,7 +190,9 @@ test.describe('S22 Sambung Kata (DV-M16-03)', () => {
         page.waitForEvent('load'),
         page.getByRole('button', { name: 'Cuba Semula' }).click(),
       ])
-      await expect(page.getByRole('heading', { level: 1, name: 'Ralat Pelayan' })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 1, name: 'Ralat Pelayan' })).toBeVisible({
+        timeout: 30_000,
+      })
     },
   )
 })

@@ -4,6 +4,8 @@
  * 2026-09-25T15:40+08:00: the current week is Monday 21 Sep 2026 with 49 rows.
  */
 
+import type { Page } from '@playwright/test'
+
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, viewportWidth } from '../support'
 
@@ -84,49 +86,71 @@ test(
   },
 )
 
+const WEEKS = [
+  {
+    query: '2026-09-16',
+    label: '14 Sep 2026',
+    check: async (page: Page) => {
+      const rows = page.getByTestId('sb-row')
+      await expect(rows.nth(17).getByTestId('sb-state')).toHaveText('Kelantan')
+      await expect(rows.nth(17).getByTestId('sb-aktif')).toContainText('0.0%')
+      await expect(rows.nth(19).getByTestId('sb-state')).toHaveText('Kuala Lumpur')
+    },
+  },
+  { query: '2026-09-07', label: '07 Sep 2026', check: async () => {} },
+  {
+    query: '2026-08-31',
+    label: '31 Aug 2026',
+    check: async (page: Page) => {
+      const rows = page.getByTestId('sb-row')
+      await expect(rows.nth(16).getByTestId('sb-state')).toHaveText('Selangor')
+      await expect(rows.nth(16).getByTestId('sb-aktif')).toContainText('0.2%')
+    },
+  },
+] as const
+
+for (const week of WEEKS) {
+  test(
+    `E2E-M16-90 ?week=${week.query} shows ${week.label} with 48 rows`,
+    MODULE,
+    async ({ page, gotoApp, loginAs }) => {
+      await loginAs(SCHOOL_ADMIN)
+      await gotoApp(`/sekolah-bersaing?week=${week.query}`)
+      await expect(page.getByTestId('sb-week')).toHaveText(
+        `Minggu ${week.label} · 48 sekolah dalam pertandingan`,
+      )
+      await expect(page.getByTestId('sb-row')).toHaveCount(48)
+      await week.check(page)
+    },
+  )
+}
+
 test(
-  'E2E-M16-90 earlier weeks, the empty week and an invalid week',
+  'E2E-M16-90 a week without a snapshot shows the empty state',
   MODULE,
   async ({ page, gotoApp, loginAs }) => {
     await loginAs(SCHOOL_ADMIN)
-    const rows = page.getByTestId('sb-row')
-
-    await gotoApp('/sekolah-bersaing?week=2026-09-16')
-    await expect(page.getByTestId('sb-week')).toHaveText(
-      'Minggu 14 Sep 2026 · 48 sekolah dalam pertandingan',
-    )
-    await expect(rows).toHaveCount(48)
-    await expect(rows.nth(17).getByTestId('sb-state')).toHaveText('Kelantan')
-    await expect(rows.nth(17).getByTestId('sb-aktif')).toContainText('0.0%')
-    await expect(rows.nth(19).getByTestId('sb-state')).toHaveText('Kuala Lumpur')
-
-    await gotoApp('/sekolah-bersaing?week=2026-09-07')
-    await expect(page.getByTestId('sb-week')).toHaveText(
-      'Minggu 07 Sep 2026 · 48 sekolah dalam pertandingan',
-    )
-    await expect(rows).toHaveCount(48)
-
-    await gotoApp('/sekolah-bersaing?week=2026-08-31')
-    await expect(page.getByTestId('sb-week')).toHaveText(
-      'Minggu 31 Aug 2026 · 48 sekolah dalam pertandingan',
-    )
-    await expect(rows.nth(16).getByTestId('sb-state')).toHaveText('Selangor')
-    await expect(rows.nth(16).getByTestId('sb-aktif')).toContainText('0.2%')
-
     await gotoApp('/sekolah-bersaing?week=2025-01-06')
     await expect(page.getByRole('heading', { level: 1, name: '🏆 Sekolah Bersaing' })).toBeVisible()
     await expect(page.getByTestId('sb-empty')).toContainText('📊 Data minggu ini belum dijana.')
     await expect(page.getByTestId('sb-empty')).toContainText(
       'Cron mingguan akan kira pada Isnin pagi. Tunggu kejap ya.',
     )
-    await expect(rows).toHaveCount(0)
+    await expect(page.getByTestId('sb-row')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
+  },
+)
 
+test(
+  'E2E-M16-90 an invalid week shows the current week (DV-M16-30)',
+  MODULE,
+  async ({ page, gotoApp, loginAs }) => {
+    await loginAs(SCHOOL_ADMIN)
     await gotoApp('/sekolah-bersaing?week=bogus')
     await expect(page.getByTestId('sb-week')).toHaveText(
       'Minggu 21 Sep 2026 · 49 sekolah dalam pertandingan',
     )
-    await expect(rows).toHaveCount(49)
+    await expect(page.getByTestId('sb-row')).toHaveCount(49)
   },
 )
 
