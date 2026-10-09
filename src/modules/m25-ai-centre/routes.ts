@@ -1,9 +1,10 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import heatmap from './routes/heatmap'
+
 /**
- * M25 routes (F-31b stub, build-plan §S.3 rule 2).
- * The module's mock task (T1) creates the `routes/<group>.ts` fragments and spreads them here.
+ * M25 routes (F-31b stub, build-plan §S.3 rule 2). M25-T2 spreads `routes/heatmap.ts` (S1 Heatmap Topik Lemah).
  */
-const routes: RouteRecordRaw[] = []
+const routes: RouteRecordRaw[] = [...heatmap]
 
 export default routes
