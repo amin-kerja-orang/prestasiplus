@@ -48,6 +48,7 @@ function reset(): void {
 async function start(): Promise<void> {
   reset()
   if (!(await load())) return
+  if (timers.isDisposed()) return // left the page while the session loaded
   phase.value = 'playing'
   timers.every(() => {
     seconds.value += 1
@@ -113,7 +114,7 @@ onMounted(() => void start())
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[44rem] space-y-4" data-testid="solo-kad-memori">
+  <div class="w-full space-y-4 px-2 sm:px-4" data-testid="solo-kad-memori">
     <div>
       <RouterLink
         to="/permainan"

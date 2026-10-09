@@ -71,6 +71,7 @@ function reset(): void {
 async function start(): Promise<void> {
   reset()
   if (!(await load())) return
+  if (timers.isDisposed()) return // left the page while the session loaded
   phase.value = 'countdown'
   const step = (): void => {
     count.value -= 1
@@ -166,16 +167,15 @@ watch(darjah, () => void start(), { immediate: true })
         tone="text-cyan-400"
       />
 
-      <div v-if="phase === 'playing' && current" class="mx-auto max-w-2xl space-y-4">
-        <div class="min-h-8 text-center">
-          <span
-            v-if="combo >= 2"
-            class="inline-block rounded-full bg-gradient-to-r from-red-500 to-orange-500 px-4 py-1 text-sm font-extrabold text-white shadow-lg"
-            :class="{ fire: combo >= 5 }"
-            data-testid="solo-combo"
-            >🔥 {{ combo }}x COMBO</span
-          >
-        </div>
+      <div v-if="phase === 'playing' && current" class="mx-auto max-w-xl space-y-4">
+        <!-- As live: a fixed pill at top-4 right-4, covering the bell and avatar of the shell header. -->
+        <span
+          v-if="combo >= 2"
+          class="fixed top-4 right-4 z-[160] rounded-full bg-gradient-to-r from-red-500 to-orange-500 px-4 py-1.5 text-sm font-extrabold whitespace-nowrap text-white shadow-lg"
+          :class="{ fire: combo >= 5 }"
+          data-testid="solo-combo"
+          >🔥 {{ combo }}x COMBO</span
+        >
         <StatBar
           :score="score"
           :time-left="timeLeft"

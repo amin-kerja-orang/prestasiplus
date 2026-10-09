@@ -148,9 +148,20 @@ export function ratio(correct: number, answered: number): string {
 export const WHEEL_SEGMENTS = 8
 export const WHEEL_SPIN_MS = 4200
 
-/** The wheel lands at `360 − (segment_index × 45 + 22.5)` degrees (BR-M16-29). */
+/** Segment `i` is drawn from `i × 45`° clockwise from 3 o'clock (as live), so its centre is at `i × 45 + 22.5`°. */
+export function wheelSegmentCenterDeg(segmentIndex: number): number {
+  return segmentIndex * 45 + 22.5
+}
+
+/** The pointer is at 12 o'clock = 270° clockwise from 3 o'clock. */
+export const WHEEL_POINTER_DEG = 270
+
+/**
+ * The landing rotation: the SRS `360 − (segment_index × 45 + 22.5)` (BR-M16-29) plus a constant −90°
+ * for the live drawing that starts at 3 o'clock, so the segment centre lands under the 12 o'clock pointer.
+ */
 export function wheelLandingDeg(segmentIndex: number): number {
-  return 360 - (segmentIndex * 45 + 22.5)
+  return (((360 - (segmentIndex * 45 + 22.5) - 90) % 360) + 360) % 360
 }
 
 /** Whole turns of a spin (5-8, deterministic per segment). */

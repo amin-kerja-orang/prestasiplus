@@ -50,7 +50,7 @@ watch(darjah, () => void load(), { immediate: true })
       color="var(--color-amber-500)"
     />
     <GamePanel theme="navy">
-      <div class="mx-auto max-w-2xl space-y-5">
+      <div class="mx-auto max-w-lg space-y-5">
         <div class="text-center">
           <RouterLink
             to="/permainan"

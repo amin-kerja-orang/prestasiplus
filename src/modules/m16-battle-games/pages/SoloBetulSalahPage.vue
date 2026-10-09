@@ -59,6 +59,7 @@ function reset(): void {
 async function start(): Promise<void> {
   reset()
   if (!(await load())) return
+  if (timers.isDisposed()) return // left the page while the session loaded
   phase.value = 'countdown'
   const step = (): void => {
     count.value -= 1
@@ -143,18 +144,18 @@ watch(darjah, () => void start(), { immediate: true })
         tone="text-violet-500"
       />
 
-      <div v-if="phase === 'playing' && current" class="mx-auto max-w-xl space-y-4">
-        <div class="min-h-8 text-center">
-          <span
-            v-if="streak >= 2"
-            class="inline-block rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-4 py-1 text-sm font-extrabold text-white shadow-lg"
-            :class="{ hot: streak >= 5 }"
-            data-testid="solo-combo"
-            >🔥 {{ streak }} KOMBO</span
-          >
-        </div>
+      <div v-if="phase === 'playing' && current" class="mx-auto max-w-lg space-y-4">
+        <!-- As live: a fixed pill at the top of the viewport, centred, over the shell header. -->
+        <span
+          v-if="streak >= 2"
+          class="fixed top-4 left-1/2 z-[160] -translate-x-1/2 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-4 py-1.5 text-sm font-extrabold whitespace-nowrap text-white shadow-lg"
+          :class="{ hot: streak >= 5 }"
+          data-testid="solo-combo"
+          >🔥 {{ streak }} KOMBO</span
+        >
         <StatBar :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" />
-        <p class="text-center text-xs text-slate-300">Kenyataan {{ index + 1 }}</p>
+        <!-- Live: dim grey (≈ 3.2:1), kept as live (G4 minor 4). -->
+        <p class="text-center text-xs text-slate-500">Kenyataan {{ index + 1 }}</p>
         <div
           class="relative rounded-3xl border border-white/10 bg-white/5 p-6 text-center transition"
           :class="{
@@ -185,7 +186,7 @@ watch(darjah, () => void start(), { immediate: true })
             >
               ❌
             </button>
-            <p class="mt-2 text-xs text-slate-300">❌ SALAH</p>
+            <p class="mt-2 text-xs text-slate-500">❌ SALAH</p>
           </div>
           <div class="text-center">
             <button
@@ -197,7 +198,7 @@ watch(darjah, () => void start(), { immediate: true })
             >
               ✅
             </button>
-            <p class="mt-2 text-xs text-slate-300">✅ BETUL</p>
+            <p class="mt-2 text-xs text-slate-500">✅ BETUL</p>
           </div>
         </div>
       </div>

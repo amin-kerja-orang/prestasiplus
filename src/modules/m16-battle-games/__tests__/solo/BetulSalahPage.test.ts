@@ -138,6 +138,23 @@ describe('S13 Betul atau Salah (FR-M16-71..75)', () => {
     log.mockRestore()
   })
 
+  it('a session that loads after the page was left starts nothing and posts nothing', async () => {
+    let release: (v: ReturnType<typeof betulSalahPayload>) => void = () => undefined
+    fetchSoloGame.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve
+        }),
+    )
+    wrapper = await mountAt(SoloBetulSalahPage, '/permainan/betul-salah?darjah=4')
+    wrapper.unmount()
+    wrapper = undefined
+    release(betulSalahPayload())
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(submitSoloGame).not.toHaveBeenCalled()
+  })
+
   it('leaves no timer running after unmount', async () => {
     wrapper = await mountAt(SoloBetulSalahPage, '/permainan/betul-salah?darjah=4')
     await vi.advanceTimersByTimeAsync(2400)

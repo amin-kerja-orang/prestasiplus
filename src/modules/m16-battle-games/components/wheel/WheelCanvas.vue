@@ -3,9 +3,10 @@
  * The Roda Nasib wheel (URS FN-M16-7.1.2; live roda-nasib-desktop): a 380 × 380 `<canvas>` (320 px at 375)
  * with a thick violet rim and a white inner ring, the 8 segments of discovery A.5 (colour, icon and label
  * from the server, the text running along the radius, the icon next to it), a violet triangle pointer at
- * 12 o'clock and a round "🎯" hub that does not turn. Segment 0 starts at 12 o'clock and runs clockwise, so a
- * rotation of `360 − (index × 45 + 22.5)` degrees brings segment `index` under the pointer. Shapes and text
- * only: no image (D22). The rotating square is clipped to its circle (DV-M16-42).
+ * 12 o'clock and a round "🎯" hub that does not turn. As live, segment 0 starts at 3 o'clock and runs
+ * clockwise (the boundaries rest at 12 and 3), so the landing rotation is the SRS `360 − (index × 45 + 22.5)`
+ * minus 90° (`wheelLandingDeg`), which brings the centre of segment `index` under the pointer. Shapes and
+ * text only: no image (D22). The rotating square is clipped to its circle (DV-M16-42).
  */
 import { onMounted, ref, watch } from 'vue'
 
@@ -42,7 +43,7 @@ function draw(): void {
   ctx.fill()
   const radius = c - 18
   props.segments.forEach((seg, i) => {
-    const start = -Math.PI / 2 + i * arc
+    const start = i * arc
     ctx.beginPath()
     ctx.moveTo(c, c)
     ctx.arc(c, c, radius, start, start + arc)
@@ -58,7 +59,7 @@ function draw(): void {
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 14px Inter, sans-serif'
+    ctx.font = 'bold 13px Inter, sans-serif'
     const labelEdge = radius - 14
     ctx.fillText(seg.label, labelEdge, 0)
     const width = ctx.measureText(seg.label).width

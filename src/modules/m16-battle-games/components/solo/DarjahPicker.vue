@@ -4,7 +4,8 @@
  * dark gradient, `z-index: 200`, the game emoji and title, the group "🏫 Sekolah Rendah" with
  * "Darjah 1" to "Darjah 4" (`?darjah=n`, hover border in the game colour) and "← Kembali ke Hub".
  * Nothing runs under it: the host starts its game only once `?darjah` is set. The muted texts are lighter
- * than live (≈ 2.7-3.5:1 there; DV-M16-47).
+ * than live for "Sekolah Rendah" and "Kembali ke Hub" (≈ 2.7-3.5:1 there; DV-M16-47); the line "Pilih darjah /
+ * tingkatan kamu:" keeps the live dim grey (≈ 3.8:1).
  */
 import { RouterLink, useRoute } from 'vue-router'
 
@@ -24,7 +25,7 @@ const route = useRoute()
       <div class="w-full max-w-lg py-6 text-center text-white">
         <div class="text-6xl">{{ emoji }}</div>
         <h2 class="mt-3 font-heading text-2xl font-extrabold">{{ title }}</h2>
-        <p class="mt-2 text-sm text-slate-400">Pilih darjah / tingkatan kamu:</p>
+        <p class="mt-2 text-sm text-slate-500">Pilih darjah / tingkatan kamu:</p>
         <p class="mt-6 mb-3 text-xs font-bold tracking-wider text-slate-400 uppercase">
           🏫 Sekolah Rendah
         </p>

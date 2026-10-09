@@ -5,8 +5,9 @@
  * "⚠ GARIS MAUT" line; tapping the correct tile scores `10 × level`. Tile timing (base fall 15 − 0.7 per
  * level, min 5 s, plus 0-2 s; 1.8 s apart; miss deadline base + 6 + 2 per option) is the SOURCE rule;
  * the 0-2 s jitter is a deterministic hash instead of `Math.random()` so a replay looks the same (DV-M16-43).
- * PROPOSED: a wrong tap ends the question and counts as answered (live notes only "−1 life"; the miss rule
- * and the deadline are SOURCE, neither the discovery nor the reference copy settle the wrong-tap case).
+ * BR-M16-26: a wrong tap costs 1 life and does NOT end the question (it continues until a correct tap or the
+ * deadline miss, which costs a life and counts as answered). PROPOSED: the wrongly tapped tile is disabled and
+ * shown red; a wrong tap itself adds nothing to "answered", so "Ketepatan" = correct / questions resolved.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -53,7 +54,7 @@ const answered = ref(0)
 const elapsed = ref(0)
 const questionLevel = ref(1)
 const banner = ref('')
-const wrongTile = ref<number | null>(null)
+const wrongTiles = ref<number[]>([])
 const result = ref({ newRecord: false, credited: 0 })
 
 const questions = computed(() => payload.value?.questions ?? [])
@@ -93,13 +94,14 @@ function reset(): void {
   elapsed.value = 0
   questionLevel.value = 1
   banner.value = ''
-  wrongTile.value = null
+  wrongTiles.value = []
   result.value = { newRecord: false, credited: 0 }
 }
 
 async function start(): Promise<void> {
   reset()
   if (!(await load())) return
+  if (timers.isDisposed()) return // left the page while the session loaded
   phase.value = 'countdown'
   const step = (): void => {
     count.value -= 1
@@ -120,7 +122,7 @@ function tick(): void {
   elapsed.value += TICK_MS
   const q = current.value
   if (q && elapsed.value >= missDeadlineSeconds(questionLevel.value, q.options.length) * 1000) {
-    loseLife()
+    missQuestion()
   }
 }
 
@@ -128,15 +130,14 @@ function nextQuestion(): void {
   index.value += 1
   elapsed.value = 0
   questionLevel.value = level.value
-  wrongTile.value = null
+  wrongTiles.value = []
   if (index.value >= questions.value.length) void finish()
 }
 
-/** A wrong tap or a miss: −1 life, the question counts as answered. */
-function loseLife(tappedTile: number | null = null): void {
+/** A miss (no correct tap by the deadline): −1 life, and the question counts as answered (BR-M16-26). */
+function missQuestion(): void {
   answered.value += 1
   lives.value -= 1
-  wrongTile.value = tappedTile
   if (lives.value <= 0) void finish()
   else nextQuestion()
 }
@@ -145,9 +146,13 @@ function tap(tileIndex: number): void {
   const q = current.value
   if (phase.value !== 'playing' || !q) return
   const option = q.options[tileIndex]
-  if (!option) return
+  if (!option || wrongTiles.value.includes(tileIndex)) return
   if (!option.correct) {
-    loseLife(tileIndex)
+    // BR-M16-26: a wrong tap costs a life and does not end the question; it goes on until a correct tap or
+    // the deadline miss. PROPOSED: the wrong tile is disabled (red) so it cannot be tapped again.
+    wrongTiles.value = [...wrongTiles.value, tileIndex]
+    lives.value -= 1
+    if (lives.value <= 0) void finish()
     return
   }
   answered.value += 1
@@ -250,7 +255,8 @@ watch(darjah, () => void start(), { immediate: true })
         </div>
 
         <div class="rounded-3xl border border-orange-500/30 bg-orange-500/10 p-4 text-center">
-          <p class="text-xs font-semibold tracking-wider text-orange-300 uppercase">
+          <!-- Live: dim orange (≈ 3.5:1), kept as live (G4 minor 4). -->
+          <p class="text-xs font-semibold tracking-wider text-orange-700 uppercase">
             Soalan {{ index + 1 }}
           </p>
           <p class="mt-1 font-heading text-base font-bold break-words text-white">
@@ -267,6 +273,7 @@ watch(darjah, () => void start(), { immediate: true })
             <button
               v-if="tile.visible"
               type="button"
+              :disabled="wrongTiles.includes(tile.i)"
               class="absolute flex min-h-11 max-w-[22%] items-center justify-center"
               :style="{
                 left: `${String(tile.lane * 24 + tile.nudge)}%`,
@@ -279,7 +286,7 @@ watch(darjah, () => void start(), { immediate: true })
               <span
                 class="line-clamp-3 block rounded-xl border px-3 py-2 text-xs font-bold break-words text-white shadow-lg sm:text-sm"
                 :class="
-                  wrongTile === tile.i
+                  wrongTiles.includes(tile.i)
                     ? 'border-red-400 bg-red-600/80'
                     : 'border-white/25 bg-white/10'
                 "

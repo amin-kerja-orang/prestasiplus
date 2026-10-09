@@ -82,7 +82,7 @@ onMounted(() => void loadPage())
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-md space-y-5 sm:max-w-lg" data-testid="roda-nasib">
+  <div class="mx-auto w-full max-w-2xl space-y-5 px-2 sm:px-6" data-testid="roda-nasib">
     <div>
       <RouterLink
         to="/permainan"
@@ -135,7 +135,7 @@ onMounted(() => void loadPage())
             {{ prize.label }}
           </h3>
           <template v-if="prize.type === 'syiling' && prize.credited > 0">
-            <!-- Live: bright orange on white (≈ 2.1:1); DV-M16-48 uses amber-600 (≈ 3.2:1, large text). -->
+            <!-- Live: bright orange on white (≈ 2.1:1); DV-M16-48 uses amber-600 (≈ 3.2:1, large text), and the line "Ditambah ke akaun kamu!" (≈ 2.6:1 on live) is slate-500 (≈ 4.8:1). -->
             <p class="mt-2 text-4xl font-extrabold text-amber-600" data-testid="prize-amount">
               +{{ prize.credited }} Syiling
             </p>

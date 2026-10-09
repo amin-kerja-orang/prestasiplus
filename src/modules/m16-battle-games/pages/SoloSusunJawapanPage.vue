@@ -63,6 +63,7 @@ function reset(): void {
 async function start(): Promise<void> {
   reset()
   if (!(await load())) return
+  if (timers.isDisposed()) return // left the page while the session loaded
   dots.value = puzzles.value.map(() => 'pending')
   phase.value = 'playing'
 }
@@ -168,7 +169,7 @@ watch(darjah, () => void start(), { immediate: true })
     <GamePanel theme="teal">
       <LoadState :loading="loading" :error="error" />
 
-      <div v-if="phase === 'playing' && current" class="mx-auto max-w-xl space-y-4">
+      <div v-if="phase === 'playing' && current" class="mx-auto max-w-lg space-y-4">
         <div class="flex items-center justify-between gap-2">
           <RouterLink
             to="/permainan"
@@ -224,6 +225,7 @@ watch(darjah, () => void start(), { immediate: true })
         </div>
 
         <div class="text-center">
+          <!-- Live: ≈ 1.9:1; DV-M16-47 lightens "Jawapan Kamu:" and "Pilihan:". -->
           <p class="mb-2 text-xs text-slate-300">📥 Jawapan Kamu:</p>
           <div
             class="flex min-h-20 flex-wrap items-center justify-center gap-2 rounded-2xl border border-teal-500/30 bg-white/5 p-3"
@@ -281,9 +283,10 @@ watch(darjah, () => void start(), { immediate: true })
           >
             ✅ Semak Jawapan
           </button>
+          <!-- Live: dim grey (≈ 3.2:1), kept as live (G4 minor 4). -->
           <button
             type="button"
-            class="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-slate-200 hover:bg-white/10"
+            class="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-slate-500 hover:bg-white/10"
             data-testid="solo-skip-question"
             @click="skip"
           >

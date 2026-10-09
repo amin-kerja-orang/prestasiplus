@@ -73,12 +73,30 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
     expect(wrapper!.find('[data-testid="solo-level-banner"]').exists()).toBe(false)
   })
 
-  it('a wrong tap fades a heart; three lost lives end the game and submit once', async () => {
+  it('a wrong tap costs a life, disables its tile and does not end the question', async () => {
+    await startPlaying()
+    await tiles()[0]!.trigger('click') // correct, level 1: on to question 2
+    expect(wrapper!.text()).toContain('Soalan 2')
+    await vi.advanceTimersByTimeAsync(1800)
+    await tiles()[1]!.trigger('click') // wrong option
+    expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(1)
+    expect(wrapper!.text()).toContain('Soalan 2')
+    expect(tiles()[1]!.attributes('disabled')).toBeDefined()
+    expect(tiles()[1]!.find('span').classes()).toContain('border-red-400')
+    await tiles()[1]!.trigger('click') // disabled: no second life lost
+    expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(1)
+    // the question goes on: the correct tile (option 0) is still there and still scores
+    await tiles()[0]!.trigger('click')
+    expect(wrapper!.text()).toContain('Soalan 3')
+    expect(text('solo-score')).toBe('20')
+  })
+
+  it('three lost lives end the game and submit once; wrong taps are not "answered"', async () => {
     await startPlaying()
     await tiles()[0]!.trigger('click') // correct, level 1
     for (let lost = 1; lost <= 3; lost++) {
       await vi.advanceTimersByTimeAsync(1800)
-      await tiles()[1]!.trigger('click') // wrong option
+      await tiles()[lost]!.trigger('click') // wrong options 1, 2, 3 of question 2
       if (lost < 3)
         expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(lost)
     }
@@ -87,11 +105,12 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
     expect(submitSoloGame).toHaveBeenCalledWith('tembak-jawapan', {
       session_id: 'shoot_0123456789abc',
       correct_count: 1,
-      total_answered: 4,
+      total_answered: 1,
       max_level: 1,
       score: 10,
       syiling_earned: 1,
     })
+    expect(wrapper!.text()).toContain('1/1')
     expect(wrapper!.get('[data-testid="solo-result-title"]').text()).toBe('CUBA LAGI!')
     expect(wrapper!.text()).toContain('Tembak Jawapan — Level 1')
     expect(wrapper!.text()).toContain('Tertinggi')

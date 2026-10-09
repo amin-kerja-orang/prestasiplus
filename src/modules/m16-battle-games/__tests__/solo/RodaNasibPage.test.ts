@@ -105,6 +105,8 @@ describe('S18 Roda Nasib (FR-M16-93..95)', () => {
     expect(button().text()).toBe('⏳ Sedang Pusing...')
     expect(button().attributes('disabled')).toBeDefined()
     expect(rotation()).toBe(nextWheelRotation(0, 2))
+    // segment 2: 7 turns (2520°) + landing 157.5° (= 360 − 112.5 − 90)
+    expect(rotation()).toBe(2677.5)
     expect(wrapper.find('[data-testid="prize-overlay"]').exists()).toBe(false)
 
     await vi.advanceTimersByTimeAsync(4199)

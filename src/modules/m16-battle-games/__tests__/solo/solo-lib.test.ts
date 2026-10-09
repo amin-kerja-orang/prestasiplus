@@ -21,7 +21,9 @@ import {
   tembakTitle,
   tileFallSeconds,
   tileJitter,
+  WHEEL_POINTER_DEG,
   wheelLandingDeg,
+  wheelSegmentCenterDeg,
   wheelTurns,
 } from '../../components/solo/solo-lib'
 
@@ -162,10 +164,23 @@ describe('clock and headings', () => {
 })
 
 describe('Roda Nasib rotation (BR-M16-29)', () => {
-  it('lands at 360 − (index × 45 + 22.5)', () => {
-    expect(wheelLandingDeg(0)).toBe(337.5)
-    expect(wheelLandingDeg(2)).toBe(247.5)
-    expect(wheelLandingDeg(7)).toBe(22.5)
+  it('lands at 360 − (index × 45 + 22.5) − 90, modulo 360', () => {
+    expect(wheelLandingDeg(0)).toBe(247.5)
+    expect(wheelLandingDeg(2)).toBe(157.5)
+    expect(wheelLandingDeg(7)).toBe(292.5)
+  })
+  it('puts every segment centre under the 12 o’clock pointer (centre + landing = 270°)', () => {
+    for (let index = 0; index < 8; index++) {
+      const sum = wheelSegmentCenterDeg(index) + wheelLandingDeg(index)
+      expect(((sum % 360) + 360) % 360).toBeCloseTo(WHEEL_POINTER_DEG)
+    }
+  })
+  it('a spin from any rotation leaves the centre under the pointer', () => {
+    for (let index = 0; index < 8; index++) {
+      const to = nextWheelRotation(index * 97.3, index)
+      const sum = wheelSegmentCenterDeg(index) + to
+      expect(((sum % 360) + 360) % 360).toBeCloseTo(WHEEL_POINTER_DEG)
+    }
   })
   it('turns 5-8 times and ends exactly on the landing angle', () => {
     for (let index = 0; index < 8; index++) {
