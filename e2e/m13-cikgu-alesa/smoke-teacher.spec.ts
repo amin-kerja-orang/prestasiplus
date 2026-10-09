@@ -22,7 +22,9 @@ import {
   viewportWidth,
 } from '../support'
 
-const expect = baseExpect.configure({ timeout: 30_000 })
+/** Slow machines: E2E_TIMEOUT_FACTOR multiplies the expect timeout (assertions unchanged). */
+const TIMEOUT_FACTOR = Number(process.env.E2E_TIMEOUT_FACTOR) || 1
+const expect = baseExpect.configure({ timeout: 30_000 * TIMEOUT_FACTOR })
 
 const ADMIN = 'admin@demo.test'
 const GURU = 'guru@demo.test'
@@ -355,7 +357,7 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(GURU)
       await gotoApp('/cikgu/rph/baharu')
-      await latency(mock, 800)
+      await latency(mock, 800 * TIMEOUT_FACTOR)
       await page.locator('#subject_name').fill('Matematik')
       await page.locator('#level').selectOption('T4')
       await page.locator('#tajuk').fill('Pecahan Setara')

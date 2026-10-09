@@ -26,7 +26,6 @@ import {
   resolveChat,
   resolvePrefill,
   speakDuration,
-  VOICE_ERROR_HOLD_MS,
   VOICE_STORAGE_KEY,
   type ChatMessage,
 } from '../components/chat/chat-lib'
@@ -169,7 +168,7 @@ function failVoice(): void {
   clearVoiceTimers()
   listening.value = false
   status.value = CHAT_COPY.noHear
-  voiceTimers = [setTimeout(endVoice, VOICE_ERROR_HOLD_MS)]
+  voiceTimers = [setTimeout(endVoice, getVoiceConfig().delays.errorHold)]
 }
 
 // --- entry points (FR-M13-21, 22) ----------------------------------------------------------------

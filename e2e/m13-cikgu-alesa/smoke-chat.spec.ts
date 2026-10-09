@@ -21,7 +21,9 @@ import {
 } from '../support'
 
 /** The shell re-renders once the session loads; give the first assertions room on a loaded machine. */
-const expect = baseExpect.configure({ timeout: 10_000 })
+/** Slow machines: E2E_TIMEOUT_FACTOR multiplies the expect timeout (assertions unchanged). */
+const TIMEOUT_FACTOR = Number(process.env.E2E_TIMEOUT_FACTOR) || 1
+const expect = baseExpect.configure({ timeout: 10_000 * TIMEOUT_FACTOR })
 
 const ADMIN = 'admin@demo.test'
 const GURU = 'guru@demo.test'
@@ -219,7 +221,7 @@ test.describe('M13 S1 chat', MODULE, () => {
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(GURU)
       await gotoApp('/cikgu')
-      await latency(mock, 800)
+      await latency(mock, 800 * TIMEOUT_FACTOR)
       await say(page, 'Terangkan pecahan setara')
       await expect(msgs(page).nth(1)).toHaveText('Anda: Terangkan pecahan setara')
       await expect(input(page)).toHaveValue('')
@@ -569,6 +571,10 @@ test.describe('M13 S1 chat', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu')
     await latency(mock, 0)
+    // Slow machines: the recogniser delays scale with the timeout factor (timing only).
+    await mock.hook('cikguVoice', {
+      delays: { interim: 600 * TIMEOUT_FACTOR, final: 1200 * TIMEOUT_FACTOR },
+    })
     await mic(page).click()
     await expect(mic(page)).toHaveText('🔴')
     await expect(mic(page)).toHaveCSS('background-color', 'rgb(254, 226, 226)')
@@ -610,6 +616,14 @@ test.describe('M13 S1 chat', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu')
     await latency(mock, 0)
+    // Slow machines: the simulated recogniser delays scale with the timeout factor (timing only).
+    await mock.hook('cikguVoice', {
+      delays: {
+        interim: 600 * TIMEOUT_FACTOR,
+        final: 1200 * TIMEOUT_FACTOR,
+        errorHold: 1000 * TIMEOUT_FACTOR,
+      },
+    })
     await mic(page).click()
     await mock.hook('cikguVoiceError')
     await expect(status(page)).toHaveText('Maaf, tak dengar.')
