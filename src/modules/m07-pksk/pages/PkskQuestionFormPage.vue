@@ -63,10 +63,16 @@ const pageMeta = usePageMeta()
 const editing = computed(() => props.mode === 'edit')
 const numericId = computed(() => (/^\d+$/.test(props.id) ? Number(props.id) : null))
 
-if (props.mode === 'edit') {
-  // DV-M07-02: the live subtitle prints raw Blade; the rebuild prints the id.
-  pageMeta.setHeader({ title: 'Edit Soalan PKSK', subtitle: `Kemaskini soalan #${props.id}` })
-}
+// DV-M07-02: the live subtitle prints raw Blade; the rebuild prints the id (follows the id param).
+watch(
+  () => props.id,
+  (id) => {
+    if (props.mode === 'edit') {
+      pageMeta.setHeader({ title: 'Edit Soalan PKSK', subtitle: `Kemaskini soalan #${id}` })
+    }
+  },
+  { immediate: true },
+)
 
 const form = reactive<{
   bahagian: Bahagian | ''
@@ -97,7 +103,7 @@ const { data: domains, error: domainsError } = useApi((signal) => fetchPkskDomai
 // S7: #9 pre-fills the form.
 const { data: loaded, error: loadError } = useApi(
   (signal) => fetchPkskQuestion(numericId.value ?? 0, { signal }),
-  undefined,
+  () => props.id,
   {
     immediate: props.mode === 'edit' && numericId.value !== null,
   },
@@ -164,8 +170,12 @@ function inputClass(name: string, base: string = FORM_INPUT_CLASS): string[] {
   return [base, 'min-h-11', ...(fieldMessages.value[name] ? [FORM_ERROR_MODIFIER] : [])]
 }
 
-function optionBody(): PkskOptionInput[] {
-  return options.value.map((o) => ({ text: o.text, isCorrect: o.isCorrect }))
+/** S6: a correct flag is only posted for Bahagian B (a tick kept after switching to A is dropped). */
+function optionBody(onlyB = false): PkskOptionInput[] {
+  return options.value.map((o) => ({
+    text: o.text,
+    isCorrect: onlyB && form.bahagian !== 'B' ? false : o.isCorrect,
+  }))
 }
 
 async function submit(): Promise<void> {
@@ -194,7 +204,7 @@ async function submit(): Promise<void> {
             difficultyLevel: Number(form.difficulty),
             ...(explanation !== '' ? { explanation } : {}),
             // Bahagian C holds no options: nothing is sent (DV-M07-05).
-            ...(form.bahagian !== 'C' ? { options: optionBody() } : {}),
+            ...(form.bahagian !== 'C' ? { options: optionBody(true) } : {}),
           })
     flash.success(result.status)
     await router.push(QUESTIONS_PATH)

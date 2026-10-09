@@ -158,6 +158,8 @@ async function revoke(row: PkskAccessItem): Promise<void> {
     await refresh(result.status)
   } catch (err) {
     flash.show({ type: 'error', message: errorLines(err) })
+    // e.g. 409: the row is no longer active, so drop the stale "Aktif" row and its "Tarik".
+    await Promise.all([reload(), reloadStats()])
   } finally {
     revoking.value = false
   }

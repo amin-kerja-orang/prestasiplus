@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
+import { usePageMeta } from '@/composables'
 import { useFlashStore } from '@/stores/flash'
 
 import type { PkskAccessItem, PkskQuestionDetail, PkskQuestionListItem } from '../../api/admin'
@@ -338,6 +339,21 @@ describe('PkskQuestionFormPage create (S6)', () => {
     })
   })
 
+  it('drops a correct flag ticked under B when the Bahagian is switched to A', async () => {
+    admin.createPkskQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await mountCreate()
+    await attr(w, 'q-bahagian').setValue('B')
+    await w.findAll('[data-testid=option-correct]')[1]!.setValue(true)
+    await attr(w, 'q-bahagian').setValue('A')
+    await attr(w, 'q-domain').setValue('1')
+    await attr(w, 'q-text').setValue('Nilai')
+    for (const input of w.findAll('[data-testid=option-text]')) await input.setValue('x')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    const body = admin.createPkskQuestion.mock.calls[0]![0] as { options: { isCorrect: boolean }[] }
+    expect(body.options.every((o) => o.isCorrect === false)).toBe(true)
+  })
+
   it('shows a 422 field message under the field and keeps the input', async () => {
     admin.createPkskQuestion.mockRejectedValue(
       new ApiError({
@@ -418,6 +434,19 @@ describe('PkskQuestionFormPage edit (S7)', () => {
     expect(attr(w, 'form-submit').text()).toBe('Kemaskini')
     expect(attr(w, 'options-title').text()).toBe('Pilihan Jawapan')
     expect(correctVisible(w)).toBe(3)
+  })
+
+  it('reloads the question and the header when the id param changes', async () => {
+    admin.fetchPkskQuestion.mockImplementation((id: number) =>
+      Promise.resolve(detail({ id, questionText: `Teks ${String(id)}` })),
+    )
+    const w = await mountEdit()
+    expect(value(w, 'q-text')).toBe('Teks 55')
+    await w.setProps({ id: '56' })
+    await flushPromises()
+    expect(admin.fetchPkskQuestion).toHaveBeenLastCalledWith(56, expect.anything())
+    expect(value(w, 'q-text')).toBe('Teks 56')
+    expect(usePageMeta().state.header?.subtitle).toBe('Kemaskini soalan #56')
   })
 
   it('does not render the options card for a saved Bahagian C', async () => {
@@ -620,6 +649,21 @@ describe('PkskAccessPage (S8)', () => {
     expect(admin.revokePkskAccess).toHaveBeenCalledWith(3)
     expect(admin.fetchPkskAccessStats).toHaveBeenCalledTimes(2)
     expect(useFlashStore().current?.message).toBe('Akses PKSK telah ditarik balik.')
+  })
+
+  it('reloads the list and the cards after a 409 so the stale row goes away', async () => {
+    confirmSpy.mockReturnValue(true)
+    admin.revokePkskAccess.mockRejectedValue(
+      new ApiError({ status: 409, code: 'CONFLICT', message: 'Akses ini tidak aktif.' }),
+    )
+    const w = await render(PkskAccessPage, PATH, PATH)
+    admin.fetchPkskAccessList.mockResolvedValue(listOf([row(2)]))
+    await w.findAll('[data-testid=a-revoke]')[0]!.trigger('click')
+    await flushPromises()
+    expect(useFlashStore().current?.type).toBe('error')
+    expect(admin.fetchPkskAccessList).toHaveBeenCalledTimes(2)
+    expect(admin.fetchPkskAccessStats).toHaveBeenCalledTimes(2)
+    expect(w.findAll('[data-testid=access-row]')).toHaveLength(1)
   })
 
   it('passes the search to the API', async () => {
