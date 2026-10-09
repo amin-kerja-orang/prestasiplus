@@ -91,6 +91,7 @@ export function emptyState(humanId: number): RoomState {
     winnerId: null,
     mvpId: null,
     draws: 0,
+    roundStartedMs: null,
     log: [],
   }
 }
@@ -277,6 +278,32 @@ export function applyAction(
   }
 }
 
+/**
+ * Time ran out for the room's clock (BR-M16-20), resolved lazily by the repository: a Perang Fakta round
+ * advances as a no-vote of the acting player; a Teka Silang Kata game ends with the words found so far.
+ */
+export function applyTimeout(
+  room: EngineRoom,
+  players: EnginePlayer[],
+  state: RoomState,
+  prng: PrngRegistry,
+  p: number,
+): EngineOut {
+  const c: Ctx = {
+    room,
+    players: players.map((x) => ({ ...x })),
+    s: structuredClone(state),
+    prng,
+    p,
+  }
+  if (room.game === 'perang-fakta' && c.s.awaiting === 'answer') return pfAdvance(c, false)
+  if (room.game === 'teka-silang-kata') {
+    c.s.winnerId = topWinner(c, (x) => x.points)
+    return finish(c)
+  }
+  throw new M16Error('CONFLICT', 'Tiada jam untuk permainan ini.')
+}
+
 type Answer = Extract<RoomAction, { type: 'answer' }>
 
 /** Whether an MCQ answer is right (a `null` option is a timeout). */
@@ -404,12 +431,23 @@ function pbAnswer(c: Ctx, a: Answer): EngineOut {
 
 // --- Perang Fakta ---------------------------------------------------------------------------------------------------
 
+/**
+ * A vote of the acting player. `optionId: null` with no `value` is a timeout (the 10 s of the round ran
+ * out): the player scores 0 and the bots still draw (BR-M16-20, §7 #28).
+ */
 function pfAnswer(c: Ctx, a: Answer): EngineOut {
   const vote = voteOf(a)
-  if (vote === null) throw new M16Error('VALIDATION_ERROR', 'Jawapan tidak sah.', 'value')
+  const timeout = vote === null && a.optionId === null && a.value === undefined
+  if (vote === null && !timeout) {
+    throw new M16Error('VALIDATION_ERROR', 'Jawapan tidak sah.', 'value')
+  }
   const fact = c.s.facts[c.s.round - 1] as { isTrue: boolean }
+  return pfAdvance(c, vote !== null && vote === fact.isTrue)
+}
+
+function pfAdvance(c: Ctx, humanRight: boolean): EngineOut {
   const me = human(c)
-  if (vote === fact.isTrue) {
+  if (humanRight) {
     me.correct += 1
     me.points += 1
   }

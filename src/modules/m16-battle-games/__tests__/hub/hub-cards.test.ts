@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { buildRoutes } from '@/app/router'
+import { resolveIcon } from '@/components/icon'
 
 import { HUB_CARDS } from '../../components/hub/hub-cards'
 import { ROOM_GAMES } from '../../components/lobby/lobby-config'
@@ -84,6 +85,20 @@ describe('S6 hub card data', () => {
     expect(new Set(HUB_CARDS.map((c) => c.id)).size).toBe(HUB_CARDS.length)
     for (const c of HUB_CARDS) expect(c.badgeClass ?? '').not.toMatch(/text-\[(\d|1[01])px\]/)
   })
+})
+
+describe('S6 card icons', () => {
+  it('keeps the live classes for the two unmapped rows', () => {
+    expect(HUB_CARDS.find((c) => c.id === 'perang-fakta')?.icon).toBe('fa-fist-raised')
+    expect(HUB_CARDS.find((c) => c.id === 'teka-silang-kata')?.icon).toBe('fa-pencil-alt')
+  })
+
+  it.each(HUB_CARDS.map((c) => [c.title, c.icon]))(
+    '%s (%s) resolves to an icon with an empty lazy index',
+    (_title, icon) => {
+      expect(resolveIcon(icon, null).kind).toBe('icon')
+    },
+  )
 })
 
 describe('S6 → room game routes (D21 reach rule)', () => {

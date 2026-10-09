@@ -91,6 +91,10 @@ export interface RoomView {
     meter?: Record<string, number>
     teamScores?: Record<string, number>
     log: string[]
+    /** Perang Fakta: seconds left in the round, from the server clock (BR-M16-20). */
+    roundSecondsLeft?: number
+    /** Teka Silang Kata: seconds left of the 5 minutes, from the server clock. */
+    secondsLeft?: number
   } | null
   round?: number
   question?: RoomQuestion

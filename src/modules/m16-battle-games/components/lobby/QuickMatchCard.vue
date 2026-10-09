@@ -31,6 +31,8 @@ const error = ref('')
 const subjectId = useId()
 const modeId = useId()
 
+const cancelling = ref(false)
+let unmounted = false
 let counter: ReturnType<typeof setInterval> | null = null
 
 const poller = useRoomPolling(async (signal) => {
@@ -61,11 +63,13 @@ function endSearch(): void {
 }
 
 async function start(): Promise<void> {
-  if (searching.value || starting.value) return
+  if (searching.value || starting.value || cancelling.value) return
   error.value = ''
   starting.value = true
   try {
     const res = await startPbQuickMatch({ subject: subject.value, match_mode: matchMode.value })
+    // The card was left while #29 was in flight: start no timer.
+    if (unmounted) return
     const body: PbQuickMatchStart = res.body
     if ('status' in body && body.status === 'searching') {
       elapsed.value = 0
@@ -78,22 +82,29 @@ async function start(): Promise<void> {
       error.value = 'error' in body && body.error ? body.error : QM_MESSAGES.network
     }
   } catch {
-    error.value = QM_MESSAGES.network
+    if (!unmounted) error.value = QM_MESSAGES.network
   } finally {
     starting.value = false
   }
 }
 
+/** "Batal Carian": back to idle at once; "Cari Lawan Sekarang" stays disabled until #31 has settled. */
 async function cancel(): Promise<void> {
   endSearch()
+  cancelling.value = true
   try {
     await cancelPbQuickMatch()
   } catch {
     /* the card is already idle; a failed cancel changes nothing on screen */
+  } finally {
+    cancelling.value = false
   }
 }
 
-onBeforeUnmount(endSearch)
+onBeforeUnmount(() => {
+  unmounted = true
+  endSearch()
+})
 </script>
 
 <template>
@@ -139,7 +150,7 @@ onBeforeUnmount(endSearch)
       </div>
       <button
         type="button"
-        :disabled="starting"
+        :disabled="starting || cancelling"
         class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition bg-primary-gradient hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
         data-testid="qm-start"
         @click="start"

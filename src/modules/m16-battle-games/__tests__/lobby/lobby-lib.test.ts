@@ -199,9 +199,9 @@ describe('room helpers (FR-M16-68..70)', () => {
   })
 
   it('measures the answer seconds in 0..15 and builds the #28 body', () => {
-    expect(answerSeconds(1000, 1000)).toBe(0)
-    expect(answerSeconds(1000, 4999)).toBe(3)
-    expect(answerSeconds(1000, 99_000)).toBe(15)
+    expect(answerSeconds(0)).toBe(0)
+    expect(answerSeconds(3)).toBe(3)
+    expect(answerSeconds(99)).toBe(15)
     expect(answerBody(7, { optionId: 2 }, 3)).toEqual({
       type: 'answer',
       questionId: 7,

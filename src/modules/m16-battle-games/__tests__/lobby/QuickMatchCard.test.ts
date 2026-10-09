@@ -148,4 +148,33 @@ describe('Papan Bijak quick match', () => {
     wrapper = undefined
     expect(vi.getTimerCount()).toBe(0)
   })
+
+  it('starts no timer when the card is left while #29 is still in flight', async () => {
+    let answer!: (v: unknown) => void
+    startPbQuickMatch.mockReturnValueOnce(new Promise((r) => (answer = r)))
+    wrapper = mount(QuickMatchCard, { attachTo: document.body })
+    await wrapper.get('[data-testid="qm-start"]').trigger('click')
+    wrapper.unmount()
+    wrapper = undefined
+    answer(res({ status: 'searching' }))
+    await flushPromises()
+    expect(vi.getTimerCount()).toBe(0)
+    await vi.advanceTimersByTimeAsync(9000)
+    expect(pollPbQuickMatch).not.toHaveBeenCalled()
+  })
+
+  it('keeps "Cari Lawan Sekarang" disabled until the cancel request has settled', async () => {
+    let settle!: (v: unknown) => void
+    cancelPbQuickMatch.mockReturnValueOnce(new Promise((r) => (settle = r)))
+    await search()
+    await wrapper!.get('[data-testid="qm-cancel"]').trigger('click')
+    await flushPromises()
+    const start = wrapper!.get('[data-testid="qm-start"]')
+    expect(start.attributes('disabled')).toBeDefined()
+    await start.trigger('click')
+    expect(startPbQuickMatch).toHaveBeenCalledTimes(1) // the blocked click sent nothing
+    settle(res({ status: 'cancelled' }))
+    await flushPromises()
+    expect(wrapper!.get('[data-testid="qm-start"]').attributes('disabled')).toBeUndefined()
+  })
 })

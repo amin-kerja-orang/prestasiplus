@@ -8,10 +8,6 @@ import { teamLabel } from './lobby-lib'
 
 type Player = RoomView['players'][number]
 
-/** Seconds of one Perang Fakta round (BR-M16-20). */
-export const PF_ROUND_SECONDS = 10
-/** Seconds of a Teka Silang Kata game (BR-M16-20: 5 minutes). */
-export const CROSSWORD_SECONDS = 300
 /** Longest time a question may take for the speed bonus and the `seconds` field. */
 export const MAX_ANSWER_SECONDS = 15
 
@@ -30,9 +26,9 @@ export const canStart = (room: RoomView): boolean =>
 export const isOpenRoom = (room: RoomView): boolean =>
   room.status === 'waiting' || room.status === 'playing'
 
-/** Whole seconds between two instants, clamped to 0..15 for the answer body. */
-export function answerSeconds(shownAtMs: number, nowMs: number): number {
-  return Math.min(MAX_ANSWER_SECONDS, Math.max(0, Math.floor((nowMs - shownAtMs) / 1000)))
+/** Whole seconds counted since the question appeared, clamped to 0..15 for the answer body. */
+export function answerSeconds(sinceQuestion: number): number {
+  return Math.min(MAX_ANSWER_SECONDS, Math.max(0, Math.floor(sinceQuestion)))
 }
 
 /** The body of #28 for an answer of the acting player. */

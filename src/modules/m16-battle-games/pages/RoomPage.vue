@@ -8,7 +8,10 @@
  *
  * An unknown code (or a room the viewer cannot join) is the 404 page for Papan Bijak and the lobby with the
  * flash "Bilik tidak dijumpai." for S8–S12 (DV-M16-07). A direct visit by a non-player first tries the join
- * of #25, so a link to an open room (the hub strip) opens it.
+ * of #25, so a link to an open room (the hub strip) opens it. INFERRED: no live behaviour is observed for a
+ * bare room link; the join-on-visit is this page's reading of "chip linking to the room" (FN-M16-4.1.2).
+ *
+ * Clocks: Perang Fakta (10 s a round) and Teka Silang Kata (5 minutes) run on the server; see `setRoom`.
  */
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
@@ -29,8 +32,6 @@ import RoomBoard from '../components/lobby/RoomBoard.vue'
 import RoomPlayers from '../components/lobby/RoomPlayers.vue'
 import RoomQuestionCard from '../components/lobby/RoomQuestionCard.vue'
 import {
-  CROSSWORD_SECONDS,
-  PF_ROUND_SECONDS,
   answerBody,
   answerSeconds,
   canAct as canActIn,
@@ -61,21 +62,25 @@ const actionErrors = ref<string[]>([])
 
 /** Bumped by every action so an older poll answer never overwrites a newer state. */
 let version = 0
-const now = ref(Date.now())
+/**
+ * The clocks come from the server (BR-M16-20): every answer of #26 / #27 / #28 carries `roundSecondsLeft`
+ * (Perang Fakta) or `secondsLeft` (Teka Silang Kata). The page only counts whole seconds since the last
+ * answer (`sinceSync`) and since the question appeared (`sinceQuestion`); a reload or a poll resyncs it.
+ * There is no `Date.now()` clock here.
+ */
+const sinceSync = ref(0)
+const sinceQuestion = ref(0)
 let questionKey = ''
-let shownAt = Date.now()
-let playStartedAt = 0
-let crosswordClosing = false
+let timeoutSentFor = ''
 
 function setRoom(v: RoomView): void {
   room.value = v
+  sinceSync.value = 0
   const key = `${v.status}:${String(v.question?.id ?? '')}:${String(v.round ?? '')}`
   if (key !== questionKey) {
     questionKey = key
-    shownAt = Date.now()
-    now.value = shownAt
+    sinceQuestion.value = 0
   }
-  if (v.status === 'playing' && playStartedAt === 0) playStartedAt = Date.now()
 }
 
 // --- polling (#26 every 3 s while the room is open) -----------------------------------------------------------------
@@ -92,14 +97,32 @@ watch(room, (r) => {
   if (r && !isOpenRoom(r)) poller.stop()
 })
 
-// A 1 s tick for the round countdown (Perang Fakta) and the crossword clock; cleared on unmount.
-const ticker = setInterval(() => {
-  now.value = Date.now()
-}, 1000)
+// A 1 s tick between polls, only while the game plays; cleared when it ends and on unmount.
+let ticker: ReturnType<typeof setInterval> | null = null
+
+function stopTicker(): void {
+  if (ticker !== null) clearInterval(ticker)
+  ticker = null
+}
+
+watch(
+  () => room.value?.status,
+  (status) => {
+    if (status === 'playing') {
+      if (ticker === null) {
+        ticker = setInterval(() => {
+          sinceSync.value += 1
+          sinceQuestion.value += 1
+        }, 1000)
+      }
+    } else stopTicker()
+  },
+  { immediate: true },
+)
 
 const initCtl = new AbortController()
 onBeforeUnmount(() => {
-  clearInterval(ticker)
+  stopTicker()
   initCtl.abort()
   poller.stop()
 })
@@ -137,7 +160,7 @@ void init()
 
 // --- actions ----------------------------------------------------------------------------------------------------------
 
-async function act(call: () => Promise<RoomView>): Promise<void> {
+async function act(call: () => Promise<RoomView>, quiet = false): Promise<void> {
   if (acting.value) return
   acting.value = true
   actionErrors.value = []
@@ -146,7 +169,8 @@ async function act(call: () => Promise<RoomView>): Promise<void> {
   try {
     setRoom(await call())
   } catch (err) {
-    actionErrors.value = errorLines(err)
+    // A timeout submit can lose the race with the server clock; the next poll resyncs, so say nothing.
+    if (!quiet) actionErrors.value = errorLines(err)
   } finally {
     acting.value = false
     version += 1
@@ -159,7 +183,7 @@ const roll = (): Promise<void> => act(() => roomAction(props.game, code.value, {
 function onAnswer(answer: { optionId?: number; value?: string }): Promise<void> {
   const q = room.value?.question
   if (!q) return Promise.resolve()
-  const seconds = answerSeconds(shownAt, Date.now())
+  const seconds = answerSeconds(sinceQuestion.value)
   return act(() => roomAction(props.game, code.value, answerBody(q.id, answer, seconds)))
 }
 
@@ -173,33 +197,47 @@ const round = computed(() => (room.value ? roundText(room.value) : ''))
 const dice = computed(() => lastRoll(room.value?.state?.log))
 const awaiting = computed(() => room.value?.state?.awaiting ?? null)
 
-const countdown = computed<string | null>(() => {
-  if (props.game !== 'perang-fakta' || room.value?.status !== 'playing') return null
-  const left = PF_ROUND_SECONDS - Math.floor((now.value - shownAt) / 1000)
-  return `${String(Math.max(0, left))}s`
+/** Seconds left of the Perang Fakta round: the server value minus the seconds counted since it arrived. */
+const roundLeft = computed<number | null>(() => {
+  const left = room.value?.state?.roundSecondsLeft
+  return room.value?.status === 'playing' && left !== undefined
+    ? Math.max(0, left - sinceSync.value)
+    : null
 })
-
-const crosswordLeft = computed(() =>
-  props.game === 'teka-silang-kata' && room.value?.status === 'playing' && playStartedAt > 0
-    ? CROSSWORD_SECONDS - Math.floor((now.value - playStartedAt) / 1000)
-    : null,
+const countdown = computed<string | null>(() =>
+  roundLeft.value === null ? null : `${String(roundLeft.value)}s`,
 )
 
-// Teka Silang Kata: at 0:00 the remaining words are left empty, which ends the game.
-watch(crosswordLeft, async (left) => {
-  if (left === null || left > 0 || !acts.value || crosswordClosing) return
-  crosswordClosing = true
-  try {
-    for (let i = 0; i < 20; i++) {
-      const r = room.value
-      if (!r || r.status !== 'playing' || !r.question) break
-      await act(() =>
-        roomAction(props.game, code.value, answerBody(r.question!.id, { value: '' }, 15)),
-      )
-      if (actionErrors.value.length > 0) break
-    }
-  } finally {
-    crosswordClosing = false
+/** Seconds left of the Teka Silang Kata game (server clock). */
+const crosswordLeft = computed<number | null>(() => {
+  const left = room.value?.state?.secondsLeft
+  return room.value?.status === 'playing' && left !== undefined
+    ? Math.max(0, left - sinceSync.value)
+    : null
+})
+
+// Perang Fakta: when the round clock reaches 0 the acting player sends the explicit no-vote (#28,
+// `optionId: null`, 0 s). The server resolves the same timeout on its own at the next poll, so a lost race
+// is harmless and silent.
+watch(roundLeft, (left) => {
+  const r = room.value
+  const q = r?.question
+  if (left !== 0 || !r || !q || !acts.value || acting.value || r.state?.awaiting !== 'answer')
+    return
+  const key = `${r.code}:${String(q.id)}`
+  if (timeoutSentFor === key) return
+  timeoutSentFor = key
+  void act(() => roomAction(props.game, code.value, answerBody(q.id, {}, 0)), true)
+})
+
+// Teka Silang Kata: at 0:00 the server ends the game; ask for the answer at once instead of waiting.
+watch(crosswordLeft, (left) => {
+  if (left === 0 && !acting.value) {
+    void fetchRoom(props.game, code.value, { signal: initCtl.signal })
+      .then((v) => {
+        if (!acting.value) setRoom(v)
+      })
+      .catch(() => undefined)
   }
 })
 

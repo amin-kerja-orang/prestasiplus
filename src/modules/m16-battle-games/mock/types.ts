@@ -292,6 +292,8 @@ export interface RoomState {
   mvpId: number | null
   /** Draw counter of the room's dice and bot streams. */
   draws: number
+  /** When the current round began (ms; Perang Fakta round clock, BR-M16-20). Null before the start. */
+  roundStartedMs: number | null
   log: string[]
 }
 

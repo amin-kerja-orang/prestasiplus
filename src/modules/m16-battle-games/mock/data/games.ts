@@ -70,6 +70,9 @@ export const BOARD_STEP = 3
 
 /** Room rules (PROVISIONAL, BR-M16-20). */
 export const PF_ROUNDS = 15
+/** Server clocks (BR-M16-20): a Perang Fakta round lasts 10 s, a Teka Silang Kata game 5 minutes. */
+export const PF_ROUND_MS = 10_000
+export const CROSSWORD_MS = 300_000
 export const KR_ROUNDS = 10
 export const BENTENG_HP = 100
 export const BENTENG_DAMAGE = 20

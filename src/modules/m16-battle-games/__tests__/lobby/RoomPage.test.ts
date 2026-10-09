@@ -53,7 +53,7 @@ const room = (over: Partial<RoomView> = {}): RoomView => ({
 const playing = (over: Partial<RoomView> = {}): RoomView =>
   room({
     status: 'playing',
-    state: { awaiting: 'answer', round: 1, total: 15, humanId: 1, log: [] },
+    state: { awaiting: 'answer', round: 1, total: 15, humanId: 1, log: [], roundSecondsLeft: 10 },
     round: 1,
     question: {
       id: 77,
@@ -301,6 +301,106 @@ describe('polling (§7.1)', () => {
     await mountRoom()
     await vi.advanceTimersByTimeAsync(12_000)
     expect(fetchRoom).toHaveBeenCalledTimes(2) // the initial load and the first poll
+  })
+})
+
+describe('server clocks (BR-M16-20)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  })
+
+  const withLeft = (left: number): RoomView =>
+    playing({
+      state: {
+        awaiting: 'answer',
+        round: 1,
+        total: 15,
+        humanId: 1,
+        log: [],
+        roundSecondsLeft: left,
+      },
+    })
+
+  it('counts the Perang Fakta round down from the server value and resyncs on the poll', async () => {
+    fetchRoom.mockResolvedValueOnce(withLeft(10))
+    fetchRoom.mockResolvedValue(withLeft(4)) // the poll at 3 s: the server says 4, not 7
+    await mountRoom()
+    expect(get('room-countdown').text()).toBe('10s')
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(get('room-countdown').text()).toBe('8s')
+    await vi.advanceTimersByTimeAsync(1000) // the poll lands
+    await flushPromises()
+    // 4 s from the server (3 s if the 1 s tick of the same instant ran right after the poll), never 7 s.
+    expect(['4s', '3s']).toContain(get('room-countdown').text())
+  })
+
+  it('a reload keeps the clock: it starts from what the server says, not from 10', async () => {
+    fetchRoom.mockResolvedValue(withLeft(3))
+    await mountRoom()
+    expect(get('room-countdown').text()).toBe('3s')
+  })
+
+  it('sends the explicit no-vote (optionId null, 0 s) when the round clock reaches 0', async () => {
+    fetchRoom.mockResolvedValue(withLeft(2))
+    roomAction.mockResolvedValueOnce(withLeft(10))
+    await mountRoom()
+    await vi.advanceTimersByTimeAsync(2000)
+    await flushPromises()
+    expect(roomAction).toHaveBeenCalledTimes(1)
+    expect(roomAction.mock.calls[0]![2]).toEqual({
+      type: 'answer',
+      questionId: 77,
+      optionId: null,
+      seconds: 0,
+    })
+    expect(wrapper!.find('[data-testid="room-action-errors"]').exists()).toBe(false)
+  })
+
+  it('stays silent when the no-vote loses the race with the server clock', async () => {
+    fetchRoom.mockResolvedValue(withLeft(1))
+    roomAction.mockRejectedValueOnce(
+      new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Soalan tidak sepadan.' }),
+    )
+    await mountRoom()
+    await vi.advanceTimersByTimeAsync(1000)
+    await flushPromises()
+    expect(roomAction).toHaveBeenCalledTimes(1)
+    expect(wrapper!.text()).not.toContain('Soalan tidak sepadan.')
+  })
+
+  it('runs the 1 s ticker only while the game plays', async () => {
+    fetchRoom.mockResolvedValue(room())
+    startRoom.mockResolvedValueOnce(playing())
+    await mountRoom()
+    expect(vi.getTimerCount()).toBe(1) // the 3 s poll only
+    await get('room-start').trigger('click')
+    await flushPromises()
+    expect(vi.getTimerCount()).toBe(2)
+    wrapper!.unmount()
+    wrapper = undefined
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('Teka Silang Kata shows the server clock and never loops answers at 0:00', async () => {
+    const tk = (left: number): RoomView =>
+      room({
+        game: 'teka-silang-kata',
+        status: 'playing',
+        state: { awaiting: 'answer', round: 1, total: 8, humanId: 1, log: [], secondsLeft: left },
+        round: 1,
+        question: { id: 5, text: 'Cat?', options: [] },
+      })
+    fetchRoom.mockResolvedValueOnce(tk(2))
+    fetchRoom.mockResolvedValue(tk(0)) // the re-read at 0:00
+    await mountRoom('teka-silang-kata')
+    expect(get('room-clock').text()).toBe('⏱️ 0:02')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(get('room-clock').text()).toBe('⏱️ 0:01')
+    await vi.advanceTimersByTimeAsync(1000)
+    await flushPromises()
+    expect(get('room-clock').text()).toBe('⏱️ 0:00')
+    expect(roomAction).not.toHaveBeenCalled() // the server ends the game; the page only re-reads it
+    expect(fetchRoom.mock.calls.length).toBeGreaterThan(1)
   })
 })
 

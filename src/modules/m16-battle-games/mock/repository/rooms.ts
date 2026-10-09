@@ -12,6 +12,9 @@ import { users, type UserRow } from '@/modules/m01-authentication/mock'
 
 import {
   BOARD_NON_PLAIN,
+  CROSSWORD_MS,
+  PF_ROUNDS,
+  PF_ROUND_MS,
   MAX_QUIZ_TILES,
   PAPAN_BIJAK_SUBJECTS,
   ROOM_COINS,
@@ -57,6 +60,7 @@ import {
 } from './games-common'
 import {
   applyAction,
+  applyTimeout,
   startGame,
   type EnginePlayer,
   type EngineRoom,
@@ -214,6 +218,10 @@ export interface RoomView {
     meter?: Record<string, number>
     teamScores?: Record<string, number>
     log: string[]
+    /** Perang Fakta: seconds left in the round (server clock, BR-M16-20). */
+    roundSecondsLeft?: number
+    /** Teka Silang Kata: seconds left of the 5 minutes (server clock). */
+    secondsLeft?: number
   } | null
   round?: number
   question?: { id: number; text: string; options: { id: number; label: string; text: string }[] }
@@ -396,7 +404,14 @@ export const roomsRepo = defineRepository({
     const applyOut = (
       room: GameRoomRow,
       out: { state: RoomState; players: EnginePlayer[]; finished: boolean },
+      roundStart: number = m16Now(),
     ): GameRoomRow => {
+      // The round clock restarts when the round number changes (and at the start).
+      const prev = room.state
+      out.state.roundStartedMs =
+        prev && prev.roundStartedMs !== null && prev.round === out.state.round
+          ? prev.roundStartedMs
+          : roundStart
       for (const ep of out.players) {
         const row = playersOf(room.id).find((p) => p.userId === ep.userId)
         if (row) players.update(row.id, { team: ep.team, points: ep.points, correct: ep.correct })
@@ -427,6 +442,33 @@ export const roomsRepo = defineRepository({
         isBot: p.isBot,
       }))
 
+    /**
+     * Resolves the server clocks lazily and idempotently (BR-M16-20): every Perang Fakta round that is
+     * 10 s old or more advances as a no-vote of the acting player (several rounds after a long absence),
+     * and a Teka Silang Kata game 5 minutes after its start ends. Same time, same result.
+     */
+    const resolveClocks = (start: GameRoomRow, prng: PrngRegistry): GameRoomRow => {
+      let room = start
+      const now = m16Now()
+      for (let i = 0; i <= PF_ROUNDS + 1; i++) {
+        const st = room.state
+        if (room.status !== 'playing' || !st) break
+        let due = false
+        let nextStart = now
+        if (room.game === 'perang-fakta') {
+          const began = st.roundStartedMs ?? room.startedAtMs ?? now
+          due = now - began >= PF_ROUND_MS
+          nextStart = began + PF_ROUND_MS
+        } else if (room.game === 'teka-silang-kata') {
+          due = now - (room.startedAtMs ?? now) >= CROSSWORD_MS
+        }
+        if (!due) break
+        const res = applyTimeout(engineRoom(room), enginePlayers(room.id), st, prng, botAccuracy())
+        room = applyOut(room, res, nextStart)
+      }
+      return room
+    }
+
     // --- views --------------------------------------------------------------------------------------------------
 
     const questionOf = (room: GameRoomRow): RoomView['question'] | undefined => {
@@ -447,6 +489,24 @@ export const roomsRepo = defineRepository({
       const v = keylessView(st.pendingQ)
       if (!v) return undefined
       return room.game === 'teka-silang-kata' ? { ...v, options: [] } : v
+    }
+
+    /** Server-derived seconds left (relative, so the client needs no shared clock). */
+    const clocksOf = (
+      room: GameRoomRow,
+      st: RoomState,
+    ): { roundSecondsLeft?: number; secondsLeft?: number } => {
+      if (room.status !== 'playing') return {}
+      const now = m16Now()
+      if (room.game === 'perang-fakta') {
+        const began = st.roundStartedMs ?? room.startedAtMs ?? now
+        return { roundSecondsLeft: Math.max(0, Math.ceil((PF_ROUND_MS - (now - began)) / 1000)) }
+      }
+      if (room.game === 'teka-silang-kata') {
+        const began = room.startedAtMs ?? now
+        return { secondsLeft: Math.max(0, Math.ceil((CROSSWORD_MS - (now - began)) / 1000)) }
+      }
+      return {}
     }
 
     const viewOf = (room: GameRoomRow): RoomView => {
@@ -487,6 +547,7 @@ export const roomsRepo = defineRepository({
                 : {}),
               ...(room.game === 'kuiz-relay' ? { teamScores: st.teamScores } : {}),
               log: st.log,
+              ...clocksOf(room, st),
             }
           : null,
       }
@@ -812,7 +873,7 @@ export const roomsRepo = defineRepository({
           ) {
             addBot(room, prng)
           }
-          return viewOf(store.get(room.id) as GameRoomRow)
+          return viewOf(resolveClocks(store.get(room.id) as GameRoomRow, prng))
         })
       },
 
@@ -878,7 +939,7 @@ export const roomsRepo = defineRepository({
           }
         } else throw new M16Error('VALIDATION_ERROR', 'Tindakan tidak sah.', 'type')
         return transaction(() => {
-          const room = mustRoom(game, code, viewerId)
+          const room = resolveClocks(mustRoom(game, code, viewerId), prng)
           if (room.status !== 'playing' || !room.state)
             throw new M16Error('CONFLICT', 'Permainan belum bermula.')
           if (room.state.humanId !== viewerId)
