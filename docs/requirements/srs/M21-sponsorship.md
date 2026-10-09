@@ -23,7 +23,7 @@
 
 ### 0.1 Fidelity deviations referenced here
 
-URS §7 is authoritative. Approved fixes: DV-M21-01 ("Lihat" → S3), 02 (405 → 404), 03 (S4 "Semua" = total), 05 (no horizontal scroll at 375), 06 (S6 header title), 07 (text ≥ 12 px), 08 (raw codes → BM labels), 12 (fictitious people), 14 (D14: simulated e-mail). Rejected — replicate live: DV-M21-04, 09, 10, 11, 13, 15.
+URS §7 is authoritative. Approved fixes: DV-M21-01 ("Lihat" → S3), 02 (405 → 404), 03 (S4 "Semua" = total), 05 (no horizontal scroll at 375), 06 (S6 header title), 07 (text ≥ 12 px), 08 (raw codes → BM labels), 12 (fictitious people), 14 (D14: simulated e-mail), 16 (S6 field boxes, D9 visual fix). Rejected — replicate live: DV-M21-04, 09, 10, 11, 13, 15.
 
 ---
 
