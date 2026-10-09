@@ -50,7 +50,7 @@ const { data, error, reload } = useApi((signal) => fetchBattleHistory({ signal }
       </RouterLink>
     </div>
     <div v-else class="rounded-2xl bg-white p-4 shadow-md">
-      <BattleRecentList :rows="data" home-colour />
+      <BattleRecentList :rows="data" />
     </div>
   </div>
 </template>

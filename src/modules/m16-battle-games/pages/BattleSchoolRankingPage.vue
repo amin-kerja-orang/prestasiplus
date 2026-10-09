@@ -74,7 +74,7 @@ const podiumOrder = computed(() => {
 
 <template>
   <div class="w-full space-y-4" data-testid="battle-schools">
-    <!-- DV-M16-41: the title is white; live paints it dark on the blue-violet gradient -->
+    <!-- DV-M16-41 (accepted for S3/S4, title colour only): white title; live is dark at about 2.0-2.5:1 contrast -->
     <div
       class="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 p-4 text-white shadow-lg"
     >
@@ -97,7 +97,7 @@ const podiumOrder = computed(() => {
         :to="periodTo(p.value)"
         class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold transition"
         :class="
-          data?.activePeriod === p.value
+          (data?.activePeriod ?? currentPeriod) === p.value
             ? 'bg-blue-500 text-white'
             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
         "

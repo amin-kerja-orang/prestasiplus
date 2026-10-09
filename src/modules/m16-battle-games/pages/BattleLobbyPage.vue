@@ -112,21 +112,11 @@ function goArena(uuid: string): void {
   void router.push(`/battle/arena/${uuid}`)
 }
 
-onMounted(async () => {
-  try {
-    const res = await fetchInvitations()
-    const list = (res.body as { invitations?: BattleInvitation[] } | null)?.invitations
-    if (Array.isArray(list) && list.length > 0) {
-      invitations.value = list
-      showInvitations.value = true
-    }
-  } catch {
-    // the invitation list is optional: an error leaves the modal closed
-  }
-  window.addEventListener('m16:battle-waiting', onWaiting)
-})
-onBeforeUnmount(() => window.removeEventListener('m16:battle-waiting', onWaiting))
-
+/**
+ * Test seam (dev and e2e builds only, the same `VITE_TEST_HOOKS` flag as `window.__mock`). DV-M16-06:
+ * there is no live control that starts the waiting card, so the e2e suite drives it with a
+ * `window` event. It is installed synchronously (before the first await) and removed on unmount.
+ */
 function onWaiting(event: Event): void {
   const d = (
     event as CustomEvent<{
@@ -139,6 +129,23 @@ function onWaiting(event: Event): void {
   if (d.join === true) void search.requestJoin(d.queueId, d.name, d.gradeLabel ?? '')
   else search.watchWaiting(d.queueId, d.name, d.gradeLabel ?? '')
 }
+const testHooks = import.meta.env.VITE_TEST_HOOKS === 'true'
+onMounted(async () => {
+  if (testHooks) window.addEventListener('m16:battle-waiting', onWaiting)
+  try {
+    const res = await fetchInvitations()
+    const list = (res.body as { invitations?: BattleInvitation[] } | null)?.invitations
+    if (Array.isArray(list) && list.length > 0) {
+      invitations.value = list
+      showInvitations.value = true
+    }
+  } catch {
+    // the invitation list is optional: an error leaves the modal closed
+  }
+})
+onBeforeUnmount(() => {
+  if (testHooks) window.removeEventListener('m16:battle-waiting', onWaiting)
+})
 </script>
 
 <template>
@@ -174,18 +181,18 @@ function onWaiting(event: Event): void {
         </button>
       </div>
 
-      <!-- Hero (DV-M16-41: the title is white; live paints it dark on the red gradient) -->
+      <!-- Hero (DV-M16-41 rejected for S1: the title is dark on the red-orange gradient, as on live) -->
       <div
-        class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 p-5 text-white shadow-lg sm:p-6"
+        class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 p-5 text-slate-900 shadow-lg sm:p-6"
       >
         <span class="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10" />
         <span class="absolute -bottom-10 -left-6 h-24 w-24 rounded-full bg-white/10" />
         <div class="relative flex flex-wrap items-center gap-3">
           <Zap class="h-8 w-8 shrink-0" />
-          <h2 class="text-2xl font-bold text-white sm:text-3xl">Battle Arena</h2>
+          <h2 class="text-2xl font-bold text-slate-900 sm:text-3xl">Battle Arena</h2>
           <span class="rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold">BARU</span>
         </div>
-        <p class="relative mt-2 text-sm text-white/90 sm:text-base">
+        <p class="relative mt-2 text-sm text-slate-900/90 sm:text-base">
           Cabar kawan, cari lawan, atau wakili sekolah anda!
         </p>
       </div>

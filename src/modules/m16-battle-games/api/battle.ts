@@ -71,15 +71,27 @@ export function pollMatch(
 /** #5 `POST /api/battle/accept-challenger/{queueId}`. */
 export function acceptChallenger(
   queueId: number,
+  options: Signal = {},
 ): Promise<RawResponse<{ matched?: boolean; battle_uuid?: string; error?: string }>> {
-  return api.raw('POST', `/api/battle/accept-challenger/${String(queueId)}`)
+  return api.raw(
+    'POST',
+    `/api/battle/accept-challenger/${String(queueId)}`,
+    undefined,
+    withSignal(options),
+  )
 }
 
 /** #6 `POST /api/battle/reject-challenger/{queueId}`. */
 export function rejectChallenger(
   queueId: number,
+  options: Signal = {},
 ): Promise<RawResponse<{ success?: boolean; error?: string }>> {
-  return api.raw('POST', `/api/battle/reject-challenger/${String(queueId)}`)
+  return api.raw(
+    'POST',
+    `/api/battle/reject-challenger/${String(queueId)}`,
+    undefined,
+    withSignal(options),
+  )
 }
 
 /** #7 `GET /api/battle/search-opponent?q=` (from 2 characters). */
@@ -122,13 +134,27 @@ export function declineInvitation(
 /** #12 `POST /api/battle/join-queue/{queueId}` (no UI caller on live, DV-M16-06). */
 export function joinQueue(
   queueId: number,
+  options: Signal = {},
 ): Promise<RawResponse<{ success?: boolean; error?: string }>> {
-  return api.raw('POST', `/api/battle/join-queue/${String(queueId)}`)
+  return api.raw(
+    'POST',
+    `/api/battle/join-queue/${String(queueId)}`,
+    undefined,
+    withSignal(options),
+  )
 }
 
 /** #13 `GET /api/battle/poll-challenger/{queueId}` (every 3 s). */
-export function pollChallenger(queueId: number): Promise<RawResponse<PollChallengerResponse>> {
-  return api.raw('GET', `/api/battle/poll-challenger/${String(queueId)}`)
+export function pollChallenger(
+  queueId: number,
+  options: Signal = {},
+): Promise<RawResponse<PollChallengerResponse>> {
+  return api.raw(
+    'GET',
+    `/api/battle/poll-challenger/${String(queueId)}`,
+    undefined,
+    withSignal(options),
+  )
 }
 
 /** #14 `POST /api/battle/forfeit/{uuid}` (the page reloads after any response). */

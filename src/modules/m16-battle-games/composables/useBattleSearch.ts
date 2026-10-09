@@ -225,8 +225,13 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
   async function respond(accept: boolean): Promise<void> {
     if (phase.value !== 'incoming') return
     const mySession = session
+    const mine = new AbortController()
+    controller = mine
     try {
-      const res = accept ? await acceptChallenger(queueId) : await rejectChallenger(queueId)
+      const opts = { signal: mine.signal }
+      const res = accept
+        ? await acceptChallenger(queueId, opts)
+        : await rejectChallenger(queueId, opts)
       if (mySession !== session) return
       const body = bodyOf<{ error: string; matched: boolean; battle_uuid: string }>(res)
       if (body?.error) {
@@ -252,9 +257,11 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
   // --- waiting for approval (#12, #13; no UI control, DV-M16-06) ---------------------------------
 
   async function waitTick(mySession: number): Promise<void> {
+    const mine = new AbortController()
+    controller = mine
     let res: RawResponse<PollChallengerResponse>
     try {
-      res = await pollChallenger(queueId)
+      res = await pollChallenger(queueId, { signal: mine.signal })
     } catch (err) {
       if (mySession !== session || isAbort(err)) return
       stopWith(BATTLE_MSG.waitingNetwork)
@@ -299,7 +306,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     const mine = new AbortController()
     controller = mine
     try {
-      const res = await joinQueue(id)
+      const res = await joinQueue(id, { signal: mine.signal })
       if (mySession !== session) return
       const body = bodyOf<{ error: string }>(res)
       if (!isOk(res.status) || body?.error) {

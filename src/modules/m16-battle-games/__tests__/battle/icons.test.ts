@@ -1,57 +1,38 @@
 /**
- * Every data-driven Font Awesome icon of S1 (discovery A.1 tiles, A.2 domains) resolves through the
- * shared icon maps (ADR-0010); a miss needs a design-system row, not a local map. Reported as
- * missing (no design-system row, M16-T3): fa-superscript (Matematik Tambahan) and fa-flask-vial
- * (Kimia); the tile then shows no glyph. The S1 level icons are fixed Lucide components.
+ * Every icon value the S1 lobby supplies resolves through the shared icon resolver (ADR-0010):
+ * the subject tiles take M03 `curriculum.subjects()` ids 1-31 (kebab Lucide names, `fas fa-*`
+ * classes, emoji, `null` for ids 30/31) and the domain tiles take the M07 PKSK domains, both read
+ * from the real mock repository payload. Rows with an icon must resolve to an icon or an emoji.
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
-import { lookupFaName } from '@/components/icon/resolve'
+import { loadLucideIndex, resolveIcon, type LucideIndex } from '@/components/icon'
+import { curriculum } from '@/modules/m03-curriculum/mock'
+import { pkskDomains } from '@/modules/m07-pksk/mock'
 
-const SUBJECT_ICONS = [
-  'book-open',
-  'globe',
-  'calculator',
-  'flask',
-  'clock',
-  'moon',
-  'heart',
-  'bolt',
-  'leaf',
-  'map',
-  'palette',
-  'music',
-  'heartbeat',
-  'wrench',
-  'desktop',
-  'language',
-  'receipt',
-  'chart-line',
-  'briefcase',
-  'book',
-]
-const DOMAIN_ICONS = [
-  'brain',
-  'calculator',
-  'flask',
-  'language',
-  'landmark',
-  'globe-asia',
-  'users',
-  'futbol',
-  'monument',
-  'leaf',
-  'laptop-code',
-  'chart-line',
-  'lightbulb',
-  'earth-asia',
-  'pen-fancy',
-  'seedling',
-]
+let index: LucideIndex | null = null
+beforeAll(async () => {
+  index = await loadLucideIndex()
+})
 
-describe('S1 data-driven icons resolve through the icon maps', () => {
-  it.each([...new Set([...SUBJECT_ICONS, ...DOMAIN_ICONS])])('fa-%s', (name) => {
-    expect(lookupFaName(name), `fa-${name}`).toBeDefined()
+const subjects = curriculum
+  .subjects({ active: true })
+  .filter((s) => s.id >= 1 && s.id <= 31)
+  .map((s) => ({ key: `subject ${String(s.id)}`, icon: s.icon }))
+const domains = pkskDomains
+  .list()
+  .filter((d) => d.isActive)
+  .map((d) => ({ key: `domain ${String(d.id)}`, icon: d.icon }))
+
+describe('S1 data-driven icons resolve through resolveIcon', () => {
+  it('reads the real payload rows', () => {
+    expect(subjects.length).toBeGreaterThan(0)
+    expect(domains.length).toBeGreaterThan(0)
+  })
+
+  it.each([...subjects, ...domains].filter((r) => r.icon))('$key ($icon)', ({ icon }) => {
+    const r = resolveIcon(icon, index)
+    expect(['icon', 'emoji']).toContain(r.kind)
   })
 })

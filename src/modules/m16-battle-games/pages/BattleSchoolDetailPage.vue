@@ -133,7 +133,7 @@ const boxes = computed(() => {
     </div>
 
     <template v-else-if="data">
-      <!-- DV-M16-41: the title is white; live paints it dark on the blue gradient -->
+      <!-- DV-M16-41 (accepted for S3/S4, title colour only): white title; live is dark at about 2.0-2.5:1 contrast -->
       <div
         class="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white shadow-lg"
       >

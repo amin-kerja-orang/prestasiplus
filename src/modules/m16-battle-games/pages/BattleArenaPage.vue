@@ -15,7 +15,7 @@ import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { alertNative, confirmNative, useApi } from '@/composables'
 import { clock } from '@/lib/time/clock'
 import { Flag } from '@lucide/vue'
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import {
@@ -140,8 +140,11 @@ async function submit(optionId: number | null): Promise<void> {
     }, FEEDBACK_MS)
   } catch {
     // the battle changed under us (finished, forfeited): show the stored state
-    failed.value = true
     await reload()
+    // after the reload: the data watcher above clears `failed` when the stored state arrives
+    await nextTick()
+    failed.value = true
+    locked.value = false
   }
 }
 
