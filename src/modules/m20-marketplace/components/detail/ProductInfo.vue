@@ -6,7 +6,7 @@
  * green WhatsApp button. The button is a plain link to W that opens a new tab (`target="_blank"`,
  * no `rel`, as live, D10); the new tab runs the hand-off (D14).
  */
-import { Eye, MapPin } from '@lucide/vue'
+import { Eye, MapPin, Package, Truck } from '@lucide/vue'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -88,26 +88,38 @@ const CategoryIcon = computed(() => categoryIcon(props.product.category.slug))
         <Eye class="h-4 w-4" aria-hidden="true" />{{ product.views }} {{ DETAIL_COPY.views }}
       </span>
       <span
-        class="font-semibold"
+        class="inline-flex items-center gap-1.5 font-semibold"
         :class="inStock ? 'text-green-600' : 'text-red-600'"
         data-testid="product-stock"
-        >{{ inStock ? DETAIL_COPY.inStock : DETAIL_COPY.outOfStock }}</span
       >
+        <Package
+          class="h-4 w-4 text-slate-500"
+          aria-hidden="true"
+          data-testid="product-stock-icon"
+        />{{ inStock ? DETAIL_COPY.inStock : DETAIL_COPY.outOfStock }}
+      </span>
     </div>
 
     <div
       class="space-y-1 rounded-xl bg-slate-50 p-3 text-sm text-slate-600"
       data-testid="product-shipping"
     >
-      <p class="font-medium break-words" data-testid="product-shipping-line">
-        {{ product.shippingLine }}
+      <p
+        class="flex items-center gap-1.5 font-medium break-words"
+        data-testid="product-shipping-line"
+      >
+        <Truck
+          class="h-4 w-4 shrink-0 text-indigo-500"
+          aria-hidden="true"
+          data-testid="product-shipping-icon"
+        />{{ product.shippingLine }}
       </p>
       <p
         v-if="product.location !== ''"
         class="flex items-center gap-1.5 break-words"
         data-testid="product-location"
       >
-        <MapPin class="h-4 w-4 shrink-0" aria-hidden="true" />{{ product.location }}
+        <MapPin class="h-4 w-4 shrink-0 text-red-500" aria-hidden="true" />{{ product.location }}
       </p>
     </div>
 

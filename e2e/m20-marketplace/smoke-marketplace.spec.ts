@@ -90,6 +90,15 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
       'Popular',
     ])
     await expect(page.getByTestId('marketplace-sort')).toHaveValue('latest')
+    if (viewportWidth(page) < 768) {
+      // BUG-M20-03: "Semua Keadaan" and "Terbaru" side by side under the category select.
+      const cat = await page.getByTestId('marketplace-category').boundingBox()
+      const cond = await page.getByTestId('marketplace-condition').boundingBox()
+      const sort = await page.getByTestId('marketplace-sort').boundingBox()
+      expect(Math.abs(cond!.y - sort!.y)).toBeLessThan(2)
+      expect(cond!.x + cond!.width).toBeLessThanOrEqual(sort!.x)
+      expect(cond!.y).toBeGreaterThanOrEqual(cat!.y + cat!.height - 1)
+    }
     await expect(page.getByTestId('marketplace-submit')).toHaveText('Cari')
     await expect(page.getByTestId('marketplace-chip-all')).toHaveAttribute('data-active', 'true')
     await expect(page.getByTestId('marketplace-chip-digital')).toHaveAttribute(
@@ -136,6 +145,19 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
     await expect(cards(page).nth(8).getByTestId('product-card-shipping')).toHaveText(
       'Ambil Sendiri (Pickup)',
     )
+    // BUG-M20-02: shipping-line icons, filled tick, inset photo, "Terpakai" stacked under the discount.
+    for (const card of [c1, c3, c5, cards(page).nth(8)]) {
+      await expect(card.getByTestId('product-card-shipping-icon')).toBeVisible()
+    }
+    await expect(c1.getByTestId('product-card-verified')).toHaveClass(/fill-blue-500/)
+    const cardBox = await c3.boundingBox()
+    const imgBox = await c3.getByTestId('product-card-image').boundingBox()
+    expect(imgBox!.x - cardBox!.x).toBeGreaterThanOrEqual(12)
+    expect(imgBox!.y - cardBox!.y).toBeGreaterThanOrEqual(12)
+    const disc = await c3.getByTestId('product-card-discount').boundingBox()
+    const used = await c3.getByTestId('product-card-used').boundingBox()
+    expect(used!.y).toBeGreaterThanOrEqual(disc!.y + disc!.height - 1)
+    expect(Math.abs(used!.x - disc!.x)).toBeLessThan(2)
     await expect.poll(() => allImagesLoaded(page)).toBe(true)
     await c1.click()
     await expect(page).toHaveURL(/\/marketplace\/beg-sekolah-anti-air-premium-vH1Fj$/)

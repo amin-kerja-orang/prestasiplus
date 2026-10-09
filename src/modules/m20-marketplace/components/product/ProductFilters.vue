@@ -45,11 +45,11 @@ function submit(): void {
   <form
     action="/marketplace"
     method="get"
-    class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-4 shadow-md sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_auto]"
+    class="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 shadow-md lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_auto]"
     data-testid="marketplace-search"
     @submit.prevent="submit"
   >
-    <div class="relative min-w-0 sm:col-span-2 lg:col-span-1">
+    <div class="relative col-span-2 min-w-0 lg:col-span-1">
       <Search
         class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
         aria-hidden="true"
@@ -63,7 +63,12 @@ function submit(): void {
         data-testid="marketplace-q"
       />
     </div>
-    <select v-model="category" name="category" :class="FIELD" data-testid="marketplace-category">
+    <select
+      v-model="category"
+      name="category"
+      :class="[FIELD, 'col-span-2 sm:col-span-1']"
+      data-testid="marketplace-category"
+    >
       <option value="">{{ MARKETPLACE_COPY.allCategories }}</option>
       <option v-for="c in categories" :key="c.id" :value="c.slug">{{ c.name }}</option>
     </select>
@@ -76,7 +81,7 @@ function submit(): void {
     </select>
     <button
       type="submit"
-      class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-500 px-6 text-sm font-semibold text-white hover:bg-indigo-600 sm:col-span-2 lg:col-span-1"
+      class="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-500 px-6 text-sm font-semibold text-white hover:bg-indigo-600 lg:col-span-1"
       data-testid="marketplace-submit"
     >
       <Search class="h-4 w-4" aria-hidden="true" />

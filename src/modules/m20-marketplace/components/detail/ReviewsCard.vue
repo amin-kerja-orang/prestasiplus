@@ -23,7 +23,11 @@ function stars(rating: number): string {
       <Star class="h-4 w-4 text-amber-500" aria-hidden="true" />
       <span data-testid="reviews-title">{{ DETAIL_COPY.reviews }} ({{ count }})</span>
     </h2>
-    <p v-if="reviews.length === 0" class="text-sm text-slate-500" data-testid="reviews-empty">
+    <p
+      v-if="reviews.length === 0"
+      class="py-4 text-center text-sm text-slate-500"
+      data-testid="reviews-empty"
+    >
       {{ DETAIL_COPY.noReviews }}
     </p>
     <ul v-else class="space-y-3">

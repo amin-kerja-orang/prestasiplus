@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S7 `/marketplace/:slug` (FR-M20-55..61; URS FT-M20-4.2): back link, gallery, details card, "Penjual"
- * card, "Ulasan ({n})" and "Produk Berkaitan". The page fetches #15 once per slug; #15 adds a view on
+ * card (right column under the details card), "Ulasan ({n})" and "Produk Berkaitan". The page fetches #15 once per slug; #15 adds a view on
  * every call (BR-M20-12), so the page shows the post-increment `views` and never refetches on its own.
  * The shell header is "Marketplace" / {category} and the tab "{product} - Marketplace PRESTASIPLUS".
  * An unknown or hidden slug renders the in-place 404 page.
@@ -72,9 +72,11 @@ watch(
     <template v-else>
       <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
         <ProductGallery :images="product.data.value.images" :name="product.data.value.name" />
-        <ProductInfo :product="product.data.value" />
+        <div class="min-w-0 space-y-5">
+          <ProductInfo :product="product.data.value" />
+          <SellerPanel :seller="product.data.value.seller" />
+        </div>
       </div>
-      <SellerPanel :seller="product.data.value.seller" />
       <ReviewsCard :reviews="product.data.value.reviews" :count="product.data.value.reviewCount" />
       <RelatedProducts :products="product.data.value.related" />
     </template>

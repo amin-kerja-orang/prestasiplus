@@ -39,7 +39,7 @@ const joined = computed(() => `${SHOP_COPY.joined} ${diffForHumans(props.shop.cr
           <span class="min-w-0 break-words">{{ shop.shopName }}</span>
           <CircleCheck
             v-if="shop.verified"
-            class="h-5 w-5 shrink-0 text-blue-200"
+            class="h-5 w-5 shrink-0 fill-green-400 stroke-white"
             aria-hidden="true"
             data-testid="shop-verified"
           />

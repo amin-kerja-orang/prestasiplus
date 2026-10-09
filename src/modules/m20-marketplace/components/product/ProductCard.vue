@@ -5,25 +5,39 @@
  * line. `simple` (S8 grid): image, name, price and struck original only
  * (FN-M20-4.3.3, FN-M20-4.2.8; no badge, no seller, no shipping line, as live).
  */
-import { CircleCheck, Package, Store } from '@lucide/vue'
+import { CircleCheck, Gift, HandCoins, MapPin, Package, Store, Truck } from '@lucide/vue'
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import type { ProductCard } from '../../api'
 import { MARKETPLACE_COPY, formatPrice } from './copy'
 
-withDefaults(defineProps<{ product: ProductCard; variant?: 'full' | 'simple' | 'related' }>(), {
-  variant: 'full',
+const props = withDefaults(
+  defineProps<{ product: ProductCard; variant?: 'full' | 'simple' | 'related' }>(),
+  { variant: 'full' },
+)
+
+/**
+ * Shipping-line icon as live: fa-truck (postage), fa-gift (free), fa-hand-holding-usd (cod),
+ * fa-map-marker-alt (pickup). #14 carries only the line (BR-M20-17), so the method is read from it.
+ */
+const shippingIcon = computed(() => {
+  const line = props.product.shippingLine
+  if (line.startsWith('Pos')) return Truck
+  if (line.startsWith('Penghantaran Percuma')) return Gift
+  if (line.startsWith('Cash on Delivery')) return HandCoins
+  return MapPin
 })
 </script>
 
 <template>
   <RouterLink
     :to="`/marketplace/${product.slug}`"
-    class="group flex min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-md transition hover:-translate-y-1 hover:shadow-lg"
+    class="group flex min-w-0 flex-col overflow-hidden rounded-2xl bg-white p-4 shadow-md transition hover:-translate-y-1 hover:shadow-lg"
     data-testid="product-card"
     :data-product-id="product.id"
   >
-    <div class="relative aspect-square w-full overflow-hidden bg-slate-100">
+    <div class="relative aspect-square w-full overflow-hidden rounded-lg bg-slate-100">
       <img
         v-if="product.thumbnailUrl"
         :src="product.thumbnailUrl"
@@ -39,22 +53,26 @@ withDefaults(defineProps<{ product: ProductCard; variant?: 'full' | 'simple' | '
       >
         <Package class="h-10 w-10" aria-hidden="true" />
       </div>
-      <template v-if="variant === 'full'">
+      <div
+        v-if="variant === 'full'"
+        class="absolute top-2 left-2 flex flex-col items-start gap-1"
+        data-testid="product-card-badges"
+      >
         <span
           v-if="product.discountPct !== null"
-          class="absolute top-2 left-2 rounded-lg bg-red-500 px-2 py-0.5 text-xs font-bold text-white"
+          class="rounded-lg bg-red-500 px-2 py-0.5 text-xs font-bold text-white"
           data-testid="product-card-discount"
           >-{{ product.discountPct }}%</span
         >
         <span
           v-if="product.condition === 'used'"
-          class="absolute top-2 right-2 rounded-lg bg-amber-500 px-2 py-0.5 text-xs font-bold text-white"
+          class="rounded-lg bg-amber-500 px-2 py-0.5 text-xs font-bold text-white"
           data-testid="product-card-used"
           >{{ MARKETPLACE_COPY.used }}</span
         >
-      </template>
+      </div>
     </div>
-    <div class="flex min-w-0 flex-1 flex-col gap-1.5 p-3">
+    <div class="flex min-w-0 flex-1 flex-col gap-1.5 px-0.5 pt-3 pb-1">
       <h4
         class="line-clamp-2 text-sm leading-snug font-semibold break-words text-slate-800"
         data-testid="product-card-name"
@@ -70,7 +88,7 @@ withDefaults(defineProps<{ product: ProductCard; variant?: 'full' | 'simple' | '
         <span class="min-w-0 truncate">{{ product.seller.shopName }}</span>
         <CircleCheck
           v-if="product.seller.verified"
-          class="h-3.5 w-3.5 shrink-0 text-blue-500"
+          class="h-3.5 w-3.5 shrink-0 fill-blue-500 stroke-white"
           aria-hidden="true"
           data-testid="product-card-verified"
         />
@@ -88,10 +106,16 @@ withDefaults(defineProps<{ product: ProductCard; variant?: 'full' | 'simple' | '
       </div>
       <p
         v-if="variant === 'full'"
-        class="mt-auto text-xs break-words text-slate-500"
+        class="mt-auto flex items-start gap-1 text-xs break-words text-slate-500"
         data-testid="product-card-shipping"
       >
-        {{ product.shippingLine }}
+        <component
+          :is="shippingIcon"
+          class="mt-0.5 h-3.5 w-3.5 shrink-0"
+          aria-hidden="true"
+          data-testid="product-card-shipping-icon"
+        />
+        <span class="min-w-0">{{ product.shippingLine }}</span>
       </p>
     </div>
   </RouterLink>

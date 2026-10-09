@@ -15,7 +15,9 @@ defineProps<{ seller: SellerCard | null }>()
 
 <template>
   <section class="min-w-0 rounded-2xl bg-white p-4 shadow-md sm:p-5" data-testid="seller-panel">
-    <h2 class="mb-3 text-base font-bold text-slate-800">{{ DETAIL_COPY.seller }}</h2>
+    <h2 class="mb-3 text-sm font-bold tracking-wide text-slate-800 uppercase">
+      {{ DETAIL_COPY.seller }}
+    </h2>
     <RouterLink
       v-if="seller"
       :to="`/marketplace/penjual/${seller.id}`"
@@ -32,7 +34,7 @@ defineProps<{ seller: SellerCard | null }>()
           <span class="min-w-0 break-words" data-testid="seller-name">{{ seller.shopName }}</span>
           <CircleCheck
             v-if="seller.verified"
-            class="h-4 w-4 shrink-0 text-blue-500"
+            class="h-4 w-4 shrink-0 fill-blue-500 stroke-white"
             aria-hidden="true"
             data-testid="seller-verified"
           />

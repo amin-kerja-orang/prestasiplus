@@ -52,7 +52,9 @@ test.describe('M20 S7 Product page', MODULE, () => {
     )
     await expect(page.getByTestId('product-views')).toHaveText('31 tontonan')
     await expect(page.getByTestId('product-stock')).toHaveText('Ada Stok')
+    await expect(page.getByTestId('product-stock-icon')).toBeVisible()
     await expect(page.getByTestId('product-shipping-line')).toHaveText('Pos / Kurier (RM8.00)')
+    await expect(page.getByTestId('product-shipping-icon')).toBeVisible()
     await expect(page.getByTestId('product-location')).toHaveText('Kuala Lumpur')
     const wa = page.getByTestId('product-whatsapp')
     await expect(wa).toHaveText('Hubungi Penjual di WhatsApp')
@@ -95,6 +97,9 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await expect(page.getByTestId('seller-link')).toHaveAttribute('href', '/marketplace/penjual/1')
     await expect(page.getByTestId('reviews-title')).toHaveText('Ulasan (0)')
     await expect(page.getByTestId('reviews-empty')).toHaveText('Belum ada ulasan untuk produk ini')
+    await expect(page.getByTestId('reviews-empty')).toHaveCSS('text-align', 'center')
+    await expect(page.getByTestId('seller-panel').locator('h2')).toHaveCSS('text-transform', 'uppercase')
+    await expect(page.getByTestId('seller-verified')).toHaveClass(/fill-blue-500/)
     await expect(page.locator('main form, main textarea')).toHaveCount(0)
     await page.getByTestId('seller-link').click()
     await expect(page).toHaveURL(/\/marketplace\/penjual\/1$/)
@@ -204,6 +209,12 @@ test.describe('M20 S7 Product page', MODULE, () => {
       expect(info!.x).toBeGreaterThan(gallery!.x + gallery!.width - 1)
       expect(Math.abs(info!.y - gallery!.y)).toBeLessThan(2)
     }
+    // BUG-M20-01: the seller card is in the right column, directly under the details card.
+    const seller = await page.getByTestId('seller-panel').boundingBox()
+    const infoBox = await page.getByTestId('product-info').boundingBox()
+    expect(seller!.y).toBeGreaterThanOrEqual(infoBox!.y + infoBox!.height - 1)
+    expect(Math.abs(seller!.x - infoBox!.x)).toBeLessThan(2)
+    expect(Math.abs(seller!.width - infoBox!.width)).toBeLessThan(2)
     const h1 = await page
       .getByTestId('product-name')
       .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
