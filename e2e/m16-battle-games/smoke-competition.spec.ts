@@ -7,7 +7,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional } from '../support'
+import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional, TAG } from '../support'
 
 const ADMIN = 'admin@demo.test'
 const PELAJARMAJU = 'pelajarmaju@demo.test'
@@ -109,6 +109,32 @@ test.describe('S20 Pertandingan Mingguan', () => {
       await expect(rows.nth(3)).toContainText('145')
       await expect(rows.nth(13)).toContainText('26')
       await expectNoHorizontalScroll(page)
+    },
+  )
+
+  // Characterisation of the live accuracies of ranks 3 and 4 (AC-M16-29.5). The M05 weekRank seed
+  // yields other values, so this is expected to fail until the owner (M05) fixes the seed.
+  test(
+    'E2E-M16-73 ranks 3 and 4 show the live accuracies 90.7% and 61.4% (known gap)',
+    {
+      tag: [TAG.provisional, moduleTag(16)],
+      annotation: {
+        type: 'known-gap',
+        description:
+          'Known gap DV-M16-38 / XR-M16-10: M05 weekRank seed yields 93.5% vs live 90.7% - owner M05',
+      },
+    },
+    async ({ page, gotoApp, loginAs }) => {
+      test.fail(
+        true,
+        'Known gap DV-M16-38 / XR-M16-10: M05 weekRank seed yields 93.5% vs live 90.7%',
+      )
+      await loginAs(ADMIN)
+      await gotoApp('/permainan/pertandingan')
+      const rows = page.getByTestId('pertandingan-row')
+      await expect(rows).toHaveCount(20)
+      await expect(rows.nth(2)).toContainText('90.7%', { timeout: 3000 })
+      await expect(rows.nth(3)).toContainText('61.4%', { timeout: 3000 })
     },
   )
 

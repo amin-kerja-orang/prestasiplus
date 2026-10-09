@@ -4,6 +4,10 @@
  * card with its countdown (refreshed every 60 s, "Tamat!" at the end, DV-M16-17), the three prize
  * cards (3 columns at every width), the own-status card and the top 20 of the weekly ranking (M05
  * Q-WEEK-RANK through #40). `?week=` is ignored, as live.
+ *
+ * Visual treatment follows the live capture (`pertandingan-desktop.png` / `-mobile.png`): a green
+ * back link and plain heading (no hero), a green week card, gold / silver / bronze prize borders, a
+ * green start button and light-grey rank numbers from 4.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -19,6 +23,9 @@ import { formatCountdown, formatPct, formatWeekRange } from '../components/compe
 import PageLoadError from '../components/competition/PageLoadError.vue'
 
 const REFRESH_MS = 60_000
+
+/** Prize-card borders: gold, silver, bronze (live capture). */
+const PRIZE_BORDER = ['border-amber-300', 'border-slate-300', 'border-orange-400'] as const
 
 const view = useApi((signal) => fetchWeeklyCompetition({ signal }))
 
@@ -54,16 +61,16 @@ function medalOf(rank: number): string | null {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl min-w-0 space-y-4" data-testid="m16-pertandingan-page">
-    <BackLink />
-
-    <section
-      class="rounded-2xl bg-linear-to-r from-amber-500 to-orange-500 p-4 text-white shadow-lg sm:p-6"
-      data-testid="pertandingan-hero"
-    >
-      <h1 class="text-xl font-bold text-white sm:text-2xl">{{ COPY.heading }}</h1>
-      <p class="mt-1 text-sm text-white">{{ COPY.sub }}</p>
-    </section>
+  <div class="min-w-0 space-y-4" data-testid="m16-pertandingan-page">
+    <div>
+      <BackLink />
+      <header data-testid="pertandingan-hero">
+        <h1 class="font-heading text-xl font-bold text-slate-900 sm:text-2xl">
+          {{ COPY.heading }}
+        </h1>
+        <p class="mt-1 text-sm text-slate-600">{{ COPY.sub }}</p>
+      </header>
+    </div>
 
     <PageLoadError v-if="view.error.value" @retry="view.reload()" />
     <div
@@ -76,16 +83,16 @@ function medalOf(rank: number): string | null {
 
     <template v-else>
       <section
-        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm"
+        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-300 bg-linear-to-r from-emerald-100 to-green-100 p-4 shadow-sm"
         data-testid="pertandingan-week"
       >
         <div class="min-w-0">
-          <p class="text-xs text-slate-600">{{ COPY.weekLabel }}</p>
-          <p class="font-bold text-slate-800" data-testid="pertandingan-range">{{ weekRange }}</p>
+          <p class="text-xs font-semibold text-emerald-700">{{ COPY.weekLabel }}</p>
+          <p class="font-bold text-slate-900" data-testid="pertandingan-range">{{ weekRange }}</p>
         </div>
         <div class="text-right">
-          <p class="text-xs text-slate-600">{{ COPY.countdownLabel }}</p>
-          <p class="font-bold text-red-600" data-testid="pertandingan-countdown">
+          <p class="text-xs font-semibold text-emerald-700">{{ COPY.countdownLabel }}</p>
+          <p class="font-bold text-slate-900" data-testid="pertandingan-countdown">
             {{ countdown }}
           </p>
         </div>
@@ -95,31 +102,32 @@ function medalOf(rank: number): string | null {
         <div
           v-for="(prize, i) in COPY.prizes"
           :key="prize.label"
-          class="rounded-2xl bg-white p-3 text-center shadow-sm"
+          class="rounded-2xl border-2 bg-white p-3 text-center shadow-sm"
+          :class="PRIZE_BORDER[i]"
           data-testid="pertandingan-prize"
         >
           <div class="text-3xl">{{ prize.medal }}</div>
-          <p class="mt-1 text-xs font-semibold text-slate-700 sm:text-sm">{{ prize.label }}</p>
-          <p class="text-sm font-bold text-amber-600">+{{ data.prizes[i] }} 🪙</p>
+          <p class="mt-1 text-xs font-semibold text-slate-900 sm:text-sm">{{ prize.label }}</p>
+          <p class="text-base font-bold text-amber-600">+{{ data.prizes[i] }} 🪙</p>
         </div>
       </section>
 
       <section
-        class="rounded-2xl bg-white p-4 text-center shadow-sm"
+        class="rounded-2xl bg-white p-6 text-center shadow-sm sm:p-8"
         data-testid="pertandingan-status"
       >
         <template v-if="data.me">
-          <p class="font-bold text-slate-800" data-testid="pertandingan-my-rank">
+          <p class="font-bold text-slate-900" data-testid="pertandingan-my-rank">
             {{ COPY.myRank(data.me.rank, data.me.betul) }}
           </p>
         </template>
         <template v-else>
           <div class="text-3xl">📝</div>
-          <p class="mt-1 font-bold text-slate-800">{{ COPY.notStarted }}</p>
+          <p class="mt-1 font-bold text-slate-900">{{ COPY.notStarted }}</p>
           <p class="text-sm text-slate-600">{{ COPY.notStartedHint }}</p>
           <RouterLink
             :to="COPY.startPracticeTo"
-            class="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-500 px-6 text-sm font-semibold text-white hover:bg-indigo-600"
+            class="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow hover:bg-emerald-700"
             data-testid="pertandingan-start"
           >
             {{ COPY.startPractice }}
@@ -127,34 +135,37 @@ function medalOf(rank: number): string | null {
         </template>
       </section>
 
-      <section class="rounded-2xl bg-white p-4 shadow-sm" data-testid="pertandingan-board">
-        <h2 class="mb-3 font-heading text-base font-bold text-slate-800">
+      <section class="rounded-2xl bg-white py-4 shadow-sm" data-testid="pertandingan-board">
+        <h2 class="mb-3 px-4 font-heading text-base font-bold text-slate-900 sm:px-5">
           {{ COPY.boardHeading }}
         </h2>
         <ol class="divide-y divide-slate-100">
           <li
             v-for="row in data.rows"
             :key="row.userId"
-            class="flex items-center gap-3 px-2 py-2"
-            :class="medalOf(row.rank) ? 'rounded-lg bg-linear-to-r from-amber-50 to-white' : ''"
+            class="flex items-center gap-3 px-4 py-3 sm:px-5"
+            :class="medalOf(row.rank) ? 'bg-linear-to-r from-amber-50 to-white' : ''"
             data-testid="pertandingan-row"
           >
-            <span class="w-8 shrink-0 text-center text-lg font-bold text-slate-600">
+            <span
+              class="w-8 shrink-0 text-center text-lg font-bold"
+              :class="medalOf(row.rank) ? '' : 'text-slate-400'"
+            >
               {{ medalOf(row.rank) ?? row.rank }}
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-semibold text-slate-800">{{
+              <span class="block truncate text-sm font-semibold text-slate-900">{{
                 row.name
               }}</span>
-              <span class="block text-xs text-slate-600">{{ row.sesi }} {{ COPY.sessions }}</span>
+              <span class="block text-xs text-slate-500">{{ row.sesi }} {{ COPY.sessions }}</span>
             </span>
             <span class="shrink-0 text-right">
               <span class="block text-sm font-bold text-green-600">{{ row.betul }}</span>
-              <span class="block text-xs text-slate-600">{{ COPY.correct }}</span>
+              <span class="block text-xs text-slate-500">{{ COPY.correct }}</span>
             </span>
             <span class="w-16 shrink-0 text-right">
-              <span class="block text-sm font-bold text-slate-800">{{ formatPct(row.tepat) }}</span>
-              <span class="block text-xs text-slate-600">{{ COPY.accuracy }}</span>
+              <span class="block text-sm font-bold text-slate-900">{{ formatPct(row.tepat) }}</span>
+              <span class="block text-xs text-slate-500">{{ COPY.accuracy }}</span>
             </span>
           </li>
         </ol>

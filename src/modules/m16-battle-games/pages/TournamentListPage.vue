@@ -4,6 +4,11 @@
  * for admins only and the active tournaments of #42 (PROPOSED cards) or the empty card "Tiada
  * tournament aktif buat masa ini." (the seed). S25-S27 leagues are not linked from here (no link to
  * `/liga` on live, Q-M16-4).
+ *
+ * Layout follows the live capture (`tournament-desktop.png`): an indigo-violet-pink hero with a
+ * decorative circle, the create button on its own row below it, and a large white empty card with a
+ * grey trophy. D9: live paints the hero heading dark on the violet gradient (unreadable), the
+ * rebuild keeps it white.
  */
 import { Plus, Trophy } from '@lucide/vue'
 import { computed } from 'vue'
@@ -23,28 +28,35 @@ const view = useApi((signal) => fetchTournaments({ signal }))
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl min-w-0 space-y-4" data-testid="m16-tournament-page">
+  <div class="min-w-0 space-y-4" data-testid="m16-tournament-page">
     <section
-      class="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-linear-to-r from-indigo-600 to-purple-600 p-4 text-white shadow-lg sm:p-6"
+      class="relative overflow-hidden rounded-2xl bg-linear-to-r from-indigo-600 via-purple-600 to-pink-500 p-4 text-white shadow-lg sm:p-6"
       data-testid="tournament-hero"
     >
-      <div class="flex min-w-0 items-center gap-3">
-        <Trophy class="h-8 w-8 shrink-0 text-yellow-300" />
-        <div class="min-w-0">
-          <h2 class="text-xl font-bold text-white sm:text-2xl">{{ COPY.heading }}</h2>
-          <p class="mt-1 text-sm text-white">{{ COPY.sub }}</p>
-        </div>
+      <div
+        class="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10"
+      ></div>
+      <div class="relative flex min-w-0 items-center gap-3">
+        <Trophy class="h-8 w-8 shrink-0 text-white" />
+        <h2 class="font-heading text-2xl font-bold text-white sm:text-3xl">{{ COPY.heading }}</h2>
       </div>
-      <RouterLink
-        v-if="isAdmin"
-        :to="COPY.createTo"
-        class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
-        data-testid="tournament-create"
-      >
-        <Plus class="h-4 w-4" />
-        {{ COPY.create }}
-      </RouterLink>
+      <p class="relative mt-2 text-sm text-white/90 sm:text-base">{{ COPY.sub }}</p>
     </section>
+
+    <!--
+      Known dead link until S24 lands: `/tournament/admin/create` is the T6 remainder and is not
+      routed yet, so the admin sees the global 404 page there (XR-M16-11: S24 admin is deferred,
+      outside the 1.0 student scope; recorded in TRACKER).
+    -->
+    <RouterLink
+      v-if="isAdmin"
+      :to="COPY.createTo"
+      class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-indigo-700"
+      data-testid="tournament-create"
+    >
+      <Plus class="h-4 w-4" />
+      {{ COPY.create }}
+    </RouterLink>
 
     <PageLoadError v-if="view.error.value" @retry="view.reload()" />
     <div
@@ -56,10 +68,10 @@ const view = useApi((signal) => fetchTournaments({ signal }))
     </div>
     <div
       v-else-if="view.data.value.length === 0"
-      class="rounded-2xl bg-white p-8 text-center shadow-sm"
+      class="rounded-2xl bg-white px-4 py-12 text-center shadow-sm"
       data-testid="tournament-empty"
     >
-      <Trophy class="mx-auto h-10 w-10 text-gray-300" />
+      <Trophy class="mx-auto h-14 w-14 text-gray-300" />
       <p class="mt-3 text-gray-600">{{ COPY.empty }}</p>
     </div>
     <div v-else class="space-y-3" data-testid="tournament-list">
