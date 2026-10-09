@@ -108,7 +108,8 @@ export function parseTournamentBody(body: unknown): TournamentInput {
     f.question_mode = 'Sila pilih sumber soalan.'
   } else if (mode === 'subject') {
     const s = num(b.subject_id)
-    if (s !== null && Number.isInteger(s) && curriculum.subject(s)) subjectId = s
+    if (s !== null && Number.isInteger(s) && s >= 1 && s <= 31 && curriculum.subject(s))
+      subjectId = s
     else f.subject_id = 'Sila pilih sumber soalan.'
   } else if (mode === 'exam_paper') {
     // No exam paper exists (as live, DV-M16-28): any value is refused.

@@ -484,10 +484,10 @@ export const gameResultsRepo = defineRepository({
               detail = { level: b.max_level }
             }
           }
-          const best = bestOf(viewerId, info.game)
-          const isNewRecord = score > best
+          // BR-M16-27: a first result is a record (even 0); later ones must beat the stored best.
+          const row = bests.query({ where: { userId: viewerId, game: info.game } }).rows[0]
+          const isNewRecord = !row || score > row.bestScore
           if (isNewRecord) {
-            const row = bests.query({ where: { userId: viewerId, game: info.game } }).rows[0]
             if (row) bests.update(row.id, { bestScore: score })
             else bests.insert({ userId: viewerId, game: info.game, bestScore: score })
           }

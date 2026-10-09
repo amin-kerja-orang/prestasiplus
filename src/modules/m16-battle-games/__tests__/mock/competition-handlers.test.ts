@@ -374,6 +374,9 @@ describe('#1, #42-#45 tournaments', () => {
         'Sila pilih sumber soalan.',
       ],
       [{ subject_id: 999 }, 'subject_id', 'Sila pilih sumber soalan.'],
+      // only the 31 subjects #43 offers are accepted
+      [{ subject_id: 32 }, 'subject_id', 'Sila pilih sumber soalan.'],
+      [{ subject_id: 0 }, 'subject_id', 'Sila pilih sumber soalan.'],
       [
         { registration_opens_at: '2026-10-02T10:00', registration_closes_at: '2026-10-01T10:00' },
         'registration_closes_at',
@@ -696,6 +699,12 @@ describe('#46-#49 leagues', () => {
     const full = await post<ErrorBody>('/api/leagues/join', T4_STUDENT, { invite_code: code })
     expect(full.status).toBe(422)
     expect(full.body.error.message).toBe('Liga ini sudah penuh.')
+    // the detail agrees with join: a full league cannot be joined
+    const detail = await data<{ canJoin: boolean }>(
+      `/api/leagues/${String(created.body.data.id)}`,
+      T4_STUDENT,
+    )
+    expect(detail.canJoin).toBe(false)
   })
 })
 

@@ -231,7 +231,9 @@ export const leaguesRepo = defineRepository({
           inviteCode: l.inviteCode,
           shareUrl: shareUrl(l.name, l.inviteCode),
           canJoin:
-            l.status !== 'ended' && (viewerSchoolId === null || !ids.includes(viewerSchoolId)),
+            l.status !== 'ended' &&
+            (viewerSchoolId === null || !ids.includes(viewerSchoolId)) &&
+            (l.maxSchools === null || ids.length < l.maxSchools),
           schools: ids.map((sid) => ({ id: sid, name: schools.get(sid)?.name ?? '' })),
           standings: byLevel,
         }

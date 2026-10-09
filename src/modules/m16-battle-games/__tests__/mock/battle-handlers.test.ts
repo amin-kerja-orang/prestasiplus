@@ -7,6 +7,7 @@
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { users } from '@/modules/m01-authentication/mock'
 import { questions } from '@/modules/m04-question-bank/mock'
 
 import { battles } from '../../mock'
@@ -338,6 +339,42 @@ describe('#7 search-opponent (BR-M16-11)', () => {
       D5_STUDENT,
     )
     expect(self.body.users.some((u) => u.id === D5_STUDENT)).toBe(false)
+  })
+})
+
+describe('#7 search-opponent over the whole student set (BR-M16-11)', () => {
+  it('takes the first 10 A to Z of every name match; e-mail-only hits use no slot', async () => {
+    const term = 'an'
+    const all = users
+      .search(term, { role: 'student', limit: Number.MAX_SAFE_INTEGER })
+      .filter((u) => u.id !== D5_STUDENT && u.name.toLowerCase().includes(term))
+    expect(all.length).toBeGreaterThan(60)
+    const expected = all
+      .sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id)
+      .slice(0, 10)
+      .map((u) => u.id)
+    const r = await get<{ users: { id: number }[] }>(
+      `/api/battle/search-opponent?q=${term}`,
+      D5_STUDENT,
+    )
+    expect(r.body.users.map((u) => u.id)).toEqual(expected)
+  })
+})
+
+describe('#17 a correct answer at exactly 15 s (BR-M16-07)', () => {
+  it('scores 500, s runs 0-15 inclusive', async () => {
+    const uuid = await match(D5_STUDENT, await startQueue(D5_STUDENT))
+    const q = (
+      await get<{ data: { question: { id: number } } }>(`/api/battle/arena/${uuid}`, D5_STUDENT)
+    ).body.data.question
+    const key = [0, 1, 2, 3].find((o) => questions.gradeAnswer(q.id, o)?.isCorrect) as number
+    const r = await post<{ data: { correct: boolean; points: number } }>(
+      `/api/battle/arena/${uuid}/answer`,
+      D5_STUDENT,
+      { questionId: q.id, optionId: key, seconds: 15 },
+    )
+    expect(r.status).toBe(200)
+    expect(r.body.data).toMatchObject({ correct: true, points: 500 })
   })
 })
 

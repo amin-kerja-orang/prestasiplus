@@ -612,6 +612,24 @@ describe('single-player games (SRS §7 #32-#33, BR-M16-25/26/27)', () => {
     expect([again.status, again.body]).toEqual([409, { message: 'Keputusan sudah dihantar.' }])
   })
 
+  it('a first result is a record even with score 0, a later 0 is not (BR-M16-27)', async () => {
+    const submit = async () => {
+      const s = (await get<Data<Any>>('/api/games/solo/betul-salah?darjah=3', D5_STUDENT)).body.data
+      return (
+        await post<Any>('/api/games/solo/betul-salah/submit', D5_STUDENT, {
+          session_id: s.sessionId,
+          correct_count: 0,
+          total_answered: 1,
+          streak: 0,
+          score: 0,
+          syiling_earned: 0,
+        })
+      ).body
+    }
+    expect((await submit()).is_new_record).toBe(true)
+    expect((await submit()).is_new_record).toBe(false)
+  })
+
   it('is a record only above the stored best (admin best 38 / 40)', async () => {
     const run = async (game: string, body: (id: string) => Any) => {
       const s = (await get<Data<Any>>(`/api/games/solo/${game}?darjah=4`, ADMIN)).body.data

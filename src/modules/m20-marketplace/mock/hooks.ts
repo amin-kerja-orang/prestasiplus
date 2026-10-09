@@ -54,6 +54,7 @@ function m20LoadFixture(name: string): { loaded: string } {
   if (name === 'm20-many') {
     const rows: MpProduct[] = []
     for (let id = 11; id <= 25; id += 1) {
+      if (mpProductsRepository.get(id)) continue // idempotent: a second load adds nothing
       const n = id - 10
       rows.push(
         fixtureProduct(
@@ -66,7 +67,7 @@ function m20LoadFixture(name: string): { loaded: string } {
         ),
       )
     }
-    mpProductsRepository.insertMany(rows)
+    if (rows.length > 0) mpProductsRepository.insertMany(rows)
     return { loaded: name }
   }
   if (name === 'm20-second-seller') {

@@ -42,7 +42,7 @@ import { M16_TABLES } from './tables/tables'
 
 const plugin = defineMockModule({
   id: 'M16',
-  dependsOn: ['core', 'M01', 'M02', 'M03', 'M04', 'M05', 'M07', 'M14'],
+  dependsOn: ['core', 'M01', 'M02', 'M03', 'M04', 'M05', 'M07', 'M11', 'M14'],
   version: 2,
   tables: M16_TABLES,
   repositories: {

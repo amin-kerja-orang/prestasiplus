@@ -412,9 +412,11 @@ export const battlesRepo = defineRepository({
       ): { id: number; name: string; school: string; avatar: string | null }[] {
         const term = q.trim()
         if (term.length < 2) return []
+        const needle = term.toLowerCase()
+        // All students (an e-mail-only hit must not take a slot), name match, A to Z, then 10.
         return users
-          .search(term, { role: 'student', limit: 60 })
-          .filter((u) => u.id !== viewerId && u.name.toLowerCase().includes(term.toLowerCase()))
+          .search(term, { role: 'student', limit: Number.MAX_SAFE_INTEGER })
+          .filter((u) => u.id !== viewerId && u.name.toLowerCase().includes(needle))
           .sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id)
           .slice(0, 10)
           .map((u) => ({
@@ -678,7 +680,8 @@ export const battlesRepo = defineRepository({
           const graded = gradeArena(questionId as number, optionId)
           if (!graded) throw new M16Error('NOT_FOUND', 'Soalan tidak dijumpai.')
           const whole = Math.floor(seconds)
-          const correct = graded.correct && whole < QUESTION_SECONDS
+          // BR-M16-07: s runs 0-15 inclusive, so a correct answer at 15 s still scores 500.
+          const correct = graded.correct
           const points = correct ? arenaPoints(whole) : 0
           const index = done + 1
           const you = b.playerA === viewerId ? 'A' : 'B'

@@ -345,6 +345,17 @@ describe('#17 shop', () => {
 })
 
 describe('hooks and fixtures (§6.13)', () => {
+  it('loads m20-many idempotently (no duplicate slugs or rows)', async () => {
+    m20Hooks.m20LoadFixture('m20-many')
+    expect(() => m20Hooks.m20LoadFixture('m20-many')).not.toThrow()
+    const res = await list('/api/marketplace/products?page=2')
+    expect(res.body.meta.totalItems).toBe(25)
+    const slugs = [...(await list('/api/marketplace/products')).body.data, ...res.body.data].map(
+      (p) => p.slug,
+    )
+    expect(new Set(slugs).size).toBe(slugs.length)
+  })
+
   it('loads m20-second-seller, m20-many and m20-out-of-stock; rejects an unknown name', async () => {
     m20Hooks.m20LoadFixture('m20-second-seller')
     const shop = await call<{ data: ShopView }>('GET', '/api/marketplace/sellers/2', PELAJAR)
