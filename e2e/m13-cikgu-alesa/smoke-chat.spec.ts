@@ -124,21 +124,27 @@ test.describe('M13 S1 chat', MODULE, () => {
     },
   )
 
-  test(
-    'E2E-M13-10 pelajar: S1 renders, S2 to S6 go to the landing page @m13',
-    provisional('role guard of S2 to S6 for other roles is INFERRED (FR-M13-07)'),
-    async ({ page, gotoApp, loginAs }) => {
-      await loginAs(PELAJAR)
-      await gotoApp('/cikgu')
-      await expect(page).toHaveURL(/\/cikgu$/)
-      await expect(page.locator('.cikgu-alesa-shell h1')).toHaveText('Cikgu Alesa')
-      await expect(input(page)).toBeVisible()
-      for (const path of ['/cikgu/rph', '/cikgu/essay', '/cikgu/pbd']) {
-        await gotoApp(path)
-        await expect(page).not.toHaveURL(/\/cikgu/)
-      }
-    },
-  )
+  // M01 BR-07: student and parent both land on /dashboard.
+  for (const [label, email] of [
+    ['pelajar', PELAJAR],
+    ['ibu bapa', 'ibubapa@demo.test'],
+  ] as const) {
+    test(
+      `E2E-M13-10 ${label}: S1 renders, S2 to S6 go to the landing page @m13`,
+      provisional('role guard of S2 to S6 for other roles is INFERRED (FR-M13-07)'),
+      async ({ page, gotoApp, loginAs }) => {
+        await loginAs(email)
+        await gotoApp('/cikgu')
+        await expect(page).toHaveURL(/\/cikgu$/)
+        await expect(page.locator('.cikgu-alesa-shell h1')).toHaveText('Cikgu Alesa')
+        await expect(input(page)).toBeVisible()
+        for (const path of ['/cikgu/rph', '/cikgu/essay', '/cikgu/pbd']) {
+          await gotoApp(path)
+          await expect(page).toHaveURL(/\/dashboard$/)
+        }
+      },
+    )
+  }
 
   test('S1 route guard: teacher and admin are not redirected from S2 to S6 @m13', async ({
     page,

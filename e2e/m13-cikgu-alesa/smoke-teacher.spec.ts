@@ -24,7 +24,7 @@ import {
 
 /** Slow machines: E2E_TIMEOUT_FACTOR multiplies the expect timeout (assertions unchanged). */
 const TIMEOUT_FACTOR = Number(process.env.E2E_TIMEOUT_FACTOR) || 1
-const expect = baseExpect.configure({ timeout: 30_000 * TIMEOUT_FACTOR })
+const expect = baseExpect.configure({ timeout: 10_000 * TIMEOUT_FACTOR })
 
 const ADMIN = 'admin@demo.test'
 const GURU = 'guru@demo.test'
@@ -42,7 +42,7 @@ const tid = (page: Page, id: string) => page.getByTestId(id)
 const h1 = (page: Page) => page.getByTestId('shell-user-main').locator('h1')
 
 async function expectNotFound(page: Page): Promise<void> {
-  await expect(page.locator('[data-page="not-found"]')).toBeVisible({ timeout: 30_000 })
+  await expect(page.locator('[data-page="not-found"]')).toBeVisible({ timeout: 30_000 * TIMEOUT_FACTOR })
   await expectTabTitle(page, NOT_FOUND_TITLE)
   await expect(page.getByText('Halaman Tidak Dijumpai').first()).toBeVisible()
   await expect(page.getByText('Oops! An Error Occurred')).toHaveCount(0)
@@ -834,7 +834,7 @@ test.describe('M13 responsive sweep', MODULE, () => {
     }) => {
       await loginAs(GURU)
       await gotoApp(path)
-      await expect(page.locator(ready).first()).toBeVisible({ timeout: 30_000 })
+      await expect(page.locator(ready).first()).toBeVisible({ timeout: 30_000 * TIMEOUT_FACTOR })
       await expectNoHorizontalScroll(page)
       if (path === '/cikgu') {
         // S1: "Hantar" stays inside the card.
@@ -858,7 +858,7 @@ test.describe('M13 responsive sweep', MODULE, () => {
     }) => {
       await loginAs(GURU)
       await gotoApp(path)
-      await expect(tid(page, table)).toBeVisible({ timeout: 30_000 })
+      await expect(tid(page, table)).toBeVisible({ timeout: 30_000 * TIMEOUT_FACTOR })
       const dims = await page.evaluate((id) => {
         const el = document
           .querySelector(`[data-testid="${id}"]`)!
@@ -880,11 +880,18 @@ test.describe('M13 responsive sweep', MODULE, () => {
   }) => {
     await loginAs(GURU)
     await gotoApp('/cikgu/pbd')
-    await expect(tid(page, 'pbd-class')).toBeVisible({ timeout: 30_000 })
-    const sel = await tid(page, 'pbd-class').boundingBox()
-    const btn = await tid(page, 'pbd-rollup').boundingBox()
-    if (viewportWidth(page) < 768) expect(btn!.y).toBeGreaterThan(sel!.y + sel!.height - 2)
-    else expect(Math.abs(btn!.y - sel!.y)).toBeLessThan(20)
+    await expect(tid(page, 'pbd-class')).toBeVisible({ timeout: 30_000 * TIMEOUT_FACTOR })
+    // Polled: the toolbar can still be settling right after the class list loads.
+    await expect
+      .poll(async () => {
+        const sel = await tid(page, 'pbd-class').boundingBox()
+        const btn = await tid(page, 'pbd-rollup').boundingBox()
+        if (!sel || !btn) return false
+        return viewportWidth(page) < 768
+          ? btn.y > sel.y + sel.height - 2
+          : Math.abs(btn.y - sel.y) < 20
+      })
+      .toBe(true)
     expect(await page.locator('#bulk-form [role], #rollup-form [role]').count()).toBe(0)
   })
 })

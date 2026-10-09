@@ -2,6 +2,8 @@
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LaravelPager } from '@/components/data'
+
 import PbdQueuePage from '../../pages/PbdQueuePage.vue'
 import { listMeta, mountAt } from './helpers'
 
@@ -106,6 +108,21 @@ describe('S6 PBD queue', () => {
     ;(all.element as HTMLInputElement).click()
     expect(checks().every((c) => c.element.checked)).toBe(true)
     ;(all.element as HTMLInputElement).click()
+    expect(checks().some((c) => c.element.checked)).toBe(false)
+  })
+
+  it('"Pilih semua" and the row ticks reset when the page changes', async () => {
+    api.fetchPbdQueue.mockResolvedValue({
+      data: [row(1, 'A', 10, 1), row(2, 'B', 20, 2)],
+      meta: listMeta(45),
+    })
+    const m = await mountAt(PbdQueuePage, '/cikgu/pbd')
+    wrapper = m.wrapper
+    wrapper.get<HTMLInputElement>('#select-all').element.click()
+    expect(checks().every((c) => c.element.checked)).toBe(true)
+    wrapper.getComponent(LaravelPager).vm.$emit('change', 2)
+    await flushPromises()
+    expect(wrapper.get<HTMLInputElement>('#select-all').element.checked).toBe(false)
     expect(checks().some((c) => c.element.checked)).toBe(false)
   })
 

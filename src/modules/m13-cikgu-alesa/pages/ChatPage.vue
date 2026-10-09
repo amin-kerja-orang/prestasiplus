@@ -5,7 +5,7 @@
  * speaker are `api/voice-sim` (no Web Speech API, no microphone, no network). Everything the live page
  * styles inline keeps the live values (URS FN-M13-2.1.1); messages are text nodes, never HTML.
  */
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import {
@@ -206,6 +206,14 @@ onMounted(() => {
   applyPrefill()
 })
 
+// A link to /cikgu?ask=... while already on /cikgu re-applies the prefill (same precedence rules).
+watch(
+  () => route.fullPath,
+  (now, before) => {
+    if (now !== before) applyPrefill()
+  },
+)
+
 onBeforeUnmount(() => {
   clearVoiceTimers()
   clearTimeout(speakTimer)
@@ -217,7 +225,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="cikgu-alesa-shell" data-testid="cikgu-chat">
     <header class="ca-head">
-      <div class="ca-avatar" aria-hidden="true">CA</div>
+      <div class="ca-avatar">CA</div>
       <div class="ca-head-text">
         <h1 class="ca-title">Cikgu Alesa</h1>
         <p class="ca-sub">Guru maya · Powered by {{ poweredBy }} + 50K+ soalan DSKP</p>
