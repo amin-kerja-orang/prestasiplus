@@ -7,7 +7,7 @@
 import { expect, test as base } from '../fixtures/test'
 import { APP_BOOT_TIMEOUT_MS, waitForApp } from '../fixtures/mock-handle'
 
-const BOOT_MS = Number(process.env.E2E_BOOT_MS ?? APP_BOOT_TIMEOUT_MS)
+const BOOT_MS = Number(process.env.E2E_BOOT_MS ?? process.env.M06_BOOT_MS ?? APP_BOOT_TIMEOUT_MS)
 
 export const test = base.extend({
   gotoApp: async ({ page }, use) => {

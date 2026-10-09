@@ -272,6 +272,19 @@ describe('Q4 MockRunPage (provisional)', () => {
   })
 })
 
+describe('Q4 submit 409', () => {
+  it('replaces to the result page when the mock was already submitted', async () => {
+    api.submitMock.mockRejectedValue(
+      new ApiError({ status: 409, code: 'ALREADY_SUBMITTED', message: 'x' }),
+    )
+    const w = await render(MockRunPage, '/spm-mock/400')
+    await t(w, 'run-form').trigger('submit')
+    await flushPromises()
+    expect(w.find('[data-testid=run-submit-error]').exists()).toBe(false)
+    expect(router.currentRoute.value.fullPath).toBe('/spm-mock/400/result')
+  })
+})
+
 describe('S12 MockResultPage', () => {
   it('renders hero, weak topics, tip, review and actions', async () => {
     const w = await render(MockResultPage, '/spm-mock/16/result')

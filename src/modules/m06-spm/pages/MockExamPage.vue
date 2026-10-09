@@ -170,8 +170,11 @@ async function generate(): Promise<void> {
               </p>
             </div>
             <span
-              class="grade rounded-full px-3 py-1 text-[0.85rem] font-bold"
-              :class="GRADE_CHIP_CLASS[m.status === 'in_progress' ? 'pending' : (m.grade ?? 'G')]"
+              class="grade rounded-full px-3 py-1 font-bold"
+              :class="[
+                m.status === 'in_progress' ? 'text-[0.85rem]' : 'text-2xl',
+                GRADE_CHIP_CLASS[m.status === 'in_progress' ? 'pending' : (m.grade ?? 'G')],
+              ]"
               data-testid="mock-row-grade"
               >{{ m.status === 'in_progress' ? 'Belum' : m.grade }}</span
             >

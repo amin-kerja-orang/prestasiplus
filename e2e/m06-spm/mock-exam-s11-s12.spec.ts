@@ -104,6 +104,7 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
       '4 bulan yang lepas · Score: 0/30 (0.00%)',
     )
     await expect(done.getByTestId('mock-row-grade')).toHaveText('G')
+    await expect(done.getByTestId('mock-row-grade')).toHaveCSS('font-size', '24px')
     await expect(done.getByTestId('mock-row-link')).toHaveText('Lihat →')
     await expect(done.getByTestId('mock-row-link')).toHaveAttribute('href', '/spm-mock/16/result')
     await expectNoHorizontalScroll(page)
@@ -267,10 +268,13 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expect(hero).toHaveAttribute('data-hero', 'bad')
     await expect(hero).toHaveClass(/red/)
     await expect(tid(page, 'result-title')).toHaveText('Bahasa Melayu · Paper 1')
+    // G4 fix: the h1 carries its own white (admin shell has no `-hero` override).
+    await expect(tid(page, 'result-title')).toHaveCSS('color', 'rgb(255, 255, 255)')
     await expect(tid(page, 'result-grade')).toHaveText('G')
     await expect(tid(page, 'result-percent')).toHaveText('0.00%')
     await expect(tid(page, 'result-score')).toHaveText('0 / 30 markah')
     await expect(tid(page, 'duta-title')).toHaveText('🎓 Cikgu Pakar Bahasa Melayu')
+    await expect(tid(page, 'duta-title')).toHaveCSS('text-transform', 'uppercase')
     await expect(tid(page, 'duta-text')).toHaveText(
       'Lemah dlm topik tertentu? Cikgu pakar ni boleh bantu anda naik ke A+ next round.',
     )
