@@ -56,7 +56,8 @@ watch(
 const heroLine = computed(() => {
   const s = data.value?.school
   if (!s) return ''
-  return [s.ppd ? `PPD ${s.ppd}` : null, s.state, s.type].filter((p) => p !== null).join(' · ')
+  // `ppd` already carries the "PPD " prefix (M02 district names), as on live "PPD HULU LANGAT · Selangor · SMK".
+  return [s.ppd ?? null, s.state, s.type].filter((p) => p !== null).join(' · ')
 })
 
 const cards = computed(() => {

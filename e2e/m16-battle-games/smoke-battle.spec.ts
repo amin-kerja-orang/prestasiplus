@@ -660,7 +660,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/battle/ranking-sekolah/8106')
-    await expect(page.getByTestId('battle-school-line')).toContainText('Selangor · SMK')
+    await expect(page.getByTestId('battle-school-line')).toHaveText('PPD HULU LANGAT · Selangor · SMK')
     await expect(page.getByTestId('battle-card-value')).toHaveText(['19', '12', '69%', '7'])
     await expect(page.getByTestId('battle-box-empty')).toHaveText([
       'Tiada data minggu ini',
