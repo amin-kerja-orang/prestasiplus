@@ -33,8 +33,6 @@ export const MOHON_COPY = {
   examplesNote:
     'Klik mana-mana contoh untuk guna sebagai template. Sila ubahsuai mengikut situasi sebenar.',
   submit: 'Hantar Permohonan',
-  /** PROPOSED notice when the request fails without a field map (network / 5xx). */
-  failed: 'Permohonan tidak dapat dihantar. Sila cuba lagi.',
   afterTitle: 'Apa yang berlaku selepas mohon?',
   afterSteps: [
     'Admin semak dan luluskan permohonan (1-3 hari bekerja)',
