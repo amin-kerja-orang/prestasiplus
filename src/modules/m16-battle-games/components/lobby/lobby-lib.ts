@@ -57,12 +57,17 @@ export function kadarClass(kadar: number): string {
   return 'bg-red-100 text-red-800'
 }
 
-/** Top 10 row styling for ranks 1–3 (gold / silver / bronze); other ranks are plain. */
+const ROW_EDGE = '[&>td]:border-y-2 [&>td:first-child]:border-l-2 [&>td:last-child]:border-r-2'
+
+/**
+ * Top 10 row styling (live: each row is its own rounded card): gold, silver and bronze with a coloured
+ * edge for ranks 1–3, white for the others. Applied to the cells of the row (`border-separate` table).
+ */
 export function topRowClass(rank: number): string {
-  if (rank === 1) return 'bg-linear-to-r from-amber-100 to-amber-200 border-l-4 border-amber-400'
-  if (rank === 2) return 'bg-linear-to-r from-slate-100 to-slate-200 border-l-4 border-slate-400'
-  if (rank === 3) return 'bg-linear-to-r from-orange-100 to-orange-200 border-l-4 border-orange-400'
-  return ''
+  if (rank === 1) return `[&>td]:bg-amber-100 [&>td]:border-amber-400 ${ROW_EDGE}`
+  if (rank === 2) return `[&>td]:bg-slate-100 [&>td]:border-slate-300 ${ROW_EDGE}`
+  if (rank === 3) return `[&>td]:bg-orange-200 [&>td]:border-orange-400 ${ROW_EDGE}`
+  return '[&>td]:bg-white'
 }
 
 /** "m:ss" of a number of seconds (0 or more). */

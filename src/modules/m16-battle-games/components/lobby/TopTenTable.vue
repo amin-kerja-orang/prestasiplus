@@ -2,8 +2,9 @@
 /**
  * "🏆 Papan Markah — Top 10 Juara" of S7 (SRS M16 v1.6 FR-M16-61; URS FN-M16-5.3.1; BR-M16-22). The server
  * sends the ordered rows, the 15-character names and the initials; this renders the medals, the rank-1–3
- * row styles, the initials circle and the Kadar pill. The table scrolls inside its card below 768 px
- * (no sticky column, DV-M16-13 pattern).
+ * row styles, the initials circle and the Kadar pill. Look (live screenshot): a pink-tinted panel whose rows
+ * are separate rounded cards (gold, silver and bronze for 1–3, large rank numbers after). The table scrolls
+ * inside its card below 768 px (no sticky column, DV-M16-13 pattern).
  */
 import type { GameLobby } from '../../api'
 import { MEDALS } from './lobby-config'
@@ -13,35 +14,43 @@ defineProps<{ rows: NonNullable<GameLobby['top10']> }>()
 </script>
 
 <template>
-  <section class="rounded-2xl bg-white p-5 shadow sm:p-6" data-testid="top10-card">
-    <h2 class="font-heading text-lg font-bold text-slate-800">🏆 Papan Markah — Top 10 Juara</h2>
+  <section
+    class="rounded-3xl border border-pink-200 bg-linear-to-br from-pink-50 to-pink-100 p-5 shadow-sm sm:p-6"
+    data-testid="top10-card"
+  >
+    <h2 class="font-heading text-lg font-bold text-rose-900">🏆 Papan Markah — Top 10 Juara</h2>
     <div class="mt-3 overflow-x-auto" data-testid="top10-scroll">
-      <table class="w-full min-w-[34rem] text-left text-sm" data-testid="top10-table">
+      <table
+        class="w-full min-w-[34rem] border-separate border-spacing-y-2 text-left text-sm"
+        data-testid="top10-table"
+      >
         <thead>
-          <tr class="border-b-2 border-slate-200 text-xs font-bold text-slate-500">
-            <th class="px-3 py-2">#</th>
-            <th class="px-3 py-2">Pemain</th>
-            <th class="px-3 py-2">🏆 Menang</th>
-            <th class="px-3 py-2">🎮 Jumlah</th>
-            <th class="px-3 py-2">📊 Kadar</th>
-            <th class="px-3 py-2">⭐ Skor</th>
-            <th class="px-3 py-2">✅ Betul</th>
+          <tr class="text-xs font-bold tracking-wide text-slate-600 uppercase">
+            <th class="px-3 py-1">#</th>
+            <th class="px-3 py-1">Pemain</th>
+            <th class="px-3 py-1">🏆 Menang</th>
+            <th class="px-3 py-1">🎮 Jumlah</th>
+            <th class="px-3 py-1">📊 Kadar</th>
+            <th class="px-3 py-1">⭐ Skor</th>
+            <th class="px-3 py-1">✅ Betul</th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="row in rows"
             :key="row.userId"
-            :class="['border-b border-slate-100', topRowClass(row.rank)]"
+            :class="topRowClass(row.rank)"
+            class="[&>td:first-child]:rounded-l-xl [&>td:last-child]:rounded-r-xl"
             data-testid="top10-row"
           >
-            <td class="px-3 py-2 font-bold" data-testid="top10-rank">
-              {{ MEDALS[row.rank - 1] ?? row.rank }}
+            <td class="px-3 py-2.5 font-bold" data-testid="top10-rank">
+              <span v-if="MEDALS[row.rank - 1]">{{ MEDALS[row.rank - 1] }}</span>
+              <span v-else class="text-xl font-medium text-slate-600">{{ row.rank }}</span>
             </td>
-            <td class="px-3 py-2">
+            <td class="px-3 py-2.5">
               <div class="flex items-center gap-2">
                 <span
-                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white"
+                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500 text-xs font-bold text-white"
                   data-testid="top10-initials"
                   >{{ row.initials }}</span
                 >
@@ -50,17 +59,17 @@ defineProps<{ rows: NonNullable<GameLobby['top10']> }>()
                 }}</span>
               </div>
             </td>
-            <td class="px-3 py-2 font-semibold">{{ row.menang }}</td>
-            <td class="px-3 py-2">{{ row.jumlah }}</td>
-            <td class="px-3 py-2">
+            <td class="px-3 py-2.5 font-bold text-amber-700">{{ row.menang }}</td>
+            <td class="px-3 py-2.5 text-slate-500">{{ row.jumlah }}</td>
+            <td class="px-3 py-2.5">
               <span
                 :class="['rounded-full px-2.5 py-0.5 text-xs font-bold', kadarClass(row.kadar)]"
                 data-testid="top10-kadar"
                 >{{ row.kadar }}%</span
               >
             </td>
-            <td class="px-3 py-2">{{ row.skor }}</td>
-            <td class="px-3 py-2">{{ row.betul }}</td>
+            <td class="px-3 py-2.5 font-bold text-violet-700">{{ row.skor }}</td>
+            <td class="px-3 py-2.5 font-bold text-emerald-700">{{ row.betul }}</td>
           </tr>
         </tbody>
       </table>

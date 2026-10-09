@@ -8,7 +8,6 @@
 import { onBeforeUnmount, ref, useId } from 'vue'
 
 import { LoadingSpinner } from '@/components/feedback'
-import { FORM_SELECT_CLASS } from '@/components/form/classes'
 
 import {
   cancelPbQuickMatch,
@@ -108,38 +107,48 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="rounded-2xl bg-white p-5 shadow sm:p-6" data-testid="quick-match">
-    <div class="flex items-start gap-3">
-      <span class="text-3xl">🔍</span>
+  <section
+    class="rounded-3xl border border-amber-200 bg-linear-to-br from-amber-50 to-yellow-100 p-5 shadow-sm sm:p-6"
+    data-testid="quick-match"
+  >
+    <div class="flex items-center gap-3">
+      <span
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-xl"
+        >🔍</span
+      >
       <div>
         <h2 class="font-heading text-lg font-bold text-slate-800">Cari Lawan Auto</h2>
-        <p class="text-xs text-slate-500">Sistem cari pemain sepadan secara automatik</p>
+        <p class="text-xs text-orange-700">Sistem cari pemain sepadan secara automatik</p>
       </div>
     </div>
 
     <div v-if="!searching" class="mt-4 space-y-4" data-testid="quick-match-form">
       <div class="grid gap-3 sm:grid-cols-2">
         <div>
-          <label :for="subjectId" class="mb-1 block text-sm font-semibold text-slate-600"
+          <label
+            :for="subjectId"
+            class="mb-1 block text-xs font-bold tracking-wide text-amber-800 uppercase"
             >Subjek</label
           >
           <select
             :id="subjectId"
             v-model="subject"
-            :class="[FORM_SELECT_CLASS, 'min-h-11']"
+            class="min-h-11 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm shadow-sm outline-none focus:ring-2 focus:ring-amber-300"
             data-testid="qm-subject"
           >
             <option v-for="s in PB_SUBJECTS" :key="s.value" :value="s.value">{{ s.label }}</option>
           </select>
         </div>
         <div>
-          <label :for="modeId" class="mb-1 block text-sm font-semibold text-slate-600"
+          <label
+            :for="modeId"
+            class="mb-1 block text-xs font-bold tracking-wide text-amber-800 uppercase"
             >Padanan</label
           >
           <select
             :id="modeId"
             v-model="matchMode"
-            :class="[FORM_SELECT_CLASS, 'min-h-11']"
+            class="min-h-11 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm shadow-sm outline-none focus:ring-2 focus:ring-amber-300"
             data-testid="qm-mode"
           >
             <option v-for="o in QM_MATCH_OPTIONS" :key="o.value" :value="o.value">
@@ -151,7 +160,7 @@ onBeforeUnmount(() => {
       <button
         type="button"
         :disabled="starting || cancelling"
-        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition bg-primary-gradient hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
+        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-amber-600 to-orange-600 px-4 py-2.5 text-sm font-bold tracking-wide text-white uppercase shadow transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
         data-testid="qm-start"
         @click="start"
       >

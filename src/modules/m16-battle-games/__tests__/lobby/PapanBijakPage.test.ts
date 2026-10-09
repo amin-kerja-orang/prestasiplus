@@ -123,7 +123,7 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     const auto = wrapper!.get('[data-testid="grade-auto"]').text()
     expect(auto).toContain('Darjah 4')
     expect(auto).toContain('(auto dari profil anda)')
-    expect(auto).toContain('Tukar')
+    expect(wrapper!.get('[data-testid="grade-auto-row"]').text()).toContain('Tukar')
     const how = wrapper!.get('[data-testid="pb-how-to"]')
     expect(how.text()).toContain('Cara Bermain:')
     expect(how.findAll('li').map((l) => l.text())).toEqual([
@@ -173,6 +173,19 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     expect(sel('create-grade-min').element.value).toBe('1')
     expect(sel('create-grade-max').element.value).toBe('6')
     expect(sel('create-grade-max').findAll('option')).toHaveLength(11)
+  })
+})
+
+describe('S7 live look: tinted panels', () => {
+  it('has the violet create, green join, amber quick match and pink Top 10 panels and a violet hero', async () => {
+    await mountPage()
+    expect(wrapper!.get('header').classes()).toContain('from-violet-600')
+    expect(wrapper!.get('[data-testid="create-card"]').classes()).toContain('from-violet-50')
+    expect(wrapper!.get('[data-testid="join-card"]').classes()).toContain('from-emerald-50')
+    expect(wrapper!.get('[data-testid="quick-match"]').classes()).toContain('from-amber-50')
+    expect(wrapper!.get('[data-testid="top10-card"]').classes()).toContain('from-pink-50')
+    // "Cara Bermain:" lives inside the green join panel, as live.
+    expect(wrapper!.get('[data-testid="join-card"]').text()).toContain('Cara Bermain:')
   })
 })
 

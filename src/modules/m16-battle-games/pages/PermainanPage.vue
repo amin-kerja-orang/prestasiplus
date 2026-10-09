@@ -27,11 +27,17 @@ const loading = computed(() => hub.value === null && error.value === null)
     </div>
     <AlertBox v-else-if="error" :messages="LOAD_ERROR" data-testid="hub-error" />
     <template v-else-if="hub">
-      <header class="rounded-2xl bg-white p-5 shadow sm:p-6">
-        <h1 class="font-heading text-2xl font-bold text-slate-800 sm:text-3xl" data-testid="hub-h1">
+      <header
+        class="relative overflow-hidden rounded-2xl bg-linear-to-r from-indigo-500 via-purple-500 to-fuchsia-300 p-5 text-white shadow-lg sm:p-6"
+      >
+        <h1 class="font-heading text-2xl font-bold sm:text-3xl" data-testid="hub-h1">
           {{ HUB_HEADING }}
         </h1>
-        <p class="mt-1 text-sm text-slate-500 sm:text-base">{{ HUB_INTRO }}</p>
+        <p class="mt-1 max-w-xl text-sm sm:text-base">{{ HUB_INTRO }}</p>
+        <span
+          class="pointer-events-none absolute top-1/2 right-6 -translate-y-1/2 text-7xl opacity-20 select-none sm:text-8xl"
+          >🎮</span
+        >
       </header>
 
       <OpenRoomsStrip :rooms="hub.openRooms" />

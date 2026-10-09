@@ -19,6 +19,7 @@ import {
   LOAD_ERROR,
   ROOM_GAME_META,
   ROOM_NOT_FOUND,
+  ROOM_THEME,
   roomPath,
 } from '../components/lobby/lobby-config'
 import { errorLines, isNotFoundError } from '../components/lobby/lobby-lib'
@@ -27,6 +28,7 @@ import RoomCreateForm from '../components/lobby/RoomCreateForm.vue'
 const props = defineProps<{ game: RoomGame }>()
 
 const meta = computed(() => ROOM_GAME_META[props.game])
+const theme = computed(() => ROOM_THEME[props.game])
 
 const router = useRouter()
 const flash = useFlash()
@@ -57,7 +59,7 @@ async function join(code: string): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl space-y-4 sm:space-y-6" data-testid="lobby-page">
+  <div class="mx-auto max-w-4xl space-y-4 sm:space-y-6" data-testid="lobby-page">
     <div
       v-if="loading"
       class="flex justify-center py-16 text-indigo-500"
@@ -67,42 +69,45 @@ async function join(code: string): Promise<void> {
     </div>
     <AlertBox v-else-if="error" :messages="LOAD_ERROR" data-testid="lobby-error" />
     <template v-else-if="lobby">
-      <header class="rounded-2xl bg-white p-5 shadow sm:p-6">
-        <h1
-          class="font-heading text-2xl font-bold text-slate-800 sm:text-3xl"
-          data-testid="lobby-h1"
-        >
+      <header
+        class="relative overflow-hidden rounded-3xl bg-linear-to-br p-5 text-white shadow-lg sm:p-6"
+        :class="theme.hero"
+      >
+        <h1 class="font-heading text-2xl font-bold sm:text-3xl" data-testid="lobby-h1">
           {{ meta.emoji }} {{ meta.title }}
         </h1>
-        <p class="mt-1 text-sm text-slate-500 sm:text-base" data-testid="lobby-subtitle">
+        <p class="mt-1 max-w-xl text-sm sm:text-base" data-testid="lobby-subtitle">
           {{ meta.subtitle }}
         </p>
-        <p class="mt-2 text-sm font-semibold text-indigo-600" data-testid="lobby-rule">
-          {{ meta.rule }}
-        </p>
+        <p class="mt-2 text-xs" data-testid="lobby-rule">{{ meta.rule }}</p>
+        <span
+          class="pointer-events-none absolute top-1/2 right-6 -translate-y-1/2 text-7xl opacity-20 select-none sm:text-8xl"
+          >{{ meta.emoji }}</span
+        >
       </header>
 
-      <div class="grid gap-4 sm:grid-cols-2 sm:gap-6">
-        <RoomCreateForm
-          :game="game"
-          :auto-grade="lobby.autoGrade"
-          :auto-grade-name="lobby.autoGradeName"
-          @created="openRoom"
-        />
-        <JoinCodeForm
-          heading="🔑 Masuk Dengan Kod"
-          placeholder="Contoh: ABC123"
-          :required="false"
-          button="Masuk"
-          :busy="joining"
-          @submit="join"
-        />
-      </div>
+      <RoomCreateForm
+        :game="game"
+        :auto-grade="lobby.autoGrade"
+        :auto-grade-name="lobby.autoGradeName"
+        @created="openRoom"
+      />
+      <JoinCodeForm
+        heading="🔑 Masuk Dengan Kod"
+        placeholder="Contoh: ABC123"
+        :required="false"
+        button="Masuk"
+        :busy="joining"
+        variant="lobby"
+        :button-class="theme.button"
+        @submit="join"
+      />
 
       <LeadersCard
         v-if="lobby.leaders && lobby.leaders.length > 0"
         :leaders="lobby.leaders"
         :unit="meta.unit"
+        :value-class="theme.value"
       />
     </template>
   </div>

@@ -10,7 +10,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { buildRoutes } from '@/app/router'
 import { resolveIcon } from '@/components/icon'
 
-import { HUB_CARDS } from '../../components/hub/hub-cards'
+import { HUB_CARDS, HUB_THEME } from '../../components/hub/hub-cards'
 import { ROOM_GAMES } from '../../components/lobby/lobby-config'
 
 /** Discovery A.3 order and targets. */
@@ -84,6 +84,24 @@ describe('S6 hub card data', () => {
   it('has unique ids and every text node class at least 12 px (no text-[..px] below 12)', () => {
     expect(new Set(HUB_CARDS.map((c) => c.id)).size).toBe(HUB_CARDS.length)
     for (const c of HUB_CARDS) expect(c.badgeClass ?? '').not.toMatch(/text-\[(\d|1[01])px\]/)
+  })
+})
+
+describe('S6 per-card colours (live screenshots, DV-M16-49)', () => {
+  it('gives every card a gradient banner and a solid button colour', () => {
+    for (const c of HUB_CARDS) {
+      const t = HUB_THEME[c.id]
+      expect(t, c.id).toBeDefined()
+      expect(t!.banner).toMatch(/^from-\S+ to-\S+$/)
+      expect(t!.button).toMatch(/^bg-\S+-\d{3} hover:bg-\S+-\d{3}$/)
+    }
+    expect(Object.keys(HUB_THEME)).toHaveLength(HUB_CARDS.length)
+  })
+
+  it('does not paint white button text on the 500 shades that live contrasts at about 2-3:1', () => {
+    for (const t of Object.values(HUB_THEME)) {
+      expect(t.button).not.toMatch(/^bg-(amber|sky|orange)-500/)
+    }
   })
 })
 

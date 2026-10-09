@@ -150,7 +150,7 @@ describe('Top 10 styling (BR-M16-22)', () => {
     expect(topRowClass(1)).toContain('amber')
     expect(topRowClass(2)).toContain('slate')
     expect(topRowClass(3)).toContain('orange')
-    expect(topRowClass(4)).toBe('')
+    expect(topRowClass(4)).toBe('[&>td]:bg-white')
   })
 })
 

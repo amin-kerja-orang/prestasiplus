@@ -63,13 +63,19 @@ async function join(code: string): Promise<void> {
     </div>
     <AlertBox v-else-if="error" :messages="LOAD_ERROR" data-testid="pb-error" />
     <template v-else-if="lobby">
-      <header class="rounded-2xl bg-white p-5 shadow sm:p-6">
-        <h1 class="font-heading text-2xl font-bold text-slate-800 sm:text-3xl" data-testid="pb-h1">
+      <header
+        class="relative overflow-hidden rounded-3xl bg-linear-to-br from-violet-600 to-purple-900 p-5 text-white shadow-lg sm:p-6"
+      >
+        <h1 class="font-heading text-2xl font-bold sm:text-3xl" data-testid="pb-h1">
           {{ meta.emoji }} {{ meta.title }}
         </h1>
-        <p class="mt-1 text-sm text-slate-500 sm:text-base" data-testid="pb-subtitle">
+        <p class="mt-1 max-w-2xl text-sm font-semibold sm:text-base" data-testid="pb-subtitle">
           {{ meta.subtitle }}
         </p>
+        <span
+          class="pointer-events-none absolute top-1/2 right-6 -translate-y-1/2 text-8xl opacity-20 select-none"
+          >🎲</span
+        >
       </header>
 
       <div class="grid gap-4 sm:gap-6 md:grid-cols-2">
@@ -79,23 +85,23 @@ async function join(code: string): Promise<void> {
           :auto-grade-name="lobby.autoGradeName"
           @created="openRoom"
         />
-        <div class="space-y-4 sm:space-y-6">
-          <JoinCodeForm
-            heading="🔑 Masuk Bilik"
-            label="Kod Bilik (6 aksara)"
-            placeholder="ABC123"
-            :required="true"
-            button="🚀 Masuk Bilik"
-            :busy="joining"
-            @submit="join"
-          />
-          <section class="rounded-2xl bg-white p-5 shadow sm:p-6" data-testid="pb-how-to">
-            <h2 class="text-sm font-bold text-slate-700">Cara Bermain:</h2>
-            <ul class="mt-2 space-y-1 text-sm text-slate-600">
+        <JoinCodeForm
+          heading="🔑 Masuk Bilik"
+          label="Kod Bilik (6 aksara)"
+          placeholder="ABC123"
+          :required="true"
+          button="🚀 Masuk Bilik"
+          :busy="joining"
+          variant="pb"
+          @submit="join"
+        >
+          <div class="mt-5" data-testid="pb-how-to">
+            <h2 class="text-sm font-bold text-slate-800">Cara Bermain:</h2>
+            <ul class="mt-2 space-y-1.5 text-xs font-semibold text-emerald-700 sm:text-sm">
               <li v-for="line in PB_HOW_TO" :key="line">{{ line }}</li>
             </ul>
-          </section>
-        </div>
+          </div>
+        </JoinCodeForm>
       </div>
 
       <QuickMatchCard @matched="openRoom" />
