@@ -22,6 +22,7 @@ import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
 import { useIntervalWhileVisible } from '@/composables/useIntervalWhileVisible'
 import { usePageMeta, type PageHeader } from '@/composables/usePageMeta'
+import { TournamentBanner } from '@/modules/m16-battle-games'
 import { navFor } from '@/shells/nav/user-nav'
 import { useNotificationBadgeStore } from '@/stores/notification-badge'
 import { useSessionStore } from '@/stores/session'
@@ -145,8 +146,9 @@ onBeforeUnmount(() => {
         class="mx-auto w-[95%] flex-1 animate-page-transition py-3 sm:py-6"
         data-testid="shell-user-main"
       >
-        <!-- M16 mount point: live `tournamentBanner()` block (`mb-4`, hidden while
-             `GET /api/tournament/active` returns []). Not rendered until M16 is built. -->
+        <!-- M16 S30: live `tournamentBanner()` block (`mb-4`, hidden while
+             `GET /api/tournament/active` returns []); mounted once per page (`:key` above). -->
+        <TournamentBanner />
         <FlashOutlet :flash="flash" class="mb-4" />
         <slot />
       </main>
