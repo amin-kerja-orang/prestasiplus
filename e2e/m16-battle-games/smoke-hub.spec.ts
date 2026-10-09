@@ -15,7 +15,7 @@ import {
   provisional,
 } from '../support'
 
-const expect = baseExpect.configure({ timeout: 10_000 })
+const expect = baseExpect.configure({ timeout: Number(process.env.E2E_EXPECT_MS) || 10_000 })
 
 const ADMIN = 'admin@demo.test'
 const PELAJAR2 = 'pelajar2@demo.test'
