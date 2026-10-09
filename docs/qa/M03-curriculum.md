@@ -95,3 +95,82 @@ None observed in the final runs. Cold boot of 5-7 s per `gotoApp` (known F-34) m
 - API 401/403 codes cannot be called from the page (mock is transport-level, not fetch); covered by unit tests only.
 - AC-30.3 "deactivate a seeded question lowers the counts" and AC-30.1 grade helper: not executed.
 - Visual comparison with live was spot-checked on screenshots (S1 BM D1 mobile, S6 desktop, S1 error state); I did not pixel-compare against reference images.
+
+---
+
+# QA report: M03 Kurikulum (student scope S12-S14), G5
+
+Code: `feature/student-prototype` at 06beaa7. SRS v1.11. Rows L29 and L30 (Murid). Build `vite build --mode e2e --outDir dist-e2e-s7-m03qa`, `vite preview` on port 5135 (stopped at the end, own PID only). Config copy in the scratchpad (`m03-qa/playwright.m03qa.config.mjs`): projects mobile 375x812, tablet 768x1024, desktop 1280x800, per-test timeout 240 s. E2E_TIMEOUT_FACTOR=3, E2E_BOOT_TIMEOUT_MS=120000.
+
+Deviations from the brief, stated honestly: (1) the supplied config has the Playwright default 30 s test timeout, which failed every test under the heavy machine load (many other sessions); I raised it to 240 s in my scratch copy. (2) `--workers=3` instead of 1 for the final run, because workers=1 projected to about 4 hours on the loaded machine. Tests use separate contexts, so state is isolated. (3) An accidental second concurrent run at the start was killed (own PIDs only) and everything was re-run from a clean build.
+
+## Verdict: READY (student scope)
+
+All 37 student ACs were executed and pass on mobile, tablet and desktop. No Critical or High bug. No horizontal scroll, no text under 12 px inside `main`, no clipped content at 375/768/1280 on S12, S13, S14 (including the empty map). One Low bug (F3) and two Low observations.
+
+## Runs
+
+| Run | Result |
+|---|---|
+| `t4-student-catalogue.spec.ts` (E2E-M03-35..47, 49, 50; 17 tests per project) | 51/51 pass (mobile, tablet, desktop) |
+| New `qa-g5-student.spec.ts` (4 tests per project: F2 chapter links, F3 heading level, responsive/text/touch sweep, edge ids) | 9/12 pass; the 3 failures are the F3 test (one per project), see BUG-M03S-01 |
+| Total | 60 pass, 3 fail (all F3), 0 flaky, 0 skipped |
+
+## Test plan: AC to tests
+
+| AC | Tests | Result |
+|---|---|---|
+| 20.1-20.3 (S12 header, title, 125 cards, chips, hrefs) | E2E-35; browser: 125 cards, 7 grade + 8 subject chips, hrefs as spec | Pass |
+| 20.4 (DARJAH_1 + SAINS: 4 topics) | E2E-36; browser | Pass |
+| 20.5 (TINGKATAN_2, ZZZ: empty text) | E2E-36; browser | Pass |
+| 20.6 (typed TINGKATAN_4: 19, GEOGRAFI: 5, no chip active) | E2E-36; browser | Pass |
+| 20.7 (`darjah_1`: 17, no grade chip active) | E2E-36; browser | Pass |
+| 21.1-21.3 (card content, "+1 lagi...", click, 1/2/3 columns) | E2E-37; browser: columns 1/2/3 at 375/768/1280, order 1,7,2,8,9 for Matematik D1 | Pass |
+| 22.1-22.4 (S13 header, hero, 3 stat cards in one row, subtopic cards, badges) | E2E-38; browser topics 7, 68, 4 | Pass |
+| 22.5 (`/topics/99999` 404) | E2E-38; QA edge test `99999`, `0`, `abc` all show the 404 page | Pass |
+| 22.6 (derived progress) | E2E-39 (pelajarmaju topic 1: 23 / 95 %, topic 7: 7 / 15 %); browser same | Pass (INFERRED rule, matches SRS seed) |
+| 23.1-23.2 (Mula Berlatih targets) | E2E-40 (MATH, BM, BI, SCI, PI, PM, SEJ, GEO); browser 7 -> MATH, 68 -> BM, 4 -> SCI | Pass |
+| 24.1 (header "Peta Belajar", no subtitle, tab title with em dash) | E2E-41; browser | Pass |
+| 24.2 (hero, tiles hidden at 375, shown at 768+, static bar) | E2E-41; browser | Pass |
+| 24.3 (path at 769+, alternating, centred at 768 and below) | E2E-42; browser: island centres 574/180/574 at 769, 376 at 768, 180 at 375, path element absent at 768 | Pass |
+| 24.4 (fade-in on scroll, reduced motion unchanged) | E2E-42 (two tests) | Pass |
+| 25.1-25.2 (7 pills, no Geografi, colours, 4 grade chips) | E2E-43; browser: Matematik rgb(59,130,246), Pend. Islam rgb(20,184,166), Sejarah rgb(239,68,68), Sains rgb(245,158,11) | Pass |
+| 25.3-25.4 (Darjah 4 fallback, default Matematik + Darjah 4) | E2E-44; browser `grade=DARJAH_5`, `TINGKATAN_1`, `darjah_2`, `XYZ` -> Darjah 4 chip, 3 islands; Sains fallback "Penyiasatan Saintifik" | Pass |
+| 25.5-25.6 (empty map GEOGRAFI, ZZZ; no dead pill) | E2E-45; browser: "0/0", "0%", texts, subtitle "... Geografi ..." / "... Zzz ...", no active pill | Pass |
+| 26.1-26.2 (no history: 2 open, 3 locked, hrefs, cursor) | E2E-46; browser: `/practice?topic_id=1`, `=7`, locked cards are DIV with not-allowed cursor | Pass |
+| 26.3-26.4 (started / mastered states, 1/5, 26 %) | E2E-47; browser as pelajarmaju: Nombor mastered 95 %, topic 7 started 15 %, Bentuk started 20 %, Operasi open, Bentuk dan Ruang locked, "1/5", 26 % | Pass |
+| 28.1-28.2 (sidebar, drawer, bottom nav, active states) | E2E-49; browser at 1280 and 375: Topik active on S12/S13, Peta Belajar active on S14, bottom nav only "Topik" (active on S12/S13, inactive on S14) | Pass |
+| 29.1 (guest to /login) | E2E-50; browser: guest `/topics` lands on `/login` | Pass |
+| 29.2 (S12-S14 open to any logged-in user) | pelajar, pelajarmaju, admin all opened S12-S14 | Pass |
+| 31.1 (no h-scroll, text >= 12 px, touch targets) | QA sweep on `/topics`, `/topics/7`, `/peta-belajar`, empty map at 3 widths; browser `scrollWidth <= innerWidth`, no node right of the viewport, small text 0, chips and buttons 44 px high | Pass |
+
+Not in this scope: 30.x (shared helpers, covered by the admin section and unit tests).
+
+## G4 follow-ups
+
+- F1 (fixed 600 s unit timeouts): not a functional defect; noted only. The supplied config's 30 s default was too low on a loaded machine (see deviations).
+- F2 (S13 vs admin's chapter links): executed as admin. Topic 67 "Kemahiran Bahasa Tingkatan 4" (BM T4 Bab 1, chapter 87): Dijawab 5, Kemajuan 0 % (A5: 5 answers, 0 correct). Topic 68 "Kemahiran Bahasa Tingkatan 5" (BM T5 Bab 99, chapter 413): Dijawab 38, Kemajuan 60 % (A3 33 answers with 11 correct plus A4 5 with 1 correct: 12 correct, round(100 x 12 / 20) = 60). Both match the M05 answers and BR-19. Chapter 382 (SEJ T5): Sejarah has no Tingkatan 5 legacy topic (`?grade_level=TINGKATAN_5&subject=SEJARAH` is empty), so no S13 can show those 40 answers; consistent with BR-19 (a chapter with no k-th topic has no answers), not a defect. Topic 125 "Sejarah Tingkatan 4" stays 0. Now asserted in `qa-g5-student.spec.ts` (passes on all three projects).
+- F3 (S14 hero heading level): the live inventory has `h1` "Peta Belajar" inside `main` (EL-M03-S14-004) and a separate `h1` "Dashboard" in `header.topbar` (EL-M03-SHU-377), so live has two `h1`. The shell header owning an `h1` does not make `h2` correct: S13 here keeps its hero as `h1` next to the shell `h1`. S14 renders `h2`; FR-M03-81 and live say `h1`. Logged as BUG-M03S-01 (Low).
+
+## Bugs
+
+| ID | Sev | Steps | Expected / actual | Evidence | Owner |
+|---|---|---|---|---|---|
+| BUG-M03S-01 | Low | Open `/peta-belajar` as any user, inspect the hero title "Peta Belajar" | Expected `h1` (FR-M03-81, live inventory EL-M03-S14-004; consistent with S13). Actual `h2`. Failing test: `qa-g5-student.spec.ts` "F3 heading levels" on all 3 projects. No visible difference. | `.playwright-mcp/m03qa-s14-1280.png` | frontend-developer |
+
+## Observations (Low, not AC failures)
+
+| ID | Observation | Owner |
+|---|---|---|
+| OBS-M03S-01 | S13 hero: the book icon is hidden below 640 px (`hidden sm:block`) and has no filled white circle; live shows a filled `bg-white/20` circle with a white icon at 375 and 1280 (`docs/discovery/img/M03/topic-show-mobile.png`, `topic-show-desktop.png`). Ours at 375: `.playwright-mcp/m03qa-s13-375.png`. FR-M03-76 only says "fa-book-open". Decorative. | frontend-developer, product-analyst (decide) |
+| OBS-M03S-02 | `/favicon.ico` returns 404 on the e2e preview (the only console error on all student routes). Environment, not M03. | devops-engineer |
+| OBS-M03S-03 | Hero title colour on S13 and S14 is dark slate on the purple and emerald gradients. This replicates live (checked against the discovery screenshots), so it is not a defect. | none |
+
+Checked and fine: the "Bentuk" island emoji tile is empty for pelajarmaju (known seed gap, URS OQ-11); shell header truncation ("Topik Pembelaj...") at 375 is the same on live and is owned by M23; "Darjah 1" wraps to two lines inside the 4 grade chips at 375 (they stay in one row, 44 px high).
+
+## Gaps
+
+- 30.x (grade helper, lookups) not executed here.
+- The browser lane only resized the viewport (no touch device); the Playwright projects at 375 and 768 use `isMobile` and `hasTouch`.
+- Visual comparison with live was done on screenshots by eye, not pixel-compared.
+- The 3 F3 failures are intentional until BUG-M03S-01 is fixed; the QA spec stays red for that one test.
