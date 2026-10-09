@@ -38,12 +38,16 @@ const weekLabel = computed(() => (data.value ? formatDateEn(data.value.weekStart
 <template>
   <div class="min-w-0 space-y-4" data-testid="m16-sekolah-bersaing-page">
     <section
-      class="rounded-3xl bg-linear-to-br from-yellow-400 to-amber-500 px-4 py-8 text-center shadow-lg sm:px-6 sm:py-10"
+      class="rounded-t-[6px] rounded-b-3xl bg-linear-to-br from-yellow-400 to-amber-500 px-11 py-10 text-center shadow-lg sm:px-8 sm:py-12"
       data-testid="sb-hero"
     >
       <!-- DV-M16-40 (D9): live paints this text white on yellow-400 to amber-500 (about 1.5 to
            2.2:1, unreadable); the rebuild keeps the gradient and uses dark amber-brown text. -->
-      <h1 class="font-heading text-2xl font-bold text-amber-900 sm:text-3xl">{{ COPY.heading }}</h1>
+      <h1
+        class="font-heading text-[30px] leading-9 font-bold text-amber-900 sm:text-[26px] sm:leading-[30px]"
+      >
+        {{ COPY.heading }}
+      </h1>
       <p class="mt-2 text-sm font-semibold text-amber-900 sm:text-base">{{ COPY.sub }}</p>
     </section>
 
@@ -62,7 +66,10 @@ const weekLabel = computed(() => (data.value ? formatDateEn(data.value.weekStart
     </div>
 
     <div v-else class="space-y-4 px-4 lg:px-9">
-      <p class="rounded-2xl bg-white p-4 text-sm text-slate-700 shadow-sm" data-testid="sb-week">
+      <p
+        class="rounded-2xl bg-white p-4 text-base leading-7 text-slate-700 shadow-sm"
+        data-testid="sb-week"
+      >
         {{ COPY.weekPrefix }}
         <strong class="text-amber-800" data-testid="sb-week-date">{{ weekLabel }}</strong> ·
         <strong class="text-amber-800" data-testid="sb-count">{{ data.count }}</strong>
@@ -74,15 +81,15 @@ const weekLabel = computed(() => (data.value ? formatDateEn(data.value.weekStart
         data-testid="sb-table"
       >
         <div
-          class="grid items-center gap-2 bg-amber-100 px-3 py-3 text-xs font-bold tracking-wide text-amber-900 uppercase sm:px-4"
+          class="grid items-center gap-2 bg-amber-100 px-3 py-4 text-xs font-bold tracking-wide text-amber-900 uppercase sm:px-4"
           :class="SB_GRID"
           data-testid="sb-header"
         >
           <div>{{ COPY.headers[0] }}</div>
           <div>{{ COPY.headers[1] }}</div>
-          <div class="text-right text-slate-700">{{ COPY.headers[2] }}</div>
-          <div class="hidden text-right text-slate-700 md:block">{{ COPY.headers[3] }}</div>
-          <div class="hidden text-right text-slate-700 md:block">{{ COPY.headers[4] }}</div>
+          <div class="text-right text-sm text-gray-800">{{ COPY.headers[2] }}</div>
+          <div class="hidden text-right text-sm text-gray-800 md:block">{{ COPY.headers[3] }}</div>
+          <div class="hidden text-right text-sm text-gray-800 md:block">{{ COPY.headers[4] }}</div>
         </div>
         <div class="divide-y divide-slate-100">
           <SchoolRow v-for="row in data.rows" :key="row.rank" :row="row" />

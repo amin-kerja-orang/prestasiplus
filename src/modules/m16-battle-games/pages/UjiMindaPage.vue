@@ -18,7 +18,10 @@ const view = useApi((signal) => fetchUjiMinda({ signal }))
 </script>
 
 <template>
-  <div class="mx-auto max-w-xl min-w-0 space-y-4 text-center" data-testid="m16-uji-minda-page">
+  <div
+    class="mx-auto max-w-xl min-w-0 space-y-4 px-4 text-center sm:px-0 lg:pt-[37px]"
+    data-testid="m16-uji-minda-page"
+  >
     <BackLink tone="pink" />
 
     <PageLoadError v-if="view.error.value" @retry="view.reload()" />
@@ -33,11 +36,11 @@ const view = useApi((signal) => fetchUjiMinda({ signal }))
       <header data-testid="uji-minda-hero">
         <div class="text-6xl">{{ COPY.emoji }}</div>
         <h1 class="mt-2 font-heading text-2xl font-bold text-slate-900">{{ COPY.heading }}</h1>
-        <p class="mx-auto mt-2 max-w-md text-slate-600">{{ COPY.sub }}</p>
+        <p class="mx-auto mt-2 max-w-md text-gray-500">{{ COPY.sub }}</p>
       </header>
 
       <section
-        class="mx-auto max-w-sm rounded-2xl bg-white p-6 text-sm text-slate-700 shadow-sm"
+        class="mx-auto max-w-sm rounded-2xl bg-white p-6 text-sm text-gray-600 shadow-sm"
         data-testid="uji-minda-how"
       >
         <p>
@@ -46,8 +49,8 @@ const view = useApi((signal) => fetchUjiMinda({ signal }))
           {{ COPY.howBefore }} <strong class="text-slate-800">{{ COPY.howLink }}</strong>
           {{ COPY.howAfter }}
         </p>
-        <div class="mt-4 rounded-xl bg-pink-50 p-4 text-left text-pink-700">
-          <p class="text-xs font-bold">{{ COPY.setHeading }}</p>
+        <div class="mt-4 rounded-xl bg-pink-50 p-4 text-left text-pink-600">
+          <p class="text-xs font-bold text-pink-700">{{ COPY.setHeading }}</p>
           <ul class="mt-2 space-y-1 text-xs" data-testid="uji-minda-list">
             <li v-for="item in COPY.setItems" :key="item">{{ item }}</li>
           </ul>

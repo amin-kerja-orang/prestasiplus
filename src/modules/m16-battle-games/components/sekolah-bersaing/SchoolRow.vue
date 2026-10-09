@@ -35,20 +35,20 @@ const tierClass = computed(() => {
 
 <template>
   <div
-    class="lb-row grid items-center gap-2 px-3 py-3 sm:px-4"
+    class="lb-row grid items-center gap-2 px-3 py-3.5 sm:px-4"
     :class="[SB_GRID, tierClass]"
     :data-rank="row.rank"
     data-testid="sb-row"
   >
     <div
       class="font-bold"
-      :class="tier > 0 ? 'text-xl' : 'text-lg text-amber-800'"
+      :class="tier > 0 ? 'text-xl' : 'text-xl text-amber-800'"
       data-testid="sb-rank"
     >
       {{ rankText }}
     </div>
     <div class="min-w-0">
-      <div class="truncate text-sm font-bold text-slate-900" data-testid="sb-school">
+      <div class="truncate text-base leading-6 font-bold text-slate-900" data-testid="sb-school">
         {{ row.anonymous ? SB_COPY.anonymous : row.schoolName }}
       </div>
       <div v-if="!row.anonymous" class="truncate text-xs text-slate-600" data-testid="sb-state">
@@ -56,15 +56,17 @@ const tierClass = computed(() => {
       </div>
     </div>
     <div class="text-right" data-testid="sb-aktif">
-      <div class="text-sm font-bold text-slate-900">{{ row.aktifPct.toFixed(1) }}%</div>
+      <div class="text-base leading-6 font-bold text-slate-900">{{ row.aktifPct.toFixed(1) }}%</div>
       <div class="text-xs text-slate-500 uppercase">{{ SB_COPY.aktif }}</div>
     </div>
     <div class="hidden text-right md:block" data-testid="sb-streak">
-      <div class="text-sm font-bold text-slate-900">🔥 {{ row.streakAvg.toFixed(1) }}</div>
+      <div class="text-base leading-6 font-bold text-slate-900">
+        🔥 {{ row.streakAvg.toFixed(1) }}
+      </div>
       <div class="text-xs text-slate-500 uppercase">{{ SB_COPY.hari }}</div>
     </div>
     <div class="hidden text-right md:block" data-testid="sb-nota">
-      <div class="text-sm font-bold text-slate-900">{{ row.notaPer10.toFixed(1) }}</div>
+      <div class="text-base leading-6 font-bold text-slate-900">{{ row.notaPer10.toFixed(1) }}</div>
       <div class="text-xs text-slate-500 uppercase">{{ SB_COPY.per10 }}</div>
     </div>
   </div>

@@ -30,7 +30,7 @@ const view = useApi((signal) => fetchTournaments({ signal }))
 <template>
   <div class="min-w-0 space-y-4" data-testid="m16-tournament-page">
     <section
-      class="relative overflow-hidden rounded-2xl bg-linear-to-r from-indigo-600 via-purple-600 to-pink-500 p-4 text-white shadow-lg sm:p-6"
+      class="relative overflow-hidden rounded-2xl bg-linear-to-r from-[#5a3cf5] via-[#9a14ff] to-[#f5399f] p-8 text-white shadow-lg"
       data-testid="tournament-hero"
     >
       <div
@@ -39,9 +39,9 @@ const view = useApi((signal) => fetchTournaments({ signal }))
       <div class="relative flex min-w-0 items-center gap-3">
         <Trophy class="h-8 w-8 shrink-0 text-white" />
         <!-- DV-M16-39: white heading (live is dark, below 3:1 contrast). -->
-        <h2 class="font-heading text-2xl font-bold text-white sm:text-3xl">{{ COPY.heading }}</h2>
+        <h2 class="font-heading text-3xl font-bold text-white">{{ COPY.heading }}</h2>
       </div>
-      <p class="relative mt-2 text-sm text-white/90 sm:text-base">{{ COPY.sub }}</p>
+      <p class="relative mt-3 text-base text-white/90">{{ COPY.sub }}</p>
     </section>
 
     <!--

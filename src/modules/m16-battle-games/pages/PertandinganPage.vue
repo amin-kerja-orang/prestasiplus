@@ -61,11 +61,11 @@ function medalOf(rank: number): string | null {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="m16-pertandingan-page">
+  <div class="min-w-0 space-y-4 px-4 sm:px-0" data-testid="m16-pertandingan-page">
     <div>
       <BackLink />
       <header data-testid="pertandingan-hero">
-        <h1 class="font-heading text-xl font-bold text-slate-900 sm:text-2xl">
+        <h1 class="font-heading text-lg font-bold text-slate-900 sm:text-2xl">
           {{ COPY.heading }}
         </h1>
         <p class="mt-1 text-sm text-slate-600">{{ COPY.sub }}</p>
