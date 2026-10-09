@@ -32,6 +32,8 @@ URS §7 is authoritative. Approved fixes: DV-M20-01 (S3 forms separated), 02 (40
 
 The M20 prototype implements, against the mock service layer, the twelve screens of URS §1 — admin product list S1, create S2, edit S3, seller list S4, seller review S5, buyer marketplace S6, product page S7, public shop S8, seller dashboard S9, seller product list S10, seller create S11 and edit S12 — plus the WhatsApp contact hand-off (no screen, D14) and the PROPOSED seller registration form at `/seller/daftar`. M20 owns (D12) the stores MarketplaceCategory (DATA-M20-01), MarketplaceProduct (DATA-M20-02), ProductImage (DATA-M20-03), Seller (DATA-M20-04), SellerDocument (DATA-M20-05) and ProductReview (DATA-M20-06), and the per-product view counter and per-seller WhatsApp-click counter. Every figure is computed per request from these stores through the named queries of §6.8; no display constant exists.
 
+**Release 1.0 deferral (DL decision 2026-10-09, D15 student scope):** row L37 covers the buyer screens S6, S7, S8 and the W hand-off (M20-T2/T3). The admin screens S1–S5 (M20-T4/T5), the seller screens S9–S12 and registration R (M20-T6), and the "Kedai Saya" shell link (FR-M20-79, E2E-M20-86) are deferred. Their FRs and E2E stay specified and are built in a later release; the handlers (M20-T1) are already merged.
+
 **Out of scope:** URS §8 — users (read through M01 / M02), M15 Kedai Hadiah, M14 wallets, M19 payments, cart / order / checkout (not on live), review submission, document upload, unban / suspend, notifications, a real WhatsApp integration (D14), backend security.
 
 ---
