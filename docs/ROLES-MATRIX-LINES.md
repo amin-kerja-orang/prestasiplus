@@ -61,7 +61,7 @@ Status di bawah ialah status pada 2026-10-02.
 | L39 | Pencapaian (34) | M | M14 | **100%** |
 | L40 | Kotak Misteri (35) | M | M15 | **100%** |
 | L41 | Rujuk Kawan (36) | M | M14 | **100%** |
-| L42 | Cikgu Alesa (37) | M | M13 (S1–S6; G4 lulus 2026-10-10) | 85% |
+| L42 | Cikgu Alesa (37) | M | M13 (S1–S6, V1, V2; G5 READY 2026-10-10, `docs/qa/M13-cikgu-alesa.md`) | **100%** |
 | L43 | Kedai Hadiah Digital (38) | M | M15 (S10 `/cikgu/hadiah`, S11 `/cikgu/hadiah/saya`) | **100%** |
 | L44 | Timeline Saya (39) | M | M08 | **100%** |
 | L45 | Jemput Ibu Bapa (40) | M | M02 (skrin, token, pautan) + M01 (halaman terima), D23 | **100%** |
