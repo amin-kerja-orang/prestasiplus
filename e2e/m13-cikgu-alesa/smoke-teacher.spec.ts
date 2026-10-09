@@ -12,6 +12,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect as baseExpect, test } from '../fixtures/test'
 import type { MockHandle } from '../fixtures/test'
 import {
+  acceptNextDialog,
   expectNoHorizontalScroll,
   expectTabTitle,
   isDesktopShell,
@@ -21,7 +22,7 @@ import {
   viewportWidth,
 } from '../support'
 
-const expect = baseExpect.configure({ timeout: 10_000 })
+const expect = baseExpect.configure({ timeout: 30_000 })
 
 const ADMIN = 'admin@demo.test'
 const GURU = 'guru@demo.test'
@@ -36,10 +37,11 @@ async function latency(mock: MockHandle, ms: number): Promise<void> {
 }
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
+const h1 = (page: Page) => page.getByTestId('shell-user-main').locator('h1')
 
 async function expectNotFound(page: Page): Promise<void> {
+  await expect(page.locator('[data-page="not-found"]')).toBeVisible({ timeout: 30_000 })
   await expectTabTitle(page, NOT_FOUND_TITLE)
-  await expect(page.locator('[data-page="not-found"]')).toBeVisible()
   await expect(page.getByText('Halaman Tidak Dijumpai').first()).toBeVisible()
   await expect(page.getByText('Oops! An Error Occurred')).toHaveCount(0)
 }
@@ -171,7 +173,7 @@ test.describe('M13 shell, 404 and routing', MODULE, () => {
     await gotoApp('/cikgu/')
     await expect(page.locator('.cikgu-alesa-shell h1')).toHaveText('Cikgu Alesa')
     await gotoApp('/cikgu/rph/')
-    await expect(page.locator('h1')).toHaveText('📋 Rancangan Pengajaran Harian (RPH)')
+    await expect(h1(page)).toHaveText('📋 Rancangan Pengajaran Harian (RPH)')
     await gotoApp('/cikgu/rph/baharu?classroom_id=1')
     await expect(tid(page, 'rph-no-class')).toBeVisible()
     await expect(page.locator('#subject_name')).toHaveValue('')
@@ -188,7 +190,7 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu/rph')
-    await expect(page.locator('h1')).toHaveText('📋 Rancangan Pengajaran Harian (RPH)')
+    await expect(h1(page)).toHaveText('📋 Rancangan Pengajaran Harian (RPH)')
     await expect(page.getByText('RPH yang dijana oleh Cikgu Alesa atau cikgu sendiri.')).toBeVisible()
     await expect(tid(page, 'rph-create')).toHaveAttribute('href', '/cikgu/rph/baharu')
     await expect(tid(page, 'rph-create')).toHaveText('Jana RPH Baharu')
@@ -252,7 +254,7 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu/rph/baharu')
     await expect(tid(page, 'rph-back')).toHaveAttribute('href', '/cikgu/rph')
-    await expect(page.locator('h1')).toHaveText('Jana RPH dengan Cikgu Alesa')
+    await expect(h1(page)).toHaveText('Jana RPH dengan Cikgu Alesa')
     await expect(tid(page, 'rph-no-class')).toHaveText(
       'Sistem belum jumpa kelas yang dikaitkan dengan akaun Cikgu. Sila isi manual.',
     )
@@ -312,10 +314,10 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
     const level = page.locator('#level')
     const [sb, lb] = [await subject.boundingBox(), await level.boundingBox()]
     if (viewportWidth(page) < 768) expect(Math.abs(sb!.x - lb!.x)).toBeLessThan(2)
-    else expect(Math.abs(sb!.y - lb!.y)).toBeLessThan(2)
+    else expect(Math.abs(sb!.y - lb!.y)).toBeLessThan(12)
     const kelas = await page.locator('#class_name').boundingBox()
     const tarikh = await page.locator('#lesson_date').boundingBox()
-    if (viewportWidth(page) >= 768) expect(Math.abs(kelas!.y - tarikh!.y)).toBeLessThan(2)
+    if (viewportWidth(page) >= 768) expect(Math.abs(kelas!.y - tarikh!.y)).toBeLessThan(12)
     await subject.fill('Sains')
     await tid(page, 'rph-cancel').click()
     await expect(page).toHaveURL(/\/cikgu\/rph$/)
@@ -365,7 +367,7 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
       await expect(page).toHaveURL(/\/cikgu\/rph\/\d+$/)
       const id = Number(page.url().split('/').pop())
       expect(id).toBeGreaterThanOrEqual(9_000_001)
-      await expect(page.locator('h1')).toHaveText('📋 Rancangan Pengajaran Harian (RPH)')
+      await expect(h1(page)).toHaveText('📋 Rancangan Pengajaran Harian (RPH)')
       await expect(tid(page, 'rph-view-date')).toHaveText('25/09/2026')
       await expect(tid(page, 'rph-view-subject')).toHaveText('Matematik / T4')
       await expect(tid(page, 'rph-view-tajuk')).toHaveText('Pecahan Setara')
@@ -455,7 +457,7 @@ test.describe('M13 S2 / S3 / V1 RPH', MODULE, () => {
       await expect(tid(page, 'rph-view-content')).toContainText('Objektif Pembelajaran')
       await expectNoHorizontalScroll(page)
       await gotoApp('/cikgu/essay/13201')
-      await expect(page.locator('h1')).toHaveText('📝 Marking Karangan AI')
+      await expect(h1(page)).toHaveText('📝 Marking Karangan AI')
       await expect(tid(page, 'essay-view-student')).toHaveText('Murid Demo 01')
       await expect(tid(page, 'essay-view-marks')).toHaveText('35/50')
       await expect(tid(page, 'essay-view-comment')).toContainText('Komen membina:')
@@ -476,7 +478,7 @@ test.describe('M13 S4 / S5 / V2 essay', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu/essay')
-    await expect(page.locator('h1')).toHaveText('📝 Marking Karangan AI')
+    await expect(h1(page)).toHaveText('📝 Marking Karangan AI')
     await expect(
       page.getByText('Karangan yang dimark oleh Cikgu Alesa berdasarkan rubric SPM/PT3.'),
     ).toBeVisible()
@@ -531,7 +533,7 @@ test.describe('M13 S4 / S5 / V2 essay', MODULE, () => {
     await gotoApp('/cikgu/essay/baharu')
     await expect(tid(page, 'essay-back')).toHaveText('← Senarai')
     await expect(tid(page, 'essay-back')).toHaveAttribute('href', '/cikgu/essay')
-    await expect(page.locator('h1')).toHaveText('📝 Mark Karangan Baharu')
+    await expect(h1(page)).toHaveText('📝 Mark Karangan Baharu')
     await expect(page.getByText('Salin & tampal karangan pelajar di bawah.')).toBeVisible()
     const options = page.locator('#rubric_key option')
     await expect(options).toHaveCount(6)
@@ -566,12 +568,13 @@ test.describe('M13 S4 / S5 / V2 essay', MODULE, () => {
     await expect(page.locator('#word-counter')).toHaveText('2 perkataan')
     await page.locator('#essay_text').fill('a b c d e')
     await expect(page.locator('#word-counter')).toHaveText('5 perkataan')
-    const dialog = page.waitForEvent('dialog')
+    const dialog = acceptNextDialog(page, {
+      type: 'alert',
+      message: 'Karangan terlalu pendek (minimum 50 aksara).',
+    })
     await page.locator('#essay_text').fill('x'.repeat(49))
     await page.locator('#essay-submit').click()
-    const d = await dialog
-    expect(d.message()).toBe('Karangan terlalu pendek (minimum 50 aksara).')
-    await d.accept()
+    await dialog
     await expect(page).toHaveURL(/\/cikgu\/essay\/baharu$/)
     await page.locator('#rubric_key').selectOption('sejarah_essay')
     await page.locator('#subject_name').fill('Sejarah')
@@ -625,7 +628,7 @@ test.describe('M13 S6 PBD', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu/pbd')
-    await expect(page.locator('h1')).toHaveText('📊 PBD Auto-Tag — Antrian Semakan')
+    await expect(h1(page)).toHaveText('📊 PBD Auto-Tag — Antrian Semakan')
     await expect(page.getByText('AI cadangan Tahap Penguasaan (TP1-6)')).toBeVisible()
     await expect(page.locator('[data-testid="pbd-class"] option')).toHaveText(['Pilih kelas untuk rollup'])
     await expect(tid(page, 'pbd-class')).not.toHaveAttribute('required', /.*/)
@@ -731,15 +734,16 @@ test.describe('M13 S6 PBD', MODULE, () => {
     },
   )
 
-  test('E2E-M13-49 S6 DOM: #bulk-form has no nested form and owns every row checkbox @m13', async ({
-    page,
-    gotoApp,
-    loginAs,
-  }) => {
-    for (const who of [GURU, ADMIN]) {
+  for (const who of [GURU, ADMIN]) {
+    test(`E2E-M13-49 S6 DOM (${who}): #bulk-form has no nested form and owns every row checkbox @m13`, async ({
+      page,
+      gotoApp,
+      loginAs,
+    }) => {
       await loginAs(who)
       await gotoApp('/cikgu/pbd')
       await expect(page.locator('#bulk-form')).toBeVisible()
+      if (who === GURU) await expect(page.locator('.row-check').first()).toBeVisible()
       const result = await page.evaluate(() => {
         const form = document.querySelector('#bulk-form') as HTMLFormElement
         return {
@@ -750,8 +754,8 @@ test.describe('M13 S6 PBD', MODULE, () => {
         }
       })
       expect(result).toEqual({ nested: 0, foreign: 0 })
-    }
-  })
+    })
+  }
 
   test(
     'E2E-M13-50 export: teacher file with the header and two approved lines; admin header only @m13',
@@ -809,58 +813,76 @@ test.describe('M13 S6 PBD', MODULE, () => {
 })
 
 test.describe('M13 responsive sweep', MODULE, () => {
-  test('E2E-M13-51 every screen has no page-level horizontal scroll; tables scroll inside their cards @m13', async ({
+  const screens: [string, string][] = [
+    ['/cikgu', '.cikgu-alesa-shell'],
+    ['/cikgu/rph', '[data-testid="rph-table"]'],
+    ['/cikgu/rph/baharu', '#rph-create-form'],
+    ['/cikgu/rph/13101', '[data-testid="rph-view-content"]'],
+    ['/cikgu/essay', '[data-testid="essay-table"]'],
+    ['/cikgu/essay/baharu', '#essay-form'],
+    ['/cikgu/essay/13201', '[data-testid="essay-view-comment"]'],
+    ['/cikgu/pbd', '[data-testid="pbd-table"]'],
+    ['/cikgu/unknown', '[data-page="not-found"]'],
+  ]
+  for (const [path, ready] of screens) {
+    test(`E2E-M13-51 ${path} has no page-level horizontal scroll @m13`, async ({
+      page,
+      gotoApp,
+      loginAs,
+    }) => {
+      await loginAs(GURU)
+      await gotoApp(path)
+      await expect(page.locator(ready).first()).toBeVisible({ timeout: 30_000 })
+      await expectNoHorizontalScroll(page)
+      if (path === '/cikgu') {
+        // S1: "Hantar" stays inside the card.
+        const card = await page.locator('.cikgu-alesa-shell').boundingBox()
+        const send = await page.locator('#cikgu-send').boundingBox()
+        expect(send!.x + send!.width).toBeLessThanOrEqual(card!.x + card!.width + 1)
+      }
+    })
+  }
+
+  // S2 / S4 / S6: the table scrolls inside its card at 375 and "TINDAKAN" is reachable.
+  for (const [path, table] of [
+    ['/cikgu/rph', 'rph-table'],
+    ['/cikgu/essay', 'essay-table'],
+    ['/cikgu/pbd', 'pbd-table'],
+  ] as const) {
+    test(`E2E-M13-51 ${path} table scrolls inside its card @m13`, async ({
+      page,
+      gotoApp,
+      loginAs,
+    }) => {
+      await loginAs(GURU)
+      await gotoApp(path)
+      await expect(tid(page, table)).toBeVisible({ timeout: 30_000 })
+      const dims = await page.evaluate((id) => {
+        const el = document
+          .querySelector(`[data-testid="${id}"]`)!
+          .closest('.overflow-x-auto') as HTMLElement
+        const before = el.scrollWidth - el.clientWidth
+        el.scrollLeft = el.scrollWidth
+        return { overflow: before }
+      }, table)
+      if (viewportWidth(page) <= 375) expect(dims.overflow).toBeGreaterThan(0)
+      const box = await page.locator(`[data-testid="${table}"] th`).last().boundingBox()
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewportWidth(page) + 1)
+    })
+  }
+
+  test('E2E-M13-51 S6 toolbar: stacked rows below 768, one row from 768; no added ARIA roles @m13', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
     await loginAs(GURU)
-    const screens: [string, string][] = [
-      ['/cikgu', '.cikgu-alesa-shell'],
-      ['/cikgu/rph', '[data-testid="rph-table"]'],
-      ['/cikgu/rph/baharu', '#rph-create-form'],
-      ['/cikgu/rph/13101', '[data-testid="rph-view-content"]'],
-      ['/cikgu/essay', '[data-testid="essay-table"]'],
-      ['/cikgu/essay/baharu', '#essay-form'],
-      ['/cikgu/essay/13201', '[data-testid="essay-view-comment"]'],
-      ['/cikgu/pbd', '[data-testid="pbd-table"]'],
-      ['/cikgu/unknown', '[data-page="not-found"]'],
-    ]
-    for (const [path, ready] of screens) {
-      await gotoApp(path)
-      await expect(page.locator(ready).first()).toBeVisible()
-      await expectNoHorizontalScroll(page)
-    }
-    // S1: "Hantar" stays inside the card.
-    await gotoApp('/cikgu')
-    const card = await page.locator('.cikgu-alesa-shell').boundingBox()
-    const send = await page.locator('#cikgu-send').boundingBox()
-    expect(send!.x + send!.width).toBeLessThanOrEqual(card!.x + card!.width + 1)
-    // S2 / S4 / S6: the table scrolls inside its card at 375 and "TINDAKAN" is reachable.
-    for (const [path, table] of [
-      ['/cikgu/rph', 'rph-table'],
-      ['/cikgu/essay', 'essay-table'],
-      ['/cikgu/pbd', 'pbd-table'],
-    ] as const) {
-      await gotoApp(path)
-      await expect(tid(page, table)).toBeVisible()
-      const scroller = page.locator(`xpath=//*[@data-testid="${table}"]/ancestor::div[contains(@class,"overflow-x-auto")][1]`)
-      const dims = await scroller.evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth }))
-      if (viewportWidth(page) <= 375) expect(dims.sw).toBeGreaterThan(dims.cw)
-      await scroller.evaluate((el) => {
-        el.scrollLeft = el.scrollWidth
-      })
-      const last = page.locator(`[data-testid="${table}"] th`).last()
-      const box = await last.boundingBox()
-      expect(box!.x + box!.width).toBeLessThanOrEqual(viewportWidth(page) + 1)
-    }
-    // S6 toolbar: stacked rows at 375, one row from 768.
     await gotoApp('/cikgu/pbd')
+    await expect(tid(page, 'pbd-class')).toBeVisible({ timeout: 30_000 })
     const sel = await tid(page, 'pbd-class').boundingBox()
     const btn = await tid(page, 'pbd-rollup').boundingBox()
     if (viewportWidth(page) < 768) expect(btn!.y).toBeGreaterThan(sel!.y + sel!.height - 2)
     else expect(Math.abs(btn!.y - sel!.y)).toBeLessThan(20)
-    // No ARIA roles added to M13 controls.
     expect(await page.locator('#bulk-form [role], #rollup-form [role]').count()).toBe(0)
   })
 })

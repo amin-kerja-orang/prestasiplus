@@ -101,12 +101,14 @@ const BTN =
 
 <template>
   <div class="min-w-0 space-y-5" data-testid="pbd-page">
-    <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+    <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
       <div class="min-w-0">
         <h1 class="font-heading text-2xl font-bold text-slate-800">{{ C.title }}</h1>
         <p class="text-sm text-slate-500">{{ C.sub }}</p>
       </div>
-      <div class="flex min-w-0 flex-col md:flex-row md:items-center md:gap-2" data-testid="pbd-toolbar">
+      <div
+class="flex min-w-0 flex-col md:flex-row md:flex-wrap md:items-center md:gap-2"
+        data-testid="pbd-toolbar">
         <form
           id="rollup-form"
           class="flex min-w-0 flex-col md:flex-row md:items-center md:gap-2"
@@ -160,8 +162,8 @@ const BTN =
             >
               <label class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-700">
                 <input
-                  :key="generation"
                   id="select-all"
+                  :key="generation"
                   type="checkbox"
                   class="h-4 w-4"
                   @click="selectAll"

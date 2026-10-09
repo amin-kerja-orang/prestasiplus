@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from 'vue-router'
+import type { RouteMeta, RouteRecordRaw } from 'vue-router'
 
 /**
  * M13 route fragment: the teacher-only paths S2 to S6 and the proposed views V1 / V2 (SRS M13 v1.1
@@ -8,12 +8,12 @@ import type { RouteRecordRaw } from 'vue-router'
  * an unknown or foreign numeric id is raised by the page (404 outcome). `/cikgu/rph/baharu` is
  * declared before the id route and cannot be confused with it (digits only).
  */
-const roles = ['teacher', 'admin'] as const
+const roles: RouteMeta['roles'] = ['teacher', 'admin']
 
-function meta(title: string, header: string) {
+function meta(title: string, header: string): RouteMeta {
   return {
-    layout: 'user' as const,
-    access: 'auth' as const,
+    layout: 'user',
+    access: 'auth',
     roles,
     title,
     header: { title: header, subtitle: 'Selamat datang kembali' },
