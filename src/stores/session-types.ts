@@ -63,4 +63,6 @@ export interface ClientSession {
   /** ISO 8601 (+08:00). Remember: +5 years; otherwise +120 min, sliding on each request (BR-06). */
   expiresAt: string
   user: UserMe
+  /** Only on an impersonated session (XR-M27-21): the actor and the path "Kembali ke Admin" uses. */
+  impersonator?: { id: number; name: string; returnTo: string }
 }
