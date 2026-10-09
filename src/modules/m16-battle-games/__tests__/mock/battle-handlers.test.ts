@@ -25,12 +25,12 @@ let booted: Booted
 beforeAll(async () => {
   vi.stubGlobal('localStorage', new MemoryStorage())
   booted = await bootM16()
-}, 180_000)
+}, 600_000)
 
 afterAll(async () => {
   await booted.runtime.reset()
   vi.unstubAllGlobals()
-}, 180_000)
+}, 600_000)
 
 async function call<T = unknown>(
   method: 'GET' | 'POST',

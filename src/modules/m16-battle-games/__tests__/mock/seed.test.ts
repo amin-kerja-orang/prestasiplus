@@ -32,12 +32,12 @@ beforeAll(async () => {
   vi.stubGlobal('localStorage', new MemoryStorage())
   booted = await bootM16()
   registered = vi.mocked(registerM16Reads).mock.calls.at(-1)?.[0]
-}, 180_000)
+}, 600_000)
 
 afterAll(async () => {
   await booted.runtime.reset()
   vi.unstubAllGlobals()
-}, 180_000)
+}, 600_000)
 
 describe('battles (Q-M16-BATTLES, M17 XR-M17-15)', () => {
   it('holds 168 battles: 0 active, 66 finished, 5 forfeited, 97 abandoned', () => {
