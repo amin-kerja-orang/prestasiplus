@@ -48,12 +48,16 @@ describe('CHK-M27-01 privacy scan of M27-owned files', () => {
     expect(ownedFiles().length).toBeGreaterThan(5)
   })
 
-  it('(a) contains no e-mail address other than @demo.test', () => {
+  /** Generic placeholders observed on live (not personal data): M02 FR-M02-22 / FR-M02-32. */
+  const ALLOWED_PLACEHOLDERS = new Set(['contoh@email.com'])
+
+  it('(a) contains no e-mail address other than @demo.test or an observed live placeholder', () => {
     const email = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
     const offenders: string[] = []
     for (const file of ownedFiles()) {
       for (const match of readFileSync(file, 'utf8').matchAll(email)) {
-        if (!match[0].endsWith('@demo.test')) offenders.push(`${file}: ${match[0]}`)
+        if (!match[0].endsWith('@demo.test') && !ALLOWED_PLACEHOLDERS.has(match[0]))
+          offenders.push(`${file}: ${match[0]}`)
       }
     }
     expect(offenders).toEqual([])

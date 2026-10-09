@@ -2,7 +2,7 @@
 /**
  * S0 "Ringkasan Prestasi" card (FR-M27-31…37): blue icon tile, title and subtitle, then four panels (GPS
  * SEKOLAH, AMARAN AWAL, LATIHAN, TINGKATAN) and the grade list. 4 panels per row at 1280, 2 at 768, 1 at 375
- * (FR-M27-25). AMARAN AWAL is rendered only when the M18 risk contract answers (`risk` not null; XR-M27-08).
+ * (FR-M27-25). AMARAN AWAL is rendered when the M18 risk read answers (`risk` not null; XR-M27-08 resolved).
  * The TINGKATAN panel is the link to `/prestasi/tingkatan`. No-data states follow BR-M27-18.
  */
 import { ChartColumn } from '@lucide/vue'

@@ -49,12 +49,12 @@ function dashboard(over: Partial<SchoolDashboard> = {}): SchoolDashboard {
       subscription: { status: 'none', label: 'Belum Ada' },
     },
     performance: {
-      gps: { value: 4.38, grade: 'B', band: 'Sederhana', entries: 320 },
-      risk: { safe: 5, watch: 6, high: 3, total: 14 },
-      practice: { accuracy: 53.94, sessions: 82, questions: 1094 },
+      gps: { value: 3.17, grade: 'B+', band: 'Baik', entries: 211 },
+      risk: { safe: 7, watch: 5, high: 2, total: 14 },
+      practice: { accuracy: 61.4, sessions: 57, questions: 803 },
       levels: [
-        { code: 't4', name: 'Tingkatan 4', accuracy: 52.1 },
-        { code: 't5', name: 'Tingkatan 5', accuracy: 50.6 },
+        { code: 't4', name: 'Tingkatan 4', accuracy: 66.2 },
+        { code: 't5', name: 'Tingkatan 5', accuracy: 71.8 },
       ],
       distribution: GRADES.map((grade, i) => ({ grade, count: i * 10, pct: i })),
       total: 450,
@@ -105,7 +105,9 @@ describe('route (FR-M27-01, 03, 07, 10)', () => {
   })
 
   it('defines no /admin-sekolah/pilih-sekolah route (it falls to the 404 page)', () => {
-    expect(routes.map((r) => r.path)).toEqual(['/admin-sekolah'])
+    const paths = routes.map((r) => r.path)
+    expect(paths).toContain('/admin-sekolah')
+    expect(paths).not.toContain('/admin-sekolah/pilih-sekolah')
   })
 })
 
@@ -232,23 +234,23 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
       'GPS, risiko murid, ketepatan latihan & perbandingan tingkatan',
     )
     expect(text(w, 'sd-panel-gps')).toContain('GPS Sekolah')
-    expect(text(w, 'sd-gps-value')).toBe('4.38')
-    expect(text(w, 'sd-gps-grade')).toBe('B · Sederhana')
-    expect(text(w, 'sd-gps-entries')).toBe('320 entri headcount')
+    expect(text(w, 'sd-gps-value')).toBe('3.17')
+    expect(text(w, 'sd-gps-grade')).toBe('B+ · Baik')
+    expect(text(w, 'sd-gps-entries')).toBe('211 entri headcount')
     expect(text(w, 'sd-panel-risk')).toContain('Amaran Awal')
     expect(['sd-risk-safe', 'sd-risk-watch', 'sd-risk-high'].map((id) => text(w, id))).toEqual([
+      '7',
       '5',
-      '6',
-      '3',
+      '2',
     ])
     expect(text(w, 'sd-panel-risk')).toContain('Selamat')
     expect(text(w, 'sd-panel-risk')).toContain('Berhati')
     expect(text(w, 'sd-panel-risk')).toContain('Berisiko')
     expect(text(w, 'sd-risk-total')).toBe('14 murid dinilai')
     expect(text(w, 'sd-panel-practice')).toContain('Latihan')
-    expect(text(w, 'sd-practice-accuracy')).toBe('53.9%')
+    expect(text(w, 'sd-practice-accuracy')).toBe('61.4%')
     expect(text(w, 'sd-panel-practice')).toContain('Purata Ketepatan')
-    expect(text(w, 'sd-practice-counts')).toBe('82 sesi · 1,094 soalan')
+    expect(text(w, 'sd-practice-counts')).toBe('57 sesi · 803 soalan')
   })
 
   it('shows the Tingkatan panel as a link with coloured rows and "Click untuk detail"', async () => {
@@ -259,13 +261,13 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
     const rows = w.findAll('[data-testid="sd-level-row"]')
     expect(rows.map((r) => r.get('span').text())).toEqual(['Tingkatan 4', 'Tingkatan 5'])
     expect(w.findAll('[data-testid="sd-level-pct"]').map((e) => e.text())).toEqual([
-      '52.1%',
-      '50.6%',
+      '66.2%',
+      '71.8%',
     ])
     expect(w.findAll('[data-testid="sd-level-pct"]')[0]?.classes()).toContain('text-amber-500')
     expect(panel.text()).toContain('Click untuk detail')
     expect((w.findAll('[data-testid="sd-level-bar"]')[0]?.element as HTMLElement).style.width).toBe(
-      '52.1%',
+      '66.2%',
     )
   })
 

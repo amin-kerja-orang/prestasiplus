@@ -16,14 +16,14 @@ export const PATHS = {
   school: '/prestasi/sekolah',
 } as const
 
-/** Integer with the `ms-MY` thousands separator ("1,094"). */
+/** Integer with the `ms-MY` thousands separator ("1,234"). */
 export const count = (n: number): string => formatCount(n)
 
-/** Accuracy with 1 decimal ("53.9%"), or the dash when there is no data. */
+/** Accuracy with 1 decimal ("61.4%"), or the dash when there is no data. */
 export const percent = (n: number | null): string =>
   n === null ? NO_DATA : `${formatNumber(n, { decimals: 1 })}%`
 
-/** GPS with 2 decimals ("4.38"), or the dash. */
+/** GPS with 2 decimals ("3.17"), or the dash. */
 export const gps = (n: number | null): string =>
   n === null ? NO_DATA : formatNumber(n, { decimals: 2 })
 

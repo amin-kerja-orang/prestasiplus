@@ -19,12 +19,14 @@ import m05 from '@/modules/m05-practice/mock'
 import m08, { schoolPerformance } from '@/modules/m08-student-performance/mock'
 import m09, { perutusan } from '@/modules/m09-content/mock'
 import m10, { classrooms } from '@/modules/m10-teacher-class/mock'
+import m18, { risk } from '@/modules/m18-ppd-jpn/mock'
 
 import type { SchoolDashboard } from '../../api/dashboard'
 import m27 from '../../mock'
 import {
   currentSubscriptionStatus,
   gradeAtGps,
+  riskTally,
   SUBSCRIPTION_LABEL,
 } from '../../mock/handlers/dashboard'
 
@@ -42,7 +44,7 @@ let runtime: MockRuntime
 beforeAll(async () => {
   runtime = await bootMock({
     mode: 'test',
-    plugins: [m01, m02, m03, m04, m05, m08, m09, m10, m27],
+    plugins: [m01, m02, m03, m04, m05, m08, m09, m10, m18, m27],
     clock: createClock({ at: CLOCK_ANCHOR_ISO }),
     latencyMs: 0,
     onWarn: null,
@@ -216,8 +218,18 @@ describe('LANGGANAN (FR-M27-30, BR-M27-14)', () => {
     expect(currentSubscriptionStatus(900003, NOW)).toBe('active')
     const d = await dashboard(AZLAN)
     expect(d.cards.subscription).toEqual({ status: 'active', label: 'Aktif' })
-    // an active row whose period has ended is not current
-    expect(currentSubscriptionStatus(900003, NOW + 3 * 366 * 86_400_000)).toBe('none')
+    // an active row whose period has lapsed is not current: it reads "Tamat" (BR-M27-14, DL decision)
+    expect(currentSubscriptionStatus(900003, NOW + 3 * 366 * 86_400_000)).toBe('expired')
+  })
+
+  it('reads "Belum Ada" for a school with only a cancelled row (anchor 8228)', () => {
+    expect(schoolSubscriptions.forSchool(8228).map((r) => r.status)).toEqual(['cancelled'])
+    expect(currentSubscriptionStatus(8228, NOW)).toBe('none')
+  })
+
+  it('reads "Tamat" for a school whose row is expired (anchor 8107)', () => {
+    expect(schoolSubscriptions.forSchool(8107).some((r) => r.status === 'expired')).toBe(true)
+    expect(currentSubscriptionStatus(8107, NOW)).toBe('expired')
   })
 })
 
@@ -268,12 +280,46 @@ describe('performance (FR-M27-32…37, BR-M27-15…18)', () => {
     expect(p.distribution).toHaveLength(10)
   })
 
-  it('leaves risk null while M18 has no risk contract (XR-M27-08)', async () => {
-    expect((await dashboard(AZLAN)).performance.risk).toBeNull()
+  it('hides the panel (risk null) when no M18 read is given', () => {
+    expect(riskTally(undefined, 900003, NOW)).toBeNull()
+  })
+
+  it.each([
+    [AZLAN, 900003],
+    [1214, 8078],
+  ])(
+    'equals the M18 risk read for school %#',
+    async (uid, schoolId) => {
+      const d = await dashboard(uid)
+      const owner = risk.forSchool(schoolId, { now: NOW })
+      expect(d.performance.risk).toEqual({
+        safe: owner.onTrack,
+        watch: owner.watch,
+        high: owner.high,
+        total: owner.total,
+      })
+      const r = d.performance.risk
+      expect(r && r.safe + r.watch + r.high).toBe(r?.total)
+    },
+    300_000,
+  )
+
+  it('maps the M18 tally explicitly: onTrack is "Selamat", the tally equals total (XR-M27-08)', () => {
+    const calls: unknown[][] = []
+    const stub = {
+      forSchool: (...args: unknown[]) => {
+        calls.push(args)
+        return { total: 14, onTrack: 7, watch: 5, high: 2 }
+      },
+    }
+    const tally = riskTally(stub, 900003, NOW)
+    expect(tally).toEqual({ safe: 7, watch: 5, high: 2, total: 14 })
+    expect(tally && tally.safe + tally.watch + tally.high).toBe(tally?.total)
+    expect(calls).toEqual([[900003, { now: NOW }]])
   })
 
   it('derives the GPS grade at round(GPS) half up (BR-M08-04)', () => {
-    expect(gradeAtGps(4.38)).toBe('B')
+    expect(gradeAtGps(3.17)).toBe('B+')
     expect(gradeAtGps(0)).toBe('A+')
     expect(gradeAtGps(0.49)).toBe('A+')
     expect(gradeAtGps(0.5)).toBe('A')
@@ -294,5 +340,6 @@ describe('populated school (NFR-M27-01)', () => {
     expect(d.performance.practice.sessions).toBeGreaterThan(0)
     expect(d.performance.practice.accuracy).not.toBeNull()
     expect(d.performance.total).toBe(d.performance.gps.entries)
-  })
+    // the time is the M08 `schoolPerformance` owner computation for ~thousands of pupils (reported, not asserted)
+  }, 300_000)
 })

@@ -6,9 +6,8 @@
  * levels and the grade distribution; its `stats.students / teachers / classes` come from the same M02 and M10
  * stores as the three count cards (M08 FR-M08-12), so they stand in for the M02 and M10 reads.
  *
- * Not run here: E2E-M27-11 (needs an admin session to post four perutusan), E2E-M27-13 `@blocked-by M09-T4`,
- * E2E-M27-15 `@blocked-by M05-T3`, E2E-M27-19 (no null-school hook, XR-M27-05; the endpoint rule is in the
- * handler test), E2E-M27-29 `@blocked-by M18`. Each is declared below as a skipped test with its reason.
+ * Not run here: E2E-M27-11 (needs an admin session to post four perutusan), E2E-M27-13 `@blocked-by M09-T4` (deferred, out of prototype 1.0),
+ * Each is declared below as a skipped test with its reason.
  */
 
 import type { Locator, Page } from '@playwright/test'
@@ -55,8 +54,8 @@ interface SchoolPerf {
   levels: { code: string; accuracy: number }[]
 }
 
-/** Parses "1,094", "53.9%" or "4.38" (the M08 page prints plain numbers, grouped numbers and percentages). */
-const num = (text: string) => Number(text.replace(/[,%s]/g, ''))
+/** Parses "1,234", "61.4%" or "3.17" (the M08 page prints plain numbers, grouped numbers and percentages). */
+const num = (text: string) => Number(text.replace(/[,%\s]/g, ''))
 
 /**
  * The oracle: the owner's own page for the same session, M08 S1 `/prestasi/sekolah` (own-school view). The raw
@@ -64,8 +63,8 @@ const num = (text: string) => Number(text.replace(/[,%s]/g, ''))
  * M08 page and the browser returns to S0. `stats.students / teachers / classes` come from the same M02 and M10
  * stores as the three count cards (M08 FR-M08-12).
  */
-async function m08(page: Page, gotoApp: (p: string) => Promise<void>): Promise<SchoolPerf> {
-  await gotoApp('/prestasi/sekolah')
+async function m08(page: Page): Promise<SchoolPerf> {
+  await spaGoto(page, '/prestasi/sekolah')
   await expect(page.getByTestId('grade-card')).toBeVisible()
   await expect(page.getByTestId('stat-murid')).toBeVisible()
   const stat = async (id: string) =>
@@ -90,7 +89,7 @@ async function m08(page: Page, gotoApp: (p: string) => Promise<void>): Promise<S
       accuracy: num(await stat('ketepatan')),
     },
     gps: {
-      value: /^d/.test(gpsText) ? Number(gpsText) : null,
+      value: /^\d/.test(gpsText) ? Number(gpsText) : null,
       band: (await band.count()) > 0 ? (await band.innerText()).trim() : null,
       entries: num(await page.getByTestId('gps-entries').innerText()),
     },
@@ -104,8 +103,21 @@ async function m08(page: Page, gotoApp: (p: string) => Promise<void>): Promise<S
       { code: 't5', accuracy: await levelPct('t5') },
     ],
   }
-  await open(page, gotoApp)
+  await spaGoto(page, PAGE)
+  await expect(page.getByTestId('sd-grades')).toBeVisible({ timeout: 60_000 })
   return perf
+}
+
+/** In-app navigation (no reload): keeps the mock state, armed faults and the booted owner caches. */
+async function spaGoto(page: Page, path: string): Promise<void> {
+  await page.evaluate(async (p) => {
+    const el = document.querySelector('#app') as Element & {
+      __vue_app__: {
+        config: { globalProperties: { $router: { push(t: string): Promise<unknown> } } }
+      }
+    }
+    await el.__vue_app__.config.globalProperties.$router.push(p)
+  }, path)
 }
 
 const ms = (n: number) => n.toLocaleString('en-US')
@@ -132,7 +144,7 @@ async function switchTo(
 async function open(page: Page, gotoApp: (p: string) => Promise<void>): Promise<void> {
   await gotoApp(PAGE)
   // the populated schools are computed from large owner datasets: allow the first answer time
-  await expect(page.getByTestId('sd-page')).toBeVisible()
+  await expect(page.getByTestId('sd-page')).toBeVisible({ timeout: 60_000 })
   await expect(page.getByTestId('sd-grades')).toBeVisible({ timeout: 60_000 })
 }
 
@@ -202,7 +214,10 @@ test.describe('shell, header', MODULE, () => {
         ),
       ).toContain('>AD<')
       await expect(page.getByTestId('shell-user-bell')).toBeVisible()
-      await expect(page.getByTestId('shell-user-header-logout')).toBeVisible()
+      // the header logout icon is the shell's own responsive choice: hidden below lg (the drawer holds "Log Keluar")
+      if (isDesktopShell(page)) {
+        await expect(page.getByTestId('shell-user-header-logout')).toBeVisible()
+      }
       await expect(page.getByTestId('shell-user-chips')).toHaveCount(0)
     },
   )
@@ -348,7 +363,8 @@ test.describe('Perutusan card', MODULE, () => {
   })
 
   test.skip('E2E-M27-11 four national perutusan give exactly 3 rows (needs an admin session; @provisional)', () => {})
-  test.skip('E2E-M27-13 click "Lihat semua →" opens the M09 list (@blocked-by M09-T4, @provisional)', () => {})
+  // deferred: `/perutusan` (M09-T4) is out of prototype 1.0 scope; does not block S0
+  test.skip('E2E-M27-13 click "Lihat semua →" opens the M09 list (@blocked-by M09-T4, deferred, @provisional)', () => {})
 })
 
 test.describe('breadcrumb', MODULE, () => {
@@ -372,7 +388,18 @@ test.describe('breadcrumb', MODULE, () => {
     expect(await y('sd-breadcrumb')).toBeLessThan(await y('sd-banner'))
   })
 
-  test.skip('E2E-M27-15 click "← Papan Pemuka" opens M05 S1 for school_admin (@blocked-by M05-T3, @provisional)', () => {})
+  test('E2E-M27-15 click "← Papan Pemuka": URL ends with /dashboard and M05 S1 renders for school_admin', async ({
+    page,
+    gotoApp,
+  }) => {
+    await signIn(page, AZLAN)
+    await open(page, gotoApp)
+    await page.getByTestId('sd-crumb-back').click()
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page.getByTestId('dashboard-page')).toBeVisible()
+    await expect(page.locator('[data-page=forbidden]')).toHaveCount(0)
+    await expect(page.getByTestId('sd-page')).toHaveCount(0)
+  })
 })
 
 test.describe('cards', MODULE, () => {
@@ -418,7 +445,7 @@ test.describe('cards', MODULE, () => {
     await gotoApp('/login')
     await switchTo(page, mock, gotoApp, POPULATED)
     await expect(page.getByTestId('sd-grades')).toBeVisible()
-    const perf = await m08(page, gotoApp)
+    const perf = await m08(page)
     const values = page.getByTestId('sd-card-value')
     await expect(values.nth(0)).toHaveText(ms(perf.stats.students))
     await expect(values.nth(1)).toHaveText(ms(perf.stats.teachers))
@@ -426,7 +453,7 @@ test.describe('cards', MODULE, () => {
     // a second school admin of another school
     await switchTo(page, mock, gotoApp, AZLAN)
     await expect(page.getByTestId('sd-banner-name')).toHaveText('SMK Demo Seri Putra')
-    const perf2 = await m08(page, gotoApp)
+    const perf2 = await m08(page)
     await expect(page.getByTestId('sd-card-value').nth(0)).toHaveText(ms(perf2.stats.students))
     await expect(page.getByTestId('sd-card-value').nth(2)).toHaveText(ms(perf2.stats.classes))
     expect([perf.stats.students, perf.stats.teachers, perf.stats.classes]).not.toEqual([
@@ -437,24 +464,37 @@ test.describe('cards', MODULE, () => {
   })
 
   test(
-    'E2E-M27-27 LANGGANAN: "Belum Ada" in the grey card; "Tempoh Ihsan" in the green card under subscriptions-extra',
+    'E2E-M27-27 LANGGANAN: "Belum Ada" in the grey card (default seed)',
     provisional(
       'LANGGANAN values other than "Belum Ada" are PROPOSED (SRS E2E-M27-27)',
       MODULE.tag,
     ),
-    async ({ page, gotoApp, mock }) => {
-      await gotoApp('/login')
-      await switchTo(page, mock, gotoApp, AZLAN)
-      await expect(page.getByTestId('sd-grades')).toBeVisible()
+    async ({ page, gotoApp }) => {
+      await signIn(page, AZLAN)
+      await open(page, gotoApp)
       await expect(page.getByTestId('sd-card-subscription')).toContainText('Belum Ada')
       await expect(page.getByTestId('sd-card-subscription')).toHaveClass(/slate/)
-      await mock.reset({ profile: 'subscriptions-extra' })
-      await switchTo(page, mock, gotoApp, ADMIN_SEKOLAH)
-      await expect(page.getByTestId('sd-grades')).toBeVisible()
-      await expect(page.getByTestId('sd-card-subscription')).toContainText('Tempoh Ihsan')
-      await expect(page.getByTestId('sd-card-subscription')).toHaveClass(/green/)
     },
   )
+
+  test.describe('profile subscriptions-extra', () => {
+    // the profile is a boot override: it survives a reload only as a mockInit option
+    test.use({ mockInit: { latency: 0, overrides: { profile: 'subscriptions-extra' } } })
+
+    test(
+      'E2E-M27-27 LANGGANAN: "Tempoh Ihsan" in the green card under subscriptions-extra',
+      provisional(
+        'LANGGANAN values other than "Belum Ada" are PROPOSED (SRS E2E-M27-27)',
+        MODULE.tag,
+      ),
+      async ({ page, loginAs, gotoApp }) => {
+        await loginAs(ADMIN_SEKOLAH)
+        await open(page, gotoApp)
+        await expect(page.getByTestId('sd-card-subscription')).toContainText('Tempoh Ihsan')
+        await expect(page.getByTestId('sd-card-subscription')).toHaveClass(/green/)
+      },
+    )
+  })
 })
 
 test.describe('access', MODULE, () => {
@@ -478,7 +518,23 @@ test.describe('access', MODULE, () => {
     })
   }
 
-  test.skip('E2E-M27-19 school_admin with a null school gets the 403 page (no test hook, XR-M27-05; endpoint rule covered by the handler test)', () => {})
+  test('E2E-M27-19 school_admin with a null school gets the 403 page (M02 hook seedSchoolAdminWithoutSchool, XR-M27-05)', async ({
+    page,
+    gotoApp,
+  }) => {
+    await gotoApp('/login')
+    const account = await page.evaluate(async () => {
+      const hooks = window.__mock as unknown as {
+        seedSchoolAdminWithoutSchool(): Promise<{ id: number; email: string }>
+      }
+      return hooks.seedSchoolAdminWithoutSchool()
+    })
+    expect(account.email).toBe('admin-tanpa-sekolah@demo.test')
+    await createMockHandle(page).setUser(account.id)
+    await gotoApp(PAGE)
+    await expectForbiddenPage(page)
+    await expect(page.locator('body')).not.toContainText('SMK')
+  })
 
   test('E2E-M27-20 /admin-sekolah/pilih-sekolah shows the 404 page', async ({ page, gotoApp }) => {
     await signIn(page, AZLAN)
@@ -532,7 +588,17 @@ test.describe('responsive and text size', MODULE, () => {
 
     const panelTops = await rowsOf(page.locator('[data-testid="sd-panels"] > *'))
     const perRow = panelTops.filter((t) => Math.abs(t - panelTops[0]!) < 2).length
-    expect(perRow).toBe(width >= 1280 ? panelTops.length : width >= 768 ? 2 : 1)
+    // GPS, AMARAN AWAL (M18, XR-M27-08), LATIHAN, TINGKATAN
+    expect(panelTops).toHaveLength(4)
+    expect(perRow).toBe(width >= 1280 ? 4 : width >= 768 ? 2 : 1)
+    if (width >= 1280) {
+      // one row, each panel at its own left edge
+      const lefts = await page
+        .locator('[data-testid="sd-panels"] > *')
+        .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)))
+      expect(new Set(lefts).size).toBe(lefts.length)
+      expect(new Set(panelTops.map((t) => Math.round(t))).size).toBe(1)
+    }
 
     const card = (await page.getByTestId('sd-performance').boundingBox())!
     for (const loc of [page.getByTestId('sd-grades'), page.getByTestId('sd-grades-total')]) {
@@ -575,10 +641,10 @@ test.describe('responsive and text size', MODULE, () => {
       'load error handling is PROPOSED; the M01 global error page does not exist yet (SRS E2E-M27-24)',
       MODULE.tag,
     ),
-    async ({ page, gotoApp, mock }) => {
+    async ({ page, mock }) => {
       await signIn(page, AZLAN)
       await mock.failNext('/api/admin-sekolah/dashboard', 500)
-      await gotoApp(PAGE)
+      await spaGoto(page, PAGE)
       await expect(page.getByTestId('sd-error')).toBeVisible()
       await expect(page.getByTestId('sd-banner')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
@@ -617,7 +683,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
   }) => {
     await signIn(page, POPULATED)
     await open(page, gotoApp)
-    const perf = await m08(page, gotoApp)
+    const perf = await m08(page)
     const panel = page.getByTestId('sd-panel-gps')
     await expect(panel).toContainText('GPS Sekolah')
     expect(
@@ -636,7 +702,29 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     }
   })
 
-  test.skip('E2E-M27-29 AMARAN AWAL tallies equal the M18 Q-M18-RISK tallies (@blocked-by M18)', () => {})
+  // Oracle note: the page cannot call the M18 endpoint or repo (the mock transport lives in the app and there is
+  // no request hook), so the tallies are checked for internal consistency here; the equality with M18
+  // `risk.forSchool` is asserted in the handler test (dashboard-handler.test.ts, real data, no pinned figures).
+  test('E2E-M27-29 AMARAN AWAL: Selamat / Berhati / Berisiko, tallies add up to "{n} murid dinilai" and fit the pupil count', async ({
+    page,
+    gotoApp,
+  }) => {
+    await signIn(page, POPULATED)
+    await open(page, gotoApp)
+    const panel = page.getByTestId('sd-panel-risk')
+    await expect(panel).toBeVisible()
+    await expect(panel).toContainText('Amaran Awal')
+    for (const label of ['Selamat', 'Berhati', 'Berisiko']) await expect(panel).toContainText(label)
+    const safe = num(await page.getByTestId('sd-risk-safe').innerText())
+    const watch = num(await page.getByTestId('sd-risk-watch').innerText())
+    const high = num(await page.getByTestId('sd-risk-high').innerText())
+    await expect(page.getByTestId('sd-risk-total')).toHaveText(
+      `${ms(safe + watch + high)} murid dinilai`,
+    )
+    const pupils = num(await page.getByTestId('sd-card-value').nth(0).innerText())
+    expect(safe + watch + high).toBeGreaterThan(0)
+    expect(safe + watch + high).toBeLessThanOrEqual(pupils)
+  })
 
   test('E2E-M27-30 LATIHAN: "{p}%" 1 decimal, "Purata Ketepatan", "{n} sesi · {m} soalan" equal M08 stats', async ({
     page,
@@ -644,7 +732,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
   }) => {
     await signIn(page, POPULATED)
     await open(page, gotoApp)
-    const perf = await m08(page, gotoApp)
+    const perf = await m08(page)
     const panel = page.getByTestId('sd-panel-practice')
     await expect(panel).toContainText('Purata Ketepatan')
     await expect(page.getByTestId('sd-practice-accuracy')).toHaveText(
@@ -661,7 +749,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
   }) => {
     await signIn(page, POPULATED)
     await open(page, gotoApp)
-    const perf = await m08(page, gotoApp)
+    const perf = await m08(page)
     const panel = page.getByTestId('sd-panel-levels')
     await expect(panel).toContainText('Click untuk detail')
     await expect(panel).toHaveAttribute('href', '/prestasi/tingkatan')
@@ -691,7 +779,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
   }) => {
     await signIn(page, POPULATED)
     await open(page, gotoApp)
-    const perf = await m08(page, gotoApp)
+    const perf = await m08(page)
     await expect(page.getByTestId('sd-grades-heading')).toHaveText('Taburan Gred (Anggaran)')
     await expect(page.getByTestId('sd-grade-letter')).toHaveText(GRADES)
     await expect(page.getByTestId('sd-grade-count')).toHaveText(
@@ -716,7 +804,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     async ({ page, gotoApp }) => {
       await signIn(page, SUHAIMI)
       await open(page, gotoApp)
-      const perf = await m08(page, gotoApp)
+      const perf = await m08(page)
       expect(perf.gps.entries).toBe(0)
       expect(perf.stats.sessions).toBe(0)
       await expect(page.getByTestId('sd-gps-value')).toHaveText('—')
@@ -739,7 +827,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     await gotoApp('/login')
     await switchTo(page, mock, gotoApp, POPULATED)
     await expect(page.getByTestId('sd-grades')).toBeVisible()
-    const own = await m08(page, gotoApp)
+    const own = await m08(page)
     await expect(page.getByTestId('sd-gps-entries')).toHaveText(
       `${ms(own.gps.entries)} entri headcount`,
     )
@@ -748,12 +836,9 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     )
     const ownPage = await page.getByTestId('sd-performance').innerText()
 
-    await gotoApp('/prestasi/sekolah')
-    await expect(page.getByTestId('grade-card')).toBeVisible()
-
     await switchTo(page, mock, gotoApp, AZLAN)
     await expect(page.getByTestId('sd-banner-name')).toHaveText('SMK Demo Seri Putra')
-    const other = await m08(page, gotoApp)
+    const other = await m08(page)
     await expect(page.getByTestId('sd-gps-entries')).toHaveText(
       `${ms(other.gps.entries)} entri headcount`,
     )

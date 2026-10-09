@@ -46,7 +46,7 @@ export interface SchoolDashboard {
   }
   performance: {
     gps: { value: number | null; grade: string | null; band: string | null; entries: number }
-    /** `null` only while M18 has no risk contract (dependency, XR-M27-08). */
+    /** The M18 `risk.forSchool` tally (XR-M27-08 resolved); `null` hides the Amaran Awal panel. */
     risk: DashboardRisk | null
     practice: { accuracy: number | null; sessions: number; questions: number }
     levels: DashboardLevel[]

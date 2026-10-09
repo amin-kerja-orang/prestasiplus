@@ -430,6 +430,18 @@ describe('isActivePath', () => {
     expect(isActivePath('/profile/', '/profile')).toBe(true)
     expect(isActivePath('/', '/dashboard')).toBe(false)
   })
+
+  it('M27 FR-M27-02: the school admin "Dashboard" is active on exactly /admin-sekolah', () => {
+    expect(isActivePath('/admin-sekolah', '/admin-sekolah')).toBe(true)
+    expect(isActivePath('/admin-sekolah/', '/admin-sekolah')).toBe(true)
+    expect(isActivePath('/admin-sekolah/monitoring', '/admin-sekolah')).toBe(false)
+    expect(isActivePath('/admin-sekolah/pelajar', '/admin-sekolah')).toBe(false)
+    // the other admin items stay active on their own path and sub-paths
+    expect(isActivePath('/admin-sekolah/pelajar', '/admin-sekolah/pelajar')).toBe(true)
+    expect(isActivePath('/admin-sekolah/pelajar/', '/admin-sekolah/pelajar')).toBe(true)
+    expect(isActivePath('/admin-sekolah/pelajar/12', '/admin-sekolah/pelajar')).toBe(true)
+    expect(isActivePath('/admin-sekolah/monitoring', '/admin-sekolah/pelajar')).toBe(false)
+  })
 })
 
 describe('drawerBadgeClass', () => {
