@@ -294,7 +294,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'pusat-kerjaya', label: 'Pusat Kerjaya', to: '/pusat-kerjaya', fa: 'fa-briefcase', color: 'text-teal-600', variant: 'ai', roles: S },
   { kind: 'item', id: 'pusat-ilmu-sekolah', label: 'Pusat Ilmu Sekolah', to: '/pusat-ilmu-sekolah', fa: 'fa-graduation-cap', color: 'text-emerald-600', variant: 'ai', roles: S },
   { kind: 'item', id: 'psikometrik', label: 'Psikometrik', to: '/psikometrik', fa: 'fa-brain', color: 'text-pink-600', variant: 'ai', badge: { text: 'NEW', cls: B_NEW_PINK_INFERRED }, roles: S },
-  { kind: 'item', id: 'heatmap-topik-lemah', label: 'Heatmap Topik Lemah', to: '/heatmap-topik-lemah', fa: 'fa-fire', color: 'text-red-600', variant: 'ai', roles: S },
+  { kind: 'item', id: 'heatmap-topik-lemah', label: 'Heatmap Topik Lemah', to: '/buku-nota/heatmap', fa: 'fa-fire', color: 'text-red-600', variant: 'ai', roles: S },
 
   { kind: 'subheading', id: 'sub-cikgu-alesa-ai', label: '🤖 Cikgu Alesa AI', cls: sub('text-purple-600/80'), roles: AI_ALL },
   { kind: 'item', id: 'cikgu-alesa-chat', label: 'Cikgu Alesa Chat', to: '/cikgu', fa: 'fa-robot', color: 'text-purple-600', variant: 'ai', tip: 'Bual dengan Cikgu Alesa — guru maya pakar SPM yang ingat nama dan progress anda', badge: { text: 'AI', cls: B_AI }, roles: AI_ALL },
