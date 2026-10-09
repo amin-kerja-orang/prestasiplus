@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CategoryChips from '../../components/product/CategoryChips.vue'
@@ -168,6 +168,15 @@ describe('ProductFilters', () => {
 })
 
 describe('ShopCard', () => {
+  // Pin the project clock: "Bergabung" is relative to now (seed createdAt 2026-02-09).
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-25T15:40:00+08:00'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('shows the initial, name with tick, stars with the count, "{n} produk" and "Bergabung"', () => {
     const w = mount(ShopCard, { props: { shop: SHOP_1.shop } })
     expect(w.get('[data-testid="shop-initial"]').text()).toBe('J')

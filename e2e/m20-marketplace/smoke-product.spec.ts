@@ -18,7 +18,7 @@ const SLUG_1 = 'beg-sekolah-anti-air-premium-vH1Fj'
 const SLUG_5 = 'e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84'
 const SLUG_7 = 'kamus-dewan-edisi-keempat-terpakai-8axTV'
 
-test.use({ mockInit: { latency: 0 } })
+test.use({ mockInit: { latency: 0, now: '2026-09-25T15:40:00+08:00' } })
 
 async function expectHeader(page: Page, title: string, subtitle: string): Promise<void> {
   await expect(page.getByTestId('shell-user-title')).toHaveText(title)

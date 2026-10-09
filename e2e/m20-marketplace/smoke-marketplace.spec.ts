@@ -13,7 +13,8 @@ import { expectNoHorizontalScroll, expectTabTitle, moduleTag, viewportWidth } fr
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(20)] }
 
-test.use({ mockInit: { latency: 0 } })
+// Project clock pinned explicitly: "Bergabung {relative}" depends on it.
+test.use({ mockInit: { latency: 0, now: '2026-09-25T15:40:00+08:00' } })
 
 const cards = (page: Page) => page.getByTestId('product-card')
 const cardIds = (page: Page) =>
