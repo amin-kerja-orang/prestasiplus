@@ -26,20 +26,21 @@ const SLICE = [
   ['M18', 'm18-ppd-jpn'],
   ['M20', 'm20-marketplace'],
   ['M21', 'm21-sponsorship'],
+  ['M22', 'm22-support-tickets'],
   ['M25', 'm25-ai-centre'],
   ['M27', 'm27-school-admin'],
 ] as const
 
 describe('registries (F-01 scaffold, F-31 extension)', () => {
-  it('list all 22 module manifests in phase order', () => {
+  it('list all 23 module manifests in phase order', () => {
     expect(modules.map((m) => [m.id, m.slug])).toEqual(SLICE)
   })
 
-  it('register 22 modules with unique ids and slugs', () => {
-    expect(modules).toHaveLength(22)
-    expect(new Set(modules.map((m) => m.id)).size).toBe(22)
-    expect(new Set(modules.map((m) => m.slug)).size).toBe(22)
-    expect(mockPlugins).toHaveLength(22)
+  it('register 23 modules with unique ids and slugs', () => {
+    expect(modules).toHaveLength(23)
+    expect(new Set(modules.map((m) => m.id)).size).toBe(23)
+    expect(new Set(modules.map((m) => m.slug)).size).toBe(23)
+    expect(mockPlugins).toHaveLength(23)
   })
 
   it('expose a route table for every module', () => {

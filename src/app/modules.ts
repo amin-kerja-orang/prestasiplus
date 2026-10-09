@@ -20,6 +20,7 @@ import { manifest as m17 } from '@/modules/m17-admin-dashboard'
 import { manifest as m18 } from '@/modules/m18-ppd-jpn'
 import { manifest as m20 } from '@/modules/m20-marketplace'
 import { manifest as m21 } from '@/modules/m21-sponsorship'
+import { manifest as m22 } from '@/modules/m22-support-tickets'
 import { manifest as m25 } from '@/modules/m25-ai-centre'
 import { manifest as m27 } from '@/modules/m27-school-admin'
 
@@ -61,6 +62,7 @@ export const modules: readonly ModuleManifest[] = [
   m18,
   m20,
   m21,
+  m22,
   m25,
   m27,
 ]
