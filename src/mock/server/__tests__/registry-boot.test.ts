@@ -12,7 +12,10 @@ import { createClock } from '@/lib/time'
 import { bootMock, type MockRuntime } from '../../index'
 import { TEST_NOW } from './helpers'
 
-const FULL_BOOT_TIMEOUT_MS = 60_000
+// Boot compiles the full D11 datasets (466k-row M04 questions), ~56s on a quiet machine. With
+// several build sessions sharing the host it can exceed a tight ceiling, so the default is
+// generous and overridable via BOOT_TEST_TIMEOUT_MS for stricter CI runs.
+const FULL_BOOT_TIMEOUT_MS = Number(process.env.BOOT_TEST_TIMEOUT_MS) || 120_000
 
 describe('full registry boot (core + every registered module)', () => {
   let runtime: MockRuntime
