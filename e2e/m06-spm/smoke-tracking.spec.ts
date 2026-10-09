@@ -260,6 +260,22 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await expect(page).toHaveURL(/\/spm\/ramalan$/)
   })
 
+  test(
+    'E2E-M06-17b a BM Q3 URL is refused, replaced with S6 and lands on the S7 list (no alert)',
+    provisional('L-5: the live Tracking A set quiz was never opened'),
+    async ({ page, loginAs, gotoApp }) => {
+      const dialogs: string[] = []
+      page.on('dialog', (d) => {
+        dialogs.push(d.message())
+        void d.dismiss()
+      })
+      await loginAs(PELAJAR)
+      await gotoApp('/spm/ramalan/BM?year=2026&set=1')
+      await expect(page).toHaveURL(/\/latihan-berstruktur\?subject_id=1&scope=spm&track=bahasa$/)
+      expect(dialogs).toEqual([])
+    },
+  )
+
   test('S5 shows a skeleton while loading and an error box with "Cuba Semula"', async ({
     page,
     loginAs,
@@ -478,6 +494,11 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
     'E2E-M06-23 GEO Set 1 takes 40 of its 67; a locked set URL goes back to S6 with no session',
     provisional('L-5: the live Tracking A set quiz was never opened'),
     async ({ page, loginAs, gotoApp, mock }) => {
+      const dialogs: string[] = []
+      page.on('dialog', (d) => {
+        dialogs.push(d.message())
+        void d.dismiss()
+      })
       await loginAs(PELAJAR)
       await gotoApp('/spm/ramalan/GEO?year=2026&set=1')
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 40')
@@ -485,6 +506,8 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
       await gotoApp('/spm/ramalan/GEO?year=2026&set=2')
       await expect(page).toHaveURL(/\/spm\/ramalan\/GEO$/)
       await expect(tid(page, 'subject-title')).toHaveText('Geografi')
+      // A refusal is quiet: the real QuizRunner raises no native alert (error flash) on the way to S6.
+      expect(dialogs).toEqual([])
       const created = (await mock.requests('/api/practice/sessions')).filter(
         (r) => r.method === 'POST' && r.status === 201,
       )

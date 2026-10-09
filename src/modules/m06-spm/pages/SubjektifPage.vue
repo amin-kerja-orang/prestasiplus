@@ -36,7 +36,7 @@ const counts = computed(() => {
 const TABS: { id: SubjektifTab; label: string; on: string }[] = [
   { id: 'all', label: 'Semua', on: 'bg-slate-900 text-white' },
   { id: 'teras', label: 'Teras', on: 'bg-teal-600 text-white' },
-  { id: 'elektif', label: 'Elektif', on: 'bg-amber-500 text-white' },
+  { id: 'elektif', label: 'Elektif', on: 'bg-amber-600 text-white' },
 ]
 
 const stats = computed(() => {

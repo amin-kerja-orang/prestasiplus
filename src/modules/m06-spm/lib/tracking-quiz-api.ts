@@ -17,7 +17,9 @@ import {
 
 /** True when a failed start means "this set cannot be started". */
 export function isSetRefusal(err: unknown): boolean {
-  return err instanceof ApiError && (err.status === 404 || err.status === 422)
+  if (!(err instanceof ApiError)) return false
+  if (err.status === 404) return true
+  return err.status === 422 && (err.code === 'SET_NOT_READY' || err.code === 'NOT_ENOUGH_QUESTIONS')
 }
 
 export function createTrackingQuizApi(onRefused: () => void): QuizApi {

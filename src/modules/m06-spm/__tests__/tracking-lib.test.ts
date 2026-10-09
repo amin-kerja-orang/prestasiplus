@@ -67,6 +67,12 @@ describe('tracking lib', () => {
       true,
     )
     expect(isSetRefusal(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))).toBe(true)
+    expect(
+      isSetRefusal(new ApiError({ status: 422, code: 'NOT_ENOUGH_QUESTIONS', message: 'x' })),
+    ).toBe(true)
+    expect(isSetRefusal(new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'x' }))).toBe(
+      false,
+    )
     expect(isSetRefusal(new ApiError({ status: 402, code: 'PAYMENT', message: 'x' }))).toBe(false)
     expect(isSetRefusal(new Error('x'))).toBe(false)
   })

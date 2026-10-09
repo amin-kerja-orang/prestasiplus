@@ -32,7 +32,7 @@ vi.mock('@/modules/m05-practice', async () => {
         retry: { type: String, default: '' },
       },
       setup(props) {
-        void props.api?.start(props.start)
+        props.api?.start(props.start).catch(() => undefined)
         return () => h('div', { 'data-testid': 'runner' })
       },
     }),
@@ -435,6 +435,14 @@ describe('Q3 TrackingASetQuizPage', () => {
     await render(TrackingACodePage, '/spm/ramalan/GEO?year=2026&set=2')
     expect(router.currentRoute.value.fullPath).toBe('/spm/ramalan/GEO')
   })
+
+  it('surfaces any other 422 as a normal error (no replace to S6)', async () => {
+    m05.startSession.mockRejectedValue(
+      new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'x' }),
+    )
+    await render(TrackingACodePage, '/spm/ramalan/GEO?year=2026&set=2')
+    expect(router.currentRoute.value.fullPath).toBe('/spm/ramalan/GEO?year=2026&set=2')
+  })
 })
 
 const overview = (over: Partial<SubjektifOverview['stats']> = {}): SubjektifOverview => ({
@@ -521,7 +529,7 @@ describe('S8 SubjektifPage', () => {
     expect(texts(w, 'subjektif-badge')).toEqual(['Teras', 'Teras'])
 
     await t(w, 'tab-elektif').trigger('click')
-    expect(t(w, 'tab-elektif').classes()).toContain('bg-amber-500')
+    expect(t(w, 'tab-elektif').classes()).toContain('bg-amber-600')
     expect(texts(w, 'subjektif-name')).toEqual(['Biologi', 'Sains Komputer'])
   })
 
