@@ -252,8 +252,10 @@ function pendingSorted(userId: number): PbdTag[] {
     )
 }
 
-function csvCell(value: string | number): string {
-  const s = String(value)
+export function csvCell(value: string | number): string {
+  let s = String(value)
+  // SEC-M13-04: neutralise spreadsheet formulas.
+  if (/^[=+@-]/.test(s)) s = `'${s}`
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 

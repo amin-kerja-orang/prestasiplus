@@ -34,6 +34,7 @@ const actionErrors = ref<string[]>([])
 const generation = ref(0)
 
 function goToPage(next: number): void {
+  generation.value += 1
   void router.push({ path: '/cikgu/pbd', query: { page: String(next) } })
 }
 
@@ -85,6 +86,7 @@ async function onBulk(event: Event): Promise<void> {
 }
 
 async function onExport(event: MouseEvent): Promise<void> {
+  // Mock limitation: a modified click skips this interceptor (the browser follows the link itself).
   if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
   event.preventDefault()
   try {
@@ -183,7 +185,7 @@ class="flex min-w-0 flex-col md:flex-row md:flex-wrap md:items-center md:gap-2"
           <table :class="T.table" data-testid="pbd-table">
             <thead class="bg-slate-50">
               <tr>
-                <th :class="T.th"><span class="sr-only"></span></th>
+                <th :class="T.th"></th>
                 <th :class="T.th">{{ C.headers[0] }}</th>
                 <th :class="T.th">{{ C.headers[1] }}</th>
                 <th :class="[T.th, 'text-center']">{{ C.headers[2] }}</th>

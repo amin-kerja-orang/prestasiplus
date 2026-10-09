@@ -27,8 +27,6 @@ export const PENDING_ESSAY_KEY = 'cikgu_pending_essay'
 export const SPEAK_MIN_CHARS = 10
 /** FR-M13-32: dictation auto-submits only when longer than this. */
 export const AUTO_SUBMIT_MIN_CHARS = 5
-/** Pause between the error status and the end step of the recogniser (PROPOSED). */
-export const VOICE_ERROR_HOLD_MS = 1000
 
 export interface ChatMessage {
   id: number

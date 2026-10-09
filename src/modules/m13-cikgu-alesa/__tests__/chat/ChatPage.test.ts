@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import {
   configureVoice,
@@ -27,11 +27,14 @@ const okBody = (reply: string, over: Partial<ChatSendResponse> = {}): ChatSendRe
 
 let wrapper: VueWrapper | undefined
 
+let currentRouter: Router | undefined
+
 async function mountPage(url = '/cikgu') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [{ path: '/cikgu', component: { template: '<div />' } }],
   })
+  currentRouter = router
   await router.push(url)
   await router.isReady()
   wrapper = mount(ChatPage, { attachTo: document.body, global: { plugins: [router] } })
@@ -162,6 +165,16 @@ describe('S1 entry points (FR-M13-21, 22)', () => {
     await mountPage('/cikgu?ask=Terangkan%20pecahan%20setara')
     expect(input().element.value).toBe('Terangkan pecahan setara')
     expect(document.activeElement).toBe(input().element)
+    expect(sendChat).not.toHaveBeenCalled()
+  })
+
+  it('a link to /cikgu?ask= while already on /cikgu re-applies the prefill', async () => {
+    Element.prototype.scrollIntoView = vi.fn()
+    await mountPage('/cikgu')
+    expect(input().element.value).toBe('')
+    await currentRouter!.push('/cikgu?ask=Terangkan%20pecahan%20setara')
+    await flushPromises()
+    expect(input().element.value).toBe('Terangkan pecahan setara')
     expect(sendChat).not.toHaveBeenCalled()
   })
 
