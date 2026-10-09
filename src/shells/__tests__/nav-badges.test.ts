@@ -49,3 +49,41 @@ describe('nav badges (M04 "Gambar Rajah" live count)', () => {
     expect(w.get('#b').text()).toBe('6,144')
   })
 })
+
+describe('nav badges (M22 "Urus Tiket" open-ticket count)', () => {
+  function mountTickets() {
+    let refresh: () => Promise<void> = () => Promise.resolve()
+    const Child = defineComponent({
+      setup() {
+        const text = useNavBadgeText()
+        return () => h('span', { id: 't' }, text('urus-tiket', '2'))
+      },
+    })
+    const Parent = defineComponent({
+      setup() {
+        refresh = provideNavBadges().refresh
+        return () => h(Child)
+      },
+    })
+    return { w: mount(Parent), refresh: () => refresh() }
+  }
+
+  it('shows the live open-ticket count after a refresh (0 is the text "0")', async () => {
+    api.get.mockImplementation((url: string) =>
+      Promise.resolve(url === '/api/admin/tiket/open-count' ? { count: 0 } : {}),
+    )
+    const { w, refresh } = mountTickets()
+    expect(w.get('#t').text()).toBe('2')
+    await refresh()
+    await flushPromises()
+    expect(w.get('#t').text()).toBe('0')
+  })
+
+  it('keeps the static "2" when the call fails', async () => {
+    api.get.mockRejectedValue(new Error('403'))
+    const { w, refresh } = mountTickets()
+    await refresh()
+    await flushPromises()
+    expect(w.get('#t').text()).toBe('2')
+  })
+})

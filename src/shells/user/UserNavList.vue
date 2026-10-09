@@ -194,9 +194,11 @@ const PUSAT_AI_TITLE_STYLE =
     >
       <NavIcon :fa="entry.fa" :class="mainIconClass(entry)" />
       <span :class="surface === 'sidebar' ? 'font-semibold' : undefined">{{ entry.label }}</span>
-      <span v-if="entry.badge" :class="badgeClass(entry)">{{
-        badgeText(entry.id, entry.badge.text)
-      }}</span>
+      <span
+        v-if="entry.badge && badgeText(entry.id, entry.badge.text) !== '0'"
+        :class="badgeClass(entry)"
+        >{{ badgeText(entry.id, entry.badge.text) }}</span
+      >
     </ShellLink>
   </template>
 </template>

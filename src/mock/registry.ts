@@ -34,6 +34,7 @@ export const mockPlugins: readonly MockPluginLoader[] = [
   () => import('@/modules/m18-ppd-jpn/mock'),
   () => import('@/modules/m20-marketplace/mock'),
   () => import('@/modules/m21-sponsorship/mock'),
+  () => import('@/modules/m22-support-tickets/mock'),
   () => import('@/modules/m25-ai-centre/mock'),
   () => import('@/modules/m27-school-admin/mock'),
 ]
