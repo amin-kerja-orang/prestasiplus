@@ -7,6 +7,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
+import { TIMEOUT_FACTOR } from './timeout-factor'
 import { isDesktopShell, moduleTag } from '../support'
 
 const ADMIN = 'admin@demo.test'
@@ -40,7 +41,7 @@ const ROUTES: Array<[string, string, string]> = [
 
 test.describe('QA G5 admin menu entries', { tag: [moduleTag(3), '@qa'] }, () => {
   test.use({ mockInit: { latency: 0 } })
-  test.setTimeout(120_000)
+  test.setTimeout(120_000 * TIMEOUT_FACTOR)
 
   test('E2E-M03-48 sidebar (>=1024): group KURIKULUM open with 3 links; active item per screen', async ({
     page,
@@ -143,7 +144,7 @@ test.describe('QA G5 admin menu entries', { tag: [moduleTag(3), '@qa'] }, () => 
 
 test.describe('QA G5 route guards', { tag: [moduleTag(3), '@qa'] }, () => {
   test.use({ mockInit: { latency: 0 } })
-  test.setTimeout(180_000)
+  test.setTimeout(180_000 * TIMEOUT_FACTOR)
 
   test('E2E-M03-50 guest is sent to /login from all 11 admin routes (AC-29.1)', async ({
     page,

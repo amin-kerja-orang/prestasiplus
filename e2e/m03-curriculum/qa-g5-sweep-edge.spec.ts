@@ -7,6 +7,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
+import { TIMEOUT_FACTOR } from './timeout-factor'
 import { expectNoHorizontalScroll, moduleTag, viewportWidth } from '../support'
 
 const ADMIN = 'admin@demo.test'
@@ -82,7 +83,7 @@ async function smallText(page: Page): Promise<string[]> {
 
 test.describe('QA G5 responsive sweep of the admin routes', MODULE, () => {
   test.use({ mockInit: { latency: 0 } })
-  test.setTimeout(90_000)
+  test.setTimeout(90_000 * TIMEOUT_FACTOR)
 
   for (const [name, path] of ROUTES) {
     test(`E2E-M03-52 ${name}: no horizontal scroll, nothing clipped, text >= 12px, nav reachable`, async ({
@@ -143,7 +144,7 @@ test.describe('QA G5 responsive sweep of the admin routes', MODULE, () => {
 
 test.describe('QA G5 seed checks (ordering, inactive demo)', MODULE, () => {
   test.use({ mockInit: { latency: 0 } })
-  test.setTimeout(90_000)
+  test.setTimeout(90_000 * TIMEOUT_FACTOR)
 
   test('E2E-M03-05 DV-M03-09: Sains Komputer T3 has no chapter number >= 100 and no repeated Topik n inside a chapter', async ({
     page,
@@ -196,7 +197,7 @@ test.describe('QA G5 seed checks (ordering, inactive demo)', MODULE, () => {
 
 test.describe('QA G5 validation and edge cases', MODULE, () => {
   test.use({ mockInit: { latency: 0 } })
-  test.setTimeout(90_000)
+  test.setTimeout(90_000 * TIMEOUT_FACTOR)
 
   test('AC-06.4 S2 blocks an empty subject and an empty level one by one', async ({ page, loginAs, gotoApp }) => {
     await loginAs(ADMIN)
