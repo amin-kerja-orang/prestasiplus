@@ -96,7 +96,12 @@ describe('schoolPerformance memo: invalidation', () => {
     const cls = classrooms.list({ kind: 'classroom', schoolId: SCHOOL }).at(-1)
     if (!cls) throw new Error('no class')
     classrooms.enrol(
-      { kind: 'classroom', classId: cls.classId, studentId: firstOf('student', SCHOOL), source: 'teacher' },
+      {
+        kind: 'classroom',
+        classId: cls.classId,
+        studentId: firstOf('student', SCHOOL),
+        source: 'teacher',
+      },
       now,
     )
     expect(schoolPerformance(scope, YEAR)).toEqual(fresh(scope))
@@ -176,7 +181,6 @@ describe('schoolPerformance memo: invalidation', () => {
     expect(performanceMemo.size).toBe(0)
   })
 })
-
 
 describe('|perf| schoolPerformance 8078', () => {
   it('logs the cold time; the warm call stays under 100 ms', () => {
