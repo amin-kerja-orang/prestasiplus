@@ -80,9 +80,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await expect(page.getByTestId('gallery-thumb').first()).toHaveAttribute('data-active', 'false')
     expect((await mock.requests()).length).toBe(before)
     expect(
-      await page
-        .getByTestId('gallery-main')
-        .evaluate((i) => (i as HTMLImageElement).naturalWidth),
+      await page.getByTestId('gallery-main').evaluate((i) => (i as HTMLImageElement).naturalWidth),
     ).toBeGreaterThan(0)
   })
 
@@ -124,9 +122,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await expect(page.getByTestId('product-shipping-line')).toHaveText('Pos / Kurier (RM10.00)')
     await expect(page.getByTestId('product-location')).toHaveText('Penang')
     await expect(page.getByTestId('gallery-thumb')).toHaveCount(5)
-    await expect(
-      page.getByTestId('related-products').getByTestId('product-card-name'),
-    ).toHaveText([
+    await expect(page.getByTestId('related-products').getByTestId('product-card-name')).toHaveText([
       'Set Buku Latihan Matematik Tahun 6 (5 Buku)',
       'E-Book: 1001 Soalan Sains Tingkatan 3 (PDF)',
     ])
@@ -143,9 +139,10 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await expect(page.getByTestId('product-category')).toHaveText('Buku & Rujukan')
     await expect(page.getByTestId('product-views')).toHaveText('8 tontonan')
     await expect(page.getByTestId('product-shipping-line')).toHaveText('Penghantaran Percuma 🎉')
-    await expect(
-      page.getByTestId('related-products').getByTestId('product-card-name'),
-    ).toHaveText(['Set Buku Latihan Matematik Tahun 6 (5 Buku)', 'Kamus Dewan Edisi Keempat (Terpakai)'])
+    await expect(page.getByTestId('related-products').getByTestId('product-card-name')).toHaveText([
+      'Set Buku Latihan Matematik Tahun 6 (5 Buku)',
+      'Kamus Dewan Edisi Keempat (Terpakai)',
+    ])
   })
 
   test('E2E-M20-60 every load adds a view; the list pages leave views unchanged', async ({
@@ -156,13 +153,14 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await loginAs(PELAJAR)
     await gotoApp(`/marketplace/${SLUG_1}`)
     await expect(page.getByTestId('product-views')).toHaveText('31 tontonan')
-    await gotoApp(`/marketplace/${SLUG_1}`)
+    // In-app navigation only (no reload): S6 and S8 leave views unchanged, every S7 mount adds one.
+    await page.getByTestId('marketplace-back').click()
+    await expect(page.getByTestId('product-card')).toHaveCount(10)
+    await page.getByTestId('product-card').first().click()
     await expect(page.getByTestId('product-views')).toHaveText('32 tontonan')
-    await gotoApp('/marketplace?sort=popular')
+    await page.getByTestId('seller-link').click()
     await expect(page.getByTestId('product-card')).toHaveCount(10)
-    await gotoApp('/marketplace/penjual/1')
-    await expect(page.getByTestId('product-card')).toHaveCount(10)
-    await gotoApp(`/marketplace/${SLUG_1}`)
+    await page.goBack()
     await expect(page.getByTestId('product-views')).toHaveText('33 tontonan')
   })
 
@@ -196,10 +194,12 @@ test.describe('M20 S7 Product page', MODULE, () => {
     const info = await page.getByTestId('product-info').boundingBox()
     if (viewportWidth(page) < 768) {
       expect(info!.y).toBeGreaterThan(gallery!.y + gallery!.height - 1)
-      expect(await page.getByTestId('gallery-thumb').evaluateAll((els) => {
-        const ys = new Set(els.map((e) => Math.round(e.getBoundingClientRect().y)))
-        return Math.ceil(els.length / ys.size)
-      })).toBeLessThanOrEqual(5)
+      expect(
+        await page.getByTestId('gallery-thumb').evaluateAll((els) => {
+          const ys = new Set(els.map((e) => Math.round(e.getBoundingClientRect().y)))
+          return Math.ceil(els.length / ys.size)
+        }),
+      ).toBeLessThanOrEqual(5)
     } else {
       expect(info!.x).toBeGreaterThan(gallery!.x + gallery!.width - 1)
       expect(Math.abs(info!.y - gallery!.y)).toBeLessThan(2)
@@ -262,7 +262,11 @@ test.describe('M20 W WhatsApp hand-off (D14)', MODULE, () => {
     await expect(page.getByTestId('product-name')).toBeVisible()
   })
 
-  test('E2E-M20-63 an unknown slug on W renders the 404 page', async ({ page, gotoApp, loginAs }) => {
+  test('E2E-M20-63 an unknown slug on W renders the 404 page', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
     await loginAs(PELAJAR)
     const urls = await interceptWaMe(page)
     await gotoApp('/marketplace/tiada-produk-zzqxv/whatsapp')

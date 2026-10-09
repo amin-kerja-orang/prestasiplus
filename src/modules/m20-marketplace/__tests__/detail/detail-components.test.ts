@@ -88,7 +88,10 @@ describe('ProductInfo', () => {
 
 describe('SellerPanel', () => {
   it('links the whole card to S8 with the initial, tick, stars and "{n} produk"', () => {
-    const w = mount(SellerPanel, { props: { seller: SELLER_CARD }, global: { plugins: [router()] } })
+    const w = mount(SellerPanel, {
+      props: { seller: SELLER_CARD },
+      global: { plugins: [router()] },
+    })
     const link = w.get('[data-testid="seller-link"]')
     expect(link.attributes('href')).toBe('/marketplace/penjual/1')
     expect(w.get('[data-testid="seller-initial"]').text()).toBe('J')
@@ -118,7 +121,9 @@ describe('ReviewsCard', () => {
   it('lists existing reviews', () => {
     const w = mount(ReviewsCard, {
       props: {
-        reviews: [{ id: 1, userId: 2, rating: 4, text: 'Bagus', createdAt: '2026-09-01T10:00:00+08:00' }],
+        reviews: [
+          { id: 1, userId: 2, rating: 4, text: 'Bagus', createdAt: '2026-09-01T10:00:00+08:00' },
+        ],
         count: 1,
       },
     })

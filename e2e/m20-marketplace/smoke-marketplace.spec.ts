@@ -26,12 +26,17 @@ async function expectHeader(page: Page, title: string, subtitle: string): Promis
 
 /** The number of distinct left edges among the first cards = grid columns. */
 async function columns(page: Page): Promise<number> {
-  return page.getByTestId('product-grid').first().evaluate((grid) => {
-    const xs = new Set(
-      Array.from(grid.children).map((c) => Math.round((c as HTMLElement).getBoundingClientRect().x)),
-    )
-    return xs.size
-  })
+  return page
+    .getByTestId('product-grid')
+    .first()
+    .evaluate((grid) => {
+      const xs = new Set(
+        Array.from(grid.children).map((c) =>
+          Math.round((c as HTMLElement).getBoundingClientRect().x),
+        ),
+      )
+      return xs.size
+    })
 }
 
 function expectedColumns(page: Page): number {
@@ -40,9 +45,13 @@ function expectedColumns(page: Page): number {
 }
 
 async function allImagesLoaded(page: Page): Promise<boolean> {
-  return page.getByTestId('product-card-image').evaluateAll((imgs) =>
-    imgs.every((i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0),
-  )
+  return page
+    .getByTestId('product-card-image')
+    .evaluateAll((imgs) =>
+      imgs.every(
+        (i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0,
+      ),
+    )
 }
 
 test.describe('M20 S6 Marketplace', MODULE, () => {
@@ -164,7 +173,9 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
     await page.getByTestId('marketplace-chip-all').click()
     await page.getByTestId('marketplace-condition').selectOption('used')
     await page.getByTestId('marketplace-submit').click()
-    await expect.poll(async () => (await cardIds(page)).slice().sort((a, b) => a - b)).toEqual([3, 7, 10])
+    await expect
+      .poll(async () => (await cardIds(page)).slice().sort((a, b) => a - b))
+      .toEqual([3, 7, 10])
     await page.getByTestId('marketplace-condition').selectOption('new')
     await page.getByTestId('marketplace-submit').click()
     await expect(cards(page)).toHaveCount(7)
@@ -244,7 +255,9 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
     await expect(cards(page)).toHaveCount(10)
     await mock.failNext('/api/marketplace/products', 500)
     await page.getByTestId('marketplace-submit').click()
-    await expect(page.getByTestId('m20-load-error')).toContainText('Maaf, berlaku ralat. Sila cuba semula.')
+    await expect(page.getByTestId('m20-load-error')).toContainText(
+      'Maaf, berlaku ralat. Sila cuba semula.',
+    )
     await page.getByTestId('m20-retry').click()
     await expect(cards(page)).toHaveCount(10)
   })

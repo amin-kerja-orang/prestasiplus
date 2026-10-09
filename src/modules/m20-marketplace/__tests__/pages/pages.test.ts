@@ -35,7 +35,10 @@ let wrapper: VueWrapper | undefined
 async function mountAt(component: Component, path: string, url: string) {
   router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path, component, props: true }, { path: '/marketplace', component: { template: '<div />' } }],
+    routes: [
+      { path, component, props: true },
+      { path: '/marketplace', component: { template: '<div />' } },
+    ],
   })
   await router.push(url)
   await router.isReady()
@@ -82,7 +85,10 @@ describe('routes', () => {
 
   it('S7 is a user-shell route and W has no shell (D14)', () => {
     const byPath = Object.fromEntries(productRoutes.map((r) => [r.path, r.meta]))
-    expect(byPath['/marketplace/:slug']).toMatchObject({ layout: 'user', header: { title: 'Marketplace' } })
+    expect(byPath['/marketplace/:slug']).toMatchObject({
+      layout: 'user',
+      header: { title: 'Marketplace' },
+    })
     expect(byPath['/marketplace/:slug/whatsapp']).toMatchObject({ layout: 'bare', access: 'auth' })
   })
 })
@@ -107,9 +113,9 @@ describe('S6 MarketplacePage', () => {
     expect(w.find('[data-testid="marketplace-empty"]').exists()).toBe(false)
     expect(w.findAll('a').some((a) => (a.attributes('href') ?? '').includes('page='))).toBe(false)
     expect(w.get<HTMLInputElement>('[data-testid="marketplace-q"]').element.value).toBe('beg')
-    expect(w.get('[data-testid="marketplace-chip-peralatan-sekolah"]').attributes('data-active')).toBe(
-      'true',
-    )
+    expect(
+      w.get('[data-testid="marketplace-chip-peralatan-sekolah"]').attributes('data-active'),
+    ).toBe('true')
   })
 
   it('shows "Tiada Produk Dijumpai" and no pager when nothing matches', async () => {
@@ -139,7 +145,9 @@ describe('S6 MarketplacePage', () => {
     })
     const w = await mountAt(MarketplacePage, '/marketplace', '/marketplace?category=buku-rujukan')
     const hrefs = w.findAll('a').map((a) => a.attributes('href') ?? '')
-    expect(hrefs.some((h) => h.includes('category=buku-rujukan') && h.includes('page=2'))).toBe(true)
+    expect(hrefs.some((h) => h.includes('category=buku-rujukan') && h.includes('page=2'))).toBe(
+      true,
+    )
   })
 
   it('a search pushes the four form values to the URL', async () => {
@@ -162,7 +170,9 @@ describe('S6 MarketplacePage', () => {
   it('a failed request shows the error box and "Cuba Semula" reloads', async () => {
     api.searchMarketplaceProducts.mockRejectedValueOnce(serverError())
     const w = await mountAt(MarketplacePage, '/marketplace', '/marketplace')
-    expect(w.get('[data-testid="m20-load-error"]').text()).toContain('Maaf, berlaku ralat. Sila cuba semula.')
+    expect(w.get('[data-testid="m20-load-error"]').text()).toContain(
+      'Maaf, berlaku ralat. Sila cuba semula.',
+    )
     await w.get('[data-testid="m20-retry"]').trigger('click')
     await flushPromises()
     expect(w.findAll('[data-testid="product-card"]')).toHaveLength(2)
@@ -171,7 +181,11 @@ describe('S6 MarketplacePage', () => {
 
 describe('S7 ProductDetailPage', () => {
   it('fetches #15 once, sets the header and the tab title, and shows the views of the response', async () => {
-    const w = await mountAt(ProductDetailPage, '/marketplace/:slug', `/marketplace/${DETAIL_1.slug}`)
+    const w = await mountAt(
+      ProductDetailPage,
+      '/marketplace/:slug',
+      `/marketplace/${DETAIL_1.slug}`,
+    )
     expect(api.fetchMarketplaceProduct).toHaveBeenCalledTimes(1)
     expect(api.fetchMarketplaceProduct.mock.calls[0]![0]).toBe(DETAIL_1.slug)
     expect(usePageMeta().state.header).toEqual({
@@ -183,12 +197,18 @@ describe('S7 ProductDetailPage', () => {
     expect(w.get('[data-testid="marketplace-back"]').attributes('href')).toBe('/marketplace')
     expect(w.get('[data-testid="seller-link"]').attributes('href')).toBe('/marketplace/penjual/1')
     expect(w.get('[data-testid="reviews-title"]').text()).toBe('Ulasan (0)')
-    expect(w.findAll('[data-testid="related-products"] [data-testid="product-card"]')).toHaveLength(1)
+    expect(w.findAll('[data-testid="related-products"] [data-testid="product-card"]')).toHaveLength(
+      1,
+    )
   })
 
   it('an unknown slug renders the in-place 404 outcome', async () => {
     api.fetchMarketplaceProduct.mockRejectedValue(notFound())
-    const w = await mountAt(ProductDetailPage, '/marketplace/:slug', '/marketplace/tiada-produk-zzqxv')
+    const w = await mountAt(
+      ProductDetailPage,
+      '/marketplace/:slug',
+      '/marketplace/tiada-produk-zzqxv',
+    )
     expect(useRouteOutcome().value).toBe(404)
     expect(w.find('[data-testid="product-page"]').exists()).toBe(false)
   })
@@ -257,7 +277,11 @@ describe('W WhatsappHandoffPage (D14)', () => {
     const replace = vi.fn()
     vi.stubGlobal('location', { replace })
     api.recordWhatsappClick.mockRejectedValueOnce(serverError())
-    const w = await mountAt(WhatsappHandoffPage, '/marketplace/:slug/whatsapp', '/marketplace/x/whatsapp')
+    const w = await mountAt(
+      WhatsappHandoffPage,
+      '/marketplace/:slug/whatsapp',
+      '/marketplace/x/whatsapp',
+    )
     expect(w.find('[data-testid="m20-load-error"]').exists()).toBe(true)
     expect(replace).not.toHaveBeenCalled()
     api.recordWhatsappClick.mockResolvedValue({ url: 'https://wa.me/1' })

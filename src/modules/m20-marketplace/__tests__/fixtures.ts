@@ -1,11 +1,5 @@
 /** Shared fixtures of the M20 buyer UI tests (values follow the SRS M20 §6.11 seed). */
-import type {
-  MarketplaceCategory,
-  ProductCard,
-  ProductDetail,
-  SellerCard,
-  ShopView,
-} from '../api'
+import type { MarketplaceCategory, ProductCard, ProductDetail, SellerCard, ShopView } from '../api'
 
 export const CATEGORIES: MarketplaceCategory[] = [
   { id: 1, slug: 'peralatan-sekolah', name: 'Peralatan Sekolah', icon: 'fa-pencil-ruler' },
@@ -90,7 +84,9 @@ export const DETAIL_1: ProductDetail = {
   seller: SELLER_CARD,
   reviews: [],
   reviewCount: 0,
-  related: [{ ...CARD_5, id: 6, slug: 'kotak-pensel', name: 'Kotak Pensel 3 Tingkat Disney Frozen' }],
+  related: [
+    { ...CARD_5, id: 6, slug: 'kotak-pensel', name: 'Kotak Pensel 3 Tingkat Disney Frozen' },
+  ],
 }
 
 export const SHOP_1: ShopView = {

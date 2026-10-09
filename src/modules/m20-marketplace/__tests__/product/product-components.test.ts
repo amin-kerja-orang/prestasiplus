@@ -4,11 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CategoryChips from '../../components/product/CategoryChips.vue'
-import {
-  formatPrice,
-  readBuyerQuery,
-  readPage,
-} from '../../components/product/copy'
+import { formatPrice, readBuyerQuery, readPage } from '../../components/product/copy'
 import ProductCard from '../../components/product/ProductCard.vue'
 import ProductFilters from '../../components/product/ProductFilters.vue'
 import ShopCard from '../../components/product/ShopCard.vue'
@@ -28,7 +24,9 @@ describe('format helpers', () => {
   })
 
   it('reads the four filter values and the page from a route query', () => {
-    expect(readBuyerQuery({ q: 'beg', category: ['a', 'b'], condition: 3, sort: 'popular' })).toEqual({
+    expect(
+      readBuyerQuery({ q: 'beg', category: ['a', 'b'], condition: 3, sort: 'popular' }),
+    ).toEqual({
       q: 'beg',
       category: 'a',
       condition: '',
@@ -43,7 +41,7 @@ describe('format helpers', () => {
 })
 
 describe('ProductCard', () => {
-  it('full: badge, seller with tick, prices and the shipping line, one link to S7', async () => {
+  it('full: badge, seller with tick, prices and the shipping line, one link to S7', () => {
     const r = router()
     const w = mount(ProductCard, { props: { product: CARD_1 }, global: { plugins: [r] } })
     expect(w.element.tagName).toBe('A')
@@ -136,8 +134,12 @@ describe('ProductFilters', () => {
     expect(w.get<HTMLSelectElement>('[data-testid="marketplace-category"]').element.value).toBe(
       'peralatan-sekolah',
     )
-    expect(w.get<HTMLSelectElement>('[data-testid="marketplace-condition"]').element.value).toBe('new')
-    expect(w.get<HTMLSelectElement>('[data-testid="marketplace-sort"]').element.value).toBe('popular')
+    expect(w.get<HTMLSelectElement>('[data-testid="marketplace-condition"]').element.value).toBe(
+      'new',
+    )
+    expect(w.get<HTMLSelectElement>('[data-testid="marketplace-sort"]').element.value).toBe(
+      'popular',
+    )
     expect(w.get('[data-testid="marketplace-submit"]').text()).toBe('Cari')
     expect(w.findAll('[data-testid="marketplace-category"] option').map((o) => o.text())).toEqual([
       'Semua Kategori',
@@ -159,7 +161,9 @@ describe('ProductFilters', () => {
     const w = mount(ProductFilters, {
       props: { categories: CATEGORIES, query: { q: '', category: '', condition: '', sort: '' } },
     })
-    expect(w.get<HTMLSelectElement>('[data-testid="marketplace-sort"]').element.value).toBe('latest')
+    expect(w.get<HTMLSelectElement>('[data-testid="marketplace-sort"]').element.value).toBe(
+      'latest',
+    )
   })
 })
 
