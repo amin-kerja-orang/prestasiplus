@@ -15,6 +15,7 @@
 import { getCurrentScope, onScopeDispose, ref, shallowRef } from 'vue'
 
 import type { RawResponse } from '@/api'
+import { clock } from '@/lib/time/clock'
 
 import {
   acceptChallenger,
@@ -49,7 +50,7 @@ function isAbort(err: unknown): boolean {
 const isOk = (status: number): boolean => status >= 200 && status < 300
 
 function bodyOf<T extends object>(res: RawResponse<unknown>): Partial<T> | null {
-  return typeof res.body === 'object' && res.body !== null ? (res.body as Partial<T>) : null
+  return typeof res.body === 'object' && res.body !== null ? res.body : null
 }
 
 export function useBattleSearch(options: { onMatched: (battleUuid: string) => void }) {
@@ -99,7 +100,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
 
   /** Schedules tick `n` at start + n x interval (fixed rate: drift never moves the timer text). */
   function schedule(mySession: number, wait: () => Promise<void>): void {
-    const now = Date.now()
+    const now = clock.now()
     tickNo += 1
     // A response that came after several slots skips the missed ones (no burst of catch-up polls).
     if (startedAt + tickNo * BATTLE_POLL_MS < now) {
@@ -115,7 +116,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
   // --- search (#4) -------------------------------------------------------------------------------
 
   async function searchTick(mySession: number): Promise<void> {
-    const elapsedMs = Date.now() - startedAt
+    const elapsedMs = clock.now() - startedAt
     elapsedText.value = formatMss(elapsedMs / 1000)
     if (elapsedMs >= BATTLE_SEARCH_TIMEOUT_MS) {
       stopWith(BATTLE_MSG.noOpponentTimeout)
@@ -204,7 +205,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
       return
     }
     queueId = body.queue_id
-    startedAt = Date.now()
+    startedAt = clock.now()
     tickNo = 0
     failures = 0
     elapsedText.value = formatMss(0)
@@ -284,7 +285,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     queueId = id
     waitingName.value = name
     waitingGrade.value = gradeLabel
-    startedAt = Date.now()
+    startedAt = clock.now()
     tickNo = 0
     phase.value = 'waiting'
     schedule(mySession, () => waitTick(mySession))

@@ -73,32 +73,40 @@ const podiumOrder = computed(() => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-4xl space-y-4" data-testid="battle-schools">
-    <div class="rounded-3xl bg-gradient-to-r from-blue-500 to-indigo-500 p-5 text-white shadow-lg">
-      <div class="flex items-center gap-3">
-        <School class="h-8 w-8 shrink-0" />
-        <h2 class="text-2xl font-bold">Papan Ranking Sekolah</h2>
+  <div class="w-full space-y-4" data-testid="battle-schools">
+    <!-- DV-M16-41: the title is white; live paints it dark on the blue-violet gradient -->
+    <div
+      class="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 p-4 text-white shadow-lg"
+    >
+      <span class="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10" />
+      <span
+        class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20"
+      >
+        <School class="h-6 w-6" />
+      </span>
+      <div class="relative min-w-0">
+        <h2 class="text-xl font-bold text-white">Papan Ranking Sekolah</h2>
+        <p class="text-sm text-white/90">Sekolah mana paling hebat? Wakili sekolah anda!</p>
       </div>
-      <p class="mt-2 text-sm text-white/90">Sekolah mana paling hebat? Wakili sekolah anda!</p>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2 rounded-2xl bg-white p-3 shadow-md">
       <RouterLink
         v-for="p in PERIODS"
         :key="p.value"
         :to="periodTo(p.value)"
-        class="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-bold transition"
+        class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold transition"
         :class="
           data?.activePeriod === p.value
             ? 'bg-blue-500 text-white'
-            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
         "
         :data-testid="`battle-period-${p.value}`"
         >{{ p.label }}</RouterLink
       >
       <select
         :value="stateQuery"
-        class="min-h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-300 sm:ml-auto sm:w-auto"
+        class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-300 sm:ml-auto sm:w-auto"
         data-testid="battle-state-select"
         @change="onState"
       >
@@ -121,36 +129,64 @@ const podiumOrder = computed(() => {
       <LoadingSpinner :size="28" />
     </div>
     <template v-else>
-      <!-- Podium -->
+      <!-- Podium: 2nd, 1st (raised, crown), 3rd -->
       <div
         v-if="podiumOrder.length > 0"
-        class="grid grid-cols-3 items-end gap-2 sm:gap-3"
+        class="grid grid-cols-3 items-end gap-2 pt-5 sm:gap-4"
         data-testid="battle-podium"
       >
         <div
           v-for="p in podiumOrder"
           :key="p.column"
-          class="min-w-0 rounded-2xl border border-slate-200 bg-white p-2 text-center shadow-sm sm:p-3"
-          :class="p.column === 1 ? 'pt-4 pb-6 sm:pb-8' : ''"
+          class="relative min-w-0 rounded-2xl border-t-4 bg-white px-2 pb-4 text-center shadow-md sm:px-4"
+          :class="
+            p.column === 1
+              ? 'border-amber-400 bg-amber-50 pt-8 pb-6'
+              : p.column === 2
+                ? 'border-slate-400 pt-7'
+                : 'border-orange-500 pt-7'
+          "
           :data-testid="`battle-podium-${p.column}`"
         >
-          <Crown v-if="p.column === 1" class="mx-auto mb-1 h-6 w-6 text-amber-500" />
-          <p class="text-xs font-bold text-slate-400">#{{ p.column }}</p>
-          <p class="text-xs font-bold break-words text-slate-800 sm:text-sm">{{ p.name }}</p>
+          <span
+            class="absolute -top-5 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full text-sm font-bold text-white"
+            :class="
+              p.column === 1 ? 'bg-amber-400' : p.column === 2 ? 'bg-slate-400' : 'bg-orange-500'
+            "
+          >
+            <Crown v-if="p.column === 1" class="h-5 w-5" />
+            <template v-else>{{ p.column }}</template>
+          </span>
+          <School
+            class="mx-auto h-6 w-6"
+            :class="
+              p.column === 1
+                ? 'text-amber-500'
+                : p.column === 2
+                  ? 'text-slate-400'
+                  : 'text-orange-500'
+            "
+          />
+          <p class="mt-1 text-xs font-bold break-words text-slate-800 sm:text-sm">{{ p.name }}</p>
           <p class="text-xs text-slate-500">{{ p.state }}</p>
-          <p class="mt-1 text-lg font-bold text-blue-600">{{ p.skor }}</p>
+          <p
+            class="mt-1 text-xl font-bold sm:text-2xl"
+            :class="p.column === 1 ? 'text-orange-500' : 'text-slate-700'"
+          >
+            {{ p.skor }}
+          </p>
           <p class="text-xs text-slate-400">mata</p>
         </div>
       </div>
 
-      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="overflow-hidden rounded-2xl bg-white shadow-md">
         <h3 class="flex items-center gap-2 px-4 pt-4 text-base font-bold text-slate-800">
           <ListOrdered class="h-5 w-5 text-blue-500" /> Senarai Penuh
         </h3>
         <div class="mt-3 overflow-x-auto" data-testid="battle-schools-scroll">
           <table class="w-full min-w-[34rem] text-sm">
             <thead>
-              <tr class="bg-slate-50 text-left text-xs font-bold text-slate-500 uppercase">
+              <tr class="bg-slate-50 text-left text-xs font-bold text-slate-600">
                 <th class="px-3 py-3">#</th>
                 <th class="px-3 py-3">Sekolah</th>
                 <th class="px-3 py-3 text-center">Battle</th>
@@ -177,25 +213,32 @@ const podiumOrder = computed(() => {
                   class="border-t border-slate-100"
                   data-testid="battle-school-row"
                 >
-                  <td class="px-3 py-3 font-bold text-slate-700">{{ r.rank }}</td>
+                  <td
+                    class="px-3 py-3 font-bold"
+                    :class="r.rank <= 3 ? 'text-orange-500' : 'text-slate-600'"
+                  >
+                    {{ r.rank }}
+                  </td>
                   <td class="px-3 py-3">
                     <RouterLink
                       :to="`/battle/ranking-sekolah/${r.schoolId}`"
-                      class="block font-semibold text-blue-600 hover:underline"
+                      class="block font-semibold text-slate-800 hover:underline"
                       data-testid="battle-school-link"
                       >{{ r.name }}</RouterLink
                     >
                     <span class="block text-xs text-slate-500">{{ r.state }} · {{ r.type }}</span>
                   </td>
-                  <td class="px-3 py-3 text-center">{{ r.battles }}</td>
+                  <td class="px-3 py-3 text-center font-semibold text-slate-800">
+                    {{ r.battles }}
+                  </td>
                   <td class="px-3 py-3 text-center" data-testid="battle-msk">
                     <span class="text-green-600">{{ r.menang }}</span
                     >/<span class="text-slate-500">{{ r.seri }}</span
                     >/<span class="text-red-500">{{ r.kalah }}</span>
                   </td>
-                  <td class="px-3 py-3 text-center">{{ r.ketepatan }}%</td>
-                  <td class="px-3 py-3 text-center">{{ r.pelajar }}</td>
-                  <td class="px-3 py-3 text-right font-bold text-slate-800">{{ r.skor }}</td>
+                  <td class="px-3 py-3 text-center text-slate-600">{{ r.ketepatan }}%</td>
+                  <td class="px-3 py-3 text-center text-slate-600">{{ r.pelajar }}</td>
+                  <td class="px-3 py-3 text-right font-bold text-blue-600">{{ r.skor }}</td>
                 </tr>
               </template>
             </tbody>

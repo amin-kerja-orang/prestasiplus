@@ -13,6 +13,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { alertNative, confirmNative, useApi } from '@/composables'
+import { clock } from '@/lib/time/clock'
 import { Flag } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -53,8 +54,8 @@ const result = shallowRef<{ winner: Winner; scoreA: number; scoreB: number } | n
 const locked = ref(false)
 const picked = ref<number | null>(null)
 const feedback = shallowRef<ArenaAnswerResult | null>(null)
-const startedAt = ref(Date.now())
-const nowMs = ref(Date.now())
+const startedAt = ref(clock.now())
+const nowMs = ref(clock.now())
 const failed = ref(false)
 
 let tick: ReturnType<typeof setInterval> | null = null
@@ -69,10 +70,10 @@ function stopTimers(): void {
 
 function startQuestionTimer(): void {
   stopTimers()
-  startedAt.value = Date.now()
+  startedAt.value = clock.now()
   nowMs.value = startedAt.value
   tick = setInterval(() => {
-    nowMs.value = Date.now()
+    nowMs.value = clock.now()
     if (!locked.value && nowMs.value - startedAt.value >= QUESTION_MS) void submit(null)
   }, TICK_MS)
 }
@@ -114,7 +115,7 @@ async function submit(optionId: number | null): Promise<void> {
   if (locked.value || !q || !active.value) return
   locked.value = true
   picked.value = optionId
-  const seconds = Math.min(15, Math.max(0, Math.floor((Date.now() - startedAt.value) / 1000)))
+  const seconds = Math.min(15, Math.max(0, Math.floor((clock.now() - startedAt.value) / 1000)))
   if (tick !== null) clearInterval(tick)
   tick = null
   try {

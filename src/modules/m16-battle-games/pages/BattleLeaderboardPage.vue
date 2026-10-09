@@ -32,7 +32,7 @@ const PILLS = [
         v-for="p in PILLS"
         :key="p.value"
         type="button"
-        class="min-h-11 rounded-full px-5 text-sm font-bold transition"
+        class="min-h-11 rounded-lg px-4 text-sm font-semibold transition"
         :class="
           period === p.value
             ? 'bg-red-500 text-white'
@@ -45,7 +45,7 @@ const PILLS = [
       </button>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-hidden rounded-2xl bg-white shadow-md">
       <div v-if="error" class="space-y-3 p-4" data-testid="battle-load-error">
         <AlertBox messages="Maaf, berlaku ralat. Sila cuba semula." />
         <button
@@ -59,7 +59,7 @@ const PILLS = [
       <div v-else class="overflow-x-auto" data-testid="battle-leaderboard-scroll">
         <table class="w-full min-w-[34rem] text-sm">
           <thead>
-            <tr class="bg-slate-50 text-left text-xs font-bold text-slate-500 uppercase">
+            <tr class="bg-slate-50 text-left text-xs font-bold text-slate-600">
               <th class="px-3 py-3">#</th>
               <th class="px-3 py-3">Pelajar</th>
               <th class="px-3 py-3">Sekolah</th>

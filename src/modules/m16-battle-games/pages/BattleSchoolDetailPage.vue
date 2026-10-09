@@ -25,7 +25,7 @@ import { setRouteOutcome } from '@/app/router'
 import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi, usePageMeta } from '@/composables'
 
-import { fetchSchoolDetail, type StandingBox } from '../api'
+import { fetchSchoolDetail } from '../api'
 import BattleRecentList from '../components/battle/BattleRecentList.vue'
 import { mskText } from '../components/battle/battle-lib'
 
@@ -68,28 +68,28 @@ const cards = computed(() => {
       label: 'Jumlah Battle',
       value: String(a.battles),
       icon: Zap,
-      cls: 'bg-red-100 text-red-500',
+      cls: 'text-red-500',
     },
     {
       id: 'menang',
       label: 'Kemenangan',
       value: String(a.menang),
       icon: Trophy,
-      cls: 'bg-amber-100 text-amber-500',
+      cls: 'text-amber-500',
     },
     {
       id: 'ketepatan',
       label: 'Ketepatan',
       value: `${String(a.ketepatan)}%`,
       icon: Percent,
-      cls: 'bg-green-100 text-green-500',
+      cls: 'text-green-500',
     },
     {
       id: 'pelajar',
       label: 'Pelajar Aktif',
       value: String(a.pelajar),
       icon: Users,
-      cls: 'bg-purple-100 text-purple-500',
+      cls: 'text-purple-500',
     },
   ]
 })
@@ -102,14 +102,14 @@ const boxes = computed(() => {
       id: 'week',
       title: 'Minggu Ini',
       icon: CalendarDays,
-      box: d.week as StandingBox | null,
+      box: d.week,
       empty: 'Tiada data minggu ini',
     },
     {
       id: 'month',
       title: 'Bulan Ini',
       icon: Calendar,
-      box: d.month as StandingBox | null,
+      box: d.month,
       empty: 'Tiada data bulan ini',
     },
   ]
@@ -133,32 +133,34 @@ const boxes = computed(() => {
     </div>
 
     <template v-else-if="data">
+      <!-- DV-M16-41: the title is white; live paints it dark on the blue gradient -->
       <div
-        class="rounded-3xl bg-gradient-to-r from-blue-500 to-indigo-500 p-5 text-white shadow-lg"
+        class="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white shadow-lg"
       >
-        <div class="flex items-center gap-3">
-          <School class="h-8 w-8 shrink-0" />
-          <h2 class="min-w-0 text-2xl font-bold break-words" data-testid="battle-school-name">
+        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
+          <School class="h-6 w-6" />
+        </span>
+        <div class="min-w-0">
+          <h2 class="text-xl font-bold break-words text-white" data-testid="battle-school-name">
             {{ data.school.name }}
           </h2>
+          <p class="text-sm text-white/90" data-testid="battle-school-line">{{ heroLine }}</p>
         </div>
-        <p class="mt-2 text-sm text-white/90" data-testid="battle-school-line">{{ heroLine }}</p>
       </div>
 
       <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
         <div
           v-for="c in cards"
           :key="c.id"
-          class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm"
+          class="rounded-2xl bg-white p-4 text-center shadow-md"
           :data-testid="`battle-card-${c.id}`"
         >
-          <span
-            class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl"
-            :class="c.cls"
+          <component :is="c.icon" class="mx-auto h-5 w-5" :class="c.cls" />
+          <p
+            class="mt-1 text-2xl font-bold"
+            :class="c.id === 'menang' ? 'text-green-600' : 'text-slate-800'"
+            data-testid="battle-card-value"
           >
-            <component :is="c.icon" class="h-5 w-5" />
-          </span>
-          <p class="mt-2 text-2xl font-bold text-slate-800" data-testid="battle-card-value">
             {{ c.value }}
           </p>
           <p class="text-xs text-slate-500">{{ c.label }}</p>
@@ -169,34 +171,34 @@ const boxes = computed(() => {
         <div
           v-for="b in boxes"
           :key="b.id"
-          class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+          class="rounded-2xl bg-white p-4 shadow-md"
           :data-testid="`battle-period-box-${b.id}`"
         >
           <h3 class="flex items-center gap-2 text-base font-bold text-slate-800">
             <component :is="b.icon" class="h-5 w-5 text-blue-500" /> {{ b.title }}
           </h3>
-          <dl v-if="b.box" class="mt-3 grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <dt class="text-xs text-slate-500">Ranking Nasional</dt>
-              <dd class="font-bold text-slate-800" data-testid="battle-box-rank">
+          <dl v-if="b.box" class="mt-3 space-y-2 text-sm">
+            <div class="flex items-center justify-between gap-3">
+              <dt class="text-slate-600">Ranking Nasional</dt>
+              <dd class="font-bold text-blue-600" data-testid="battle-box-rank">
                 #{{ b.box.rank }}
               </dd>
             </div>
-            <div>
-              <dt class="text-xs text-slate-500">Battle</dt>
+            <div class="flex items-center justify-between gap-3">
+              <dt class="text-slate-600">Battle</dt>
               <dd class="font-bold text-slate-800" data-testid="battle-box-battles">
                 {{ b.box.battles }}
               </dd>
             </div>
-            <div>
-              <dt class="text-xs text-slate-500">Menang/Seri/Kalah</dt>
+            <div class="flex items-center justify-between gap-3">
+              <dt class="text-slate-600">Menang/Seri/Kalah</dt>
               <dd class="font-bold text-slate-800" data-testid="battle-box-msk">
                 {{ mskText(b.box.menang, b.box.seri, b.box.kalah) }}
               </dd>
             </div>
-            <div>
-              <dt class="text-xs text-slate-500">Skor</dt>
-              <dd class="font-bold text-slate-800" data-testid="battle-box-skor">
+            <div class="flex items-center justify-between gap-3">
+              <dt class="text-slate-600">Skor</dt>
+              <dd class="font-bold text-blue-600" data-testid="battle-box-skor">
                 {{ b.box.skor }}
               </dd>
             </div>
@@ -207,7 +209,7 @@ const boxes = computed(() => {
         </div>
       </div>
 
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="rounded-2xl bg-white p-4 shadow-md">
         <h3 class="flex items-center gap-2 text-base font-bold text-slate-800">
           <Medal class="h-5 w-5 text-amber-500" /> Pejuang Terbaik Minggu Ini
         </h3>
@@ -228,7 +230,7 @@ const boxes = computed(() => {
         </p>
       </div>
 
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="rounded-2xl bg-white p-4 shadow-md">
         <h3 class="flex items-center gap-2 text-base font-bold text-slate-800">
           <History class="h-5 w-5 text-blue-500" /> Battle Terkini
         </h3>
