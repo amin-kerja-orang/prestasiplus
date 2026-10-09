@@ -11,7 +11,13 @@ import type { Page } from '@playwright/test'
 
 import { expect as baseExpect, test } from '../fixtures/test'
 import type { MockHandle } from '../fixtures/test'
-import { expectNoHorizontalScroll, expectTabTitle, expectTouchTarget, moduleTag, provisional } from '../support'
+import {
+  expectNoHorizontalScroll,
+  expectTabTitle,
+  expectTouchTarget,
+  moduleTag,
+  provisional,
+} from '../support'
 
 const expect = baseExpect.configure({ timeout: 10_000 })
 
@@ -52,14 +58,30 @@ async function submits(mock: MockHandle, game: string): Promise<number> {
   return (await mock.requests(`/api/games/solo/${game}/submit`)).length
 }
 
-/** Waits for the countdown, pauses, and steps through 3-2-1 (800 ms each). */
-async function throughCountdown(page: Page, mock: MockHandle): Promise<void> {
-  await expect(page.getByTestId('solo-countdown')).toBeVisible()
+/**
+ * Boots on a cheap page, stops the clock, then opens the game with the router: no timer of the game
+ * (countdown, clock) runs until the test advances the clock, however slow the machine is.
+ */
+async function openPaused(
+  page: Page,
+  gotoApp: (path: string) => Promise<void>,
+  mock: MockHandle,
+  path: string,
+): Promise<void> {
+  await gotoApp('/permainan/jutawan')
   await pause(page, mock)
-  // Step in 100 ms until 3-2-1 is over, so the game itself starts (almost) exactly at its first tick.
-  for (let i = 0; i < 40 && (await page.getByTestId('solo-countdown').count()) > 0; i++) {
-    await mock.advanceTime(100)
+  await go(page, path)
+}
+
+/** Steps the paused countdown 3 → 2 → 1 → play (800 ms each). */
+async function throughCountdown(page: Page, mock: MockHandle): Promise<void> {
+  const number = page.getByTestId('solo-countdown-number')
+  await expect(number).toHaveText('3')
+  for (const next of ['2', '1']) {
+    await mock.advanceTime(800)
+    await expect(number).toHaveText(next)
   }
+  await mock.advanceTime(800)
   await expect(page.getByTestId('solo-countdown')).toHaveCount(0)
 }
 
@@ -86,7 +108,8 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
       await expect(picker).toContainText(title)
       await expect(picker).toContainText('Pilih darjah / tingkatan kamu:')
       await expect(picker).toContainText('🏫 Sekolah Rendah')
-      for (const n of [1, 2, 3, 4]) await expect(picker.getByRole('link', { name: `Darjah ${String(n)}` })).toBeVisible()
+      for (const n of [1, 2, 3, 4])
+        await expect(picker.getByRole('link', { name: `Darjah ${String(n)}` })).toBeVisible()
       await expect(picker.getByRole('link', { name: '← Kembali ke Hub' })).toBeVisible()
       await expectTouchTarget(picker.getByRole('link', { name: 'Darjah 4' }))
       expect(await mock.requests('/api/games/solo/*')).toHaveLength(0)
@@ -111,7 +134,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     mock,
   }) => {
     await loginAs(ADMIN)
-    await gotoApp('/permainan/betul-salah?darjah=4')
+    await openPaused(page, gotoApp, mock, '/permainan/betul-salah?darjah=4')
     await expectTabTitle(page, 'Betul atau Salah ✅ — PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title').first()).toHaveText('Betul atau Salah')
     await expect(page.getByText('✅❌ BETUL ATAU SALAH')).toBeVisible()
@@ -148,7 +171,10 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await mock.advanceTime(45_000)
     await expect(page.getByTestId('solo-result')).toBeVisible()
     expect(await submits(mock, 'betul-salah')).toBe(1)
-    const body = (await mock.lastRequest('/api/games/solo/betul-salah/submit'))!.body as Record<string, unknown>
+    const body = (await mock.lastRequest('/api/games/solo/betul-salah/submit'))!.body as Record<
+      string,
+      unknown
+    >
     expect(body).toMatchObject({
       correct_count: correct,
       total_answered: 6,
@@ -178,7 +204,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     mock,
   }) => {
     await loginAs(ADMIN)
-    await gotoApp('/permainan/cabaran-kilat?darjah=4')
+    await openPaused(page, gotoApp, mock, '/permainan/cabaran-kilat?darjah=4')
     await expectTabTitle(page, 'Cabaran Kilat ⚡ — PRESTASIPLUS')
     await expect(page.getByText('⚡ CABARAN KILAT')).toBeVisible()
     await throughCountdown(page, mock)
@@ -228,11 +254,14 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
 
   test(
     'E2E-M16-66 with the syiling setting on, Cabaran Kilat shows the credited syiling @m16',
-    provisional('the M14 credit amount (rates, caps) is a fixture of the harness; assertion follows the SOURCE rule'),
+    provisional(
+      'the M14 credit amount (rates, caps) is a fixture of the harness; assertion follows the SOURCE rule',
+    ),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
       await gotoApp('/permainan/jutawan')
       await mock.hook('m16Fixture', 'settingCoins')
+      await pause(page, mock)
       await go(page, '/permainan/cabaran-kilat?darjah=4')
       await expect(page.getByTestId('solo-countdown')).toBeVisible()
       await throughCountdown(page, mock)
@@ -261,7 +290,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     mock,
   }) => {
     await loginAs(ADMIN)
-    await gotoApp('/permainan/tembak-jawapan?darjah=4')
+    await openPaused(page, gotoApp, mock, '/permainan/tembak-jawapan?darjah=4')
     await expectTabTitle(page, 'Tembak Jawapan 🎯 — PRESTASIPLUS')
     await expect(page.getByText('🎯 TEMBAK JAWAPAN')).toBeVisible()
     await expect(page.getByText('Tap jawapan yang betul sebelum jatuh!')).toBeVisible()
@@ -282,7 +311,8 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     // Three questions nobody taps: each costs a life at its deadline (base + 6 + 2 × 4 = 29 s at level 1).
     for (let miss = 1; miss <= 3; miss++) {
       await mock.advanceTime(29_100)
-      if (miss < 3) await expect(page.locator('[data-testid="solo-heart"].opacity-25')).toHaveCount(miss)
+      if (miss < 3)
+        await expect(page.locator('[data-testid="solo-heart"].opacity-25')).toHaveCount(miss)
     }
     await expect(page.getByTestId('solo-result')).toBeVisible()
     expect(await submits(mock, 'tembak-jawapan')).toBe(1)
@@ -305,7 +335,15 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await gotoApp('/permainan/susun-jawapan?darjah=4')
     await expectTabTitle(page, 'Susun Jawapan 🧩 — PRESTASIPLUS')
     await expect(page.getByText('Soalan 1 daripada 20')).toBeVisible()
-    for (const s of ['Kembali', 'Skor 0', '🪙 0', '🧩 Susun Jawapan', '📥 Jawapan Kamu:', 'Klik huruf/perkataan di bawah untuk susun', '🔤 Pilihan:']) {
+    for (const s of [
+      'Kembali',
+      'Skor 0',
+      '🪙 0',
+      '🧩 Susun Jawapan',
+      '📥 Jawapan Kamu:',
+      'Klik huruf/perkataan di bawah untuk susun',
+      '🔤 Pilihan:',
+    ]) {
       await expect(page.getByText(s, { exact: true }).first()).toBeVisible()
     }
     await expect(page.getByTestId('solo-dot')).toHaveCount(20)
@@ -354,7 +392,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     mock,
   }) => {
     await loginAs(ADMIN)
-    await gotoApp('/permainan/kad-memori')
+    await openPaused(page, gotoApp, mock, '/permainan/kad-memori')
     await expectTabTitle(page, 'Kad Memori — PRESTASIPLUS')
     await expect(page.getByText('🃏 Kad Memori')).toBeVisible()
     await expect(page.getByText('Padankan soalan dengan jawapan yang betul!')).toBeVisible()
@@ -369,7 +407,6 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     expect(size.width).toBeGreaterThanOrEqual(60)
     expect(Math.abs(size.width - size.height)).toBeLessThan(1)
     await expectNoHorizontalScroll(page)
-    await pause(page, mock)
 
     // Find the partner of card 0 by trying the others: a mismatch shows "wrong" and turns back after 800 ms.
     let moves = 0
@@ -394,15 +431,27 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
       }
     }
     for (let a = 0; a < 12; a++) {
-      if (!(((await cards.nth(a).getAttribute('class')) ?? '').includes('matched'))) await pairUp(a)
+      if (!((await cards.nth(a).getAttribute('class')) ?? '').includes('matched')) await pairUp(a)
       if ((await page.getByTestId('solo-overlay').count()) > 0) break
     }
-    await expect(page.getByTestId('solo-moves')).toHaveText(new RegExp(`^👆 ${String(moves)} langkah$`))
+    await expect(page.getByTestId('solo-moves')).toHaveText(
+      new RegExp(`^👆 ${String(moves)} langkah$`),
+    )
     expect(sawMismatch || moves === 6).toBe(true)
     const overlay = page.getByTestId('solo-overlay')
     await expect(overlay).toBeVisible()
     expect(await submits(mock, 'kad-memori')).toBe(1)
-    for (const s of ['🎉', 'Tahniah!', 'Semua kad berjaya dipadankan!', 'Masa', 'Langkah', 'Ketepatan', 'Syiling 🪙', '🔄 Main Lagi', '🏠 Hub']) {
+    for (const s of [
+      '🎉',
+      'Tahniah!',
+      'Semua kad berjaya dipadankan!',
+      'Masa',
+      'Langkah',
+      'Ketepatan',
+      'Syiling 🪙',
+      '🔄 Main Lagi',
+      '🏠 Hub',
+    ]) {
       await expect(overlay).toContainText(s)
     }
     await expect(page.getByTestId('solo-coins')).toHaveText('+0')
@@ -456,7 +505,12 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expect(page.getByTestId('spin-button')).toHaveText('✅ Sudah Spin Hari Ini')
   })
 
-  test('E2E-M16-68 fixture spinNothing: "Cuba Lagi" modal @m16', async ({ page, gotoApp, loginAs, mock }) => {
+  test('E2E-M16-68 fixture spinNothing: "Cuba Lagi" modal @m16', async ({
+    page,
+    gotoApp,
+    loginAs,
+    mock,
+  }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan/roda-nasib')
     await mock.hook('m16Fixture', 'spinNothing')
@@ -502,7 +556,9 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await gotoApp('/permainan/jutawan')
     await expectTabTitle(page, 'Jutawan Ilmu 💰 — PRESTASIPLUS')
     await expect(page.getByTestId('darjah-picker')).toBeVisible()
-    await expect(page.getByText('Pilih subjek, jawab 15 soalan — menang sampai 1,000 Syiling!')).toBeVisible()
+    await expect(
+      page.getByText('Pilih subjek, jawab 15 soalan — menang sampai 1,000 Syiling!'),
+    ).toBeVisible()
     await expect(page.getByTestId('jutawan-best')).toHaveText('L0')
     await expect(page.getByTestId('jutawan-games')).toHaveText('0')
     await expect(page.getByText('1,000🪙')).toBeVisible()
@@ -517,7 +573,10 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expect(subjects).toHaveCount(10)
     await expect(subjects.filter({ hasText: 'Bahasa Melayu' })).toContainText('579 soalan')
     await expect(subjects.filter({ hasText: 'Matematik' })).toContainText('1077 soalan')
-    await expect(subjects.filter({ hasText: 'Matematik' })).toHaveAttribute('href', /\/permainan\/jutawan\/main\?subject=3&darjah=4$/)
+    await expect(subjects.filter({ hasText: 'Matematik' })).toHaveAttribute(
+      'href',
+      /\/permainan\/jutawan\/main\?subject=3&darjah=4$/,
+    )
     await expectTouchTarget(subjects.first())
     await expectNoHorizontalScroll(page)
 
@@ -565,7 +624,11 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     },
   )
 
-  test('E2E-M16-07 /permainan/roda-nasib/spin has no page (404, solo part of 07) @m16', async ({ page, gotoApp, loginAs }) => {
+  test('E2E-M16-07 /permainan/roda-nasib/spin has no page (404, solo part of 07) @m16', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan/roda-nasib/spin')
     await expect(page.getByText('Halaman Tidak Dijumpai')).toBeVisible()

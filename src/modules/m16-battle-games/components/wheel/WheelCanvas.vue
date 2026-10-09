@@ -70,22 +70,25 @@ watch(() => props.segments, draw, { deep: true })
     >
       🎯
     </div>
-    <div
-      class="rounded-full shadow-xl"
-      :style="{
-        transform: `rotate(${String(rotation)}deg)`,
-        transition: `transform ${String(WHEEL_SPIN_MS)}ms cubic-bezier(0.17, 0.67, 0.12, 0.99)`,
-      }"
-      data-testid="wheel-disc"
-      :data-rotation="rotation"
-    >
-      <canvas
-        ref="canvas"
-        :width="SIZE"
-        :height="SIZE"
-        class="block h-auto w-full rounded-full"
-        data-testid="wheel-canvas"
-      />
+    <!-- The clip keeps the rotating square's box from widening the page while the wheel turns. -->
+    <div class="overflow-hidden rounded-full shadow-xl">
+      <div
+        class="rounded-full"
+        :style="{
+          transform: `rotate(${String(rotation)}deg)`,
+          transition: `transform ${String(WHEEL_SPIN_MS)}ms cubic-bezier(0.17, 0.67, 0.12, 0.99)`,
+        }"
+        data-testid="wheel-disc"
+        :data-rotation="rotation"
+      >
+        <canvas
+          ref="canvas"
+          :width="SIZE"
+          :height="SIZE"
+          class="block h-auto w-full rounded-full"
+          data-testid="wheel-canvas"
+        />
+      </div>
     </div>
   </div>
 </template>
