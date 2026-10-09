@@ -373,13 +373,18 @@ const selectClass = [
         <thead class="bg-slate-50">
           <tr>
             <th scope="col" class="w-12 px-4 py-3">
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
-                :checked="selectAll"
-                data-testid="select-all"
-                @change="toggleAll"
-              />
+              <label
+                class="flex min-h-11 min-w-11 cursor-pointer items-center justify-center lg:inline-flex lg:min-h-0 lg:min-w-0 lg:justify-start"
+                data-testid="select-all-label"
+              >
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
+                  :checked="selectAll"
+                  data-testid="select-all"
+                  @change="toggleAll"
+                />
+              </label>
             </th>
             <th v-for="label in COLUMNS" :key="label" scope="col" :class="T.th">{{ label }}</th>
           </tr>
@@ -406,13 +411,18 @@ const selectClass = [
             :data-question-id="row.id"
           >
             <td class="px-4 py-3">
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
-                :checked="selectedIds.includes(row.id)"
-                data-testid="row-select"
-                @change="toggleRow(row.id, $event)"
-              />
+              <label
+                class="flex min-h-11 min-w-11 cursor-pointer items-center justify-center lg:inline-flex lg:min-h-0 lg:min-w-0 lg:justify-start"
+                data-testid="row-select-label"
+              >
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
+                  :checked="selectedIds.includes(row.id)"
+                  data-testid="row-select"
+                  @change="toggleRow(row.id, $event)"
+                />
+              </label>
             </td>
             <td :class="T.td">
               <p class="max-w-xs truncate" data-testid="q-text">

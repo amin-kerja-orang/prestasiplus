@@ -170,6 +170,26 @@ describe('PkskQuestionListPage (S5)', () => {
     expect(w.find('[data-testid=pksk-bulk-bar]').exists()).toBe(false)
   })
 
+  it('BUG-M07-01 each checkbox sits in a 44 px label below lg and clicking the label toggles it', async () => {
+    const w = await render(PkskQuestionListPage, PATH, PATH)
+    const headLabel = attr(w, 'select-all-label')
+    expect(headLabel.element.tagName).toBe('LABEL')
+    expect(headLabel.classes()).toEqual(expect.arrayContaining(['min-h-11', 'min-w-11', 'lg:min-h-0']))
+    expect(headLabel.find('[data-testid=select-all]').exists()).toBe(true)
+    const rowLabels = w.findAll('[data-testid=row-select-label]')
+    expect(rowLabels).toHaveLength(3)
+    for (const l of rowLabels) {
+      expect(l.classes()).toEqual(expect.arrayContaining(['min-h-11', 'min-w-11']))
+      expect(l.find('[data-testid=row-select]').exists()).toBe(true)
+    }
+    await rowLabels[1]!.trigger('click')
+    expect(attr(w, 'bulk-count').text()).toBe('1 dipilih')
+    await rowLabels[1]!.trigger('click')
+    expect(w.find('[data-testid=pksk-bulk-bar]').exists()).toBe(false)
+    await headLabel.trigger('click')
+    expect(attr(w, 'bulk-count').text()).toBe('3 dipilih')
+  })
+
   it('bulk approve sends the ids with no confirm and reloads with the flash', async () => {
     admin.bulkPkskQuestions.mockResolvedValue({
       data: { affected: 2 },
