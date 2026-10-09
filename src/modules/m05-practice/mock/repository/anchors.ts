@@ -223,6 +223,7 @@ export function canonicalAnchors(): CanonicalAnchors {
             isCorrect: a.isCorrect,
             answeredAt: toIsoMyt(Math.min(at, end)),
             sessionId: s.id,
+            ...(a.chapterId !== undefined ? { chapterId: a.chapterId } : {}),
           },
           'M05',
         ),
