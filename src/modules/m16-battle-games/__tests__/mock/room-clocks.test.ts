@@ -150,6 +150,28 @@ describe('Perang Fakta round clock (10 s a round)', () => {
     expect(bad.status).toBe(422)
   })
 
+  it('an answer that arrives after the clock ended the game gets the finished room, not a refusal', async () => {
+    const started = await startGame('perang-fakta')
+    advance(15 * 10 + 1)
+    const late = await postJson<Data<Any>>(roomPath('perang-fakta', started.code, '/action'), {
+      type: 'answer',
+      questionId: started.question.id,
+      optionId: 0,
+      seconds: 3,
+    })
+    expect(late.status).toBe(200)
+    expect(late.body.data.status).toBe('finished')
+    expect(late.body.data.result).toBeDefined()
+    // A later action on the finished room is still refused.
+    const again = await postJson<Any>(roomPath('perang-fakta', started.code, '/action'), {
+      type: 'answer',
+      questionId: started.question.id,
+      optionId: 0,
+      seconds: 3,
+    })
+    expect(again.status).toBe(409)
+  })
+
   it('a vote still scores and restarts the round clock', async () => {
     const started = await startGame('perang-fakta')
     advance(6)
@@ -173,6 +195,20 @@ describe('Teka Silang Kata clock (5 minutes)', () => {
     const v = await view('teka-silang-kata', started.code)
     expect(v.status).toBe('playing')
     expect(v.state.secondsLeft).toBe(180)
+  })
+
+  it('a word typed after 0:00 gets the finished room (200), not "Permainan belum bermula."', async () => {
+    const started = await startGame('teka-silang-kata')
+    advance(301)
+    const late = await postJson<Data<Any>>(roomPath('teka-silang-kata', started.code, '/action'), {
+      type: 'answer',
+      questionId: started.question.id,
+      value: 'cat',
+      seconds: 0,
+    })
+    expect(late.status).toBe(200)
+    expect(late.body.data.status).toBe('finished')
+    expect(late.body.data.result).toBeDefined()
   })
 
   it('ends the game at 0:00 with the words found so far, once', async () => {

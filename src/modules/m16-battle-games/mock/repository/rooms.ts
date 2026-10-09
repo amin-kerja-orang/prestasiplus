@@ -939,7 +939,11 @@ export const roomsRepo = defineRepository({
           }
         } else throw new M16Error('VALIDATION_ERROR', 'Tindakan tidak sah.', 'type')
         return transaction(() => {
-          const room = resolveClocks(mustRoom(game, code, viewerId), prng)
+          const before = mustRoom(game, code, viewerId)
+          const room = resolveClocks(before, prng)
+          // The clock ended the game just now (crossword 0:00, the last Perang Fakta round): the answer
+          // arrived too late, so answer with the finished room instead of a refusal.
+          if (before.status === 'playing' && room.status === 'finished') return viewOf(room)
           if (room.status !== 'playing' || !room.state)
             throw new M16Error('CONFLICT', 'Permainan belum bermula.')
           if (room.state.humanId !== viewerId)

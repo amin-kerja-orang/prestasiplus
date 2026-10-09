@@ -356,6 +356,27 @@ describe('server clocks (BR-M16-20)', () => {
     expect(wrapper!.find('[data-testid="room-action-errors"]').exists()).toBe(false)
   })
 
+  it('shows the result when a late answer is met with the finished room', async () => {
+    fetchRoom.mockResolvedValue(withLeft(8))
+    roomAction.mockResolvedValueOnce(
+      room({
+        status: 'finished',
+        result: {
+          winnerId: 2,
+          winnerName: 'Pelajar Dua',
+          mvpId: null,
+          scores: [{ userId: 2, name: 'Pelajar Dua', points: 9, correct: 9 }],
+        },
+      }),
+    )
+    await mountRoom()
+    await wrapper!.findAll('[data-testid="room-option"]')[0]!.trigger('click')
+    await flushPromises()
+    expect(get('room-result-title').text()).toBe('🏆 Pelajar Dua menang!')
+    expect(wrapper!.find('[data-testid="room-action-errors"]').exists()).toBe(false)
+    expect(vi.getTimerCount()).toBe(0) // polling and the ticker stop with the finished room
+  })
+
   it('stays silent when the no-vote loses the race with the server clock', async () => {
     fetchRoom.mockResolvedValue(withLeft(1))
     roomAction.mockRejectedValueOnce(
