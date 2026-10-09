@@ -7,7 +7,7 @@
  * mock hook `battleWaiting` plus the page seam (a `window` event `m16:battle-waiting`).
  */
 
-import type { Page } from '@playwright/test'
+import type { Clock, Page } from '@playwright/test'
 
 import { canonicalAccount } from '../../src/mock/core-data/accounts.ts'
 import { expect as baseExpect, test } from '../fixtures/test'
@@ -53,6 +53,14 @@ async function pickSubject(page: Page, name: string): Promise<void> {
   const tile = page.getByTestId('battle-subject').filter({ hasText: name })
   if (!(await tile.first().isVisible())) await page.getByTestId('battle-toggle-more').click()
   await tile.first().click()
+}
+
+/**
+ * The page clock keeps flowing after boot, so slow steps would fire polls by themselves. Pause it:
+ * from here on a poll or a timer fires only on `mock.advanceTime`, so "1 poll per 3 s step" is exact.
+ */
+async function freezeClock(page: Page, clock: Clock): Promise<void> {
+  await clock.pauseAt((await page.evaluate(() => Date.now())) + 10_000)
 }
 
 async function openLobby(page: Page, gotoApp: (p: string) => Promise<void>): Promise<void> {
@@ -209,10 +217,11 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   test(
     'E2E-M16-22 Quick Match: request, timer 0:00 to 0:06 and the arena after the 3rd poll @m16',
     provisional('simulated matchmaking (SIMULATION, BR-M16-05)'),
-    async ({ page, gotoApp, loginAs, mock }) => {
+    async ({ page, gotoApp, loginAs, mock, clock }) => {
       await loginAs(ADMIN)
       await openLobby(page, gotoApp)
       await pickSubject(page, 'Matematik')
+      await freezeClock(page, clock)
       await quick(page).click()
       await expect(page.getByTestId('battle-searching')).toContainText('Mencari Lawan...')
       await expect(page.getByTestId('battle-searching')).toContainText(
@@ -237,10 +246,11 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   test(
     'E2E-M16-23 "Batal" sends no request and the abandoned queue is never matched @m16',
     provisional('simulated matchmaking (SIMULATION, DV-M16-05)'),
-    async ({ page, gotoApp, loginAs, mock }) => {
+    async ({ page, gotoApp, loginAs, mock, clock }) => {
       await loginAs(ADMIN)
       await openLobby(page, gotoApp)
       await pickSubject(page, 'Matematik')
+      await freezeClock(page, clock)
       await page.getByTestId('battle-visibility-label').click()
       await quick(page).click()
       await expect(page.getByTestId('battle-searching')).toContainText(
@@ -311,10 +321,11 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   test(
     'E2E-M16-26 incoming challenge: card copy, "Tolak" keeps searching, "Terima" opens the arena @m16',
     provisional('the challenger is simulated (BR-M16-05)'),
-    async ({ page, gotoApp, loginAs, mock }) => {
+    async ({ page, gotoApp, loginAs, mock, clock }) => {
       await loginAs(ADMIN)
       await openLobby(page, gotoApp)
       await pickSubject(page, 'Matematik')
+      await freezeClock(page, clock)
       await mock.hook('battleSim', { mode: 'incoming' })
       await quick(page).click()
       await expect(timer(page)).toBeVisible()
@@ -336,7 +347,10 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await mock.hook('battleSim', { mode: 'incoming' })
       await quick(page).click()
       await expect(timer(page)).toBeVisible()
-      await mock.advanceTime(6000)
+      // Two exact 3 s steps: one poll each (the second answers with the challenger).
+      const before = await polls(mock)
+      await pollOnce(mock, before + 1)
+      await mock.advanceTime(3000)
       await expect(card).toBeVisible()
       await page.getByTestId('battle-incoming-accept').click()
       await expect(page).toHaveURL(/\/battle\/arena\/[0-9a-f-]{36}$/)
