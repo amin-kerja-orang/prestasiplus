@@ -5,8 +5,8 @@
 | Field | Value |
 |---|---|
 | Document | Design System — Foundation |
-| Version | 1.11 |
-| Date | 2026-09-30 |
+| Version | 1.12 |
+| Date | 2026-10-09 |
 | Status | Draft — awaiting user approval (G2) |
 | Author | ui-ux-designer (agent) |
 | Sources | `docs/discovery/00-global-ui.md`, `docs/discovery/img/global/*`, `docs/requirements/SRS.md` (NFR-RESP, NFR-02), `docs/requirements/srs/M01…M21-*.md` §10 + deviation tables, `docs/discovery/M01…M09-*.md` |
@@ -18,6 +18,7 @@
 
 | Version | Date | Change |
 |---|---|---|
+| 1.12 | 2026-10-09 | M16 module rows (M16-T4 G4 finding: the two S6 hub icons rendered through the lazy same-name fallback because no row existed). Checked `docs/discovery/M16-battle-games.md` appendix A.3 rows 3 and 7 against §6.1–§6.8: neither FA name had a row. Added two rows to the §6.13 M16 sub-table: `fa-fist-raised` → `HandFist` and `fa-pencil-alt` → `Pencil`. Both are same-glyph matches. Also added the M12 module row `fa-project-diagram` → `Workflow` (approximation, DV-M12-30; only M12 uses it, so it is a §6.13 row, not global); it is listed in §6.10. Also added a new §6.13 M27 sub-table with `fa-user-secret` → `HatGlasses` (approximation; only M27 uses it: S6/S7 "Menyamar" button), also listed in §6.10, which now has 33 icons. All four Lucide names were checked to exist in `@lucide/vue` (`hand-fist`, `pencil`, `workflow`, `hat-glasses` in `dist/esm/icons`). The §6.13 intro sentence now says every sub-table is empty except M12, M16, M27. Totals: 276 global mapping rows (§6.1–§6.8) + 4 module rows (§6.13) + 4 brand rows (§6.9). No colour, type, spacing or component change. |
 | 1.11 | 2026-09-30 | From the F-16 G4 review. (a) §7.2 app input spec replaced with the observed live string (blue focus `focus:ring-blue-300 focus:border-blue-400`, `rounded-xl px-3.5 py-2.5`, about 44px tall); the indigo spec is withdrawn. (b) §7.4 gains one line on the pager (live Laravel classes plus 44px hit area and `flex-wrap`, NFR-RESP-03, DV-M04-09). No other change. |
 | 1.10 | 2026-09-30 | §6 icon rows for the shells (D-R1, `docs/design/shells.md` v1.2 §2.9). I checked every FA name in the admin menu (M01 admin-shell inventory `SHA-admin-shell.json`), the teacher menu and the other role menus of `src/shells/nav/user-nav.ts` against §6. 21 names had no row (the 18 that `src/shells/shared/shell-icons.ts` carries as INFERRED fallbacks, plus three admin-only names) and were added as global rows, because they are shell links: `fa-exchange-alt` → `ArrowLeftRight`, `fa-file-export` → `FileOutput` (§6.1); `fa-triangle-exclamation` → `TriangleAlert`, `fa-life-ring` → `LifeBuoy` (§6.2); `fa-headset` → `Headset`, `fa-hand-holding-medical` → `HandHelping` (approx) (§6.3); `fa-clipboard-question` → `FileQuestionMark` (approx), `fa-tasks` → `ListChecks` (§6.4); `fa-microphone` → `Mic`, `fa-pen-to-square` → `SquarePen` (§6.5); `fa-campground` → `Tent`, `fa-medal` → `Medal`, `fa-compass` → `Compass`, `fa-door-open` → `DoorOpen`, `fa-table-cells` → `Grid3x3`, `fa-map-location-dot` → `MapPinned`, `fa-crosshairs` → `Crosshair`, `fa-ranking-star` → `Award` (approx), `fa-building-flag` → `Landmark` (approx) (§6.6); `fa-dice` → `Dice5`, `fa-gauge-high` → `Gauge` (§6.8). The 18 shell-icons choices are kept as they are (already imported and built); the three new Lucide names (`Crosshair`, `Dice5`, `Gauge`) were checked to exist in `@lucide/vue` 1.48. §6.10 now lists 31 icons (adds the four approximations). Totals: 276 global mapping rows (§6.1–§6.8) + 0 module rows (§6.13) + 4 brand rows (§6.9). F-14 adds the same rows to `fa-to-lucide.ts`; `shell-icons.ts` then no longer needs its fallback table. No colour, type, spacing or component change. |
 | 1.9 | 2026-09-27 | §6 icon rows for the M21 SRS (XR-M21-08). I re-scanned all 21 module SRS docs plus the SRS README with the guard-test regex `\bfa-([a-z0-9-]+)` and the same allow-lists. The three M21 names were the only gaps. All three were added as global §6.6 rows, because they are data-driven sponsor-category icons (S7 tiles), like the subject and product-category icons: `fa-hands-helping` → `HandHelping`, `fa-piggy-bank` → `PiggyBank`, `fa-utensils` → `Utensils`. All three are same-glyph matches, so §6.10 is unchanged (27 icons). `UtensilsCrossed` was rejected because FA `utensils` shows the fork and knife side by side, not crossed. §6.13 gets an empty M21 sub-table. Totals: 255 global mapping rows (§6.1–§6.8) + 0 module rows (§6.13) + 4 brand rows (§6.9). |
@@ -551,7 +552,7 @@ Table below covers every distinct FA icon class found across `docs/discovery/00-
 
 These are functional (non-brand) icons where Lucide has no direct equivalent; the mapping above already assigns the closest available icon, but confirm visually during build:
 
-`fa-file-pdf`, `fa-file-word`, `fa-globe-asia`, `fa-earth-asia`, `fa-laptop-code`, `fa-hat-wizard`, `fa-crystal-ball`, `fa-stars`, `fa-quran`, `fa-mosque`, `fa-monument`, `fa-university`, `fa-flag-checkered`, `fa-user-graduate`, `fa-user-shield`, `fa-user-tag`, `fa-users-cog`, `fa-users-slash`, `fa-child`, `fa-shield-halved`, `fa-running`, `fa-futbol`, `fa-magnifying-glass-chart`, `fa-boxes-stacked`, `fa-file-invoice`, `fa-user-tie`, `fa-hand-holding-usd`, `fa-hand-holding-medical`, `fa-clipboard-question`, `fa-ranking-star`, `fa-building-flag` (31 icons).
+`fa-file-pdf`, `fa-file-word`, `fa-globe-asia`, `fa-earth-asia`, `fa-laptop-code`, `fa-hat-wizard`, `fa-crystal-ball`, `fa-stars`, `fa-quran`, `fa-mosque`, `fa-monument`, `fa-university`, `fa-flag-checkered`, `fa-user-graduate`, `fa-user-shield`, `fa-user-tag`, `fa-users-cog`, `fa-users-slash`, `fa-child`, `fa-shield-halved`, `fa-running`, `fa-futbol`, `fa-magnifying-glass-chart`, `fa-boxes-stacked`, `fa-file-invoice`, `fa-user-tie`, `fa-hand-holding-usd`, `fa-hand-holding-medical`, `fa-clipboard-question`, `fa-ranking-star`, `fa-building-flag`, `fa-project-diagram` (M12 module row, §6.13), `fa-user-secret` (M27 module row, §6.13) (33 icons).
 
 v1.2: `fa-square-root-alt` (→ `Radical`) and `fa-variable` (→ `Variable`) left this list because Lucide 1.48 has the matching glyph. `fa-stars` was added (it was already approximate). The v1.1 count "(24 icons)" was wrong; the list had 21.
 
@@ -576,7 +577,7 @@ Module SRS icon lists that disagreed with this section were corrected to match i
 
 **Rule.** §6.1–§6.8 are the global rows (`src/components/icon/fa-to-lucide.ts`). A module icon map (`src/components/icon/maps/mXX-*.ts`) must match its own sub-table below exactly and must never redefine a global §6.1–§6.8 row. A module that needs a new icon first asks the ui-ux-designer to add the row to its sub-table here, following the §6 rules (closest glyph, canonical `@lucide/vue` 1.48 name). The module then writes the row into its own map file. A row that more than one module needs goes into §6.1–§6.8, not here. (build-plan v1.4 §S.3 rule 3; ADR-0010 Amendment 2.)
 
-All current rows are global, so every module sub-table is empty.
+Almost all current rows are global, so every module sub-table is empty except M12, M16, M27.
 
 #### M01 — Authentication
 
@@ -648,7 +649,7 @@ All current rows are global, so every module sub-table is empty.
 
 | FA class | Lucide | Notes |
 |---|---|---|
-| none yet | | |
+| `fa-project-diagram` | `Workflow` | approximation (DV-M12-30): FA glyph is three linked nodes in a tree, `Workflow` is two boxes joined by a connector. S1 card "Kirkpatrick Evaluation Flow" (FN-M12-2.3.1) |
 
 #### M13 — Cikgu Alesa
 
@@ -672,7 +673,8 @@ All current rows are global, so every module sub-table is empty.
 
 | FA class | Lucide | Notes |
 |---|---|---|
-| none yet | | |
+| `fa-fist-raised` | `HandFist` | raised clenched fist; same glyph. S6 hub card "Perang Fakta" "Main!" button |
+| `fa-pencil-alt` | `Pencil` | diagonal pencil; same glyph. S6 hub card "Teka Silang Kata" "Main!" button |
 
 #### M17 — Admin dashboard
 
@@ -703,6 +705,12 @@ All current rows are global, so every module sub-table is empty.
 | FA class | Lucide | Notes |
 |---|---|---|
 | none yet | | |
+
+#### M27 — School admin
+
+| FA class | Lucide | Notes |
+|---|---|---|
+| `fa-user-secret` | `HatGlasses` | approximation: FA shows a person bust with a hat and glasses, `HatGlasses` shows only the hat and glasses. S6/S7 "Menyamar" button in the "Tindakan" cell, title "Log masuk sebagai pengguna ini" (FR-M27-121, FN-M27-8.5.1, EL-S6-22) |
 
 ---
 

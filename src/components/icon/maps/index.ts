@@ -11,6 +11,7 @@ import { iconMap as m09 } from './m09-content'
 import { iconMap as m10 } from './m10-teacher-class'
 import { iconMap as m12 } from './m12-kirkpatrick'
 import { iconMap as m16 } from './m16-battle-games'
+import { iconMap as m27 } from './m27-school-admin'
 
 /** Per-module icon maps, in module order (written once by F-14; modules edit only their own file). */
 export const MODULE_ICON_MAPS: Readonly<Record<string, IconMap>> = {
@@ -26,4 +27,5 @@ export const MODULE_ICON_MAPS: Readonly<Record<string, IconMap>> = {
   m10,
   m12,
   m16,
+  m27,
 }
