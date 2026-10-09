@@ -37,7 +37,7 @@ Status di bawah ialah status pada 2026-10-02.
 | L15 | Monitoring (10) | G★ AS★ | M11 | **100%** |
 | L16 | Kirkpatrick (11) | G★ AS★ | M12 | **100%** |
 | L17 | Remedial (12) | M★ | M05 | **100%** |
-| L18 | SPM (13) | M★ | M06 | 40% |
+| L18 | SPM (13) | M★ | M06 | **100%** |
 | L19 | Heatmap Topik Lemah (14) | M★ | M25 (`/buku-nota/heatmap`; G4 lulus 2026-10-10; F-19b href menu belum) | 85% |
 | L20 | Mohon Keluarga Angkat (15) | M | M21 (S6; G5 READY 2026-10-10, `docs/qa/M21-sponsorship.md`) | **100%** |
 | L21 | Latih Tubi (16) | M | M05 | **100%** |
