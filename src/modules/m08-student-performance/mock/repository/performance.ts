@@ -11,7 +11,9 @@ import { practice, practiceAnswers } from '@/modules/m05-practice/mock'
 
 import type { ClassCard, LevelClassRow, LevelDetail, SchoolPerformance } from '../../api/types'
 import { GPS_CHART } from '../data/observed'
+import { headcountRevisionOf } from './headcount'
 import {
+  headcountReaderGeneration,
   headcountReads,
   isGraded,
   latestAr,
@@ -20,6 +22,8 @@ import {
 } from './headcount-port'
 import {
   LEVEL_SLUG,
+  checkStamp,
+  performanceMemo,
   levelStudentIds,
   meanAccuracy,
   studentsOfClasses,
@@ -215,7 +219,54 @@ export function studentStatuses(entries: readonly HeadcountEntryView[]): {
   return { on, below }
 }
 
+/**
+ * Owner data stamp of the S1 memo: M05 log (session + answer counts, checked by `checkStamp`, which also
+ * clears the memo), M01 pupil / teacher / user counts of the scope, M10 class count + active-class count +
+ * active enrolments of the scope's classes, the M08 headcount write revision and the headcount reader generation (re-registered by seeds / tests). No store exposes a
+ * version counter publicly, so these are the cheapest changes that cover every public write path.
+ * NOT detected: an edit that keeps every count equal (a user moved or renamed, a class renamed or its
+ * teacher / subject changed, a student swapped between classes, a direct edit of a stored SPM history
+ * row) until the next seed / reset or `resetReadCache()`; the tests that edit owner data call it.
+ */
+function ownerStamp(scope: Scope): string {
+  const classes = classesOf(scope)
+  let active = 0
+  let members = 0
+  for (const c of classes) {
+    if (c.isActive) active++
+    members += classrooms.memberCount(c.kind, c.classId)
+  }
+  const people =
+    scope.kind === 'platform'
+      ? Object.values(users.roleCounts()).join('.')
+      : [
+          users.countWhere({ role: 'student', schoolId: scope.schoolId }),
+          users.countWhere({ role: 'teacher', schoolId: scope.schoolId }),
+          users.countWhere({ schoolId: scope.schoolId }),
+        ].join('.')
+  return [
+    classes.length,
+    active,
+    members,
+    people,
+    headcountRevisionOf(),
+    headcountReaderGeneration(),
+  ].join(':')
+}
+
+/** S1 read model, memoised per (scope, clock year) and owner data stamp; the result equals `computeSchoolPerformance`. */
 export function schoolPerformance(scope: Scope, clockYear: number): SchoolPerformance {
+  checkStamp()
+  const key = `${scope.kind === 'platform' ? 'platform' : String(scope.schoolId)}|${String(clockYear)}`
+  const stamp = ownerStamp(scope)
+  const hit = performanceMemo.get(key)
+  if (hit && hit.stamp === stamp) return structuredClone(hit.value as SchoolPerformance)
+  const value = computeSchoolPerformance(scope, clockYear)
+  performanceMemo.set(key, { stamp, value: structuredClone(value) })
+  return value
+}
+
+function computeSchoolPerformance(scope: Scope, clockYear: number): SchoolPerformance {
   const classes = classesOf(scope).filter((c) => c.isActive)
   const studentRows =
     scope.kind === 'platform'

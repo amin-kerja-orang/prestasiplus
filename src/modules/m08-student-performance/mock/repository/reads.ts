@@ -46,10 +46,14 @@ let stamp = ''
 /** Memo of the class item analyses (`item-analysis.ts`), cleared with the totals. */
 export const classAnalysisMemo = new Map<string, unknown>()
 
+/** Memo of `schoolPerformance` (S1; key = arguments, value = owner data stamp + result), cleared with the totals. */
+export const performanceMemo = new Map<string, { stamp: string; value: unknown }>()
+
 /** Forgets the memo (every boot and `mock.reset()` runs the M08 seed, which calls this). */
 export function resetReadCache(): void {
   allTotals = null
   classAnalysisMemo.clear()
+  performanceMemo.clear()
   stamp = ''
 }
 
@@ -59,6 +63,7 @@ export function checkStamp(): void {
   if (s !== stamp) {
     allTotals = null
     classAnalysisMemo.clear()
+    performanceMemo.clear()
     stamp = s
   }
 }
