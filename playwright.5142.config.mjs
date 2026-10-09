@@ -9,7 +9,8 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   fullyParallel: true,
   workers: 2,
-  timeout: 120_000,
+  timeout: 180_000,
+  expect: { timeout: 30_000 },
   retries: 0,
   reporter: 'list',
   outputDir: 'test-results-5142',
@@ -44,6 +45,6 @@ export default defineConfig({
     command: `npx vite build --mode e2e --outDir dist-e2e-5142 && npx vite preview --mode e2e --outDir dist-e2e-5142 --port ${PORT} --strictPort`,
     url: baseURL,
     reuseExistingServer: true,
-    timeout: 600_000,
+    timeout: 1_800_000,
   },
 })

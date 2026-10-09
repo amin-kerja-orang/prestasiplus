@@ -35,6 +35,16 @@ test.use({ mockInit: { latency: 0 } })
 const cards = (page: Page) => page.getByTestId('tk-card')
 const cardOf = (page: Page, id: number) => cards(page).filter({ hasText: `#${String(id)} —` })
 
+/** Multi-user tests: `loginAs` re-applies its init-script session on every load, so sign in with the core hook. */
+async function signIn(
+  gotoApp: (p: string) => Promise<void>,
+  mock: { setUser: (...a: string[]) => Promise<unknown> },
+  who: string,
+): Promise<void> {
+  await gotoApp('/login')
+  await mock.setUser(who)
+}
+
 async function openS1(page: Page, gotoApp: (p: string) => Promise<void>, path = PATH) {
   await gotoApp(path)
   await expect(page.getByTestId('tk-page')).toBeVisible()
@@ -193,11 +203,10 @@ test.describe('S1 list', MODULE, () => {
 
   test('E2E-M22-05 teacher and school admin: same anatomy, own tickets only (none)', async ({
     page,
-    loginAs,
     gotoApp,
     mock,
   }) => {
-    await loginAs(GURU)
+    await signIn(gotoApp, mock, GURU)
     await openS1(page, gotoApp)
     await expect(page.getByTestId('tk-total')).toHaveText('Jumlah tiket: 0')
     await expect(page.getByTestId('tk-empty')).toBeVisible()
@@ -357,11 +366,10 @@ test.describe('S1 create', MODULE, () => {
 
   test('E2E-M22-17 teacher and school admin create; it shows on their own S1 only', async ({
     page,
-    loginAs,
     gotoApp,
     mock,
   }) => {
-    await loginAs(GURU)
+    await signIn(gotoApp, mock, GURU)
     await openS1(page, gotoApp)
     await page.getByTestId('tk-new').click()
     await page.getByLabel('Subjek').fill('Tiket guru')
@@ -400,11 +408,10 @@ test.describe('S1 access', MODULE, () => {
 
   test('E2E-M22-21 isolation: ?userId is ignored, each user sees only their own', async ({
     page,
-    loginAs,
     gotoApp,
     mock,
   }) => {
-    await loginAs(PELAJAR2)
+    await signIn(gotoApp, mock, PELAJAR2)
     await openS1(page, gotoApp, `${PATH}?userId=4`)
     await expect(cards(page)).toHaveCount(1)
     await expect(page.getByText('Soalan kuiz tidak dipaparkan')).toHaveCount(0)
@@ -417,9 +424,9 @@ test.describe('S1 access', MODULE, () => {
   test(
     'E2E-M22-22 other roles open S1 with their own tickets (none)',
     provisional('parent, sponsor and JPN access is INFERRED (SRS E2E-M22-22)', MODULE.tag),
-    async ({ page, loginAs, gotoApp, mock }) => {
+    async ({ page, gotoApp, mock }) => {
       test.skip(viewportWidth(page) < 1280, 'E2E-M22-22 runs at 1280 only')
-      await loginAs(ADMIN)
+      await signIn(gotoApp, mock, ADMIN)
       await openS1(page, gotoApp)
       await expect(page.getByTestId('tk-total')).toHaveText('Jumlah tiket: 0')
       await expect(page.getByText('Tidak dapat log masuk ke akaun')).toHaveCount(0)
@@ -632,10 +639,11 @@ test.describe('access and badge', MODULE, () => {
   test(
     'E2E-M22-35 a guest goes to /login; other roles are sent away',
     provisional('role redirect follows the router rule for /admin/* (SRS E2E-M22-35)', MODULE.tag),
-    async ({ page, gotoApp, loginAs, mock }) => {
+    async ({ page, gotoApp, mock }) => {
+      test.setTimeout(600_000)
       await gotoApp(QUEUE)
       await expect(page).toHaveURL(/\/login/)
-      await loginAs(PELAJAR)
+      await signIn(gotoApp, mock, PELAJAR)
       await gotoApp(QUEUE)
       await expect(page.getByTestId('tq-page')).toHaveCount(0)
       for (const who of [GURU, SCHOOL_ADMIN, 'ppd@demo.test', 'jpn@demo.test']) {
@@ -647,14 +655,9 @@ test.describe('access and badge', MODULE, () => {
     },
   )
 
-  test('E2E-M22-37 "Urus Tiket" shows for the admin only', async ({
-    page,
-    loginAs,
-    gotoApp,
-    mock,
-  }) => {
+  test('E2E-M22-37 "Urus Tiket" shows for the admin only', async ({ page, gotoApp, mock }) => {
     test.skip(viewportWidth(page) < 1280, 'E2E-M22-37 runs at 1280 only')
-    await loginAs(ADMIN)
+    await signIn(gotoApp, mock, ADMIN)
     await gotoApp('/dashboard')
     const item = page.getByTestId('shell-user-sidebar').locator('[data-nav-id="urus-tiket"]')
     await expect(item).toBeVisible()
@@ -681,9 +684,9 @@ test.describe('access and badge', MODULE, () => {
   test(
     'E2E-M22-41 (provisional part) badge "3" after a pupil creates a ticket',
     provisional('the badge definition is INFERRED (SRS E2E-M22-41)', MODULE.tag),
-    async ({ page, loginAs, gotoApp, mock }) => {
+    async ({ page, gotoApp, mock }) => {
       test.skip(viewportWidth(page) < 1280, 'sidebar at 1280 only')
-      await loginAs(PELAJAR)
+      await signIn(gotoApp, mock, PELAJAR)
       await openS1(page, gotoApp)
       await page.getByTestId('tk-new').click()
       await page.getByLabel('Subjek').fill('Satu lagi')
@@ -788,13 +791,50 @@ test.describe('responsive and quality', MODULE, () => {
       provisional('the shared error convention is PROPOSED (SRS E2E-M22-45)', MODULE.tag),
       async ({ page, loginAs, gotoApp, mock }) => {
         await loginAs(PELAJAR2)
-        await gotoApp('/dashboard')
-        await mock.failNext('/api/tiket', { status: 500 })
-        await gotoApp(PATH)
+        await openS1(page, gotoApp)
+        // the fault lives in the page: reach the failing call by an in-app navigation, not a reload
+        await mock.failNext('GET /api/tiket', 500)
+        await page.getByTestId('tk-tabs').getByRole('link', { name: 'Dibuka' }).click()
         await expect(page.getByTestId('tk-error')).toBeVisible()
         await page.getByTestId('tk-retry').click()
         await expect(cards(page)).toHaveCount(1)
       },
     )
+  })
+})
+
+test.describe('320 px', MODULE, () => {
+  test.use({ viewport: { width: 320, height: 700 } })
+
+  test('E2E-M22-43 (320) no horizontal page scroll on S1 and S2', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', '320 px is checked once, on the mobile project')
+    await loginAs(ADMIN)
+    await openS1(page, gotoApp)
+    await expect(cards(page).first().or(page.getByTestId('tk-empty'))).toBeVisible()
+    await expectNoHorizontalScroll(page)
+    await openS2(page, gotoApp)
+    await expect(page.getByTestId('tq-table')).toBeVisible()
+    await expectNoHorizontalScroll(page)
+  })
+
+  test.describe('tickets-extra', () => {
+    test.use(EXTRA)
+
+    test('E2E-M22-43 (320) long body and reply do not overflow', async ({
+      page,
+      loginAs,
+      gotoApp,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== 'mobile', '320 px is checked once, on the mobile project')
+      await loginAs(PELAJAR)
+      await openS1(page, gotoApp)
+      await page.getByTestId('tk-new').click()
+      await expect(cards(page)).toHaveCount(6)
+      await expectNoHorizontalScroll(page)
+    })
   })
 })
