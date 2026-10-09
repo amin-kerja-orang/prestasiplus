@@ -112,31 +112,39 @@ test.describe('S20 Pertandingan Mingguan', () => {
     },
   )
 
-  // Characterisation of the live accuracies of ranks 3 and 4 (AC-M16-29.5). The M05 weekRank seed
-  // yields other values, so this is expected to fail until the owner (M05) fixes the seed.
-  test(
-    'E2E-M16-73 ranks 3 and 4 show the live accuracies 90.7% and 61.4% (known gap)',
-    {
-      tag: [TAG.provisional, moduleTag(16)],
-      annotation: {
-        type: 'known-gap',
-        description:
-          'Known gap DV-M16-38 / XR-M16-10: M05 weekRank seed yields 93.5% vs live 90.7% - owner M05',
+  // Characterisation of the live accuracies of ranks 3 and 4 (AC-M16-29.5), one test per gap. The
+  // M05 weekRank seed yields other values, so each is expected to fail until the owner (M05) fixes
+  // the seed. The setup (login, navigation, 20 rows, a percentage present in the row) runs BEFORE
+  // `test.fail(...)` is called, so a setup failure is a normal failure and never the expected one.
+  const KNOWN_GAPS = [
+    { id: 'E2E-M16-73b', rank: 3, row: 2, live: '90.7%', seed: '93.5%' },
+    { id: 'E2E-M16-73c', rank: 4, row: 3, live: '61.4%', seed: 'a different value' },
+  ] as const
+
+  for (const gap of KNOWN_GAPS) {
+    test(
+      `${gap.id} rank ${String(gap.rank)} shows the live accuracy ${gap.live} (known gap)`,
+      {
+        tag: [TAG.provisional, moduleTag(16)],
+        annotation: {
+          type: 'known-gap',
+          description: `Known gap DV-M16-38 / XR-M16-10: M05 weekRank seed yields ${gap.seed} vs live ${gap.live} - owner M05`,
+        },
       },
-    },
-    async ({ page, gotoApp, loginAs }) => {
-      test.fail(
-        true,
-        'Known gap DV-M16-38 / XR-M16-10: M05 weekRank seed yields 93.5% vs live 90.7%',
-      )
-      await loginAs(ADMIN)
-      await gotoApp('/permainan/pertandingan')
-      const rows = page.getByTestId('pertandingan-row')
-      await expect(rows).toHaveCount(20)
-      await expect(rows.nth(2)).toContainText('90.7%', { timeout: 3000 })
-      await expect(rows.nth(3)).toContainText('61.4%', { timeout: 3000 })
-    },
-  )
+      async ({ page, gotoApp, loginAs }) => {
+        await loginAs(ADMIN)
+        await gotoApp('/permainan/pertandingan')
+        const rows = page.getByTestId('pertandingan-row')
+        await expect(rows).toHaveCount(20)
+        await expect(rows.nth(gap.row)).toContainText(/\d+\.\d%/)
+        test.fail(
+          true,
+          `Known gap DV-M16-38 / XR-M16-10: M05 weekRank seed yields ${gap.seed} vs live ${gap.live}`,
+        )
+        await expect(rows.nth(gap.row)).toContainText(gap.live, { timeout: 3000 })
+      },
+    )
+  }
 
   test(
     'E2E-M16-73 pelajarmaju is ranked 14 with the PROPOSED rank line',

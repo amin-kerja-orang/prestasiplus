@@ -44,7 +44,7 @@ onMounted(async () => {
         <Trophy v-else class="h-5 w-5" />
       </span>
       <span class="min-w-0 flex-1">
-        <span class="block truncate text-sm font-bold text-gray-800">{{ t.title }}</span>
+        <span class="block text-sm font-bold break-words text-gray-800">{{ t.title }}</span>
         <span
           v-if="t.live_match"
           class="flex items-center gap-1.5 text-xs font-bold text-red-600"

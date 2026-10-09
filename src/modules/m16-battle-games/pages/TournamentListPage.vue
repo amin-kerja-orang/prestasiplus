@@ -7,8 +7,8 @@
  *
  * Layout follows the live capture (`tournament-desktop.png`): an indigo-violet-pink hero with a
  * decorative circle, the create button on its own row below it, and a large white empty card with a
- * grey trophy. D9: live paints the hero heading dark on the violet gradient (unreadable), the
- * rebuild keeps it white.
+ * grey trophy. DV-M16-39 (D9): live paints the hero heading dark on the violet gradient (about
+ * 2.7 to 2.9:1, unreadable), the rebuild keeps it white.
  */
 import { Plus, Trophy } from '@lucide/vue'
 import { computed } from 'vue'
@@ -38,6 +38,7 @@ const view = useApi((signal) => fetchTournaments({ signal }))
       ></div>
       <div class="relative flex min-w-0 items-center gap-3">
         <Trophy class="h-8 w-8 shrink-0 text-white" />
+        <!-- DV-M16-39: white heading (live is dark, below 3:1 contrast). -->
         <h2 class="font-heading text-2xl font-bold text-white sm:text-3xl">{{ COPY.heading }}</h2>
       </div>
       <p class="relative mt-2 text-sm text-white/90 sm:text-base">{{ COPY.sub }}</p>

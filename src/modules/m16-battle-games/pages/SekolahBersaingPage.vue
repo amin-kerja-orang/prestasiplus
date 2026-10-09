@@ -38,11 +38,13 @@ const weekLabel = computed(() => (data.value ? formatDateEn(data.value.weekStart
 <template>
   <div class="min-w-0 space-y-4" data-testid="m16-sekolah-bersaing-page">
     <section
-      class="rounded-3xl bg-linear-to-br from-yellow-400 to-amber-500 px-4 py-8 text-center text-white shadow-lg sm:px-6 sm:py-10"
+      class="rounded-3xl bg-linear-to-br from-yellow-400 to-amber-500 px-4 py-8 text-center shadow-lg sm:px-6 sm:py-10"
       data-testid="sb-hero"
     >
-      <h1 class="font-heading text-2xl font-bold text-white sm:text-3xl">{{ COPY.heading }}</h1>
-      <p class="mt-2 text-sm font-semibold text-white sm:text-base">{{ COPY.sub }}</p>
+      <!-- DV-M16-40 (D9): live paints this text white on yellow-400 to amber-500 (about 1.5 to
+           2.2:1, unreadable); the rebuild keeps the gradient and uses dark amber-brown text. -->
+      <h1 class="font-heading text-2xl font-bold text-amber-900 sm:text-3xl">{{ COPY.heading }}</h1>
+      <p class="mt-2 text-sm font-semibold text-amber-900 sm:text-base">{{ COPY.sub }}</p>
     </section>
 
     <PageLoadError v-if="view.error.value" @retry="view.reload()" />
@@ -59,7 +61,7 @@ const weekLabel = computed(() => (data.value ? formatDateEn(data.value.weekStart
       <p class="mt-2 text-sm text-slate-500">{{ COPY.emptyHint }}</p>
     </div>
 
-    <div v-else class="space-y-4 lg:px-9">
+    <div v-else class="space-y-4 px-4 lg:px-9">
       <p class="rounded-2xl bg-white p-4 text-sm text-slate-700 shadow-sm" data-testid="sb-week">
         {{ COPY.weekPrefix }}
         <strong class="text-amber-800" data-testid="sb-week-date">{{ weekLabel }}</strong> ·
@@ -78,9 +80,9 @@ const weekLabel = computed(() => (data.value ? formatDateEn(data.value.weekStart
         >
           <div>{{ COPY.headers[0] }}</div>
           <div>{{ COPY.headers[1] }}</div>
-          <div class="text-right">{{ COPY.headers[2] }}</div>
-          <div class="hidden text-right md:block">{{ COPY.headers[3] }}</div>
-          <div class="hidden text-right md:block">{{ COPY.headers[4] }}</div>
+          <div class="text-right text-slate-700">{{ COPY.headers[2] }}</div>
+          <div class="hidden text-right text-slate-700 md:block">{{ COPY.headers[3] }}</div>
+          <div class="hidden text-right text-slate-700 md:block">{{ COPY.headers[4] }}</div>
         </div>
         <div class="divide-y divide-slate-100">
           <SchoolRow v-for="row in data.rows" :key="row.rank" :row="row" />
