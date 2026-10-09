@@ -11,6 +11,7 @@ import {
   created,
   requireAuth,
   route,
+  unauthorized,
   validationError,
   type MockRequest,
   type MockResponse,
@@ -70,7 +71,7 @@ function submit(req: MockRequest): MockResponse {
   if (Object.keys(fields).length > 0) return validationError(fields)
 
   const viewer = req.session
-  if (!viewer) return validationError({ studentEmail: MSG.required })
+  if (!viewer) return unauthorized() // unreachable behind `requireAuth`; same 401 as the guard
   const row = fosterApplicationsRepo.submit({
     studentId,
     applicantUserId: viewer.userId,

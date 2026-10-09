@@ -30,6 +30,8 @@ vi.mock('../../api/foster-application', () => ({
 }))
 
 let wrapper: VueWrapper | undefined
+/** Errors that reach the app's global handler (what a non-422 failure must do). */
+const caught: unknown[] = []
 
 async function mountPage() {
   const router = createRouter({
@@ -43,7 +45,7 @@ async function mountPage() {
   await router.isReady()
   wrapper = mount(MohonKeluargaAngkatPage, {
     attachTo: document.body,
-    global: { plugins: [router] },
+    global: { plugins: [router], config: { errorHandler: (e: unknown) => void caught.push(e) } },
   })
   await flushPromises()
   return wrapper
@@ -68,7 +70,10 @@ function validation(fields: Record<string, string>): ApiError {
   return new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'invalid', fields })
 }
 
-beforeEach(() => submit.mockReset())
+beforeEach(() => {
+  submit.mockReset()
+  caught.length = 0
+})
 afterEach(() => {
   wrapper?.unmount()
   wrapper = undefined
@@ -200,8 +205,9 @@ describe('S6 submit (FR-M21-49)', () => {
     expect(notice().text()).toBe('Email pelajar tidak dijumpai dalam PrestasiPlus.')
     expect(email().element.value).toBe('tiada.pelajar@demo.test')
     expect(reason().element.value).toBe('Sebab ujian')
-    expect(email().attributes('aria-invalid')).toBe('true')
-    expect(category().attributes('aria-invalid')).toBeUndefined()
+    expect(email().classes()).toContain('border-red-400')
+    expect(category().classes()).not.toContain('border-red-400')
+    expect(wrapper!.find('[aria-invalid], [aria-live], [aria-describedby]').exists()).toBe(false)
     expect(wrapper!.find('[data-variant="success"]').exists()).toBe(false)
   })
 
@@ -220,15 +226,41 @@ describe('S6 submit (FR-M21-49)', () => {
     ).toEqual(['Format e-mel tidak sah.', 'Sila isi ruangan ini.'])
   })
 
-  it('a failure without a field map shows the generic notice', async () => {
+  it('removes duplicate 422 messages', async () => {
     submit.mockReturnValue(
-      failure(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' })),
+      failure(validation({ studentEmail: MSG.required, studentCategory: MSG.required })),
     )
     await mountPage()
     await fill()
     await wrapper!.get('form').trigger('submit')
     await flushPromises()
-    expect(notice().text()).toBe('Permohonan tidak dapat dihantar. Sila cuba lagi.')
+    expect(
+      notice()
+        .findAll('p')
+        .map((p) => p.text()),
+    ).toEqual(['Sila isi ruangan ini.'])
+  })
+
+  it('sends a whitespace-only reason as typed (the browser check lets it pass; the server rejects it)', async () => {
+    submit.mockResolvedValue({ id: 4 })
+    await mountPage()
+    await fill({ reason: '   ' })
+    await wrapper!.get('form').trigger('submit')
+    await flushPromises()
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({ reason: '   ' }))
+  })
+
+  it('a failure without a field map shows no page notice and reaches the global handler', async () => {
+    const boom = new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' })
+    submit.mockReturnValue(failure(boom))
+    await mountPage()
+    await fill()
+    await wrapper!.get('form').trigger('submit')
+    await flushPromises()
+    expect(caught).toEqual([boom])
+    expect(notice().text()).toBe('')
+    expect(wrapper!.find('[data-variant]').exists()).toBe(false)
+    expect(wrapper!.get('[data-testid="mohon-submit"]').attributes('disabled')).toBeUndefined()
   })
 
   it('a new submit clears the previous notice', async () => {

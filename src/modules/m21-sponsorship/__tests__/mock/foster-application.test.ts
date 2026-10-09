@@ -169,6 +169,13 @@ describe('422 (V-M21-03)', () => {
     })
   })
 
+  it('rejects a whitespace-only reason alone with "Sila isi ruangan ini." and creates nothing', async () => {
+    const a = await post({ ...valid(), reason: ' \t  ' }, PELAJAR)
+    expect(a.status).toBe(422)
+    expect(fieldsOf(a)).toEqual({ reason: 'Sila isi ruangan ini.' })
+    expect(fosterApplications.count('Q-M21-APP-TABS')).toBe(0)
+  })
+
   it('accepts all 5 categories and all 4 incomes', async () => {
     for (const studentCategory of ['B40', 'Asnaf', 'Yatim', 'OKU', 'Lain-lain']) {
       expect((await post({ ...valid(), studentCategory }, PELAJAR)).status).toBe(201)

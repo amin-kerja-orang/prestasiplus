@@ -13,7 +13,7 @@ const emit = defineEmits<{ pick: [text: string] }>()
 <template>
   <div class="rounded-xl bg-slate-50 p-3" data-testid="mohon-examples">
     <p class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-      <Lightbulb class="h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
+      <Lightbulb class="h-4 w-4 shrink-0 text-amber-500" />
       {{ MOHON_COPY.examplesTitle }}
     </p>
     <ul class="mt-2 space-y-1.5">
