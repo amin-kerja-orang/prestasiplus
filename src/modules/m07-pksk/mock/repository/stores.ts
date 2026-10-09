@@ -7,6 +7,7 @@
  */
 
 import { defineRepository } from '@/mock/repository'
+import { toIsoMyt } from '@/lib/time'
 import { users } from '@/modules/m01-authentication/mock'
 
 import {
@@ -21,6 +22,7 @@ import { displayStatusOf, gradeOf, LEVELS } from './rules'
 import type {
   Bahagian,
   Grade,
+  PkskAccessItem,
   PkskAccessRow,
   PkskDomain,
   PkskExamAttemptRow,
@@ -90,6 +92,21 @@ export const pkskAccessRepo = defineRepository({
       if (!p) return []
       return p.level === 'ALL' ? LEVELS : [p.level]
     }
+    const view = (row: PkskAccessRow, nowMs: number): PkskAccessItem => {
+      const user = users.get(row.userId)
+      const pkg = packagesTable.get(row.packageId)
+      const granter = row.grantedById === null ? undefined : users.get(row.grantedById)
+      return {
+        id: row.id,
+        user: { id: row.userId, name: user?.name ?? '-', email: user?.email ?? '' },
+        package: { id: row.packageId, name: pkg?.name ?? '-', level: pkg?.level ?? 'ALL' },
+        grantedBy: granter ? { id: granter.id, name: granter.name } : null,
+        grantedAt: row.grantedAt,
+        expiresAt: row.expiresAt,
+        status: row.status,
+        displayStatus: displayStatusOf(row, nowMs),
+      }
+    }
     return {
       /** Seed phase and the provisional edge-case fixture: rows are inserted with their ids. */
       seed(rows: readonly PkskAccessRow[]): void {
@@ -99,6 +116,82 @@ export const pkskAccessRepo = defineRepository({
       },
       forUser(userId: number): PkskAccessRow[] {
         return store.query({ where: { userId } }).rows.map((r) => ({ ...r }))
+      },
+      get(id: number): PkskAccessRow | undefined {
+        const row = store.get(id)
+        return row ? { ...row } : undefined
+      },
+
+      /** `PkskAccessItem` (DATA-M07-04) of one row. */
+      view,
+
+      /**
+       * S8 list (BR-M07-17, BR-M07-18): `grantedAt` desc then `id` desc; `search` is a trimmed,
+       * case-insensitive substring of the user's name or e-mail.
+       */
+      adminList(
+        opts: { search?: string; page: number; pageSize: number },
+        nowMs: number,
+      ): { rows: PkskAccessItem[]; total: number } {
+        const term = (opts.search ?? '').trim().toLowerCase()
+        const all = store
+          .query({})
+          .rows.filter((r) => {
+            if (term === '') return true
+            const u = users.get(r.userId)
+            return (
+              (u?.name ?? '').toLowerCase().includes(term) ||
+              (u?.email ?? '').toLowerCase().includes(term)
+            )
+          })
+          .sort((a, b) => Date.parse(b.grantedAt) - Date.parse(a.grantedAt) || b.id - a.id)
+        const offset = (opts.page - 1) * opts.pageSize
+        return {
+          rows: all.slice(offset, offset + opts.pageSize).map((r) => view(r, nowMs)),
+          total: all.length,
+        }
+      },
+
+      /** BR-M07-08: active rows only (not revoked, not expired); a Kombo counts in T1 and T4. */
+      stats(nowMs: number): { activeTotal: number; t1: number; t4: number } {
+        let activeTotal = 0
+        let t1 = 0
+        let t4 = 0
+        for (const r of store.query({}).rows) {
+          if (displayStatusOf(r, nowMs) !== 'active') continue
+          activeTotal += 1
+          const levels = levelsOf(r.packageId)
+          if (levels.includes('T1')) t1 += 1
+          if (levels.includes('T4')) t4 += 1
+        }
+        return { activeTotal, t1, t4 }
+      },
+
+      /** BR-M07-14: a new active row, `grantedAt` = now. */
+      grant(
+        input: { userId: number; packageId: number; expiresAt: string | null; grantedById: number },
+        nowMs: number,
+      ): PkskAccessRow {
+        return transaction(() =>
+          store.insert({
+            userId: input.userId,
+            packageId: input.packageId,
+            grantedById: input.grantedById,
+            grantedAt: toIsoMyt(nowMs),
+            expiresAt: input.expiresAt,
+            status: 'active',
+            revokedAt: null,
+          }),
+        )
+      },
+
+      /** BR-M07-15: only an active, unexpired row may be revoked; returns `null` otherwise. */
+      revoke(id: number, nowMs: number): PkskAccessRow | null {
+        return transaction(() => {
+          const row = store.get(id)
+          if (!row || displayStatusOf(row, nowMs) !== 'active') return null
+          return store.update(id, { status: 'revoked', revokedAt: toIsoMyt(nowMs) })
+        })
       },
       /**
        * BR-M07-07: level L is usable with (a) an active, unexpired grant for L or ALL, (b) the M02

@@ -39,6 +39,18 @@ export interface PkskAccessRow {
   revokedAt: string | null
 }
 
+/** API shape of an access row (DATA-M07-04, §7 #14, #16, #17). */
+export interface PkskAccessItem {
+  id: number
+  user: { id: number; name: string; email: string }
+  package: { id: number; name: string; level: PackageLevel }
+  grantedBy: { id: number; name: string } | null
+  grantedAt: string
+  expiresAt: string | null
+  status: 'active' | 'revoked'
+  displayStatus: 'active' | 'expired' | 'revoked'
+}
+
 /** DATA-M07-05 (only completed attempts are stored). */
 export interface PkskExamAttemptRow {
   id: number
