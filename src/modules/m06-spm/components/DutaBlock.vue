@@ -26,7 +26,7 @@ const card = computed(() => data.value)
 
 <template>
   <section v-if="card" class="rounded-2xl bg-white p-4 shadow-sm sm:p-6" data-testid="duta-block">
-    <h2 class="font-heading text-base font-bold text-slate-900" data-testid="duta-title">
+    <h2 class="font-heading text-base font-bold text-slate-900 uppercase" data-testid="duta-title">
       {{ title }}
     </h2>
     <p class="mt-1 text-sm text-slate-600" data-testid="duta-text">{{ text }}</p>

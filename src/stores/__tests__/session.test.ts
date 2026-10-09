@@ -324,3 +324,26 @@ describe('session store: me refresh and logout', () => {
     expect(localStorage.getItem(PP_AUTH_STORAGE_KEY)).toBeNull()
   })
 })
+
+describe('impersonator (XR-M27-21)', () => {
+  const impersonator = { id: 8, name: 'Pentadbir Sekolah Demo', returnTo: '/admin-sekolah/pelajar' }
+
+  it('round-trips through pp.auth and the store getter', () => {
+    writeStored(session({ impersonator }))
+    const store = useSessionStore()
+    expect(store.check()).toBe(true)
+    expect(store.impersonator).toEqual(impersonator)
+    expect(stored()?.impersonator).toEqual(impersonator)
+    store.setSession(session({ impersonator }))
+    expect(stored()?.impersonator).toEqual(impersonator)
+  })
+
+  it('is null without it and a malformed one is dropped', () => {
+    writeStored({ ...session(), impersonator: { id: 'x' } })
+    const store = useSessionStore()
+    expect(store.check()).toBe(true)
+    expect(store.impersonator).toBeNull()
+    store.setSession(session())
+    expect(store.impersonator).toBeNull()
+  })
+})

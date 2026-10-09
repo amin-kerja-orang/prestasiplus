@@ -39,6 +39,8 @@ import {
 import { statsRoutes } from './handlers/auth-stats'
 import { expireSession } from './hooks/expire-session'
 import { seedAuth } from './seeds/auth'
+// M27-T0b (XR-M27-21): the school-admin impersonation switch with return path and audit.
+import { impersonation, impersonationAudit } from './impersonation'
 
 const plugin = defineMockModule({
   id: 'M01',
@@ -60,8 +62,9 @@ const plugin = defineMockModule({
     userSettings: userSettingsRepo,
   },
   routes: [...authRoutes, ...accountRoutes, ...statsRoutes, ...notificationRoutes],
-  hooks: { pushNotification, expireSession },
+  hooks: { pushNotification, expireSession, impersonationAudit },
   seed(ctx) {
+    impersonation.resetAudit()
     usersRepo.resetSelections()
     seedNotifications()
     seedAuth(ctx)
@@ -97,6 +100,14 @@ export const { users, notifications, passwordResets, loginThrottle, userSettings
   plugin.repositories
 
 export type { UserSettings } from '../api/types'
+/** School-admin impersonation switch (XR-M27-21, M27-T0b). */
+export {
+  ImpersonationError,
+  impersonation,
+  type ImpersonationAuditRow,
+  type ImpersonationErrorCode,
+  type ImpersonationReturnTo,
+} from './impersonation'
 /** Anchor rows of the users dataset (for consumers that must not copy id blocks). */
 export { anchorUserIds, isAnchorUser } from './anchor-ids'
 

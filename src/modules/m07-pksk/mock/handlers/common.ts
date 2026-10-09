@@ -4,7 +4,14 @@
  */
 
 import { API_ERROR_CODES } from '@/api/errors'
-import { fail, forbidden, notFound, type MockContext, type MockRequest } from '@/mock/define'
+import {
+  fail,
+  forbidden,
+  notFound,
+  requireRole,
+  type MockContext,
+  type MockRequest,
+} from '@/mock/define'
 import type { MockResponse } from '@/mock/define'
 import type { Question } from '@/modules/m04-question-bank/mock'
 
@@ -27,6 +34,16 @@ export function gateLevel(req: MockRequest, ctx: MockContext): LevelGate {
     return { ok: false, response: forbidden() }
   }
   return { ok: true, level: raw }
+}
+
+/** Every admin endpoint of M07 (§7 #7-#18, FR-M07-59): guest 401, other roles 403. */
+export const adminOnly = requireRole('admin')
+
+/** A whole number from a JSON number or a numeric string; `undefined` otherwise. */
+export function asInt(value: unknown): number | undefined {
+  if (typeof value === 'number') return Number.isSafeInteger(value) ? value : undefined
+  if (typeof value === 'string' && /^-?\d+$/.test(value.trim())) return Number(value.trim())
+  return undefined
 }
 
 export const obj = (body: unknown): Record<string, unknown> =>

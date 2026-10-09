@@ -58,7 +58,7 @@ export interface Answer<T = unknown> {
 
 export async function call<T = unknown>(
   runtime: MockRuntime,
-  method: 'GET' | 'POST' | 'PUT',
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   url: string,
   userId: number | null,
   body?: unknown,

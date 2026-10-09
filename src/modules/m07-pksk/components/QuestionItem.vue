@@ -17,12 +17,11 @@ function type(text: string): void {
 </script>
 
 <template>
-  <fieldset
+  <div
     class="min-w-0 space-y-3 rounded-2xl bg-white p-4 shadow-sm"
     data-testid="pksk-item"
     :data-question-id="question.id"
   >
-    <legend class="sr-only">Soalan {{ index }}</legend>
     <p class="text-sm font-semibold break-words text-slate-800">
       {{ index }}. {{ question.questionText }}
     </p>
@@ -50,8 +49,7 @@ function type(text: string): void {
       class="w-full rounded-xl border border-slate-300 p-3 text-sm"
       :value="modelValue.text ?? ''"
       data-testid="pksk-essay"
-      :aria-label="`Jawapan soalan ${String(index)}`"
       @input="type(($event.target as HTMLTextAreaElement).value)"
     ></textarea>
-  </fieldset>
+  </div>
 </template>

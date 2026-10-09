@@ -24,7 +24,8 @@ import { setUser } from './set-user'
 import { users } from './users'
 
 const core = defineMockCore({
-  version: 6,
+  // v7: the sessions table gains `parentToken` (impersonation, XR-M27-21).
+  version: 7,
   tables: { sessions: sessionsTable },
   repositories: { sessions },
   fixtures: { accounts: CANONICAL_ACCOUNTS },

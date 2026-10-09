@@ -43,6 +43,9 @@ export default plugin
 
 export const { moodCheckins, tuitionCentres } = plugin.repositories
 
+export { buildStatsReport, normaliseRange } from './reports/stats-report'
+export type * from './reports/stats-report-types'
+
 export type {
   DateWindow,
   Mood,

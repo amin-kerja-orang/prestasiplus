@@ -141,7 +141,7 @@ async function solve(): Promise<void> {
 
         <label
           for="imgInput"
-          class="flex min-h-11 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-3 py-4 text-center text-sm break-words text-slate-600 hover:border-amber-400 hover:bg-amber-50"
+          class="flex min-h-11 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-3 py-4 text-center text-sm break-words text-slate-600 uppercase hover:border-amber-400 hover:bg-amber-50"
           data-testid="walk-image-label"
           >{{ imageLabel }}</label
         >

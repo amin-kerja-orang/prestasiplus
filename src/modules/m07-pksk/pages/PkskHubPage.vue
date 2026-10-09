@@ -27,7 +27,6 @@ const { data: access } = useApi((signal) => fetchPkskAccess({ signal }))
           background-image: radial-gradient(circle, #fff 1.5px, transparent 1.5px);
           background-size: 24px 24px;
         "
-        aria-hidden="true"
       ></div>
       <div class="relative">
         <AppIcon name="fa-graduation-cap" class="mx-auto mb-4 h-14 w-14 text-white" />

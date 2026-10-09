@@ -10,7 +10,8 @@
  * PUBLIC exports (other modules import from `@/modules/m07-pksk/mock` only, D12): `pkskDomains`,
  * `pkskAccess`, `pkskProgress`, `pkskPackages` and the row types.
  *
- * Routes (`handlers/`): SRS §7 #1-#6 and #21-#23. #7-#18 (admin) are M07-T1b. Hook `seedPkskAccessEdgeCases`.
+ * Routes (`handlers/`): SRS §7 #1-#6 and #21-#23 (student, T1a) and #7-#18 (admin, T1b: `admin-questions.ts`
+ * through the M04 `questions.pksk*` contract, `admin-access.ts`). Hook `seedPkskAccessEdgeCases`.
  * M05 and M14 are read at request time only (not `dependsOn`, as M08/M17); a runtime that serves the
  * routes loads them all, as the registry does.
  *

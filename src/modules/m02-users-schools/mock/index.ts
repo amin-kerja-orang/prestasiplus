@@ -198,3 +198,22 @@ export {
 export { toTitleCase } from './import/text'
 /** M02 BR-12 expiry rule (provisional host of M19 `billing.computeExpiry`, XR-M19-04). */
 export { computeExpiry, type Billing, type PackageCode } from './repository/billing'
+/** M27-T0a (XR-M27-17): the school admin's write contract over the M01 users store. */
+export {
+  schoolAdminUsers,
+  SchoolAdminWriteError,
+  PUPIL_PASSWORD_MIN,
+  PUPIL_NAME_MIN,
+  MSG_ACCOUNT_INACTIVE,
+  MSG_USER_NOT_FOUND,
+  MSG_ROLE_NOT_MANAGED,
+  type SchoolAdminUsers,
+  type SchoolAdminWriteStatus,
+  type ManagedRole,
+  type UpdateUserInput,
+  type CreateTeacherInput,
+  type CreatePupilInput,
+  type CreatePupilOptions,
+  type ResetPasswordInput,
+} from './school-admin-writes'
+export { MSG_USER_CREATED, MSG_USER_UPDATED } from './handlers/users-admin'

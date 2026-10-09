@@ -3,6 +3,7 @@ import type { ModuleManifest } from '@/app/modules'
 import routes from './routes'
 
 export * from './api/dashboard'
+export * from './api/school-admin'
 
 /**
  * M27 public entry (ADR-0009). Other modules import this module only from here.

@@ -73,7 +73,11 @@ async function submit(): Promise<void> {
       data.value.items.map((it) => ({ no: it.no, answer: answers[it.no] ?? '' })),
     )
     await router.push(`/spm-mock/${String(data.value.id)}/result`)
-  } catch {
+  } catch (e) {
+    if (isApiError(e) && e.status === 409) {
+      await router.replace(`/spm-mock/${String(data.value.id)}/result`)
+      return
+    }
     submitError.value = SUBMIT_ERROR
   } finally {
     submitting.value = false
@@ -137,7 +141,6 @@ async function submit(): Promise<void> {
             </p>
             <p class="mt-1 text-sm break-words whitespace-pre-line text-slate-700">{{ it.text }}</p>
             <fieldset v-if="it.options" class="mt-3 space-y-1">
-              <legend class="sr-only">Jawapan soalan {{ it.no }}</legend>
               <label
                 v-for="(opt, i) in it.options"
                 :key="i"
@@ -160,7 +163,6 @@ async function submit(): Promise<void> {
               v-else
               v-model="answers[it.no]"
               rows="4"
-              :aria-label="`Jawapan soalan ${String(it.no)}`"
               :class="FORM_TEXTAREA_CLASS"
               class="mt-3"
               data-testid="run-answer"
