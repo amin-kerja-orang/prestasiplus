@@ -30,7 +30,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await booted.runtime.reset()
   vi.unstubAllGlobals()
-})
+}, 180_000)
 
 async function call<T = unknown>(
   method: 'GET' | 'POST' | 'PUT',

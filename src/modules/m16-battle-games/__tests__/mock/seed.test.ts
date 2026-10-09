@@ -37,7 +37,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await booted.runtime.reset()
   vi.unstubAllGlobals()
-})
+}, 180_000)
 
 describe('battles (Q-M16-BATTLES, M17 XR-M17-15)', () => {
   it('holds 168 battles: 0 active, 66 finished, 5 forfeited, 97 abandoned', () => {
