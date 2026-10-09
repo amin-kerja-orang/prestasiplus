@@ -99,8 +99,13 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
 
   /** Schedules tick `n` at start + n x interval (fixed rate: drift never moves the timer text). */
   function schedule(mySession: number, wait: () => Promise<void>): void {
+    const now = Date.now()
     tickNo += 1
-    const delay = Math.max(0, startedAt + tickNo * BATTLE_POLL_MS - Date.now())
+    // A response that came after several slots skips the missed ones (no burst of catch-up polls).
+    if (startedAt + tickNo * BATTLE_POLL_MS < now) {
+      tickNo = Math.ceil((now - startedAt) / BATTLE_POLL_MS)
+    }
+    const delay = Math.max(0, startedAt + tickNo * BATTLE_POLL_MS - now)
     timer = setTimeout(() => {
       timer = null
       if (mySession === session) void wait()

@@ -13,7 +13,11 @@ const router = createRouter({ history: createMemoryHistory(), routes: buildRoute
 describe('M16 battle routes', () => {
   const cases = [
     ['/battle', 'Battle Arena', 'Bertanding kuiz 1v1 dengan pelajar lain!'],
-    ['/battle/arena/9f0c1d2e-1111-4222-8333-444455556666', 'Battle Arena', 'Bertanding kuiz 1v1 dengan pelajar lain!'],
+    [
+      '/battle/arena/9f0c1d2e-1111-4222-8333-444455556666',
+      'Battle Arena',
+      'Bertanding kuiz 1v1 dengan pelajar lain!',
+    ],
     ['/battle/leaderboard', 'Ranking Pelajar Battle', 'Siapa pejuang terhebat minggu ini?'],
     ['/battle/ranking-sekolah', 'Papan Ranking Sekolah', 'Ranking 10,218 sekolah seluruh Malaysia'],
     ['/battle/history', 'Sejarah Battle', 'Rekod pertandingan anda'],

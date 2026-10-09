@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { effectScope } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 
 import { useBattleSearch } from '../../composables/useBattleSearch'
 
@@ -17,12 +17,12 @@ vi.mock('../../api/battle', () => api)
 const res = (status: number, body: unknown) => ({ status, headers: {}, body })
 const PARAMS = { question_type: 'biasa', open_to_all: false, subject_id: 3 } as const
 
-let onMatched: ReturnType<typeof vi.fn>
+let onMatched: Mock<(battleUuid: string) => void>
 let scope: ReturnType<typeof effectScope>
 let s: ReturnType<typeof useBattleSearch>
 
 function setup() {
-  onMatched = vi.fn()
+  onMatched = vi.fn<(battleUuid: string) => void>()
   scope = effectScope()
   s = scope.run(() => useBattleSearch({ onMatched }))!
 }
@@ -128,8 +128,12 @@ describe('polling #4 (3 s, stop rules)', () => {
     api.pollMatch.mockResolvedValue(res(200, { status: 'waiting' }))
     release(res(200, { status: 'waiting' }))
     await tick(0)
-    await tick(3000)
+    // the missed slots are skipped: one poll now, the next a full interval later
     expect(api.pollMatch).toHaveBeenCalledTimes(2)
+    await tick(2999)
+    expect(api.pollMatch).toHaveBeenCalledTimes(2)
+    await tick(1)
+    expect(api.pollMatch).toHaveBeenCalledTimes(3)
   })
 
   it.each(['expired', 'not_found'])('%s stops with "Tiada lawan dijumpai."', async (status) => {

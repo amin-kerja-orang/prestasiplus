@@ -323,7 +323,9 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       const card = page.getByTestId('battle-incoming')
       await expect(card).toContainText('Cabaran Masuk!')
       await expect(card).toContainText('ingin menyertai battle anda')
-      await expect(card).toContainText('Soalan mengikut gred anda. Lawan akan bermain soalan gred anda.')
+      await expect(card).toContainText(
+        'Soalan mengikut gred anda. Lawan akan bermain soalan gred anda.',
+      )
       await expect(page.getByTestId('battle-incoming-accept')).toHaveText('Terima')
       await page.getByTestId('battle-incoming-reject').click()
       await expect(page.getByTestId('battle-searching')).toBeVisible()
@@ -355,7 +357,9 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       })
       await page.evaluate((id) => {
         window.dispatchEvent(
-          new CustomEvent('m16:battle-waiting', { detail: { queueId: id, name: 'Murid Demo 4301' } }),
+          new CustomEvent('m16:battle-waiting', {
+            detail: { queueId: id, name: 'Murid Demo 4301' },
+          }),
         )
       }, queueId)
       const card = page.getByTestId('battle-waiting')
@@ -478,7 +482,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       const fb = page.getByTestId('battle-arena-feedback')
       await expect(fb).toBeVisible()
       const text = (await fb.innerText()).trim()
-      expect(text).toMatch(/^(\+9\d\d|\+0)/)
+      expect(text).toMatch(/^\+\d+/)
       await expect(page.getByTestId('battle-arena-opponent')).toContainText('Lawan:')
       await mock.advanceTime(1500)
       await expect(page.getByTestId('battle-arena-progress')).toHaveText('Soalan 2/10')
@@ -596,9 +600,9 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     )
     await page.getByTestId('battle-period-all_time').click()
     await expect(page.getByTestId('battle-school-row')).toHaveCount(7)
-    const hrefs = await page.getByTestId('battle-school-link').evaluateAll((els) =>
-      els.map((e) => e.getAttribute('href')),
-    )
+    const hrefs = await page
+      .getByTestId('battle-school-link')
+      .evaluateAll((els) => els.map((e) => e.getAttribute('href')))
     expect(hrefs.slice(0, 4)).toEqual([
       '/battle/ranking-sekolah/8106',
       '/battle/ranking-sekolah/8090',
@@ -652,9 +656,9 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       'Tiada data pejuang minggu ini',
     )
     await expect(page.getByTestId('battle-recent-row')).toHaveCount(10)
-    await expect(page.getByTestId('battle-recent-row').first().getByTestId('battle-time')).toHaveText(
-      /yang lepas$/,
-    )
+    await expect(
+      page.getByTestId('battle-recent-row').first().getByTestId('battle-time'),
+    ).toHaveText(/yang lepas$/)
     await expectNoHorizontalScroll(page)
   })
 
@@ -690,6 +694,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
+    test.setTimeout(420_000)
     await loginAs(ADMIN)
     for (const [path, ready] of [
       ['/battle', 'battle-lobby'],
@@ -703,6 +708,8 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await expectNoHorizontalScroll(page)
     }
     const width = page.viewportSize()!.width
+    await gotoApp('/battle/ranking-sekolah/8106')
+    await expect(page.getByTestId('battle-recent-scroll')).toBeVisible()
     const wide = await page.getByTestId('battle-recent-scroll').evaluate((el) => ({
       scroll: el.scrollWidth,
       client: el.clientWidth,

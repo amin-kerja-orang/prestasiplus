@@ -14,7 +14,7 @@ import { S3_SCHOOL_COUNT } from '../api/constants'
 function battleRoute(
   path: string,
   name: string,
-  component: RouteRecordRaw['component'],
+  component: NonNullable<RouteRecordRaw['component']>,
   title: string,
   subtitle: string,
 ): RouteRecordRaw {

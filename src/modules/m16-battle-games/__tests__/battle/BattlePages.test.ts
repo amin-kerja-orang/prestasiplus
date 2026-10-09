@@ -134,7 +134,9 @@ describe('S1 lobby', () => {
     await mountPage(BattleLobbyPage)
     expect(byId('battle-visibility-text').text()).toBe('Hanya pelajar gred sama boleh match')
     await byId('battle-visibility-switch').setValue(true)
-    expect(byId('battle-visibility-text').text()).toBe('Semua gred boleh nampak & mohon sertai anda')
+    expect(byId('battle-visibility-text').text()).toBe(
+      'Semua gred boleh nampak & mohon sertai anda',
+    )
     expect(byId('battle-visibility-label').text()).toBe('Terbuka')
   })
 
@@ -230,7 +232,18 @@ describe('S2 leaderboard', () => {
       'Belum ada data ranking. Mula battle untuk muncul di sini!',
     )
     api.fetchStudentStandings.mockResolvedValue([
-      { rank: 1, userId: 9, name: 'Murid', school: 'SK', menang: 2, seri: 0, kalah: 2, ketepatan: 58, streak: 1, skor: 591 },
+      {
+        rank: 1,
+        userId: 9,
+        name: 'Murid',
+        school: 'SK',
+        menang: 2,
+        seri: 0,
+        kalah: 2,
+        ketepatan: 58,
+        streak: 1,
+        skor: 591,
+      },
     ])
     await byId('battle-pill-monthly').trigger('click')
     await flushPromises()
