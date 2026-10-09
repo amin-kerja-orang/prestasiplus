@@ -6,9 +6,11 @@ Slug: `m20-marketplace`. Role under test: Murid / pelajar (`pelajar@demo.test`).
 
 | Row | Screens | Verdict |
 |---|---|---|
-| L37 Marketplace (student) | S6 `/marketplace`, S7 `/marketplace/:slug`, S8 `/marketplace/penjual/:id`, W `/marketplace/:slug/whatsapp` | **Ready (functional), with 3 open Medium/Low fidelity bugs for the Delivery Lead to rule on** |
+| L37 Marketplace (student) | S6 `/marketplace`, S7 `/marketplace/:slug`, S8 `/marketplace/penjual/:id`, W `/marketplace/:slug/whatsapp` | **Ready** (re-test 2026-10-10 after fidelity fixes) |
 
-Reasons: all 30 in-scope ACs pass (E2E 57/57 plus 12 added QA legs, unit 66/66, exploratory at 320/375/768/1280). No Critical or High bug is open and no horizontal scroll was found at any width. Three visual differences from live that are not in URS section 7 are reported as bugs (BUG-M20-01 and 02 Medium, BUG-M20-03 Low). They change no flow, copy or state, so under the stated criterion they do not block "Ready", but strict fidelity (CLAUDE.md section 6) says they should be fixed or recorded as deviations before the row is closed. Admin S1-S5, seller S9-S12, registration R and FR-M20-79 are Deferred (release 1.0), not Fail.
+Reasons: all 30 in-scope ACs pass (E2E 69/69 on mobile, tablet and desktop, unit 69/69). BUG-M20-01, 02 and 03 are Closed (Pass, see Re-test notes). No Critical, High or Medium bug is open and there is no horizontal scroll at 320, 375, 768 or 1280. Remaining visual differences from live are three Low items (RT-L1..RT-L3) that change no flow, copy or state. DV-M20-14 (S8 banner readable) is an approved deviation, not a bug. Admin S1-S5, seller S9-S12, registration R and FR-M20-79 are Deferred (release 1.0), not Fail.
+
+First-round verdict (2026-10-09) was "Ready (functional)" with the three fidelity bugs open.
 
 ## Environment
 
@@ -82,19 +84,19 @@ AC-M20-01.1, 01.2, 01.6 (admin menus, "Kedai Saya"), 02.1/02.2 admin and seller 
 
 All three were found by comparing the rebuild with the live screenshots (`docs/discovery/img/M20/`); none of them is listed in URS section 7, and the SRS section 10 and FN-M20-4.1.3 / 4.2.3 text does not describe the layout detail, so the cause is partly a spec gap.
 
-### BUG-M20-01 - S7 layout and icons differ from live (Medium, fidelity)
+### BUG-M20-01 - S7 layout and icons differ from live (Medium, fidelity) **[CLOSED - Pass on re-test 2026-10-10]**
 - Steps: log in as pelajar, open `/marketplace/beg-sekolah-anti-air-premium-vH1Fj` at 1280 and 768.
 - Expected (live `product-desktop.png`, `product-used.png`, `product-tablet.png`): the "PENJUAL" card (uppercase label, rounded-square gradient avatar "J") sits in the right column directly under the details card, so the page has a two-column block (gallery | details + seller). Eye icon before "N tontonan" and a box icon before "Ada Stok"; truck icon before the shipping line and map pin before the location. "Belum ada ulasan untuk produk ini" is centred and muted in the "Ulasan (0)" card.
 - Actual (`SCR\s7-1280.png`, `p1-768.png`, `p1-375.png`): the seller card is a full-width card below the gallery block with a mixed-case "Penjual" heading and a flat avatar; no box icon, no truck icon; empty-review text left aligned.
 - Owner: frontend-developer (layout, icons); product-analyst to add the placement and icons to FN-M20-4.2.3 / 4.2.6 or record each as a deviation. Note the design system maps icons to Lucide (SRS 10.1), so icon shapes may differ from FontAwesome; the missing truck and box icons are omissions, not substitutions.
 
-### BUG-M20-02 - S6 / S8 / S7 related cards differ from live (Medium, fidelity)
+### BUG-M20-02 - S6 / S8 / S7 related cards differ from live (Medium, fidelity) **[CLOSED - Pass on re-test 2026-10-10]**
 - Steps: open `/marketplace` at 1280 (also `/marketplace/penjual/1`, related products on S7).
 - Expected (live `marketplace-desktop.png`, `shop-desktop.png`): white card with inner padding, the photo inset inside the card with rounded corners, "Terpakai" amber badge stacked on the left directly under the red discount badge, an icon before every shipping line (truck for Pos / Kurier, gift for Penghantaran Percuma, hand for COD, pin for Ambil Sendiri), filled blue verified tick.
 - Actual (`SCR\s6-1280.png`, `shop-1280.png`, `list-375.png`): photo runs edge to edge at the top of the card with no inset, "Terpakai" is top-right, no icon before the shipping lines, the verified tick is an outline.
 - Owner: frontend-developer; product-analyst for the missing icon rows in FN-M20-4.1.3 (the discovery inventory captured only `fa-store` on the card).
 
-### BUG-M20-03 - S6 search card layout at 375 differs from live (Low, fidelity)
+### BUG-M20-03 - S6 search card layout at 375 differs from live (Low, fidelity) **[CLOSED - Pass on re-test 2026-10-10]**
 - Steps: open `/marketplace` at 375.
 - Expected (`marketplace-mobile.png`): search input full width; "Semua Kategori" on its own row; "Semua Keadaan" and "Terbaru" side by side; compact "Cari" button on the next row.
 - Actual (`SCR\list-375.png`): all three selects and the "Cari" button are separate full-width rows, so the filter block is about 230 px taller. Fully usable, no overflow.
@@ -127,6 +129,36 @@ All three were found by comparing the rebuild with the live screenshots (`docs/d
 
 ## Re-test notes
 
-- After BUG-M20-01/02/03 are fixed or recorded as deviations: re-run `e2e/m20-marketplace` on three projects (use a 30 s `expect` budget on a loaded machine) and repeat the screenshot comparison for S6, S7, S8 at 375 / 768 / 1280.
-- When the admin and seller screens enter scope, re-open the Deferred ACs; the admin legs of AC-M20-16.6, 17.1/17.2 (S9 counter), 24.3 (M19 payments) and 25.x still need to run.
-- New test code kept for the next run: `e2e/m20-marketplace/qa-l37.spec.ts`.
+Re-test 2026-10-10, branch `s3-qa-l37-retest` (fixes 461d047, ae2c943). Build `vite build --mode e2e --outDir dist-e2e-5121`, preview on my own port 5121 (stopped; scratch config and `dist-e2e-5121` deleted). Viewer pelajar, clock 2026-10-10, `wa.me` aborted at context level. Screenshots in scratchpad `m20-retest\shots\`: `s6-375/768/1280.png`, `s7-disc-*`, `s7-used-*`, `s7-plain-*`, `s8-375.png`, `s8-768.png`, `s8b-768.png`, `s8b-1280.png`. Reference: live images in the main tree `docs/discovery/img/M20/`. 375 is compared with `*-mobile.png`, 768 with `marketplace-tablet.png` for S6 (for S7 and S8 `product-tablet.png` and `shop-tablet.png` exist and were the reference), 1280 with `*-desktop.png`.
+
+### Runs
+
+| Run | Result |
+|---|---|
+| E2E `e2e/m20-marketplace`, all 3 projects, `--workers=1 --timeout=120000`, `expect` 30 s, `E2E_BOOT_TIMEOUT_MS=60000` | **69/69 pass on the first run**: mobile 375x812 23/23, tablet 768x1024 23/23, desktop 1280x800 23/23 (45.7 min, no reruns needed). Includes `qa-l37.spec.ts`. |
+| Unit `npx vitest run src/modules/m20-marketplace --pool=threads --maxWorkers=2` | 4 files, **69/69 pass** (66 before; the fixes added 3). |
+| Horizontal scroll (`scrollWidth == clientWidth`) at 320, 375, 768, 1280 on S6, S7 (discount #1, used "Terpakai" Uniform, plain #5) and S8 | all ok, no horizontal scroll |
+
+### Per bug
+
+| Bug | Result | Evidence |
+|---|---|---|
+| BUG-M20-01 (S7) | **Pass** | `s7-disc-1280.png` vs `product-desktop.png`: seller card in the right column directly under the details card, uppercase "PENJUAL", rounded avatar "J" with name, verified tick, stars and "10 produk"; eye and box icons before "tontonan" and "Ada Stok", truck and pin in the shipping box, "Belum ada ulasan untuk produk ini" centred and muted. `s7-used-375.png` vs `product-mobile.png`: stacked in the same order (gallery, details, PENJUAL, Ulasan, Produk Berkaitan). Used item shows the amber "Terpakai" chip beside the category chip. |
+| BUG-M20-02 (cards S6, S8, S7 related) | **Pass** | `s6-375.png` vs `marketplace-mobile.png`, `s6-768.png` vs `marketplace-tablet.png`: photo inset in a padded white card with rounded corners, text inset, "Terpakai" amber badge directly under the red discount badge (Uniform, Kamus, Kasut), coloured icons on each shipping line (truck, gift for Penghantaran Percuma, hand for COD, pin for Ambil Sendiri), verified tick filled blue. `s8b-1280.png` and `s8b-768.png` vs `shop-desktop.png`: shop cards inset, header tick filled green. S7 related card inset (`s7-disc-1280.png`). |
+| BUG-M20-03 (S6 filters) | **Pass** | 375: search full width, category alone, condition and sort side by side, compact "Cari" on its own row (`s6-375.png`, matches `marketplace-mobile.png`). 768: search, category and condition on one row, then sort and "Cari" (`s6-768.png`, matches `marketplace-tablet.png`). 1280: all on one row (`s6-1280.png`). |
+| DV-M20-14 (S8 banner) | Pass (approved deviation) | `s8b-1280.png`: purple gradient banner with readable name, description, rating, "10 produk" and "Bergabung 8 bulan yang lepas"; live is white on white. Not a bug. |
+
+Note: my first `s8-1280.png` capture was blank because the script screenshotted before the grid had rendered; it was retaken as `s8b-1280.png` after waiting for the cards. Script artefact, not an app defect.
+
+### Remaining differences from live (Low, none blocking)
+
+| ID | Difference | Severity | Owner |
+|---|---|---|---|
+| RT-L1 | Seller avatar "J" is a flat indigo square; live uses an indigo-to-violet gradient (S7). The Ulasan heading star is an outline icon, live is a filled amber star. | Low | frontend-developer |
+| RT-L2 | S6 card at 375: the struck-through price wraps below the price and the seller name truncates ("JomBelajar ..."); live puts the struck price beside the price and wraps "JomBelajar Official" onto two lines. Cosmetic, no overflow. | Low | frontend-developer |
+| RT-L3 | S7 related card title is shown in full over two lines; live truncates with an ellipsis. | Low | frontend-developer |
+
+### Still open from the first round
+
+- Admin and seller screens (Deferred) and the pager UI E2E (Observation 5) are unchanged; re-open when they enter scope.
+- Test code kept: `e2e/m20-marketplace/qa-l37.spec.ts`.
