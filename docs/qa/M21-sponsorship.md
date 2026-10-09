@@ -4,7 +4,20 @@ Scope: student screen S6 `/mohon-keluarga-angkat` (roles-matrix L20) only. Admin
 
 Build: `npx vite build --mode e2e --outDir dist-e2e-s7-m21qa`, `vite preview` on port 5134 (stopped afterwards, only that PID), Playwright Chromium projects mobile 375x812, tablet 768x1024, desktop 1280x800, `--workers=1`. Config only in the scratchpad (`m21-qa/pw.mjs`). Exploratory work used Playwright MCP lane 1 only. Screenshots: `.playwright-mcp/m21-s6-375.png`, `-768.png`, `-1280.png`, `-success.png`, `-unknown.png`, `-e500.png`, `-mobile.png`.
 
-## Verdict: READY (S6 only), with 2 Low observations and 1 environment caveat
+## Retest after B-01 fix (0642fdb): READY, B-01 closed, no open bug
+
+Rebuilt (`vite build --mode e2e`), full `e2e/m21-sponsorship` on port 5134, `--workers=1`, `E2E_BOOT_TIMEOUT_MS=120000`, test timeout 240 s: **54/54 pass** (18 each on mobile, tablet, desktop), no retries, no failure.
+
+MCP lane 1 at 375, 768 and 1280 against `docs/discovery/img/M21/mohon-keluarga-angkat-*.png` (screenshots `.playwright-mcp/m21-s6-retest-375.png`, `-768.png`, `-1280.png`): blue hero gradient (rgb 37,99,235 fading to transparent) with left-aligned text, solid blue submit button, light-blue info box with blue text, examples as plain lines in the grey box, header "Mohon Keluarga Angkat" / "Selamat datang kembali", scrollWidth equals clientWidth at all three widths. Matches live.
+
+- **B-01: Closed.**
+- **DV-M21-16 (URS/SRS, 0642fdb):** the field boxes (bordered inputs, selects, textarea) stay as a D9 visual fix because live renders borderless fields. Present as specified; accepted, not a bug.
+- **B-02: Not a bug.** The 375 header ellipsis is shell behaviour shared with other long titles; no S6 action.
+- Final verdict: **READY**. G5 passes for S6. Preview server on 5134 stopped (own PID only).
+
+---
+
+## First-pass verdict (superseded by the retest above): READY (S6 only), with 2 Low observations and 1 environment caveat
 
 - Every S6 AC executed and passes on all three viewports. No Critical, High or Medium bug. No horizontal scroll, no text under 12 px, no layout break at 375, 768 or 1280.
 - 2 Low bugs (visual fidelity vs the live screenshot), neither blocks G5.
@@ -54,8 +67,8 @@ Copy, field order, option labels, example text, info box and single-column layou
 
 | ID | Severity | Steps | Expected | Actual | Screenshot | Owner |
 |---|---|---|---|---|---|---|
-| B-01 | Low | Open S6 at 1280 or 375 as pelajar | Live: hero is a blue gradient with left-aligned H1 and lead, submit button solid blue (discovery screenshots, desktop and mobile) | Hero is a pink-to-purple gradient with centred text; submit button pink-to-purple. URS/SRS only say "gradient hero" with no colour, so this may be the prototype theme (Perlu pengesahan) | `.playwright-mcp/m21-s6-1280.png` vs `docs/discovery/img/M21/mohon-keluarga-angkat-desktop.png` | frontend-developer / ui-ux-designer (decide: replicate blue, or accept theme) |
-| B-02 | Low | Open S6 at 375 | Shell header title readable (live shows the short "Dashboard"; DV-M21-06 replaces it with "Mohon Keluarga Angkat") | Title is cut to "Mohon Keluarga ..." by an ellipsis because of the bell, menu and logo; the sub-title is full | `.playwright-mcp/m21-s6-375.png` | frontend-developer (shell header, shared with other long titles) |
+| B-01 (CLOSED in retest) | Low | Open S6 at 1280 or 375 as pelajar | Live: hero is a blue gradient with left-aligned H1 and lead, submit button solid blue (discovery screenshots, desktop and mobile) | Hero is a pink-to-purple gradient with centred text; submit button pink-to-purple. URS/SRS only say "gradient hero" with no colour, so this may be the prototype theme (Perlu pengesahan) | `.playwright-mcp/m21-s6-1280.png` vs `docs/discovery/img/M21/mohon-keluarga-angkat-desktop.png` | frontend-developer / ui-ux-designer (decide: replicate blue, or accept theme) |
+| B-02 (not a bug: shell behaviour) | Low | Open S6 at 375 | Shell header title readable (live shows the short "Dashboard"; DV-M21-06 replaces it with "Mohon Keluarga Angkat") | Title is cut to "Mohon Keluarga ..." by an ellipsis because of the bell, menu and logo; the sub-title is full | `.playwright-mcp/m21-s6-375.png` | frontend-developer (shell header, shared with other long titles) |
 
 Test infrastructure note (not an app bug): `e2e/fixtures/mock-handle.ts` boot budget 15 s and the 10 s `expect` override at the top of `s6-mohon.spec.ts` are too tight on a loaded host; `E2E_BOOT_TIMEOUT_MS` is already supported.
 
