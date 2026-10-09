@@ -116,6 +116,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
       expect(await submits(mock, path.split('/').pop()!)).toBe(0)
     }
 
+    await pause(page, mock)
     await go(page, '/permainan/betul-salah')
     await page.getByTestId('darjah-picker').getByRole('link', { name: 'Darjah 4' }).click()
     await expect(page).toHaveURL(/\/permainan\/betul-salah\?darjah=4$/)
@@ -142,7 +143,8 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expect(page.getByTestId('solo-clock')).toHaveText('45')
     await expect(page.getByTestId('solo-score')).toHaveText('0')
     await expect(page.getByText('Kenyataan 1')).toBeVisible()
-    await expect(page.getByText('❌ SALAH ✅ BETUL')).toBeVisible()
+    await expect(page.getByText('❌ SALAH')).toBeVisible()
+    await expect(page.getByText('✅ BETUL', { exact: true })).toBeVisible()
     await expectTouchTarget(page.getByTestId('solo-betul'))
     await expectNoHorizontalScroll(page)
 
@@ -321,7 +323,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expect(result).toContainText('Tertinggi')
     await expect(result).toContainText('Level 1')
     await expect(result).toContainText('0 🪙')
-    await expect(page.getByTestId('solo-result-title')).toHaveText('🔄 CUBA LAGI!')
+    await expect(page.getByTestId('solo-result-title')).toHaveText('CUBA LAGI!')
     await expectNoHorizontalScroll(page)
   })
 

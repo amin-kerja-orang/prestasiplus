@@ -86,7 +86,18 @@ describe('S17 Kad Memori (FR-M16-86..89)', () => {
       time_seconds: 5,
     })
     const overlay = wrapper.get('[data-testid="solo-overlay"]')
-    for (const s of ['🎉', 'Tahniah!', 'Semua kad berjaya dipadankan!', 'Masa', 'Langkah', '0:05', '50%', '+0', '🔄 Main Lagi', '🏠 Hub']) {
+    for (const s of [
+      '🎉',
+      'Tahniah!',
+      'Semua kad berjaya dipadankan!',
+      'Masa',
+      'Langkah',
+      '0:05',
+      '50%',
+      '+0',
+      '🔄 Main Lagi',
+      '🏠 Hub',
+    ]) {
       expect(overlay.text()).toContain(s)
     }
     await overlay.trigger('click')

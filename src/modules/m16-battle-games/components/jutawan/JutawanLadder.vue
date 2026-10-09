@@ -15,10 +15,10 @@ const RUNGS = Array.from({ length: JUTAWAN_LEVELS }, (_, i) => JUTAWAN_LEVELS - 
       class="min-w-11 rounded-lg px-2 py-1 text-center text-xs font-bold md:text-sm"
       :class="
         rung <= level
-          ? 'passed bg-emerald-500 text-white'
+          ? 'passed bg-emerald-500 text-emerald-950'
           : rung === level + 1
-            ? 'current bg-amber-400 text-slate-900'
-            : 'bg-slate-100 text-slate-500'
+            ? 'current bg-amber-400 text-slate-950'
+            : 'bg-white/10 text-slate-300'
       "
       data-testid="jutawan-rung"
     >

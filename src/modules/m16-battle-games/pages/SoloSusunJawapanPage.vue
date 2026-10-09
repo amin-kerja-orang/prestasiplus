@@ -9,6 +9,7 @@ import { RouterLink } from 'vue-router'
 import { ArrowLeft } from '@lucide/vue'
 
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
+import GamePanel from '../components/solo/GamePanel.vue'
 import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
 import { susunGain, susunMatches, susunTitle } from '../components/solo/solo-lib'
@@ -139,76 +140,93 @@ async function finish(): Promise<void> {
 }
 
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value) },
-  { label: 'Selesai', value: `${String(solved.value)}/${String(puzzles.value.length)}` },
-  { label: 'Syiling Diperolehi', value: `${String(result.value.credited)} 🪙` },
+  { label: 'Skor Total', value: String(score.value), tone: 'text-teal-300' },
+  {
+    label: 'Selesai',
+    value: `${String(solved.value)}/${String(puzzles.value.length)}`,
+    tone: 'text-emerald-400',
+  },
+  {
+    label: 'Syiling Diperolehi',
+    value: `${String(result.value.credited)} 🪙`,
+    tone: 'text-yellow-300',
+    wide: true,
+  },
 ])
 
 watch(darjah, () => void start(), { immediate: true })
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-xl" data-testid="solo-susun-jawapan">
+  <div data-testid="solo-susun-jawapan">
     <DarjahPicker
       v-if="darjah === null"
       emoji="🧩"
       title="Susun Jawapan"
-      color="var(--color-violet-500)"
+      color="var(--color-teal-500)"
     />
-    <LoadState :loading="loading" :error="error" />
+    <GamePanel theme="teal">
+      <LoadState :loading="loading" :error="error" />
 
-    <div v-if="phase === 'playing' && current" class="space-y-4">
-      <div class="flex items-center justify-between gap-2">
-        <RouterLink
-          to="/permainan"
-          class="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-slate-600 hover:text-slate-900"
-        >
-          <ArrowLeft :size="16" /> Kembali
-        </RouterLink>
-        <div class="flex gap-2">
-          <span
-            class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-bold text-indigo-700"
-            data-testid="solo-score"
-            >Skor {{ score }}</span
+      <div v-if="phase === 'playing' && current" class="mx-auto max-w-xl space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <RouterLink
+            to="/permainan"
+            class="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-teal-300 hover:text-teal-100"
           >
-          <span
-            class="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-700"
-            data-testid="solo-coins"
-            >🪙 {{ coinsShown }}</span
-          >
+            <ArrowLeft :size="16" /> Kembali
+          </RouterLink>
+          <div class="flex gap-2">
+            <span
+              class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-slate-300"
+              data-testid="solo-score"
+              >Skor <b class="ml-1 text-teal-300">{{ score }}</b></span
+            >
+            <span
+              class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-yellow-300"
+              data-testid="solo-coins"
+              >🪙 {{ coinsShown }}</span
+            >
+          </div>
         </div>
-      </div>
 
-      <h2 class="text-center font-heading text-xl font-extrabold text-slate-800">
-        🧩 Susun Jawapan
-      </h2>
-      <div class="flex flex-wrap justify-center gap-1.5" data-testid="solo-dots">
-        <span
-          v-for="(dot, i) in dots"
-          :key="i"
-          class="h-3 w-3 rounded-full"
-          :class="[
-            i === index ? 'active ring-2 ring-indigo-400' : '',
-            dot === 'done'
-              ? 'done bg-emerald-500'
-              : dot === 'wrong'
-                ? 'wrong bg-red-400'
-                : 'bg-slate-300',
-          ]"
-          data-testid="solo-dot"
-        />
-      </div>
+        <!-- Live paints this heading dark on the dark panel (≈ 1.3:1); DV-M16-46 paints it white. -->
+        <h2 class="text-center font-heading text-xl font-extrabold text-white">🧩 Susun Jawapan</h2>
+        <div class="flex flex-wrap justify-center gap-1.5" data-testid="solo-dots">
+          <span
+            v-for="(dot, i) in dots"
+            :key="i"
+            class="h-3 w-3 rounded-full"
+            :class="[
+              i === index ? 'active bg-teal-400 ring-2 ring-teal-300/50' : '',
+              dot === 'done'
+                ? 'done bg-emerald-400'
+                : dot === 'wrong'
+                  ? 'wrong bg-red-400'
+                  : i === index
+                    ? ''
+                    : 'bg-white/20',
+            ]"
+            data-testid="solo-dot"
+          />
+        </div>
 
-      <div class="space-y-4 rounded-3xl bg-white p-5 shadow-md" data-testid="solo-card">
-        <p class="text-xs font-bold tracking-wide text-slate-500">
-          Soalan {{ index + 1 }} daripada {{ puzzles.length }}
-        </p>
-        <p class="text-lg font-semibold break-words text-slate-800">{{ current.question }}</p>
+        <div
+          class="rounded-3xl border border-white/10 bg-white/5 p-5 text-center"
+          data-testid="solo-card"
+        >
+          <p class="text-xs font-bold tracking-wider text-teal-300 uppercase">
+            Soalan {{ index + 1 }} daripada {{ puzzles.length }}
+          </p>
+          <p class="mt-2 font-heading text-lg font-bold break-words text-white">
+            {{ current.question }}
+          </p>
+        </div>
 
-        <div>
-          <p class="mb-1 text-xs font-bold text-slate-500">📥 Jawapan Kamu:</p>
+        <div class="text-center">
+          <p class="mb-2 text-xs text-slate-300">📥 Jawapan Kamu:</p>
           <div
-            class="flex min-h-16 flex-wrap items-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-3"
+            class="flex min-h-20 flex-wrap items-center justify-center gap-2 rounded-2xl border border-teal-500/30 bg-white/5 p-3"
             data-testid="solo-drop"
             @click="removeLast"
           >
@@ -219,7 +237,12 @@ watch(darjah, () => void start(), { immediate: true })
               v-for="tile in placedTiles"
               :key="tile.i"
               type="button"
-              class="min-h-11 min-w-11 rounded-xl bg-indigo-500 px-3 py-2 text-base font-bold text-white"
+              class="min-h-11 min-w-11 rounded-xl border-2 px-3 py-2 text-base font-bold"
+              :class="
+                check === 'wrong'
+                  ? 'border-red-400 bg-red-500/10 text-red-300'
+                  : 'border-teal-400 bg-teal-500/20 text-teal-100'
+              "
               data-testid="solo-placed"
               @click.stop="remove(tile.i)"
             >
@@ -228,14 +251,17 @@ watch(darjah, () => void start(), { immediate: true })
           </div>
         </div>
 
-        <div>
-          <p class="mb-1 text-xs font-bold text-slate-500">🔤 Pilihan:</p>
-          <div class="flex flex-wrap gap-2" data-testid="solo-source">
+        <div class="text-center">
+          <p class="mb-2 text-xs text-slate-300">🔤 Pilihan:</p>
+          <div
+            class="flex min-h-20 flex-wrap items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 bg-white/5 p-3"
+            data-testid="solo-source"
+          >
             <button
               v-for="tile in sourceTiles"
               :key="tile.i"
               type="button"
-              class="min-h-11 min-w-11 rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-base font-bold text-slate-800 hover:border-indigo-400 disabled:opacity-50"
+              class="min-h-11 min-w-11 rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-base font-bold text-white hover:border-teal-300 disabled:opacity-50"
               :disabled="check !== 'idle'"
               data-testid="solo-tile"
               @click="place(tile.i)"
@@ -245,10 +271,10 @@ watch(darjah, () => void start(), { immediate: true })
           </div>
         </div>
 
-        <div v-if="check === 'idle'" class="grid gap-3 sm:grid-cols-2">
+        <div v-if="check === 'idle'" class="space-y-3">
           <button
             type="button"
-            class="min-h-11 rounded-xl bg-emerald-600 px-3 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+            class="min-h-14 w-full rounded-2xl bg-gradient-to-r from-teal-400 to-teal-500 px-3 py-3 text-lg font-bold text-teal-950 shadow-lg hover:brightness-105 disabled:opacity-40"
             :disabled="placed.length === 0"
             data-testid="solo-check"
             @click="verify"
@@ -257,7 +283,7 @@ watch(darjah, () => void start(), { immediate: true })
           </button>
           <button
             type="button"
-            class="min-h-11 rounded-xl bg-slate-100 px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200"
+            class="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-slate-200 hover:bg-white/10"
             data-testid="solo-skip-question"
             @click="skip"
           >
@@ -266,12 +292,12 @@ watch(darjah, () => void start(), { immediate: true })
         </div>
 
         <div v-else-if="check === 'correct'" class="space-y-3 text-center">
-          <p class="text-lg font-extrabold text-emerald-600" data-testid="solo-feedback">
+          <p class="text-lg font-extrabold text-emerald-300" data-testid="solo-feedback">
             🎉 BETUL! +{{ lastPoints }} mata
           </p>
           <button
             type="button"
-            class="min-h-11 w-full rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-700"
+            class="min-h-14 w-full rounded-2xl bg-gradient-to-r from-teal-400 to-teal-500 px-3 py-3 text-lg font-bold text-teal-950 shadow-lg hover:brightness-105"
             data-testid="solo-next"
             @click="next"
           >
@@ -280,13 +306,13 @@ watch(darjah, () => void start(), { immediate: true })
         </div>
 
         <div v-else class="space-y-3 text-center">
-          <p class="text-base font-extrabold text-red-600" data-testid="solo-feedback">
+          <p class="text-base font-bold text-red-300" data-testid="solo-feedback">
             ❌ Cuba lagi atau langkau
           </p>
           <div class="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              class="min-h-11 rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-700"
+              class="min-h-12 rounded-2xl bg-gradient-to-r from-teal-400 to-teal-500 px-3 py-3 text-base font-bold text-teal-950 shadow-lg hover:brightness-105"
               data-testid="solo-retry"
               @click="retry"
             >
@@ -294,7 +320,7 @@ watch(darjah, () => void start(), { immediate: true })
             </button>
             <button
               type="button"
-              class="min-h-11 rounded-xl bg-slate-100 px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200"
+              class="min-h-12 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-base font-bold text-slate-200 hover:bg-white/10"
               data-testid="solo-skip"
               @click="skip"
             >
@@ -303,17 +329,18 @@ watch(darjah, () => void start(), { immediate: true })
           </div>
         </div>
       </div>
-    </div>
 
-    <ResultCard
-      v-else-if="phase === 'done'"
-      :title="susunTitle(solved, puzzles.length)"
-      subtitle="Susun Jawapan selesai!"
-      :tiles="tiles"
-      :new-record="false"
-      again-label="🔄 Main Lagi"
-      :coins-credited="result.credited"
-      @again="start"
-    />
+      <ResultCard
+        v-if="phase === 'done'"
+        theme="teal"
+        :title="susunTitle(solved, puzzles.length)"
+        subtitle="Susun Jawapan selesai!"
+        :tiles="tiles"
+        :new-record="false"
+        again-label="🔄 Main Lagi"
+        :coins-credited="result.credited"
+        @again="start"
+      />
+    </GamePanel>
   </div>
 </template>

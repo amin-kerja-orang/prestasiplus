@@ -103,52 +103,55 @@ function cardState(id: number): string {
 }
 
 const CARD_TONE: Record<string, string> = {
-  matched: 'matched border-emerald-400 bg-emerald-50 text-emerald-800',
-  wrong: 'wrong border-red-400 bg-red-50 text-red-800',
-  flipped: 'flipped border-indigo-400 bg-indigo-50 text-indigo-800',
-  '': 'border-transparent bg-indigo-600 text-white hover:bg-indigo-500',
+  matched: 'matched border-emerald-300 bg-emerald-50 text-emerald-900',
+  wrong: 'wrong border-red-300 bg-red-50 text-red-800',
+  flipped: 'flipped border-indigo-300 bg-indigo-50 text-indigo-900',
+  '': 'border-transparent bg-gradient-to-br from-indigo-500 to-purple-700 text-white hover:brightness-110',
 }
 
 onMounted(() => void start())
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-3xl space-y-4" data-testid="solo-kad-memori">
+  <div class="mx-auto w-full max-w-[44rem] space-y-4" data-testid="solo-kad-memori">
     <div>
       <RouterLink
         to="/permainan"
-        class="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-slate-600 hover:text-slate-900"
+        class="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-violet-600 hover:text-violet-800"
       >
         <ArrowLeft :size="16" /> Permainan
       </RouterLink>
-      <h2 class="font-heading text-2xl font-extrabold text-slate-800">🃏 Kad Memori</h2>
+      <h2 class="flex items-center gap-2 font-heading text-2xl font-extrabold text-slate-800">
+        🃏 Kad Memori
+      </h2>
       <p class="text-sm text-slate-500">Padankan soalan dengan jawapan yang betul!</p>
     </div>
 
-    <div class="flex flex-wrap justify-center gap-2 text-sm font-bold" data-testid="solo-stats">
-      <span class="rounded-full bg-white px-3 py-1 shadow-sm" data-testid="solo-time"
+    <div class="flex flex-wrap gap-3 text-sm font-bold text-slate-700" data-testid="solo-stats">
+      <span class="rounded-xl bg-white px-4 py-2.5 shadow-sm" data-testid="solo-time"
         >⏱️ {{ formatClock(seconds) }}</span
       >
-      <span class="rounded-full bg-white px-3 py-1 shadow-sm" data-testid="solo-moves"
+      <span class="rounded-xl bg-white px-4 py-2.5 shadow-sm" data-testid="solo-moves"
         >👆 {{ moves }} langkah</span
       >
-      <span class="rounded-full bg-white px-3 py-1 shadow-sm" data-testid="solo-matched"
+      <span class="rounded-xl bg-white px-4 py-2.5 shadow-sm" data-testid="solo-matched"
         >✅ {{ matchedPairs }} / {{ PAIRS }} padan</span
       >
     </div>
 
     <LoadState :loading="loading" :error="error" />
 
+    <!-- Live: 98 px cards at 375 (3 per row) and 151 px from 768 (4 per row). -->
     <div
       v-if="cards.length > 0"
-      class="mx-auto grid max-w-[640px] grid-cols-4 gap-2 sm:gap-3"
+      class="mx-auto flex max-w-[41rem] flex-wrap justify-center gap-3"
       data-testid="solo-cards"
     >
       <button
         v-for="card in cards"
         :key="card.id"
         type="button"
-        class="aspect-square w-full max-w-[151px] justify-self-center overflow-hidden rounded-xl border-2 p-1 text-center text-xs leading-tight font-bold break-words transition sm:text-sm"
+        class="flex h-[98px] w-[98px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 p-2 text-center text-xs leading-tight font-bold break-words shadow-lg transition sm:h-[151px] sm:w-[151px] sm:text-sm"
         :class="[
           CARD_TONE[cardState(card.id)],
           cardState(card.id) !== ''
@@ -160,7 +163,7 @@ onMounted(() => void start())
         data-testid="solo-card-item"
         @click="flip(card.id)"
       >
-        <span v-if="cardState(card.id) === ''" class="text-2xl">❓</span>
+        <span v-if="cardState(card.id) === ''" class="text-4xl">❓</span>
         <span v-else>{{ card.content }}</span>
       </button>
     </div>
@@ -168,39 +171,39 @@ onMounted(() => void start())
     <Teleport to="body">
       <div
         v-if="phase === 'done'"
-        class="fixed inset-0 z-[200] flex animate-fade-in items-center justify-center overflow-y-auto bg-slate-900/70 p-4"
+        class="fixed inset-0 z-[200] flex animate-fade-in items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm"
         data-testid="solo-overlay"
       >
-        <div class="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-xl">
+        <div class="w-full max-w-[25rem] rounded-3xl bg-white p-6 text-center shadow-2xl">
           <div class="text-6xl">🎉</div>
           <h3 class="mt-2 font-heading text-2xl font-extrabold text-slate-800">Tahniah!</h3>
-          <p class="mt-1 text-sm text-slate-500">Semua kad berjaya dipadankan!</p>
+          <p class="mt-1 text-base text-slate-600">Semua kad berjaya dipadankan!</p>
           <div class="mt-4 grid grid-cols-2 gap-3 text-center">
-            <div class="rounded-2xl bg-slate-50 p-3">
-              <div class="text-lg font-extrabold text-slate-800">
+            <div class="rounded-2xl bg-blue-50 p-3">
+              <div class="text-2xl font-extrabold text-blue-600">
                 {{ formatClock(result.time) }}
               </div>
-              <div class="text-xs font-semibold text-slate-500">Masa</div>
+              <div class="text-xs font-medium text-slate-600">Masa</div>
             </div>
-            <div class="rounded-2xl bg-slate-50 p-3">
-              <div class="text-lg font-extrabold text-slate-800">{{ moves }}</div>
-              <div class="text-xs font-semibold text-slate-500">Langkah</div>
+            <div class="rounded-2xl bg-violet-50 p-3">
+              <div class="text-2xl font-extrabold text-violet-700">{{ moves }}</div>
+              <div class="text-xs font-medium text-slate-600">Langkah</div>
             </div>
-            <div class="rounded-2xl bg-slate-50 p-3">
-              <div class="text-lg font-extrabold text-slate-800">{{ result.accuracy }}%</div>
-              <div class="text-xs font-semibold text-slate-500">Ketepatan</div>
+            <div class="rounded-2xl bg-green-50 p-3">
+              <div class="text-2xl font-extrabold text-green-700">{{ result.accuracy }}%</div>
+              <div class="text-xs font-medium text-slate-600">Ketepatan</div>
             </div>
-            <div class="rounded-2xl bg-slate-50 p-3">
-              <div class="text-lg font-extrabold text-slate-800" data-testid="solo-coins">
+            <div class="rounded-2xl bg-amber-50 p-3">
+              <div class="text-2xl font-extrabold text-orange-700" data-testid="solo-coins">
                 +{{ result.coins }}
               </div>
-              <div class="text-xs font-semibold text-slate-500">Syiling 🪙</div>
+              <div class="text-xs font-medium text-slate-600">Syiling 🪙</div>
             </div>
           </div>
-          <div class="mt-6 grid grid-cols-2 gap-3">
+          <div class="mt-5 grid grid-cols-2 gap-3">
             <button
               type="button"
-              class="min-h-11 rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-700"
+              class="min-h-12 rounded-xl bg-gradient-to-r from-sky-600 to-sky-700 px-3 py-3 text-base font-bold text-white shadow hover:brightness-110"
               data-testid="solo-again"
               @click="start"
             >
@@ -208,7 +211,7 @@ onMounted(() => void start())
             </button>
             <RouterLink
               to="/permainan"
-              class="flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200"
+              class="flex min-h-12 items-center justify-center rounded-xl bg-slate-100 px-3 py-3 text-base font-bold text-slate-700 hover:bg-slate-200"
               >🏠 Hub</RouterLink
             >
           </div>

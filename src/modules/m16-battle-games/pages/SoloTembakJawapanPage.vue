@@ -4,11 +4,14 @@
  * 30 MCQ, 3 lives. The options of a question fall one after another into a 500 px zone above the
  * "⚠ GARIS MAUT" line; tapping the correct tile scores `10 × level`. Tile timing (base fall 15 − 0.7 per
  * level, min 5 s, plus 0-2 s; 1.8 s apart; miss deadline base + 6 + 2 per option) is the SOURCE rule;
- * the 0-2 s jitter is a deterministic hash instead of `Math.random()` so a replay looks the same.
+ * the 0-2 s jitter is a deterministic hash instead of `Math.random()` so a replay looks the same (DV-M16-43).
+ * PROPOSED: a wrong tap ends the question and counts as answered (live notes only "−1 life"; the miss rule
+ * and the deadline are SOURCE, neither the discovery nor the reference copy settle the wrong-tap case).
  */
 import { computed, ref, watch } from 'vue'
 
 import CountdownView from '../components/solo/CountdownView.vue'
+import GamePanel from '../components/solo/GamePanel.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
@@ -22,6 +25,7 @@ import {
   tembakLevel,
   tembakTitle,
   tileFallSeconds,
+  tileJitter,
 } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
@@ -65,6 +69,7 @@ const tiles = computed(() => {
       i,
       text: option.text,
       lane: laneOf(q.id, i, LANES),
+      nudge: tileJitter(q.id, i) * 2,
       visible: elapsed.value >= startMs,
       progress: fallProgress(elapsed.value, startMs, fall),
     }
@@ -180,119 +185,136 @@ async function finish(): Promise<void> {
 }
 
 const resultTiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value) },
-  { label: 'Ketepatan', value: ratio(correct.value, answered.value) },
-  { label: 'Tertinggi', value: `Level ${String(maxLevel.value)}` },
-  { label: 'Syiling', value: `${String(result.value.credited)} 🪙` },
+  { label: 'Skor Total', value: String(score.value), tone: 'text-orange-400' },
+  { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-emerald-400' },
+  { label: 'Tertinggi', value: `Level ${String(maxLevel.value)}`, tone: 'text-red-400' },
+  { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-yellow-300' },
 ])
 
 watch(darjah, () => void start(), { immediate: true })
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-5xl" data-testid="solo-tembak-jawapan">
+  <div data-testid="solo-tembak-jawapan">
     <DarjahPicker
       v-if="darjah === null"
       emoji="🎯"
       title="Tembak Jawapan"
-      color="var(--color-red-500)"
+      color="var(--color-orange-500)"
     />
-    <LoadState :loading="loading" :error="error" />
+    <GamePanel theme="ember">
+      <LoadState :loading="loading" :error="error" />
 
-    <CountdownView
-      v-if="phase === 'countdown'"
-      title="🎯 TEMBAK JAWAPAN"
-      :count="count"
-      hint="Tap jawapan yang betul sebelum jatuh!"
-    />
+      <CountdownView
+        v-if="phase === 'countdown'"
+        title="🎯 TEMBAK JAWAPAN"
+        :count="count"
+        hint="Tap jawapan yang betul sebelum jatuh!"
+        tone="text-orange-500"
+      />
 
-    <div v-else-if="phase === 'playing' && current" class="space-y-3">
-      <div
-        class="grid grid-cols-4 items-center gap-2 rounded-2xl bg-white p-3 text-center shadow-sm"
-        data-testid="solo-hud"
-      >
-        <div>
-          <div class="text-xl font-extrabold text-slate-800" data-testid="solo-score">
-            {{ score }}
-          </div>
-          <div class="text-xs font-semibold text-slate-500">Skor</div>
-        </div>
-        <div>
-          <div class="text-xl font-extrabold text-slate-800" data-testid="solo-level">
-            {{ level }}
-          </div>
-          <div class="text-xs font-semibold text-slate-500">Level</div>
-        </div>
-        <div class="text-lg" data-testid="solo-lives">
-          <span
-            v-for="n in LIVES"
-            :key="n"
-            :class="n > lives ? 'opacity-25' : ''"
-            data-testid="solo-heart"
-            >❤️</span
+      <div v-if="phase === 'playing' && current" class="mx-auto max-w-5xl space-y-3">
+        <div class="flex items-center justify-between gap-2" data-testid="solo-hud">
+          <div
+            class="min-w-14 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-center"
           >
-        </div>
-        <div class="text-lg font-extrabold text-amber-600" data-testid="solo-coins">
-          🪙 {{ coinsShown }}
-        </div>
-      </div>
-
-      <div class="rounded-2xl bg-white p-4 text-center shadow-sm">
-        <p class="text-xs font-bold tracking-wide text-slate-500">Soalan {{ index + 1 }}</p>
-        <p class="mt-1 text-base font-semibold break-words text-slate-800">
-          {{ current.question }}
-        </p>
-      </div>
-
-      <div
-        id="fallZone"
-        class="relative h-[500px] w-full overflow-hidden rounded-2xl bg-gradient-to-b from-slate-900 to-indigo-950"
-        data-testid="solo-fall-zone"
-      >
-        <template v-for="tile in tiles" :key="`${index}-${tile.i}`">
-          <button
-            v-if="tile.visible"
-            type="button"
-            class="absolute flex min-h-14 w-1/4 items-center justify-center px-1"
-            :style="{
-              left: `${String(tile.lane * 25)}%`,
-              top: `calc((100% - 3.5rem - 1.5rem) * ${String(tile.progress)})`,
-              transition: 'top 100ms linear',
-            }"
-            data-testid="solo-tile"
-            @click="tap(tile.i)"
+            <div class="text-xs text-slate-300">Skor</div>
+            <div class="text-lg font-extrabold text-orange-400" data-testid="solo-score">
+              {{ score }}
+            </div>
+          </div>
+          <div
+            class="min-w-14 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-center"
           >
+            <div class="text-xs text-slate-300">Level</div>
+            <div class="text-lg font-extrabold text-orange-400" data-testid="solo-level">
+              {{ level }}
+            </div>
+          </div>
+          <div class="text-xl" data-testid="solo-lives">
             <span
-              class="block w-full rounded-xl px-2 py-2 text-xs font-bold break-words text-white shadow-lg sm:text-sm"
-              :class="wrongTile === tile.i ? 'bg-red-600' : 'bg-indigo-500'"
-              >{{ tile.text }}</span
+              v-for="n in LIVES"
+              :key="n"
+              class="mx-0.5"
+              :class="n > lives ? 'opacity-25' : ''"
+              data-testid="solo-heart"
+              >❤️</span
             >
-          </button>
-        </template>
-        <div
-          v-if="banner"
-          class="absolute inset-x-0 top-1/3 text-center text-3xl font-extrabold text-amber-300"
-          data-testid="solo-level-banner"
-        >
-          {{ banner }}
+          </div>
+          <div
+            class="min-w-14 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-center text-lg font-extrabold text-yellow-300"
+            data-testid="solo-coins"
+          >
+            🪙 {{ coinsShown }}
+          </div>
         </div>
+
+        <div class="rounded-3xl border border-orange-500/30 bg-orange-500/10 p-4 text-center">
+          <p class="text-xs font-semibold tracking-wider text-orange-300 uppercase">
+            Soalan {{ index + 1 }}
+          </p>
+          <p class="mt-1 font-heading text-base font-bold break-words text-white">
+            {{ current.question }}
+          </p>
+        </div>
+
         <div
-          class="absolute inset-x-0 bottom-0 border-t-2 border-dashed border-red-400 bg-red-500/20 py-1 text-center text-xs font-bold text-red-300"
+          id="fallZone"
+          class="relative h-[500px] w-full overflow-hidden rounded-3xl border border-white/5 bg-black/30"
+          data-testid="solo-fall-zone"
         >
-          ⚠ GARIS MAUT
+          <template v-for="tile in tiles" :key="`${index}-${tile.i}`">
+            <button
+              v-if="tile.visible"
+              type="button"
+              class="absolute flex min-h-11 max-w-[22%] items-center justify-center"
+              :style="{
+                left: `${String(tile.lane * 24 + tile.nudge)}%`,
+                top: `calc((100% - 3.5rem - 1.5rem) * ${String(tile.progress)})`,
+                transition: 'top 100ms linear',
+              }"
+              data-testid="solo-tile"
+              @click="tap(tile.i)"
+            >
+              <span
+                class="line-clamp-3 block rounded-xl border px-3 py-2 text-xs font-bold break-words text-white shadow-lg sm:text-sm"
+                :class="
+                  wrongTile === tile.i
+                    ? 'border-red-400 bg-red-600/80'
+                    : 'border-white/25 bg-white/10'
+                "
+                >{{ tile.text }}</span
+              >
+            </button>
+          </template>
+          <div
+            v-if="banner"
+            class="absolute inset-x-0 top-1/3 text-center text-3xl font-extrabold text-amber-300"
+            data-testid="solo-level-banner"
+          >
+            {{ banner }}
+          </div>
+          <div
+            class="absolute inset-x-4 bottom-2 h-px bg-gradient-to-r from-transparent via-red-500 to-transparent"
+          />
+          <!-- Live: a dark red on near-black (≈ 2:1); DV-M16-47 lightens it. -->
+          <div class="absolute right-4 bottom-3 text-xs font-bold tracking-wider text-red-400">
+            ⚠ GARIS MAUT
+          </div>
         </div>
       </div>
-    </div>
 
-    <ResultCard
-      v-else-if="phase === 'done'"
-      :title="tembakTitle(score)"
-      :subtitle="`Tembak Jawapan — Level ${String(maxLevel)}`"
-      :tiles="resultTiles"
-      :new-record="result.newRecord"
-      again-label="🔄 Main Lagi"
-      :coins-credited="result.credited"
-      @again="start"
-    />
+      <ResultCard
+        v-if="phase === 'done'"
+        theme="ember"
+        :title="tembakTitle(score)"
+        :subtitle="`Tembak Jawapan — Level ${String(maxLevel)}`"
+        :tiles="resultTiles"
+        :new-record="result.newRecord"
+        again-label="🔄 Main Lagi"
+        :coins-credited="result.credited"
+        @again="start"
+      />
+    </GamePanel>
   </div>
 </template>

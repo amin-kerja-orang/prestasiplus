@@ -116,7 +116,7 @@ describe('S16 Susun Jawapan (FR-M16-82..85)', () => {
       syiling_earned: 2,
     })
     await vi.waitFor(() => expect(wrapper!.text()).toContain('Susun Jawapan selesai!'))
-    expect(byTestId('solo-result-title').text()).toBe('📚 TERUSKAN!')
+    expect(byTestId('solo-result-title').text()).toBe('TERUSKAN!')
     expect(wrapper.text()).toContain('Selesai')
     expect(wrapper.text()).toContain('1/20')
     expect(wrapper.text()).toContain('Syiling Diperolehi')

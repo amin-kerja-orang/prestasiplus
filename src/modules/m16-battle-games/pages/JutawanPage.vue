@@ -12,6 +12,7 @@ import { fetchJutawanPage } from '../api'
 import type { JutawanPage } from '../api'
 import JutawanSubjectList from '../components/jutawan/JutawanSubjectList.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
+import GamePanel from '../components/solo/GamePanel.vue'
 import LoadState from '../components/solo/LoadState.vue'
 import { jutawanHeading, parseDarjah } from '../components/solo/solo-lib'
 
@@ -41,59 +42,69 @@ watch(darjah, () => void load(), { immediate: true })
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-3xl space-y-5" data-testid="jutawan-page">
+  <div data-testid="jutawan-page">
     <DarjahPicker
       v-if="darjah === null"
       emoji="💰"
       title="Jutawan Ilmu"
       color="var(--color-amber-500)"
     />
+    <GamePanel theme="navy">
+      <div class="mx-auto max-w-2xl space-y-5">
+        <div class="text-center">
+          <RouterLink
+            to="/permainan"
+            class="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-amber-400 hover:text-amber-300"
+          >
+            <ArrowLeft :size="16" /> Permainan
+          </RouterLink>
+          <!-- Live paints this heading navy on the navy panel (≈ 1.2:1); DV-M16-46 paints it white. -->
+          <h2 class="font-heading text-2xl font-extrabold text-white">💰 Jutawan Ilmu</h2>
+          <p class="mt-1 text-sm text-amber-200">
+            Pilih subjek, jawab 15 soalan — menang sampai 1,000 Syiling!
+          </p>
+        </div>
 
-    <div>
-      <RouterLink
-        to="/permainan"
-        class="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-slate-600 hover:text-slate-900"
-      >
-        <ArrowLeft :size="16" /> Permainan
-      </RouterLink>
-      <h2 class="font-heading text-2xl font-extrabold text-slate-800">💰 Jutawan Ilmu</h2>
-      <p class="text-sm text-slate-500">
-        Pilih subjek, jawab 15 soalan — menang sampai 1,000 Syiling!
-      </p>
-    </div>
+        <LoadState :loading="loading" :error="error" />
 
-    <LoadState :loading="loading" :error="error" />
-
-    <template v-if="page">
-      <div class="grid grid-cols-3 gap-3 text-center" data-testid="jutawan-stats">
-        <div class="rounded-2xl bg-white p-3 shadow-sm">
-          <div class="text-xl font-extrabold text-slate-800" data-testid="jutawan-best">
-            L{{ page.bestLevel }}
+        <template v-if="page">
+          <div class="grid grid-cols-3 gap-3 text-center" data-testid="jutawan-stats">
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div class="text-xl font-extrabold text-amber-300" data-testid="jutawan-best">
+                L{{ page.bestLevel }}
+              </div>
+              <div class="text-xs text-slate-300">Rekod Tertinggi</div>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div class="text-xl font-extrabold text-cyan-300" data-testid="jutawan-games">
+                {{ page.games }}
+              </div>
+              <div class="text-xs text-slate-300">Permainan</div>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div class="text-xl font-extrabold text-emerald-300">1,000🪙</div>
+              <div class="text-xs text-slate-300">Hadiah Utama</div>
+            </div>
           </div>
-          <div class="text-xs font-semibold text-slate-500">Rekod Tertinggi</div>
-        </div>
-        <div class="rounded-2xl bg-white p-3 shadow-sm">
-          <div class="text-xl font-extrabold text-slate-800" data-testid="jutawan-games">
-            {{ page.games }}
-          </div>
-          <div class="text-xs font-semibold text-slate-500">Permainan</div>
-        </div>
-        <div class="rounded-2xl bg-white p-3 shadow-sm">
-          <div class="text-xl font-extrabold text-amber-600">1,000🪙</div>
-          <div class="text-xs font-semibold text-slate-500">Hadiah Utama</div>
-        </div>
-      </div>
 
-      <JutawanSubjectList
-        v-if="darjah !== null && page.subjects"
-        :heading="page.heading ?? jutawanHeading(darjah)"
-        :subjects="page.subjects"
-        :darjah="darjah"
-      />
-      <div v-else class="rounded-2xl bg-white p-8 text-center shadow-sm" data-testid="jutawan-hint">
-        <div class="text-4xl">👆</div>
-        <p class="mt-2 text-sm text-slate-500">Pilih darjah atau tingkatan di atas untuk mula.</p>
+          <JutawanSubjectList
+            v-if="darjah !== null && page.subjects"
+            :heading="page.heading ?? jutawanHeading(darjah)"
+            :subjects="page.subjects"
+            :darjah="darjah"
+          />
+          <div
+            v-else
+            class="rounded-2xl border border-white/10 bg-white/5 p-8 text-center"
+            data-testid="jutawan-hint"
+          >
+            <div class="text-4xl">👆</div>
+            <p class="mt-2 text-sm text-slate-300">
+              Pilih darjah atau tingkatan di atas untuk mula.
+            </p>
+          </div>
+        </template>
       </div>
-    </template>
+    </GamePanel>
   </div>
 </template>

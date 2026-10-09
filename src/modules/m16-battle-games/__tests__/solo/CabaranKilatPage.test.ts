@@ -79,7 +79,7 @@ describe('S14 Cabaran Kilat (FR-M16-76..78)', () => {
       score: 60,
       syiling_earned: 6,
     })
-    expect(wrapper.get('[data-testid="solo-result-title"]').text()).toBe('💪 TERUSKAN!')
+    expect(wrapper.get('[data-testid="solo-result-title"]').text()).toBe('TERUSKAN!')
     expect(wrapper.text()).toContain('60 saat penuh aksi!')
     expect(wrapper.text()).toContain('3/4')
     expect(wrapper.text()).toContain('3x')

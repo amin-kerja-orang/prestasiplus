@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
- * The subject links of S19 (URS FN-M16-7.2.2): emoji, name, "{count} soalan" and a chevron, one column
- * below `md`, two from `md`. Each links to `/permainan/jutawan/main?subject={id}&darjah={n}`.
+ * The subject links of S19 (URS FN-M16-7.2.2; live jutawan-subjects): glass cards with a tinted emoji
+ * square, the subject name, a "{count} soalan" pill and an amber chevron, one column below `md`, two from
+ * `md`. Each links to `/permainan/jutawan/main?subject={id}&darjah={n}`.
  */
 import { RouterLink } from 'vue-router'
 import { ChevronRight } from '@lucide/vue'
@@ -14,10 +15,10 @@ defineProps<{ heading: string; subjects: NonNullable<JutawanPage['subjects']>; d
 
 <template>
   <section data-testid="jutawan-subjects">
-    <h3 class="mb-3 text-sm font-extrabold tracking-wide text-slate-600">
+    <h3 class="mb-3 text-xs font-bold tracking-widest text-slate-300 uppercase">
       📚 PILIH SUBJEK ({{ heading }})
     </h3>
-    <div class="grid gap-3 md:grid-cols-2">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
       <RouterLink
         v-for="s in subjects"
         :key="s.id"
@@ -25,16 +26,22 @@ defineProps<{ heading: string; subjects: NonNullable<JutawanPage['subjects']>; d
           path: '/permainan/jutawan/main',
           query: { subject: String(s.id), darjah: String(darjah) },
         }"
-        class="flex min-h-14 items-center gap-3 rounded-2xl border-l-4 bg-white p-4 shadow-sm transition hover:shadow-md"
-        :style="{ borderLeftColor: s.colour }"
+        class="flex min-h-20 min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition hover:border-amber-400/50 hover:bg-white/10"
         data-testid="jutawan-subject"
       >
-        <span class="text-2xl">{{ s.emoji }}</span>
+        <span
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
+          :style="{ backgroundColor: `color-mix(in srgb, ${s.colour} 25%, transparent)` }"
+          >{{ s.emoji }}</span
+        >
         <span class="min-w-0 flex-1">
-          <span class="block font-bold break-words text-slate-800">{{ s.name }}</span>
-          <span class="block text-xs text-slate-500">{{ questionCountLabel(s.count) }}</span>
+          <span class="block truncate font-bold text-white">{{ s.name }}</span>
+          <span
+            class="mt-1 inline-block rounded-md bg-white/10 px-2 py-0.5 text-xs text-slate-300"
+            >{{ questionCountLabel(s.count) }}</span
+          >
         </span>
-        <ChevronRight :size="18" class="shrink-0 text-slate-400" />
+        <ChevronRight :size="18" class="shrink-0 text-amber-400" />
       </RouterLink>
     </div>
   </section>

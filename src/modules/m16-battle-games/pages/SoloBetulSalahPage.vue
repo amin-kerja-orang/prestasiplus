@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue'
 
 import CountdownView from '../components/solo/CountdownView.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
+import GamePanel from '../components/solo/GamePanel.vue'
 import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
 import StatBar from '../components/solo/StatBar.vue'
@@ -34,6 +35,7 @@ const answered = ref(0)
 const timeLeft = ref(GAME_SECONDS)
 const feedback = ref<'' | '✅' | '❌'>('')
 const result = ref({ newRecord: false, credited: 0 })
+let coins = 0
 
 const statements = computed(() => payload.value?.statements ?? [])
 const current = computed(() => statements.value[index.value])
@@ -53,8 +55,6 @@ function reset(): void {
   result.value = { newRecord: false, credited: 0 }
   coins = 0
 }
-
-let coins = 0
 
 async function start(): Promise<void> {
   reset()
@@ -116,90 +116,103 @@ async function finish(): Promise<void> {
 }
 
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value) },
-  { label: 'Ketepatan', value: ratio(correct.value, answered.value) },
-  { label: 'Kombo Max', value: `${String(maxStreak.value)} 🔥` },
-  { label: 'Syiling', value: `${String(result.value.credited)} 🪙` },
+  { label: 'Skor Total', value: String(score.value), tone: 'text-violet-300' },
+  { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-emerald-400' },
+  { label: 'Kombo Max', value: `${String(maxStreak.value)} 🔥`, tone: 'text-amber-400' },
+  { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-cyan-300' },
 ])
 
 watch(darjah, () => void start(), { immediate: true })
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-xl" data-testid="solo-betul-salah">
+  <div data-testid="solo-betul-salah">
     <DarjahPicker
       v-if="darjah === null"
       emoji="✅"
       title="Betul atau Salah"
       color="var(--color-emerald-500)"
     />
-    <LoadState :loading="loading" :error="error" />
+    <GamePanel theme="indigo">
+      <LoadState :loading="loading" :error="error" />
 
-    <CountdownView v-if="phase === 'countdown'" title="✅❌ BETUL ATAU SALAH" :count="count" />
+      <CountdownView
+        v-if="phase === 'countdown'"
+        title="✅❌ BETUL ATAU SALAH"
+        :count="count"
+        tone="text-violet-500"
+      />
 
-    <div v-else-if="phase === 'playing' && current" class="space-y-4">
-      <div class="min-h-8 text-center">
-        <span
-          v-if="streak >= 2"
-          class="inline-block rounded-full bg-orange-100 px-4 py-1 text-sm font-extrabold text-orange-600"
-          :class="{ hot: streak >= 5 }"
-          data-testid="solo-combo"
-          >🔥 {{ streak }} KOMBO</span
-        >
-      </div>
-      <StatBar :score="score" :time-left="timeLeft" :correct="correct" />
-      <div
-        class="relative rounded-3xl bg-white p-6 text-center shadow-md transition"
-        :class="{
-          'ring-4 ring-emerald-400': feedback === '✅',
-          'ring-4 ring-red-400': feedback === '❌',
-        }"
-        data-testid="solo-card"
-      >
-        <p class="text-xs font-bold tracking-wide text-slate-500">Kenyataan {{ index + 1 }}</p>
-        <p class="mt-3 text-lg font-semibold break-words text-slate-800">
-          {{ current.statement }}
-        </p>
+      <div v-if="phase === 'playing' && current" class="mx-auto max-w-xl space-y-4">
+        <div class="min-h-8 text-center">
+          <span
+            v-if="streak >= 2"
+            class="inline-block rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-4 py-1 text-sm font-extrabold text-white shadow-lg"
+            :class="{ hot: streak >= 5 }"
+            data-testid="solo-combo"
+            >🔥 {{ streak }} KOMBO</span
+          >
+        </div>
+        <StatBar :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" />
+        <p class="text-center text-xs text-slate-300">Kenyataan {{ index + 1 }}</p>
         <div
-          v-if="feedback"
-          class="absolute inset-0 flex items-center justify-center rounded-3xl bg-white/70 text-7xl"
-          data-testid="solo-feedback"
+          class="relative rounded-3xl border border-white/10 bg-white/5 p-6 text-center transition"
+          :class="{
+            'ring-2 ring-emerald-400': feedback === '✅',
+            'ring-2 ring-red-400': feedback === '❌',
+          }"
+          data-testid="solo-card"
         >
-          {{ feedback }}
+          <p class="font-heading text-lg font-bold break-words text-white">
+            {{ current.statement }}
+          </p>
+          <div
+            v-if="feedback"
+            class="absolute inset-0 flex items-center justify-center rounded-3xl bg-slate-950/70 text-7xl"
+            data-testid="solo-feedback"
+          >
+            {{ feedback }}
+          </div>
+        </div>
+        <div class="flex justify-center gap-8 pt-2">
+          <div class="text-center">
+            <button
+              type="button"
+              class="flex h-20 w-20 items-center justify-center rounded-full border-2 border-red-500/50 bg-red-950/40 text-4xl transition hover:bg-red-900/60 disabled:opacity-60"
+              :disabled="feedback !== ''"
+              data-testid="solo-salah"
+              @click="answer(false)"
+            >
+              ❌
+            </button>
+            <p class="mt-2 text-xs text-slate-300">❌ SALAH</p>
+          </div>
+          <div class="text-center">
+            <button
+              type="button"
+              class="flex h-20 w-20 items-center justify-center rounded-full border-2 border-emerald-500/50 bg-emerald-950/40 text-4xl transition hover:bg-emerald-900/60 disabled:opacity-60"
+              :disabled="feedback !== ''"
+              data-testid="solo-betul"
+              @click="answer(true)"
+            >
+              ✅
+            </button>
+            <p class="mt-2 text-xs text-slate-300">✅ BETUL</p>
+          </div>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <button
-          type="button"
-          class="min-h-16 rounded-2xl bg-red-500 text-4xl shadow-md transition hover:bg-red-600 disabled:opacity-60"
-          :disabled="feedback !== ''"
-          data-testid="solo-salah"
-          @click="answer(false)"
-        >
-          ❌
-        </button>
-        <button
-          type="button"
-          class="min-h-16 rounded-2xl bg-emerald-500 text-4xl shadow-md transition hover:bg-emerald-600 disabled:opacity-60"
-          :disabled="feedback !== ''"
-          data-testid="solo-betul"
-          @click="answer(true)"
-        >
-          ✅
-        </button>
-      </div>
-      <p class="text-center text-xs font-semibold text-slate-500">❌ SALAH &nbsp; ✅ BETUL</p>
-    </div>
 
-    <ResultCard
-      v-else-if="phase === 'done'"
-      :title="betulSalahTitle(score)"
-      subtitle="45 saat — Betul atau Salah!"
-      :tiles="tiles"
-      :new-record="result.newRecord"
-      again-label="🔄 Main Lagi"
-      :coins-credited="result.credited"
-      @again="start"
-    />
+      <ResultCard
+        v-if="phase === 'done'"
+        theme="indigo"
+        :title="betulSalahTitle(score)"
+        subtitle="45 saat — Betul atau Salah!"
+        :tiles="tiles"
+        :new-record="result.newRecord"
+        again-label="🔄 Main Lagi"
+        :coins-credited="result.credited"
+        @again="start"
+      />
+    </GamePanel>
   </div>
 </template>

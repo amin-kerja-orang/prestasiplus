@@ -13,6 +13,7 @@ import { AlertBox } from '@/components/feedback'
 import { answerJutawan, lifelineJutawan, startJutawan } from '../api'
 import type { RoomQuestion } from '../api'
 import JutawanLadder from '../components/jutawan/JutawanLadder.vue'
+import GamePanel from '../components/solo/GamePanel.vue'
 import LoadState from '../components/solo/LoadState.vue'
 import { JUTAWAN_LEVELS } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
@@ -114,92 +115,101 @@ async function useLifeline(): Promise<void> {
 function optionClass(id: number): string {
   if (picked.value?.id === id) {
     return picked.value.correct
-      ? 'correct border-emerald-500 bg-emerald-50'
-      : 'wrong border-red-500 bg-red-50'
+      ? 'correct border-emerald-400 bg-emerald-500/20'
+      : 'wrong border-red-400 bg-red-500/20'
   }
-  return 'border-slate-200 bg-white hover:border-amber-400'
+  return 'border-white/15 bg-white/5 hover:border-amber-400/60'
 }
 
 onMounted(() => void start())
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-4xl space-y-4" data-testid="jutawan-game">
-    <LoadState :loading="phase === 'loading'" error="" />
-    <div v-if="phase === 'error'" class="space-y-3">
-      <AlertBox :messages="error" />
-      <RouterLink
-        to="/permainan/jutawan"
-        class="inline-flex min-h-11 items-center text-sm font-semibold text-indigo-600"
-        >← Pilih subjek</RouterLink
-      >
-    </div>
-
-    <div v-else-if="phase === 'playing' && question" class="grid gap-4 md:grid-cols-[8rem_1fr]">
-      <JutawanLadder :level="level" />
-      <div class="space-y-4">
-        <div class="flex items-center justify-between gap-2">
-          <p class="text-sm font-bold text-slate-600" data-testid="jutawan-progress">
-            Soalan {{ level + 1 }} / {{ JUTAWAN_LEVELS }}
-          </p>
-          <button
-            type="button"
-            class="min-h-11 rounded-xl bg-amber-100 px-4 py-2 text-sm font-bold text-amber-800 hover:bg-amber-200 disabled:opacity-50"
-            :disabled="busy || lifelines <= 0 || removed.length > 0"
-            data-testid="jutawan-lifeline"
-            @click="useLifeline"
+  <div data-testid="jutawan-game">
+    <GamePanel theme="navy">
+      <div class="mx-auto max-w-4xl space-y-4">
+        <LoadState :loading="phase === 'loading'" error="" />
+        <div v-if="phase === 'error'" class="space-y-3">
+          <AlertBox :messages="error" />
+          <RouterLink
+            to="/permainan/jutawan"
+            class="inline-flex min-h-11 items-center text-sm font-semibold text-amber-400"
+            >← Pilih subjek</RouterLink
           >
-            50:50 ({{ lifelines }})
-          </button>
         </div>
-        <div class="rounded-3xl bg-white p-5 shadow-md" data-testid="jutawan-question">
-          <p class="text-lg font-semibold break-words text-slate-800">{{ question.text }}</p>
-          <div class="mt-4 grid gap-3">
-            <template v-for="option in question.options" :key="option.id">
+
+        <div v-else-if="phase === 'playing' && question" class="grid gap-4 md:grid-cols-[8rem_1fr]">
+          <JutawanLadder :level="level" />
+          <div class="space-y-4">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm font-bold text-slate-200" data-testid="jutawan-progress">
+                Soalan {{ level + 1 }} / {{ JUTAWAN_LEVELS }}
+              </p>
               <button
-                v-if="!removed.includes(option.id)"
                 type="button"
-                class="min-h-12 rounded-2xl border-2 px-4 py-3 text-left text-sm font-semibold break-words text-slate-800 transition"
-                :class="optionClass(option.id)"
-                :disabled="busy"
-                data-testid="jutawan-option"
-                @click="choose(option.id)"
+                class="min-h-11 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-sm font-bold text-amber-300 hover:bg-amber-400/20 disabled:opacity-40"
+                :disabled="busy || lifelines <= 0 || removed.length > 0"
+                data-testid="jutawan-lifeline"
+                @click="useLifeline"
               >
-                {{ option.label }}. {{ option.text }}
+                50:50 ({{ lifelines }})
               </button>
-            </template>
+            </div>
+            <div
+              class="rounded-3xl border border-white/10 bg-white/5 p-5"
+              data-testid="jutawan-question"
+            >
+              <p class="font-heading text-lg font-bold break-words text-white">
+                {{ question.text }}
+              </p>
+              <div class="mt-4 grid gap-3">
+                <template v-for="option in question.options" :key="option.id">
+                  <button
+                    v-if="!removed.includes(option.id)"
+                    type="button"
+                    class="min-h-12 rounded-2xl border-2 px-4 py-3 text-left text-base font-bold break-words text-white transition"
+                    :class="optionClass(option.id)"
+                    :disabled="busy"
+                    data-testid="jutawan-option"
+                    @click="choose(option.id)"
+                  >
+                    {{ option.label }}. {{ option.text }}
+                  </button>
+                </template>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <section
-      v-else-if="phase === 'done'"
-      class="mx-auto w-full max-w-md rounded-3xl bg-white p-6 text-center shadow-lg"
-      data-testid="jutawan-result"
-    >
-      <div class="text-5xl">💰</div>
-      <h2 class="mt-2 font-heading text-2xl font-extrabold text-slate-800">
-        Tahniah! Anda sampai L{{ result.level }}.
-      </h2>
-      <p v-if="result.credited > 0" class="mt-2 text-lg font-extrabold text-amber-600">
-        +{{ result.credited }} 🪙
-      </p>
-      <div class="mt-6 grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          class="min-h-11 rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-700"
-          data-testid="jutawan-again"
-          @click="start"
+        <section
+          v-else-if="phase === 'done'"
+          class="mx-auto w-full max-w-md rounded-3xl border border-amber-400/30 bg-white/5 p-6 text-center"
+          data-testid="jutawan-result"
         >
-          🔄 Main Lagi
-        </button>
-        <RouterLink
-          to="/permainan"
-          class="flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200"
-          >🎮 Hub</RouterLink
-        >
+          <div class="text-5xl">💰</div>
+          <h2 class="mt-2 font-heading text-2xl font-extrabold text-white">
+            Tahniah! Anda sampai L{{ result.level }}.
+          </h2>
+          <p v-if="result.credited > 0" class="mt-2 text-lg font-extrabold text-amber-300">
+            +{{ result.credited }} 🪙
+          </p>
+          <div class="mt-6 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              class="min-h-12 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-3 text-base font-bold text-slate-950 hover:brightness-110"
+              data-testid="jutawan-again"
+              @click="start"
+            >
+              🔄 Main Lagi
+            </button>
+            <RouterLink
+              to="/permainan"
+              class="flex min-h-12 items-center justify-center rounded-xl bg-white/10 px-3 py-3 text-base font-bold text-slate-100 hover:bg-white/20"
+              >🎮 Hub</RouterLink
+            >
+          </div>
+        </section>
       </div>
-    </section>
+    </GamePanel>
   </div>
 </template>

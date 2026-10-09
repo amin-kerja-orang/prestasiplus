@@ -113,7 +113,10 @@ describe('Jutawan game (provisional)', () => {
       await flushPromises()
       await vi.advanceTimersByTimeAsync(700)
     }
-    expect(answerJutawan).toHaveBeenNthCalledWith(1, 'jut_0123456789abc', { questionId: 1, optionId: 1 })
+    expect(answerJutawan).toHaveBeenNthCalledWith(1, 'jut_0123456789abc', {
+      questionId: 1,
+      optionId: 1,
+    })
     expect(wrapper.text()).toContain('Tahniah! Anda sampai L3.')
     expect(wrapper.text()).toContain('🔄 Main Lagi')
     expect(wrapper.text()).toContain('🎮 Hub')

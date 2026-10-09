@@ -72,7 +72,8 @@ afterEach(() => {
 })
 
 const button = () => wrapper!.get('[data-testid="spin-button"]')
-const rotation = () => Number(wrapper!.get('[data-testid="wheel-disc"]').attributes('data-rotation'))
+const rotation = () =>
+  Number(wrapper!.get('[data-testid="wheel-disc"]').attributes('data-rotation'))
 
 describe('S18 Roda Nasib (FR-M16-93..95)', () => {
   it('renders the header, the chips, the wheel and an enabled SPIN button', async () => {

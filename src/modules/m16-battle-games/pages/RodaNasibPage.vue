@@ -82,11 +82,11 @@ onMounted(() => void loadPage())
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-xl space-y-5" data-testid="roda-nasib">
+  <div class="mx-auto w-full max-w-md space-y-5 sm:max-w-lg" data-testid="roda-nasib">
     <div>
       <RouterLink
         to="/permainan"
-        class="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-slate-600 hover:text-slate-900"
+        class="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-violet-600 hover:text-violet-800"
       >
         <ArrowLeft :size="16" /> Permainan
       </RouterLink>
@@ -97,11 +97,11 @@ onMounted(() => void loadPage())
     <LoadState :loading="loading" :error="error" />
 
     <template v-if="page">
-      <div class="flex flex-wrap justify-center gap-2 text-sm font-bold">
-        <span class="rounded-full bg-white px-3 py-1 shadow-sm" data-testid="spin-count"
+      <div class="flex flex-wrap gap-3 text-sm font-bold text-slate-700">
+        <span class="rounded-xl bg-white px-4 py-2.5 shadow-sm" data-testid="spin-count"
           >🎰 {{ spins }} kali spin</span
         >
-        <span class="rounded-full bg-white px-3 py-1 shadow-sm" data-testid="spin-won"
+        <span class="rounded-xl bg-white px-4 py-2.5 shadow-sm" data-testid="spin-won"
           >🪙 {{ won }} Syiling dimenangkan</span
         >
       </div>
@@ -110,7 +110,7 @@ onMounted(() => void loadPage())
 
       <button
         type="button"
-        class="mx-auto flex min-h-12 w-full max-w-xs items-center justify-center rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3 text-lg font-extrabold text-white shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+        class="mx-auto flex min-h-14 w-48 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-violet-800 px-4 py-3 text-lg font-extrabold text-white shadow-xl shadow-violet-500/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="spinning || alreadySpun"
         data-testid="spin-button"
         @click="spin"
@@ -122,11 +122,11 @@ onMounted(() => void loadPage())
     <Teleport to="body">
       <div
         v-if="prize"
-        class="fixed inset-0 z-[200] flex animate-fade-in items-center justify-center bg-slate-900/70 p-4"
+        class="fixed inset-0 z-[200] flex animate-fade-in items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
         data-testid="prize-overlay"
         @click.self="prize = null"
       >
-        <div class="w-full max-w-xs rounded-3xl bg-white p-6 text-center shadow-xl">
+        <div class="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl">
           <div class="text-6xl" data-testid="prize-icon">{{ prize.icon }}</div>
           <h3
             class="mt-2 font-heading text-2xl font-extrabold text-slate-800"
@@ -135,7 +135,8 @@ onMounted(() => void loadPage())
             {{ prize.label }}
           </h3>
           <template v-if="prize.type === 'syiling' && prize.credited > 0">
-            <p class="mt-2 text-lg font-extrabold text-amber-600" data-testid="prize-amount">
+            <!-- Live: bright orange on white (≈ 2.1:1); DV-M16-48 uses amber-600 (≈ 3.2:1, large text). -->
+            <p class="mt-2 text-4xl font-extrabold text-amber-600" data-testid="prize-amount">
               +{{ prize.credited }} Syiling
             </p>
             <p class="text-sm text-slate-500">Ditambah ke akaun kamu!</p>
@@ -145,7 +146,7 @@ onMounted(() => void loadPage())
           </p>
           <button
             type="button"
-            class="mt-5 min-h-11 w-full rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-700"
+            class="mt-5 min-h-12 w-full rounded-xl bg-gradient-to-r from-violet-600 to-violet-800 px-3 py-3.5 text-base font-bold text-white shadow-lg hover:brightness-110"
             data-testid="prize-close"
             @click="prize = null"
           >

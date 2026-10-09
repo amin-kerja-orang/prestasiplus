@@ -79,7 +79,8 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
     for (let lost = 1; lost <= 3; lost++) {
       await vi.advanceTimersByTimeAsync(1800)
       await tiles()[1]!.trigger('click') // wrong option
-      if (lost < 3) expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(lost)
+      if (lost < 3)
+        expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(lost)
     }
     await vi.advanceTimersByTimeAsync(0)
     expect(submitSoloGame).toHaveBeenCalledTimes(1)
@@ -91,7 +92,7 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
       score: 10,
       syiling_earned: 1,
     })
-    expect(wrapper!.get('[data-testid="solo-result-title"]').text()).toBe('🔄 CUBA LAGI!')
+    expect(wrapper!.get('[data-testid="solo-result-title"]').text()).toBe('CUBA LAGI!')
     expect(wrapper!.text()).toContain('Tembak Jawapan — Level 1')
     expect(wrapper!.text()).toContain('Tertinggi')
     expect(wrapper!.text()).toContain('Level 1')

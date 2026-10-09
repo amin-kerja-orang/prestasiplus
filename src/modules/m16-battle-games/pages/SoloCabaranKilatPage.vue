@@ -7,6 +7,7 @@ import { computed, ref, watch } from 'vue'
 
 import CountdownView from '../components/solo/CountdownView.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
+import GamePanel from '../components/solo/GamePanel.vue'
 import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
 import StatBar from '../components/solo/StatBar.vue'
@@ -25,9 +26,9 @@ const NEXT_MS = 400
 const STEP_MS = 800
 
 const CHIP_TONE = {
-  green: 'bg-emerald-100 text-emerald-700',
-  amber: 'bg-amber-100 text-amber-700',
-  red: 'bg-red-100 text-red-700',
+  green: 'bg-emerald-500/20 text-emerald-300',
+  amber: 'bg-amber-500/20 text-amber-300',
+  red: 'bg-red-500/20 text-red-300',
 } as const
 
 const timers = useGameTimers()
@@ -112,11 +113,13 @@ function pick(optionId: number): void {
 }
 
 function optionClass(id: number, isCorrect: boolean): string {
-  if (picked.value === null) return 'border-slate-200 bg-white hover:border-indigo-400'
+  if (picked.value === null) return 'border-white/15 bg-white/5 hover:border-cyan-400/60'
   if (id === picked.value) {
-    return isCorrect ? 'correct border-emerald-500 bg-emerald-50' : 'wrong border-red-500 bg-red-50'
+    return isCorrect
+      ? 'correct border-emerald-400 bg-emerald-500/20'
+      : 'wrong border-red-400 bg-red-500/20'
   }
-  return 'border-slate-200 bg-white opacity-70'
+  return 'border-white/10 bg-white/5 opacity-70'
 }
 
 async function finish(): Promise<void> {
@@ -136,41 +139,55 @@ async function finish(): Promise<void> {
 }
 
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value) },
-  { label: 'Betul / Jawab', value: ratio(correct.value, answered.value) },
-  { label: 'Combo Max 🔥', value: `${String(maxCombo.value)}x` },
-  { label: 'Syiling', value: `${String(result.value.credited)} 🪙` },
+  { label: 'Skor Total', value: String(score.value), tone: 'text-cyan-300' },
+  { label: 'Betul / Jawab', value: ratio(correct.value, answered.value), tone: 'text-emerald-400' },
+  { label: 'Combo Max 🔥', value: `${String(maxCombo.value)}x`, tone: 'text-amber-400' },
+  { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-violet-300' },
 ])
 
 watch(darjah, () => void start(), { immediate: true })
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-xl" data-testid="solo-cabaran-kilat">
+  <div data-testid="solo-cabaran-kilat">
     <DarjahPicker
       v-if="darjah === null"
       emoji="⚡"
       title="Cabaran Kilat"
       color="var(--color-amber-500)"
     />
-    <LoadState :loading="loading" :error="error" />
+    <GamePanel theme="violet">
+      <LoadState :loading="loading" :error="error" />
 
-    <CountdownView v-if="phase === 'countdown'" title="⚡ CABARAN KILAT" :count="count" />
+      <CountdownView
+        v-if="phase === 'countdown'"
+        title="⚡ CABARAN KILAT"
+        :count="count"
+        tone="text-cyan-400"
+      />
 
-    <div v-else-if="phase === 'playing' && current" class="space-y-4">
-      <div class="min-h-8 text-center">
-        <span
-          v-if="combo >= 2"
-          class="inline-block rounded-full bg-orange-100 px-4 py-1 text-sm font-extrabold text-orange-600"
-          :class="{ fire: combo >= 5 }"
-          data-testid="solo-combo"
-          >🔥 {{ combo }}x COMBO</span
-        >
-      </div>
-      <StatBar :score="score" :time-left="timeLeft" :correct="correct" />
-      <div class="rounded-3xl bg-white p-5 shadow-md" data-testid="solo-card">
-        <div class="flex items-center justify-between gap-2">
-          <p class="text-xs font-bold tracking-wide text-slate-500">Soalan {{ index + 1 }}</p>
+      <div v-if="phase === 'playing' && current" class="mx-auto max-w-2xl space-y-4">
+        <div class="min-h-8 text-center">
+          <span
+            v-if="combo >= 2"
+            class="inline-block rounded-full bg-gradient-to-r from-red-500 to-orange-500 px-4 py-1 text-sm font-extrabold text-white shadow-lg"
+            :class="{ fire: combo >= 5 }"
+            data-testid="solo-combo"
+            >🔥 {{ combo }}x COMBO</span
+          >
+        </div>
+        <StatBar
+          :score="score"
+          :time-left="timeLeft"
+          :max="GAME_SECONDS"
+          :correct="correct"
+          caps
+          ring="stroke-cyan-400"
+          score-tone="text-cyan-300"
+          correct-tone="text-emerald-400"
+        />
+        <div class="flex items-center justify-between gap-2 pt-2">
+          <p class="text-xs text-slate-300">Soalan {{ index + 1 }}</p>
           <span
             v-if="chip"
             class="rounded-full px-3 py-0.5 text-xs font-bold"
@@ -179,15 +196,17 @@ watch(darjah, () => void start(), { immediate: true })
             >{{ chip.label }}</span
           >
         </div>
-        <p class="mt-3 text-lg font-semibold break-words text-slate-800">
-          {{ current.question_text }}
-        </p>
-        <div class="mt-4 grid gap-3">
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-5" data-testid="solo-card">
+          <p class="font-heading text-lg font-bold break-words text-white">
+            {{ current.question_text }}
+          </p>
+        </div>
+        <div class="grid gap-3">
           <button
             v-for="(option, i) in current.options"
             :key="option.id"
             type="button"
-            class="min-h-12 rounded-2xl border-2 px-4 py-3 text-left text-sm font-semibold break-words text-slate-800 transition"
+            class="min-h-12 rounded-2xl border-2 px-4 py-3 text-left text-base font-bold break-words text-white transition"
             :class="optionClass(option.id, option.correct)"
             :disabled="picked !== null"
             data-testid="solo-option"
@@ -197,17 +216,18 @@ watch(darjah, () => void start(), { immediate: true })
           </button>
         </div>
       </div>
-    </div>
 
-    <ResultCard
-      v-else-if="phase === 'done'"
-      :title="cabaranKilatTitle(score)"
-      subtitle="60 saat penuh aksi!"
-      :tiles="tiles"
-      :new-record="result.newRecord"
-      again-label="⚡ Main Lagi"
-      :coins-credited="result.credited"
-      @again="start"
-    />
+      <ResultCard
+        v-if="phase === 'done'"
+        theme="cyan"
+        :title="cabaranKilatTitle(score)"
+        subtitle="60 saat penuh aksi!"
+        :tiles="tiles"
+        :new-record="result.newRecord"
+        again-label="⚡ Main Lagi"
+        :coins-credited="result.credited"
+        @again="start"
+      />
+    </GamePanel>
   </div>
 </template>

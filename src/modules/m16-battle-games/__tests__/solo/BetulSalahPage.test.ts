@@ -85,7 +85,8 @@ describe('S13 Betul atau Salah (FR-M16-71..75)', () => {
       score: 102,
       syiling_earned: 20,
     })
-    expect(wrapper.get('[data-testid="solo-result-title"]').text()).toBe('✅ HEBAT!')
+    expect(wrapper.get('[data-testid="solo-result-emoji"]').text()).toBe('✅')
+    expect(wrapper.get('[data-testid="solo-result-title"]').text()).toBe('HEBAT!')
     expect(text()).toContain('45 saat — Betul atau Salah!')
     expect(text()).toContain('Skor Total')
     expect(text()).toContain('6/6')
