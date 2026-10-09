@@ -66,9 +66,7 @@ export interface SchoolUsage {
 }
 
 /** #2 `GET /api/admin-sekolah/usage?period=` (S1). An unknown period gives `30days`. */
-export const fetchSchoolUsage = (
-  o: { period?: UsagePeriod | string | null; signal?: AbortSignal } = {},
-) =>
+export const fetchSchoolUsage = (o: { period?: string | null; signal?: AbortSignal } = {}) =>
   api.get<SchoolUsage>(`${BASE}/usage`, {
     query: { period: o.period },
     ...(o.signal ? { signal: o.signal } : {}),
@@ -109,7 +107,7 @@ export interface SchoolDskpHeatmap {
 export const fetchSchoolDskpHeatmap = (
   o: {
     subjectId?: number | null
-    tingkatan?: 'T4' | 'T5' | string | null
+    tingkatan?: string | null
     signal?: AbortSignal
   } = {},
 ) =>
@@ -168,7 +166,7 @@ export interface SchoolActivityReport {
 
 /** #4 `GET /api/admin-sekolah/laporan-aktiviti?range=` (S3). */
 export const fetchSchoolActivityReport = (
-  o: { range?: 7 | 30 | 90 | number | null; signal?: AbortSignal } = {},
+  o: { range?: number | null; signal?: AbortSignal } = {},
 ) =>
   api.get<SchoolActivityReport>(`${BASE}/laporan-aktiviti`, {
     query: { range: o.range },
@@ -277,7 +275,7 @@ export interface SchoolUserListMeta {
 
 export interface SchoolUserListQuery {
   /** `1` or `0`; anything else = all. */
-  isActive?: boolean | '1' | '0' | string | null
+  isActive?: boolean | string | null
   search?: string | null
   page?: number | null
   signal?: AbortSignal
@@ -492,17 +490,13 @@ export interface ImpersonationSession {
   user: UserMe
 }
 
-export interface ImpersonateResult extends WriteResult<
-  ImpersonationSession & {
-    impersonator: { id: number; name: string }
-  }
-> {}
+export type ImpersonateResult = WriteResult<
+  ImpersonationSession & { impersonator: { id: number; name: string } }
+>
 
-export interface LeaveImpersonationResult extends WriteResult<
-  ImpersonationSession & {
-    returnTo: '/admin-sekolah/pelajar' | '/admin-sekolah/guru'
-  }
-> {}
+export type LeaveImpersonationResult = WriteResult<
+  ImpersonationSession & { returnTo: '/admin-sekolah/pelajar' | '/admin-sekolah/guru' }
+>
 
 /** #20 `POST /api/admin-sekolah/users/:id/impersonate`. 409 when already impersonating. */
 export const impersonateSchoolUser = (id: number) =>
