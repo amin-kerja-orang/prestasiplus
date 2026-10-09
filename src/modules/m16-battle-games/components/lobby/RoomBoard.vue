@@ -28,7 +28,13 @@ const tiles = computed<Tile[]>(() => {
       .map((p, idx) => ({ idx, at: positions[String(p.id)] ?? 1 }))
       .filter((x) => x.at === n)
       .map((x) => x.idx)
-    return { n, emoji: view.emoji, className: view.className, target: tileTarget(kind), players: here }
+    return {
+      n,
+      emoji: view.emoji,
+      className: view.className,
+      target: tileTarget(kind),
+      players: here,
+    }
   })
 })
 </script>

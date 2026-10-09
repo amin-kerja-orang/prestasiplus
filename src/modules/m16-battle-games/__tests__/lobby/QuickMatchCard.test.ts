@@ -49,17 +49,25 @@ describe('Papan Bijak quick match', () => {
     expect(t).toContain('Sistem cari pemain sepadan secara automatik')
     expect(t).toContain('🔍 Cari Lawan Sekarang')
     expect(
-      wrapper.get('[data-testid="qm-subject"]').findAll('option').map((o) => o.text()),
+      wrapper
+        .get('[data-testid="qm-subject"]')
+        .findAll('option')
+        .map((o) => o.text()),
     ).toEqual(['Matematik', 'Bahasa Melayu', 'Sains', 'Bahasa Inggeris'])
-    expect(wrapper.get('[data-testid="qm-mode"]').findAll('option').map((o) => o.text())).toEqual([
-      'Tahap sama',
-      'Semua darjah/tingkatan',
-    ])
+    expect(
+      wrapper
+        .get('[data-testid="qm-mode"]')
+        .findAll('option')
+        .map((o) => o.text()),
+    ).toEqual(['Tahap sama', 'Semua darjah/tingkatan'])
   })
 
   it('posts the subject and match mode, counts every second and polls every 3 s', async () => {
     await search()
-    expect(startPbQuickMatch).toHaveBeenCalledWith({ subject: 'MATEMATIK', match_mode: 'same_grade' })
+    expect(startPbQuickMatch).toHaveBeenCalledWith({
+      subject: 'MATEMATIK',
+      match_mode: 'same_grade',
+    })
     expect(wrapper!.text()).toContain('Sila tunggu, sistem sedang mencari pemain sepadan')
     expect(elapsed()).toBe('Mencari lawan... 0s')
     await vi.advanceTimersByTimeAsync(2000)

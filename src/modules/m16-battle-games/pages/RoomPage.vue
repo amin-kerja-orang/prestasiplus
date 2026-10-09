@@ -193,7 +193,9 @@ watch(crosswordLeft, async (left) => {
     for (let i = 0; i < 20; i++) {
       const r = room.value
       if (!r || r.status !== 'playing' || !r.question) break
-      await act(() => roomAction(props.game, code.value, answerBody(r.question!.id, { value: '' }, 15)))
+      await act(() =>
+        roomAction(props.game, code.value, answerBody(r.question!.id, { value: '' }, 15)),
+      )
       if (actionErrors.value.length > 0) break
     }
   } finally {
@@ -213,7 +215,10 @@ const meters = computed(() => {
       name: p.name,
       value: Math.max(0, value),
       percent: Math.max(0, Math.min(100, Math.round((value / max) * 100))),
-      label: r.game === 'benteng-ilmu' ? `HP ${String(Math.max(0, value))}` : `${String(value)}/20 langkah`,
+      label:
+        r.game === 'benteng-ilmu'
+          ? `HP ${String(Math.max(0, value))}`
+          : `${String(value)}/20 langkah`,
       barClass: r.game === 'benteng-ilmu' ? 'bg-emerald-500' : 'bg-indigo-500',
     }
   })
@@ -232,7 +237,10 @@ const meters = computed(() => {
     <AlertBox v-else-if="phase === 'error'" :messages="LOAD_ERROR" data-testid="room-error" />
     <template v-else-if="room">
       <header class="rounded-2xl bg-white p-5 shadow sm:p-6">
-        <h1 class="font-heading text-2xl font-bold text-slate-800 sm:text-3xl" data-testid="room-h1">
+        <h1
+          class="font-heading text-2xl font-bold text-slate-800 sm:text-3xl"
+          data-testid="room-h1"
+        >
           {{ meta.emoji }} {{ meta.title }}
         </h1>
         <p class="mt-1 text-sm text-slate-500" data-testid="room-code">
@@ -242,14 +250,14 @@ const meters = computed(() => {
 
       <AlertBox :messages="actionErrors" data-testid="room-action-errors" />
 
-      <div class="grid gap-4 md:grid-cols-3 sm:gap-6">
+      <div class="grid gap-4 sm:gap-6 md:grid-cols-3">
         <RoomPlayers
           class="md:order-2"
           :room="room"
           :show-metric="room.status === 'playing' || room.status === 'finished'"
         />
 
-        <section class="space-y-4 rounded-2xl bg-white p-5 shadow md:order-1 md:col-span-2 sm:p-6">
+        <section class="space-y-4 rounded-2xl bg-white p-5 shadow sm:p-6 md:order-1 md:col-span-2">
           <!-- waiting -->
           <div v-if="room.status === 'waiting'" class="space-y-3" data-testid="room-waiting">
             <p class="text-sm text-slate-600" data-testid="room-waiting-count">
@@ -260,7 +268,7 @@ const meters = computed(() => {
               v-if="isHost"
               type="button"
               :disabled="!startable || acting"
-              class="bg-save-gradient inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+              class="inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white transition bg-save-gradient disabled:cursor-not-allowed disabled:opacity-50"
               data-testid="room-start"
               @click="start"
             >
@@ -286,7 +294,11 @@ const meters = computed(() => {
               </p>
             </div>
 
-            <RoomBoard v-if="game === 'papan-bijak' && room.state?.board" :board="room.state.board" :room="room" />
+            <RoomBoard
+              v-if="game === 'papan-bijak' && room.state?.board"
+              :board="room.state.board"
+              :room="room"
+            />
 
             <div v-if="meters.length > 0" class="space-y-2" data-testid="room-meters">
               <div v-for="m in meters" :key="m.id" data-testid="room-meter">
@@ -295,7 +307,11 @@ const meters = computed(() => {
                   <span>{{ m.label }}</span>
                 </div>
                 <div class="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-100">
-                  <div class="h-full rounded-full" :class="m.barClass" :style="{ width: `${String(m.percent)}%` }"></div>
+                  <div
+                    class="h-full rounded-full"
+                    :class="m.barClass"
+                    :style="{ width: `${String(m.percent)}%` }"
+                  ></div>
                 </div>
               </div>
             </div>
@@ -315,7 +331,7 @@ const meters = computed(() => {
                 <button
                   type="button"
                   :disabled="acting"
-                  class="bg-primary-gradient inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60"
+                  class="inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white bg-primary-gradient disabled:cursor-wait disabled:opacity-60"
                   data-testid="room-roll"
                   @click="roll"
                 >
@@ -348,7 +364,11 @@ const meters = computed(() => {
             >
               {{ headline?.title }}
             </p>
-            <p v-if="headline?.mvp" class="text-sm font-semibold text-indigo-600" data-testid="room-mvp">
+            <p
+              v-if="headline?.mvp"
+              class="text-sm font-semibold text-indigo-600"
+              data-testid="room-mvp"
+            >
               {{ headline.mvp }}
             </p>
             <ul v-if="room.result" class="divide-y divide-slate-100" data-testid="room-scores">
@@ -363,7 +383,7 @@ const meters = computed(() => {
             </ul>
             <RouterLink
               to="/permainan"
-              class="bg-primary-gradient inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white"
+              class="inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white bg-primary-gradient"
               data-testid="room-hub"
             >
               🎮 Hub
@@ -375,7 +395,7 @@ const meters = computed(() => {
             <p class="text-sm font-semibold text-slate-600">Bilik ini telah ditutup.</p>
             <RouterLink
               to="/permainan"
-              class="bg-primary-gradient inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white"
+              class="inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white bg-primary-gradient"
               >🎮 Hub</RouterLink
             >
           </div>

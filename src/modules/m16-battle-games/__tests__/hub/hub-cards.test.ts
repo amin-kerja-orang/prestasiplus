@@ -98,9 +98,12 @@ describe('S6 → room game routes (D21 reach rule)', () => {
     expect(r.meta.roles).toBeUndefined()
   })
 
-  it.each(ROOM_GAMES)('the hub card for %s resolves to its lobby (not the 404 catch-all)', (game) => {
-    expect(HUB_CARDS.some((c) => c.to === `/${game}`)).toBe(true)
-    expect(router.resolve(`/${game}`).name).not.toBe('core.not-found')
-    expect(router.resolve(`/${game}/ABC123`).name).toBe(`m16.room.${game}`)
-  })
+  it.each(ROOM_GAMES)(
+    'the hub card for %s resolves to its lobby (not the 404 catch-all)',
+    (game) => {
+      expect(HUB_CARDS.some((c) => c.to === `/${game}`)).toBe(true)
+      expect(router.resolve(`/${game}`).name).not.toBe('core.not-found')
+      expect(router.resolve(`/${game}/ABC123`).name).toBe(`m16.room.${game}`)
+    },
+  )
 })

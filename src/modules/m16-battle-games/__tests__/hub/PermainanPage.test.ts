@@ -65,7 +65,9 @@ describe('S6 hub page', () => {
     expect(titles[10]).toBe('Peta Pengembaraan')
     expect(titles[17]).toBe('Kad Memori')
     expect(wrapper!.findAll('[data-testid="hub-card-button"]')).toHaveLength(18)
-    const hrefs = wrapper!.findAll('a[data-testid="hub-card-button"]').map((a) => a.attributes('href'))
+    const hrefs = wrapper!
+      .findAll('a[data-testid="hub-card-button"]')
+      .map((a) => a.attributes('href'))
     expect(hrefs[1]).toBe('/battle')
     expect(hrefs[10]).toBe('/peta-belajar')
   })
@@ -97,20 +99,26 @@ describe('S6 hub page', () => {
   it('shows the "Belum" chips only while the viewer has not played / battled (DV-M16-14)', async () => {
     fetchGamesHub.mockResolvedValueOnce(hub())
     await mountPage()
-    expect(wrapper!.get('[data-testid="hub-card-papan-bijak"]').text()).toContain('🆕 Belum main lagi')
+    expect(wrapper!.get('[data-testid="hub-card-papan-bijak"]').text()).toContain(
+      '🆕 Belum main lagi',
+    )
     expect(wrapper!.get('[data-testid="hub-card-battle"]').text()).toContain('🆕 Belum battle lagi')
     wrapper!.unmount()
 
     fetchGamesHub.mockResolvedValueOnce(hub({ chips: { papanBijakPlayed: true, battled: false } }))
     await mountPage()
-    expect(wrapper!.get('[data-testid="hub-card-papan-bijak"]').text()).not.toContain('Belum main lagi')
+    expect(wrapper!.get('[data-testid="hub-card-papan-bijak"]').text()).not.toContain(
+      'Belum main lagi',
+    )
     expect(wrapper!.get('[data-testid="hub-card-battle"]').text()).toContain('Belum battle lagi')
     wrapper!.unmount()
 
     fetchGamesHub.mockResolvedValueOnce(hub({ chips: { papanBijakPlayed: false, battled: true } }))
     await mountPage()
     expect(wrapper!.get('[data-testid="hub-card-papan-bijak"]').text()).toContain('Belum main lagi')
-    expect(wrapper!.get('[data-testid="hub-card-battle"]').text()).not.toContain('Belum battle lagi')
+    expect(wrapper!.get('[data-testid="hub-card-battle"]').text()).not.toContain(
+      'Belum battle lagi',
+    )
   })
 
   it('navigates once from the card body and once from the button', async () => {

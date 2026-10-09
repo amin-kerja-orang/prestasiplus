@@ -175,7 +175,7 @@ async function submit(): Promise<void> {
       <button
         type="submit"
         :disabled="busy"
-        class="bg-save-gradient inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
+        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition bg-save-gradient hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
         data-testid="create-submit"
       >
         {{ isPb ? '🎲' : meta.emoji }} Cipta Bilik

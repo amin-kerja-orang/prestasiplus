@@ -92,7 +92,14 @@ async function mountPage() {
 const sel = (id: string) => wrapper!.get<HTMLSelectElement>(`[data-testid="${id}"]`)
 
 beforeEach(() => {
-  for (const m of [fetchGameLobby, createRoom, joinRoom, startPbQuickMatch, pollPbQuickMatch, cancelPbQuickMatch])
+  for (const m of [
+    fetchGameLobby,
+    createRoom,
+    joinRoom,
+    startPbQuickMatch,
+    pollPbQuickMatch,
+    cancelPbQuickMatch,
+  ])
     m.mockReset()
   fetchGameLobby.mockResolvedValue(lobby())
 })
@@ -108,12 +115,11 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     expect(wrapper!.get('[data-testid="pb-subtitle"]').text()).toBe(
       'Board game quiz multiplayer — jemput kawan, gulung dadu, jawab soalan! 🐍🪜',
     )
-    expect(sel('create-subject').findAll('option').map((o) => o.text())).toEqual([
-      '🔢 Matematik',
-      '📝 Bahasa Melayu',
-      '🔬 Sains',
-      '🇬🇧 Bahasa Inggeris',
-    ])
+    expect(
+      sel('create-subject')
+        .findAll('option')
+        .map((o) => o.text()),
+    ).toEqual(['🔢 Matematik', '📝 Bahasa Melayu', '🔬 Sains', '🇬🇧 Bahasa Inggeris'])
     const auto = wrapper!.get('[data-testid="grade-auto"]').text()
     expect(auto).toContain('Darjah 4')
     expect(auto).toContain('(auto dari profil anda)')
@@ -157,13 +163,11 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
   it('custom shows "Dari" / "Hingga" (default D1 / D6) and "Maks Pemain" 2-6 defaults to 4', async () => {
     await mountPage()
     expect(wrapper!.find('[data-testid="create-range"]').exists()).toBe(false)
-    expect(sel('create-max-players').findAll('option').map((o) => o.text())).toEqual([
-      '2 Pemain',
-      '3 Pemain',
-      '4 Pemain',
-      '5 Pemain',
-      '6 Pemain',
-    ])
+    expect(
+      sel('create-max-players')
+        .findAll('option')
+        .map((o) => o.text()),
+    ).toEqual(['2 Pemain', '3 Pemain', '4 Pemain', '5 Pemain', '6 Pemain'])
     expect(sel('create-max-players').element.value).toBe('4')
     await sel('create-mode').setValue('custom')
     expect(sel('create-grade-min').element.value).toBe('1')
@@ -268,6 +272,8 @@ describe('S7 Top 10 (FR-M16-61)', () => {
     expect(kadar[1]!.classes().join(' ')).toContain('emerald')
     expect(kadar[2]!.classes().join(' ')).toContain('red')
     expect(wrapper!.get('[data-testid="top10-scroll"]').classes()).toContain('overflow-x-auto')
-    expect(wrapper!.get('[data-testid="top10-card"]').text()).toContain('Papan Markah — Top 10 Juara')
+    expect(wrapper!.get('[data-testid="top10-card"]').text()).toContain(
+      'Papan Markah — Top 10 Juara',
+    )
   })
 })

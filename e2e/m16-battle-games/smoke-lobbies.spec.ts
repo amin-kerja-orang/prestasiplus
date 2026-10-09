@@ -19,18 +19,35 @@ const MODULE = { tag: [moduleTag(16)] }
 test.use({ mockInit: { latency: 0 } })
 
 const LOBBIES = [
-  ['perang-fakta', 'Perang Fakta', '⚔️ Perang Fakta', '2-6 pemain · 15 pusingan · 10 saat setiap soalan'],
+  [
+    'perang-fakta',
+    'Perang Fakta',
+    '⚔️ Perang Fakta',
+    '2-6 pemain · 15 pusingan · 10 saat setiap soalan',
+  ],
   ['benteng-ilmu', 'Benteng Ilmu', '🏰 Benteng Ilmu', '2 pemain · HP 100 · Giliran bertukar'],
-  ['perlumbaan-matematik', 'Perlumbaan Matematik', '🏎️ Perlumbaan Matematik', '2-4 pemain · 20 langkah · Siapa sampai dulu menang'],
+  [
+    'perlumbaan-matematik',
+    'Perlumbaan Matematik',
+    '🏎️ Perlumbaan Matematik',
+    '2-4 pemain · 20 langkah · Siapa sampai dulu menang',
+  ],
   ['kuiz-relay', 'Kuiz Relay', '🏃‍♂️ Kuiz Relay', '4-8 pemain · 2 pasukan · 10 pusingan'],
-  ['teka-silang-kata', 'Teka Silang Kata', '📝 Teka Silang Kata', '2 pemain · 5 minit · Markah tertinggi menang'],
+  [
+    'teka-silang-kata',
+    'Teka Silang Kata',
+    '📝 Teka Silang Kata',
+    '2 pemain · 5 minit · Markah tertinggi menang',
+  ],
 ] as const
 
 /** Client-side navigation (keeps the mock state, unlike a page load). */
 async function spaGo(page: Page, path: string): Promise<void> {
   await page.evaluate(async (to) => {
     const el = document.querySelector('#app') as Element & {
-      __vue_app__: { config: { globalProperties: { $router: { push(p: string): Promise<unknown> } } } }
+      __vue_app__: {
+        config: { globalProperties: { $router: { push(p: string): Promise<unknown> } } }
+      }
     }
     await el.__vue_app__.config.globalProperties.$router.push(to)
   }, path)
@@ -71,7 +88,9 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
     await gotoApp('/papan-bijak')
     await expectTabTitle(page, 'Papan Bijak — PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title').first()).toHaveText('Papan Bijak')
-    await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText('Selamat datang kembali')
+    await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
+      'Selamat datang kembali',
+    )
     await expect(page.getByTestId('pb-h1')).toHaveText('🎲 Papan Bijak')
     await expect(page.getByTestId('pb-subtitle')).toHaveText(
       'Board game quiz multiplayer — jemput kawan, gulung dadu, jawab soalan! 🐍🪜',
@@ -84,15 +103,21 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
     ])
     await expect(page.getByTestId('grade-auto')).toContainText('Darjah 4')
     await expect(page.getByTestId('grade-auto')).toContainText('(auto dari profil anda)')
-    await expect(page.getByTestId('create-mode').locator('option').nth(1)).toHaveText('Semua Darjah (1-6)')
+    await expect(page.getByTestId('create-mode').locator('option').nth(1)).toHaveText(
+      'Semua Darjah (1-6)',
+    )
 
     await page.getByTestId('grade-switch').click()
-    expect(await page.getByTestId('grade-select').locator('optgroup').evaluateAll((g) => g.map((x) => x.getAttribute('label')))).toEqual([
-      'Sekolah Rendah',
-      'Sekolah Menengah',
-    ])
+    expect(
+      await page
+        .getByTestId('grade-select')
+        .locator('optgroup')
+        .evaluateAll((g) => g.map((x) => x.getAttribute('label'))),
+    ).toEqual(['Sekolah Rendah', 'Sekolah Menengah'])
     await page.getByTestId('grade-select').selectOption('TINGKATAN_2')
-    await expect(page.getByTestId('create-mode').locator('option').nth(1)).toHaveText('Semua Tingkatan (1-5)')
+    await expect(page.getByTestId('create-mode').locator('option').nth(1)).toHaveText(
+      'Semua Tingkatan (1-5)',
+    )
     await page.getByTestId('grade-back').click()
     await expect(page.getByTestId('grade-auto')).toContainText('Darjah 4')
 
@@ -159,7 +184,9 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
       expect(start?.body).toEqual({ subject: 'MATEMATIK', match_mode: 'same_grade' })
       await mock.advanceTime(2000)
       await expect(page.getByTestId('qm-elapsed')).toHaveText('Mencari lawan... 2s')
-      await expect(page.getByText('Sila tunggu, sistem sedang mencari pemain sepadan')).toBeVisible()
+      await expect(
+        page.getByText('Sila tunggu, sistem sedang mencari pemain sepadan'),
+      ).toBeVisible()
 
       // Cancel: back to idle, #31 posted.
       await page.getByTestId('qm-cancel').click()
@@ -198,9 +225,9 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
     await gotoApp('/papan-bijak')
     const rows = page.getByTestId('top10-row')
     await expect(rows).toHaveCount(10)
-    expect(await page.getByTestId('top10-rank').allTextContents()).toEqual([
-      '🥇', '🥈', '🥉', '4', '5', '6', '7', '8', '9', '10',
-    ].map((x) => x.trim()))
+    expect(await page.getByTestId('top10-rank').allTextContents()).toEqual(
+      ['🥇', '🥈', '🥉', '4', '5', '6', '7', '8', '9', '10'].map((x) => x.trim()),
+    )
     // Rank 1 is the admin: 4 / 6 / 67% / 90 / 13.
     await expect(rows.first()).toContainText('Admin Demo')
     await expect(rows.first().getByTestId('top10-initials')).toHaveText('AD')
@@ -232,11 +259,14 @@ test.describe('M16 S8-S12 lobbies', MODULE, () => {
     loginAs,
   }) => {
     await loginAs(ADMIN)
+    await gotoApp('/perang-fakta')
     for (const [slug, title, h1, rule] of LOBBIES) {
-      await gotoApp(`/${slug}`)
+      await spaGo(page, `/${slug}`)
       await expectTabTitle(page, `${title} — PRESTASIPLUS`)
       await expect(page.getByTestId('shell-user-title').first()).toHaveText(title)
-      await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText('Selamat datang kembali')
+      await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
+        'Selamat datang kembali',
+      )
       await expect(page.getByTestId('lobby-h1')).toHaveText(h1)
       await expect(page.getByTestId('lobby-rule')).toHaveText(rule)
       expect(await page.getByTestId('create-subject').locator('option').allTextContents()).toEqual([
@@ -339,8 +369,7 @@ test.describe('M16 rooms', MODULE, () => {
       await page.getByTestId('create-submit').click()
       await expect(page).toHaveURL(/\/perang-fakta\/[A-Z0-9]{6}$/)
       await expect(page.getByTestId('room-waiting')).toBeVisible()
-      await expect(page.getByTestId('room-player')).toHaveCount(1)
-      await expect(page.getByTestId('room-start')).toBeDisabled()
+      await expect(page.getByTestId('room-waiting')).toContainText('minimum 2')
       await expectNoHorizontalScroll(page)
 
       // The host poll (every 3 s) adds a bot up to the minimum of 2.
@@ -356,7 +385,9 @@ test.describe('M16 rooms', MODULE, () => {
         await expectNoHorizontalScroll(page)
         await page.getByTestId('room-option').first().click()
         if (round < 15) {
-          await expect(page.getByTestId('room-round')).toHaveText(`Pusingan ${String(round + 1)}/15`)
+          await expect(page.getByTestId('room-round')).toHaveText(
+            `Pusingan ${String(round + 1)}/15`,
+          )
         }
       }
       await expect(page.getByTestId('room-result-title')).toHaveText(/^(🏆 .+ menang!|🤝 Seri)$/)

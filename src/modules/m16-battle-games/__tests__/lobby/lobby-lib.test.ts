@@ -164,7 +164,9 @@ describe('error lines', () => {
     })
     expect(errorLines(fields)).toEqual(['Subjek tidak sah.', 'Tahap soalan tidak sah.'])
     expect(
-      errorLines(new ApiError({ status: 409, code: 'CONFLICT', message: 'Pemain belum mencukupi.' })),
+      errorLines(
+        new ApiError({ status: 409, code: 'CONFLICT', message: 'Pemain belum mencukupi.' }),
+      ),
     ).toEqual(['Pemain belum mencukupi.'])
     expect(errorLines(new Error('x'))).toEqual(['Ralat berlaku. Sila cuba lagi.'])
   })
@@ -180,7 +182,10 @@ describe('room helpers (FR-M16-68..70)', () => {
     expect(canAct(r, 1)).toBe(false) // no state yet
     expect(
       canAct(
-        room({ status: 'playing', state: { awaiting: 'answer', round: 1, total: 15, humanId: 1, log: [] } }),
+        room({
+          status: 'playing',
+          state: { awaiting: 'answer', round: 1, total: 15, humanId: 1, log: [] },
+        }),
         1,
       ),
     ).toBe(true)
@@ -239,14 +244,30 @@ describe('room helpers (FR-M16-68..70)', () => {
     const pf = room({ status: 'playing', state: state({}) })
     expect(roundText(pf)).toBe('Pusingan 3/15')
     expect(metricText(pf, pf.players[0]!)).toBe('0 mata')
-    const bi = room({ game: 'benteng-ilmu', status: 'playing', state: state({ meter: { '1': 60 } }) })
+    const bi = room({
+      game: 'benteng-ilmu',
+      status: 'playing',
+      state: state({ meter: { '1': 60 } }),
+    })
     expect(metricText(bi, bi.players[0]!)).toBe('HP 60')
-    const pm = room({ game: 'perlumbaan-matematik', status: 'playing', state: state({ meter: { '1': 7 } }) })
+    const pm = room({
+      game: 'perlumbaan-matematik',
+      status: 'playing',
+      state: state({ meter: { '1': 7 } }),
+    })
     expect(metricText(pm, pm.players[0]!)).toBe('7/20 langkah')
-    const pb = room({ game: 'papan-bijak', status: 'playing', state: state({ positions: { '1': 12 } }) })
+    const pb = room({
+      game: 'papan-bijak',
+      status: 'playing',
+      state: state({ positions: { '1': 12 } }),
+    })
     expect(metricText(pb, pb.players[0]!)).toBe('Petak 12/50')
     expect(roundText(pb)).toBe('')
-    const tk = room({ game: 'teka-silang-kata', status: 'playing', state: state({ total: 8, round: 2 }) })
+    const tk = room({
+      game: 'teka-silang-kata',
+      status: 'playing',
+      state: state({ total: 8, round: 2 }),
+    })
     expect(roundText(tk)).toBe('Kata 2/8')
   })
 
@@ -256,7 +277,9 @@ describe('room helpers (FR-M16-68..70)', () => {
       title: '🏆 Admin Demo menang!',
     })
     expect(
-      resultHeadline(room({ status: 'finished', result: { ...base, winnerId: null, winnerName: null } })),
+      resultHeadline(
+        room({ status: 'finished', result: { ...base, winnerId: null, winnerName: null } }),
+      ),
     ).toEqual({ title: '🤝 Seri' })
     const relay = room({
       game: 'kuiz-relay',

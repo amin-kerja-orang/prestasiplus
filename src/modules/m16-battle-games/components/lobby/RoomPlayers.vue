@@ -28,7 +28,10 @@ defineProps<{ room: RoomView; showMetric: boolean }>()
           data-testid="room-player-marker"
         ></span>
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-semibold break-words text-slate-700" data-testid="room-player-name">
+          <p
+            class="text-sm font-semibold break-words text-slate-700"
+            data-testid="room-player-name"
+          >
             {{ p.name }}
           </p>
           <p class="text-xs text-slate-500">

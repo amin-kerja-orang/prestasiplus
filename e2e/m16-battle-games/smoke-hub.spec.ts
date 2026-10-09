@@ -7,7 +7,13 @@
 import type { Page } from '@playwright/test'
 
 import { expect as baseExpect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, expectTabTitle, expectTouchTarget, moduleTag, provisional } from '../support'
+import {
+  expectNoHorizontalScroll,
+  expectTabTitle,
+  expectTouchTarget,
+  moduleTag,
+  provisional,
+} from '../support'
 
 const expect = baseExpect.configure({ timeout: 10_000 })
 
@@ -43,7 +49,9 @@ const CARDS: [string, string | null, string, string][] = [
 async function spaGo(page: Page, path: string): Promise<void> {
   await page.evaluate(async (to) => {
     const el = document.querySelector('#app') as Element & {
-      __vue_app__: { config: { globalProperties: { $router: { push(p: string): Promise<unknown> } } } }
+      __vue_app__: {
+        config: { globalProperties: { $router: { push(p: string): Promise<unknown> } } }
+      }
     }
     await el.__vue_app__.config.globalProperties.$router.push(to)
   }, path)
@@ -62,10 +70,14 @@ test.describe('M16 S6 hub', MODULE, () => {
     await gotoApp('/permainan')
     await expectTabTitle(page, 'Permainan — PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title').first()).toHaveText('Zona Permainan')
-    await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText('Selamat datang kembali')
+    await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
+      'Selamat datang kembali',
+    )
     await expect(page.getByTestId('hub-h1')).toHaveText('🎮 Zona Permainan')
     await expect(page.getByTestId('hub-open-rooms-empty')).toContainText('🌙')
-    await expect(page.getByTestId('hub-open-rooms-empty')).toContainText('Tiada bilik terbuka buat masa ini.')
+    await expect(page.getByTestId('hub-open-rooms-empty')).toContainText(
+      'Tiada bilik terbuka buat masa ini.',
+    )
     await expect(page.getByTestId('hub-open-rooms-empty')).toContainText(
       'Cipta bilik permainan dan jemput rakan-rakan!',
     )
@@ -75,17 +87,19 @@ test.describe('M16 S6 hub', MODULE, () => {
     expect(await grid(page).locator('h3').allTextContents()).toEqual(CARDS.map((c) => c[0]))
     const buttons = grid(page).getByTestId('hub-card-button')
     await expect(buttons).toHaveCount(18)
-    expect(await buttons.allTextContents()).toEqual(CARDS.map((c) => c[2]))
+    expect((await buttons.allTextContents()).map((t) => t.trim())).toEqual(CARDS.map((c) => c[2]))
     expect(await buttons.evaluateAll((els) => els.map((a) => a.getAttribute('href')))).toEqual(
       CARDS.map((c) => c[3]),
     )
-    expect(
-      await grid(page).locator('[data-testid="hub-card-badge"]').allTextContents(),
-    ).toEqual(CARDS.flatMap((c) => (c[1] === null ? [] : [c[1]])))
+    expect(await grid(page).locator('[data-testid="hub-card-badge"]').allTextContents()).toEqual(
+      CARDS.flatMap((c) => (c[1] === null ? [] : [c[1]])),
+    )
 
     // Columns by width: 1 below sm, 2 at sm, 3 from lg.
     const width = page.viewportSize()!.width
-    const lefts = await grid(page).locator('h3').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)))
+    const lefts = await grid(page)
+      .locator('h3')
+      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)))
     const columns = new Set(lefts).size
     expect(columns).toBe(width >= 1024 ? 3 : width >= 640 ? 2 : 1)
 
@@ -122,7 +136,11 @@ test.describe('M16 S6 hub', MODULE, () => {
     await expect(card(page, 'battle')).toContainText('🆕 Belum battle lagi')
   })
 
-  test('S6 chips for pelajar2: both "Belum" chips (part of E2E-M16-44) @m16', async ({ page, gotoApp, loginAs }) => {
+  test('S6 chips for pelajar2: both "Belum" chips (part of E2E-M16-44) @m16', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
     await loginAs(PELAJAR2)
     await gotoApp('/permainan')
     await expect(card(page, 'papan-bijak')).toContainText('🆕 Belum main lagi')

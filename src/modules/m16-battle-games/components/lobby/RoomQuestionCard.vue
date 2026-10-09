@@ -47,7 +47,10 @@ function submitWord(): void {
 <template>
   <div class="space-y-4" data-testid="room-question">
     <div class="flex items-start justify-between gap-3">
-      <p class="text-base font-semibold break-words text-slate-800" data-testid="room-question-text">
+      <p
+        class="text-base font-semibold break-words text-slate-800"
+        data-testid="room-question-text"
+      >
         {{ question.text }}
       </p>
       <span
@@ -90,7 +93,7 @@ function submitWord(): void {
       <button
         type="submit"
         :disabled="busy || disabled"
-        class="bg-primary-gradient inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        class="inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold text-white bg-primary-gradient disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         data-testid="room-word-submit"
       >
         Hantar

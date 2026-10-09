@@ -62,11 +62,41 @@ afterEach(() => {
 
 describe('S8-S12 lobby template (FR-M16-62..65)', () => {
   it.each([
-    ['perang-fakta', '⚔️ Perang Fakta', 'Betul atau Salah? Vote & buktikan pengetahuan kamu!', '2-6 pemain · 15 pusingan · 10 saat setiap soalan', '⚔️ Cipta Bilik'],
-    ['benteng-ilmu', '🏰 Benteng Ilmu', 'Serang benteng lawan dengan kuasa ilmu! Jawab betul = serang, jawab salah = rosak sendiri!', '2 pemain · HP 100 · Giliran bertukar', '🏰 Cipta Bilik'],
-    ['perlumbaan-matematik', '🏎️ Perlumbaan Matematik', 'Jawab soalan, lari ke garisan penamat! Siapa paling pantas menang!', '2-4 pemain · 20 langkah · Siapa sampai dulu menang', '🏎️ Cipta Bilik'],
-    ['kuiz-relay', '🏃‍♂️ Kuiz Relay', 'Berpasukan! Jawab soalan secara bergilir-gilir. Pasukan terbaik menang!', '4-8 pemain · 2 pasukan · 10 pusingan', '🏃‍♂️ Cipta Bilik'],
-    ['teka-silang-kata', '📝 Teka Silang Kata', 'Isi silang kata paling pantas! Lawan masa dan lawan untuk markah tertinggi!', '2 pemain · 5 minit · Markah tertinggi menang', '📝 Cipta Bilik'],
+    [
+      'perang-fakta',
+      '⚔️ Perang Fakta',
+      'Betul atau Salah? Vote & buktikan pengetahuan kamu!',
+      '2-6 pemain · 15 pusingan · 10 saat setiap soalan',
+      '⚔️ Cipta Bilik',
+    ],
+    [
+      'benteng-ilmu',
+      '🏰 Benteng Ilmu',
+      'Serang benteng lawan dengan kuasa ilmu! Jawab betul = serang, jawab salah = rosak sendiri!',
+      '2 pemain · HP 100 · Giliran bertukar',
+      '🏰 Cipta Bilik',
+    ],
+    [
+      'perlumbaan-matematik',
+      '🏎️ Perlumbaan Matematik',
+      'Jawab soalan, lari ke garisan penamat! Siapa paling pantas menang!',
+      '2-4 pemain · 20 langkah · Siapa sampai dulu menang',
+      '🏎️ Cipta Bilik',
+    ],
+    [
+      'kuiz-relay',
+      '🏃‍♂️ Kuiz Relay',
+      'Berpasukan! Jawab soalan secara bergilir-gilir. Pasukan terbaik menang!',
+      '4-8 pemain · 2 pasukan · 10 pusingan',
+      '🏃‍♂️ Cipta Bilik',
+    ],
+    [
+      'teka-silang-kata',
+      '📝 Teka Silang Kata',
+      'Isi silang kata paling pantas! Lawan masa dan lawan untuk markah tertinggi!',
+      '2 pemain · 5 minit · Markah tertinggi menang',
+      '📝 Cipta Bilik',
+    ],
   ] as const)('%s: hero, rule line and create button', async (game, h1, sub, rule, button) => {
     await mountPage(game)
     expect(get('lobby-h1').text()).toBe(h1)
@@ -77,23 +107,22 @@ describe('S8-S12 lobby template (FR-M16-62..65)', () => {
 
   it('create form: five subjects, one-way "Tukar", three match fields only', async () => {
     await mountPage()
-    expect(get('create-subject').findAll('option').map((o) => o.text())).toEqual([
-      'Matematik',
-      'Bahasa Melayu',
-      'Bahasa Inggeris',
-      'Sains',
-      'Sejarah',
-    ])
+    expect(
+      get('create-subject')
+        .findAll('option')
+        .map((o) => o.text()),
+    ).toEqual(['Matematik', 'Bahasa Melayu', 'Bahasa Inggeris', 'Sains', 'Sejarah'])
     const auto = get('grade-auto').text()
     expect(auto).toContain('Darjah 4')
     expect(auto).toContain('(auto)')
     await get('grade-switch').trigger('click')
     expect(wrapper!.find('[data-testid="grade-select"]').exists()).toBe(true)
     expect(wrapper!.find('[data-testid="grade-back"]').exists()).toBe(false) // one-way, as live
-    expect(get('create-mode').findAll('option').map((o) => o.text())).toEqual([
-      'Tahap sama sahaja',
-      'Semua Darjah / Semua Tingkatan',
-    ])
+    expect(
+      get('create-mode')
+        .findAll('option')
+        .map((o) => o.text()),
+    ).toEqual(['Tahap sama sahaja', 'Semua Darjah / Semua Tingkatan'])
     expect(wrapper!.find('[data-testid="create-max-players"]').exists()).toBe(false)
   })
 

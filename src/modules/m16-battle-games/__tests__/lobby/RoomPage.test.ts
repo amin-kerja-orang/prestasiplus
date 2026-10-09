@@ -25,7 +25,8 @@ vi.mock('@/composables/useSession', () => ({
   useSession: () => ({ user: ref({ id: 1 }) }),
 }))
 
-const notFound = () => new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Bilik tidak dijumpai.' })
+const notFound = () =>
+  new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Bilik tidak dijumpai.' })
 
 const room = (over: Partial<RoomView> = {}): RoomView => ({
   code: 'ABC123',
@@ -118,7 +119,9 @@ describe('waiting room (FR-M16-68)', () => {
   })
 
   it('disables "Mula" below the game minimum (Kuiz Relay needs 4)', async () => {
-    fetchRoom.mockResolvedValue(room({ game: 'kuiz-relay', settings: { ...room().settings, minPlayers: 4, maxPlayers: 8 } }))
+    fetchRoom.mockResolvedValue(
+      room({ game: 'kuiz-relay', settings: { ...room().settings, minPlayers: 4, maxPlayers: 8 } }),
+    )
     await mountRoom('kuiz-relay')
     expect(get('room-start').attributes('disabled')).toBeDefined()
   })
@@ -161,7 +164,10 @@ describe('play and result (FR-M16-69, 70)', () => {
   it('posts an answer with the question id, the option and the seconds', async () => {
     fetchRoom.mockResolvedValue(playing())
     roomAction.mockResolvedValueOnce(
-      playing({ round: 2, state: { awaiting: 'answer', round: 2, total: 15, humanId: 1, log: [] } }),
+      playing({
+        round: 2,
+        state: { awaiting: 'answer', round: 2, total: 15, humanId: 1, log: [] },
+      }),
     )
     await mountRoom()
     await wrapper!.findAll('[data-testid="room-option"]')[0]!.trigger('click')
@@ -182,11 +188,21 @@ describe('play and result (FR-M16-69, 70)', () => {
   })
 
   it('Papan Bijak: the roll button posts {type: roll}; the board has 50 tiles', async () => {
-    const board = Array.from({ length: 50 }, (_, i) => (i === 0 ? 'start' : i === 49 ? 'finish' : 'plain'))
+    const board = Array.from({ length: 50 }, (_, i) =>
+      i === 0 ? 'start' : i === 49 ? 'finish' : 'plain',
+    )
     const pb = room({
       game: 'papan-bijak',
       status: 'playing',
-      state: { awaiting: 'roll', round: 1, total: 50, humanId: 1, board, positions: { '1': 1, '2': 1 }, log: [] },
+      state: {
+        awaiting: 'roll',
+        round: 1,
+        total: 50,
+        humanId: 1,
+        board,
+        positions: { '1': 1, '2': 1 },
+        log: [],
+      },
     })
     fetchRoom.mockResolvedValue(pb)
     roomAction.mockResolvedValueOnce({
@@ -199,9 +215,7 @@ describe('play and result (FR-M16-69, 70)', () => {
     await flushPromises()
     expect(roomAction.mock.calls[0]![2]).toEqual({ type: 'roll' })
     expect(get('room-dice').text()).toBe('🎲 Dadu: 4')
-    expect(
-      wrapper!.get('[data-tile="5"]').findAll('[data-testid="room-token"]'),
-    ).toHaveLength(1)
+    expect(wrapper!.get('[data-tile="5"]').findAll('[data-testid="room-token"]')).toHaveLength(1)
   })
 
   it('a finished room shows the winner, the scores and the hub link', async () => {
@@ -265,7 +279,10 @@ describe('polling (§7.1)', () => {
   it('stops polling when the room finishes and clears every timer on unmount', async () => {
     fetchRoom.mockResolvedValueOnce(room())
     fetchRoom.mockResolvedValue(
-      room({ status: 'finished', result: { winnerId: null, winnerName: null, mvpId: null, scores: [] } }),
+      room({
+        status: 'finished',
+        result: { winnerId: null, winnerName: null, mvpId: null, scores: [] },
+      }),
     )
     await mountRoom()
     await vi.advanceTimersByTimeAsync(3000)

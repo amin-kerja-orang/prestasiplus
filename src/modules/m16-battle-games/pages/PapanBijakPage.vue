@@ -72,7 +72,7 @@ async function join(code: string): Promise<void> {
         </p>
       </header>
 
-      <div class="grid gap-4 md:grid-cols-2 sm:gap-6">
+      <div class="grid gap-4 sm:gap-6 md:grid-cols-2">
         <RoomCreateForm
           :game="GAME"
           :auto-grade="lobby.autoGrade"

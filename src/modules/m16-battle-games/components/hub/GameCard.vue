@@ -41,7 +41,7 @@ function go(e: MouseEvent): void {
       >{{ card.badge }}</span
     >
     <div class="text-4xl" data-testid="hub-card-emoji">{{ card.emoji }}</div>
-    <h3 class="font-heading mt-2 text-lg font-bold text-slate-800">{{ card.title }}</h3>
+    <h3 class="mt-2 font-heading text-lg font-bold text-slate-800">{{ card.title }}</h3>
     <p class="mt-1 text-sm text-slate-500">{{ card.text }}</p>
     <div v-if="visibleChips.length > 0" class="mt-3 flex flex-wrap gap-2">
       <span
@@ -55,7 +55,7 @@ function go(e: MouseEvent): void {
     <div class="mt-auto pt-4">
       <RouterLink
         :to="card.to"
-        class="bg-primary-gradient inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5"
+        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition bg-primary-gradient hover:-translate-y-0.5"
         data-testid="hub-card-button"
       >
         <AppIcon :name="card.icon" class="h-4 w-4" />
