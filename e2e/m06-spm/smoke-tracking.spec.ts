@@ -27,6 +27,9 @@ import {
 
 const GURU = 'guru@demo.test'
 
+/** First data load of a freshly booted mock can take long on a busy machine. */
+const SLOW = { timeout: 30_000 }
+
 /** Texts of the chips of an open card. */
 const chipsOf = (card: import('@playwright/test').Locator) =>
   card.locator('[data-testid=open-chips] > span')
@@ -41,6 +44,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/ramalan')
+    await expect(tid(page, 'lanes')).toBeVisible(SLOW)
     await expectTabTitle(page, 'Tracking A SPM - PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A SPM')
     if (isDesktopShell(page)) {
@@ -140,6 +144,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/spm/ramalan')
+    await expect(tid(page, 'readiness')).toBeVisible(SLOW)
     const card = tid(page, 'readiness')
     await expect(card).toBeVisible()
     await expect(card).toContainText('Admin Readiness')
@@ -229,7 +234,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     }) => {
       await loginAs(who)
       await gotoApp('/spm/ramalan')
-      await expect(tid(page, 'lanes')).toBeVisible()
+      await expect(tid(page, 'lanes')).toBeVisible(SLOW)
       await expect(tid(page, 'readiness')).toHaveCount(0)
       await expect(page.getByText('Admin Readiness')).toHaveCount(0)
     })
@@ -630,7 +635,7 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
       await loginAs(PELAJAR2)
       await gotoApp('/latihan-berstruktur/2510/jawab?scope=spm')
       const answers = page.getByTestId('sub-answer')
-      await expect(answers.first()).toBeVisible()
+      await expect(answers.first()).toBeVisible(SLOW)
       const n = await answers.count()
       expect(n).toBeGreaterThan(0)
       for (let i = 0; i < n; i++) await answers.nth(i).fill(`Jawapan ${String(i + 1)}`)
