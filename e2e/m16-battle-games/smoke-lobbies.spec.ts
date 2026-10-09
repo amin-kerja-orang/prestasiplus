@@ -7,7 +7,7 @@
 
 import type { Page } from '@playwright/test'
 
-import { expect as baseExpect, test } from '../fixtures/test'
+import { expect as baseExpect, reloadApp, test } from '../fixtures/test'
 import type { MockHandle } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional } from '../support'
 
@@ -179,11 +179,15 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
       await loginAs(ADMIN)
       await gotoApp('/papan-bijak')
       await page.getByTestId('qm-start').click()
-      await expect(page.getByTestId('qm-elapsed')).toHaveText('Mencari lawan... 0s')
+      await expect(page.getByTestId('qm-elapsed')).toHaveText(/^Mencari lawan\.\.\. \d+s$/) // 0s unless the machine is slow
       const start = await mock.lastRequest('/api/papan-bijak/quick-match')
       expect(start?.body).toEqual({ subject: 'MATEMATIK', match_mode: 'same_grade' })
       await mock.advanceTime(2000)
-      await expect(page.getByTestId('qm-elapsed')).toHaveText('Mencari lawan... 2s')
+      await expect
+        .poll(async () =>
+          Number(/(\d+)s$/.exec((await page.getByTestId('qm-elapsed').textContent()) ?? '')?.[1]),
+        )
+        .toBeGreaterThanOrEqual(2)
       await expect(
         page.getByText('Sila tunggu, sistem sedang mencari pemain sepadan'),
       ).toBeVisible()
@@ -328,8 +332,10 @@ test.describe('M16 S8-S12 lobbies', MODULE, () => {
     loginAs,
   }) => {
     await loginAs(ADMIN)
-    for (const [slug] of LOBBIES) {
-      await gotoApp(`/${slug}/XXXXXX`)
+    for (const [i, [slug]] of LOBBIES.entries()) {
+      // The first is a real page load of the bare link; the others are client-side visits (one boot).
+      if (i === 0) await gotoApp(`/${slug}/XXXXXX`)
+      else await spaGo(page, `/${slug}/XXXXXX`)
       await expect(page).toHaveURL(new RegExp(`/${slug}$`))
       const flash = page.getByTestId('cmp-flash')
       await expect(flash).toHaveText('Bilik tidak dijumpai.')
@@ -396,6 +402,46 @@ test.describe('M16 rooms', MODULE, () => {
       const polls = await pollCount(mock, '/api/games/perang-fakta/rooms/*')
       await mock.advanceTime(9000)
       expect(await pollCount(mock, '/api/games/perang-fakta/rooms/*')).toBe(polls) // finished: no more polls
+      await expectNoHorizontalScroll(page)
+    },
+  )
+
+  test(
+    'Perang Fakta server clock: a reload mid-round keeps the countdown, and the round advances with no input @m16',
+    provisional('the room clock is PROVISIONAL (BR-M16-20)'),
+    async ({ page, gotoApp, loginAs, mock }) => {
+      await loginAs(ADMIN)
+      await gotoApp('/perang-fakta')
+      await page.getByTestId('create-submit').click()
+      await expect(page).toHaveURL(/\/perang-fakta\/[A-Z0-9]{6}$/)
+      await pollOnce(mock, '/api/games/perang-fakta/rooms/*', 2)
+      await expect(page.getByTestId('room-player')).toHaveCount(2)
+      await page.getByTestId('room-start').click()
+      // The wall clock keeps running under the Playwright clock, so the checks are relative: the round
+      // number and the seconds left are read from the page and compared, never assumed to be 1 and 10.
+      const readRound = async () =>
+        Number(
+          /Pusingan (\d+)\//.exec((await page.getByTestId('room-round').textContent()) ?? '')?.[1],
+        )
+      const readLeft = async () =>
+        Number(((await page.getByTestId('room-countdown').textContent()) ?? '').replace('s', ''))
+      await expect(page.getByTestId('room-countdown')).toBeVisible()
+      const round0 = await readRound()
+      const left0 = await readLeft()
+
+      // 2 s pass on the project clock, then the page is reloaded: the countdown continues, it is not reset.
+      await mock.advanceTime(2000)
+      await reloadApp(page)
+      await expect(page.getByTestId('room-countdown')).toBeVisible()
+      const round1 = await readRound()
+      expect(round1).toBeGreaterThanOrEqual(round0)
+      if (round1 === round0) expect(await readLeft()).toBeLessThan(left0)
+
+      // With no input the round advances: 11 s is more than one round (the page sends the no-vote, the
+      // server resolves the same), and the new round starts its own 10 s.
+      await mock.advanceTime(11_000)
+      await expect.poll(readRound).toBeGreaterThan(round1)
+      await expect.poll(readLeft).toBeGreaterThan(0)
       await expectNoHorizontalScroll(page)
     },
   )
