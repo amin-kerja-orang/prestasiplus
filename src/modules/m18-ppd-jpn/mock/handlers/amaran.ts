@@ -31,6 +31,7 @@ import {
   yyyymmdd,
 } from '../repository/amaran'
 import {
+  ADMIN_PREVIEW_SCOPE,
   defaultScope,
   mayExportSchool,
   mayOpenSchool,
@@ -116,7 +117,10 @@ export const amaranRoutes: RouteDef[] = [
       scope = { kind: 'district', district: d, state: s }
     } else if (kind === 'state') {
       const own = defaultScope(viewer)
-      const s = state ?? (own?.kind === 'state' ? own.state : undefined)
+      // Admin without a state: the admin preview state (DATA-M18-05, SRS §9).
+      const s =
+        state ??
+        (own?.kind === 'state' ? own.state : viewer.role === 'admin' ? ADMIN_PREVIEW_SCOPE.state : undefined)
       if (s === undefined) return validationError({ state: 'The state is required.' })
       scope = { kind: 'state', state: s }
     } else {

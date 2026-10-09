@@ -9,7 +9,10 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { CLOCK_ANCHOR_MS } from '@/lib/time'
 import { users } from '@/modules/m01-authentication/mock'
 
+import { MASTERY_THRESHOLDS, masteryLevel } from '@/modules/m05-practice/mock'
+
 import { risk } from '../../mock'
+import { MASTERY_LADDER, masteryLevelOf } from '../../mock/repository/risk'
 import { MemoryStorage, bootM18 } from './boot'
 
 vi.setConfig({ testTimeout: 180_000 })
@@ -70,10 +73,10 @@ describe('observed anchors reproduced by the current owner data', () => {
 
 describe('observed anchors NOT reproduced (owner data gaps, never tuned)', () => {
   it.todo(
-    'KLUANG score-80 "belum mula latih" = 49 (8880 42, 8767 2, 8772 2, 2700 2, 8765 1): needs M05 stored-only mastery (XR-M18-M05-01)',
+    'KLUANG score-80 "belum mula latih" = 49 (8880 42, 8767 2, 8772 2, 2700 2, 8765 1): with the single stored-mastery source now: 135 red, 26 score-80 (8880 19, 8767 2, 8772 2, 2700 2, 8765 1): 8880 is 19 not 42 until M05 seeds change (XL-R10-01)',
   )
   it.todo(
-    '8880 average 84.0 and its 42 "Tiada aktiviti" score-80 pupils: same cause (log-derived mastery for answerers)',
+    '8880 average 84.0 and its 42 "Tiada aktiviti" score-80 pupils: with the single source 8880 averages 87.6 (not 84.0) and has 19 such pupils: M05 seed gap (XL-R10-01)',
   )
   it.todo(
     '8765 scores 72.2 / 67 and 2700 88.6: sessions are M18 display values (DATA-M18-07), not yet mapped to pupils',
@@ -123,5 +126,30 @@ describe('behaviour of the read model', () => {
   it('the result follows the clock (the same pupils score lower earlier)', () => {
     const early = risk.pupilsForClass(1156, { now: Date.parse('2026-09-16T12:00:00+08:00') })[0]
     expect(early?.score).toBeLessThan(44.7)
+  })
+})
+
+describe('one mastery source for every path', () => {
+  it('the class-row score equals the school-row score for every pupil (class 1156 school and a large school)', () => {
+    const cls = risk.pupilsForClass(1156, { now })
+    expect(cls.length).toBeGreaterThan(0)
+    const schoolIds = new Set<number>([8880, ...cls.map((r) => r.schoolId)])
+    for (const sid of schoolIds) {
+      const bySchool = new Map(risk.pupilsForSchool(sid, { now }).map((r) => [r.userId, r]))
+      expect(bySchool.size).toBeGreaterThan(0)
+      for (const r of cls.filter((c) => c.schoolId === sid))
+        expect(bySchool.get(r.userId)?.score).toBe(r.score)
+    }
+    // a large school: every class of it, pupil by pupil
+    const rows = risk.pupilsForSchool(8880, { now })
+    const classIds = new Set(rows.flatMap((r) => r.classes.filter((c) => c.kind === 'classroom').map((c) => c.id)))
+    for (const id of [...classIds].slice(0, 6))
+      for (const r of risk.pupilsForClass(id, { now }))
+        expect(rows.find((x) => x.userId === r.userId)?.score).toBe(r.score)
+  })
+
+  it('the mastery ladder is the M05 own export', () => {
+    expect(MASTERY_LADDER).toBe(MASTERY_THRESHOLDS)
+    for (let c = 0; c <= 1600; c += 7) expect(masteryLevelOf(c)).toBe(masteryLevel(c))
   })
 })

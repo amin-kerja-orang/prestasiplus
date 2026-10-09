@@ -242,6 +242,14 @@ describe('#22 GET /api/amaran/summary', () => {
     expect(d.schools?.some((s) => s.schoolId === 8880)).toBe(true)
   })
 
+  it('admin with scope=state and no state: the admin preview state (Perak, DATA-M18-05)', async () => {
+    const res = await getAs(runtime, admin.id, '/api/amaran/summary?scope=state')
+    expect(res.status).toBe(200)
+    const d = (res.body as { data: SummaryData }).data ?? (res.body as SummaryData)
+    expect(d.scope).toBe('state')
+    expect(d.title).toBe('Negeri Perak')
+  })
+
   it('403 out of scope: PPD officer for another district or a state; school admin for district / state', async () => {
     expect(
       (await getAs(runtime, ppdSelangor.id, '/api/amaran/summary?scope=school&schoolId=8880'))

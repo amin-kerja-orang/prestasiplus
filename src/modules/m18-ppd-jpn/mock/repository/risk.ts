@@ -14,15 +14,27 @@
  * M10 `classrooms.enrolmentsOf`, M02 `schools`. Per-school results are memoised per stamp (session
  * count, answer count, pupil count, minute of the clock) so a warm `forSchool` is a map lookup.
  *
- * INFERRED: the mastery ladder thresholds are the M05 BR-20 scale (M05 keeps them private; M14 holds
- * a read-only copy), practice-mode sessions only (BR-M18-23), pupils include inactive users
+ * Public API: consumers outside a handler must pass `now` explicitly in the options (handlers pass
+ * `ctx.clock.now()`); the default is the app clock. Mastery thresholds are M05's BR-20 export.
+ *
+ * Cache limits: a school memo is keyed on the owner stamp (session count, answer count, pupil count,
+ * minute of `now`) and is cleared on every mock seed / reset (`finaliseM18`). Mastery writes go with
+ * answers (log stamp changes). A direct edit of `lastActiveAt` or of a class enrolment without a new
+ * answer is NOT detected until the minute of `now` changes or `risk.resetCache()` is called.
+ *
+ * INFERRED: practice-mode sessions only (BR-M18-23), pupils include inactive users
  * (BR-M18-04), fixture schools 900001-900099 are excluded from district / state scopes (BR-M18-02).
  */
 
 import { clock as appClock } from '@/lib/time'
 import { users, type UserRow } from '@/modules/m01-authentication/mock'
 import { schools } from '@/modules/m02-users-schools/mock'
-import { practice, practiceAnswers } from '@/modules/m05-practice/mock'
+import {
+  MASTERY_THRESHOLDS,
+  masteryLevel,
+  practice,
+  practiceAnswers,
+} from '@/modules/m05-practice/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type {
@@ -39,14 +51,11 @@ const DAY = 86_400_000
 const FIXTURE_MIN = 900_001
 const FIXTURE_MAX = 900_099
 
-/** Correct answers needed for L0 ... L10 (M05 BR-20; L4+ INFERRED there too). */
-const MASTERY_THRESHOLDS = [0, 10, 25, 50, 100, 200, 350, 550, 800, 1100, 1500] as const
+/** The M05 BR-20 ladder (L0 ... L10), re-exported from the owner (no private copy). */
+export const MASTERY_LADDER: readonly number[] = MASTERY_THRESHOLDS
 
-export function masteryLevelOf(correct: number): number {
-  let level = 0
-  for (const [i, t] of MASTERY_THRESHOLDS.entries()) if (correct >= t) level = i
-  return level
-}
+/** Mastery level of a record from its correct answers: M05's own `masteryLevel`. */
+export const masteryLevelOf = (correct: number): number => masteryLevel(correct)
 
 const round1 = (n: number): number => Math.round(n * 10) / 10
 
@@ -84,6 +93,8 @@ export function computeRisk(input: RiskInputs, now: number): RiskComputed {
   const neverActive = !hasSession && !hasActivity && !hasMastery
 
   const a = hasSession ? 100 - (input.accuracy as number) : hasActivity || hasMastery ? 100 : 50
+  // Whole elapsed days (floor) is the accepted calibration: it reproduces the class-1156 anchor
+  // (44.7 at the clock, 45.7 one day later); rounding would shift every pupil by up to a day.
   const daysSinceActive = hasActivity ? Math.max(0, Math.floor((now - activeMs) / DAY)) : null
   const e = daysSinceActive === null ? 100 : Math.min(100, (daysSinceActive * 100) / 30)
   const m = hasMastery ? (10 - (input.masteryMean as number)) * 10 : 100
@@ -151,32 +162,24 @@ interface MasteryCounter {
 }
 
 /**
- * Mastery records of a set of pupils (Q-M18-MASTERY: M05 SubjectMastery).
- *
- * XR-M18-M05-01: M05 exposes no bulk read of the STORED counters, and `practice.mastery(userId)` costs a
- * log scan (~100 ms) for users without stored rows. Until M05 offers `practice.storedMastery(userIds)`
- * (used automatically when present), a set of at most `PROBE_MAX` pupils (a class, a small school) reads
- * `practice.mastery` per pupil (stored rows, else the log aggregates), and a larger set takes the log
- * aggregates from the bulk `practice.subjectTotals` (what M05 returns for users without stored rows).
- * Pupils holding stored rows in a large school are therefore read from the log (owner gap).
+ * Mastery records of a set of pupils (Q-M18-MASTERY: M05 SubjectMastery), ONE source for every path
+ * (class, school, scope): the stored counters via `practice.storedMastery`, and only for a pupil
+ * without stored rows the log aggregates (`practice.subjectTotals`, the same counters
+ * `practice.mastery(id)` derives for a single pupil). A pupil's records never depend on the set size.
  */
-const PROBE_MAX = 60
-
 function masteryOf(userIds: readonly number[]): Map<number, MasteryCounter[]> {
   const out = new Map<number, MasteryCounter[]>()
-  const stored = Reflect.get(practice, 'storedMastery') as
-    ((ids: readonly number[]) => Map<number, MasteryCounter[]>) | undefined
-  if (typeof stored === 'function') {
-    const got = stored.call(practice, userIds)
-    for (const id of userIds) out.set(id, got.get(id) ?? [])
-    return out
+  const stored = practice.storedMastery(userIds)
+  const missing: number[] = []
+  for (const id of userIds) {
+    const rows = stored.get(id) ?? []
+    if (rows.length > 0) out.set(id, rows)
+    else missing.push(id)
   }
-  if (userIds.length <= PROBE_MAX) {
-    for (const id of userIds) out.set(id, practice.mastery(id))
-    return out
+  if (missing.length > 0) {
+    const totals = practice.subjectTotals(missing)
+    for (const id of missing) out.set(id, totals.get(id) ?? [])
   }
-  const totals = practice.subjectTotals(userIds)
-  for (const id of userIds) out.set(id, totals.get(id) ?? [])
   return out
 }
 

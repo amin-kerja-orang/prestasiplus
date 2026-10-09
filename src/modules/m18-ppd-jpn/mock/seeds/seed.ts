@@ -11,6 +11,7 @@ import { toIsoMyt } from '@/lib/time'
 import { users } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 
+import { resetRiskCache } from '../repository/risk'
 import { amaranInterventionsRepo, correctionSubjectsRepo } from '../repository/stores'
 import type { AmaranInterventionRow, CorrectionSubjectRow } from '../repository/types'
 
@@ -145,6 +146,7 @@ export function finaliseM18(): void {
   const c = buildCorrections()
   const i = buildInterventions()
   issuesFound = [...c.issues, ...i.issues]
+  resetRiskCache() // a mock reset / reseed drops every risk memo
   correctionSubjectsRepo.seed(c.rows)
   amaranInterventionsRepo.seed(i.rows)
 }
