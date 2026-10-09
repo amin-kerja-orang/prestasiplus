@@ -50,7 +50,6 @@ function type(text: string): void {
       class="w-full rounded-xl border border-slate-300 p-3 text-sm"
       :value="modelValue.text ?? ''"
       data-testid="pksk-essay"
-      :aria-label="`Jawapan soalan ${String(index)}`"
       @input="type(($event.target as HTMLTextAreaElement).value)"
     ></textarea>
   </fieldset>
