@@ -33,7 +33,7 @@ const DOT: Record<string, string> = {
 }
 
 const PILL = 'inline-flex min-h-11 items-center rounded-full border-2 px-4 py-2 text-sm font-semibold transition'
-const CHIP = 'inline-flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 py-2 text-sm font-bold transition'
+const CHIP = 'inline-flex min-h-11 flex-1 items-center justify-center rounded-xl px-2 py-2 min-[375px]:px-3 text-sm font-bold transition'
 </script>
 
 <template>

@@ -393,6 +393,17 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
     await expect(last).toHaveCSS('opacity', '1')
   })
 
+  test('DV-M03-10 no horizontal page scroll at 320 px', async ({ page, loginAs, gotoApp }) => {
+    await page.setViewportSize({ width: 320, height: 800 })
+    await loginAs(PELAJAR)
+    await openMap(page, gotoApp)
+    await expect(page.getByTestId('map-grade-chip')).toHaveCount(4)
+    await expectNoHorizontalScroll(page)
+    await openMap(page, gotoApp, '?subject=MATEMATIK&grade=DARJAH_1')
+    await expect(page.getByTestId('map-node').first()).toBeVisible()
+    await expectNoHorizontalScroll(page)
+  })
+
   test('E2E-M03-43 selectors: pills, colours, subtitles, grade chips', async ({
     page,
     loginAs,
