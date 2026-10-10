@@ -134,6 +134,8 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     const item = menu.getByRole('link', { name: 'Heatmap Topik Lemah' })
     await expect(item).toHaveAttribute('href', '/buku-nota/heatmap')
     await expect(item).not.toHaveAttribute('href', '/heatmap-topik-lemah')
+    // AC-M25-01.5: the entry is the highlighted item while S1 is open.
+    await expect(item).toHaveClass(/\bactive\b/)
   })
 
   test('E2E-M25-01 the admin menu has no Heatmap Topik Lemah entry @m25', async ({
@@ -526,6 +528,10 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await expect(button).toHaveText('Mula Latih Tubi')
     await expect(button).toHaveAttribute('href', '/practice')
     await expectNoHorizontalScroll(page)
+    // B-2 re-test: a click lands on /practice, not on the global 404.
+    await button.click()
+    await expect(page).toHaveURL(/\/practice$/)
+    await expect(page.getByText('Halaman Tidak Dijumpai')).toHaveCount(0)
 
     await actAs(page, mock, gotoApp, ADMIN, PATH)
     await expect(page.getByTestId('heatmap-legend').locator('li').nth(3)).toHaveText('Belum cuba')

@@ -86,3 +86,56 @@ Screenshots in `D:\Dev Projects\pretasiplus-app\.playwright-mcp\`: `m25-admin-12
 ## Final verdict
 
 **NOT READY.** G5 needs every AC executed and Pass with no open Critical/High bug. Open: 1 Fail (AC-M25-04.1, B-1), 2 Blocked (AC-M25-01.1, 01.5, F-19b, which is itself a High dead-link bug), plus B-2 (Medium). Everything else (36 of 39 ACs, 117 automated tests across the three viewports) passes with no horizontal scroll, no text under 12 px and all figures (116 / 45, 37 / 26 style totals, 43 / 57 / 83 order, band edges, tie order, empty state, role redirects, mock-failure hiding of the Cikgu Pakar card) as specified. A re-run after the fixes should be limited to E2E-M25-01 (unskipped), 10, 17 and 19.
+
+---
+
+# Re-test after fixes (G5 final, 2026-10-10)
+
+Code: `feature/student-prototype` at 242aa56, which contains `d697423` (B-1, B-2, B-5) and `78efd4b` (F-19b, DV-M25-09). Build: `npx vite build --mode e2e --outDir <scratch>/dist`, served by my own `vite preview` on port 5109 (stopped afterwards, own PID only). Playwright: `--workers=1`, 2 retries, 30 s expect timeout, `E2E_BOOT_TIMEOUT_MS=150000`, `E2E_BOOT_MS=150000`, projects mobile 375x812, tablet 768x1024, desktop 1280x800. The temporary config was removed from the repo root. No application code was edited. Logs are in `<scratchpad>/m25-g5/` (`e2e.log`, `report.json`, `unit5.log`, `tsc.log`).
+
+Spec changes (test code only, `e2e/m25-ai-centre/s1-heatmap.spec.ts`):
+- E2E-M25-01 student menu: the `test.fixme` for F-19b had already been removed in `d697423`, so the test now runs at all 3 widths (sidebar at 1280, drawer at 375 and 768). I added an assertion that the entry has the `active` class (AC-M25-01.5 was never asserted before).
+- E2E-M25-17: after the href check, the test now clicks "Mula Latih Tubi" and asserts the URL ends in `/practice` and "Halaman Tidak Dijumpai" is absent (B-2).
+
+## Runs
+
+| Run | Result |
+|---|---|
+| `e2e/m25-ai-centre`, 3 projects, 40 tests each (120) | **120 passed, 0 failed, 0 skipped, 0 flaky** (41.5 min). Mobile 40/40, tablet 40/40, desktop 40/40. No retry was used. |
+| E2E-M25-01 (student menu, now un-skipped) | pass at 375 (drawer), 768 (drawer) and 1280 (sidebar): href `/buku-nota/heatmap`, not `/heatmap-topik-lemah`, entry is active |
+| E2E-M25-10 (hero) | pass at 3 widths: h1, p and container computed colour `rgb(255, 255, 255)` (admin) |
+| E2E-M25-17 (pelajar2 empty state) | pass at 3 widths: button href `/practice`, click lands on `/practice`, no 404 page |
+| E2E-M25-30 (timing-fragile before, B-5) | pass at 3 widths with `test.slow()` |
+| `npx vitest run --project unit --maxWorkers=2 src/modules/m25-ai-centre` | **4 files, 26 tests passed**. Note: the first three attempts failed only with a vitest worker start timeout for `heatmap-page.test.ts` ("Timeout waiting for worker to respond", 3 other files passed) while the machine was loaded by the e2e build and other sessions; no assertion failed. The re-run after the e2e run finished passed all 4 files. This is environmental. |
+| `npx tsc -p tsconfig.e2e.json --noEmit` | exit 0, no errors |
+
+## Re-tested ACs
+
+| AC | Evidence | M | T | D | Result |
+|---|---|---|---|---|---|
+| 01.1 student menu href `/buku-nota/heatmap` | E2E-01 (un-skipped) | Pass | Pass | Pass | **Pass** |
+| 01.5 active menu item | E2E-01 active-class assertion (added) | Pass | Pass | Pass | **Pass** |
+| 04.1 hero white text on red gradient | E2E-10 h1, p, container all `rgb(255,255,255)` for admin. For students the hero is the same `HeatmapHero.vue` (explicit `text-white` on h1 and p, no role branch), and pelajarmaju / pelajar2 render it in E2E-14 / 17; the student h1 colour itself is not separately asserted in a test. | Pass | Pass | Pass | **Pass** |
+| 07.1 pelajar2 empty state, button target | E2E-17 href plus click to `/practice` (DV-M25-10) | Pass | Pass | Pass | **Pass** |
+| 02.3 404 page | E2E-05 still passes; AC text now reads `/practice` (see B-3) | Pass | Pass | Pass | **Pass** |
+
+All other ACs: regression run green at 375 / 768 / 1280 (see Runs). No horizontal scroll, text under 12 px or clipped content was reported by E2E-08 and `expectNoHorizontalScroll`.
+
+Updated counts: **39 ACs, 39 Pass, 0 Fail, 0 Blocked**.
+
+## Bug status
+
+| ID | Severity | Status |
+|---|---|---|
+| F-19b | High | **Closed.** Menu href is `/buku-nota/heatmap` at 1280 (sidebar) and 375 / 768 (drawer), entry active. |
+| B-1 | Medium | **Closed.** h1 is white; E2E-10 now asserts it. |
+| B-2 | Medium | **Closed.** Button goes to `/practice` and the click lands there (DV-M25-10, D9 dead-link fix). |
+| B-3 | Low | **Closed.** AC-M25-02.3 in `docs/requirements/urs/M25-ai-centre.md` already reads "Mula Latihan" -> `/practice` (M01 DV-02); no stale text left, no doc note needed. |
+| B-4 | Low | Open, not an M25 defect: `/ppd/dashboard` and `/jpn/dashboard` render the global 404 (role homes not built). Owner: M01 / role-home owner. Does not block. |
+| B-5 | Low | **Closed.** `test.slow()` added; E2E-M25-30 passed at all 3 widths with no retry. |
+
+No open Critical or High bug.
+
+## Final verdict: READY
+
+All 39 ACs are executed and Pass (36 from the first run plus the 3 re-tested here), the full suite is 120 of 120 at mobile, tablet and desktop, the unit suite (26 tests) and the e2e type-check are clean, and the only open item is the Low, non-M25 B-4. Caveats stated honestly: the student-account h1 colour rests on the shared component plus the admin assertion, and the unit run needed a re-run because of a load-related worker start timeout.
