@@ -35,6 +35,8 @@ Unreadable-text fixes (D9, M16-T6 G4, 2026-10-09; colour only, layout and gradie
 
 Deferred (release 1.0 = student scope): S24 `/tournament/admin/create` and the other admin/seller tournament screens. The admin-only "Cipta Tournament Baru" link on S23 stays as observed and resolves only once S24 is built (TRACKER XR-M16-11; not a D9 fix, does not block L28).
 
+Shell bottom-nav (INFERRED, G5 L26 Low-1, 2026-10-10): live highlights the mobile bottom-nav tab "Game" (`/permainan`) on the game pages; the exact live condition was not captured. The user shell keeps "Game" active on `/permainan*` and, via `activeAlso` in `src/shells/nav/user-nav.ts`, on `/battle*`, `/papan-bijak*` and the five lobbies with their rooms (`/perang-fakta`, `/benteng-ilmu`, `/perlumbaan-matematik`, `/kuiz-relay`, `/teka-silang-kata`). `/tournament` and `/sekolah-bersaing` are not included (no evidence).
+
 ---
 
 ## 1. Scope
