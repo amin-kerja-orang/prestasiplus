@@ -232,3 +232,9 @@ How executed: manual browser (Playwright MCP lane 3) for 02.1, 03.x and the visu
 ## Cleanup (round 2)
 
 My scratch config, `dist-e2e-5120` and `test-results` were removed and my 5120 preview stopped. Kept for the commit: `e2e/m16-battle-games/qa-round2.spec.ts` and `src/modules/m16-battle-games/__tests__/mock/qa-round2.test.ts`.
+
+## Lead note (2026-10-10)
+
+- BUG-L26-03 fixed by the lead: the hero `h1` on S6 (`hub-h1`), S7 (`pb-h1`) and S8–S12 (`lobby-h1`) now carries `text-white`, as on live. Re-verified by QA before L26 is closed.
+- Low-3 ("Habat!" at 0/0 on the live screenshot vs the URS "TERUSKAN!" ladder) is recorded as DV-M16-50: the rebuild follows the URS.
+- The round-2 evidence files `e2e/m16-battle-games/qa-round2.spec.ts` and `src/modules/m16-battle-games/__tests__/mock/qa-round2.test.ts` were not merged: they fail the repo lint rules (restricted cross-module import, unused variable). Their results are recorded above and remain the evidence for the formerly not-executed ACs.

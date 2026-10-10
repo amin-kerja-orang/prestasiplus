@@ -66,7 +66,7 @@ async function join(code: string): Promise<void> {
       <header
         class="relative overflow-hidden rounded-3xl bg-linear-to-br from-violet-600 to-purple-900 p-5 text-white shadow-lg sm:p-6"
       >
-        <h1 class="font-heading text-2xl font-bold sm:text-3xl" data-testid="pb-h1">
+        <h1 class="font-heading text-2xl font-bold text-white sm:text-3xl" data-testid="pb-h1">
           {{ meta.emoji }} {{ meta.title }}
         </h1>
         <p class="mt-1 max-w-2xl text-sm font-semibold sm:text-base" data-testid="pb-subtitle">

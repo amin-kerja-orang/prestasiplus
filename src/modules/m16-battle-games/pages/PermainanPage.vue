@@ -30,7 +30,7 @@ const loading = computed(() => hub.value === null && error.value === null)
       <header
         class="relative overflow-hidden rounded-2xl bg-linear-to-r from-indigo-500 via-purple-500 to-fuchsia-300 p-5 text-white shadow-lg sm:p-6"
       >
-        <h1 class="font-heading text-2xl font-bold sm:text-3xl" data-testid="hub-h1">
+        <h1 class="font-heading text-2xl font-bold text-white sm:text-3xl" data-testid="hub-h1">
           {{ HUB_HEADING }}
         </h1>
         <p class="mt-1 max-w-xl text-sm sm:text-base">{{ HUB_INTRO }}</p>
