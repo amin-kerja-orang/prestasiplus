@@ -45,9 +45,9 @@ Status di bawah ialah status pada 2026-10-02.
 | L23 | Kedudukan (18) | M | M08 | **100%** |
 | L24 | PKSK (19) | M | M07 | **100%** |
 | L25 | Artikel (20) | M | M09 | **100%** |
-| L26 | Permainan (21) | M★ | M16 | 40% |
+| L26 | Permainan (21) | M★ | M16 | 85% |
 | L27 | Cabutan Bertuah (22) | M | M15 | **100%** |
-| L28 | Tournament (23) | M | M16 | 40% |
+| L28 | Tournament (23) | M | M16 | **100%** |
 | L29 | Topik (24) | M | M03 (S12–S13; G5 READY 2026-10-10, `docs/qa/M03-curriculum.md`) | **100%** |
 | L30 | Peta Belajar (25) | M | M03 (S14; G5 READY 2026-10-10, `docs/qa/M03-curriculum.md`) | **100%** |
 | L31 | Set Soalan Guru (26) | M | M10 (perlu pengesahan) | **100%** |
@@ -56,7 +56,7 @@ Status di bawah ialah status pada 2026-10-02.
 | L34 | Tukar Token (29) | M | M14 | **100%** |
 | L35 | Cabaran Harian (30) | M | M14 | **100%** |
 | L36 | Kedai Hadiah (31) | M | M15 | **100%** |
-| L37 | Marketplace (32) | M | M20 | 40% |
+| L37 | Marketplace (32) | M | M20 | **100%** |
 | L38 | Papan Pendahulu (33) | M | M08 | **100%** |
 | L39 | Pencapaian (34) | M | M14 | **100%** |
 | L40 | Kotak Misteri (35) | M | M15 | **100%** |
@@ -69,7 +69,7 @@ Status di bawah ialah status pada 2026-10-02.
 | L47 | Laporan (42) | G★ | M11 | **100%** |
 | L48 | Laporan Mingguan (43) | G★ | M08 | **100%** |
 | L49 | Sumbang Soalan (44) | G★ | M04 | **100%** |
-| L50 | Sekolah Bersaing (45) | AS★ | M16 (S28 `/sekolah-bersaing`, M16-T6a; bukan M26) — Sesi 7 | 40% |
+| L50 | Sekolah Bersaing (45) | AS★ | M16 (S28 `/sekolah-bersaing`, M16-T6a; bukan M26) — Sesi 7 | **100%** |
 | L51 | Statistik Penggunaan (46) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
 | L52 | DSKP Heatmap (47) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
 | L53 | Laporan Aktiviti (48) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
@@ -80,13 +80,13 @@ Status di bawah ialah status pada 2026-10-02.
 | L58 | Kelas Sekolah (53) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
 | L59 | Laporan Soalan (54) | M★ | M04 | **100%** |
 
-Purata semasa (dikira semula 2026-10-10 oleh Sesi 8 daripada lajur % di atas). Kaedah: purata % bagi setiap baris yang menyenaraikan peranan itu. "Asas Akaun" = L01 hingga L05. "Release 1.0" = baris yang peranan itu bertanda ★. Kaedah ini menghasilkan semula tepat jadual 2026-10-03 untuk Guru dan Admin Sekolah, dan untuk lajur Release 1.0 Murid; dua lajur Murid yang lain berbeza 0.4 mata daripada kaedah asal.
+Purata semasa (dikira semula 2026-10-10 oleh Sesi 3 selepas L28, L37, L50 ke 100% dan L26 ke 85%, daripada lajur % di atas). Kaedah: purata % bagi setiap baris yang menyenaraikan peranan itu. "Asas Akaun" = L01 hingga L05. "Release 1.0" = baris yang peranan itu bertanda ★. Kaedah ini menghasilkan semula tepat jadual 2026-10-03 untuk Guru dan Admin Sekolah, dan untuk lajur Release 1.0 Murid; dua lajur Murid yang lain berbeza 0.4 mata daripada kaedah asal.
 
 | Peranan | Menu modul | Menu modul, Release 1.0 | Termasuk Asas Akaun | Termasuk Asas Akaun, Release 1.0 |
 |---|---|---|---|---|
-| Murid | 94.9% | 94.2% | 95.5% | 95.6% |
+| Murid | 99.2% | 97.7% | 99.3% | 98.2% |
 | Guru | 100.0% | 100.0% | 100.0% | 100.0% |
-| Admin Sekolah | 70.0% | 68.2% | 76.5% | 70.0% |
+| Admin Sekolah | 73.3% | 71.8% | 79.1% | 73.3% |
 
 ## Pembahagian sesi
 
