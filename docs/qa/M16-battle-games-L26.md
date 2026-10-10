@@ -238,3 +238,11 @@ My scratch config, `dist-e2e-5120` and `test-results` were removed and my 5120 p
 - BUG-L26-03 fixed by the lead: the hero `h1` on S6 (`hub-h1`), S7 (`pb-h1`) and S8–S12 (`lobby-h1`) now carries `text-white`, as on live. Re-verified by QA before L26 is closed.
 - Low-3 ("Habat!" at 0/0 on the live screenshot vs the URS "TERUSKAN!" ladder) is recorded as DV-M16-50: the rebuild follows the URS.
 - The round-2 evidence files `e2e/m16-battle-games/qa-round2.spec.ts` and `src/modules/m16-battle-games/__tests__/mock/qa-round2.test.ts` were not merged: they fail the repo lint rules (restricted cross-module import, unused variable). Their results are recorded above and remain the evidence for the formerly not-executed ACs.
+
+## Round 2 re-test (branch `s3-l26-fix`, fix f119872)
+
+- **BUG-L26-03: Fixed.** Computed colour of the hero `h1` is `rgb(255, 255, 255)` (white, as live) on `/permainan` (S6), `/papan-bijak` (S7), `/perang-fakta` and `/teka-silang-kata` (S8-S12 lobby `h1`), at 375 and 1280 (Playwright script, not MCP).
+- Unit `__tests__/hub` and `__tests__/lobby`: 8 files, 125 tests passed. (A first run under heavy load lost 3 worker starts with "Timeout waiting for worker to respond"; rerun alone passed.)
+- E2E smoke-hub and smoke-lobbies, port 5120, workers 1: **60 passed, 0 failed** (mobile, tablet, desktop: 20 each).
+- No other bug is open. The remaining Blocked sub-items (02.1 and 03.1 routes `/liga` and `/admin/permainan`, 03.5 admin create form, 19.3 S29 page) are prototype limits, not failures; Low items stay with the lead (Low-3 is covered by DV-M16-50).
+- **Final L26 verdict: READY.**
