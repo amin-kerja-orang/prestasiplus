@@ -45,7 +45,7 @@ Status di bawah ialah status pada 2026-10-02.
 | L23 | Kedudukan (18) | M | M08 | **100%** |
 | L24 | PKSK (19) | M | M07 | **100%** |
 | L25 | Artikel (20) | M | M09 | **100%** |
-| L26 | Permainan (21) | M★ | M16 | 85% |
+| L26 | Permainan (21) | M★ | M16 | **100%** |
 | L27 | Cabutan Bertuah (22) | M | M15 | **100%** |
 | L28 | Tournament (23) | M | M16 | **100%** |
 | L29 | Topik (24) | M | M03 (S12–S13; G5 READY 2026-10-10, `docs/qa/M03-curriculum.md`) | **100%** |
@@ -80,13 +80,13 @@ Status di bawah ialah status pada 2026-10-02.
 | L58 | Kelas Sekolah (53) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
 | L59 | Laporan Soalan (54) | M★ | M04 | **100%** |
 
-Purata semasa (dikira semula 2026-10-10 oleh Sesi 3 selepas L28, L37, L50 ke 100% dan L26 ke 85%, daripada lajur % di atas). Kaedah: purata % bagi setiap baris yang menyenaraikan peranan itu. "Asas Akaun" = L01 hingga L05. "Release 1.0" = baris yang peranan itu bertanda ★. Kaedah ini menghasilkan semula tepat jadual 2026-10-03 untuk Guru dan Admin Sekolah, dan untuk lajur Release 1.0 Murid; dua lajur Murid yang lain berbeza 0.4 mata daripada kaedah asal.
+Purata semasa (dikira semula 2026-10-10 oleh Sesi 3 selepas L26, L28, L37 dan L50 ke 100%, daripada lajur % di atas). Kaedah: purata % bagi setiap baris yang menyenaraikan peranan itu. "Asas Akaun" = L01 hingga L05. "Release 1.0" = baris yang peranan itu bertanda ★. Kaedah ini menghasilkan semula tepat jadual 2026-10-03 untuk Guru dan Admin Sekolah, dan untuk lajur Release 1.0 Murid; dua lajur Murid yang lain berbeza 0.4 mata daripada kaedah asal.
 
 | Peranan | Menu modul | Menu modul, Release 1.0 | Termasuk Asas Akaun | Termasuk Asas Akaun, Release 1.0 |
 |---|---|---|---|---|
-| Murid | 99.2% | 97.7% | 99.3% | 98.2% |
+| Murid | 99.6% | 98.8% | 99.7% | 99.1% |
 | Guru | 100.0% | 100.0% | 100.0% | 100.0% |
-| Admin Sekolah | 73.3% | 71.8% | 79.1% | 73.3% |
+| Admin Sekolah | 93.3% | 92.9% | 94.8% | 93.3% |
 
 ## Pembahagian sesi
 
