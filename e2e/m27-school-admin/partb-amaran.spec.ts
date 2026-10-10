@@ -7,8 +7,8 @@
  * spec). Oracle: the figures are compared with the page's own invariants and with the S0 "Amaran Awal" panel of the
  * same session (the same M18 owner call), never pinned.
  *
- * `@blocked-by M18`: only the steps that FOLLOW "Keberkesanan Intervensi", "Ringkasan Eksekutif" and the M18 route
- * `/amaran/sekolah/{id}` (pages deferred, DV-M27-23); the buttons themselves, their hrefs and the CSV are run.
+ * `@blocked-by M18`: the steps that FOLLOW "Keberkesanan Intervensi", "Ringkasan Eksekutif" and the M18 route
+ * `/amaran/sekolah/{id}` (pages deferred, DV-M27-23) are declared `test.skip` (E2E-M27-73b, 75); the buttons, hrefs and CSV run.
  */
 
 import { readFileSync } from 'node:fs'
@@ -118,7 +118,7 @@ test.describe('S4 access (E2E-M27-72)', MODULE, () => {
       await gotoApp(S4)
       await expectForbiddenPage(page)
       expect(page.url()).toContain(S4)
-      expect(await mock.requests('/api/amaran/schools')).toHaveLength(0)
+      expect(await mock.requests('/api/amaran/schools/:id')).toHaveLength(0)
     })
   }
 })
@@ -221,7 +221,7 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
     }
 
     // M18 #21 was asked for the session school, without a level
-    const calls = await createMockHandle(page).requests('/api/amaran/schools/')
+    const calls = await createMockHandle(page).requests('/api/amaran/schools/:id')
     expect(calls.length).toBeGreaterThan(0)
     expect(calls.at(-1)?.query ?? {}).not.toHaveProperty('tingkatan')
 
@@ -296,7 +296,7 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
     expect(t4).toBeLessThanOrEqual(all!)
     expect(g + y + r).toBe(t4)
     await expect(page.getByTestId('am-pupil-row')).toHaveCount(t4)
-    const calls = await createMockHandle(page).requests('/api/amaran/schools/')
+    const calls = await createMockHandle(page).requests('/api/amaran/schools/:id')
     expect(calls.at(-1)?.query).toMatchObject({ tingkatan: 'T4' })
   })
 
@@ -329,23 +329,8 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
     }
   })
 
-  test(
-    'E2E-M27-73 @blocked-by M18 following "Keberkesanan Intervensi" and "Ringkasan Eksekutif" opens the M18 pages',
-    provisional('M18 PPD/JPN pages deferred (DV-M27-23)', MODULE.tag),
-    async ({ page, gotoApp }) => {
-      await signIn(page, AZLAN)
-      await open(page, gotoApp)
-      await page.getByTestId('am-btn-keberkesanan').click()
-      await expect(page).toHaveURL(/\/amaran\/keberkesanan$/)
-      await expect(page.locator('[data-page=not-found]')).toHaveCount(0)
-      await spaGoto(page, S4)
-      await page.getByTestId('am-btn-ringkasan').click()
-      await expect(page).toHaveURL(
-        new RegExp(`/amaran/ringkasan-eksekutif\\?scope=school&school_id=${OWN_P1}$`),
-      )
-      await expect(page.locator('[data-page=not-found]')).toHaveCount(0)
-    },
-  )
+  // deferred: the M18 pages `/amaran/keberkesanan` and `/amaran/ringkasan-eksekutif` are out of prototype 1.0 scope (DV-M27-23); the buttons, labels, icons and hrefs run above
+  test.skip('E2E-M27-73b following "Keberkesanan Intervensi" and "Ringkasan Eksekutif" opens the M18 pages (@blocked-by M18, deferred DV-M27-23, @provisional)', () => {})
 })
 
 test.describe('S4 CSV and scope (E2E-M27-74, 75)', MODULE, () => {
@@ -361,7 +346,7 @@ test.describe('S4 CSV and scope (E2E-M27-74, 75)', MODULE, () => {
     await page.getByTestId('am-btn-csv').click()
     const file = await download
     expect(file.suggestedFilename()).toMatch(/^amaran-sekolah-\d+-\d{8}\.csv$/)
-    const calls = await createMockHandle(page).requests('/api/amaran/export/school/')
+    const calls = await createMockHandle(page).requests('/api/amaran/export/school/:id')
     expect(calls).toHaveLength(1)
     const text = readFileSync((await file.path())!, 'utf8').replace(/^﻿/, '')
     const lines = text.split(/\r?\n/).filter((l) => l !== '')
@@ -371,19 +356,8 @@ test.describe('S4 CSV and scope (E2E-M27-74, 75)', MODULE, () => {
     expect(page.url()).toContain(S4)
   })
 
-  test(
-    'E2E-M27-75 @blocked-by M18 P1 opening /amaran/sekolah/900001 (a foreign school) gets M18\'s 403',
-    provisional(
-      'the M18 page route /amaran/sekolah/{id} is deferred; the endpoint refusal is covered by the M18 handler tests (amaran-endpoints.test.ts)',
-      MODULE.tag,
-    ),
-    async ({ page, gotoApp }) => {
-      await signIn(page, AZLAN)
-      await gotoApp('/amaran/sekolah/900001')
-      await expectTabTitle(page, FORBIDDEN_TITLE)
-      await expect(page.getByTestId('am-page')).toHaveCount(0)
-    },
-  )
+  // deferred: the M18 page route `/amaran/sekolah/{id}` does not exist in prototype 1.0; the endpoint refusal (403) is covered by the M18 handler tests (amaran-endpoints.test.ts)
+  test.skip('E2E-M27-75 P1 opening /amaran/sekolah/900001 (a foreign school) gets the 403 of M18 (@blocked-by M18, deferred DV-M27-23, @provisional)', () => {})
 })
 
 test.describe('S4 school without pupils (E2E-M27-76)', MODULE, () => {
