@@ -24,6 +24,7 @@ import m05, { practice } from '@/modules/m05-practice/mock'
 import m07 from '@/modules/m07-pksk/mock'
 import m08 from '@/modules/m08-student-performance/mock'
 import m10 from '@/modules/m10-teacher-class/mock'
+import m11 from '@/modules/m11-teacher-analytics/mock'
 import m12 from '@/modules/m12-kirkpatrick/mock'
 import m14 from '@/modules/m14-gamification/mock'
 import m16 from '@/modules/m16-battle-games/mock'
@@ -38,7 +39,7 @@ let platformMs = 0
 beforeAll(async () => {
   await bootMock({
     mode: 'test',
-    plugins: [m01, m02, m03, m04, m05, m07, m08, m10, m12, m14, m16, m17],
+    plugins: [m01, m02, m03, m04, m05, m07, m08, m10, m11, m12, m14, m16, m17],
     clock: createClock({ at: CLOCK_ANCHOR_ISO }),
     latencyMs: 0,
     onWarn: null,
