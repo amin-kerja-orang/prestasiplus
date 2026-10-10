@@ -23,10 +23,10 @@ Status di bawah ialah status pada 2026-10-02.
 | L01 | Profil Saya (A1) | M★ G★ AS | M01 | **100%** |
 | L02 | Tetapan Peribadi (A2) | M★ G★ AS | M01 | **100%** |
 | L03 | Panduan (A3) | M★ G★ AS | M09 | **100%** |
-| L04 | Tiket Bantuan (A4) | M G AS | M22 | 40% |
+| L04 | Tiket Bantuan (A4) | M G AS | M22 | **100%** |
 | L05 | Log Keluar (A5) | M★ G★ AS★ | M01 | **100%** |
 | L06 | Command Center (1) | G★ AS★ | M11 | **100%** |
-| L07 | Dashboard / Dashboard Guru (2) | M★ G★ AS | M17 / M05 | 40% |
+| L07 | Dashboard / Dashboard Guru (2) | M★ G★ AS | M05-T3 (Murid) / M10-T2 (Guru) / M27 S0 (Admin Sekolah) | **100%** |
 | L08 | Headcount (3) | M★ G★ AS★ | M08 | **100%** |
 | L09 | Prestasi (4) | M★ G★ AS★ | M08 | **100%** |
 | L10 | Analitik Adaptif (5) | M★ G★ AS★ | M08 | **100%** |
@@ -80,13 +80,13 @@ Status di bawah ialah status pada 2026-10-02.
 | L58 | Kelas Sekolah (53) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
 | L59 | Laporan Soalan (54) | M★ | M04 | **100%** |
 
-Purata semasa (dikira semula 2026-10-03 daripada lajur % di atas):
+Purata semasa (dikira semula 2026-10-10 oleh Sesi 8 daripada lajur % di atas). Kaedah: purata % bagi setiap baris yang menyenaraikan peranan itu. "Asas Akaun" = L01 hingga L05. "Release 1.0" = baris yang peranan itu bertanda ★. Kaedah ini menghasilkan semula tepat jadual 2026-10-03 untuk Guru dan Admin Sekolah, dan untuk lajur Release 1.0 Murid; dua lajur Murid yang lain berbeza 0.4 mata daripada kaedah asal.
 
 | Peranan | Menu modul | Menu modul, Release 1.0 | Termasuk Asas Akaun | Termasuk Asas Akaun, Release 1.0 |
 |---|---|---|---|---|
-| Murid | 82.2% | 81.5% | 81.9% | 85.9% |
-| Guru | 93.0% | 93.0% | 89.8% | 94.5% |
-| Admin Sekolah | 47.2% | 47.6% | 54.3% | 50.6% |
+| Murid | 94.9% | 94.2% | 95.5% | 95.6% |
+| Guru | 100.0% | 100.0% | 100.0% | 100.0% |
+| Admin Sekolah | 70.0% | 68.2% | 76.5% | 70.0% |
 
 ## Pembahagian sesi
 
@@ -101,8 +101,8 @@ Satu modul hanya dipegang oleh satu sesi. Jangan biarkan dua sesi menyentuh data
 | 5 | L27, L33, L34, L35, L36, L39, L40, L41, L43 | M14, M15 | |
 | 6 | L06, L13, L15, L16, L31, L46, L47, L49 | M10, M11, M12 | Selaras dengan Sesi 1 jika menyentuh data M10 |
 | 7 | L18, L19, L20, L24, L26, L28, L29, L30, L37, L42 | M06, M07, M16, M03, M20, M21, M13, M25 (Heatmap sahaja) | **Dijeda 2026-10-03** (PC ditutup). Termasuk L50 (M16 S28, diambil daripada Sesi 2). Pengendali M03/M06/M07/M13/M16 (T1+T2)/M20/M21 dan skrin M03-T4, M06-T2, M06-T4, M07-T2, M13-T2 sudah digabungkan; G3 belum lulus (E2E M03 gagal, M06/M07/M13 belum diuji). M25 G1 lulus; XL-R10 terbuka. Langkah sambung: lihat log TRACKER 2026-10-03 "Session 7 PAUSED". Port E2E 50xx. |
-| 8 | L07 | M10-T2 (Guru `/guru`), M05-T3 (Murid `/dashboard`, dengan izin Sesi 1), M27 S0 (Admin Sekolah `/admin-sekolah`, dikongsi dengan Sesi 2) | **Dijeda 2026-10-03:** Guru lulus G5; Murid lulus G4, G5 separuh jalan; Admin Sekolah lulus G1 dan sedang dibina. Bukan M17 S1, kerana `/admin` ialah admin platform, bukan peranan L07. Lihat log TRACKER. |
-| Disekat → Sesi 2 | L04, L51 hingga L58 (L50 → Sesi 7, M16 S28) | M22, M27 (teras + S1+; S0/L07 milik Sesi 8) | Dinyahsekat oleh D24 (kod server sebagai spesifikasi). Penemuan bermula 2026-10-03. |
+| 8 | L07, L04 | M10-T2 (Guru `/guru`), M05-T3 (Murid `/dashboard`, dengan izin Sesi 1), M27 S0 (Admin Sekolah `/admin-sekolah`, dikongsi dengan Sesi 2), M22, ditambah read model risiko M18 dan cache M08 `schoolPerformance` | **Selesai 2026-10-10, disahkan ketua:** L07 100% (G5 Guru 10/10, Murid 33/33, Admin Sekolah 49/51 dengan AC-03.5 tidak dapat dilaksanakan dan AC-04.2 `/perutusan` ditangguh; `docs/qa/L07-dashboard-*.md`). L04 100% (M22 G5 58/58, `docs/qa/L04-tiket-bantuan.md`). Bukan M17 S1, kerana `/admin` ialah admin platform, bukan peranan L07. Port E2E 5140–5149. |
+| Disekat → Sesi 2 | L51 hingga L58 (L04 → Sesi 8, selesai) (L50 → Sesi 7, M16 S28) | M22, M27 (teras + S1+; S0/L07 milik Sesi 8) | Dinyahsekat oleh D24 (kod server sebagai spesifikasi). Penemuan bermula 2026-10-03. |
 
 ## Peraturan untuk setiap sesi
 
