@@ -10,9 +10,11 @@ import {
   USER_BOTTOM_NAV,
   USER_DRAWER_ACCOUNT,
   USER_NAV,
+  bottomNavActive,
   drawerBadgeClass,
   isActivePath,
   navFor,
+  type BottomNavLink,
   type NavEntry,
   type NavItem,
 } from '../nav/user-nav'
@@ -448,5 +450,29 @@ describe('drawerBadgeClass', () => {
   it('turns 10px pills into 9px and leaves 8px pills', () => {
     expect(drawerBadgeClass('ml-auto text-[10px] font-bold')).toBe('ml-auto text-[9px] font-bold')
     expect(drawerBadgeClass('ml-auto text-[8px] font-bold')).toBe('ml-auto text-[8px] font-bold')
+  })
+})
+
+describe('bottomNavActive: "Game" tab', () => {
+  const link = (id: string) => USER_BOTTOM_NAV.find((b) => b.id === id) as BottomNavLink
+  it('is active on the game pages', () => {
+    for (const p of [
+      '/permainan',
+      '/permainan/roda-nasib',
+      '/battle',
+      '/battle/history',
+      '/battle/leaderboard',
+      '/papan-bijak',
+      '/papan-bijak/ABC123',
+      '/perang-fakta',
+      '/teka-silang-kata/ABC123',
+    ])
+      expect(bottomNavActive(link('game'), p), p).toBe(true)
+  })
+  it('is not active elsewhere, and other tabs are unchanged', () => {
+    for (const p of ['/dashboard', '/spm', '/topics', '/battle-x', '/permainanx'])
+      expect(bottomNavActive(link('game'), p), p).toBe(false)
+    expect(bottomNavActive(link('spm'), '/spm/latih-tubi')).toBe(true)
+    expect(bottomNavActive(link('spm'), '/battle')).toBe(false)
   })
 })

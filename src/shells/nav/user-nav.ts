@@ -625,6 +625,11 @@ export interface BottomNavLink {
   fa: string
   /** Live inline icon colour (`style="color: …"`), when set. */
   iconStyle?: string
+  /**
+   * Further path prefixes that keep this tab active (the entry's own `to` always does). Same prefix
+   * rule as `isActivePath`.
+   */
+  activeAlso?: readonly string[]
 }
 
 export interface BottomNavButton {
@@ -654,6 +659,18 @@ export const USER_BOTTOM_NAV: readonly BottomNavEntry[] = [
     to: '/permainan',
     fa: 'fa-gamepad',
     iconStyle: 'color: #8b5cf6;',
+    // INFERRED (G5 L26 Low-1: live highlights "Game" on these pages; the exact live condition was
+    // not captured): the M16 game pages outside `/permainan`: Battle Arena, Papan Bijak, the five
+    // lobbies and their rooms (`/{game}/:code`).
+    activeAlso: [
+      '/battle',
+      '/papan-bijak',
+      '/perang-fakta',
+      '/benteng-ilmu',
+      '/perlumbaan-matematik',
+      '/kuiz-relay',
+      '/teka-silang-kata',
+    ],
   },
   { kind: 'link', id: 'topik', label: 'Topik', to: '/topics', fa: 'fa-book-open' },
   // Live dispatches `toggle-chatbot` for the chatbot widget (M22, not built: no listener yet).
@@ -710,6 +727,11 @@ export function isActivePath(
   if (target === '/admin-sekolah') return path === target
   if (except.some((e) => path === e || path.startsWith(`${e}/`))) return false
   return path === target || path.startsWith(`${target}/`)
+}
+
+/** Whether a bottom-nav link tab is active on `currentPath` (its `to` plus any `activeAlso`). */
+export function bottomNavActive(entry: BottomNavLink, currentPath: string): boolean {
+  return [entry.to, ...(entry.activeAlso ?? [])].some((to) => isActivePath(currentPath, to))
 }
 
 /** Drawer badge classes: 10px pills become 9px (design-system §4). */

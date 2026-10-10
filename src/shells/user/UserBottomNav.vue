@@ -5,7 +5,7 @@
  * not built: the event has no listener yet, so the button is inert). Live "Lagi" dispatches
  * `toggle-drawer`, i.e. it opens the same drawer as the header hamburger.
  */
-import { USER_BOTTOM_NAV, isActivePath } from '@/shells/nav/user-nav'
+import { USER_BOTTOM_NAV, bottomNavActive } from '@/shells/nav/user-nav'
 import NavIcon from '@/shells/shared/NavIcon.vue'
 import ShellLink from '@/shells/shared/ShellLink.vue'
 
@@ -32,7 +32,7 @@ const ICON = 'text-lg sm:text-xl mb-0.5 sm:mb-1'
         <ShellLink
           v-if="entry.kind === 'link'"
           :to="entry.to"
-          :class="[ITEM, { active: isActivePath(currentPath, entry.to) }]"
+          :class="[ITEM, { active: bottomNavActive(entry, currentPath) }]"
           :data-nav-id="`bottom-${entry.id}`"
         >
           <NavIcon :fa="entry.fa" :class="ICON" :style="entry.iconStyle" />
