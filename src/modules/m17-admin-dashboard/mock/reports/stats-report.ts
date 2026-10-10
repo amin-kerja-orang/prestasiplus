@@ -74,13 +74,15 @@ interface Population {
   fixture: boolean
 }
 
-const outsideFixtures = (u: UserRow): boolean => u.schoolId === null || !isFixtureSchoolId(u.schoolId)
+const outsideFixtures = (u: UserRow): boolean =>
+  u.schoolId === null || !isFixtureSchoolId(u.schoolId)
 
-function populationOf(schoolId: number | null): Population {
+function populationOf(schoolId: number | null, includeInactive = false): Population {
   if (schoolId !== null) {
+    const keep = (u: UserRow): boolean => includeInactive || u.isActive
     return {
-      pupils: studentsOf(schoolId).filter((u) => u.isActive),
-      teachers: teachersOf(schoolId).filter((u) => u.isActive),
+      pupils: studentsOf(schoolId).filter(keep),
+      teachers: teachersOf(schoolId).filter(keep),
       fixture: isFixtureSchoolId(schoolId),
     }
   }
@@ -191,12 +193,15 @@ function socialOf(pupilIds: ReadonlySet<number>, from: number, now: number): Soc
 // --- the builder -------------------------------------------------------------------------------------
 
 /** The S11 report for a range (7 / 30 / 90, else 30) and an optional school restriction. */
-export function buildStatsReport(range: number | string, options: StatsReportOptions = {}): StatsReport {
+export function buildStatsReport(
+  range: number | string,
+  options: StatsReportOptions = {},
+): StatsReport {
   const days = normaliseRange(range)
   const now = options.now ?? Date.parse(CLOCK_ANCHOR_ISO)
   const schoolId = options.schoolId ?? null
   const from = dayRange(now).start - (days - 1) * DAY_MS
-  const pop = populationOf(schoolId)
+  const pop = populationOf(schoolId, schoolId !== null && options.includeInactive === true)
   const pupilIds = new Set(pop.pupils.map((u) => u.id))
   const schoolName = (id: number | null): string | null =>
     id === null ? null : (schools.get(id)?.name ?? null)
@@ -446,7 +451,8 @@ function schoolTable(
     row.status = status
   }
   const ms = (r: StatsSchoolRow): number => (r.lastLoginAt === null ? 0 : Date.parse(r.lastLoginAt))
-  const rank = (r: StatsSchoolRow): number => (r.status === 'aktif' ? 0 : r.lastLoginAt === null ? 2 : 1)
+  const rank = (r: StatsSchoolRow): number =>
+    r.status === 'aktif' ? 0 : r.lastLoginAt === null ? 2 : 1
   return rows.sort((a, b) => {
     const d = rank(a) - rank(b)
     if (d !== 0) return d

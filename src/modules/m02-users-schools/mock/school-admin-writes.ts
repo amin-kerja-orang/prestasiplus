@@ -27,6 +27,7 @@ import {
   type RuleSet,
   type ValidationRule,
 } from '@/mock/define'
+import { sessions } from '@/mock/auth/sessions'
 import { users, type UserRow } from '@/modules/m01-authentication/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
@@ -184,7 +185,10 @@ export const schoolAdminUsers = {
       },
       now,
     )
-    if (typeof data.newPassword === 'string') users.setPassword(id, data.newPassword)
+    if (typeof data.newPassword === 'string') {
+      users.setPassword(id, data.newPassword)
+      sessions.revokeAllFor(id) // a password change on S9/S10 ends the target's open sessions too
+    }
     return reload(id)
   },
 
@@ -250,7 +254,7 @@ export const schoolAdminUsers = {
       classId: [
         rule('class_id', () => {
           const cls = classId === null ? undefined : classrooms.get('classroom', classId)
-          return cls?.schoolId === schoolId ? null : 'The selected :attribute is invalid.'
+          return cls?.schoolId === schoolId && cls.isActive ? null : 'The selected :attribute is invalid.'
         }),
       ],
     })
@@ -283,6 +287,7 @@ export const schoolAdminUsers = {
     if (row?.schoolId !== schoolId) throw new SchoolAdminWriteError(404, MSG_USER_NOT_FOUND)
     if (row.role !== 'teacher') throw new SchoolAdminWriteError(403, MSG_ROLE_NOT_MANAGED)
     users.update(id, { isActive }, now)
+    if (!isActive) sessions.revokeAllFor(id) // a deactivated teacher's open sessions end at once
     return reload(id)
   },
 
@@ -301,6 +306,7 @@ export const schoolAdminUsers = {
       { newPassword: [required(), ...changedPasswordRules()] },
     )
     users.setPassword(id, input.newPassword)
+    sessions.revokeAllFor(id) // the target's open sessions end; the actor's own session is untouched
     users.update(id, {}, now) // `updatedAt` ("Kemaskini") follows the reset
   },
 }

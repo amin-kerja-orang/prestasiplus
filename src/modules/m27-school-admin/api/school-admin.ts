@@ -10,8 +10,8 @@
  * All ids are integers. Counts are plain numbers (the page formats with `ms-MY`). Dates are ISO 8601
  * (+08:00); the page formats `dd/mm/yyyy`. `status` on writes carries the UNVERIFIED COPY flash of M02.
  *
- * `#4` (S3 `StatsReport`) is typed here as {@link SchoolActivityReport} after the M17 shape (M17 SRS §7 #18,
- * without `schools` and `overview.score`); its handler is M27-T1c. `#19`, `#20`, `#21` handlers are
+ * `#4` (S3 `StatsReport`) is typed here as {@link SchoolActivityReport}, the M17 shape (M17 SRS §7 #18) in
+ * the school scope; its handler is M27-T1c. `#19`, `#20`, `#21` handlers are
  * M27-T1b and M27-T1d; their client functions are here so every screen builds against one file.
  */
 
@@ -123,7 +123,8 @@ export interface ActivityPupilRow {
   name: string
   className: string | null
   sessions: number
-  accuracy: number | null
+  /** correct / answered x 100, one decimal, never above 100. */
+  accuracy: number
   seconds: number
   coins: number
   lastLoginAt: string | null
@@ -141,8 +142,17 @@ export interface ActivityTeacherRow {
   lastLoginAt: string | null
 }
 
+/**
+ * The M17 `StatsReport` (SRS M17 §7 #18) in the school scope (BR-M27-26): no `schools`, no `overview.score` /
+ * `structuredScore` ("Skor Purata" and "Struktur" are never rendered), no `schoolName` on the rows and
+ * `tiles` without the `schools` group.
+ */
 export interface SchoolActivityReport {
   range: 7 | 30 | 90
+  /** The session school. */
+  schoolId: number
+  /** Request clock, ISO +08:00. */
+  generatedAt: string
   overview: {
     pupils: number
     pupilsLogged: number
@@ -156,12 +166,23 @@ export interface SchoolActivityReport {
   topPupils: { userId: number; name: string; activities: number }[]
   teachersNeverLogged: { userId: number; name: string; email: string }[]
   teachers: ActivityTeacherRow[]
+  /** Pills "Semua", "Aktif", "Login Sahaja", "Belum Login"; up to 200 rows each. */
   pupils: {
+    semua: ActivityPupilRow[]
     aktif: ActivityPupilRow[]
     loginSahaja: ActivityPupilRow[]
     belumLogin: ActivityPupilRow[]
   }
-  tiles: Record<string, number>
+  tiles: {
+    teachers: {
+      total: number
+      logged: number
+      /** School-scoped "Jumlah Soalan" (lead decision). */
+      questions: number
+      coins: number
+    }
+    pupils: { total: number; practised: number; sessions: number; accuracy: number }
+  }
 }
 
 /** #4 `GET /api/admin-sekolah/laporan-aktiviti?range=` (S3). */
@@ -343,6 +364,9 @@ export interface SchoolUserInput {
   name: string
   email: string
   phone?: string | null
+  /** Optional pair (#8 / #13): both apply in the same request as the profile fields, or none does. */
+  newPassword?: string
+  newPasswordConfirmation?: string
 }
 
 export interface ResetPasswordInput {
@@ -495,7 +519,11 @@ export type ImpersonateResult = WriteResult<
 >
 
 export type LeaveImpersonationResult = WriteResult<
-  ImpersonationSession & { returnTo: '/admin-sekolah/pelajar' | '/admin-sekolah/guru' }
+  ImpersonationSession & {
+    returnTo: '/admin-sekolah/pelajar' | '/admin-sekolah/guru'
+    /** The actor session's "Ingat saya" flag, so the client keeps it when restoring the session. */
+    remember?: boolean
+  }
 >
 
 /** #20 `POST /api/admin-sekolah/users/:id/impersonate`. 409 when already impersonating. */

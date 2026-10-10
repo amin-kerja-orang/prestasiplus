@@ -70,6 +70,14 @@ function currentUser(req: MockRequest) {
   return user && isSessionUser(user) ? user : undefined
 }
 
+/** Roles whose `schoolId` is an admin-assigned scope, not a self-service choice. */
+const STAFF_ROLES: ReadonlySet<string> = new Set([
+  'school_admin',
+  'ppd_officer',
+  'jpn_officer',
+  'admin',
+])
+
 const unauthorized = () => fail(401, API_ERROR_CODES.UNAUTHORIZED, 'Unauthenticated.')
 
 // --- #8 ---------------------------------------------------------------------------------------
@@ -102,7 +110,9 @@ function updateProfile(req: MockRequest, ctx: MockContext): MockResponse {
   if ('phone' in body) patch.phone = textOrNull(body.phone)
   if ('bio' in body) patch.bio = textOrNull(body.bio)
   if ('grade' in body) patch.grade = intOrNull(body.grade)
-  if ('schoolId' in body) patch.schoolId = intOrNull(body.schoolId)
+  // Security: a staff account's school is its tenant scope (M27 `schoolOf`); only a student or
+  // teacher may pick a school here, so a staff `schoolId` in the body is ignored (kept as stored).
+  if ('schoolId' in body && !STAFF_ROLES.has(user.role)) patch.schoolId = intOrNull(body.schoolId)
   const saved = users.update(user.id, patch, ctx.clock.now())
   if (!isSessionUser(saved)) return unauthorized()
   return ok(toUserMe(saved), { status: MSG_PROFILE_SAVED })

@@ -170,6 +170,15 @@ export const sessions = defineRepository({
       })
     },
 
+    /** Ends every impersonation session opened from `token` (`parentToken === token`); returns the count. */
+    revokeChildrenOf(token: string): number {
+      return transaction(() => {
+        const { rows } = store.query({ where: { parentToken: token } })
+        for (const row of rows) store.remove(row.id)
+        return rows.length
+      })
+    },
+
     /** Sessions of `userId` (newest first), for diagnostics and tests. */
     listFor(userId: number): SessionRow[] {
       return store.query({ where: { userId }, sort: { field: 'createdAt', dir: 'desc' } }).rows

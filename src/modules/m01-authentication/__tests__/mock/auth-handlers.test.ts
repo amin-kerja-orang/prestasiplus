@@ -16,7 +16,7 @@ import { PASSWORD_RESET_OUTBOX_TYPE as HOOKS_OUTBOX_TYPE } from '@/mock/testing/
 import { wallet } from '@/modules/m14-gamification/mock'
 
 import type { ClientSession, UserMe, UserSettings } from '../../api/types'
-import { loginThrottle, passwordResets, users, userSettings } from '../../mock'
+import { impersonation, loginThrottle, passwordResets, users, userSettings } from '../../mock'
 import { PASSWORD_RESET_OUTBOX_TYPE } from '../../mock/handlers/auth'
 import { DEMO_EXPIRED_TOKEN, DEMO_RESET_TOKEN } from '../../mock/handlers/auth-state'
 
@@ -228,6 +228,21 @@ describe('POST /api/auth/logout (#6)', () => {
     const out = await call('POST', '/api/auth/logout', undefined, token)
     expect(out.status).toBe(204)
     expect((await call('GET', '/api/me', undefined, token)).status).toBe(401)
+  })
+
+  it('also ends the impersonation sessions opened from the logged-out session', async () => {
+    const actor = await loginToken('adminsekolah@demo.test')
+    const pupil = users
+      .adminList({ role: 'student', schoolId: users.get(8)!.schoolId!, page: 1, pageSize: 1 })
+      .rows.find((u) => u.isActive)!
+    const child = impersonation.start({ id: 8, sessionToken: actor }, pupil.id, NOW).session.token
+    const other = await loginToken('pelajar@demo.test')
+    expect((await call('GET', '/api/me', undefined, child)).status).toBe(200)
+    expect((await call('POST', '/api/auth/logout', undefined, actor)).status).toBe(204)
+    expect((await call('GET', '/api/me', undefined, child)).status).toBe(401)
+    expect(sessions.peek(child)).toBeUndefined()
+    // an unrelated session is untouched
+    expect((await call('GET', '/api/me', undefined, other)).status).toBe(200)
   })
 
   it('answers 204 without a session or with a dead token (a 401 is ignored)', async () => {
@@ -581,6 +596,23 @@ describe('profile, picture and password (#8, #9, #10)', () => {
     expect((r.body.data as unknown as UserMe).school?.id).toBe(900_002)
     const me = await call('GET', '/api/me', undefined, token)
     expect((me.body.data as unknown as UserMe).name).toBe('Nama Baharu')
+  })
+
+  it.each([
+    ['adminsekolah@demo.test', 8],
+    ['ppd@demo.test', 9],
+    ['jpn@demo.test', 10],
+    ['admin@demo.test', 1],
+  ])('PUT /api/me ignores schoolId for the staff account %s (tenant scope)', async (email, id) => {
+    const token = await loginToken(email)
+    const before = users.get(id)!
+    const r = await call('PUT', '/api/me', { name: before.name, schoolId: 900_002 }, token)
+    expect(r.status).toBe(200)
+    expect(users.get(id)!.schoolId).toBe(before.schoolId)
+    expect((r.body.data as unknown as UserMe).schoolId).toBe(before.schoolId)
+    const cleared = await call('PUT', '/api/me', { name: before.name, schoolId: null }, token)
+    expect(cleared.status).toBe(200)
+    expect(users.get(id)!.schoolId).toBe(before.schoolId)
   })
 
   it('PUT /api/me clears optional fields with null and validates (BR-14)', async () => {

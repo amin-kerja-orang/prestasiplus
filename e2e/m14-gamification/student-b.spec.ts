@@ -458,7 +458,7 @@ test.describe('M14 S18 /gamification/kad-kongsi', MODULE, () => {
       ctx.drawImage(bmp, 0, 0)
       const x = Math.round(bmp.width * 0.06)
       const y = Math.round(bmp.height * 0.5)
-      const [r, g, b, a] = ctx.getImageData(x, y, 1, 1).data
+      const [r = 0, g = 0, b = 0, a = 0] = ctx.getImageData(x, y, 1, 1).data
       return { r, g, b, a, w: bmp.width, h: bmp.height }
     }, bytes.toString('base64'))
     expect(px.w).toBeGreaterThan(400) // scale 2 of a card about 340px wide

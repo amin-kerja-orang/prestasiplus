@@ -18,7 +18,6 @@ import {
   type MockQuery,
   type RouteDef,
 } from '@/mock/define'
-import { m02Config } from '@/modules/m02-users-schools/mock'
 
 import { csvFilename, usersCsv } from '../read-models/csv'
 import { schoolInfoOf } from '../read-models/school-info'
@@ -63,14 +62,13 @@ const csvRoute = (path: string, role: SchoolRole): RouteDef =>
   })
 
 /** #22 (added v1.8): the S12 form data. Never carries the literal default password. */
-const formOptionsRoute = route('GET', `${BASE}/pelajar/form-options`, guard, (req, ctx) => {
+const formOptionsRoute = route('GET', `${BASE}/pelajar/form-options`, guard, (req) => {
   const viewer = schoolOf(req)
-  const secret = ctx.config.get('bulkImportDefaultPassword', m02Config().bulkImportDefaultPassword)
   return ok({
     school: schoolInfoOf(viewer),
     classes: activeClassroomOptions(viewer.schoolId),
-    // Only the length of the default password shapes the placeholder, so the value never leaves M02.
-    passwordPlaceholder: '•'.repeat(secret.length),
+    // Fixed length: neither the default password nor its length leaves M02.
+    passwordPlaceholder: '•'.repeat(8),
     passwordHint: 'Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).',
     passwordMinLength: 8,
   })

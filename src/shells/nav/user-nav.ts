@@ -379,7 +379,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'section', id: 'sa-sec-penilaian', label: 'PENILAIAN', text: 'text-amber-700', rule: 'from-amber-300', roles: SCH },
   { kind: 'item', id: 'sa-headcount', label: 'Headcount', to: '/headcount', fa: 'fa-chart-line', color: 'text-blue-500', roles: SCH },
   { kind: 'item', id: 'sa-prestasi', label: 'Prestasi', to: '/prestasi', fa: 'fa-chart-bar', color: 'text-emerald-500', roles: SCH },
-  { kind: 'item', id: 'sa-amaran-awal', label: 'Amaran Awal', to: '/amaran', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: SCH },
+  { kind: 'item', id: 'sa-amaran-awal', label: 'Amaran Awal', to: '/amaran/sekolah', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: SCH },
   { kind: 'item', id: 'sa-laporan-bulanan', label: 'Laporan Bulanan', to: '/admin-sekolah/laporan-bulanan', fa: 'fa-calendar-alt', color: 'text-blue-500', roles: SCH },
   { kind: 'section', id: 'sa-sec-analitik', label: 'ANALITIK', text: 'text-indigo-700', rule: 'from-indigo-300', roles: SCH },
   { kind: 'item', id: 'sa-monitoring', label: 'Monitoring', to: '/admin-sekolah/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: SCH },

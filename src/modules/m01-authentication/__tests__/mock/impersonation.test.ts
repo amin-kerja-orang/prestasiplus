@@ -265,3 +265,16 @@ describe('impersonation.leave', () => {
     expect(second.session.user.id).toBe(TEACHER)
   })
 })
+
+describe('sessions.revokeChildrenOf', () => {
+  it('removes only the sessions whose parentToken is the given token', () => {
+    const adminToken = login(SCHOOL_ADMIN)
+    const unrelated = login(OTHER_SCHOOL_PUPIL)
+    const a = impersonation.start({ id: SCHOOL_ADMIN, sessionToken: adminToken }, PUPIL, NOW)
+    expect(sessions.revokeChildrenOf(adminToken)).toBe(1)
+    expect(sessions.peek(a.session.token)).toBeUndefined()
+    expect(sessions.peek(adminToken)).toBeDefined()
+    expect(sessions.peek(unrelated)).toBeDefined()
+    expect(sessions.revokeChildrenOf(adminToken)).toBe(0)
+  })
+})

@@ -161,4 +161,9 @@ export interface StatsReportOptions {
   schoolId?: number | null
   /** Epoch ms; defaults to the project clock anchor (ADR-0006). */
   now?: number
+  /**
+   * School scope only (ignored for the platform): count every pupil and teacher of the school, active or
+   * not (M27 BR-M27-26). Default `false` keeps the M17 behaviour (active only).
+   */
+  includeInactive?: boolean
 }

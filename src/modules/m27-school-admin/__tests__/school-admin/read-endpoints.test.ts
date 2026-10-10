@@ -726,7 +726,7 @@ describe('#22 pupil form options (S12)', () => {
     expect(o.passwordMinLength).toBe(8)
     expect(o.passwordHint).toBe('Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).')
     const secret = m02Config().bulkImportDefaultPassword
-    expect(o.passwordPlaceholder).toHaveLength(secret.length)
+    expect(o.passwordPlaceholder).toBe('•'.repeat(8))
     expect(JSON.stringify(o)).not.toContain(secret)
   })
 

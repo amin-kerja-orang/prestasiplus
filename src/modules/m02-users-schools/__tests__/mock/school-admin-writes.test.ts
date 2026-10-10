@@ -6,6 +6,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { CLOCK_ANCHOR_ISO, createClock } from '@/lib/time'
+import { sessions } from '@/mock/auth/sessions'
 import { bootMock } from '@/mock/index'
 import { users, type UserRow } from '@/modules/m01-authentication/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
@@ -388,6 +389,17 @@ describe('setTeacherActive', () => {
     expect(svc.setTeacherActive(school, t.id, true, NOW).isActive).toBe(true)
   })
 
+  it('deactivating ends the open sessions of the teacher, not of the actor; activating does not', () => {
+    const t = teacher()
+    const open = sessions.create(t.id, true, NOW)
+    const actor = sessions.create(ACTOR, false, NOW)
+    svc.setTeacherActive(school, t.id, true, NOW)
+    expect(sessions.resolve(open.id, NOW)).not.toBeNull()
+    svc.setTeacherActive(school, t.id, false, NOW)
+    expect(sessions.resolve(open.id, NOW)).toBeNull()
+    expect(sessions.resolve(actor.id, NOW)).not.toBeNull()
+  })
+
   it('pupils are read-only (403) and a peer school admin is not manageable', () => {
     const p = pupil().user
     expect(refused(() => svc.setTeacherActive(school, p.id, false, NOW))).toMatchObject({
@@ -409,6 +421,41 @@ describe('setTeacherActive', () => {
 })
 
 describe('resetPassword', () => {
+  it('ends the open sessions of the target and leaves the actor session', () => {
+    const t = teacher()
+    const open = sessions.create(t.id, true, NOW)
+    const actor = sessions.create(ACTOR, false, NOW)
+    svc.resetPassword(
+      school,
+      'teacher',
+      t.id,
+      { newPassword: 'baharu123', newPasswordConfirmation: 'baharu123' },
+      NOW,
+    )
+    expect(sessions.resolve(open.id, NOW)).toBeNull()
+    expect(sessions.resolve(actor.id, NOW)).not.toBeNull()
+  })
+
+  it('a password change through updateUser also ends the target sessions', () => {
+    const t = teacher()
+    const open = sessions.create(t.id, true, NOW)
+    const actor = sessions.create(ACTOR, false, NOW)
+    svc.updateUser(
+      school,
+      'teacher',
+      t.id,
+      {
+        name: t.name,
+        email: t.email,
+        newPassword: 'baharu123',
+        newPasswordConfirmation: 'baharu123',
+      },
+      NOW,
+    )
+    expect(sessions.resolve(open.id, NOW)).toBeNull()
+    expect(sessions.resolve(actor.id, NOW)).not.toBeNull()
+  })
+
   it('replaces the password of a pupil and a teacher at once', () => {
     const t = teacher()
     svc.resetPassword(

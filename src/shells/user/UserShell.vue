@@ -27,6 +27,7 @@ import { useNotificationBadgeStore } from '@/stores/notification-badge'
 import { useSessionStore } from '@/stores/session'
 import { useShellStore } from '@/stores/shell'
 
+import ImpersonationBanner from './ImpersonationBanner.vue'
 import UserBottomNav from './UserBottomNav.vue'
 import UserDrawer from './UserDrawer.vue'
 import UserHeader from './UserHeader.vue'
@@ -117,6 +118,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="user-shell min-h-screen bg-app-user font-body antialiased" data-layout="user">
+    <ImpersonationBanner />
     <UserSidebar
       :open="shell.sidebarOpen"
       :entries="sidebarEntries"

@@ -288,7 +288,11 @@ function resetByIc(req: MockRequest, ctx: MockContext): MockResponse {
 
 function logout(req: MockRequest): MockResponse {
   // A 401 is ignored (SRS #6): the response is 204 for any token, live or dead.
-  if (req.token) sessions.revoke(req.token)
+  if (req.token) {
+    // Impersonation children die with the actor session (they would otherwise outlive the logout).
+    sessions.revokeChildrenOf(req.token)
+    sessions.revoke(req.token)
+  }
   return noContent()
 }
 
