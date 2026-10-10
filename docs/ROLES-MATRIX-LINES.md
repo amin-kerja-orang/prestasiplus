@@ -75,9 +75,9 @@ Status di bawah ialah status pada 2026-10-02.
 | L53 | Laporan Aktiviti (48) | AS★ | M27 (Sesi 2; Part B S1–S5; G5 READY 2026-10-10, docs/qa/L51-L55-admin-sekolah-analitik.md) | 100% |
 | L54 | Amaran Awal (49) | AS★ | M27 (Sesi 2; Part B S1–S5; G5 READY 2026-10-10, docs/qa/L51-L55-admin-sekolah-analitik.md) | 100% |
 | L55 | Laporan Bulanan (50) | AS★ | M27 (Sesi 2; Part B S1–S5; G5 READY 2026-10-10, docs/qa/L51-L55-admin-sekolah-analitik.md) | 100% |
-| L56 | Senarai Pelajar (51) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
-| L57 | Senarai Guru (52) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
-| L58 | Kelas Sekolah (53) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
+| L56 | Senarai Pelajar (51) | AS★ | M27 (Sesi 2; Part B S6–S12; G5 READY 2026-10-10 oleh Sesi 8, docs/qa/L56-L58-pengguna-sekolah.md) | 100% |
+| L57 | Senarai Guru (52) | AS★ | M27 (Sesi 2; Part B S6–S12; G5 READY 2026-10-10 oleh Sesi 8, docs/qa/L56-L58-pengguna-sekolah.md) | 100% |
+| L58 | Kelas Sekolah (53) | AS★ | M27 (Sesi 2; Part B S6–S12; G5 READY 2026-10-10 oleh Sesi 8, docs/qa/L56-L58-pengguna-sekolah.md) | 100% |
 | L59 | Laporan Soalan (54) | M★ | M04 | **100%** |
 
 Purata semasa (dikira semula 2026-10-10 oleh Sesi 3 selepas L26, L28, L37 dan L50 ke 100%, daripada lajur % di atas). Kaedah: purata % bagi setiap baris yang menyenaraikan peranan itu. "Asas Akaun" = L01 hingga L05. "Release 1.0" = baris yang peranan itu bertanda ★. Kaedah ini menghasilkan semula tepat jadual 2026-10-03 untuk Guru dan Admin Sekolah, dan untuk lajur Release 1.0 Murid; dua lajur Murid yang lain berbeza 0.4 mata daripada kaedah asal.
