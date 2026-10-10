@@ -70,14 +70,14 @@ Status di bawah ialah status pada 2026-10-02.
 | L48 | Laporan Mingguan (43) | G★ | M08 | **100%** |
 | L49 | Sumbang Soalan (44) | G★ | M04 | **100%** |
 | L50 | Sekolah Bersaing (45) | AS★ | M16 (S28 `/sekolah-bersaing`, M16-T6a; bukan M26) — Sesi 7 | **100%** |
-| L51 | Statistik Penggunaan (46) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
-| L52 | DSKP Heatmap (47) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
-| L53 | Laporan Aktiviti (48) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
-| L54 | Amaran Awal (49) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
-| L55 | Laporan Bulanan (50) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
-| L56 | Senarai Pelajar (51) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
-| L57 | Senarai Guru (52) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
-| L58 | Kelas Sekolah (53) | AS★ | M27 (Sesi 2; Part B S1–S11) | 40% |
+| L51 | Statistik Penggunaan (46) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
+| L52 | DSKP Heatmap (47) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
+| L53 | Laporan Aktiviti (48) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
+| L54 | Amaran Awal (49) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
+| L55 | Laporan Bulanan (50) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
+| L56 | Senarai Pelajar (51) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
+| L57 | Senarai Guru (52) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
+| L58 | Kelas Sekolah (53) | AS★ | M27 (Sesi 2; Part B S1–S12; G4 lulus 2026-10-10, c5e1a7f) | 85% |
 | L59 | Laporan Soalan (54) | M★ | M04 | **100%** |
 
 Purata semasa (dikira semula 2026-10-10 oleh Sesi 3 selepas L28, L37, L50 ke 100% dan L26 ke 85%, daripada lajur % di atas). Kaedah: purata % bagi setiap baris yang menyenaraikan peranan itu. "Asas Akaun" = L01 hingga L05. "Release 1.0" = baris yang peranan itu bertanda ★. Kaedah ini menghasilkan semula tepat jadual 2026-10-03 untuk Guru dan Admin Sekolah, dan untuk lajur Release 1.0 Murid; dua lajur Murid yang lain berbeza 0.4 mata daripada kaedah asal.
