@@ -5,9 +5,9 @@
 | Field | Value |
 |---|---|
 | Document | SRS — M02 Users & Schools Management |
-| Version | 1.32 |
-| Date | 2026-10-02 |
-| Status | Approved (G1) — v1.32 (doc-only: school 1267 placement, 5571 / 5551 `absentIds` note reverted, new open points; v1.31 = L45 `ParentInvite` as-built, §6.16 and §7 #45–#48; v1.30 = review/QA consistency fixes DOC-01, DOC-02 and open items Q9–Q10; v1.29 = as-built decisions, §0.2) |
+| Version | 1.33 |
+| Date | 2026-10-10 |
+| Status | Approved (G1) — v1.33 (doc-only: §6.17 `schoolAdminUsers` write contract for M27, as built in commit `c5e1a7f`); v1.32 (doc-only: school 1267 placement, 5571 / 5551 `absentIds` note reverted, new open points; v1.31 = L45 `ParentInvite` as-built, §6.16 and §7 #45–#48; v1.30 = review/QA consistency fixes DOC-01, DOC-02 and open items Q9–Q10; v1.29 = as-built decisions, §0.2) |
 | Authors | product-analyst (functional: §1–5, §8–10, §12–13) · solution-architect (data entities & mock API: §6–7, NFR §11) |
 | Source URS | [urs/M02-users-schools.md](../urs/M02-users-schools.md) (v1.23: 153 Functions, 32 stories, 170 ACs, coverage 1,056/1,056) |
 | Source discovery | [M02-users-schools.md](../../discovery/M02-users-schools.md), [inventory/M02/](../../discovery/inventory/M02/), [00-global-ui.md](../../discovery/00-global-ui.md) |
@@ -50,6 +50,7 @@
 | 1.31 | 2026-10-02 | **Revision history — v1.31, L45 as-built (doc-only; from the L45-T1/T2 builds and G4 reviews; no observed copy, count or existing FR / AC / E2E id changed).** (1) New §6.16 DATA-M02-15 `ParentInvite` (owner M02; store `parentInvites`, runtime, no seed). (2) §7: new #45–#46 (L45 endpoints #1–#2, `GET /api/me/parent-invite`, `POST /api/me/parent-invite/generate`, M02-owned) and #47–#48 (L45 #3–#4, preview and accept, served by M02 for the M01 page `/ibu-bapa/terima/:token`); mock helper `setParentInviteToken` added to the helpers note; repository contract added. (3) BR-06: deleting a student also removes its invite. BR-10 and §6.2: a link may also be created by an accepted invite (runtime id from 1000), idempotent per pair. XR-L45-01, XR-L45-02, XR-L45-03 → **Applied**. (4) §6.15 D row "M12 XR-01/06/10": 5571 and 5551 are implemented as `absentIds` holes of the users dataset (M01 plugin v8); totals unchanged (5,159 / 4,533 / 551). (5) Placeholder for school 1267 (§6.15 D, open points (7)): pending, see below. **Pending: school 1267 moved to an observed state, see change log** (the chosen state will be recorded in the next revision). *Items (4) and (5) are superseded by v1.32.* |
 | 1.32 | 2026-10-02 | **Revision history — v1.32, school 1267 and 5571 / 5551 (doc-only; no observed value changed).** (1) §6.15 D new row: **1267** = SK · Kedah · PPD BALING, INFERRED (D9), replacing the generated Sarawak row because live shows 10 states among schools with users (M11 / M12); schools with users cover exactly the ten observed states; open point (7) closed; anchor in `src/modules/m02-users-schools/mock/datasets/schools-anchors.ts`, M02 plugin v6; totals 10,220 / 10,212 / SK 7,779 unchanged, every other generated row byte-identical. (2) **Reverts the v1.31 `absentIds` note** (item 4 above): that change shifted generated slots (M10 classroom:1001 teacher, classes-before-f30 snapshot), so it was reverted and the M01 plugin is back to v7. §6.15 D row "M12 XR-01/06/10" now says 5571 and 5551 exist as ordinary generated users (no M02 change; M10 `anchors.test` requires 5001–5989 to exist), and M12 S8 answers the 403 page for these two live second ids explicitly (DV-M12-25, decided with the M12 owner). (3) §6.15 open points: new (8) Selangor "Jumlah Sekolah" 28 vs 25 with users (M11 S2) and (9) school 8300 should have no school code (M11); both open, owner M02, constraint: every other generated row byte-identical. |
 | 1.29 | 2026-09-30 | **Revision history — v1.29, as-built decisions of the M02 build and G4 reviews (doc-only).** New §0.2 (module-wide decisions: 404 vs load-failure, alert-only validation, status-only flashes, S9 toggle failure, D10 file input, FR-M02-21 grade). §7: new `GET /api/admin/config/defaults` (#44) and own-account 422s on #6, #7, #9 (server guard only). BR-09 Title Case algorithm fixed (INFERRED); Q4 "Perlu pengesahan". BR-18 full package = `personal` until `packageExpiresAt`. FR-M02-21 grade sent for standard roles only. §10 S1 modals wording aligned to design-system §7.7. §8 "Ditetapkan" confirmed. §13 new open items Q6-Q8 (XR). No FR / AC / E2E id added or removed; no observed copy changed. |
+| 1.33 | 2026-10-10 | **Revision history — v1.33, M27 school-admin write contract as built (doc-only; from M27 Part B commit `c5e1a7f`, G4 passed; no observed copy, count or existing FR / AC / E2E id changed).** New §6.17 documents the `schoolAdminUsers` contract (M27 XR-M27-17): `updateUser`, `createTeacher`, `createPupil`, `setTeacherActive`, `resetPassword`; the error class `SchoolAdminWriteError` (403, 404, 422 with fields); the three INFERRED refusal texts; the pupil limits `PUPIL_PASSWORD_MIN` 8 and `PUPIL_NAME_MIN` 3; and the session revocations. The admin screens S1 to S7 are unchanged. |
 
 **Tags:** **OBSERVED** · **INFERRED** (most likely live behaviour; Laravel defaults where they apply) · **UNVERIFIED COPY** (post-submit text not captured; placeholder in §8 until verified, URS OQ-1) · **DV-M02-nn** (fidelity deviation, URS §7) · **SEC-M02-nn** (security risk for review, NFR-M02-04).
 
@@ -709,6 +710,33 @@ Of 265 − 12 = 253 still outside after v1.22: OBSERVED-locked or owner-locked 2
 | createdAt | datetime (MYT, mock clock) | yes | Time the current token was generated |
 
 Store `parentInvites`: runtime only, **no seed** (the token is created lazily at the first `GET`, L45 FR-L45-13). Repository contract as built: `parentInvites.get`, `getOrCreate`, `rotate`, `resolve`, `setToken`, `removeForUser`. Deleting a student cascades `removeForUser` (BR-06); a deactivated student's token stays stored but does not resolve (L45 BR-L45-04). Other modules use this contract, never their own schema (D12).
+
+### 6.17 `schoolAdminUsers` — write contract for the school admin (v1.33; owner M02; consumer M27, XR-M27-17)
+
+The only way M27 changes a user. Not an HTTP endpoint of M02 (no row in §7); M27 calls it from its handlers inside one transaction (M27 §19 #8, #9, #12 to #15, #19). Validation is M02's own (BR-08 rules shared with the admin handlers), so a rule is defined once. All methods are synchronous and validate before they write, so a refusal leaves nothing saved. Text input is trimmed and a blank becomes absent; passwords are never trimmed. Keys the contract does not name (`role`, `schoolId`, `isActive`, `grade`, `icNumber`) are not read. Roles managed: `student` and `teacher` only.
+
+| Method | Input | Behaviour |
+|---|---|---|
+| `updateUser(schoolId, role, id, input, now)` | `{name, email, phone?, newPassword?, newPasswordConfirmation?}` | Target must be of the school and of the given role (else 404) and active (else 403). `name`, `email` (unique, ignoring the user itself) and `phone` (max 14) follow BR-08; `newPassword` is optional, at least 6 characters and confirmed. Name, e-mail and phone (only when `phone` is present in the input) are saved; role, school, status and grade never change. When a new password is given the hash is replaced and **all open sessions of the target end** (`sessions.revokeAllFor`). Returns the saved user. |
+| `createTeacher(schoolId, input, actorId, now)` | `{name, email, phone?, password, passwordConfirmation}` | Role `teacher`, `schoolId` as given, `isActive` true, `createdById` = actor. `password` required, min 6, confirmed (BR-08 create rules). No session is touched. |
+| `createPupil(schoolId, input, actorId, now, options?)` | `{name, email, password?, classId?}`; `options.defaultPassword?` | Role `student`, active, `createdById` = actor. `name` required, 3 to 255 characters (`PUPIL_NAME_MIN` 3). `email` required, valid, unique. `password` empty or `PUPIL_PASSWORD_MIN` 8 to 255 characters (stricter than the 6 of BR-08, M27 DV-M27-19). `classId` optional; when sent it must be an active `classroom` of the same school, else 422 on `classId`; it creates an enrolment with source `school_admin`. Password used = the typed one, else `options.defaultPassword`, else the configured `bulkImportDefaultPassword`. Returns `{user, password}`; the plaintext is returned once and stored nowhere (hash only). |
+| `setTeacherActive(schoolId, id, isActive, now)` | — | Switches a teacher either way, an inactive one included. Not of the school: 404; of the school but not a teacher: 403. Setting `isActive` false **ends all open sessions of the teacher**. Does not require the account to be active. |
+| `resetPassword(schoolId, role, id, input, now)` | `{newPassword, newPasswordConfirmation}` | Same scope and active checks as `updateUser`. `newPassword` required, min 6, confirmed. The hash is replaced, **all open sessions of the target end**, and `updatedAt` follows the reset. No password is returned. |
+
+**Check order** (object methods): role the school admin may manage (else 403), then 404 (unknown, other school, other role), then 403 for an inactive account (not for `setTeacherActive`), then 422.
+
+**Errors.** Every refusal throws `SchoolAdminWriteError` with `status` 403, 404 or 422, a `message` and, for 422, `fields` (field name to message; the message is the first field message). The caller maps it to the error envelope.
+
+| Status | When | Text |
+|---|---|---|
+| 403 | Account is inactive | "Akaun ini tidak aktif." (INFERRED) |
+| 404 | User unknown, of another school, or not of the given role | "Pengguna tidak ditemui." (INFERRED) |
+| 403 | Role the school admin may not manage (peer school admin, parent, …; `setTeacherActive` on a non-teacher) | "Anda tidak boleh mengurus akaun ini." (INFERRED) |
+| 422 | Validation | The shared Laravel default messages; `fields` per input |
+
+The three refusal texts have no live copy (INFERRED, UNVERIFIED COPY). The success flashes are M02's (`MSG_USER_UPDATED`, `MSG_USER_CREATED`).
+
+**Sessions.** The target's open sessions end on: a password change through `updateUser`, `resetPassword`, and `setTeacherActive(…, false)`. The target is always a pupil or teacher, never the acting school admin, so the actor's own session is untouched.
 
 ## 7. Mock API endpoints
 
