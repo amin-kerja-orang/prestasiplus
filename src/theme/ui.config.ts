@@ -3,7 +3,7 @@
  * shape as `app.config.ts` `ui`). Spec: docs/design/v2-design-system.md section 5.
  *
  * One config serves both personalities. Where the learner differs, the class uses the Tailwind
- * `[[data-personality=learner]_&]:` variant, so a component never needs to know which portal it is
+ * `learner:` variant, so a component never needs to know which portal it is
  * in. Colours come from the semantic utilities (`bg-elevated`, `text-primary-on`, ...) that
  * `tokens.css` resolves per personality and colour mode; no palette step is named here.
  *
@@ -18,8 +18,7 @@ const filled =
   'bg-elevated text-highlighted hover:bg-accented focus:bg-elevated disabled:bg-elevated/50 focus-visible:ring-2 focus-visible:ring-inset'
 
 /** Field height: staff 40px (44px on coarse pointers), learner 52px; text is 16px on every size. */
-const fieldSize =
-  'min-h-10 pointer-coarse:min-h-11 [[data-personality=learner]_&]:min-h-13 text-base'
+const fieldSize = 'min-h-10 pointer-coarse:min-h-11 learner:min-h-13 text-base'
 
 const fieldConfig = {
   defaultVariants: { variant: 'soft' },
@@ -119,10 +118,10 @@ export const uiConfig = {
     variants: {
       size: {
         md: {
-          base: 'min-h-9 pointer-coarse:min-h-11 [[data-personality=learner]_&]:min-h-13 [[data-personality=learner]_&]:rounded-lg [[data-personality=learner]_&]:px-5',
+          base: 'min-h-9 pointer-coarse:min-h-11 learner:min-h-13 learner:rounded-lg learner:px-5',
         },
         lg: {
-          base: 'min-h-10 pointer-coarse:min-h-11 [[data-personality=learner]_&]:min-h-14 [[data-personality=learner]_&]:rounded-lg [[data-personality=learner]_&]:px-6',
+          base: 'min-h-10 pointer-coarse:min-h-11 learner:min-h-14 learner:rounded-lg learner:px-6',
         },
       },
     },
@@ -189,10 +188,9 @@ export const uiConfig = {
         color: 'neutral',
         variant: 'pill',
         class: {
-          indicator:
-            'bg-seg-active shadow-ds-xs [[data-personality=learner]_&]:bg-gradient-primary [[data-personality=learner]_&]:shadow-cta',
+          indicator: 'bg-seg-active shadow-ds-xs learner:bg-gradient-primary learner:shadow-cta',
           trigger:
-            'data-[state=active]:text-highlighted [[data-personality=learner]_&]:data-[state=active]:text-primary-on',
+            'data-[state=active]:text-highlighted learner:data-[state=active]:text-primary-on',
         },
       },
     ],
