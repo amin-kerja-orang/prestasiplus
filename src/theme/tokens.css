@@ -1,0 +1,27 @@
+/* v2 tokens (V2-T02 spike subset: kobalt primary + ink neutral, from docs/design/v2-design-system.md §3.1).
+   V2-T03 completes the remaining palettes and the semantic layer. */
+@theme static {
+  --color-kobalt-50: #eef3ff;
+  --color-kobalt-100: #dde6ff;
+  --color-kobalt-200: #bfd0ff;
+  --color-kobalt-300: #93aeff;
+  --color-kobalt-400: #6283ff;
+  --color-kobalt-500: #3b5cff;
+  --color-kobalt-600: #2440f0;
+  --color-kobalt-700: #1c31d1;
+  --color-kobalt-800: #1d2ea6;
+  --color-kobalt-900: #1d2c83;
+  --color-kobalt-950: #141c52;
+
+  --color-ink-50: #f5f7fb;
+  --color-ink-100: #ebeef5;
+  --color-ink-200: #d5dbe8;
+  --color-ink-300: #a9b3c8;
+  --color-ink-400: #7d88a0;
+  --color-ink-500: #5f6a84;
+  --color-ink-600: #49536c;
+  --color-ink-700: #3a4258;
+  --color-ink-800: #262d40;
+  --color-ink-900: #171c2d;
+  --color-ink-950: #0d1120;
+}

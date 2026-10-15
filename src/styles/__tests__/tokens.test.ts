@@ -16,6 +16,9 @@ const stylesDir = dirname(fileURLToPath(new URL('../main.css', import.meta.url))
 const requireFromHere = createRequire(import.meta.url)
 
 function loadStylesheet(id: string, base: string) {
+  // `@nuxt/ui` css imports the Vite-plugin-generated `#build/ui.css`, which only exists inside the
+  // Vite pipeline. This test covers the legacy tokens, so Nuxt UI is replaced by an empty sheet.
+  if (id === '@nuxt/ui') return Promise.resolve({ path: id, base, content: '' })
   const path = id.startsWith('.')
     ? resolve(base, id)
     : requireFromHere.resolve(id === 'tailwindcss' ? 'tailwindcss/index.css' : id)
@@ -85,7 +88,7 @@ describe('design tokens (F-02)', () => {
   })
 
   it('has the observed semantic colours', () => {
-    expect(css).toContain('--color-primary: #6366f1')
+    expect(css).toContain('--color-live-primary: #6366f1')
     expect(css).toContain('--color-text: #334155')
     expect(css).toContain('--color-text-strong: #1e293b')
     expect(css).toContain('--color-muted: #64748b')

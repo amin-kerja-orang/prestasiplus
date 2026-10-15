@@ -10,6 +10,14 @@ const PERF_TESTS = 'src/**/__tests__/**/*.perf.test.ts'
 export default mergeConfig(
   viteConfig,
   defineConfig({
+    resolve: {
+      alias: {
+        // Virtual module of the Nuxt UI Vite plugin; not loadable under Vitest (see the stub).
+        '@nuxt/ui/vue-plugin': fileURLToPath(
+          new URL('./src/test-support/nuxt-ui-plugin-stub.ts', import.meta.url),
+        ),
+      },
+    },
     test: {
       // Node by default (mock handlers, datasets, libs); component tests opt in
       // to jsdom with a `// @vitest-environment jsdom` docblock (ADR-0011).
