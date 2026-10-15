@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { mount, type VueWrapper } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, ref, type Ref } from 'vue'
 
 import {
   defaultPreference,
@@ -41,17 +41,37 @@ describe('pure helpers', () => {
 })
 
 describe('useThemeMode', () => {
-  let api: ThemeMode
+  const wrappers: VueWrapper[] = []
+  const root = document.documentElement
 
-  function mountPortal(personality: Personality) {
-    return mount(
-      defineComponent({
-        setup() {
-          api = useThemeMode(personality)
-          return () => h('div')
-        },
-      }),
+  function mountPortal(personality: Personality | Ref<Personality>): ThemeMode {
+    let api!: ThemeMode
+    wrappers.push(
+      mount(
+        defineComponent({
+          setup() {
+            api = useThemeMode(personality)
+            return () => h('div')
+          },
+        }),
+      ),
     )
+    return api
+  }
+
+  /** Installs a controllable `prefers-color-scheme` mock; returns a function that flips it. */
+  function mockSystemScheme(initialDark: boolean): (dark: boolean) => void {
+    let listener: ((event: { matches: boolean }) => void) | null = null
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: initialDark,
+        addEventListener: (_: string, fn: (event: { matches: boolean }) => void) => {
+          listener = fn
+        },
+      })),
+    )
+    return (dark) => listener?.({ matches: dark })
   }
 
   beforeEach(() => {
@@ -59,43 +79,106 @@ describe('useThemeMode', () => {
     resetThemeModeForTests()
   })
   afterEach(() => {
-    document.documentElement.className = ''
-    document.documentElement.removeAttribute('data-personality')
+    while (wrappers.length > 0) wrappers.pop()?.unmount()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    root.className = ''
+    root.removeAttribute('data-personality')
   })
 
   it('learner is dark by default and marks <html>; unmount restores legacy state', async () => {
-    const wrapper = mountPortal('learner')
+    mountPortal('learner')
     await nextTick()
-    const root = document.documentElement
     expect(root.classList.contains('dark')).toBe(true)
     expect(root.dataset.personality).toBe('learner')
-    wrapper.unmount()
+    wrappers.pop()?.unmount()
     expect(root.classList.contains('dark')).toBe(false)
     expect(root.dataset.personality).toBeUndefined()
+    expect(root.style.colorScheme).toBe('')
   })
 
   it('staff with no stored choice and a light OS stays light', async () => {
-    mountPortal('staff')
+    const api = mountPortal('staff')
     await nextTick()
-    expect(document.documentElement.classList.contains('dark')).toBe(false)
+    expect(root.classList.contains('dark')).toBe(false)
     expect(api.preference.value).toBe('system')
   })
 
+  it('system follows the OS, including a change event', async () => {
+    const flip = mockSystemScheme(true)
+    mountPortal('staff')
+    await nextTick()
+    expect(root.classList.contains('dark')).toBe(true)
+    flip(false)
+    await nextTick()
+    expect(root.classList.contains('dark')).toBe(false)
+    expect(root.style.colorScheme).toBe('light')
+  })
+
   it('toggle stores the choice under pp.theme and flips .dark', async () => {
-    mountPortal('learner')
+    const api = mountPortal('learner')
     await nextTick()
     api.toggle()
     await nextTick()
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light')
-    expect(document.documentElement.classList.contains('dark')).toBe(false)
+    expect(root.classList.contains('dark')).toBe(false)
     api.setPreference('dark')
     await nextTick()
-    expect(document.documentElement.classList.contains('dark')).toBe(true)
+    expect(root.classList.contains('dark')).toBe(true)
   })
 
-  it('never touches the legacy colour-mode key', () => {
+  it('a blocked setItem still applies the choice for this page view', async () => {
+    const api = mountPortal('learner')
+    await nextTick()
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota')
+    })
+    expect(() => {
+      api.setPreference('light')
+    }).not.toThrow()
+    await nextTick()
+    expect(root.classList.contains('dark')).toBe(false)
+    expect(api.preference.value).toBe('light')
+  })
+
+  it('follows a personality ref (staff to learner swap)', async () => {
+    const personality = ref<Personality>('staff')
+    mountPortal(personality)
+    await nextTick()
+    expect(root.dataset.personality).toBe('staff')
+    expect(root.classList.contains('dark')).toBe(false)
+    personality.value = 'learner'
+    await nextTick()
+    expect(root.dataset.personality).toBe('learner')
+    expect(root.classList.contains('dark')).toBe(true)
+  })
+
+  it('overlapping layouts: unmounting the older one keeps the newer personality', async () => {
     mountPortal('staff')
+    mountPortal('learner')
+    await nextTick()
+    expect(root.dataset.personality).toBe('learner')
+    wrappers.shift()?.unmount()
+    await nextTick()
+    expect(root.dataset.personality).toBe('learner')
+    expect(root.classList.contains('dark')).toBe(true)
+    wrappers.pop()?.unmount()
+    expect(root.dataset.personality).toBeUndefined()
+  })
+
+  it('picks up a change made in another tab (storage event)', async () => {
+    mountPortal('learner')
+    await nextTick()
+    localStorage.setItem(THEME_STORAGE_KEY, 'light')
+    window.dispatchEvent(new StorageEvent('storage', { key: THEME_STORAGE_KEY }))
+    await nextTick()
+    expect(root.classList.contains('dark')).toBe(false)
+  })
+
+  it('writes only pp.theme, never the Nuxt UI colour-mode key', async () => {
+    const api = mountPortal('staff')
+    await nextTick()
     api.toggle()
-    expect(localStorage.getItem('vueuse-color-scheme')).toBeNull()
+    expect(Object.keys(localStorage)).toEqual([THEME_STORAGE_KEY])
   })
 })

@@ -149,7 +149,6 @@
   --text-overline--letter-spacing: 0.08em;
   --text-overline--font-weight: 700;
 
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   --animate-ds-rise: ds-rise 600ms var(--ease-pop) both;
@@ -313,11 +312,19 @@
   --radius-chip: var(--ds-r-chip);
 }
 
+/* Personality variants: learner: and staff: apply inside (or on) the scope. :is() keeps the specificity
+   at (0,2,0), like any other variant. Use these instead of arbitrary [data-personality] variants. */
+@custom-variant learner (&:is([data-personality='learner'] *, [data-personality='learner']));
+@custom-variant staff (&:is([data-personality='staff'] *, [data-personality='staff']));
+
 /* ------------------------------------------------------------------ 3. personality scopes */
 
 /* Shared by both personalities (no colour decisions). */
 [data-personality] {
   --ui-radius: 0.5rem;
+  --ds-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ds-ink: #0b0d12;
+  --ds-primary-gradient: linear-gradient(135deg, var(--ds-c1), var(--ds-primary-2));
   --ds-r-card: 1rem;
   --ds-r-sheet: 1.75rem;
   --ds-r-chip: 0.75rem;
@@ -474,6 +481,9 @@
 /* ---- Learner "Elektrik", light ---- */
 [data-personality='learner'] {
   color-scheme: light;
+  --ds-bg-device: #e6e8ec;
+  --ds-ai-a: #a98bff;
+  --ds-ai-b: #7c3aed;
   --ds-r-card: 1.25rem;
   --ui-bg-muted: #f5f6f8;
   --ui-bg: #ffffff;
@@ -554,6 +564,9 @@
   --ds-win-ring: #c6f432;
   --ds-ic-flame: #ff7a1a;
   --ds-ai: #9b6bff;
+  --ds-ai-a: #c3a2ff;
+  --ds-ai-b: #8a55f5;
+  --ds-bg-device: #101319;
 
   --ds-shadow-xs: none;
   --ds-shadow-lift: 0 6px 20px rgb(0 0 0 / 0.35);
@@ -573,5 +586,10 @@
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Loading spinners keep turning (a frozen spinner reads as a hang). */
+  [data-personality] .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
   }
 }

@@ -5,14 +5,28 @@
  * legacy pages dark.
  *
  * - Storage key `pp.theme`: `'light' | 'dark' | 'system'`. Absent = the portal default
- *   (learner: dark, staff: system).
- * - `data-personality`, `.dark` and `color-scheme` are put on <html> only while a portal layout
- *   has called `useThemeMode` (so teleported modals, toasts and drawers inherit the tokens), and
- *   removed when it unmounts. Legacy pages never mount one, so they never get `.dark` and stay
- *   light (no `LegacyScope` workaround needed for the document).
+ *   (learner: dark, staff: system). Changes made in another tab are picked up (`storage` event).
+ * - `data-personality`, `.dark` and `color-scheme` are put on <html> only while at least one
+ *   portal layout has called `useThemeMode` (so teleported modals, toasts and drawers inherit the
+ *   tokens). Mounted layouts form a stack: the most recently mounted one decides the personality,
+ *   and the attributes are removed only when the last one unmounts (layout swaps overlap).
+ *   Legacy pages never mount one, so they never get `.dark` and stay light.
  * - Tailwind's `dark:` variant and the token scopes in `tokens.css` both key off `.dark`.
+ *
+ * Known limit: on a hard reload the attributes are applied in `onMounted`, so a learner whose
+ * stored/default scheme is dark can see one light frame before the layout mounts.
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
+import {
+  computed,
+  effectScope,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+  type ComputedRef,
+  type Ref,
+} from 'vue'
 
 export type Personality = 'staff' | 'learner'
 export type ThemePreference = 'light' | 'dark' | 'system'
@@ -56,15 +70,53 @@ function browserStorage(): Storage | null {
 /** Module state: one stored choice, shared by every consumer. `null` = never chosen. */
 const stored = ref<ThemePreference | null>(readStoredPreference(browserStorage()))
 const systemDark = ref(false)
-let mediaBound = false
+/** Mounted portal layouts, oldest first; the last one is the active personality. */
+const owners = shallowRef<{ personality: ComputedRef<Personality> }[]>([])
 
-function bindSystemScheme(): void {
-  if (mediaBound || typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
-  mediaBound = true
-  const query = window.matchMedia('(prefers-color-scheme: dark)')
-  systemDark.value = query.matches
-  query.addEventListener('change', (event) => {
-    systemDark.value = event.matches
+const activePersonality = computed<Personality | null>(() => {
+  const top = owners.value[owners.value.length - 1]
+  return top ? top.personality.value : null
+})
+const activeScheme = computed<Scheme>(() =>
+  resolveScheme(
+    stored.value ?? defaultPreference(activePersonality.value ?? 'staff'),
+    systemDark.value,
+  ),
+)
+
+function syncDom(): void {
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  const personality = activePersonality.value
+  if (personality === null) {
+    delete root.dataset.personality
+    root.classList.remove('dark')
+    root.style.removeProperty('color-scheme')
+    return
+  }
+  root.dataset.personality = personality
+  root.classList.toggle('dark', activeScheme.value === 'dark')
+  root.style.colorScheme = activeScheme.value
+}
+
+let started = false
+function start(): void {
+  if (started || typeof window === 'undefined') return
+  started = true
+  if (typeof window.matchMedia === 'function') {
+    const query = window.matchMedia('(prefers-color-scheme: dark)')
+    systemDark.value = query.matches
+    query.addEventListener('change', (event) => {
+      systemDark.value = event.matches
+    })
+  }
+  window.addEventListener('storage', (event) => {
+    if (event.key === THEME_STORAGE_KEY || event.key === null) {
+      stored.value = readStoredPreference(browserStorage())
+    }
+  })
+  effectScope(true).run(() => {
+    watch([activePersonality, activeScheme], syncDom)
   })
 }
 
@@ -72,6 +124,9 @@ function bindSystemScheme(): void {
 export function resetThemeModeForTests(): void {
   stored.value = readStoredPreference(browserStorage())
   systemDark.value = false
+  owners.value = []
+  started = false
+  syncDom()
 }
 
 export interface ThemeMode {
@@ -85,8 +140,8 @@ export interface ThemeMode {
 }
 
 /**
- * Called by a portal layout root. Applies `.dark` on <html> while mounted and keeps it in step
- * with the preference and, for `system`, the OS scheme.
+ * Called by a portal layout root. Registers the layout as the active portal while mounted and keeps
+ * `.dark` / `data-personality` on <html> in step with the preference and, for `system`, the OS.
  */
 export function useThemeMode(personality: Ref<Personality> | Personality): ThemeMode {
   const personalityRef = computed(() =>
@@ -97,27 +152,17 @@ export function useThemeMode(personality: Ref<Personality> | Personality): Theme
   )
   const scheme = computed<Scheme>(() => resolveScheme(preference.value, systemDark.value))
 
-  function apply(value: Scheme): void {
-    const root = document.documentElement
-    root.dataset.personality = personalityRef.value
-    root.classList.toggle('dark', value === 'dark')
-    root.style.colorScheme = value
-  }
-  function clear(): void {
-    const root = document.documentElement
-    delete root.dataset.personality
-    root.classList.remove('dark')
-    root.style.removeProperty('color-scheme')
-  }
+  const entry = { personality: personalityRef }
 
   onMounted(() => {
-    bindSystemScheme()
-    apply(scheme.value)
+    start()
+    owners.value = [...owners.value, entry]
+    syncDom()
   })
-  watch([scheme, personalityRef], () => {
-    if (typeof document !== 'undefined') apply(scheme.value)
+  onBeforeUnmount(() => {
+    owners.value = owners.value.filter((owner) => owner !== entry)
+    syncDom()
   })
-  onBeforeUnmount(clear)
 
   function setPreference(value: ThemePreference): void {
     stored.value = value
@@ -129,8 +174,8 @@ export function useThemeMode(personality: Ref<Personality> | Personality): Theme
   }
 
   return {
-    preference: preference,
-    scheme: scheme,
+    preference,
+    scheme,
     setPreference,
     toggle: () => setPreference(scheme.value === 'dark' ? 'light' : 'dark'),
   }
