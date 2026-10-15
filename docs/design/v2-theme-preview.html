@@ -669,6 +669,12 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
 :root[data-variant="bplus"] .subj .tile { background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--c); }
 :root[data-variant="bplus"] .subj .tile::after { display: none; }
 
+/* B+ dikemas kini: satu warna tema (kobalt) pada semua ikon, bukan pelbagai warna */
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(n) { --g: var(--ic-kobalt); }
+:root[data-variant="bplus"] .stats .stat:nth-child(n) .stat-ic { --g: var(--ic-kobalt); }
+:root[data-variant="bplus"] .chips .chip-sm:nth-child(n) .ic, :root[data-variant="bplus"] .pstat:nth-child(n) .ic, :root[data-variant="bplus"] .reward-chip:nth-child(n) .ic { color: var(--ic-kobalt); }
+:root[data-variant="bplus"] .subj .tile { background: color-mix(in srgb, var(--ic-kobalt) 12%, transparent); color: var(--ic-kobalt); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; }
   html { scroll-behavior: auto; }
@@ -733,7 +739,7 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
       <div class="seg" role="group" aria-label="Versi tema">
         <button type="button" data-variant="a" aria-pressed="false">Versi A (Asal)</button>
         <button type="button" data-variant="b" aria-pressed="false">Versi B (Tenang)</button>
-        <button type="button" data-variant="bplus" aria-pressed="true">Versi B+ (Ikon Berwarna)</button>
+        <button type="button" data-variant="bplus" aria-pressed="true">Versi B+ (Warna Tema)</button>
       </div>
       <div class="seg" role="group" aria-label="Mod paparan">
         <button type="button" data-mode="light" aria-pressed="false"><svg class="ic ic-16" aria-hidden="true"><use href="#i-sun"/></svg>Cerah</button>
@@ -752,7 +758,7 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
     <span class="t-over">Pratonton tema &middot; PrestasiPlus v2</span>
     <h1>Tema Gelanggang &mdash; Pratonton</h1>
     <p>Gelanggang ialah arena latihan SPM: yakin seperti papan skor, bukan comel seperti aplikasi kanak-kanak, dengan skor, ranking dan streak sebagai hero. Biru kobalt untuk tindakan dan satu penyerlah limau untuk kemajuan serta kemenangan, di atas permukaan dakwat yang tenang dan selesa di mata, siang mahupun malam.</p>
-    <p>Versi A (Asal) lebih berwarna dengan garis dan bayang tegas; Versi B (Tenang) memakai lapisan permukaan lembut, kobalt sebagai satu-satunya warna tindakan, dan limau hanya untuk detik kemenangan; Versi B+ (Ikon Berwarna), yang dipaparkan secara lalai, sama seperti B tetapi menambah warna pada ikon, titik dan tint kecil sahaja.</p>
+    <p>Versi A (Asal) lebih berwarna dengan garis dan bayang tegas; Versi B (Tenang) memakai lapisan permukaan lembut, kobalt sebagai satu-satunya warna tindakan, dan limau hanya untuk detik kemenangan; Versi B+ (Warna Tema), yang dipaparkan secara lalai, sama seperti B tetapi semua ikon memakai warna tema kobalt di atas tint lembut.</p>
     <div class="hero-chips">
       <span class="badge b-sticker">Sedia untuk SPM.</span>
       <span class="badge b-neutral" style="background:transparent;color:var(--text-inv);border-color:color-mix(in srgb,var(--text-inv) 40%,transparent)">Cerah &amp; Gelap</span>
@@ -774,7 +780,7 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
       <ul class="legend">
         <li><i style="background:var(--bg-inv)"></i>60% dakwat &amp; teks neutral</li>
         <li><i style="background:var(--bg-accented)"></i>30% lapisan permukaan</li>
-        <li><i style="background:var(--primary)"></i>10% kobalt (tindakan). Limau hanya untuk detik menang.<span class="only-plus"> Dalam B+, warna lain hanya pada ikon dan tint kecil.</span></li>
+        <li><i style="background:var(--primary)"></i>10% kobalt (tindakan). Limau hanya untuk detik menang.<span class="only-plus"> Dalam B+, ikon memakai warna tema kobalt.</span></li>
       </ul>
     </div>
     <div class="card stack" style="margin-bottom:16px">
