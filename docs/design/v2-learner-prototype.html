@@ -249,15 +249,15 @@ h2.focus-t:focus { outline: none; }
 @keyframes sheet { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
 
 /* ===== Kemenangan ===== */
-#s-win { background: radial-gradient(90% 50% at 50% 10%, color-mix(in srgb, var(--highlight) 16%, transparent), transparent 70%); text-align: center; }
+#s-win { background: radial-gradient(90% 50% at 50% 10%, color-mix(in srgb, var(--wc, var(--highlight)) 16%, transparent), transparent 70%); text-align: center; }
 .win { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: max(16px, env(safe-area-inset-top)) 20px 12px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .win .ttl { font-family: var(--font-display); font-weight: 800; font-size: 1.75rem; line-height: 1.15; color: var(--text-hl); }
 .win .sub { color: var(--text-muted); font-size: .9375rem; max-width: 30ch; }
-.big { position: relative; width: 168px; height: 168px; margin-top: 4px; }
+.big { position: relative; width: 136px; height: 136px; margin-top: 2px; }
 .big svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.big .trk { stroke: var(--bg-elevated); } .big .bar { stroke: var(--win-ring); transition: stroke-dashoffset 1.3s var(--ease-pop) .2s; }
+.big .trk { stroke: var(--bg-elevated); } .big .bar { stroke: var(--wr, var(--win-ring)); transition: stroke-dashoffset 1.3s var(--ease-pop) .2s; }
 .big .ct { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.big .ct b { font-family: var(--font-display); font-weight: 800; font-size: 3rem; line-height: 1; color: var(--text-hl); }
+.big .ct b { font-family: var(--font-display); font-weight: 800; font-size: 2.5rem; line-height: 1; color: var(--text-hl); }
 .big .ct span { font-size: .75rem; color: var(--text-muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .rw { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; width: 100%; max-width: 320px; }
 .rw div { background: var(--bg); border-radius: 18px; padding: 12px; display: flex; align-items: center; gap: 10px; text-align: left; box-shadow: var(--shadow-lift); }
@@ -284,8 +284,25 @@ html[data-r3d="on"] .sticker .s-ic { display: none; }
 .hero { position: relative; margin-top: 12px; }
 .hero .ring { align-self: flex-end; }
 .hero .art { position: absolute; top: -22px; right: 16px; width: 76px; height: 76px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 8px 10px rgba(0,0,0,.35)); }
-.winhero { display: flex; align-items: flex-end; justify-content: center; }
-.winhero .art-win { width: 96px; height: 96px; margin-left: -8px; object-fit: contain; filter: drop-shadow(0 8px 10px rgba(0,0,0,.35)); }
+#s-win { --wc: var(--highlight); --wr: var(--win-ring); }
+#s-win[data-tone="keep"] { --wc: var(--primary); --wr: var(--primary-t); }
+.winhero { position: relative; width: 128px; height: 128px; flex: none; display: grid; place-items: center; }
+.wglow { position: absolute; inset: -22px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--wc) 42%, transparent), transparent); pointer-events: none; }
+.winhero .art-win { position: relative; width: 128px; height: 128px; object-fit: contain; filter: drop-shadow(0 10px 12px rgba(0,0,0,.35)); }
+#s-win.on .art-win { animation: popin .7s var(--ease-pop) .15s both; }
+@keyframes popin { from { opacity: 0; transform: scale(.4) rotate(-8deg); } to { opacity: 1; transform: none; } }
+.wbub { display: flex; align-items: flex-end; gap: 10px; width: 100%; max-width: 340px; text-align: left; padding-left: 5px; }
+.gb2 { position: relative; flex: 1; min-width: 0; background: var(--bg); color: var(--text-hl); border-radius: 18px; padding: 10px 14px; font-size: .9375rem; line-height: 1.4; box-shadow: var(--shadow-lift); }
+.gb2::before { content: ""; position: absolute; left: -8px; bottom: 14px; width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 9px solid var(--bg); }
+.wbub { transition: opacity .3s, transform .4s var(--ease-pop); }
+.wbub.pre { opacity: 0; transform: translateY(8px); }
+.tdots { display: none; gap: 5px; align-items: center; height: 22px; }
+.tdots i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); animation: tdot 1s ease-in-out infinite; }
+.tdots i:nth-child(2) { animation-delay: .15s; } .tdots i:nth-child(3) { animation-delay: .3s; }
+@keyframes tdot { 0%,80%,100% { transform: translateY(0); opacity: .5; } 40% { transform: translateY(-4px); opacity: 1; } }
+.wbub.typ .tdots { display: inline-flex; }
+.wbub.typ .fn, .wbub.typ #winSub { display: none; }
+.win .gb2 .fn { margin: 0 0 2px; font-size: .75rem; color: var(--text-muted); }
 
 /* ===== Kad watak (warna ikut makna: amber=langganan, oren=amaran, violet=info, biru=tindakan, limau=pencapaian) ===== */
 :root { --amber: #FFB41F; --amber-on: #0B0D12; }
@@ -450,7 +467,7 @@ html[data-r3d="on"] .sticker .s-ic { display: none; }
 
 /* ===== Gerak dikurangkan: animasi besar mati, perubahan keadaan kekal ===== */
 @media (prefers-reduced-motion: reduce) {
-  .gcard, .gcap, .alesa, .alesa .blink, .flame, .bubble, .stat, .hero, .q, .opt, .fb, .combo.lit .ic, .combo.bump, .tab .ic, .opt.pop, .opt.nudge, .alesa.party, .alesa.hop { animation: none !important; }
+  #s-win.on .art-win, .gcard, .gcap, .alesa, .alesa .blink, .flame, .bubble, .stat, .hero, .q, .opt, .fb, .combo.lit .ic, .combo.bump, .tab .ic, .opt.pop, .opt.nudge, .alesa.party, .alesa.hop { animation: none !important; }
   .fl { animation: none !important; opacity: 1; }
   .sticker { animation: none !important; opacity: 1 !important; }
   .screen, .screen.out { transform: none; transition: opacity .2s linear, visibility 0s .2s; }
@@ -709,14 +726,13 @@ html[data-r3d="on"] .sticker .s-ic { display: none; }
     <!-- ========== KEMENANGAN ========== -->
     <section class="screen" id="s-win" aria-label="Kemenangan" inert>
       <div class="win">
-        <div class="winhero"><div id="alesaWin" aria-hidden="true"></div><img class="art-win" id="winArt" data-3d="trophy_3d" alt="" aria-hidden="true" width="96" height="96" hidden></div>
-        <span class="fn" id="fnWin"></span>
+        <div class="winhero"><span class="wglow" aria-hidden="true"></span><img class="art-win" id="winArt" data-3d="trophy_3d" alt="" aria-hidden="true" width="128" height="128"></div>
         <h2 class="ttl focus-t" id="winT" tabindex="-1">Hebat, Aina!</h2>
-        <p class="sub" id="winSub"></p>
         <div class="big" id="winRing" role="progressbar" aria-label="Skor latihan" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
           <svg viewBox="0 0 150 150" aria-hidden="true"><circle class="trk" cx="75" cy="75" r="64" fill="none" stroke-width="12"/><circle class="bar" id="winBar" cx="75" cy="75" r="64" fill="none" stroke-width="12" stroke-linecap="round"/></svg>
           <div class="ct" aria-hidden="true"><b id="winScore">0</b><span id="winOf">daripada 5</span></div>
         </div>
+        <div class="wbub"><div id="alesaWin" aria-hidden="true"></div><p class="gb2"><b class="fn" id="fnWin"></b><span id="winSub"></span><span class="tdots" aria-hidden="true"><i></i><i></i><i></i></span></p></div>
         <div class="rw">
           <div class="k1"><span class="ico rw3"><svg class="ic ic-f" aria-hidden="true"><use href="#i-bolt"/></svg><img class="r3" data-3d="high_voltage_3d" alt="" aria-hidden="true" width="40" height="40"></span><span><b id="winXp">+0</b><small>Mata</small></span></div>
           <div class="k3"><span class="ico rw3"><svg class="ic ic-f" aria-hidden="true"><use href="#i-coin"/></svg><img class="r3" data-3d="coin_3d" alt="" aria-hidden="true" width="40" height="40"></span><span><b id="winCoin">+0</b><small>Koin</small></span></div>
@@ -1031,9 +1047,16 @@ html[data-r3d="on"] .sticker .s-ic { display: none; }
     S.xp += xp; S.coins += coins; S.streak += 1; S.done = true; S.prog = Math.min(100, S.prog + right * 4); save();
     var good = right >= 3;
     $('winT').textContent = right === 5 ? 'Sempurna, Aina!' : right === 4 ? 'Hebat, Aina!' : right === 3 ? 'Bagus, Aina!' : 'Teruskan, Aina!';
-    $('winSub').textContent = good ? 'Latihan selesai. Streak awak terus menyala.' : 'Awak dah siap. Setiap kesilapan tadi satu langkah lebih dekat.';
-    setAlesa($('alesaWin'), good ? 'celebrating' : 'encouraging', 112, good ? 'party' : 'hop');
-    var art = $('winArt'); art.hidden = !good; art.src = src3(right === 5 ? 'party_popper_3d' : 'trophy_3d');
+    $('winSub').textContent = right === 5 ? 'Tahniah, Aina! Semua betul! 🎉' : good ? 'Tahniah, Aina! Awak dapat ' + right + '/5. Hebat!' : 'Bagus sebab awak cuba, Aina. Jom ulang kaji soalan yang salah, awak pasti boleh! 💪';
+    var wb = document.querySelector('.wbub'); clearTimeout(wb._t1); clearTimeout(wb._t2);
+    wb.classList.remove('pre', 'typ');
+    if (!RM()) {
+      wb.classList.add('pre');
+      wb._t1 = setTimeout(function () { wb.classList.remove('pre'); wb.classList.add('typ'); wb._t2 = setTimeout(function () { wb.classList.remove('typ'); }, 600); }, 400);
+    }
+    setAlesa($('alesaWin'), good ? 'celebrating' : 'encouraging', 46, good ? 'party' : 'hop');
+    $('s-win').setAttribute('data-tone', good ? 'good' : 'keep');
+    $('winArt').src = src3(right === 5 ? 'party_popper_3d' : good ? 'trophy_3d' : 'books_3d');
     var st = '<span class="sticker"><svg class="ic ic-f s-ic" aria-hidden="true"><use href="#i-flame"/></svg><img class="r3" src="' + src3('fire_3d') + '" alt="" aria-hidden="true" width="26" height="26">Streak ' + S.streak + ' hari!</span>';
     if (lvl) st += '<span class="sticker"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>Tahap naik!</span>';
     $('stk').innerHTML = st;
