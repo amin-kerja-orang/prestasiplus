@@ -1,11 +1,20 @@
 # PrestasiPlus v2 — Portal Shells (Pentadbiran and Pembelajaran)
 
-Slug: `v2-design-system` (shells part) · Gate: G2 · Status: Draft for user approval · Date: 2026-10-16 · Author: ui-ux-designer
-Companion: `docs/design/v2-design-system.md` (tokens, components, density, guard rules). Requirements: `docs/requirements/v2-portals.md` (US-01…US-16, menu §5–§8). Decisions: D28–D32.
+| Field | Value |
+|---|---|
+| Slug | `v2-design-system` (shells part) |
+| Version | **2.0** (supersedes the unnumbered 0.1 draft) |
+| Status | **Approved (D33–D38)** |
+| Date | 2026-10-16 |
+| Author | ui-ux-designer |
+| Companion | `docs/design/v2-design-system.md` (tokens, components, personalities, guard rules) |
+| Visual sources | `docs/design/v2-learner-prototype.html` (learner), `docs/design/v2-theme-preview.html` variant B+ (staff) |
+| Requirements | `docs/requirements/v2-portals.md` (US-01…US-16, menus §5–§8) |
+| Supersedes | `docs/design/shells.md` visuals and chrome. Unchanged from it: one menu definition feeds sidebar, drawer and Ctrl+K (DV-SH-04 fix), "hidden, not disabled" role filtering, header title from route meta (DV-SH-03). |
 
-Conventions: widths **375 / 768 / 1280** are the design points (Tailwind: base, `md`, `xl`; the switch between "mobile" and "desktop" chrome is `lg` = 1024). All three must not scroll horizontally; 320 also must not. Components named `U*` are Nuxt UI; `Ds*` are design-system patterns (design-system doc §10.3). Wireframe legend: `[ ]` button · `( )` chip/badge · `{ }` data · `…` truncated · `▾` menu.
+**Change log:** 2.0 rewrote the draft to the approved visuals. Removed: 3px active-nav bars, bordered banners, 2px outline chips, pop-shadow buttons, songket brand panel, "Kebangsaan" label (now "Seluruh Negara"), the learner "Chat" tab, all-grey icons. Added: learner header (brand + friend avatar), filled-pill 5-tab nav, full-screen quiz and win screen, friend picker flow, staff B+ chrome.
 
-Supersedes `docs/design/shells.md` for visuals and chrome. Unchanged from it: the single menu definition feeding sidebar, drawer and Ctrl+K (DV-SH-04 fix), "hidden, not disabled" role filtering, header title derived from route meta (DV-SH-03).
+Conventions: design widths **375 / 768 / 1280**; `lg` (1024) switches mobile ↔ desktop chrome; no horizontal page scroll at ≥ 320px. `U*` = Nuxt UI, `Ds*` = design-system pattern. Decisions D33: one SPA, two portals; Pentadbiran lives under `/admin/**` (per-host build); Mod Pelajar for Admin Pusat + Admin Sekolah; Murid 5 tabs + floating Cikgu Alesa; no Pentadbiran bottom nav.
 
 ---
 
@@ -14,490 +23,417 @@ Supersedes `docs/design/shells.md` for visuals and chrome. Unchanged from it: th
 | | Portal Pentadbiran | Portal Pembelajaran |
 |---|---|---|
 | Roles | Admin Pusat, Pegawai PPD/JPN, Admin Sekolah | Murid, Guru, Ibu Bapa, Penaja |
-| Shell component | `DsShellPentadbiran` | `DsShellPembelajaran` (variants: `murid`, `guru`, `simple` for Ibu Bapa/Penaja) |
-| Density | `staff` | Murid = `learner`; Guru, Ibu Bapa, Penaja = `staff` |
-| Nav pattern ≥ lg (1024) | Left sidebar (rail 72px at 1024–1279, expanded 272px at ≥ 1280; user-togglable, choice stored) | Left sidebar 272px |
-| Nav pattern < lg | Top bar + hamburger → slide-over drawer with the **complete** menu. **No bottom nav.** | Top bar + **bottom tab bar** (Murid, Guru) + "Lagi" opens the complete menu drawer; Ibu Bapa/Penaja: top bar + drawer |
-| Search | Ctrl/Cmd+K palette + visible trigger on touch | Search not part of the learner shell (not on live); Ctrl+K is Pentadbiran only |
-| Identity cue | Wordmark chip "Pentadbiran" (neutral) + role/scope chip in the top bar | Wordmark chip "Pembelajaran" (primary); Murid identity card with level/XP |
-| Cross-portal ways | Role switcher (dual-role), Mod Pelajar, login/logout — nothing else (US-15) | Role switcher (dual-role), "Keluar Mod Pelajar" while in the mode, login/logout |
-| Colour mode | Light / Gelap / Ikut Sistem (default: system), toggle in the account menu in both portals | same |
+| Shell | `DsShellPentadbiran` | `DsShellPembelajaran` variants `murid`, `guru`, `simple` |
+| Personality | `staff` (B+: layers not lines, kobalt on icons, semantic colour for meaning only) | Murid = `learner` (Elektrik); Guru / Ibu Bapa / Penaja = `staff` look in this shell |
+| Default colour mode | System | Murid **dark**; others system |
+| Nav ≥ lg | Sidebar (rail 72px at 1024–1279, 272px at ≥ 1280, user-toggle persisted) | Sidebar 272px |
+| Nav < lg | Top bar + hamburger → drawer with the **complete** menu; **no bottom nav** | Murid, Guru: top bar + **bottom tab bar** + "Lagi" drawer. Ibu Bapa/Penaja: top bar + drawer |
+| Identity cue | Wordmark chip "Pentadbiran" (`subtle`) + role/scope chip | Murid: brand + friend avatar; others: wordmark chip "Pembelajaran" |
+| Cross-portal ways | Role switcher (dual role), Mod Pelajar, login/logout only (US-15) | Role switcher, "Keluar Mod Pelajar" in the mode, login/logout |
+| Search | Ctrl/Cmd+K + visible trigger | none (not on live) |
 
-**Shared chrome rules**
+**Shared rules**
 
-- DOM order: skip link → mode banner (if any) → top bar → sidebar nav → `main` → bottom nav. Landmarks: `header`, `nav aria-label="Menu utama"`, `main id="kandungan"`, `nav aria-label="Navigasi bawah"` (mobile tab bar).
-- Skip link copy: "Langkau ke kandungan" (first focusable element, visible on focus, 44px, `secondary` sticker).
-- One scroll container per page: the `main` panel scrolls; the top bar is sticky; the sidebar scrolls on its own. Wide content (tables, charts) scrolls inside its own card.
-- Safe areas: bottom bar and drawers add `env(safe-area-inset-*)` padding (set in `DsBottomNav` / shell config, not in pages).
-- Page transition: 120ms opacity (none under reduced motion).
-- Footer strip (copyright) stays as live: "© 2026 PRESTASIPLUS. Hakcipta Terpelihara." / "Didikan penuh ❤️ dari Malaysia 🇲🇾" — inside the drawer footer < lg, and at the end of `main` content ≥ lg (`text-caption text-muted`).
+- DOM order: skip link → mode banner → top bar → nav → `main#kandungan` → bottom nav. Landmarks `header`, `nav aria-label="Menu utama"`, `main`, `nav aria-label="Navigasi bawah"`.
+- Skip link "Langkau ke kandungan": first focusable, shown on focus, 44px, primary fill.
+- **Layers, not lines** everywhere: sidebar, bars and cards separate by surface level and soft shadow (`shadow-xs`, `shadow-bar`, `shadow-bar-up`); no dividers or borders. Page = `bg-muted`, raised = `bg-default`, elevated = `bg-elevated` (max 3).
+- One scroll container: `main` scrolls; top bar sticky; sidebar scrolls on its own; wide tables/strips scroll inside their own card.
+- Safe areas handled by `DsBottomNav`/shell config. Page transition 120ms opacity (none under reduced motion).
+- Footer strip as live: "© 2026 PRESTASIPLUS. Hakcipta Terpelihara." / "Didikan penuh ❤️ dari Malaysia 🇲🇾" (`text-caption text-muted`; in the drawer < lg, end of `main` ≥ lg).
+- Colour mode toggle (Cerah / Gelap / Ikut Sistem) in the account menu (staff) and as an icon button in the learner header (sun/moon).
 
 ---
 
-## 2. Portal Pentadbiran
+## 2. Portal Pentadbiran (staff personality, B+)
 
 ### 2.1 Structure
 
 ```
-UApp (isolate, bg-muted, data-density="staff", data-portal="pentadbiran")
-└─ DsModeBanner            (only in Mod Pelajar — never present in Pentadbiran, see §3)
+UApp (isolate, bg-muted, data-personality="staff", data-density="staff", data-portal="pentadbiran")
+└─ DsModeBanner      (never present here; Mod Pelajar lives in the Pembelajaran shell, §3)
 └─ UDashboardGroup
-   ├─ UDashboardSidebar    (collapsible; slide-over < lg)
-   │   ├ header : wordmark + (Pentadbiran) chip + collapse button
-   │   ├ search : UDashboardSearchButton  "Cari…  Ctrl K"
-   │   ├ body   : UNavigationMenu — 9 job groups, role-filtered, one active group open
-   │   └ footer : account block (UAvatar, name, role) → UDropdownMenu
+   ├─ UDashboardSidebar   (bg-default, shadow-xs; collapsible; slide-over < lg)
+   │   header: logo + "Pentadbiran" chip + collapse | search: UDashboardSearchButton
+   │   body: UNavigationMenu (9 job groups, role-filtered)
+   │   footer: account block (UAvatar, name, role) → UDropdownMenu
    └─ UDashboardPanel
-       ├ UDashboardNavbar  : [toggle] [title/subtitle] … [search-icon] [DsServerStatus] [DsRoleChip] [account]
-       └ main              : page content (DsPage)
-UDashboardSearch (UCommandPalette in a modal) — mounted once, opens on Ctrl/Cmd+K
+       UDashboardNavbar (bg-default, shadow-bar): [toggle] [title/subtitle] … [search] [DsServerStatus] [DsRoleChip] [account]
+       main: DsPage content
+UDashboardSearch (command palette) mounted once; Ctrl/Cmd+K
 ```
 
-### 2.2 Menu (sidebar and drawer, identical)
+### 2.2 Menu
 
-Group order and item order are exactly `v2-portals.md` §5–§6 (94 items for Admin Pusat). Rendering rules:
+Groups and items exactly `v2-portals.md` §5–§6 (94 items for Admin Pusat). Rendering:
 
 | Rule | Spec |
 |---|---|
-| Groups | 9 groups in this order: Papan Pemuka, Pemantauan, Bank Soalan, Kertas & SPM, Kurikulum & Kandungan, Pengguna & Sekolah, Penglibatan, Kewangan, Sistem. A group with no visible item is not rendered (AC-03.5). |
-| Group header | `text-overline text-dimmed`, 40px row, leading Lucide icon (below), trailing chevron. Collapsible (`UNavigationMenu` with children). Papan Pemuka (2 items) is always expanded and has no chevron. |
-| Open state | Only the group that contains the active route is open on load/route change; others stay as the user left them; state persisted in `localStorage["pentadbiran_menu"]`. Keyboard: Enter/Space toggles, arrows move (Reka UI). |
-| Nested groups | Pemantauan › Kirkpatrick (7 items) is a second-level collapsible; indented 16px; max depth 2. |
-| Item | 40px row (48px under `pointer-coarse` and in the drawer), 20px icon at group level only (items inside groups have no icon, to stay calm), label `text-label`, truncates with tooltip + `title`. Badges: `LIVE` (`UBadge error solid`, pulse) on Langsung; count badges via `UChip`. |
-| Active | `bg-primary/10`, `text-highlighted`, `font-semibold`, 3px leading primary bar, `aria-current="page"`. Active group header gets the same bar. Not colour-only. |
-| Hover/focus | Hover `bg-elevated`; focus outline 2px primary. |
-| Role filtering | Items are removed, never disabled or padlocked (AC-03.4). Pusat sees 9 groups; PPD/JPN: Pemantauan + Pengguna & Sekolah; Sekolah: Papan Pemuka, Pemantauan, Pengguna & Sekolah, Kewangan. |
-| Collapsed rail (1024–1279 default) | 72px: group icons only, `UTooltip` with group name on hover/focus; clicking a group icon opens a flyout `UPopover` listing its items. Expand button at the top. |
+| Groups | Papan Pemuka, Pemantauan, Bank Soalan, Kertas & SPM, Kurikulum & Kandungan, Pengguna & Sekolah, Penglibatan, Kewangan, Sistem; empty groups not rendered |
+| Group row | 40px (48 coarse/drawer); leading **32px icon chip: Phosphor Regular glyph in kobalt (`--ds-ic-theme`) on a 12% kobalt tint, radius 12**; label `text-label`; chevron. Papan Pemuka always open, no chevron. All nine group icons use the **same** theme colour (no rainbow, no grey). |
+| Items | No icons inside groups; 40px rows, `text-label`, truncate with tooltip |
+| Active | **Tone + weight, no bar and no outline**: row `bg-primary/10`, label `text-highlighted font-semibold`; active group chip becomes solid kobalt with white/ink glyph. `aria-current="page"`. |
+| Hover/focus | Hover `bg-elevated`; focus 2px primary ring |
+| Open state | Only the group of the active route opens on navigation; others as left; persisted `localStorage["pentadbiran_menu"]`. Nested Kirkpatrick group is a second-level collapsible (indent 16px; max depth 2) |
+| Badges | `LIVE` on Langsung = `UBadge color="error" variant="solid"` + `live-pulse` (stays red); counts via `UChip` |
+| Role filtering | Items removed, never disabled or padlocked (AC-03.4). Pusat: 9 groups. PPD/JPN: Pemantauan + Pengguna & Sekolah. Sekolah: Papan Pemuka, Pemantauan, Pengguna & Sekolah, Kewangan |
+| Rail (1024–1279) | 72px, group chips only, tooltip with group name, click opens a `UPopover` flyout list; expand button on top |
 
-Group icons (Lucide, single neutral colour, no per-group colours):
-
-| Group | Icon | Group | Icon |
-|---|---|---|---|
-| Papan Pemuka | `i-lucide-layout-dashboard` | Pengguna & Sekolah | `i-lucide-school` |
-| Pemantauan | `i-lucide-activity` | Penglibatan | `i-lucide-trophy` |
-| Bank Soalan | `i-lucide-library-big` | Kewangan | `i-lucide-wallet` |
-| Kertas & SPM | `i-lucide-scroll-text` | Sistem | `i-lucide-settings` |
-| Kurikulum & Kandungan | `i-lucide-book-open` | | |
-
-Item icons are not shown inside groups (calm staff density); the FA→Lucide mapping is used where an item appears as a Ctrl+K result (icon shown there).
+Group icon bases (Phosphor, Regular via `DsIcon`): Papan Pemuka `squares-four`, Pemantauan `pulse`, Bank Soalan `books`, Kertas & SPM `scroll`, Kurikulum & Kandungan `book-open`, Pengguna & Sekolah `student`, Penglibatan `trophy`, Kewangan `wallet`, Sistem `gear`. (DS-T0 verifies glyphs.)
 
 ### 2.3 Top bar
 
-| Slot | ≥ md (768+) | < md (375) |
+| Slot | ≥ md | < md (375) |
 |---|---|---|
-| Left | `UDashboardSidebarToggle` (< lg only) · page title (`text-heading`, one line, ellipsis) · subtitle (`text-caption text-muted`, ≥ md only) | Toggle (44px) · title (ellipsis) |
-| Right | search trigger · `DsServerStatus` (Pusat, ≥ xl) · `DsRoleChip` · account menu | search icon button (44px, `aria-label="Cari"`) · account avatar button (44px) |
-| Row 2 | none | **Scope bar** (44px, full width, `bg-elevated`, sticky with the top bar) holding the `DsRoleChip` (see 2.4) |
-| Height | 56px (`--ui-header-height` 3.5rem) | row 1: 56px + row 2: 44px |
+| Left | Sidebar toggle (< lg) · title `text-heading` (one line) · subtitle `text-caption text-muted` (≥ md) | Toggle 44px · title (ellipsis) |
+| Right | Search trigger · `DsServerStatus` (Pusat, ≥ xl) · `DsRoleChip` · account menu | Search icon button 44px (`aria-label="Cari"`) · account avatar 44px |
+| Row 2 | none | **Scope bar** 44px, `bg-elevated`, sticky with the bar, holds `DsRoleChip` |
+| Height | 56px | 56 + 44px |
 
-- Search trigger ≥ md: `UButton variant="outline" color="neutral"` "Cari halaman atau rekod…" + `UKbd` "Ctrl K" (macOS: "⌘ K"; the label is chosen by platform); width `w-64` at md, `w-80` at xl. At < md it is an icon button.
-- There is **no notification bell** in the Pentadbiran top bar (replicated live omission, shells.md §2.3).
-- Account menu (`UDropdownMenu`, trigger = avatar): header block (name, e-mel, role chip) · "Tetapan Peribadi" (→ `/tetapan`) · "Mod Paparan" sub-menu (Cerah / Gelap / Ikut Sistem, radio items) · "Masuk Mod Pelajar" (Admin Pusat and Admin Sekolah only, §3) · "Tukar Peranan" (only if ≥ 2 roles, opens the switcher) · separator · "Log Keluar" (`color="error"`). Rows ≥ 44px on touch.
+- Search trigger ≥ md: `UButton` tonal (filled `bg-elevated`, hover `bg-accented`) "Cari halaman atau rekod…" + `UKbd` "Ctrl K" ("⌘ K" on macOS); 288px at xl, 256px at md. No bell (replicated omission).
+- Account menu (`UDropdownMenu`): name/e-mel/role chip · "Tetapan Peribadi" · "Mod Paparan" (Cerah/Gelap/Ikut Sistem) · "Masuk Mod Pelajar" (Admin Pusat, Admin Sekolah) · "Tukar Peranan" (≥ 2 roles) · "Log Keluar" (`color="error"`). Rows ≥ 44px; no separators (group gap + level step).
 
 ### 2.4 Role and scope chip (`DsRoleChip`)
 
-Copy (AC-04.1): "Admin Pusat · Kebangsaan" · "Pegawai PPD · {nama PPD}" · "Pegawai JPN · {negeri}" · "Admin Sekolah · {nama sekolah}". All strings from one copy table. Scope text is the same value the server applied.
+Copy (single table): **"Admin Pusat · Seluruh Negara"** · "Pegawai PPD · {nama PPD}" · "Pegawai JPN · {negeri}" · "Admin Sekolah · {nama sekolah}". Scope text equals the server-applied scope.
 
 | State | Spec |
 |---|---|
-| Single role | Static `UBadge variant="subtle" color="neutral" size="lg"`: leading role icon (`i-lucide-shield-check` Pusat, `i-lucide-map-pinned` PPD/JPN, `i-lucide-school` Sekolah), role (`font-semibold`) · scope. Not a button. |
-| Dual role (≥ 2 roles) | Same look but a button (`UPopover`), trailing `i-lucide-chevrons-up-down`, `aria-haspopup="menu"`, label `aria-label="Peranan aktif: {peranan} {skop}. Tukar peranan"`. |
-| Width | ≥ xl: full text. md–lg: full text, scope truncates at `max-w-64` with tooltip. < md: sits on the scope bar (row 2) at full text; scope ellipsis only if > 343px minus icon (tooltip + `title` carry the full value). |
-| Pratonton/Mod | Not shown in Mod Pelajar (admin chrome is not rendered there). |
+| Single role | Static `UBadge` subtle (`bg-elevated text-toned`), size lg, role icon (kobalt) + role `font-semibold` + scope. Not a button |
+| Dual role | Same look as a button (`UPopover`), trailing `chevrons-up-down`, `aria-label="Peranan aktif: {peranan} {skop}. Tukar peranan"` |
+| Widths | ≥ md full text (scope truncates at 16rem with tooltip); < md on the scope bar at full text, ellipsis only beyond 343px |
 
 ### 2.5 Role switcher
 
-`UPopover` (≥ md) / `UDrawer` bottom sheet (< md), title "Tukar Peranan", description "Pilih peranan yang ingin anda gunakan. Menu dan data akan mengikut peranan itu."
-
-```
-┌ Tukar Peranan ───────────────────────┐
-│ Pilih peranan yang ingin anda guna…  │
-│ ( ) Guru · SK Taman Contoh      ✓    │  ← radio list, current has check + "Aktif"
-│ ( ) Admin Sekolah · SK Taman Contoh  │
-│                       [ Batal ]      │
-└──────────────────────────────────────┘
-```
-
-- Each row ≥ 56px: role icon, "{peranan}" (`text-label`), "{skop}" (`text-caption text-muted`), portal hint ("Portal Pembelajaran" / "Portal Pentadbiran"), `UBadge` "Aktif" on current.
-- Selecting a different role immediately: closes, shows a 2px top progress bar (`UProgress` indeterminate, max 800ms), re-computes portal/menu/chip/Ctrl+K index, routes to that role's home, then `UToast` success: "Peranan aktif: {peranan} · {skop}".
-- Blocked while in Mod Pelajar (the control is not rendered there, AC-08.6).
-- First sign-in of a dual-role account only: one-time `UToast` info "Anda mempunyai lebih daripada satu peranan. Tukar peranan di menu profil." (PROPOSED).
+`UPopover` (≥ md) / `UDrawer` bottom sheet (< md): title "Tukar Peranan", description "Pilih peranan yang ingin anda gunakan. Menu dan data akan mengikut peranan itu." Radio list, rows ≥ 56px: role icon, role + scope, portal hint ("Portal Pembelajaran"/"Portal Pentadbiran"), `UBadge` "Aktif" on current; cancel [Batal]. Select → close, top progress (≤ 800ms), recompute portal/menu/chip/Ctrl+K, route to the new role's home, toast "Peranan aktif: {peranan} · {skop}". Not rendered during Mod Pelajar. First dual-role sign-in only: toast "Anda mempunyai lebih daripada satu peranan. Tukar peranan di menu profil." (accepted, D33c; no role-picker screen).
 
 ### 2.6 Ctrl+K palette (`UDashboardSearch`)
 
-Trigger: Ctrl/Cmd+K anywhere in Pentadbiran; the search button in sidebar/top bar; at < md the icon button (AC-10.6). Esc closes; focus returns to the trigger/previous element.
+Trigger Ctrl/Cmd+K, the search button, or the icon button < md. Esc closes; focus returns.
 
 | Viewport | Layout |
 |---|---|
-| 1280 | Centered modal 640px wide, top offset 15vh, max height 70vh; input 56px; results list scrolls inside |
-| 768 | Same, width `min(90vw, 560px)` |
-| 375 | **Full-height sheet** (`UDrawer`-style, top inset 8px, rounded top), input 56px with a visible "Tutup" text button on the right; results rows 56px |
+| 1280 | Centered 640px, top offset 15vh, max 70vh, input 56px, `bg-default shadow-modal` |
+| 768 | `min(90vw, 560px)` |
+| 375 | Full-height sheet (top inset 8px, radius 24 top), input 56px, text button "Tutup" |
+
+Groups "Halaman", "Rekod", "Tindakan" (`text-overline`); empty query shows "Terkini" (last 5). Pages come from the same role-filtered menu data; records (Pengguna, Sekolah) are server-scoped, debounced 150ms. Result rows 56px (hover/active = `bg-elevated`, no dividers). Matching is case/diacritic-insensitive BM. States: none → `UEmpty` "Tiada hasil untuk “{kata kunci}”" / "Cuba kata kunci lain atau semak ejaan."; loading → skeleton + "Mencari rekod…" (polite); error → "Carian rekod tidak tersedia buat masa ini." + [Cuba Lagi]. "Masuk Mod Pelajar" only for allowed roles; "Tukar Peranan" only with ≥ 2 roles. Combobox/listbox semantics with `aria-activedescendant`.
+
+### 2.7 `DsServerStatus` (Admin Pusat, ≥ xl)
+
+`UPopover` trigger "CPU {x}% · RAM {y}% · Disk {z}%" as three `UBadge`s with icon + word. Thresholds (kept): CPU >80 / RAM >85 / Disk >90 = `error`; >50 / >60 / >75 = `warning`; else `success` (semantic colour used because it carries meaning). Popover adds Uptime and "Load: x / n cores", "{used}GB / {total}GB". Poll 30s while visible; first load "--"; failed poll keeps last values. Below xl: Sistem › Prestasi Sistem.
+
+### 2.8 Wireframes
 
 ```
-┌──────────────────────────────────────────────┐
-│ 🔍 Cari halaman atau rekod…             Esc  │
-├──────────────────────────────────────────────┤
-│ HALAMAN                                      │
-│  ▸ Langsung            Pemantauan            │
-│  ▸ Pengguna            Pengguna & Sekolah    │
-│ REKOD                                        │
-│  ▸ {nama pengguna}     Pengguna · {sekolah}  │
-│  ▸ {nama sekolah}      Sekolah · {negeri}    │
-│ TINDAKAN                                     │
-│  ▸ Masuk Mod Pelajar                         │
-│  ▸ Tukar Mod Paparan                         │
-├──────────────────────────────────────────────┤
-│ ↑ ↓ pilih   ↵ buka   Esc tutup               │
-└──────────────────────────────────────────────┘
-```
+1280  (sidebar 272, raised on bg-muted page; no lines)
+┌───────────────────┬────────────────────────────────────────────────────────────────────┐
+│ ▣ PRESTASI+       │ Pemantauan › Langsung        [🔍 Cari… Ctrl K] (CPU 12% RAM 41%…)  │
+│ (Pentadbiran)  «  │ Subtitle                       (Admin Pusat · Seluruh Negara) (AB) │
+│ [🔍 Cari… Ctrl K] ├────────────────────────────────────────────────────────────────────┤  ← shadow-bar, no line
+│ [◫] Papan Pemuka  │  ┌ DsStat ┐ ┌ DsStat ┐ ┌ DsStat ┐ ┌ DsStat ┐                       │
+│      Dashboard    │  └────────┘ └────────┘ └────────┘ └────────┘                       │
+│  ░Laporan Ekse…░  │  ┌ DsDataTable (zebra, no row lines) ───────────────────────────┐ │
+│ [⌁] Pemantauan ▾  │  │ Penapis…                                     [ Eksport ]     │ │
+│ [▤] Bank Soalan ▾ │  │ rows…                                                        │ │
+│ … 9 groups        │  └──────────────────────────────────────────────────────────────┘ │
+│ (AB) Nama… ▾      │  © 2026 PRESTASIPLUS. Hakcipta Terpelihara.                        │
+└───────────────────┴────────────────────────────────────────────────────────────────────┘
+ ░ = active row (tone + weight)
 
-- Groups (headings `text-overline`): "Halaman", "Rekod", "Tindakan". Empty query shows "Terkini" (last 5 visited pages) then "Halaman" top items.
-- Page results come from the same menu definition as the sidebar (role-filtered; an item the role cannot read never appears, AC-10.3). Record results (Pengguna, Sekolah) are server-scoped, debounced 150ms; while loading a `USkeleton` row shows.
-- Matching is case/diacritic-insensitive, BM terms; fuse threshold 0.1 default.
-- States: **no results** `UEmpty` "Tiada hasil untuk “{kata kunci}”" + "Cuba kata kunci lain atau semak ejaan."; **loading records** skeleton rows + "Mencari rekod…" (`aria-live="polite"`); **error** "Carian rekod tidak tersedia buat masa ini." + [Cuba Lagi]; page results still shown.
-- "Masuk Mod Pelajar" appears only for roles allowed (§3). "Tukar Peranan" appears only with ≥ 2 roles.
-- Combobox semantics: input `role="combobox"`, list `role="listbox"`, active option via `aria-activedescendant`.
-
-### 2.7 Server status (`DsServerStatus`, Admin Pusat only, ≥ xl)
-
-`UPopover` trigger in the top bar: compact `UBadge` group "CPU {x}% · RAM {y}% · Disk {z}%". Colours by threshold (old design-system §5 numbers kept: CPU >80 / RAM >85 / Disk >90 = `error`; CPU >50 / RAM >60 / Disk >75 = `warning`; else `success`), each with an icon (`i-lucide-cpu`, `i-lucide-memory-stick`, `i-lucide-hard-drive`) and the word, not colour alone. Popover adds Uptime and tooltips "Load: x / n cores", "{used}GB / {total}GB". Polls 30s while the tab is visible. First load shows "--"; a failed poll keeps last values. Below xl it is reachable through Sistem › Prestasi Sistem only.
-
-### 2.8 Wireframes — Pentadbiran
-
-**1280 (sidebar expanded 272px, content fluid, max 100rem)**
-
-```
-┌──────────────────┬──────────────────────────────────────────────────────────────────────┐
-│ ▣ PRESTASIPLUS   │ Pemantauan › Langsung                (Cari… Ctrl K) (CPU 12% RAM 41%…)│
-│ (Pentadbiran)  « │ Subtitle…                              (Admin Pusat · Kebangsaan) (AB)│
-│ [🔍 Cari…  Ctrl K]├──────────────────────────────────────────────────────────────────────┤
-│                  │                                                                      │
-│ ▌◫ Papan Pemuka  │   DsPage content                                                     │
-│    Dashboard     │   ┌ DsStat ┐ ┌ DsStat ┐ ┌ DsStat ┐ ┌ DsStat ┐                        │
-│    Laporan Ekse… │   └────────┘ └────────┘ └────────┘ └────────┘                        │
-│  ⌁ Pemantauan  ▾ │   ┌ DsDataTable ───────────────────────────────────────────────┐    │
-│  ▤ Bank Soalan ▾ │   │ Filter…                                      [ Eksport ]   │    │
-│  ▤ Kertas & SPM▾ │   │ …rows…                                                      │    │
-│  … (9 groups)    │   └────────────────────────────────────────────────────────────┘    │
-│                  │                                                                      │
-│ (AB) Nama Pengg… │   © 2026 PRESTASIPLUS. Hakcipta Terpelihara.                         │
-│  Admin Pusat   ▾ │                                                                      │
-└──────────────────┴──────────────────────────────────────────────────────────────────────┘
-```
-
-**768 (no persistent sidebar; hamburger opens the drawer)**
-
-```
-┌────────────────────────────────────────────────────────────┐
-│ [☰] Pemantauan › Langsung        [🔍 Cari… Ctrl K] (AB)    │ 56
-│     (Admin Pusat · Kebangsaan)                              │  chip inline at md
-├────────────────────────────────────────────────────────────┤
-│  page gutter 24                                             │
-│  ┌ DsStat ┐ ┌ DsStat ┐   (2 columns)                        │
-│  ┌ DsDataTable (scrolls inside card)───────────────────┐    │
-└────────────────────────────────────────────────────────────┘
-Drawer open (slide-over from left, 320px, overlay bg-inverted/60):
-┌──────────────────────┐
-│ ▣ PRESTASIPLUS    ✕  │  full menu, 48px rows, same groups/order
-│ (Pentadbiran)        │  footer: account block + © lines
-└──────────────────────┘
-```
-
-**375**
-
-```
-┌───────────────────────────────────┐
-│ [☰] Langsung            [🔍] (AB) │ 56  (title one line, ellipsis)
-│ (Admin Pusat · Kebangsaan)      ▾ │ 44  scope bar (chip), sticky
-├───────────────────────────────────┤
-│ 16px gutter                       │
-│ ┌ DsStat ┐ ┌ DsStat ┐ (2 cols)    │
-│ ┌ DsDataTable → card list ──────┐ │
-│ │ {nama}              {badge}   │ │
-│ │ {sekolah} · {nilai}           │ │
-│ └───────────────────────────────┘ │
-└───────────────────────────────────┘
+768                                         375
+┌───────────────────────────────────┐   ┌─────────────────────────────┐
+│ [☰] Langsung  [🔍 Cari…] (AB)     │   │ [☰] Langsung      [🔍] (AB) │ 56
+│     (Admin Pusat · Seluruh Negara)│   │ (Admin Pusat · Seluruh Neg…)│ 44 scope bar
+├───────────────────────────────────┤   ├─────────────────────────────┤
+│ 24px gutter, 2-col stats, table   │   │ 16px gutter, 2-col stats     │
+│ scrolls inside its card           │   │ table → card list            │
+└───────────────────────────────────┘   └─────────────────────────────┘
+Drawer (320px, from left, scrim): logo, ✕, full menu 48px rows, account block, © lines
 ```
 
 ### 2.9 States
 
-| State | Spec (copy) |
+| State | Spec |
 |---|---|
-| Shell loading (first paint after login / role switch) | Sidebar and top bar render from the cached menu definition; `main` shows `USkeleton` blocks matching the page; top progress bar. No blank screen. |
-| Menu with zero visible groups (misconfigured role) | `UEmpty` in main: title "Tiada menu untuk peranan ini", description "Sila hubungi Admin Pusat untuk menyemak akses anda.", action [Log Keluar]. |
-| Session expired | `UModal` (not dismissible): "Sesi anda telah tamat", "Sila log masuk semula untuk meneruskan.", [Log Masuk]. Unsaved-form warning is out of scope. |
-| Offline | `UAlert` (warning, persistent) under the top bar: "Anda sedang luar talian. Perubahan tidak akan disimpan." |
+| Shell loading | Sidebar/top bar from cached menu; `main` skeleton blocks; top progress bar; never blank |
+| No visible groups | `UEmpty` "Tiada menu untuk peranan ini" / "Sila hubungi Admin Pusat untuk menyemak akses anda." / [Log Keluar] |
+| Session expired | Non-dismissible `UModal` "Sesi anda telah tamat" / "Sila log masuk semula untuk meneruskan." / [Log Masuk] |
+| Offline | `UAlert` warning under the bar: "Anda sedang luar talian. Perubahan tidak akan disimpan." |
 | Forbidden / 404 | §7 |
 
 ---
 
-## 3. Mod Pelajar (admin tests the student portal as themselves — D31c)
+## 3. Mod Pelajar (D31c, D33b)
 
-Design principle: a **deliberate role transition**, never a silent shell change. Three cues are always present while the mode is on: the banner, the lime frame, and the changed tab title.
+An admin (Admin Pusat or Admin Sekolah) tests the student portal **as themselves**. It is an explicit, visible role transition; never a silent shell change. This replaces the "Pratonton" new-tab design and drops the "Pratonton" row action in Pengguna.
 
 ### 3.1 Entry
 
-Entry points: account menu "Masuk Mod Pelajar", Ctrl+K action "Masuk Mod Pelajar". (Not in the main menu, not in any user row.) Visible to Admin Pusat and Admin Sekolah; hidden for Pegawai PPD/JPN and for dual-role accounts that are not currently an admin role. Q1 below on exact roles.
-
-Confirmation dialog (`DsDialog`, `UModal` ≥ sm / bottom sheet < sm):
-
-| Element | Copy (PROPOSED) |
-|---|---|
-| Title | "Masuk Mod Pelajar?" |
-| Body | "Anda akan beralih ke Portal Pembelajaran dan melihat paparan murid menggunakan akaun anda sendiri ({nama}). Data yang anda cipta dalam mod ini ditanda sebagai data ujian." |
-| Actions | [Masuk Mod Pelajar] (primary, right) · [Batal] (outline, left) |
-
-On confirm: top progress bar (≤ 600ms) → route to the Murid home → `UToast` info "Anda kini dalam Mod Pelajar. Gunakan “Keluar Mod Pelajar” di bahagian atas untuk kembali." Focus moves to the banner's exit button on arrival (announced), then the user continues.
+Account menu "Masuk Mod Pelajar" or Ctrl+K action. Confirmation (`DsDialog`; bottom sheet < sm): title **"Masuk Mod Pelajar?"**; body "Anda akan beralih ke Portal Pembelajaran dan melihat paparan murid menggunakan akaun anda sendiri ({nama}). Data yang anda cipta dalam mod ini ditanda sebagai data ujian."; [Masuk Mod Pelajar] / [Batal]. On confirm: progress bar (≤ 600ms) → Murid home (learner personality, dark by default for this view unless the admin's mode choice is explicit) → toast "Anda kini dalam Mod Pelajar. Gunakan “Keluar Mod Pelajar” di bahagian atas untuk kembali." Focus moves to the banner exit button.
 
 ### 3.2 While active
 
 | Cue | Spec |
 |---|---|
-| Banner (`DsModeBanner` on `UBanner`, **not closable**) | Full-width, in normal flow above the shell (shell height = viewport − banner, so nothing is overlapped and no offset hacks are needed). Fill `bg-highlight` + `text-on-highlight` (13.5:1), 2px bottom `border-inverted`. Leading `i-lucide-flask-conical`. |
-| Banner ≥ md (min-height 48px) | "**Mod Pelajar** — anda sedang menguji paparan murid sebagai {nama}. Data yang dicipta ditanda sebagai data ujian." · [Keluar Mod Pelajar] (`UButton color="neutral" variant="solid"` inverted, 44px) |
-| Banner < md (375, 48px, one row) | `Mod Pelajar` · [Keluar Mod Pelajar]; the long sentence moves into an info button (`i-lucide-info`, 44px) that opens a `UPopover` with the same sentence. |
-| Frame | While active the viewport has a 4px inset ring in `secondary` around the whole app (`data-mode="student-test"` on the shell root). Also visible at 375. |
-| Tab title | Prefixed "[Mod Pelajar] ". |
-| Admin chrome | Not rendered; the Murid shell is shown with the admin's own name and role chip hidden. The role switcher and "Masuk Mod Pelajar" are not rendered. The account menu keeps "Mod Paparan", "Tetapan Peribadi", "Log Keluar" and adds "Keluar Mod Pelajar" at the top. |
-| Test data | Items the admin creates show a small `UBadge` "Data ujian" (`color="warning"`, solid, with `i-lucide-flask-conical`) wherever they would appear in lists the admin can see. |
-| Guard | Navigating to any `/admin…` URL in this mode redirects to the Murid home with `UToast` warning "Keluar Mod Pelajar dahulu untuk ke Portal Pentadbiran." |
+| Banner (`DsModeBanner` on `UBanner`, not closable) | In normal flow above the shell (shell = viewport − banner; no overlap). Fill `bg-highlight`, text `text-on-highlight` (15.2:1), leading `flask` glyph, no border. Lime is reserved for win moments **and** Mod Pelajar. |
+| ≥ md (48px) | "**Mod Pelajar** — anda sedang menguji paparan murid sebagai {nama}. Data yang dicipta ditanda sebagai data ujian." + [Keluar Mod Pelajar] (solid ink button, 44px) |
+| < md (375, 48px, one row) | `Mod Pelajar` + [Keluar Mod Pelajar]; the sentence moves to an info button (44px) opening a `UPopover` |
+| Frame | 4px inset ring in `secondary` (lime) around the viewport (`data-mode="student-test"`). This is a **mode indicator**, the only decorative ring allowed, defined in shell config |
+| Tab title | Prefix "[Mod Pelajar] " |
+| Chrome | Murid shell with the admin's name; role switcher and "Masuk Mod Pelajar" hidden; account menu adds "Keluar Mod Pelajar" first |
+| Test data | Items created show `UBadge` "Data ujian" (warning solid + `flask`) where an admin sees them |
+| Guard | Any `/admin/**` URL → Murid home + toast "Keluar Mod Pelajar dahulu untuk ke Portal Pentadbiran." |
 
 ### 3.3 Exit
 
-[Keluar Mod Pelajar] (banner, account menu) → no confirmation (non-destructive) → progress bar → returns to the **Pentadbiran page the admin came from** (stored on entry; fallback Papan Pemuka) → `UToast` success "Anda telah keluar daripada Mod Pelajar." Browser Back after exit does not re-enter the mode (history entry replaced). If the session ends while in the mode, normal logout rules apply.
-
-### 3.4 Wireframes
-
-```
-1280                                                             375
-┌─────────────────────────────────────────────────────────┐  ┌───────────────────────────────┐
-│▒ ⚗ Mod Pelajar — anda sedang menguji paparan murid sebagai {nama}…    [Keluar Mod Pelajar] ▒│  │▒ ⚗ Mod Pelajar  (i) [Keluar Mod Pelajar]▒│
-│▒┌──────────────┬────────────────────────────────────┐▒│  │▒ [logo]   (🔥3) (🪙120) (🔔) (AB)  ▒│
-│▒│ Murid shell  │ …                                  │▒│  │▒ …content…                         ▒│
-│▒└──────────────┴────────────────────────────────────┘▒│  │▒ [Utama][SPM][Game][Topik][Lagi]  ▒│
-└─────────────────────────────────────────────────────────┘  └───────────────────────────────┘
-▒ = 4px secondary (lime) inset frame
-```
+[Keluar Mod Pelajar] (banner or menu): no confirmation; progress bar; returns to the Pentadbiran page the admin came from (fallback Papan Pemuka); toast "Anda telah keluar daripada Mod Pelajar."; history entry replaced so Back does not re-enter.
 
 ---
 
-## 4. Pemantauan › Langsung (live monitoring) and full-screen
+## 4. Pemantauan › Langsung and full-screen
 
-### 4.1 Normal view (inside the Pentadbiran shell, same tab — AC-09.1)
+### 4.1 Normal view (same tab, inside Pentadbiran — AC-09.1)
 
-Page = `DsPage` titled "Langsung". Content uses the **shared drill-down components** with the guru Command Center (AC-09.4): `DsLiveTiles`, `DsDrillTable` are *props-driven* views of one data contract; Guru starts at own classes, Pusat at national list, PPD at district, Sekolah at own school. (These two are added to the L2 inventory only as thin wrappers over `DsStat` / `DsDataTable`: no new visual language. Approval item Q4.)
+`DsPage` "Langsung" using `DsLiveTiles` and `DsDrillTable` (thin wrappers over `DsStat`/`DsDataTable`, same data contract as the Guru Command Center; Guru starts at own classes, Pusat at national list, PPD at district, Sekolah at own school).
 
 ```
 1280
-┌ Langsung  ( ● LANGSUNG ) Dikemas kini 14:32:05      [ Jeda ] [ ⤢ Skrin Penuh ] ┐
-│ Skop: {Kebangsaan}                                                              │
-│ ┌ DsStat ─┐ ┌ DsStat ─┐ ┌ DsStat ─┐ ┌ DsStat ─┐   metrik langsung (kandungan M17)│
-│ Breadcrumb:  Semua Sekolah › {Sekolah} › {Guru} › {Kelas} › {Murid}            │
-│ ┌ DsDataTable (level semasa: sekolah / guru / kelas / murid) ──────────────────┐│
-│ │ Nama | Aktif sekarang | Aktiviti terakhir | Skor purata | ›                  ││
-│ └──────────────────────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────────────────┘
+┌ Langsung  (● LANGSUNG) Dikemas kini 14:32:05      [ Jeda ] [ ⤢ Skrin Penuh ] ┐
+│ Skop: Seluruh Negara                                                           │
+│ ┌ DsStat ┐ ┌ DsStat ┐ ┌ DsStat ┐ ┌ DsStat ┐   metrik langsung (kandungan M17)  │
+│ Semua Sekolah › {Sekolah} › {Guru} › {Kelas} › {Murid}                       │
+│ ┌ DsDrillTable (zebra rows, › affordance) ─────────────────────────────────┐  │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- "● LANGSUNG" = `UBadge color="error"`, `live-pulse` (static dot under reduced motion), word always present.
-- [Jeda] / [Sambung] toggles auto-update (WCAG 2.2.2). While paused the badge reads "DIJEDA" (`neutral`) and the timestamp stops.
-- Connection states: "Menyambung…" (spinner), "LANGSUNG" (ok), "Terputus — mencuba semula…" (`warning`, with [Cuba Lagi]).
-- Drill-down row click or Enter opens the next level in place (same route with query, back button works). Row chevron `i-lucide-chevron-right`. Out-of-scope target → 404 page (AC-09.5).
-- < md: tiles 2×2, breadcrumb collapses to `UBreadcrumb` showing the last two crumbs with an ellipsis menu, table becomes a card list; [Skrin Penuh] stays visible in the page header (icon + label).
+- "● LANGSUNG" = `UBadge color="error" variant="solid"` + `live-pulse` (static dot under reduced motion); the word is always present.
+- [Jeda]/[Sambung] pauses auto-update (WCAG 2.2.2); paused badge "DIJEDA" (neutral). States: "Menyambung…", LANGSUNG, "Terputus — mencuba semula…" (warning, [Cuba Lagi]).
+- Row click/Enter drills in place (query params; Back works). Out-of-scope target → 404 (AC-09.5).
+- < md: tiles 2×2; breadcrumb shows last two crumbs + overflow menu; table → card list; [Skrin Penuh] in the page header.
 
-### 4.2 Full-screen mode (AC-09.2, US-16 AC-16.4)
+### 4.2 Full-screen (AC-09.2, AC-16.4)
 
-Enter via [⤢ Skrin Penuh] (`aria-pressed`), or key `F` when focus is inside the page. Implementation intent: hide sidebar, top bar and footer (pseudo full-screen — a fixed layer filling `100dvh`) **and** request the browser Fullscreen API where available (iOS Safari does not support it for non-video; the pseudo mode alone is then used). Live updates keep running across the toggle (same component instance, no remount).
+Enter via [⤢ Skrin Penuh] (`aria-pressed`) or `F` (focus inside the page, not in an input). Hides sidebar, top bar, footer (pseudo full-screen fixed layer at `100dvh`) and also requests the browser Fullscreen API when available (iOS Safari falls back to the pseudo mode). Same component instance: updates continue.
 
 ```
-Full-screen 1280 (wall-display type scale: `data-view="wall"` raises the type tokens one step)
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│ ● LANGSUNG  Langsung · {Kebangsaan}   Kemas kini 14:32:05      [Jeda] [✕ Keluar Skrin Penuh  Esc]│ 56
-├──────────────────────────────────────────────────────────────────────────────────┤
-│ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐                       │
-│ │   {angka}  │ │   {angka}  │ │   {angka}  │ │   {angka}  │  display numerals     │
-│ │   label    │ │   label    │ │   label    │ │   label    │                       │
-│ └────────────┘ └────────────┘ └────────────┘ └────────────┘                       │
-│ Semua Sekolah › {Sekolah} › {Guru}                                               │
-│ ┌ table / cards (internal scroll) ───────────────────────────────────────────────┐│
-└──────────────────────────────────────────────────────────────────────────────────┘
-
-Full-screen 375
-┌───────────────────────────────┐
-│ ● LANGSUNG        [Jeda] [✕]  │ 56  (✕ = 44px, aria-label "Keluar skrin penuh")
-├───────────────────────────────┤
-│ ┌ tile ┐ ┌ tile ┐  2×2        │
-│ ┌ tile ┐ ┌ tile ┐             │
-│ ‹ {Sekolah}   (back crumb)    │ 44  last crumb + back, full path in a menu
-│ card list (internal scroll)   │
-└───────────────────────────────┘
+Full-screen 1280 (wall scale: data-view="wall" raises type one step)
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ● LANGSUNG  Langsung · Seluruh Negara  Kemas kini 14:32:05  [Jeda] [✕ Keluar Esc]│ 56 (bg-default, shadow-bar)
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   display numerals       │
+│ │  {angka} │ │  {angka} │ │  {angka} │ │  {angka} │                           │
+│ Semua Sekolah › {Sekolah} › {Guru}                                           │
+│ ┌ table / cards (internal scroll) ────────────────────────────────────────┐   │
+Full-screen 375:  ● LANGSUNG  [Jeda] [✕] (56) · tiles 2×2 · "‹ {Sekolah}" back crumb (44) · card list
 ```
 
-- Exit control is always visible (top-right, 44px, labelled, with `UKbd` "Esc" on keyboard devices). Esc exits (also when the browser exits Fullscreen itself — state is synced to the `fullscreenchange` event). Focus returns to the [Skrin Penuh] button.
-- The strip does not auto-hide (accessibility); the page content scrolls below it.
-- Wall view: type tokens step up (`text-display` becomes the tile value), grid becomes 4×1 at ≥ 1280 and 2×2 below; contrast and colour rules unchanged. `prefers-reduced-motion` stops the pulse and number tick animations.
-- Tile values update in place; a visually hidden `aria-live="off"` region is used (not chatty); a polite summary is announced only when the user presses [Jeda] ("Kemas kini dijeda pada 14:32:05").
+- Exit is always visible, labelled, 44px, with `UKbd` "Esc" on keyboard devices; Esc and the browser's own exit both restore (synced to `fullscreenchange`); focus returns to [Skrin Penuh]. The strip never auto-hides.
+- Tile values update in place via an `aria-live="off"` region; [Jeda] announces "Kemas kini dijeda pada 14:32:05". Reduced motion: no pulse, no number tick.
 
 ---
 
 ## 5. Portal Pembelajaran
 
-### 5.1 Murid (learner density)
+### 5.1 Murid (learner personality, dark default)
 
-Menu groups (BM labels exactly as `v2-portals.md` §8; items per `user-nav.ts`; emoji in group labels are kept as copy): top items (Dashboard, Target SPM, Misi Harian, Remedial) · SPM · Pembelajaran · Pusat AI · 🏆 Bilik Duta · ✨ Visi & Pertandingan · 💎 Killer Features · Akaun & Bantuan (Profil Saya, Tetapan Peribadi, Panduan, Tiket Bantuan, Log Keluar). One definition feeds sidebar and drawer. "Command Center" and other admin/guru blocks are not shown (US-14).
+Menu groups: BM labels exactly per `v2-portals.md` §8 (top items Dashboard, Target SPM, Misi Harian, Remedial · SPM · Pembelajaran · Pusat AI · 🏆 Bilik Duta · ✨ Visi & Pertandingan · 💎 Killer Features · Akaun & Bantuan); emoji in group labels kept as copy. One definition feeds sidebar, drawer and tab bar. No admin/guru blocks.
 
-| Region | 1280 | 768 | 375 |
-|---|---|---|---|
-| Nav | Sidebar 272px: logo, identity card (avatar, name, level, XP `UProgress` with numbers), groups as `UNavigationMenu` (group headers `text-overline`, items 44px, 20px coloured-neutral icons, badges LIVE/NEW/AI/PRO/SPM as `UBadge`) | Bottom tab bar (5 tabs) + drawer | Bottom tab bar (5 tabs) + drawer |
-| Top bar | Title, reward chips, bell, avatar menu | logo, title, chips, bell, avatar | logo (→ Utama), streak chip, coin chip, bell, avatar |
-| Content | `--ui-container` 72rem centred, gutters 32 | gutters 24 | gutters 16 |
-| Chat | Floating Cikgu Alesa button (56px, bottom-right) | same, above the tab bar | same |
-
-**Bottom tab bar (`DsBottomNav`)**: 64px + safe area, `bg-default`, top border `border-default`. Five tabs: **Home**, **SPM**, **Game**, **Topik**, **Lagi** (labels as live; "Home"/"Game" are live copy). Each tab: icon 24px + label `text-caption` (12px), `flex-1`, min 64×64 hit area. Active: `text-primary`, filled icon weight swap (stroke 2.5) + 3px top bar `bg-primary` + `aria-current="page"` (not colour-only). "Lagi" opens the complete drawer (`USlideover` from the right, width `min(88vw, 360px)`), same menu as the sidebar. The live "Chat" tab moves to the floating Cikgu Alesa button (Q3).
+**Header (< lg and as the sidebar head ≥ lg)**
 
 ```
-375 — Murid
-┌───────────────────────────────────┐
-│ ▣        (🔥 5) (🪙 120) (🔔3) (AB)│ 56
-├───────────────────────────────────┤
-│  Selamat datang, {nama}           │
-│  ┌ hero card (inverted+songket) ─┐│
-│  │ Tahap 4   ◔ 68%   [Mula]      ││  shadow-pop
-│  └───────────────────────────────┘│
-│  ┌ DsStat ┐ ┌ DsStat ┐            │
-│                         (💬) 56px │ ← Cikgu Alesa
-├───────────────────────────────────┤
-│ [⌂ Home][SPM][Game][Topik][⋯ Lagi]│ 64
+375
+┌───────────────────────────────────────┐
+│ PRESTASI+   (🔥 5) (🪙 120)  [☾] (🔔3)│ ← brand (the "+" in --ds-primary-t), reward chips, mode toggle, bell
+│ (friend avatar 56 in greeting below)  │
+└───────────────────────────────────────┘
+```
+
+- Brand wordmark "PRESTASI+" (display, "+" in `text-primary` tone); header height 4rem with safe-area top padding; raised on page, `shadow-bar`.
+- **Friend avatar**: the 56px `DsFriendAvatar` button sits in the Home greeting (with bubble) and in the sidebar identity card ≥ lg; on other screens the header carries a 40px avatar button (touch area 56). Tap → picker (§5.4).
+- Reward chips: 3D fire + streak number, 3D coin + koin; labels "hari"/"Koin" from ≥ md; at 375 numbers only with `aria-label`. Bell = `UChip` count (99+).
+- Icon buttons 44px, radius 14, raised.
+
+**Sidebar ≥ lg (272px, raised, `shadow-xs`)**: brand, identity card (friend avatar 56, name, level, XP `UProgress` with number), groups via `UNavigationMenu` (group `text-overline`, item rows 44px with Phosphor **Duotone** neutral glyphs), **active item = filled gradient pill** (white label, glyph white), no bar. Footer: Akaun & Bantuan.
+
+**Bottom tab bar (`DsBottomNav`, < lg)**: 5 tabs **Home · SPM · Game · Topik · Lagi** (live labels), raised bar with 22px top radius and `shadow-bar-up`, tab min 56px high (64 incl. padding + safe area), glyph 24 + `text-caption` label. **Active tab = filled gradient pill** (A1→A1b, white glyph and label), glyph plays `hop`. Inactive = `text-muted`. "Lagi" opens `USlideover` from the right (`min(88vw, 360px)`) with the complete menu. The live "Chat" tab is replaced by the **floating Cikgu Alesa button** (56px, A4 chip, violet, "AI" pill; bottom-right above the tab bar, 16px offset, all sizes; opens the M13 chat). Pages reserve bottom padding for tab bar + button.
+
+```
+375 Home (Murid)                                      1280 Home (Murid)
+┌───────────────────────────────────┐   ┌──────────────┬───────────────────────────────────┐
+│ PRESTASI+  (🔥5)(🪙120) [☾] (🔔)  │   │ PRESTASI+    │ Selamat datang, {nama}   [☾](🔔)   │
+│ (👦) ┌ bubble: Lima soalan… Jom? ┐ │   │ (👦) {nama}  │ (👦) ┌ bubble ─────────┐            │
+│ ┌ stat ┐┌ stat ┐┌ stat ┐ 3 across  │   │ Lvl 2 ▓▓░░ 5 │ ┌ stat ┐┌ stat ┐┌ stat ┐            │
+│ ┌ HERO gradient A1 ─────────────┐ │   │ [▣ Home] ▓▓▓ │ ┌ HERO gradient ──────────┐        │
+│ │ overline / Tajuk / sub  ◔ 68% │ │   │  SPM         │ │ …            ◔ 68%  3D │        │
+│ │ [ Mula ]              (3D art)│ │   │  Pembelajaran│ └─────────────────────────┘        │
+│ └───────────────────────────────┘ │   │  Pusat AI …  │ Subjek (scroll strip)               │
+│ Subjek ▸ [🧮][📖][🔬] scroll      │   │              │ ┌ character cards in 2 columns ┐    │
+│ ┌ gcard: Percubaan Percuma ─────┐ │   │              │ └──────────────────────────────┘    │
+│ ┌ info carousel (violet) ───────┐ │   └──────────────┴───────────────────────────────────┘
+│ ┌ achievements (lime) ──────────┐ │
+│                          (💬 AI)  │   ← floating Cikgu Alesa
+│ [⌂ Home][SPM][Game][Topik][⋯Lagi] │   ← active tab = filled gradient pill
 └───────────────────────────────────┘
 ```
 
-Header chips: streak (`UBadge reward soft` + flame icon + number + word "hari" visible ≥ md, `aria-label` at < md), coin (`reward` + `i-lucide-coins`), bell (`UChip` count, 99+ cap). Tap targets 44px.
+Home content (all old Home content replicated as meaning-coloured character cards, D37a): friend greeting, 3 stat tiles (Hari Berturut / Syiling Kamu / Mata (Lvl 2)), hero (next action + ring), subject strip, then cards in this order: Percubaan Percuma (amber), amaran (orange), info carousel (violet, with "Baca lagi/Tutup"), pencapaian (lime), misi/quests, recent items, articles strip. Card anatomy and colours: design-system §3.3/§6. Gutters 16 / 24 / 32; at ≥ md the card stack becomes 2 columns; stat tiles stay 3 across (4 at ≥ xl if a fourth exists).
 
-### 5.2 Guru (staff density)
+### 5.2 Quiz (Latihan) — full-screen, one question at a time
 
-Same shell with the staff density and the Guru menu (v2-portals §8: Command Center (LIVE), HARIAN, PENGAJARAN, PENILAIAN, ANALITIK (Monitoring, Kirkpatrick), PUSAT AI, BANK SOALAN, AKTIVITI, LAIN-LAIN, Bantuan). Monitoring, Kirkpatrick and Command Center render **in this learning layout** (US-14). ≥ lg sidebar + top bar (title, bell, avatar; role chip "Guru · {sekolah}" only for dual-role accounts). < lg: top bar + **bottom tab bar** with four primary destinations and "Lagi": proposed Dashboard Guru · Kelas · Command Center · Penilaian · Lagi (the first four are configured in the nav data `bottomNav` field; final picks by the owning modules). Labels use group names as in the menu; a 12px label must fit 64px or truncate with `title`.
+Chrome (sidebar, top bar, tab bar, floating button) is hidden; the quiz owns the viewport (`100dvh`). Applies to the redesigned question display (D35b); question content comes from the M04/M05 contract.
 
-### 5.3 Ibu Bapa and Penaja (simple variant, staff density)
+```
+375                                              1280 (column max 40rem, centred on bg-muted)
+┌───────────────────────────────────┐          ┌────────────────────────────────────────────┐
+│ [✕] ▓▓▓▓░░░░░░░░░░░░░░  (🔥 3)    │ top      │        ┌─ column 640 ────────────────┐     │
+│ (Matematik) 4/10        ⏱ 0:42    │ meta     │        │ [✕] ▓▓▓▓░░░░░░░░░ (🔥 3)    │     │
+│                                   │          │        │ (Matematik) 4/10             │     │
+│  Soalan (display 20→24px)         │ question │        │ Soalan …                     │     │
+│  centred vertically, scrolls      │          │        │ [A] Pilihan 1                │     │
+│ ┌ [A] Pilihan 1               ┐   │ options  │        │ [B] Pilihan 2                │     │
+│ ┌ [B] Pilihan 2               ┐   │ 60px     │        │ [  Semak  ]                  │     │
+│ ┌ [  Semak  ] (disabled until) ┐  │ footer   │        └──────────────────────────────┘     │
+└───────────────────────────────────┘          └────────────────────────────────────────────┘
+```
 
-Few items (§8: Dashboard, linked-child views, consent approvals, Akaun & Bantuan; Penaja home, Akaun & Bantuan). No sidebar and no bottom bar: top bar with logo, **horizontal `UNavigationMenu`** at ≥ md (max 5 items), hamburger + drawer < md. Content max width 64rem centred.
+- Top: close button (44px, `aria-label="Keluar latihan"`) (prototype: `aria-label="Tutup latihan dan kembali ke Home"`; closes the quiz and returns to Home, no extra confirm dialog is specified). **Progress bar** 10px, track `bg-elevated`, fill gradient primary → AI, animated width. **Combo chip** 44px raised pill with flame (lit = display number + A3 flicker; `hot` = soft A3 glow, no ring line).
+- Meta row: subject chip (solid A1 icon chip + label), counter "n/N", timer only if the mode has one (neutral text; never alarming red except the last 10s using `text-error` plus icon).
+- Question: `text-heading` display, 1.35 line height; options `DsOption` 60px, gap 10px, letter chips; selecting does not submit; [Semak] primary full-width 52px enabled after selection.
+- After check: option states (correct = success mix + solid green chip + check; wrong = error mix + solid red chip + x + `nudge`); `DsFloatScore` "+10" (lime pill) floats from the correct option; **feedback sheet** slides up (500ms) over the footer: green/red title with round glyph, explanation, friend line (happy/encouraging) and, for AI explanations, an elevated bubble tagged "AI"; combo chip `+n`; CTA "Teruskan". Copy (prototype): correct title cycles through the GOOD list "Betul!", "Mantap!", "Tepat sekali!", "Kemas!", "Terbaik!" with a peer line from the GOODMSG list; wrong title is "Hampir!" with "Jawapan: {huruf}." plus a BADMSG line and a "Penjelasan" AI-tagged explanation. Explanation text comes from the question's data; friend lines per design-system §10.3.
+- Keyboard: 1–4 / A–D select, Enter checks/continues, Esc opens the exit confirm. All controls ≥ 44px; the sheet is `role="status"` (polite).
+- Reduced motion: no flicker/nudge/float/sheet slide; correct/wrong still shown by glyph + text.
+
+### 5.3 Win screen
+
+Full-screen after the last question (and level-ups). Layout (375; ≥ md the same single column, max 30rem, centred):
+
+Order (top to bottom, per the prototype): 3D achievement hero → title → score ring → friend congratulation dialog → +Mata / +Koin → stickers → buttons.
+
+```
+┌───────────────────────────────────┐   soft lime glow behind the hero (win moments only)
+│ 3D hero 96–128: 🎉 party popper (5/5) · 🏆 trophy (3–4/5) · 📚 books (0–2/5) │
+│ Title (display 28): "Sempurna, {nama}!" / "Hebat, …" / "Bagus, …" / "Teruskan, …"│
+│        ┌─ ring 168 ─────────────────┐             │
+│        │   {skor}  (display 48)     │ ← count-up  │  bar LIME if ≥ 3/5, A1 below 3
+│        │   daripada 5               │             │
+│        └────────────────────────────┘             │
+│ (friend 46, party/hop) ┌ {Nama rakan}            ┐ │  chat bubble; typing dots (≈400–600ms)
+│                        │ {mesej tahniah} · · ·   │ │  then the message
+│ ┌ 3D ⚡ +{n} Mata ┐ ┌ 3D 🪙 +{n} Koin ┐           │
+│  [ STICKER: Streak {n} hari! ] [ Tahap naik! ]    │  lime, −4° / +3°, stamp-in 0.9s / 1.15s
+│ [ Kongsi ] (tonal)                                │
+│ [ Kembali ke Home ] (primary)                     │
+└───────────────────────────────────┘   + confetti burst (28 particles)
+```
+
+Copy (prototype, verbatim): titles "Sempurna, {nama}!" (5/5), "Hebat, {nama}!" (4), "Bagus, {nama}!" (3), "Teruskan, {nama}!" (< 3). Friend congratulation: 5/5 "Tahniah, {nama}! Semua betul! 🎉"; 3–4 "Tahniah, {nama}! Awak dapat {n}/5. Hebat!"; < 3 "Bagus sebab awak cuba, {nama}. Jom ulang kaji soalan yang salah, awak pasti boleh! 💪". Labels "daripada 5", "Mata", "Koin"; stickers "Streak {n} hari!" and (when level rises, ≥ 4/5) "Tahap naik!"; buttons **"Kongsi"** and **"Kembali ke Home"**; ring `aria-valuetext` "{n} daripada 5 betul"; screen label "Kemenangan". The "Tukar rakan" link is on Home and the avatar, not on this screen.
+
+Rules: **lime** appears at win moments only (ring bar when ≥ 3/5, stickers, float score, glow); below 3/5 the ring bar is A1 and the lime glow is off (the streak sticker still shows), friend `encouraging` with `hop`; with ≥ 3/5 friend `celebrating` with `party`. Reward tiles are raised with 3D art and display numbers; numbers count up (1.2–1.4s). Reduced motion: no typing dots (message shown at once), static ring at final value, stickers in place, no confetti.
+
+### 5.4 Friend picker flow
+
+- **First run** (Murid without a friend): sheet opens over Home after the first paint: title **"Pilih rakan belajar awak"**, description "Dia akan temankan awak sepanjang latihan. Boleh tukar bila-bila masa.", two radio cards (Aiman, Aisyah: 96px face, name display, trait lines "Tenang & suka cabaran" (Aiman) and "Ceria & sentiasa beri semangat" (Aisyah)), [Pilih] (disabled until a card is chosen; [Batal] appears when changing). Dismiss without choosing → default Aiman for the session, re-offered once next login.
+- **Change anytime**: tap the friend avatar (Home, header button, sidebar card) or the "Tukar rakan" link (win screen, Home footer link) → same sheet with current friend preselected → toast "Rakan belajar: {nama}".
+- Sheet layout: `UDrawer` bottom sheet < md (radius 28 top, `bg-elevated`, scrim rgba(5,7,10,.62)); centered `UModal` 480px ≥ md. Cards 2 columns, selected = violet surface mix + ✓ badge + scale 1.02. Radiogroup semantics, Arrow keys, Esc closes, focus returns to the avatar.
+- The friend appears on Home (greeting), quiz feedback, win, and learner empty states; Cikgu Alesa remains a separate entry (floating button; "AI" pill).
+
+### 5.5 Guru (staff look inside the learning shell)
+
+Menu per `v2-portals.md` §8 (Command Center (LIVE), HARIAN, PENGAJARAN, PENILAIAN, ANALITIK, PUSAT AI, BANK SOALAN, AKTIVITI, LAIN-LAIN, Bantuan); Monitoring, Kirkpatrick and Command Center render in this layout. Staff personality and B+ rules (kobalt glyph chips, tone-and-weight active item). ≥ lg sidebar + top bar (title, bell, avatar; chip "Guru · {sekolah}" only for dual-role). < lg: top bar + **bottom tab bar** `Dashboard · Kelas · Command Center · Penilaian · Lagi` (accepted, D33c) where the active tab is a **tonal pill** (`bg-primary/10` radius 12, label `font-semibold`; no top bar). Command Center tab carries the red live dot. Labels truncate with `title` if needed at 320.
+
+### 5.6 Ibu Bapa and Penaja (simple variant, staff look)
+
+Top bar with logo and a horizontal `UNavigationMenu` (≤ 5 items) at ≥ md; hamburger + drawer < md. Content max 64rem. Items per `v2-portals.md` §8.
 
 ---
 
-## 6. Authentication and portal routing
+## 6. Authentication and portal routing (`DsShellAuth`)
 
-One login (US-01, Q9 default). The guest layout `DsShellAuth` is shared; there is no separate admin login.
+One login for all roles (D33; no separate admin login).
 
-### 6.1 Login (`/login`)
+**Look:** auth uses the **learner Elektrik personality** (dark by default on first visit, then the user's saved mode). ≥ xl split layout: left brand panel (gradient A1 surface, "PRESTASI+", **"Sedia untuk SPM."** display, 3D rocket art, footer line "Didikan penuh ❤️ dari Malaysia 🇲🇾"); right form on `bg-muted`. 768: centered card (`bg-default shadow-card`, max 28rem) under a slim gradient brand strip. 375: single column, logo 40px, fields full width, [Log Masuk] 52px full width, 16px gutters.
 
-Fields (labels as M01 S1 unless noted): "Alamat Email atau Nama Pengguna" (PROPOSED; the .cloud model accepts both) · "Sekolah" (`USelectMenu` searchable, shown **only** when the identifier contains no "@"; hint PROPOSED "Pilih sekolah anda jika log masuk dengan nama pengguna.") · "Kata Laluan" (show/hide toggle `aria-pressed`, label "Tunjuk kata laluan") · "Ingat saya" (`UCheckbox`, unticked) · [Log Masuk]. Links verbatim from FR-M01-06: "Lupa kata laluan?", "Reset melalui No IC", "Belum ada akaun? Daftar Sekarang 🚀", "Kembali ke Laman Utama". Google sign-in: [Log masuk dengan Google] (outline) only if SSO is enabled (F-04).
-Heading: "Selamat Kembali! 👋" (existing). Sub-heading unchanged from M01.
+Fields: "Alamat Email atau Nama Pengguna" (accepted) · "Sekolah" (`USelectMenu` searchable, appears only when the identifier has no "@"; hint "Pilih sekolah anda jika log masuk dengan nama pengguna.") · "Kata Laluan" (show/hide toggle `aria-pressed`) · "Ingat saya" · [Log Masuk]. Links verbatim (FR-M01-06): "Lupa kata laluan?", "Reset melalui No IC", "Belum ada akaun? Daftar Sekarang 🚀", "Kembali ke Laman Utama". Heading "Selamat Kembali! 👋". Google sign-in button (tonal) only if SSO is enabled. Inputs are filled, 52px, 2px primary focus ring, error = 2px inset error ring + message.
 
-```
-1280 (split 5/7)                                       768 (centered card, brand strip on top)
-┌───────────────────────┬─────────────────────────┐   ┌─────────────────────────────────┐
-│ ink-950 + songket     │  Selamat Kembali! 👋     │   │ ▣ PRESTASIPLUS   (songket strip)│
-│  ▣ PRESTASIPLUS       │  Alamat Email atau Nama… │   │ ┌ card max-w-md ─────────────┐ │
-│  Sedia untuk SPM.     │  [______________________]│   │ │ Selamat Kembali! 👋        │ │
-│  (display, white)     │  Sekolah [____________▾] │   │ │ fields…   [ Log Masuk ]    │ │
-│                       │  Kata Laluan [____] (👁) │   │ └────────────────────────────┘ │
-│  Didikan penuh ❤️ …   │  [x] Ingat saya          │   └─────────────────────────────────┘
-│                       │  [      Log Masuk      ] │   375: single column, no brand panel,
-│                       │  Lupa kata laluan? …     │   logo 40px on top, fields full width,
-└───────────────────────┴─────────────────────────┘   [Log Masuk] 48px full width, 16px gutters
-```
-
-States and exact errors (AC-01.4–01.7; shown in a `UAlert color="error"` above the fields, focus moves to it, `role="alert"`):
+Errors (`UAlert` error above fields, `role="alert"`, focus moves to it):
 
 | State | Copy |
 |---|---|
-| Invalid credentials | "E-mel/Nama pengguna atau kata laluan tidak sah." |
+| Invalid | "E-mel/Nama pengguna atau kata laluan tidak sah." |
 | Inactive/suspended | "Akaun anda tidak aktif atau telah digantung. Sila hubungi pentadbir." |
-| School not active | "Sekolah anda belum diaktifkan oleh pentadbir. Sila hubungi pihak sekolah." |
-| Ambiguous username | The ambiguity message from M01 (exact copy per `web.php:448` in the SRS); the Sekolah field receives focus. |
-| Submitting | [Log Masuk] → `loading` ("Sedang Memasuki…" as live), fields disabled |
-| Throttled / network | "Ralat rangkaian. Sila cuba lagi." (existing generic) |
-| Already signed in | Redirect to the role home (AC-01.8); no flash of the form. |
+| School off | "Sekolah anda belum diaktifkan oleh pentadbir. Sila hubungi pihak sekolah." |
+| Ambiguous username | M01 ambiguity message; Sekolah field focused |
+| Submitting | button `loading` "Sedang Memasuki…", fields disabled |
+| Network | "Ralat rangkaian. Sila cuba lagi." |
+| Already signed in | redirect to role home (AC-01.8), no form flash |
 
-### 6.2 Post-login routing (AC-01.2/01.3/01.10, US-02)
-
-| Account state | Lands on | Transition |
-|---|---|---|
-| Admin Pusat / Admin Sekolah | Pentadbiran › Papan Pemuka | Shell skeleton + progress bar (≤ 800ms) |
-| Pegawai PPD / JPN | Pentadbiran › Pemantauan › Papan Pemuka Wilayah (PM-14) | same |
-| Guru | Dashboard Guru | Pembelajaran shell skeleton |
-| Murid | Dashboard Murid | same |
-| Ibu Bapa / Penaja | Dashboard / Penaja home | same |
-| Dual role | Portal of the last-active role (default: first role in fixed order) — **no chooser screen**; one-time info toast (§2.5) | same |
-| Guest on a protected URL | `/login` with no redirect parameter (AC-01.1) | — |
-| Learner opens a Pentadbiran URL | Redirect to own home (AC-02.2) + `UToast` info "Halaman itu hanya untuk Portal Pentadbiran." (PROPOSED) | — |
-| Staff-only user opens a Pembelajaran role page | Redirect to own home (AC-02.3), same toast pattern ("Halaman itu hanya untuk Portal Pembelajaran.") | — |
-
-Logout: account menu → "Log Keluar" → `/login`; Back must not show protected data (AC-01.9). Registration, password reset and the ibu-bapa invitation screens use `DsShellAuth` with the same split/centered/single-column rules (copy per M01).
+**Routing after login (AC-01.2/3/10, US-02):** Admin Pusat / Admin Sekolah → Pentadbiran Papan Pemuka; Pegawai PPD/JPN → Pemantauan › Papan Pemuka Wilayah; Guru → Dashboard Guru; Murid → Home (first run: friend picker); Ibu Bapa/Penaja → their home; dual role → last-active role (default first), no chooser. Transition: shell skeleton + top progress (≤ 800ms). Guest on protected URL → `/login` without redirect param. Learner opening a Pentadbiran URL → own home + toast "Halaman itu hanya untuk Portal Pentadbiran."; staff-only user opening a Pembelajaran role page → own home + toast "Halaman itu hanya untuk Portal Pembelajaran." Logout → `/login`; Back must not show protected data.
 
 ---
 
 ## 7. Empty, forbidden, 404 and error states
 
-All render **inside the user's own portal shell** (sidebar and top bar stay), except unauthenticated, which uses `DsShellAuth`. Component: `DsErrorPage` on `UError`/`UEmpty` with an illustration; centred, `max-w-md`, vertical padding 48/64px. No gradient backgrounds (old 404/403 gradient pages retired).
+Rendered inside the user's own portal shell (unauthenticated: `DsShellAuth`). Component `DsErrorPage` on `UError`/`UEmpty`; centred, max 28rem, padding 48/64px; illustration 160px (120 at 375); actions in a row ≥ sm, stacked full-width 48px < sm. No gradient pages and no lines. Learner shell may show the friend (encouraging) in place of the illustration.
 
-| State | Illustration | Heading (`text-title`) | Body (`text-body text-muted`) | Actions |
+| State | Illustration | Heading | Body | Actions |
 |---|---|---|---|---|
-| **403 Pentadbiran, Pusat-only page** | `403` | Name of the page, then "Akses Ditolak" | "Halaman ini diuruskan oleh Admin Pusat sahaja." | [Kembali ke Papan Pemuka] (PPD/JPN: landing "Kembali ke Papan Pemuka Wilayah"); the item is absent from the menu (AC-06.4) |
-| **403 Pentadbiran, other** | `403` | "Akses Ditolak" | "Halaman ini tidak tersedia untuk peranan anda." | same button |
-| **403 Pembelajaran (legacy copy)** | `403` | "Akses Ditolak" | "Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir." | [Halaman Utama] · [Log Masuk] (outline) |
-| **404 Pentadbiran** | `404` | "Halaman Tidak Dijumpai" | "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" | [Kembali ke Papan Pemuka] · [Cari (Ctrl K)] |
-| **404 Pembelajaran** | `404` | "Halaman Tidak Dijumpai" | same | [Halaman Utama] · [Mula Latihan] (outline) |
-| Out-of-scope record (AC-06.6) | `404` | same as 404 | same (existence is not disclosed) | same |
-| **Unexpected error** | `ralat` | "Sesuatu tidak kena" (PROPOSED) | "Kami tidak dapat memuatkan halaman ini. Cuba lagi sebentar." | [Cuba Lagi] · [Kembali] |
-| **Empty list (first use)** | `kosong` | "Tiada {item} lagi" | context line | Primary create action if permitted (e.g. "Tambah Soalan Pertama") |
-| **Empty (filter)** | `tiada-hasil` | "Tiada {item} dijumpai" | "Tiada hasil untuk penapis semasa." | [Set Semula Penapis] |
-| **Loading** | — | — | `USkeleton` shapes matching the layout; spinner only on buttons | — |
+| 403 Pentadbiran, Pusat-only page | `403` | "Akses Ditolak" (+ page name above) | "Halaman ini diuruskan oleh Admin Pusat sahaja." | [Kembali ke Papan Pemuka] (PPD/JPN: [Kembali ke Papan Pemuka Wilayah]); item absent from menu |
+| 403 Pentadbiran, other | `403` | "Akses Ditolak" | "Halaman ini tidak tersedia untuk peranan anda." | same |
+| 403 Pembelajaran | `403` | "Akses Ditolak" | "Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir." | [Halaman Utama] · [Log Masuk] (tonal) |
+| 404 Pentadbiran | `404` | "Halaman Tidak Dijumpai" | "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" | [Kembali ke Papan Pemuka] · [Cari (Ctrl K)] |
+| 404 Pembelajaran | `404` | same | same | [Halaman Utama] · [Mula Latihan] (tonal) |
+| Out-of-scope record | `404` | same as 404 | same | same (existence not disclosed) |
+| Unexpected error | `ralat` | "Sesuatu tidak kena" (PROPOSED) | "Kami tidak dapat memuatkan halaman ini. Cuba lagi sebentar." | [Cuba Lagi] · [Kembali] |
+| Empty list | `kosong` | "Tiada {item} lagi" | context | primary create action if permitted |
+| Empty (filter) | `tiada-hasil` | "Tiada {item} dijumpai" | "Tiada hasil untuk penapis semasa." | [Set Semula Penapis] |
+| Loading | — | — | `USkeleton` shapes | spinner only inside buttons |
 
-Layout across widths: illustration 160px (120px at 375); actions row at ≥ sm, stacked full-width (48px) at < sm. Status codes: 403/404 pages return the matching HTTP status when served by the real backend; the prototype sets `document.title` "Akses Ditolak - PRESTASIPLUS" / "Halaman Tidak Dijumpai - PRESTASIPLUS".
+Titles: `document.title` "Akses Ditolak - PRESTASIPLUS" / "Halaman Tidak Dijumpai - PRESTASIPLUS".
 
 ---
 
 ## 8. Interaction notes
 
-- **Menu data is the single source.** Sidebar, drawer, bottom bar, Ctrl+K pages and 403 checks read the same role-filtered definition; there is no padlocked item anywhere.
-- **Sidebar toggle** persisted per user/device (`localStorage["pentadbiran_sidebar"]`), keyboard shortcut none (avoid conflicts); rail ↔ expanded animates width 160ms (none under reduced motion).
-- **Drawer** closes on route change, Esc, overlay tap, swipe-left (touch); focus trapped inside; returns to the hamburger.
-- **Tab bar** ("Lagi") opens the same drawer component as the hamburger (< lg) with the complete menu.
-- **Colour mode** change is instant, persisted, and respects `prefers-color-scheme` when "Ikut Sistem"; no flash of wrong theme (script sets `.dark` before first paint).
-- **Long labels**: nav and chip text truncate with ellipsis plus `title`/tooltip; they never wrap and never force horizontal scroll.
-- **Keyboard**: Tab order follows DOM order (§1); Ctrl/Cmd+K global in Pentadbiran; Esc closes the topmost overlay; `F` toggles full-screen only when focus is inside the Langsung page and not in an input.
-- **Back button**: drill-down levels, full-screen state and drawer do not add junk history entries (drawer/full-screen use no history; drill-down uses query params).
+- Menu data is the single source for sidebar, drawer, tab bar, Ctrl+K and 403 checks; no padlocked items.
+- Sidebar rail/expanded persisted (`pentadbiran_sidebar`), width animates 200ms (none under reduced motion).
+- Drawer closes on route change, Esc, scrim tap, swipe-left; traps focus; returns to the trigger. Tab bar "Lagi" uses the same menu.
+- Colour mode instant, persisted, set before first paint (no flash). Murid default dark; staff default system.
+- Long labels truncate with tooltip; never wrap the nav, never scroll the page sideways.
+- Keyboard: tab order follows DOM order; Ctrl/Cmd+K global in Pentadbiran; Esc closes the top overlay; `F` toggles full-screen only on Langsung outside inputs; quiz shortcuts §5.2.
+- Back button: drill-down uses query params; drawer, full-screen and sheets add no history entries.
 
 ## 9. Accessibility checklist (shells)
 
-| # | Check | Where |
-|---|---|---|
-| 1 | Skip link first, visible on focus, 44px | all shells |
-| 2 | Landmarks: header, nav (named), main, bottom nav (named), single `h1` per page | all |
-| 3 | `aria-current="page"` on active menu item and tab; active state not colour-only | menus, tab bar |
-| 4 | Every interactive target ≥ 44×44 on touch: hamburger, search, avatar, chips, tabs, rows in drawers/palette, exit full-screen, banner button | 375/768 |
-| 5 | Focus visible 2px outline (≥ 3:1) everywhere; no focus loss when drawer/palette/switcher/dialogs close (returns to trigger) | all |
-| 6 | Palette is a combobox/listbox with `aria-activedescendant`; results count announced politely | Ctrl+K |
-| 7 | Role chip has an accessible name with role, scope and (if switchable) the action; switcher is a radio list | chip/switcher |
-| 8 | Mod Pelajar: banner is a labelled region (`aria-label="Mod Pelajar"`), exit button first focus on entry, state also conveyed by text + frame, not colour alone | §3 |
-| 9 | Live data: pause control present (2.2.2), LIVE status has the word, updates are not announced per tick, reduced motion removes pulse | §4 |
-| 10 | Full-screen: exit via Esc and a visible button; focus returns; works without the Fullscreen API | §4.2 |
-| 11 | Forms: labels, hint/error association, error summary focus, 16px inputs, `autocomplete` (`username`, `current-password`), password toggle `aria-pressed` | login |
-| 12 | Contrast per design-system §3.3 in light and dark for every chrome element, including lime banner (13.5:1) and chips | all |
-| 13 | No horizontal page scroll at 320/375/768/1280 in light and dark: login, home of each portal, a group's first page, 403/404, Langsung (normal and full-screen), Ctrl+K, switcher, banner (checked by e2e G-10) | all |
-| 14 | Reduced motion and 200% zoom / text spacing do not break the chrome (top bar rows wrap to the scope bar; chips truncate with tooltip) | all |
-| 15 | `<html lang="ms">`; document title set per route; tab title prefixed in Mod Pelajar | all |
+| # | Check |
+|---|---|
+| 1 | Skip link first, visible on focus, 44px |
+| 2 | Landmarks named; one `h1` per page |
+| 3 | `aria-current="page"` on active menu item and tab; active state not colour-only (tone + weight; filled pill + label) |
+| 4 | Targets ≥ 44×44 on touch: hamburger, search, avatar, friend avatar (56), chips, tabs (56), palette rows, exit full-screen, banner button, quiz options (60) |
+| 5 | Focus ring 2px primary on every control; focus returns after drawer/palette/sheet/dialog close |
+| 6 | Palette combobox/listbox with `aria-activedescendant`; result count announced politely |
+| 7 | Role chip accessible name (role, scope, action); switcher is a radio list |
+| 8 | Mod Pelajar: labelled region, exit button first focus on entry, state via text + frame (not colour alone) |
+| 9 | Langsung: pause control (2.2.2), LIVE has the word, no per-tick announcements, pulse removed under reduced motion |
+| 10 | Full-screen exits via Esc and a visible button; works without the Fullscreen API |
+| 11 | Forms: persistent labels, hints/placeholders, error summary, 16px inputs, `autocomplete`, password toggle `aria-pressed` (R-1 mitigations for borderless inputs) |
+| 12 | Contrast per design-system §3.4 in both personalities and modes (lime banner 15.2:1; white on A1 5.2:1) |
+| 13 | No horizontal page scroll at 320/375/768/1280, light and dark: login, both home pages, a group's first page, quiz, win, picker, 403/404, Langsung (both modes), Ctrl+K, switcher, banner |
+| 14 | Reduced motion and 200% zoom keep the chrome intact (top bar wraps to scope bar; chips truncate) |
+| 15 | Quiz/win: result conveyed by glyph + text; feedback `role="status"`; friend and 3D images decorative |
+| 16 | `<html lang="ms">`; document title per route; "[Mod Pelajar] " prefix in the mode |
 
 ---
 
-## 10. Open questions (blocking only; each with a recommended default applied above)
+## 10. Decisions applied and open points
 
-| # | Question | Recommended default |
+Applied: two personalities (D35/D36); Elektrik learner, B+ staff (D34–D36); Phosphor Duotone for learners, 3D rewards on, friend style 4+ (D38); Aiman/Aisyah and Alesa as separate AI tutor (D37); scope label "Seluruh Negara"; LIVE red; filled borderless inputs (risk R-1 accepted); dark default for Murid; no Pentadbiran bottom nav; Murid 5 tabs + floating Cikgu Alesa; Mod Pelajar for Admin Pusat + Admin Sekolah; Guru tabs Dashboard/Kelas/Command Center/Penilaian; no role-picker screen.
+
+Open, non-blocking (default applied above):
+
+| # | Point | Default |
 |---|---|---|
-| Q1 | **Mod Pelajar** (D31c) vs `v2-portals.md` US-07 "Pratonton" (new tab, chosen student, read-only): D31c supersedes it. Confirm: same tab, admin acts as themselves, full actions, data marked as test data, available to **Admin Pusat and Admin Sekolah** (not PPD/JPN), and the "Pratonton" row action in Pengguna is dropped. | Yes to all. Same tab so it is a visible role transition, not a hidden second session. |
-| Q2 | Pentadbiran mobile has **no bottom nav** (9 groups cannot fit); drawer + search + scope bar instead. Dropping the live "Lagi" popover subset means the full menu is reachable on mobile. | Approve. |
-| Q3 | Murid bottom bar becomes 5 tabs (Home, SPM, Game, Topik, Lagi) and the live "Chat" tab becomes a floating Cikgu Alesa button on all sizes. | Approve. |
-| Q4 | Two thin L2 wrappers for the shared Langsung/Command Center components (`DsLiveTiles`, `DsDrillTable`) are added to the pattern inventory (built only from `DsStat`/`DsDataTable`). | Approve. |
-| Q5 | Dual-role first sign-in lands in the last/first role with a one-time toast instead of a role-chooser screen (AC-01.10 default). | Approve. |
-| Q6 | Which Guru destinations occupy the four guru tab-bar slots (proposed Dashboard Guru, Kelas, Command Center, Penilaian)? | Use the proposal; owning modules may adjust through the nav data without design change. |
-| Q7 | Login identifier: one "Alamat Email atau Nama Pengguna" field with the Sekolah picker appearing only for non-email input (PROPOSED labels/hints), replacing the two-mode .cloud form. | Approve; exact M01 labels used where they exist. |
+| O1 | Quiz, win, picker and Home copy now follow the prototype verbatim; no new learner copy is proposed. Remaining PROPOSED strings are non-learner (Mod Pelajar, role switcher, login hints, "Sesuatu tidak kena") | Use as written until the user edits |
+| O2 | Auth screens use the learner Elektrik look for all roles | Yes; staff see the same login |
+| O3 | Staff icon weight Regular (design-system O1) | Regular |
+| O4 | Timer in the quiz exists only for modes that define one | Follows the M05 contract |

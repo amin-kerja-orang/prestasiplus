@@ -22,9 +22,12 @@ Start with [TRACKER.md](TRACKER.md) (progress and decisions) and the repo-level 
 | [requirements/v2-portals.md](requirements/v2-portals.md) | Written: two portals, one Portal Pentadbiran, role/menu model |
 | [requirements/v2-cloud-gap.md](requirements/v2-cloud-gap.md) | Written: gap analysis of prestasiplus.cloud vs the prototype |
 | [architecture/v2-data-migration.md](architecture/v2-data-migration.md) | Written (draft): .cloud database to v2 backend migration |
-| `design/v2-design-system.md` | To be written in G2: Nuxt UI theme, tokens, light/dark, component rules |
-| `design/v2-shells.md` | To be written in G2: shells for the two portals |
-| `architecture/v2-frontend.md` | To be written in G2: frontend migration plan onto Nuxt UI |
+| [design/v2-design-system.md](design/v2-design-system.md) | Approved v2.0 (D33–D38): two personalities (staff calm B+, learner Elektrik), tokens, Phosphor icons, Fluent 3D, virtual friend, guard rules |
+| [design/v2-learner-prototype.html](design/v2-learner-prototype.html) | Approved interactive learner prototype (Home, quiz, win, friend picker) |
+| [design/v2-theme-preview.html](design/v2-theme-preview.html) | Staff look reference (variant B+) |
+| [design/v2-visual-choices.html](design/v2-visual-choices.html) | Record of the visual choices (icon set, 3D, friend style) |
+| [design/v2-shells.md](design/v2-shells.md) | Approved v2.0: shells for both portals at 375/768/1280 |
+| [architecture/v2-frontend.md](architecture/v2-frontend.md) | Written: frontend architecture, ADR 0015–0018, task list V2-T01–T60 |
 
-Reading order for newcomers: TRACKER decisions D28–D32, then `requirements/v2-portals.md`,
+Reading order for newcomers: TRACKER decisions D28–D38, then `requirements/v2-portals.md`,
 `requirements/v2-cloud-gap.md`, `architecture/overview.md`, `architecture/v2-data-migration.md`.
