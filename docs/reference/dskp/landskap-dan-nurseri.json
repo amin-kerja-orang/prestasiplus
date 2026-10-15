@@ -1,0 +1,872 @@
+{
+  "subject": "Landskap dan Nurseri",
+  "subjectCode": null,
+  "subjectKind": "Mata Pelajaran Vokasional (MPV), KSSM",
+  "levels": [
+    "T4",
+    "T5"
+  ],
+  "source": "Landskap dan Nurser.pdf",
+  "edition": "Terbitan 2018, Bahagian Pembangunan Kurikulum KPM, September 2018 (DSKP KSSM MPV Landskap dan Nurseri Tingkatan 4 dan 5)",
+  "structureNote": "Hierarchy: Modul (unit, numbered 1.0-7.0; Modul 1-4 = Tingkatan 4, Modul 5-7 = Tingkatan 5) > Standard Kandungan (x.y) > Standard Pembelajaran (x.y.z, \"Murid boleh:\"). Standard Prestasi (Tahap Penguasaan 1-6) is given once per MODULE, not per SK. Competency/practical based (hands-on skills, projects, folio); minimum 256 hours per year. Assessment = Pentaksiran Berasaskan Standard + Pentaksiran Berasaskan Projek (HOTS measured through projects). Printed numbering quirks kept as printed: SK 1.3 (Amalan Keselamatan) has SP numbered 1.4.1-1.4.5; SK 7.2 (Rancangan Perniagaan) has SP numbered 7.3.1-7.3.9; SP 1.4.4 text is truncated in the PDF (\"...kemalangan dan\"). Catatan column (Cadangan Aktiviti / Nota) deliberately not extracted.",
+  "units": [
+    {
+      "level": "T4",
+      "code": "1.0",
+      "title": "PENGENALAN KEPADA LANDSKAP DAN NURSERI",
+      "bidang": "Modul",
+      "hoursMin": 29,
+      "moduleDescription": "Modul ini memberi pengetahuan asas kepada murid berkaitan nurseri, tumbuhan landskap, pelandskapan, kerjaya dalam industri landskap dan nurseri serta amalan keselamatan.",
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "Pengenalan kepada Landskap",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Menyatakan maksud landskap dan pelandskapan."
+            },
+            {
+              "code": "1.1.2",
+              "text": "Menyenaraikan peluang kerjaya dalam industri landskap."
+            },
+            {
+              "code": "1.1.3",
+              "text": "Menerangkan agensi yang terlibat dalam industri landskap."
+            },
+            {
+              "code": "1.1.4",
+              "text": "Menerangkan jenis, rupa bentuk dan ciri tumbuhan landskap."
+            },
+            {
+              "code": "1.1.5",
+              "text": "Menerangkan elemen, fungsi fizikal dan estatika tumbuhan dalam landskap."
+            },
+            {
+              "code": "1.1.6",
+              "text": "Menunjukkan contoh tumbuhan landskap mengikut jenis tumbuhan landskap."
+            },
+            {
+              "code": "1.1.7",
+              "text": "Memilih tumbuhan berdasarkan ciri tumbuhan landskap."
+            },
+            {
+              "code": "1.1.8",
+              "text": "Mencadangkan tumbuhan hiasan berdasarkan fungsi fizikal dan estetik dalam pelandskapan."
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Pengenalan kepada Nurseri",
+          "sp": [
+            {
+              "code": "1.2.1",
+              "text": "Menyatakan maksud nurseri."
+            },
+            {
+              "code": "1.2.2",
+              "text": "Menyatakan jenis perusahaan nurseri."
+            },
+            {
+              "code": "1.2.3",
+              "text": "Menyenaraikan peluang kerjaya dalam industri nurseri."
+            },
+            {
+              "code": "1.2.4",
+              "text": "Menerangkan agensi yang terlibat dalam industri nurseri."
+            },
+            {
+              "code": "1.2.5",
+              "text": "Menerangkan struktur asas dalam nurseri dan fungsinya."
+            },
+            {
+              "code": "1.2.6",
+              "text": "Menerangkan faktor pemilihan tapak nurseri dan pembinaan rumah tumbuhan."
+            },
+            {
+              "code": "1.2.7",
+              "text": "Merekod struktur nurseri sedia ada berdasarkan keperluan struktur asas dalam nurseri."
+            },
+            {
+              "code": "1.2.8",
+              "text": "Mengesan kelebihan dan kelemahan pada pembinaan rumah tumbuhan yang sedia ada."
+            },
+            {
+              "code": "1.2.9",
+              "text": "Mencadangkan penambahbaikan pembinaan rumah tumbuhan berdasarkan faktor pembinaan rumah tumbuhan."
+            },
+            {
+              "code": "1.2.10",
+              "text": "Melakar idea susun atur kedudukan struktur asas dalam nurseri berdasarkan faktor penting pemilihan tapak."
+            }
+          ]
+        },
+        {
+          "sk": "1.3",
+          "skTitle": "Amalan Keselamatan di Nurseri dan Tapak Landskap",
+          "sp": [
+            {
+              "code": "1.4.1",
+              "text": "Menyatakan jenis kemalangan di nurseri dan tapak landskap."
+            },
+            {
+              "code": "1.4.2",
+              "text": "Menyenaraikan jenis-jenis alat perlindungan keselamatan di nurseri dan tapak landskap berserta kegunaannya."
+            },
+            {
+              "code": "1.4.3",
+              "text": "Menerangkan tanda keselamatan di nurseri dan tapak landskap."
+            },
+            {
+              "code": "1.4.4",
+              "text": "Menjelaskan punca berlakunya kemalangan dan"
+            },
+            {
+              "code": "1.4.5",
+              "text": "Menunjuk cara tindakan yang perlu diambil apabila berlaku kemalangan di nurseri dan tapak landskap."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": null,
+          "descriptor": "Menyatakan maksud landskap dan nurseri dan pelandskapan. | Menyenaraikan peluang kerjaya dalam bidang landskap. | Menyatakan jenis kemalangan di nurseri dan tapak landskap. | Menerangkan agensi yang terlibat dalam industri landskap. | Menerangkan jenis, rupa bentuk dan ciri tumbuhan landskap. | Menerangkan struktur asas dalam nurseri dan fungsinya. | Menerangkan tanda keselamatan di nurseri dan tapak landskap. | Menunjukkan contoh tumbuhan landskap mengikut jenis tumbuhan landskap. | Menunjuk cara tindakan yang perlu diambil apabila berlaku kemalangan di nurseri dan tapak landskap. | Mengesan kelebihan dan kelemahan pada pembinaan rumah tumbuhan yang sedia ada. | Mencadangkan penambahbaikan pembinaan rumah tumbuhan berdasarkan faktor pembinaan rumah tumbuhan. | Menghasilkan lakaran idea susun atur kedudukan struktur asas dalam nurseri dengan persekitaran yang selamat dan boleh dicontohi.",
+          "note": "PDF lists these Standard Prestasi statements for the whole module with merged TAHAP 1-6 cells; per-level alignment is not recoverable from the text layer. Statements are in printed order (roughly ascending level)."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "2.0",
+      "title": "PEMBIAKAN TUMBUHAN",
+      "bidang": "Modul",
+      "hoursMin": 59,
+      "moduleDescription": "Modul ini memberi pengetahuan, kemahiran dan nilai kepada murid berkaitan aktiviti membiak tumbuhan secara seks dan aseks dengan pelbagai teknik ... mengikut prosedur kerja dan mengamalkan langkah keselamatan.",
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Pembiakan Tumbuhan Secara Seks",
+          "sp": [
+            {
+              "code": "2.1.1",
+              "text": "Menyenaraikan alatan dan bahan yang digunakan untuk menyemai biji benih."
+            },
+            {
+              "code": "2.1.2",
+              "text": "Menyatakan ciri-ciri biji benih yang baik."
+            },
+            {
+              "code": "2.1.3",
+              "text": "Menerangkan teknik mempercepatkan kebernasan (percambahan) biji benih."
+            },
+            {
+              "code": "2.1.4",
+              "text": "Menerangkan kelebihan dan kekurangan pembiakan secara seks."
+            },
+            {
+              "code": "2.1.5",
+              "text": "Melaksanakan ujian kebernasan biji benih."
+            },
+            {
+              "code": "2.1.6",
+              "text": "Memilih biji benih berdasarkan ciri-ciri biji benih yang baik."
+            },
+            {
+              "code": "2.1.7",
+              "text": "Merawat biji benih menggunakan bahan kimia mengikut prosedur kerja."
+            },
+            {
+              "code": "2.1.8",
+              "text": "Menyediakan medium semaian dan bekas semaian mengikut prosedur kerja."
+            },
+            {
+              "code": "2.1.9",
+              "text": "Menyemai biji benih mengikut prosedur kerja."
+            },
+            {
+              "code": "2.1.10",
+              "text": "Menghitung peratus kebernasan biji benih yang disemai."
+            },
+            {
+              "code": "2.1.11",
+              "text": "Memilih medium lain untuk menyemai biji benih."
+            },
+            {
+              "code": "2.1.12",
+              "text": "Mencadangkan satu teknik yang sesuai untuk mempercepatkan percambahan biji benih."
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "Pembiakan Tumbuhan Secara Aseks",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Menyenaraikan alatan dan bahan untuk menyemai tumbuhan secara aseks."
+            },
+            {
+              "code": "2.2.2",
+              "text": "Menyenaraikan contoh tumbuhan yang sesuai dibiakkan secara aseks."
+            },
+            {
+              "code": "2.2.3",
+              "text": "Menerangkan kelebihan dan kekurangan pembiakan secara aseks."
+            },
+            {
+              "code": "2.2.4",
+              "text": "Menerangkan teknik membiak tumbuhan secara aseks: i) keratan batang, ii) keratan daun, iii) cantuman baji, iv) rayapan (stolon), v) rizom, vi) bebawang, vii) ubi, viii) umbisi, ix) belahan rumpun, x) tut (markot)."
+            },
+            {
+              "code": "2.2.5",
+              "text": "Menyediakan medium semaian/ pengakaran mengikut keperluan teknik pembiakan secara aseks."
+            },
+            {
+              "code": "2.2.6",
+              "text": "Melakukan pembiakan tumbuhan secara aseks mengikut prosedur kerja. i) Keratan batang ii) Keratan daun iii) Cantuman Baji iv) Rayapan (stolon) v) Rizom vi) Bebawang vii) Ubi viii) Umbisi ix) Belahan rumpun x) Tut (Markot)"
+            },
+            {
+              "code": "2.2.7",
+              "text": "Mencadangkan bahan lain untuk mempercepatkan proses pertumbuhan akar."
+            },
+            {
+              "code": "2.2.8",
+              "text": "Menghasilkan pelbagai varieti pada satu tumbuhan dengan menggunakan teknik pembiakan secara aseks."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyenaraikan tumbuhan yang sesuai dibiakkan secara aseks."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan kelebihan dan kekurangan pembiakan secara seks dan aseks."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Melakukan satu teknik pembiakan tumbuhan secara seks dan tiga teknik pembiakan secara aseks mengikut prosedur kerja."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menghitung peratus kebernasan biji benih yang disemai."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Mencadangkan medium lain untuk menyemai biji benih dan bahan lain untuk mempercepatkan proses pertumbuhan akar."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan satu gabungan pelbagai varieti pada satu tumbuhan dari dengan menggunakan teknik pembiakan tumbuhan secara aseks dengan kreatif dan boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "3.0",
+      "title": "PENANAMAN DAN PENYENGGARAAN TANAMAN DI NURSERI",
+      "bidang": "Modul",
+      "hoursMin": 40,
+      "moduleDescription": "Modul ini memberi pengetahuan dan kemahiran kepada murid berkaitan aktiviti menanam dan menyenggara tanaman di dalam bekas tanaman dengan mengikut prosedur kerja.",
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Menanam Tumbuhan dalam Bekas Tanaman",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Menyenaraikan jenis bekas tanaman."
+            },
+            {
+              "code": "3.1.2",
+              "text": "Menyenaraikan alatan dan bahan untuk menanam tumbuhan dalam bekas tanaman."
+            },
+            {
+              "code": "3.1.3",
+              "text": "Menjelaskan faktor pemilihan bekas tanaman."
+            },
+            {
+              "code": "3.1.4",
+              "text": "Menerangkan fungsi bahan medium penanaman berserta nisbah campuran medium untuk bekas tanaman."
+            },
+            {
+              "code": "3.1.5",
+              "text": "Menyediakan medium penanaman mengikut nisbah campuran pemasuan."
+            },
+            {
+              "code": "3.1.6",
+              "text": "Melaksanakan aktiviti menanam tumbuhan ke dalam bekas tanaman mengikut prosedur kerja."
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Menyenggara Tanaman dalam Bekas Tanaman",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Menerangkan aktiviti penyenggaraan tanaman dalam bekas tanaman: i) menyiram, ii) membaja, iii) merumpai, iv) memangkas, v) kawalan cahaya, vi) pemasuan semula."
+            },
+            {
+              "code": "3.2.2",
+              "text": "Menerangkan tujuan menyenggara tanaman dalam bekas."
+            },
+            {
+              "code": "3.2.3",
+              "text": "Mengenal pasti alatan dan bahan aktiviti penyenggaraan tanaman dalam bekas tanaman."
+            },
+            {
+              "code": "3.2.4",
+              "text": "Memeriksa keadaan tanaman untuk menentukan aktiviti penyenggaraan yang akan dilaksanakan."
+            },
+            {
+              "code": "3.2.5",
+              "text": "Melaksanakan aktiviti menyenggara tanaman dalam bekas tanaman mengikut prosedur kerja."
+            },
+            {
+              "code": "3.2.6",
+              "text": "Menilai keberkesanan aktiviti penyenggaraan tanaman yang telah dilaksanakan."
+            },
+            {
+              "code": "3.2.7",
+              "text": "Menyediakan jadual aktiviti menyenggara tanaman dalam bekas tanaman mengikut jenis tanaman."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": null,
+          "descriptor": "Menyenaraikan alatan dan bahan untuk menanam tumbuhan dalam bekas tanaman. | Menyatakan aktiviti penyenggaraan tanaman dalam bekas tanaman. | Menjelaskan faktor pemilihan bekas tanaman. | Menerangkan tujuan menyenggara tanaman dalam bekas. | Mengenal pasti alatan dan bahan aktiviti penyenggaraan tanaman dalam bekas tanaman. | Menyediakan medium penanaman mengikut nisbah campuran yang ditetapkan. | Memeriksa keadaan tanaman untuk menentukan aktiviti penyenggaraan yang akan dilaksanakan. | Melaksanakan aktiviti menanam tumbuhan ke dalam bekas tanaman, aktiviti penyenggaraan seperti menyiram, membaja, merumpai, memangkas, kawalan cahaya dan pemasuan semula tanaman dalam bekas tanaman mengikut prosedur kerja. | Menilai keberkesanan aktiviti menyiram, merumpai, memangkas dan pemasuan semula yang telah dilaksanakan. | Menghasilkan satu penanaman tumbuhan di dalam bekas yang diperbuat daripada bahan guna semula/ bahan terpakai secara kreatif dan inovatif dengan mengambil kira faktor pemilihan bekas tanaman. | Menyediakan jadual aktiviti menyenggara tanaman dalam bekas tanaman mengikut jenis tanaman.",
+          "note": "PDF lists these Standard Prestasi statements for the whole module with merged TAHAP 1-6 cells; per-level alignment is not recoverable from the text layer. Statements are in printed order (roughly ascending level)."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "4.0",
+      "title": "REKA BENTUK LANDSKAP",
+      "bidang": "Modul",
+      "hoursMin": 128,
+      "moduleDescription": "Modul ini memberi pengetahuan, kemahiran dan nilai kepada murid berkaitan asas grafik, pelan asas, pelan inventori, pelan analisis, gambar rajah buih dan pelan konsep serta menghasilkan pelan induk landskap yang kreatif.",
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Asas Lukisan Grafik",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Menyatakan alatan dan bahan asas lukisan grafik."
+            },
+            {
+              "code": "4.1.2",
+              "text": "Menerangkan fungsi alatan asas lukisan grafik."
+            },
+            {
+              "code": "4.1.3",
+              "text": "Melukis jenis-jenis garisan asas grafik."
+            },
+            {
+              "code": "4.1.4",
+              "text": "Menghasilkan penghurufan berdasarkan saiz yang bersesuaian."
+            },
+            {
+              "code": "4.1.5",
+              "text": "Melukis simbol grafik landskap yang digunakan di dalam Pelan Landskap."
+            },
+            {
+              "code": "4.1.6",
+              "text": "Mewarna simbol landskap mengikut kesesuaian teknik mewarna."
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Mereka Bentuk Landskap",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Menyenaraikan prinsip reka bentuk landskap."
+            },
+            {
+              "code": "4.2.2",
+              "text": "Mengenal pasti komponen dalam pelan landskap."
+            },
+            {
+              "code": "4.2.3",
+              "text": "Menerangkan jenis pelan dalam proses mereka bentuk landskap dan pelaksanaan projek landskap."
+            },
+            {
+              "code": "4.2.4",
+              "text": "Memilih tapak atau kawasan untuk mereka bentuk landskap."
+            },
+            {
+              "code": "4.2.5",
+              "text": "Melukis pelan asas mengikut skala."
+            },
+            {
+              "code": "4.2.6",
+              "text": "Merekod ciri fizikal dan estetik serta elemen landskap sedia ada di tapak dalam pelan inventori."
+            },
+            {
+              "code": "4.2.7",
+              "text": "Menganalisis ciri fizikal dan estetik serta elemen landskap sedia ada dalam pelan analisis."
+            },
+            {
+              "code": "4.2.8",
+              "text": "Mencadangkan program dalam gambar rajah bulat atau buih berdasarkan matlamat yang telah ditetapkan."
+            },
+            {
+              "code": "4.2.9",
+              "text": "Mencadangkan elemen landskap dalam program reka bentuk pada pelan konsep berdasarkan gambar rajah bulat atau buih."
+            },
+            {
+              "code": "4.2.10",
+              "text": "Menghasilkan pelan induk landskap berdasarkan susun atur program dan elemen landskap yang dicadangkan dalam pelan konsep mengikut skala."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": null,
+          "descriptor": "Menyatakan alatan dan bahan asas lukisan grafik. | Menyenaraikan empat prinsip reka bentuk landskap. | Menerangkan fungsi alatan asas lukisan grafik. | Menerangkan dua jenis pelan dalam proses mereka bentuk landskap dan pelaksanaan projek landskap. | Menghasilkan jenis-jenis garisan asas grafik, penghurufan berdasarkan saiz yang bersesuaian dan simbol grafik landskap berserta warna. | Melukis pelan asas mengikut skala. | Merekod ciri fizikal dan estetik serta elemen landskap sedia ada di tapak dalam pelan inventori. | Menganalisis ciri fizikal dan estetik serta elemen landskap sedia ada dalam pelan analisis. | Mencadangkan program dalam gambar rajah bulat atau buih berdasarkan matlamat yang telah ditetapkan. | Mencadangkan elemen landskap dalam program reka bentuk pada pelan konsep berdasarkan gambar rajah bulat atau buih. | Menghasilkan pelan induk landskap berdasarkan susun atur program dan elemen landskap yang dicadangkan dalam pelan konsep mengikut skala secara kreatif dan boleh dicontohi.",
+          "note": "PDF lists these Standard Prestasi statements for the whole module with merged TAHAP 1-6 cells; per-level alignment is not recoverable from the text layer. Statements are in printed order (roughly ascending level)."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "5.0",
+      "title": "PELAKSANAAN AKTIVITI PELANDSKAPAN",
+      "bidang": "Modul",
+      "hoursMin": 144,
+      "moduleDescription": "Modul ini memberi pengetahuan, kemahiran dan nilai kepada murid berkaitan aktiviti penyediaan tapak landskap kejur dan lembut, membina atau memasang struktur landskap dan menanam tanaman di kawasan landskap dengan mengamalkan langkah keselamatan serta menyediakan laporan perbelanjaan kos pembinaan landskap.",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Penyediaan Tapak Pembinaan Landskap Kejur",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Menerangkan keperluan kerja awalan tapak pembinaan landskap kejur: i) penyempadanan, ii) pembersihan tapak, iii) mengukur dan menanda."
+            },
+            {
+              "code": "5.1.2",
+              "text": "Mengenal pasti alatan dan bahan untuk aktiviti kerja awalan tapak pembinaan landskap."
+            },
+            {
+              "code": "5.1.3",
+              "text": "Melaksanakan aktiviti penyempadanan dan pembersihan tapak mengikut keperluan tapak pembinaan landskap."
+            },
+            {
+              "code": "5.1.4",
+              "text": "Melaksanakan aktiviti mengukur dan menanda di tapak pembinaan landskap berdasarkan lakaran projek/ pelan induk."
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Pembinaan Landskap Kejur",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Menyenaraikan jenis bahan bagi struktur binaan landskap kejur."
+            },
+            {
+              "code": "5.2.2",
+              "text": "Menerangkan struktur binaan landskap kejur."
+            },
+            {
+              "code": "5.2.3",
+              "text": "Mengenal pasti alatan dan bahan struktur binaan landskap kejur."
+            },
+            {
+              "code": "5.2.4",
+              "text": "Memeriksa tempat struktur yang hendak dibina berdasarkan lakaran projek/ pelan induk."
+            },
+            {
+              "code": "5.2.5",
+              "text": "Mengesahkan struktur yang hendak dibina pada kawasan landskap berdasarkan lakaran projek/ pelan induk."
+            },
+            {
+              "code": "5.2.6",
+              "text": "Membina struktur binaan landskap kejur di tapak pembinaan landskap mengikut prosedur kerja dan tatacara keselamatan: i) Binaan konkrit/ bata; atau ii) Binaan kayu/ hiasan landskap berasaskan kayu; atau iii) struktur logam/ bukan logam; atau iv) perabot taman lain."
+            }
+          ]
+        },
+        {
+          "sk": "5.3",
+          "skTitle": "Penyediaan Tapak Landskap Lembut",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Mengenal pasti tapak penanaman landskap lembut."
+            },
+            {
+              "code": "5.3.2",
+              "text": "Mengenal pasti alatan dan bahan penyediaan tapak landskap lembut."
+            },
+            {
+              "code": "5.3.3",
+              "text": "Melaksanakan aktiviti menanda (tagging) berdasarkan lakaran projek/ pelan induk/ pelan penanaman"
+            },
+            {
+              "code": "5.3.4",
+              "text": "Melaksanakan aktiviti pembersihan dan pemugaran mengikut keperluan di tapak penanaman landskap."
+            },
+            {
+              "code": "5.3.5",
+              "text": "Membina batas tanaman mengikut prosedur kerja dan keperluan di tapak penanaman landskap."
+            },
+            {
+              "code": "5.3.6",
+              "text": "Menyediakan medium penanaman mengikut prosedur kerja."
+            },
+            {
+              "code": "5.3.7",
+              "text": "Membuat lubang penanaman mengikut prosedur kerja."
+            }
+          ]
+        },
+        {
+          "sk": "5.4",
+          "skTitle": "Melaksanakan Penanaman Landskap Lembut",
+          "sp": [
+            {
+              "code": "5.4.1",
+              "text": "Menerangkan aktiviti pengendalian dan penjagaan tumbuhan semasa transit."
+            },
+            {
+              "code": "5.4.2",
+              "text": "Menerangkan kaedah penanaman landskap lembut."
+            },
+            {
+              "code": "5.4.3",
+              "text": "Melaksanakan aktiviti penanaman landskap lembut mengikut prosedur."
+            },
+            {
+              "code": "5.4.4",
+              "text": "Memasang pancang pada tanaman mengikut prosedur dan keperluan tanaman."
+            },
+            {
+              "code": "5.4.5",
+              "text": "Melaksanakan aktiviti penyiraman tanaman mengikut prosedur."
+            },
+            {
+              "code": "5.4.6",
+              "text": "Melaksanakan aktiviti sungkupan (mulching) mengikut keperluan penanaman."
+            },
+            {
+              "code": "5.4.7",
+              "text": "Memeriksa penanaman tanaman landskap berdasarkan lakaran projek/ pelan induk/ pelan penanaman."
+            },
+            {
+              "code": "5.4.8",
+              "text": "Mengesahkan penanaman tanaman landskap berdasarkan lakaran projek/ pelan induk/ pelan penanaman."
+            },
+            {
+              "code": "5.4.9",
+              "text": "Menghasilkan kawasan landskap lembut berdasarkan lakaran projek/ pelan induk/ pelan penanaman mengikut prosedur kerja dan tatacara keselamatan."
+            }
+          ]
+        },
+        {
+          "sk": "5.5",
+          "skTitle": "Perbelanjaan Kos Pembinaan Landskap",
+          "sp": [
+            {
+              "code": "5.5.1",
+              "text": "Menyatakan tujuan pengiraan perbelanjaan pembinaan landskap."
+            },
+            {
+              "code": "5.5.2",
+              "text": "Mengenal pasti perbelanjaan bahan yang terlibat dalam pembinaan landskap."
+            },
+            {
+              "code": "5.5.3",
+              "text": "Merekod bahan pelandskapan dan kuantiti penggunaannya dalam pembinaan landskap."
+            },
+            {
+              "code": "5.5.4",
+              "text": "Menghitung perbelanjaan kos pembinaan landskap yang dilaksanakan."
+            },
+            {
+              "code": "5.5.5",
+              "text": "Menghasilkan satu laporan perbelanjaan kos pembinaan landskap yang dilaksanakan."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyenaraikan jenis bahan bagi struktur binaan landskap kejur, alatan dan bahan landskap lembut."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan dua struktur binaan landskap kejur dan langkah kerja bagi penanaman pokok palma dan renek."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Melaksanakan aktiviti pelandskapan berdasarkan lakaran projek/ pelan induk/ pelan penanaman mengikut prosedur. | Merekod bahan pelandskapan dan kuantiti penggunaannya dalam pembinaan landskap."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menghitung perbelanjaan kos pembinaan landskap yang telah dilaksanakan."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Mengesahkan struktur binaan dan penanaman landskap berdasarkan lakaran projek/ pelan induk/ pelan penanaman."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Membina atau memasang gabungan beberapa bentuk komposisi yang terdiri daripada landskap kejur dan landskap lembut di satu kawasan secara kreatif dan satu laporan perbelanjaan kos pembinaan landskap yang boleh dijadikan contoh."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "6.0",
+      "title": "PENGURUSAN KAWASAN LANDSKAP",
+      "bidang": "Modul",
+      "hoursMin": 64,
+      "moduleDescription": "Modul ini memberi pengetahuan, kemahiran dan nilai kepada murid berkaitan aktiviti menyenggara landskap kejur dan lembut, penjadualan kerja penyenggaraan serta menguruskan sisa pepejal di kawasan landskap bagi memelihara alam sekitar.",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Penyenggaraan Landskap Kejur",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Menyenaraikan aktiviti penyenggaraan landskap kejur."
+            },
+            {
+              "code": "6.1.2",
+              "text": "Menyatakan alatan dan bahan menyenggara landskap kejur."
+            },
+            {
+              "code": "6.1.3",
+              "text": "Menerangkan tujuan penyenggaraan landskap kejur."
+            },
+            {
+              "code": "6.1.4",
+              "text": "Mengenal pasti kerosakan pada landskap kejur."
+            },
+            {
+              "code": "6.1.5",
+              "text": "Melaksanakan aktiviti penyenggaraan landskap kejur mengikut keperluan."
+            },
+            {
+              "code": "6.1.6",
+              "text": "Memeriksa keadaan struktur dan kefungsian landskap kejur setelah aktiviti penyelenggaraan dibuat."
+            },
+            {
+              "code": "6.1.7",
+              "text": "Mencadangkan teknik alternatif yang lebih efisyen pada landskap kejur yang telah diselenggara."
+            },
+            {
+              "code": "6.1.8",
+              "text": "Menghasilkan jadual kerja aktiviti penyenggaraan landskap kejur."
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Menyenggara Landskap Lembut",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Menyenaraikan aktiviti penyenggaraan landskap lembut di kawasan landskap: i) penyiraman, ii) pembajaan, iii) pemangkasan, iv) pengawalan penyakit dan perosak."
+            },
+            {
+              "code": "6.2.2",
+              "text": "Menyatakan alatan dan bahan menyenggara landskap lembut."
+            },
+            {
+              "code": "6.2.3",
+              "text": "Menerangkan tujuan penyenggaraan landskap lembut di kawasan landskap."
+            },
+            {
+              "code": "6.2.4",
+              "text": "Memeriksa tanaman yang memerlukan penyenggaraan di kawasan landskap."
+            },
+            {
+              "code": "6.2.5",
+              "text": "Melaksanakan penyenggaraan landskap lembut di kawasan landskap mengikut keperluan tanaman."
+            },
+            {
+              "code": "6.2.6",
+              "text": "Menghuraikan aktiviti penyenggaraan landskap lembut di kawasan landskap: i) penyiraman, ii) pembajaan, iii) pemangkasan, iv) pengawalan penyakit dan perosak."
+            }
+          ]
+        },
+        {
+          "sk": "6.3",
+          "skTitle": "Mengurus Sisa Pepejal di Kawasan Landskap",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Menyatakan maksud sisa pepejal."
+            },
+            {
+              "code": "6.3.2",
+              "text": "Menyatakan peranan industri landskap dalam melindungi alam sekitar."
+            },
+            {
+              "code": "6.3.3",
+              "text": "Menerangkan jenis-jenis sisa pepejal terkawal."
+            },
+            {
+              "code": "6.3.4",
+              "text": "Menerangkan komponan pengurusan sisa pepejal."
+            },
+            {
+              "code": "6.3.5",
+              "text": "Mengenal pasti sisa pepejal di kawasan landskap."
+            },
+            {
+              "code": "6.3.6",
+              "text": "Mengkategorikan sisa pepejal di kawasan landskap kepada bahan yang boleh diguna semula (Reuse), dikitar semula (Recycle) atau dikurangkan (Reduce)."
+            },
+            {
+              "code": "6.3.7",
+              "text": "Memilih sisa pepejal yang boleh diguna semula (Reuse) di kawasan landskap."
+            },
+            {
+              "code": "6.3.8",
+              "text": "Menghasilkan semula benda/ barangan baharu daripada bahan sisa pepejal yang boleh diguna semula (Reuse) di kawasan landskap."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyenaraikan aktiviti penyenggaraan landskap kejur dan lembut serta sisa pepejal di kawasan landskap."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menerangkan tujuan penyenggaraan landskap kejur dan lembut di kawasan landskap."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Melaksanakan aktiviti penyenggaraan landskap kejur dan lembut serta mengasingkan sisa pepejal di kawasan landskap mengikut keperluan."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menghuraikan satu aktiviti penyenggaraan landskap lembut di kawasan landskap."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Mencadangkan satu teknik alternatif yang lebih efisyen pada landskap kejur yang telah diseleggara."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan semula satu benda/ barangan baharu daripada sisa pepejal yang dipilih di kawasan landskap secara kreatif dan boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "7.0",
+      "title": "KEUSAHAWANAN",
+      "bidang": "Modul",
+      "hoursMin": 48,
+      "moduleDescription": "Modul ini memberi pengetahuan asas, kemahiran dan nilai kepada murid berkaitan keusahawanan, etika dan budaya kerja, dokumen dalam urus niaga, perekodan stok, pemasaran, pengiraan kos dan rancangan perniagaan.",
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Pengenalan Usahawan dan Peniaga",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Menyatakan maksud keusahawanan dan perniagaan."
+            },
+            {
+              "code": "7.1.2",
+              "text": "Menyatakan ciri usahawan dan peniaga."
+            },
+            {
+              "code": "7.1.3",
+              "text": "Menerangkan dokumen yang terlibat dalam urusniaga."
+            },
+            {
+              "code": "7.1.4",
+              "text": "Mengenal pasti jenis stok."
+            },
+            {
+              "code": "7.1.5",
+              "text": "Merekod stok di tempat kerja berdasarkan dokumen urusniaga."
+            },
+            {
+              "code": "7.1.6",
+              "text": "Membincangkan etika dan budaya di tempat kerja."
+            }
+          ]
+        },
+        {
+          "sk": "7.2",
+          "skTitle": "Rancangan Perniagaan",
+          "sp": [
+            {
+              "code": "7.3.1",
+              "text": "Menyatakan maksud rancangan perniagaan dan pemasaran."
+            },
+            {
+              "code": "7.3.2",
+              "text": "Menerangkan kepentingan rancangan perniagaan."
+            },
+            {
+              "code": "7.3.3",
+              "text": "Menerangkan agensi yang membantu usahawan dan peniaga dalam bidang latihan dan kewangan."
+            },
+            {
+              "code": "7.3.4",
+              "text": "Menerangkan elemen pemasaran."
+            },
+            {
+              "code": "7.3.5",
+              "text": "Menyediakan jadual kerja penghasilan produk/ perkhidmatan untuk dipasarkan."
+            },
+            {
+              "code": "7.3.6",
+              "text": "Melakukan iklan produk/ perkhidmatan untuk dipasarkan."
+            },
+            {
+              "code": "7.3.7",
+              "text": "Menghitung kos pengeluaran dan peratus keuntungan produk/ perkhidmatan untuk dipasarkan."
+            },
+            {
+              "code": "7.3.8",
+              "text": "Menentukan harga jualan produk/ perkhidmatan untuk dipasarkan."
+            },
+            {
+              "code": "7.3.9",
+              "text": "Menyediakan rancangan perniagaan berdasarkan format yang ditetapkan."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": "1-4",
+          "descriptor": "Menyatakan maksud keusahawanan dan perniagaan | Menyatakan ciri usahawan dan peniaga. | Menerangkan dokumen yang terlibat dalam urusniaga, jenis stok, kepentingan rancangan perniagaan dan elemen pemasaran. | Menerangkan agensi yang membantu usahawan dan peniaga dalam bidang latihan dan kewangan. | Merekod stok berdasarkan dokumen urusniaga. | Menyediakan jadual kerja penghasilan produk/ perkhidmatan untuk dipasarkan. | Melakukan iklan produk/ perkhidmatan untuk dipasarkan menggunakan TMK. | Menghitung kos pengeluaran dan peratus keuntungan produk/ perkhidmatan untuk dipasarkan.",
+          "note": "PDF lists these Standard Prestasi statements for the whole module with merged TAHAP 1-6 cells; per-level alignment is not recoverable from the text layer. Statements are in printed order (roughly ascending level)."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menentukan harga jualan produk/ perkhidmatan untuk dipasarkan."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan rancangan perniagaan berdasarkan format yang ditetapkan dengan menggunakan TMK dan boleh dijadikan contoh."
+        }
+      ]
+    }
+  ]
+}

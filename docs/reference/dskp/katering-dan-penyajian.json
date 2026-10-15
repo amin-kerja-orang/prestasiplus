@@ -1,0 +1,1515 @@
+{
+  "subject": "Katering dan Penyajian",
+  "subjectCode": null,
+  "subjectKind": "Mata Pelajaran Vokasional (MPV), KSSM",
+  "levels": [
+    "T4",
+    "T5"
+  ],
+  "source": "DSKP KSSM subjek vokasional Katering dan Penyajian.pdf",
+  "edition": "Terbitan 2018, Bahagian Pembangunan Kurikulum KPM, September 2018 (DSKP KSSM MPV Katering dan Penyajian Tingkatan 4 dan 5)",
+  "structureNote": "Hierarchy: Modul (unit, numbered 1.0-8.0; Modul 1-4 = Tingkatan 4, Modul 5-8 = Tingkatan 5) > Standard Kandungan (x.y) > Standard Pembelajaran (x.y.z, \"Murid boleh:\"). Standard Prestasi (Tahap Penguasaan 1-6) is given per module, except Modul 1.0 which has two TP tables (one for SK 1.1, one for SK 1.2-1.3; see appliesToSK). Competency/practical based (amali, mise en place, recipe production, projects, folio); minimum 256 hours per year. Assessment = Pentaksiran Berasaskan Standard + Pentaksiran Berasaskan Projek. Printed typos kept as printed (e.g. \"peranggu\", \"resepi\", \"Pekhidmatan\"). Catatan column (Cadangan Aktiviti / Nota) deliberately not extracted. SP lists with roman sub-items (i, ii, ...) are inlined in the SP text.",
+  "units": [
+    {
+      "level": "T4",
+      "code": "1.0",
+      "title": "PENGENALAN BIDANG PERKHIDMATAN MAKANAN",
+      "bidang": "Modul",
+      "hoursMin": 16,
+      "moduleDescription": "Murid diperkenalkan kepada industri perkhidmatan makanan serta prospek kerjaya dalam penyediaan dan penyajian makanan, Murid dilatih dalam aspek keselamatan, kesihatan dan sanitasi diri serta premis perkhidmatan makanan dan tanggungjawab sebagai pengendali makanan dalam menyumbang kepada pemeliharaan alam sekitar dalam bidang perkhidmatan makanan.",
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "Asas Perkhidmatan Makanan",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Menyatakan maksud perkhidmatan makanan."
+            },
+            {
+              "code": "1.1.2",
+              "text": "Menjelaskan objektif perkhidmatan makanan."
+            },
+            {
+              "code": "1.1.3",
+              "text": "Mengenal pasti prospek kerjaya dalam bidang perkhidmatan makanan."
+            },
+            {
+              "code": "1.1.4",
+              "text": "Menghuraikan segmen komersial dan bukan komersial dalam bidang perkhidmatan makanan."
+            },
+            {
+              "code": "1.1.5",
+              "text": "Membincangkan sistem katering dalam bidang perkhidmatan makanan."
+            },
+            {
+              "code": "1.1.6",
+              "text": "Menghasilkan laporan berkaitan organisasi premis perkhidmatan makanan pilihan dari segmen komersial atau bukan komersial."
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Keselamatan, Kesihatan dan Sanitasi",
+          "sp": [
+            {
+              "code": "1.2.1",
+              "text": "Menyatakan aspek keselamatan, kesihatan dan sanitasi dalam bidang perkhidmatan makanan."
+            },
+            {
+              "code": "1.2.2",
+              "text": "Menjelaskan keperluan keselamatan di dapur berpandukan badan kawal selia dan agensi yang berkaitan."
+            },
+            {
+              "code": "1.2.3",
+              "text": "Mengenal pasti punca dan akibat makanan tercemar."
+            },
+            {
+              "code": "1.2.4",
+              "text": "Menilai tahap keselamatan, kesihatan dan sanitasi di premis perkhidmatan makanan berpandukan garis panduan agensi kawal selia."
+            },
+            {
+              "code": "1.2.5",
+              "text": "Membuat kesimpulan hasil penilaian tahap keselamatan, kesihatan dan sanitasi di premis perkhidmatan makanan."
+            },
+            {
+              "code": "1.2.6",
+              "text": "Menghasilkan laporan berkaitan amalan keselamatan, kesihatan dan sanitasi di premis perkhidmatan makanan."
+            }
+          ]
+        },
+        {
+          "sk": "1.3",
+          "skTitle": "Pemeliharaan Alam Sekitar dalam Bidang Perkhidmatan Makanan",
+          "sp": [
+            {
+              "code": "1.3.1",
+              "text": "Mengetahui akta dan agensi yang terlibat dengan pemeliharaan alam sekitar dalam bidang perkhidmatan makanan."
+            },
+            {
+              "code": "1.3.2",
+              "text": "Menerangkan peranan premis perkhidmatan makanan dalam melindungi dan memelihara alam sekitar."
+            },
+            {
+              "code": "1.3.3",
+              "text": "Mengenal pasti prosedur pengurusan sisa buangan yang teratur."
+            },
+            {
+              "code": "1.3.4",
+              "text": "Menghuraikan kesan pengabaian pengurusan sisa buangan oleh premis perkhidmatan makanan terhadap alam sekitar."
+            },
+            {
+              "code": "1.3.5",
+              "text": "Menilai pengurusan sisa buangan premis perkhidmatan makanan berpandukan senarai semak."
+            },
+            {
+              "code": "1.3.6",
+              "text": "Mengusulkan langkah penambahbaikan dalam proses pembuangan sisa makanan bagi premis perkhidmatan makanan."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud perkhidmatan makanan.",
+          "appliesToSK": [
+            "1.1"
+          ]
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan objektif perkhidmatan makanan.",
+          "appliesToSK": [
+            "1.1"
+          ]
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengenal pasti prospek kerjaya dalam bidang perkhidmatan makanan.",
+          "appliesToSK": [
+            "1.1"
+          ]
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menghuraikan segmen komersial dan bukan komersial dalam bidang perkhidmatan makanan.",
+          "appliesToSK": [
+            "1.1"
+          ]
+        },
+        {
+          "tp": 5,
+          "descriptor": "Membincangkan sistem katering dalam bidang perkhidmatan makanan.",
+          "appliesToSK": [
+            "1.1"
+          ]
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan laporan berkaitan organisasi premis perkhidmatan makanan pilihan dari segmen komersial atau bukan komersial.",
+          "appliesToSK": [
+            "1.1"
+          ]
+        },
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud perkhidmatan makanan serta mengetahui aspek keselamatan, kesihatan dan sanitasi dalam bidang perkhidmatan makanan.",
+          "appliesToSK": [
+            "1.2",
+            "1.3"
+          ]
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan objektif perkhidmatan makanan serta keperluan kepada keselamatan, kesihatan, sanitasi dan pengurusan sisa buangan dalam bidang perkhidmatan makanan.",
+          "appliesToSK": [
+            "1.2",
+            "1.3"
+          ]
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengenal pasti punca dan akibat makanan tercemar.",
+          "appliesToSK": [
+            "1.2",
+            "1.3"
+          ]
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menghuraikan segmen komersial dan bukan komersial dalam bidang perkhidmatan makanan.",
+          "appliesToSK": [
+            "1.2",
+            "1.3"
+          ]
+        },
+        {
+          "tp": 5,
+          "descriptor": "Membincangkan sistem katering serta pengurusan sisa buangan secara lestari dalam bidang perkhidmatan makanan.",
+          "appliesToSK": [
+            "1.2",
+            "1.3"
+          ]
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan laporan berkaitan organisasi premis perkhidmatan makanan pilihan dari segmen komersial atau bukan komersial merangkumi aspek pengurusan keselamatan, kesihatan, sanitasi dan tanggungjawab pemeliharaan alam sekitar secara sistematik, kreatif dan boleh diteladani.",
+          "appliesToSK": [
+            "1.2",
+            "1.3"
+          ]
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "2.0",
+      "title": "PERALATAN DAN BAHAN DALAM PERKHIDMATAN MAKANAN",
+      "bidang": "Modul",
+      "hoursMin": 16,
+      "moduleDescription": "Murid diperkenalkan dan dilatih untuk mengenal pasti, mengendali dan menyenggara peralatan, perkakasan dan bahan dalam bidang penyediaan dan penyajian makanan. Kaedah penstoran serta pengurusan stok mengikut prosedur ...",
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Peralatan Penyediaan Makanan",
+          "sp": [
+            {
+              "code": "2.1.1",
+              "text": "Mengenal jenis peralatan untuk penyediaan makanan."
+            },
+            {
+              "code": "2.1.2",
+              "text": "Mengelaskan peralatan mengikut kategori: i) Peralatan memproses ii) Peralatan memasak iii) Peralatan holding iv) Peralatan penyejukan"
+            },
+            {
+              "code": "2.1.3",
+              "text": "Menjelaskan fungsi peralatan mengikut kategori."
+            },
+            {
+              "code": "2.1.4",
+              "text": "Menghuraikan ciri pemilihan peralatan untuk penyediaan makanan."
+            },
+            {
+              "code": "2.1.5",
+              "text": "Memilih peralatan penyediaan makanan berdasarkan jenis tugasan."
+            },
+            {
+              "code": "2.1.6",
+              "text": "Merancang jadual pemeriksaan berkala bagi peralatan penyediaan makanan."
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "Bahan Penyediaan Makanan",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Mengenal bahan penyediaan makanan."
+            },
+            {
+              "code": "2.2.2",
+              "text": "Mengelaskan bahan penyediaan makanan mengikut kategori: i) Bahan kering ii) Bahan basah"
+            },
+            {
+              "code": "2.2.3",
+              "text": "Menjelaskan kaedah penstoran bahan penyediaan makanan."
+            },
+            {
+              "code": "2.2.4",
+              "text": "Menghuraikan ciri pemilihan bahan penyediaan makanan."
+            },
+            {
+              "code": "2.2.5",
+              "text": "Memilih bahan penyediaan makanan berdasarkan jenis tugasan."
+            },
+            {
+              "code": "2.2.6",
+              "text": "Merancang jadual pesanan bahan penyediaan makanan berpandukan borang pesanan."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan jenis peralatan untuk penyediaan makanan."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Mengenal bahan penyediaan makanan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Mengelaskan peralatan dan bahan penyediaan makanan mengikut kategori."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menjelaskan fungsi peralatan penyediaan makanan mengikut kategori. | Menjelaskan kaedah penstoran bahan penyediaan makanan. | Menghuraikan ciri pemilihan peralatan dan bahan penyediaan makanan",
+          "note": "Level boundary for the statements printed between TAHAP 3 and 5 is approximate (merged cells in the PDF)."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Memilih pralatan dan bahan penyediaan makanan berdasarkan jenis tugasan."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Merancang jadual pemeriksaan berkala bagi peralatan penyediaan makanan. | Merancang jadual pesanan bahan penyediaan makanan berpandukan borang pesanan."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "3.0",
+      "title": "PENGENALAN KEPADA PERKHIDMATAN PENYAJIAN",
+      "bidang": "Modul",
+      "hoursMin": 32,
+      "moduleDescription": "Murid mempelajari berkaitan asas dalam perkhidmatan penyajian, mengenal pasti kategori perabot serta linen, menyusun atur peranggu meja dan ruang penyajian serta melaksana proses penyajian mengikut prosedur jenis perkhidmatan penyajian.",
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Asas Perkhidmatan Penyajian",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Mengenal pasti tugas dan tanggungjawab dalam organisasi perkhidmatan penyajian."
+            },
+            {
+              "code": "3.1.2",
+              "text": "Menjelaskan jenis perkhidmatan penyajian."
+            },
+            {
+              "code": "3.1.3",
+              "text": "Melaksana prosedur perkhidmatan penyajian bagi perkhidmatan layan diri dan plate service."
+            },
+            {
+              "code": "3.1.4",
+              "text": "Membezakan perkhidmatan penyajian layan diri dan plate service."
+            },
+            {
+              "code": "3.1.5",
+              "text": "Memilih jenis perkhidmatan penyajian berpandukan jenis sajian."
+            },
+            {
+              "code": "3.1.6",
+              "text": "Menghasilkan carta alir proses penyajian mengikut jenis perkhidmatan penyajian."
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Peralatan, Perabot dan Linen Penyajian",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Mengenal jenis peralatan , perabot dan linen dalam perkhidmatan penyajian."
+            },
+            {
+              "code": "3.2.2",
+              "text": "Menerangkan fungsi peralatan, perabot dan linen dalam perkhidmatan penyajian."
+            },
+            {
+              "code": "3.2.3",
+              "text": "Melaksanakan lipatan napkin untuk perkhidmatan penyajian."
+            },
+            {
+              "code": "3.2.4",
+              "text": "Melaksanakan penyelenggaraan dan penstoran peralatan dan linen penyajian."
+            },
+            {
+              "code": "3.2.5",
+              "text": "Menghuraikan faktor yang mempengaruhi pemilihan peralatan untuk perkhidmatan penyajian."
+            },
+            {
+              "code": "3.2.6",
+              "text": "Menilai hasil lipatan napkin untuk penyajian."
+            },
+            {
+              "code": "3.2.7",
+              "text": "Menghasilkan senarai semak penyenggaraan dan penstoran peralatan, perabot dan linen bagi perkhidmatan penyajian."
+            }
+          ]
+        },
+        {
+          "sk": "3.3",
+          "skTitle": "Susun Atur Peranggu Meja",
+          "sp": [
+            {
+              "code": "3.3.1",
+              "text": "Menyatakan maksud peranggu meja."
+            },
+            {
+              "code": "3.3.2",
+              "text": "Mengenal pasti jenis peranggu meja."
+            },
+            {
+              "code": "3.3.3",
+              "text": "Melaksanakan proses mise en place sebelum menyusun atur peranggu meja. i) Menggilap kutleri dan glassware ii) Membentang alas meja iii) Melipat napkin iv) Menyediakan alatan sampingan"
+            },
+            {
+              "code": "3.3.4",
+              "text": "Menyusun atur peranggu meja berdasarkan jenis perkhidmatan."
+            },
+            {
+              "code": "3.3.5",
+              "text": "Membezakan susun atur peranggu meja mengikut jenis perkhidmatan."
+            },
+            {
+              "code": "3.3.6",
+              "text": "Menilai susun atur peranggu meja mengikut kriteria penilaian."
+            },
+            {
+              "code": "3.3.7",
+              "text": "Menghasilkan susun atur peranggu meja yang kreatif mengikut jenis perkhidmatan penyajian."
+            }
+          ]
+        },
+        {
+          "sk": "3.4",
+          "skTitle": "Proses Perkhidmatan Penyajian",
+          "sp": [
+            {
+              "code": "3.4.1",
+              "text": "Menerangkan prosedur penyajian makanan berdasarkan jenis perkhidmatan."
+            },
+            {
+              "code": "3.4.2",
+              "text": "Menjelaskan jenis perkhidmatan penyajian yang akan dilaksanakan."
+            },
+            {
+              "code": "3.4.3",
+              "text": "Melaksana prosedur perkhidmatan penyajian berdasarkan jenis perkhidmatan."
+            },
+            {
+              "code": "3.4.4",
+              "text": "Menghuraikan prosedur melayan pelanggan mengikut jenis perkhidmatan penyajian."
+            },
+            {
+              "code": "3.4.5",
+              "text": "Menilai prosedur melayan pelanggan mengikut jenis perkhidmatan penyajian."
+            },
+            {
+              "code": "3.4.6",
+              "text": "Menghasilkan dokumentasi prosedur melayan pelanggan dalam perkhidmatan penyajian."
+            }
+          ]
+        },
+        {
+          "sk": "3.5",
+          "skTitle": "Susun Atur Ruang Penyajian",
+          "sp": [
+            {
+              "code": "3.5.1",
+              "text": "Menerangkan susun atur ruang penyajian perkhidmatan kafeteria dan perkhidmatan bufet."
+            },
+            {
+              "code": "3.5.2",
+              "text": "Mengenal pasti peralatan penyajian untuk perkhidmatan kafeteria dan perkhidmatan bufet."
+            },
+            {
+              "code": "3.5.3",
+              "text": "Melakar susun atur ruang penyajian perkhidmatan kafeteria dan perkhidmatan bufet."
+            },
+            {
+              "code": "3.5.4",
+              "text": "Menyusun atur peralatan dan perabot di ruang penyajian perkhidmatan kafeteria dan bufet."
+            },
+            {
+              "code": "3.5.5",
+              "text": "Menilai susun atur ruang penyajian perkhidmatan kafeteria dan bufet berdasarkan kriteria penilaian."
+            },
+            {
+              "code": "3.5.6",
+              "text": "Menghasilkan gubahan bunga dengan kreatif sebagai centre piece perkhidmatan bufet."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengenal pasti tugas,tanggungjawab dan aktiviti dalam organisasi perkhidmatan penyajian."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Mengenal pasti peralatan dan perabot dalam perkhidmatan penyajian."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menyusun atur alatan, peranggu meja dan ruang penyajian mengikut jenis perkhidmatan penyajian."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menghuraikan prosedur melayan pelanggan mengikut jenis perkhidmatan penyajian."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Menilai prosedur penyajian, susun atur peranggu meja serta susun atur ruang penyajian mengikut jenis perkhidmatan penyajian berdasarkan kriteria penilaian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan gubahan bunga atau centre piece untuk perkhidmatan penyajian yang kreatif dan boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T4",
+      "code": "4.0",
+      "title": "HIDANGAN ASAS",
+      "bidang": "Modul",
+      "hoursMin": 192,
+      "moduleDescription": "Murid dilatih untuk menyedia, memasak, menghias, menghidang dan mengepek pelbagai jenis hidangan asas merangkumi hidangan pastri, roti, minuman, hasil bijirin, biskut, snek serta menyedia dan menghias pelbagai jenis kek dan hiasan kek.",
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Hidangan Minuman",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Menyatakan definisi minuman."
+            },
+            {
+              "code": "4.1.2",
+              "text": "Menjelaskan kategori minuman. i) Minuman panas ii) Minuman sejuk iii) Minuman beralkohol iv) Minuman tanpa alkohol v) Minuman berkarbonat"
+            },
+            {
+              "code": "4.1.3",
+              "text": "Merancang menu minuman."
+            },
+            {
+              "code": "4.1.4",
+              "text": "Menentukan resipi standard minuman."
+            },
+            {
+              "code": "4.1.5",
+              "text": "Melaksana mise en place mengikut perancangan menu."
+            },
+            {
+              "code": "4.1.6",
+              "text": "Menghasilkan minuman berpandukan resipi standard."
+            },
+            {
+              "code": "4.1.7",
+              "text": "Menilai hasil minuman mengikut kriteria penilaian."
+            },
+            {
+              "code": "4.1.8",
+              "text": "Mencadangkan nilai tambah untuk minuman berpandukan penilaian."
+            },
+            {
+              "code": "4.1.9",
+              "text": "Mencipta resipi standard baharu bagi hidangan minuman."
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Hidangan Bijirin dan Hasil Bijirin",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Menerangkan jenis bijirin dan hasil bijirin."
+            },
+            {
+              "code": "4.2.2",
+              "text": "Menjelaskan bahagian utama bijirin."
+            },
+            {
+              "code": "4.2.3",
+              "text": "Mengelaskan sumber bahan asas bijirin dan hasil bijirin. i) Beras ii) Gandum iii) Oat iv) Sekoi v) Jagung"
+            },
+            {
+              "code": "4.2.4",
+              "text": "Merancang menu hidangan berasaskan bijirin dan hasil bijirin."
+            },
+            {
+              "code": "4.2.5",
+              "text": "Menentukan resipi standard bagi hidangan berasaskan bijirin dan hasil bijirin."
+            },
+            {
+              "code": "4.2.6",
+              "text": "Melaksanakan mise en place bagi penyediaan hidangan berasaskan bijirin dan hasil bijirin."
+            },
+            {
+              "code": "4.2.7",
+              "text": "Menghasilkan hidangan berasaskan bijirin dan hasil bijirin."
+            },
+            {
+              "code": "4.2.8",
+              "text": "Menilai hasil bijirin mengikut kriteria penilaian."
+            },
+            {
+              "code": "4.2.9",
+              "text": "Mencadangkan nilai tambah untuk hidangan berasaskan bijirin dan hasil bijirin berpandukan penilaian."
+            },
+            {
+              "code": "4.2.10",
+              "text": "Mencipta resipi baharu untuk hidangan berasaskan bijirin dan hasil bijirin."
+            }
+          ]
+        },
+        {
+          "sk": "4.3",
+          "skTitle": "Hidangan Kuih Tempatan",
+          "sp": [
+            {
+              "code": "4.3.1",
+              "text": "Mengenal jenis kuih tempatan mengikut kategori manis dan savouri."
+            },
+            {
+              "code": "4.3.2",
+              "text": "Menjelaskan sumber bahan tempatan dalam penyediaan kuih tempatan."
+            },
+            {
+              "code": "4.3.3",
+              "text": "Menerangkan jenis bater dalam penyediaan kuih tempatan: i) Bater pekat ii) Bater cair"
+            },
+            {
+              "code": "4.3.4",
+              "text": "Merancang menu kuih tempatan."
+            },
+            {
+              "code": "4.3.5",
+              "text": "Menentukan resipi standard bagi hidangan kuih tempatan."
+            },
+            {
+              "code": "4.3.6",
+              "text": "Melaksana mise en place bagi penyediaan kuih tempatan."
+            },
+            {
+              "code": "4.3.7",
+              "text": "Menghasilkan hidangan kuih tempatan mengikut resipi standard."
+            },
+            {
+              "code": "4.3.8",
+              "text": "Menilai hasil kuih tempatan mengikut kriteria penilaian."
+            },
+            {
+              "code": "4.3.9",
+              "text": "Mencadangkan nilai tambah untuk hidangan kuih tempatan berpandukan penilaian."
+            },
+            {
+              "code": "4.3.10",
+              "text": "Mencipta resipi baharu untuk hidangan kuih tempatan."
+            }
+          ]
+        },
+        {
+          "sk": "4.4",
+          "skTitle": "Hidangan Pastri",
+          "sp": [
+            {
+              "code": "4.4.1",
+              "text": "Mengenal jenis pastri."
+            },
+            {
+              "code": "4.4.2",
+              "text": "Menjelaskan fungsi bahan asas dalam penyediaan pastri."
+            },
+            {
+              "code": "4.4.3",
+              "text": "Merancang menu hidangan pastri."
+            },
+            {
+              "code": "4.4.4",
+              "text": "Menentukan resipi standard bagi hidangan pastri."
+            },
+            {
+              "code": "4.4.5",
+              "text": "Melaksana mise en place bagi penyediaan pastri."
+            },
+            {
+              "code": "4.4.6",
+              "text": "Menghasilkan hidangan pastri mengikut resipi standard. i) Pastri rapuh ii) Pastri choux iii) Pastri lapis iv) Pastri danish"
+            },
+            {
+              "code": "4.4.7",
+              "text": "Menilai hasil pastri mengikut kriteria penilaian."
+            },
+            {
+              "code": "4.4.8",
+              "text": "Mencadangkan nilai tambah untuk hidangan pastri berpandukan penilaian."
+            },
+            {
+              "code": "4.4.9",
+              "text": "Mencipta resipi baharu untuk hidangan pastri."
+            }
+          ]
+        },
+        {
+          "sk": "4.5",
+          "skTitle": "Hidangan Roti",
+          "sp": [
+            {
+              "code": "4.5.1",
+              "text": "Menerangkan jenis roti."
+            },
+            {
+              "code": "4.5.2",
+              "text": "Menjelaskan fungsi bahan-bahan asas untuk membuat roti."
+            },
+            {
+              "code": "4.5.3",
+              "text": "Mengenal pasti jenis doh dan proses asas penyediaan doh roti."
+            },
+            {
+              "code": "4.5.4",
+              "text": "Merancang menu hidangan roti."
+            },
+            {
+              "code": "4.5.5",
+              "text": "Menentukan resipi standard bagi hidangan roti."
+            },
+            {
+              "code": "4.5.6",
+              "text": "Melaksana mise en place bagi penyediaan roti."
+            },
+            {
+              "code": "4.5.7",
+              "text": "Menghasilkan hidangan roti mengikut resipi standard. i) Sweet bun ii) Wholemeal bread iii) Flat bread iv) Specialty bread"
+            },
+            {
+              "code": "4.5.8",
+              "text": "Menilai hasil roti mengikut kriteria penilaian."
+            },
+            {
+              "code": "4.5.9",
+              "text": "Mencadangkan nilai tambah untuk hidangan roti berpandukan penilaian."
+            },
+            {
+              "code": "4.5.10",
+              "text": "Mencipta resipi baharu untuk hidangan roti."
+            }
+          ]
+        },
+        {
+          "sk": "4.6",
+          "skTitle": "Hidangan Biskut",
+          "sp": [
+            {
+              "code": "4.6.1",
+              "text": "Menyatakan definisi biskut."
+            },
+            {
+              "code": "4.6.2",
+              "text": "Menerangkan fungsi bahan-bahan asas membuat biskut."
+            },
+            {
+              "code": "4.6.3",
+              "text": "Mengenal pasti kaedah membuat biskut."
+            },
+            {
+              "code": "4.6.4",
+              "text": "Merancang menu biskut."
+            },
+            {
+              "code": "4.6.5",
+              "text": "Menentukan resipi standard bagi biskut."
+            },
+            {
+              "code": "4.6.6",
+              "text": "Melaksana mise en place bagi penyediaan biskut."
+            },
+            {
+              "code": "4.6.7",
+              "text": "Menghasilkan hidangan biskut mengikut resipi standard."
+            },
+            {
+              "code": "4.6.8",
+              "text": "Menilai hasil biskut mengikut kriteria penilaian."
+            },
+            {
+              "code": "4.6.9",
+              "text": "Mencadangkan nilai tambah untuk hidangan biskut berpandukan penilaian."
+            },
+            {
+              "code": "4.6.10",
+              "text": "Mencipta resipi baharu untuk hidangan biskut."
+            }
+          ]
+        },
+        {
+          "sk": "4.7",
+          "skTitle": "Kek dan Hiasan Kek",
+          "sp": [
+            {
+              "code": "4.7.1",
+              "text": "Menyatakan definisi kek."
+            },
+            {
+              "code": "4.7.2",
+              "text": "Menyenaraikan pelbagai kaedah penyediaan kek."
+            },
+            {
+              "code": "4.7.3",
+              "text": "Menerangkan fungsi bahan-bahan asas dalam penyediaan kek."
+            },
+            {
+              "code": "4.7.4",
+              "text": "Mengenal pasti pelbagai jenis hiasan kek. i) Butter cream ii) Whipped cream iii) Ganache iv) Fondant v) Royal icing vi) Frosting"
+            },
+            {
+              "code": "4.7.5",
+              "text": "Merancang menu kek dan hiasan kek."
+            },
+            {
+              "code": "4.7.6",
+              "text": "Menentukan resipi standard bagi kek dan hiasan kek."
+            },
+            {
+              "code": "4.7.7",
+              "text": "Melaksana mise en place bagi penyediaan kek dan hiasan kek."
+            },
+            {
+              "code": "4.7.8",
+              "text": "Menghasilkan hidangan kek dan hiasan kek mengikut resipi standard. i) Kek kaedah putar (whip) ii) Kek kaedah enjut (whisk) iii) Kek kaedah selangkah"
+            },
+            {
+              "code": "4.7.9",
+              "text": "Menilai hidangan kek dan hiasan kek mengikut kriteria penilaian."
+            },
+            {
+              "code": "4.7.10",
+              "text": "Mencadangkan nilai tambah untuk hidangan kek dan hiasan kek berpandukan penilaian."
+            },
+            {
+              "code": "4.7.11",
+              "text": "Mencipta resipi baharu untuk hidangan kek dan hiasan kek."
+            }
+          ]
+        },
+        {
+          "sk": "4.8",
+          "skTitle": "Hidangan Snek",
+          "sp": [
+            {
+              "code": "4.8.1",
+              "text": "Menyatakan maksud hidangan snek."
+            },
+            {
+              "code": "4.8.2",
+              "text": "Menerangkan pelbagai jenis hidangan snek. i) konfeksioneri ii) buah-buahan iii) kekacang iv) sandwich v) biskut vi) coklat"
+            },
+            {
+              "code": "4.8.3",
+              "text": "Merancang menu hidangan snek mengikut jenis."
+            },
+            {
+              "code": "4.8.4",
+              "text": "Menentukan resipi standard bagi hidangan snek."
+            },
+            {
+              "code": "4.8.5",
+              "text": "Melaksana mise en place bagi penyediaan hidangan snek."
+            },
+            {
+              "code": "4.8.6",
+              "text": "Menghasilkan hidangan snek mengikut resipi standard. i) konfeksioneri ii) sandwich"
+            },
+            {
+              "code": "4.8.7",
+              "text": "Menilai hasil hidangan snek mengikut kriteria penilaian."
+            },
+            {
+              "code": "4.8.8",
+              "text": "Mencadangkan nilai tambah untuk hidangan snek berpandukan hasil penilaian."
+            },
+            {
+              "code": "4.8.9",
+              "text": "Mencipta resipi baharu untuk hidangan snek."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menyatakan maksud hidangan asas."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan kategori dalam hidangan asas."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menghasilkan hidangan asas berpandukan resipi standard."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menilai hidangan asas berdasarkan kriteria penilaian."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Mencadangkan nilai tambah untuk hidangan asas yang dihasilkan berdasarkan penilaian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan dan mempersembahkan resipi baharu untuk hidangan asas yang kreatif dan boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "5.0",
+      "title": "MENU DALAM PERKHIDMATAN MAKANAN",
+      "bidang": "Modul",
+      "hoursMin": 20,
+      "moduleDescription": "Murid diperkenalkan kepada fungsi menu dalam perkhidmatan makanan dan mempelajari kaedah merancang menu serta penghasilan menu mengikut kategori pelanggan serta jenis sajian yang tertentu.",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Perancangan Menu",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Menyatakan definisi menu."
+            },
+            {
+              "code": "5.1.2",
+              "text": "Menjelaskan jenis menu."
+            },
+            {
+              "code": "5.1.3",
+              "text": "Menerangkan kepentingan perancangan menu."
+            },
+            {
+              "code": "5.1.4",
+              "text": "Mengenal pasti fungsi menu dalam perkhidmatan makanan."
+            },
+            {
+              "code": "5.1.5",
+              "text": "Menghuraikan faktor yang mempengaruhi dalam perancangan menu."
+            },
+            {
+              "code": "5.1.6",
+              "text": "Mencadangkan hidangan menu berdasarkan jenis sajian."
+            },
+            {
+              "code": "5.1.7",
+              "text": "Merumuskan perancangan hidangan menu berdasarkan nutrien dan pilihan hidangan."
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Penghasilan Kad Menu",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Melakar cadangan draf rekaan kad menu."
+            },
+            {
+              "code": "5.2.2",
+              "text": "Mengenalpasti menu yang digunakan bagi draf rekaan kad menu."
+            },
+            {
+              "code": "5.2.3",
+              "text": "Menyediakan draf kad menu mengikut jenis menu yang dipilh."
+            },
+            {
+              "code": "5.2.4",
+              "text": "Menilai draf kad menu yang dihasilkan berpandukan kriteria penilaian."
+            },
+            {
+              "code": "5.2.5",
+              "text": "Mencadangkan penambaikan dalam penghasilan draf kad menu berpandukan penilaian."
+            },
+            {
+              "code": "5.2.6",
+              "text": "Menghasilkan kad menu berpandukan cadangan penambahbaikkan draf kad menu."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengetahui definisi menu dan kepentingan perancangan menu."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan jenis menu yang digunakan bagi rekaan draf kad menu."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menyediakan draf kad menu mengikut jenis menu yang dipilih."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menghuraikan faktor yang mempengaruhi perancangan menu dan draf kad menu."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Mengusulkan penambaikan dalam penghasilan draf kad menu berpandukan penilaian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Mencipta kad menu berpandukan cadangan penambahbaikkan draf kad menu."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "6.0",
+      "title": "HIDANGAN SET MENU",
+      "bidang": "Modul",
+      "hoursMin": 92,
+      "moduleDescription": "Murid diperkenalkan kepada jenis hidangan set menu dalam penyediaan makanan. Murid dilatih untuk menyedia, memasak, menghias, menghidang hidangan pembuka selera, hidangan sup, hidangan utama dan hidangan desert mengikut menu yang dirancang serta resipi standard yang dipilih.",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Hidangan Pembuka Selera",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Menyatakan definisi hidangan pembuka selera."
+            },
+            {
+              "code": "6.1.2",
+              "text": "Menerangkan jenis hidangan pembuka selera mengikut kategori. i) Pembuka Selera Sejuk ii) Pembuka Selera Panas"
+            },
+            {
+              "code": "6.1.3",
+              "text": "Mengenal pasti struktur menghidang salad."
+            },
+            {
+              "code": "6.1.4",
+              "text": "Merancang menu hidangan pembuka selera."
+            },
+            {
+              "code": "6.1.5",
+              "text": "Menentukan resipi standard bagi hidangan pembuka selera."
+            },
+            {
+              "code": "6.1.6",
+              "text": "Melaksana mise en place bagi penyediaan hidangan pembuka selera."
+            },
+            {
+              "code": "6.1.7",
+              "text": "Menghasilkan hidangan pembuka selera berdasarkan resipi standard."
+            },
+            {
+              "code": "6.1.8",
+              "text": "Menilai hasil hidangan pembuka selera berdasarkan kriteria penilaian."
+            },
+            {
+              "code": "6.1.9",
+              "text": "Mencadangkan nilai tambah untuk hidangan pembuka selera berdasarkan penilaian."
+            },
+            {
+              "code": "6.1.10",
+              "text": "Mencipta resipi baharu untuk hidangan pembuka selera."
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Hidangan Sup",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Menyatakan definisi hidangan sup."
+            },
+            {
+              "code": "6.2.2",
+              "text": "Menerangkan klasifikasi hidangan sup. i) Sup Jernih ii) Sup Krim iii) Sup Antarabangsa"
+            },
+            {
+              "code": "6.2.3",
+              "text": "Mengenal pasti agen pemekat bagi hidangan sup."
+            },
+            {
+              "code": "6.2.4",
+              "text": "Merancang menu bagi hidangan sup."
+            },
+            {
+              "code": "6.2.5",
+              "text": "Menentukan resipi standard bagi hidangan sup."
+            },
+            {
+              "code": "6.2.6",
+              "text": "Melaksana mise en place bagi hidangan sup."
+            },
+            {
+              "code": "6.2.7",
+              "text": "Menghasilkan hidangan sup berdasarkan resipi standard. i) Sup Jernih ii) Sup Krim iii) Sup Antarabangsa"
+            },
+            {
+              "code": "6.2.8",
+              "text": "Menilai hasil hidangan sup berdasarkan kriteria penilaian."
+            },
+            {
+              "code": "6.2.9",
+              "text": "Mencadangkan nilai tambah untuk hidangan sup berdasarkan penilaian."
+            },
+            {
+              "code": "6.2.10",
+              "text": "Mencipta resipi baharu untuk hidangan sup."
+            }
+          ]
+        },
+        {
+          "sk": "6.3",
+          "skTitle": "Hidangan Utama",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Menyatakan definisi hidangan utama."
+            },
+            {
+              "code": "6.3.2",
+              "text": "Mengelaskan jenis hidangan utama. i) Berasaskan ayam ii) Berasaskan daging iii) Berasaskan ikan iv) Berasaskan kerangan laut v) Berasaskan pemakanan vegetarian"
+            },
+            {
+              "code": "6.3.3",
+              "text": "Merancang menu bagi hidangan utama."
+            },
+            {
+              "code": "6.3.4",
+              "text": "Menentukan resipi standard bagi hidangan utama."
+            },
+            {
+              "code": "6.3.5",
+              "text": "Melaksana mise en place bagi hidangan utama."
+            },
+            {
+              "code": "6.3.6",
+              "text": "Menghasilkan hidangan utama berdasarkan resipi standard. i) Berasaskan ayam ii) Berasaskan daging iii) Berasaskan ikan iv) Berasaskan kerangan laut v) Berasaskan pemakanan vegetarian"
+            },
+            {
+              "code": "6.3.7",
+              "text": "Menilai hasil hidangan utama berdasarkan kriteria penilaian."
+            },
+            {
+              "code": "6.3.8",
+              "text": "Mencadangkan nilai tambah untuk hidangan utama berdasarkan penilaian."
+            },
+            {
+              "code": "6.3.9",
+              "text": "Mencipta resipi baharu untuk hidangan utama."
+            }
+          ]
+        },
+        {
+          "sk": "6.4",
+          "skTitle": "Hidangan Desert",
+          "sp": [
+            {
+              "code": "6.4.1",
+              "text": "Menyatakan definisi desert."
+            },
+            {
+              "code": "6.4.2",
+              "text": "Mengelaskan jenis desert mengikut kategori. i) Desert panas ii) Desert sejuk iii) Desert sejuk beku"
+            },
+            {
+              "code": "6.4.3",
+              "text": "Merancang menu desert."
+            },
+            {
+              "code": "6.4.4",
+              "text": "Menentukan resipi standard bagi penyediaan desert."
+            },
+            {
+              "code": "6.4.5",
+              "text": "Melaksanakan mise en place bagi penyediaan hidangan desert."
+            },
+            {
+              "code": "6.4.6",
+              "text": "Menghasilkan hidangan desert berdasarkan resepi standard. i) Desert panas ii) Desert sejuk iii) Desert sejuk beku"
+            },
+            {
+              "code": "6.4.7",
+              "text": "Menilai hasil desert berdasarkan kriteria penilaian."
+            },
+            {
+              "code": "6.4.8",
+              "text": "Mencadangkan nilai tambah untuk hidangan desert berdasarkan penilaian."
+            },
+            {
+              "code": "6.4.9",
+              "text": "Mencipta resipi baharu untuk hidangan desert."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengetahui definisi hidangan set menu."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Menjelaskan jenis hidangan dalam set menu."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menghasilkan hidangan set menu berdasarkan resepi standard."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menilai hasil hidangan set menu berdasarkan kriteria penilaian."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Mencadangkan nilai tambah untuk hidangan set menu berdasarkan penilaian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan resipi baharu untuk hidangan set menu yang kreatif dan boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "7.0",
+      "title": "HIDANGAN LENGKAP DAN SEIMBANG",
+      "bidang": "Modul",
+      "hoursMin": 112,
+      "moduleDescription": "Murid diperkenalkan kepada jenis dan kategori hidangan lengkap dan seimbang mengikut sajian timur dan sajian barat. Murid dilatih untuk menyedia, memasak, menghias, menghidang pelbagai jenis hidangan harian serta hidangan keraian.",
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Hidangan Harian Sajian Timur dan Sajian Barat",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Menyatakan maksud hidangan harian"
+            },
+            {
+              "code": "7.1.2",
+              "text": "Mengenal pasti jenis hidangan harian."
+            },
+            {
+              "code": "7.1.3",
+              "text": "Merancang menu hidangan harian mengikut jenis hidangan harian sajian timur dan sajian barat."
+            },
+            {
+              "code": "7.1.4",
+              "text": "Membuat pengiraan kos bahan berpandukan menu hidangan harian sajian timur dan sajian barat."
+            },
+            {
+              "code": "7.1.5",
+              "text": "Melaksana mise en place mengikut menu hidangan harian: i) Sarapan ii) Minum pagi / minum petang / makan lewat malam iii) Makan tengahari / makan malam"
+            },
+            {
+              "code": "7.1.6",
+              "text": "Menghasilkan hidangan harian sajian timur dan sajian barat berpandukan perancangan menu."
+            },
+            {
+              "code": "7.1.7",
+              "text": "Menilai hasil hidangan harian sajian timur dan sajian barat mengikut kriteria penilaian."
+            },
+            {
+              "code": "7.1.8",
+              "text": "Mencadangkan penambahbaikan untuk hidangan harian sajian timur dan sajian barat berpandukan penilaian."
+            },
+            {
+              "code": "7.1.9",
+              "text": "Mencipta resipi baharu bagi hidangan harian sajian timur dan sajian barat."
+            }
+          ]
+        },
+        {
+          "sk": "7.2",
+          "skTitle": "Hidangan Keraian Sajian Timur",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Menyatakan maksud hidangan keraian."
+            },
+            {
+              "code": "7.2.2",
+              "text": "Mengenal pasti jenis hidangan keraian sajian timur."
+            },
+            {
+              "code": "7.2.3",
+              "text": "Merancang menu hidangan keraian sajian timur mengikut tema keraian."
+            },
+            {
+              "code": "7.2.4",
+              "text": "Membuat pengiraan kos bahan berpandukan menu hidangan keraian."
+            },
+            {
+              "code": "7.2.5",
+              "text": "Melaksana mise en place mengikut menu hidangan keraian: i) Perayaan ii) Hari kelahiran iii) Perkahwinan"
+            },
+            {
+              "code": "7.2.6",
+              "text": "Menghasilkan hidangan keraian berpandukan perancangan menu."
+            },
+            {
+              "code": "7.2.7",
+              "text": "Menilai hasil hidangan keraian mengikut kriteria penilaian."
+            },
+            {
+              "code": "7.2.8",
+              "text": "Mencadangkan penambahbaikan untuk hidangan keraian berpandukan penilaian."
+            },
+            {
+              "code": "7.2.9",
+              "text": "Mencipta resipi baharu bagi hidangan keraian sajian timur."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Mengetahui maksud hidangan lengkap dan seimbang"
+        },
+        {
+          "tp": 2,
+          "descriptor": "Merancang menu hidangan lengkap dan seimbang bagi sajian timur dan sajian barat."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menghasilkan hidangan lengkap dan seimbang bagi sajian timur dan sajian barat berpandukan resipi standard."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menilai hidangan lengkap dan seimbang bagi sajian timur dan sajian barat berdasarkan kriteria penilaian."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Mencadangkan penambahbaikan untuk hidangan lengkap dan simbang bagi sajian timur dan sajian barat berpandukan penilaian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan resipi baharu bagi hidangan harian dan hidangan keraian yang kreatif dan boleh dicontohi."
+        }
+      ]
+    },
+    {
+      "level": "T5",
+      "code": "8.0",
+      "title": "KEUSAHAWANAN DALAM KATERING DAN PENYAJIAN",
+      "bidang": "Modul",
+      "hoursMin": 32,
+      "moduleDescription": "Murid dipupuk ciri-ciri keusahawanan dan mempelajari bidang perniagaan berkaitan pemilikan perniagaan, kaedah pemasaran, pengiraan kos dan merancang rancangan perniagaan serta melaksana aktiviti keusahawanan.",
+      "standards": [
+        {
+          "sk": "8.1",
+          "skTitle": "Ciri Usahawan",
+          "sp": [
+            {
+              "code": "8.1.1",
+              "text": "Menyatakan maksud usahawan."
+            },
+            {
+              "code": "8.1.2",
+              "text": "Menerangkan peranan dan sumbangan usahawan kepada individu, masyarakat dan negara."
+            },
+            {
+              "code": "8.1.3",
+              "text": "Menjelaskan ciri-ciri usahawan yang berjaya."
+            },
+            {
+              "code": "8.1.4",
+              "text": "Mengelaskan Aktiviti keusahawanan berdasarkan bidang kegiatan usahawan: i) Pengeluaran ii) Perkhidmatan iii) Pemasaran iv) Pengagihan"
+            },
+            {
+              "code": "8.1.5",
+              "text": "Mengenal pasti agensi yang membantu usahawan."
+            },
+            {
+              "code": "8.1.6",
+              "text": "Membuat kesimpulan berkaitan kelebihan menjadi seorang usahawan."
+            },
+            {
+              "code": "8.1.7",
+              "text": "Menyediakan dokumentasi berkaitan faktor yang menggalakkan pertumbuhan keusahawanan dalam bidang perkhidmatan makanan."
+            }
+          ]
+        },
+        {
+          "sk": "8.2",
+          "skTitle": "Pemasaran dalam Perniagaan.",
+          "sp": [
+            {
+              "code": "8.2.1",
+              "text": "Menyatakan maksud pemasaran."
+            },
+            {
+              "code": "8.2.2",
+              "text": "Menjelaskan matlamat dan fungsi pemasaran."
+            },
+            {
+              "code": "8.2.3",
+              "text": "Mengenal pasti aktiviti pemasaran dalam bidang perkhidmatan makanan."
+            },
+            {
+              "code": "8.2.4",
+              "text": "Menghuraikan strategi pemasaran dalam bidang perkhidmatan makanan."
+            },
+            {
+              "code": "8.2.5",
+              "text": "Mencadangkan strategi pemasaran yang sesuai dilaksanakan dalam projek keusahawanan."
+            },
+            {
+              "code": "8.2.6",
+              "text": "Menghasilkan paparan grafik bagi tujuan pemasaran projek keusahawanan."
+            }
+          ]
+        },
+        {
+          "sk": "8.3",
+          "skTitle": "Pengiraan Kos dalam Perniagaan",
+          "sp": [
+            {
+              "code": "8.3.1",
+              "text": "Mengetahui kepentingan pengiraan kos makanan dalam perniagaan."
+            },
+            {
+              "code": "8.3.2",
+              "text": "Menjelaskan kos yang terlibat dalam pengiraan kos. i) kos bahan ii) kos upah iii) kos sampingan iv) kos pengeluaran"
+            },
+            {
+              "code": "8.3.3",
+              "text": "Membuat anggaran pengiraan kos pengeluaran dan harga jualan berdasarkan resepi standard."
+            },
+            {
+              "code": "8.3.4",
+              "text": "Menilai ketepatan pengiraan kos pengeluaran dan harga jualan berdasarkan resepi standard."
+            },
+            {
+              "code": "8.3.5",
+              "text": "Mengesahkan pengiraan kos pengeluaran berdasarkan resipi standard."
+            },
+            {
+              "code": "8.3.6",
+              "text": "Merancang pengiraan kos makanan dan harga jualan bagi satu projek keusahawanan."
+            }
+          ]
+        },
+        {
+          "sk": "8.4",
+          "skTitle": "Rancangan Perniagaan",
+          "sp": [
+            {
+              "code": "8.4.1",
+              "text": "Menyatakan maksud rancangan perniagaan."
+            },
+            {
+              "code": "8.4.2",
+              "text": "Mengenalpasti tujuan menyediakan rancangan perniagaan."
+            },
+            {
+              "code": "8.4.3",
+              "text": "Menyediakan rancangan perniagaan berpandukan projek keusahawanan."
+            },
+            {
+              "code": "8.4.4",
+              "text": "Menghuraikan ciri-ciri rancangan perniagaan yang lengkap dan sistematik."
+            },
+            {
+              "code": "8.4.5",
+              "text": "Menilai rancangan perniagaan yang disediakan berpandukan senarai semak."
+            },
+            {
+              "code": "8.4.6",
+              "text": "Mencadangkan penambahbaikan kepada rancangan perniagaan yang disediakan."
+            }
+          ]
+        },
+        {
+          "sk": "8.5",
+          "skTitle": "Projek Keusahawanan",
+          "sp": [
+            {
+              "code": "8.5.1",
+              "text": "Menerangkan projek keusahawanan yang dirancang."
+            },
+            {
+              "code": "8.5.2",
+              "text": "Mengenal pasti keperluan dalam rancangan perniagaan bagi pelaksanaan projek keusahawanan."
+            },
+            {
+              "code": "8.5.3",
+              "text": "Melaksanakan projek keusahawanan berpandukan rancangan perniagaan."
+            },
+            {
+              "code": "8.5.4",
+              "text": "Menganalisis pencapaian projek keusahawanan berbanding rancangan perniagaan."
+            },
+            {
+              "code": "8.5.5",
+              "text": "Membuat kesimpulan pencapaian projek keusahawanan."
+            },
+            {
+              "code": "8.5.6",
+              "text": "Menghasilkan laporan pelaksanaan projek keusahawanan."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Menerangkan maksud keusahawanan, pemasaran dan rancangan perniagaan."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Mengenal pasti keperluan dalam rancangan perniagaan bagi pelaksanaan projek keusahawanan."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Menghasilkan paparan grafik pemasaran dan membuat pengiraan kos dalam pelaksanaan projek keusahawanan."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Menganalisis pencapaian projek keusahawanan berbanding rancangan perniagaan."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Membuat kesimpulan pencapaian projek keusahawanan berpandukan penilaian."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Menghasilkan laporan pelaksanaan projek keusahawanan yang sistematik"
+        }
+      ]
+    }
+  ]
+}

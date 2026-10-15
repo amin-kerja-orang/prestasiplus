@@ -1,0 +1,1686 @@
+{
+  "subject": "Fizik",
+  "subjectCode": null,
+  "levels": [
+    "T4",
+    "T5"
+  ],
+  "language": "en",
+  "source": "DSKP KSSM Physics Form 4 and 5.pdf",
+  "edition": "KSSM Fizik Tingkatan 4 dan 5 (Edisi Bahasa Inggeris), Bahagian Pembangunan Kurikulum, Mei 2019 (Terbitan 2019)",
+  "structureNote": "Hierarchy: Theme -> Learning Area (unit, numbered N.0) -> Content Standard (SK) -> Learning Standard (SP). Performance Standard (levels 1-6, Recall..Invent) is given per Learning Area (unit). Unit titles from table headings; SK titles come from the learning-area overview lists. Formulae/symbols dropped (a few greek letters restored by hand).",
+  "generalPerformanceLevels": {
+    "source": "Table 13: Descriptors of the overall performance level of KSSM Physics (overall level, set at end of each year; includes knowledge, skills, values)",
+    "levels": [
+      {
+        "tp": 1,
+        "descriptor": "(Know) Pupils know basic knowledge, skills or values in Physics."
+      },
+      {
+        "tp": 2,
+        "descriptor": "(Know and understand) Pupils know and understand basic knowledge, skills and values in Physics."
+      },
+      {
+        "tp": 3,
+        "descriptor": "(Know, understand and do) Pupils know, understand and apply basic knowledge, skills and values in Physics."
+      },
+      {
+        "tp": 4,
+        "descriptor": "(Know, understand and carry out in a civilised manner) Pupils know, understand and apply knowledge, skills and values in a competent mannerly procedure in Physics."
+      },
+      {
+        "tp": 5,
+        "descriptor": "(Know, understand and do with commendable praise) Pupils know, understand and apply knowledge, skills and values in new situations with excellent commendable procedure in Physics."
+      },
+      {
+        "tp": 6,
+        "descriptor": "(Know, understand and carry out in an exemplary manner) Pupils know, understand and apply knowledge, skills and values in new situations with exceptional exemplary procedure in Physics."
+      }
+    ]
+  },
+  "manualCorrections": [
+    "T4 SP 3.1.5 text corrected",
+    "T4 SP 5.6.2",
+    "T4 SP 5.6.3",
+    "T4 SP 5.6.4",
+    "T4 SP 5.7.3",
+    "T4 SP 5.3.3 text corrected",
+    "T4 SP 5.3.4 added (merged into a neighbouring SP by the PDF layout)",
+    "T4 SP 5.4.3 text corrected",
+    "T4 SP 5.4.4 added (merged into a neighbouring SP by the PDF layout)",
+    "T4 SP 5.6.5 added (merged into a neighbouring SP by the PDF layout)",
+    "T4 SP 5.5.4 text corrected",
+    "T4 SP 5.6.1 text corrected",
+    "T4 SP 6.5.2",
+    "T5 SP 1.3.2",
+    "T5 SP 3.2.1 text corrected",
+    "T5 SP 3.2.2 text corrected",
+    "T5 SP 4.1.4",
+    "T5 SP 4.1.5",
+    "T5 SP 4.3.1",
+    "T5 SP 4.3.2 inserted",
+    "T5 SP 4.2.2 text corrected",
+    "T5 SP 4.2.3 text corrected",
+    "T5 SP 4.1.6 added (merged into a neighbouring SP by the PDF layout)"
+  ],
+  "units": [
+    {
+      "level": "T4",
+      "code": "1.0",
+      "title": "Measurement",
+      "titlePrinted": "MEASUREMENT",
+      "theme": "ELEMENTARY PHYSICS",
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "Physical Quantities",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Explain physical quantities."
+            },
+            {
+              "code": "1.1.2",
+              "text": "Explain with examples base quantities and derived quantities."
+            },
+            {
+              "code": "1.1.3",
+              "text": "Describe derived quantities in terms of base quantities and their corresponding S.I. units."
+            },
+            {
+              "code": "1.1.4",
+              "text": "Explain with examples, scalar quantities and vector quantities."
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Scientific Investigation",
+          "sp": [
+            {
+              "code": "1.2.1",
+              "text": "Interpret graph to determine the relationship between two physical quantities."
+            },
+            {
+              "code": "1.2.2",
+              "text": "Analyse graph to summarise an investigation."
+            },
+            {
+              "code": "1.2.3",
+              "text": "Carry out a scientific investigation and write a complete report for the Simple Pendulum Experiment."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall knowledge and scientific skills on Measurement."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand Measurement, and able to comprehend the concept."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge of Measurement to explain the occurrences or phenomena of nature and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information about Measurement in daily life problem solving about natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement about Measurement in daily life problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Invent by applying the knowledge and skills about Measurement in daily life problem solving or decision making to carry out activities/ assignments in a new situation creatively and innovatively; giving due consideration to the social/ economic/ cultural aspects."
+        }
+      ],
+      "tpScope": "MEASUREMENT"
+    },
+    {
+      "level": "T4",
+      "code": "2.0",
+      "title": "Force and Motion I",
+      "titlePrinted": "FORCE AND MOTION I",
+      "theme": "NEWTONIAN MECHANICS",
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Linear Motion",
+          "sp": [
+            {
+              "code": "2.1.1",
+              "text": "Describe the type of linear motion of an object in the following states: (i) stationary (ii) uniform velocity (iii) non-uniform velocity"
+            },
+            {
+              "code": "2.1.2",
+              "text": "Determine: (i) distance and displacement (ii) speed and velocity (iii) acceleration/ deceleration"
+            },
+            {
+              "code": "2.1.3",
+              "text": "Solve problems involving linear motion using the following equations: (i) v u (ii) s (iii) s (iv) v2 u2"
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "Linear Motion Graphs",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Interpret types of motion from the following: (i) displacement-time graph (ii) velocity-time graph (iii) acceleration-time graph"
+            },
+            {
+              "code": "2.2.2",
+              "text": "Analyse displacement-time graph to determine distance, displacement and velocity."
+            },
+            {
+              "code": "2.2.3",
+              "text": "Analyse velocity-time graph to determine distance, displacement, velocity and acceleration."
+            },
+            {
+              "code": "2.2.4",
+              "text": "Convert and sketch: (i) displacement-time graph to velocity-time graph and vice-versa (ii) velocity-time graph to acceleration-time graph and vice-versa."
+            },
+            {
+              "code": "2.2.5",
+              "text": "Solve problems involving linear motion graphs."
+            }
+          ]
+        },
+        {
+          "sk": "2.3",
+          "skTitle": "Free Fall Motion",
+          "sp": [
+            {
+              "code": "2.3.1",
+              "text": "Explain with examples free fall motion and gravitational acceleration."
+            },
+            {
+              "code": "2.3.2",
+              "text": "Experiment to determine the value of gravitational acceleration."
+            },
+            {
+              "code": "2.3.3",
+              "text": "Solve problems involving the Earth's gravitational acceleration for objects in free fall."
+            }
+          ]
+        },
+        {
+          "sk": "2.4",
+          "skTitle": "Inertia",
+          "sp": [
+            {
+              "code": "2.4.1",
+              "text": "Explain with examples the concept of inertia."
+            },
+            {
+              "code": "2.4.2",
+              "text": "Experiment to find the relationship between inertia and mass."
+            },
+            {
+              "code": "2.4.3",
+              "text": "Justify the effects of inertia in daily life."
+            }
+          ]
+        },
+        {
+          "sk": "2.5",
+          "skTitle": "Momentum",
+          "sp": [
+            {
+              "code": "2.5.1",
+              "text": "Explain momentum, p as the product of mass, m and velocity, v."
+            },
+            {
+              "code": "2.5.2",
+              "text": "Apply the Principle of Conservation of Momentum in collision and explosion."
+            }
+          ]
+        },
+        {
+          "sk": "2.6",
+          "skTitle": "Force",
+          "sp": [
+            {
+              "code": "2.6.1",
+              "text": "Define force as the rate of change of momentum."
+            },
+            {
+              "code": "2.6.2",
+              "text": "Solve problems involving F= ma"
+            }
+          ]
+        },
+        {
+          "sk": "2.7",
+          "skTitle": "Impulse and Impulsive Force",
+          "sp": [
+            {
+              "code": "2.7.1",
+              "text": "Communicate to explain impulse and impulsive force."
+            },
+            {
+              "code": "2.7.2",
+              "text": "Solve problems involving impulse and impulsive force."
+            }
+          ]
+        },
+        {
+          "sk": "2.8",
+          "skTitle": "Weight",
+          "sp": [
+            {
+              "code": "2.8.1",
+              "text": "Describe weight as the gravitional force that acts on an object, W = mg"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall knowledge and scientific skills on Force and Motion."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand Force and Motion, and able to comprehend the concept."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge of Force and Motion to explain the occurrences or phenomena of nature and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information about Force and Motion in daily life problem solving about natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement about Force and Motion in daily life problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Invent by applying the knowledge and skills about Force and Motion in daily life problem solving or decision making to carry out activities/ assignments in a new situation creatively and innovatively; giving due consideration to the social/ economic/ cultural aspects."
+        }
+      ],
+      "tpScope": "FORCE AND MOTION I"
+    },
+    {
+      "level": "T4",
+      "code": "3.0",
+      "title": "Gravitation",
+      "titlePrinted": "GRAVITATION",
+      "theme": "NEWTONIAN MECHANICS",
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Law of Universal Gravitation",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Explain Newton's Universal Law of Gravitation: Gm1m2 r2"
+            },
+            {
+              "code": "3.1.2",
+              "text": "Solve problems involving Newton's Universal Law of Gravitation for: (i) two static objects on the Earth (ii) objects on the Earth's surface (iii) Earth and satelites (iv) Earth and Sun"
+            },
+            {
+              "code": "3.1.3",
+              "text": "Relate gravitational acceleration, g on the surface of the Earth with the universal gravitational constant, G"
+            },
+            {
+              "code": "3.1.4",
+              "text": "Justify the importance of knowing the values of gravitational acceleration of the planets in the Solar System."
+            },
+            {
+              "code": "3.1.5",
+              "text": "Describe the centripetal force in the motion of satellites and planets system."
+            },
+            {
+              "code": "3.1.6",
+              "text": "Determine the mass of the Earth and the Sun using Newton's universal law of gravitation and centripetal force."
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Kepler's Law",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Explain Kepler's Laws."
+            },
+            {
+              "code": "3.2.2",
+              "text": "Express Kepler's Third Law"
+            },
+            {
+              "code": "3.2.3",
+              "text": "Solve problems using Kepler's Third Law"
+            }
+          ]
+        },
+        {
+          "sk": "3.3",
+          "skTitle": "Man Made Satellite",
+          "sp": [
+            {
+              "code": "3.3.1",
+              "text": "Describe how an orbit of a satellite is maintained at a specific height by setting the necessary satellite's velocity."
+            },
+            {
+              "code": "3.3.2",
+              "text": "Communicate on geostationary and non- geostationary satellites."
+            },
+            {
+              "code": "3.3.3",
+              "text": "Conceptualize escape velocity"
+            },
+            {
+              "code": "3.3.4",
+              "text": "Solve problems involving the escape velocity,v for a rocket from the Earth's surface, the Moon's surface, Mars' surface and the Sun's surface."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall knowledge and scientific skills on Gravitation."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand Gravitation, and able to comprehend the concept."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge of Gravitation to explain the occurrences or phenomena of nature and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information about Gravitation in daily life problem solving about natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement about Gravitation in daily life problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Invent by applying the knowledge and skills about Gravitation in daily life problem solving or decision making to carry out activities/ assignments in a new situation creatively and innovatively; giving due consideration to the social/ economic/ cultural aspects."
+        }
+      ],
+      "tpScope": "GRAVITATION"
+    },
+    {
+      "level": "T4",
+      "code": "4.0",
+      "title": "Heat",
+      "titlePrinted": "HEAT",
+      "theme": "HEAT",
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Thermal Equilibrium",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Explain with examples thermal equilibrium in daily life."
+            },
+            {
+              "code": "4.1.2",
+              "text": "Calibrate a liquid-in-glass thermometer using two fixed points."
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Specific Heat Capacity",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Explain heat capacity, C."
+            },
+            {
+              "code": "4.2.2",
+              "text": "Define specific heat capacity of a material, c"
+            },
+            {
+              "code": "4.2.3",
+              "text": "Experiment to determine: (i) the specific heat capacity of water (ii) the specific heat capacity of aluminum"
+            },
+            {
+              "code": "4.2.4",
+              "text": "Communicate to explain the applications of specific heat capacity in daily life, material engineering and natural phenomena."
+            },
+            {
+              "code": "4.2.5",
+              "text": "Solve problems involving specific heat capacity using formula:"
+            }
+          ]
+        },
+        {
+          "sk": "4.3",
+          "skTitle": "Specific Latent Heat",
+          "sp": [
+            {
+              "code": "4.3.1",
+              "text": "Explain latent heat."
+            },
+            {
+              "code": "4.3.2",
+              "text": "Define: (i) specific latent heat, (ii) specific latent heat of fusion, f (iii) specific latent heat of evaporization, v"
+            },
+            {
+              "code": "4.3.3",
+              "text": "Experiment to determine: (i) specific latent heat, f of fusion of ice. (ii) specific latent heat of evaporation, v of water"
+            },
+            {
+              "code": "4.3.4",
+              "text": "Communicate to explain the applications of specific latent heat in daily life."
+            },
+            {
+              "code": "4.3.5",
+              "text": "Solve problems involving latent heat."
+            }
+          ]
+        },
+        {
+          "sk": "4.4",
+          "skTitle": "Gas Laws",
+          "sp": [
+            {
+              "code": "4.4.1",
+              "text": "Explain pressure, temperature and volume of gas in terms of the behaviour of gas molecules based on the Kinetic Theory of Gas."
+            },
+            {
+              "code": "4.4.2",
+              "text": "Experiment to determine the relationship between the pressure and volume of a fixed mass of gas at constant temperature."
+            },
+            {
+              "code": "4.4.3",
+              "text": "Experiment to determine the relationship between the volume and temperature of a fixed mass of gas at constant pressure."
+            },
+            {
+              "code": "4.4.4",
+              "text": "Experiment to determine the relationship between the pressure and temperature of a fixed mass of gas at constant volume."
+            },
+            {
+              "code": "4.4.5",
+              "text": "Solve problems involving pressure, temperature and volume for a fixed mass of gas using Gas law formulas."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall knowledge and scientific skills on Heat."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand Heat, and able to comprehend the concept."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge of Heat to explain the occurrences or phenomena of nature and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information about Heat in daily life problem solving about natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement about Heat in daily life problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Invent by applying the knowledge and skills about Heat in daily life problem solving or decision making to carry out activities/ assignments in a new situation creatively and innovatively; giving due consideration to the social/ economic/ cultural aspects."
+        }
+      ],
+      "tpScope": "HEAT"
+    },
+    {
+      "level": "T4",
+      "code": "5.0",
+      "title": "Waves",
+      "titlePrinted": "WAVES",
+      "theme": "WAVES, LIGHT AND OPTICS",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Fundamentals of Waves",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Describe waves."
+            },
+            {
+              "code": "5.1.2",
+              "text": "State the types of waves."
+            },
+            {
+              "code": "5.1.3",
+              "text": "Compare transverse waves and longitudinal waves."
+            },
+            {
+              "code": "5.1.4",
+              "text": "Explain the characteristics of waves: (i) Amplitude (a) (ii) Period (T) (iii) Frequency (f) (iv) wavelength (λ) (v) wave speed (v)"
+            },
+            {
+              "code": "5.1.5",
+              "text": "Sketch and interpret wave graphs: (i) displacement - time (ii) displacement - distance"
+            },
+            {
+              "code": "5.1.6",
+              "text": "Determine wavelength, , frequency, f and wave speed, v."
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Damping and Resonance",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Describe damping and resonance for an oscillating/ vibrating system"
+            },
+            {
+              "code": "5.2.2",
+              "text": "Justify the effects of resonance in our daily lives."
+            }
+          ]
+        },
+        {
+          "sk": "5.3",
+          "skTitle": "Reflection of Waves",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Describe reflection of waves from the following aspects: (i) angle of incidence (i) (ii) angle of reflection (r) (iii) wavelength (λ), (iv) frequency (f), (v) speed (v) (vi) direction of propagation of waves."
+            },
+            {
+              "code": "5.3.2",
+              "text": "Draw a diagram to show the reflection of plane water waves by through a plane reflector."
+            },
+            {
+              "code": "5.3.3",
+              "text": "Justify the application of reflection of waves in daily life."
+            },
+            {
+              "code": "5.3.4",
+              "text": "Solve problems involving reflection of waves."
+            }
+          ]
+        },
+        {
+          "sk": "5.4",
+          "skTitle": "Refraction of Waves",
+          "sp": [
+            {
+              "code": "5.4.1",
+              "text": "Describe refraction of waves from the following aspects: (i) angle of incidence (i) (ii) angle of refraction (r) (iii) wavelength (λ) (iv) frequency (f) (v) speed (v) (vi) direction of propagation of waves."
+            },
+            {
+              "code": "5.4.2",
+              "text": "Draw diagrams to show the refraction of waves for two different depths."
+            },
+            {
+              "code": "5.4.3",
+              "text": "Explain natural phenomena of refraction of waves in daily life."
+            },
+            {
+              "code": "5.4.4",
+              "text": "Solve problems involving refraction of waves."
+            }
+          ]
+        },
+        {
+          "sk": "5.5",
+          "skTitle": "Diffraction of Waves",
+          "sp": [
+            {
+              "code": "5.5.1",
+              "text": "Describe diffraction of waves from the following aspects: (i) wavelength (λ) (ii) frequency (f) (iii) speed (v) (iv) direction of propagation of waves"
+            },
+            {
+              "code": "5.5.2",
+              "text": "Determine factors affecting diffraction of waves."
+            },
+            {
+              "code": "5.5.3",
+              "text": "Draw diagrams to show the pattern of diffraction of water waves and the effect of diffraction of light waves."
+            },
+            {
+              "code": "5.5.4",
+              "text": "Explain the applications of diffraction of waves in daily life."
+            }
+          ]
+        },
+        {
+          "sk": "5.6",
+          "skTitle": "Wave Interference",
+          "sp": [
+            {
+              "code": "5.6.1",
+              "text": "Explain the principle of superposition of waves."
+            },
+            {
+              "code": "5.6.2",
+              "text": "Describe the pattern of interference for: (i) water waves (ii) sound waves (iii) light waves"
+            },
+            {
+              "code": "5.6.3",
+              "text": "Relate λ, a, x and D for the wave interference pattern."
+            },
+            {
+              "code": "5.6.4",
+              "text": "Solve problems involving interference of waves."
+            },
+            {
+              "code": "5.6.5",
+              "text": "Communicate on the applications of interference of waves in daily life."
+            }
+          ]
+        },
+        {
+          "sk": "5.7",
+          "skTitle": "Electromagnetic Waves",
+          "sp": [
+            {
+              "code": "5.7.1",
+              "text": "Characterise electromagnetic waves"
+            },
+            {
+              "code": "5.7.2",
+              "text": "State the components of the electromagnetic spectrum according to wavelengths and frequencies."
+            },
+            {
+              "code": "5.7.3",
+              "text": "Communicate to explain about the applications of each component in the electromagnetic spectrum in daily life."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall knowledge and scientific skills on Waves."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand Waves, and able to comprehend the concept."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge of Waves to explain the occurrences or phenomena of nature and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information about Waves in daily life problem solving about natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement about Waves in daily life problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Invent by applying the knowledge and skills about Waves in daily life problem solving or decision making to carry out activities/ assignments in a new situation creatively and innovatively; giving due consideration to the social/ economic/ cultural aspects."
+        }
+      ],
+      "tpScope": "WAVES"
+    },
+    {
+      "level": "T4",
+      "code": "6.0",
+      "title": "Light and Optics",
+      "titlePrinted": "LIGHT AND OPTICS",
+      "theme": "WAVES, LIGHT AND OPTICS",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Fundamentals of Light",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Describe refraction of light"
+            },
+            {
+              "code": "6.1.2",
+              "text": "Explain refractive index, n."
+            },
+            {
+              "code": "6.1.3",
+              "text": "Conceptualize Snell's Law"
+            },
+            {
+              "code": "6.1.4",
+              "text": "Experiment to determine the refractive index, n for glass block or perspex."
+            },
+            {
+              "code": "6.1.5",
+              "text": "Explain real depth and apparent depth."
+            },
+            {
+              "code": "6.1.6",
+              "text": "Experiment to determine refractive index of a medium using real depth and apparent depth."
+            },
+            {
+              "code": "6.1.7",
+              "text": "Solve problems related to refraction of light."
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Refraction of Light",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Describe critical angle and total internal reflection."
+            },
+            {
+              "code": "6.2.2",
+              "text": "Relate critical angle with refrative index, n,"
+            },
+            {
+              "code": "6.2.3",
+              "text": "Communicate to explain natural phenomena and applications of total internal reflection in daily life."
+            },
+            {
+              "code": "6.2.4",
+              "text": "Solve problems involving total internal reflection."
+            }
+          ]
+        },
+        {
+          "sk": "6.3",
+          "skTitle": "Total Internal Reflection",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Identify convex lenses as converging lenses and concave lenses as diverging lenses"
+            },
+            {
+              "code": "6.3.2",
+              "text": "Estimate focal length for a convex lens using distant object."
+            },
+            {
+              "code": "6.3.3",
+              "text": "Determine the position and features of images formed by : (i) convex lens (ii) concave lens"
+            },
+            {
+              "code": "6.3.4",
+              "text": "Explain linear magnification, m as:"
+            }
+          ]
+        },
+        {
+          "sk": "6.4",
+          "skTitle": "Image Formation by Lens",
+          "sp": [
+            {
+              "code": "6.4.1",
+              "text": "Experiment to: (i) Investigate the relationship between object distance, u and image distance, v for a convex lens. (ii) Determine the focal length of a thin lens using lens formula:"
+            },
+            {
+              "code": "6.4.2",
+              "text": "Solve problems using lens formula for convex and concave lens."
+            }
+          ]
+        },
+        {
+          "sk": "6.5",
+          "skTitle": "Thin Lens Formula",
+          "sp": [
+            {
+              "code": "6.5.1",
+              "text": "Justify the usage of lenses in optical instruments such as magnifying lens, telescope and microscope."
+            },
+            {
+              "code": "6.5.2",
+              "text": "Design and build a compound microscope and astronomical telescope."
+            },
+            {
+              "code": "6.5.3",
+              "text": "Communicate application of small lenses in optical instrument technology."
+            }
+          ]
+        },
+        {
+          "sk": "6.6",
+          "skTitle": "Optical instruments",
+          "sp": [
+            {
+              "code": "6.6.1",
+              "text": "Determine position and features of image formed by: (i) concave mirror (ii) convex mirror"
+            },
+            {
+              "code": "6.6.2",
+              "text": "Explain the applications of concave and convex mirrors in life."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall knowledge and scientific skills on Light and Optics."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand Light and Optics, and able to comprehend the concept."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply knowledge of Light and Optics to explain the occurrences or phenomena of nature and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information about Light and Optics in daily life problem solving about natural phenomena."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement about Light and Optics in daily life problem solving and decision making to carry out a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Invent by applying the knowledge and skills about Light and Optics in daily life problem solving or decision making to carry out activities/ assignments in a new situation creatively and innovatively; giving due consideration to the social/ economic/ cultural aspects."
+        }
+      ],
+      "tpScope": "LIGHT AND OPTICS"
+    },
+    {
+      "level": "T5",
+      "code": "1.0",
+      "title": "Force and Motion Ii",
+      "titlePrinted": "FORCE AND MOTION II",
+      "theme": "NEWTONIAN MECHANICS",
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "Resultant Force",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Describe resultant force"
+            },
+            {
+              "code": "1.1.2",
+              "text": "Determine the resultant force"
+            },
+            {
+              "code": "1.1.3",
+              "text": "Communicate about resultant force, F when an object is : (i) stationary, F = 0 N (ii) moving with constant velocity, F = 0 N (iii) moving with constant acceleration, F"
+            },
+            {
+              "code": "1.1.4",
+              "text": "Solve problems involving resultant force, mass and acceleration of an object"
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Resolution of Forces",
+          "sp": [
+            {
+              "code": "1.2.1",
+              "text": "Describe resolution of forces"
+            },
+            {
+              "code": "1.2.2",
+              "text": "Solve problems involving resultant force and resolution of forces"
+            }
+          ]
+        },
+        {
+          "sk": "1.3",
+          "skTitle": "Forces in Equilibrium",
+          "sp": [
+            {
+              "code": "1.3.1",
+              "text": "Explain forces in equilibrium"
+            },
+            {
+              "code": "1.3.2",
+              "text": "Sketch a triangle of forces in equilibrium."
+            },
+            {
+              "code": "1.3.3",
+              "text": "Solve problems involving forces in equilibrium"
+            }
+          ]
+        },
+        {
+          "sk": "1.4",
+          "skTitle": "Elasticity",
+          "sp": [
+            {
+              "code": "1.4.1",
+              "text": "Describe elasticity"
+            },
+            {
+              "code": "1.4.2",
+              "text": "Experiment to investigate the relationship between force, F and extension of spring, x"
+            },
+            {
+              "code": "1.4.3",
+              "text": "Communicate about the law related to force, F and extension of spring, x"
+            },
+            {
+              "code": "1.4.4",
+              "text": "Solve problems involving force and extension of spring"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall facts, concepts and scientific skills on Force and Motion II."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand concepts of Force and Motion II and able to comprehend them."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply concept of Force and Motion II to explain occurrences of natural phenomenon and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information and draw connections on Force and Motion II in the context of problem solving on occurrences of natural phenomenon."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement on Force and Motion II in the context of problem solving and decision making to complete a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create new or original work on Force and Motion II in the context of problem solving and decision making to complete activities / assignments creatively and innovatively in a new situation; taking into consideration the social / economic / cultural values of society."
+        }
+      ],
+      "tpScope": "FORCE AND MOTION II"
+    },
+    {
+      "level": "T5",
+      "code": "2.0",
+      "title": "Pressure",
+      "titlePrinted": "PRESSURE",
+      "theme": "NEWTONIAN MECHANICS",
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Pressure in Liquids",
+          "sp": [
+            {
+              "code": "2.1.1",
+              "text": "Communicate about the concept of pressure"
+            },
+            {
+              "code": "2.1.2",
+              "text": "Experiment to investigate factors affecting pressure in liquids"
+            },
+            {
+              "code": "2.1.3",
+              "text": "Solve problems involving pressure in liquids"
+            },
+            {
+              "code": "2.1.4",
+              "text": "Communicate about applications of pressure in liquids in daily life"
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "Atmospheric Pressure",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Describe atmospheric pressure"
+            },
+            {
+              "code": "2.2.2",
+              "text": "Communicate about the value of atmospheric pressure"
+            },
+            {
+              "code": "2.2.3",
+              "text": "Solve problems in daily life involving various pressure units"
+            },
+            {
+              "code": "2.2.4",
+              "text": "Describe the effects of atmospheric pressure on objects at high altitude and underwater"
+            }
+          ]
+        },
+        {
+          "sk": "2.3",
+          "skTitle": "Gas Pressure",
+          "sp": [
+            {
+              "code": "2.3.1",
+              "text": "Determine gas pressure using a manometer"
+            },
+            {
+              "code": "2.3.2",
+              "text": "Solve problems involving gas pressure in daily life"
+            }
+          ]
+        },
+        {
+          "sk": "2.4",
+          "skTitle": "Pascal's Principle",
+          "sp": [
+            {
+              "code": "2.4.1",
+              "text": "Describe the principle of pressure transmission in an enclosed fluid"
+            },
+            {
+              "code": "2.4.2",
+              "text": "Communicate about hydraulic system as a force multiplier"
+            },
+            {
+              "code": "2.4.3",
+              "text": "Communicate about applications of Pascal's principle"
+            },
+            {
+              "code": "2.4.4",
+              "text": "Solve problems involving Pascal's principle in daily life"
+            }
+          ]
+        },
+        {
+          "sk": "2.5",
+          "skTitle": "Archimedes' Principle",
+          "sp": [
+            {
+              "code": "2.5.1",
+              "text": "Describe the relationship between buoyant force and the difference in liquid pressure at different depths for a submerged object"
+            },
+            {
+              "code": "2.5.2",
+              "text": "Relate the balance of forces with the state of floatation of an object in a fluid"
+            },
+            {
+              "code": "2.5.3",
+              "text": "Communicate about applications of Archimedes' principle in daily life"
+            },
+            {
+              "code": "2.5.4",
+              "text": "Solve problems involving Archimedes' principle and buoyancy"
+            }
+          ]
+        },
+        {
+          "sk": "2.6",
+          "skTitle": "Bernoulli's Principle",
+          "sp": [
+            {
+              "code": "2.6.1",
+              "text": "Describe the effect of fluid velocity on pressure"
+            },
+            {
+              "code": "2.6.2",
+              "text": "Explain lift as a result of the difference in pressure due to different velocity of fluids"
+            },
+            {
+              "code": "2.6.3",
+              "text": "Communicate about applications of Bernoulli's principle in daily life"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall facts, concepts and scientific skills on Pressure."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand concepts of Pressure, and able to comprehend them."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply concept of Pressure to explain occurrences of natural phenomenon and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information and draw connections on Pressure in the context of problem solving on the occurrences of natural phenomenon."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement on Pressure in the context of problem solving and decision making to complete a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create new or original work on Pressure in the context of problem solving and decision making to complete activities/assignments creatively and innovatively in a new situation; taking into consideration the social / economic / cultural values of society."
+        }
+      ],
+      "tpScope": "PRESSURE"
+    },
+    {
+      "level": "T5",
+      "code": "3.0",
+      "title": "Electricity",
+      "titlePrinted": "ELECTRICITY",
+      "theme": "ELECTRICITY AND ELECTROMAGNETISM",
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Current and Potential Difference",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Explain electric field"
+            },
+            {
+              "code": "3.1.2",
+              "text": "Define strength of electric field, E"
+            },
+            {
+              "code": "3.1.3",
+              "text": "Explain behaviour of charged particles in an electric field"
+            },
+            {
+              "code": "3.1.4",
+              "text": "Define electric current"
+            },
+            {
+              "code": "3.1.5",
+              "text": "Define potential difference, V"
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Resistance",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Compare and contrast ohmic and non-ohmic conductor"
+            },
+            {
+              "code": "3.2.2",
+              "text": "Solve problems involving combination of series and parallel circuits"
+            },
+            {
+              "code": "3.2.3",
+              "text": "Define resistivity of wire,"
+            },
+            {
+              "code": "3.2.4",
+              "text": "Describe factors that affect resistance of a wire through experiments to conclude"
+            },
+            {
+              "code": "3.2.5",
+              "text": "Communicate about applications of resistivity of wire in daily life"
+            },
+            {
+              "code": "3.2.6",
+              "text": "Solve problems involving the formula of wire resistance,"
+            }
+          ]
+        },
+        {
+          "sk": "3.3",
+          "skTitle": "Electromotive Force (e.m.f) and Internal Resistance",
+          "sp": [
+            {
+              "code": "3.3.1",
+              "text": "Define electromotive force,"
+            },
+            {
+              "code": "3.3.2",
+              "text": "Explain internal resistance, r"
+            },
+            {
+              "code": "3.3.3",
+              "text": "Conduct an experiment to determine e.m.f and internal resistance in a dry cell"
+            },
+            {
+              "code": "3.3.4",
+              "text": "Solve problems involving e.m.f and internal resistance in a dry cell"
+            }
+          ]
+        },
+        {
+          "sk": "3.4",
+          "skTitle": "Electrical Energy and Power",
+          "sp": [
+            {
+              "code": "3.4.1",
+              "text": "Formulate relationship between electrical energy (E), voltage (V), current (I) and time (t)"
+            },
+            {
+              "code": "3.4.2",
+              "text": "Formulate relationship between power (P), voltage (V), and current (I)"
+            },
+            {
+              "code": "3.4.3",
+              "text": "Solve problems involving electrical energy and power in daily life"
+            },
+            {
+              "code": "3.4.4",
+              "text": "Compare power and rate of energy consumptions in various electrical appliances"
+            },
+            {
+              "code": "3.4.5",
+              "text": "Suggest ways to save usage of electrical energy in household"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall facts, concepts and scientific skills on Electricity."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand concepts of Electricity and able to comprehend them."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply concept of Electricity to explain occurrences of natural phenomenon and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information and draw connections on Electricity in the context of problem solving on occurrences of natural phenomenon."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement on Electricity in the context of problem solving and decision making to complete a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create new or original work on Electricity in the context of problem solving and decision making to complete activities/ assignments creatively and innovatively in a new situation; taking into consideration the social/ economic/ cultural values of society."
+        }
+      ],
+      "tpScope": "ELECTRICITY"
+    },
+    {
+      "level": "T5",
+      "code": "4.0",
+      "title": "Electromagnetism",
+      "titlePrinted": "ELECTROMAGNETISM",
+      "theme": "ELECTRICITY AND ELECTROMAGNETISM",
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Force on a Current-carrying Conductor in a Magnetic Field",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Describe the effect of a current-carrying conductor in a magnetic field"
+            },
+            {
+              "code": "4.1.2",
+              "text": "Draw the pattern of the combined magnetic field (catapult field) to indicate the direction of force on a current-carrying conductor in a magnetic field"
+            },
+            {
+              "code": "4.1.3",
+              "text": "Explain factors that affect the magnitude of force on a current-carrying conductor in a magnetic field"
+            },
+            {
+              "code": "4.1.4",
+              "text": "Describe the effect of a current-carrying coil in a magnetic field"
+            },
+            {
+              "code": "4.1.5",
+              "text": "Describe the working principle of a direct current motor"
+            },
+            {
+              "code": "4.1.6",
+              "text": "Describe factors that affect the speed of rotation in an electric motor"
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Electromagnetic Induction",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Describe electromagnetic induction in : (i) straight wire (ii) solenoid"
+            },
+            {
+              "code": "4.2.2",
+              "text": "Explain factors that affect magnitude of induced emf"
+            },
+            {
+              "code": "4.2.3",
+              "text": "Determine the direction of induced current in: (i) straight wire (ii) solenoid"
+            },
+            {
+              "code": "4.2.4",
+              "text": "Design a direct current and alternating current generator"
+            }
+          ]
+        },
+        {
+          "sk": "4.3",
+          "skTitle": "Transformer",
+          "sp": [
+            {
+              "code": "4.3.1",
+              "text": "Describe the working principle of a simple transformer"
+            },
+            {
+              "code": "4.3.2",
+              "text": "Describe an ideal transformer"
+            },
+            {
+              "code": "4.3.3",
+              "text": "Describe energy loss and ways to increase the efficiency of a transformer"
+            },
+            {
+              "code": "4.3.4",
+              "text": "Communicate about the use of transformers in daily life"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall facts, concepts and scientific skills on Electromagnetism."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand concepts of Electromagnetism and able to comprehend them."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply concept of Electromagnetism to explain occurrences of natural phenomenon and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information and draw connections on Electromagnetism in the context of problem solving on occurrences of natural phenomenon."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement on Electromagnetism in the context of problem solving and decision making to complete a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create new or original work on Electromagnetism in the context of problem solving and decision making to complete activities/assignments creatively and innovatively in a new situation; taking into consideration the social/economic/cultural values of society."
+        }
+      ],
+      "tpScope": "ELECTROMAGNETISM"
+    },
+    {
+      "level": "T5",
+      "code": "5.0",
+      "title": "Electronics",
+      "titlePrinted": "ELECTRONICS",
+      "theme": "APPLIED PHYSICS",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Electron",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Describe thermionic emission and cathode rays"
+            },
+            {
+              "code": "5.1.2",
+              "text": "Describe effects of electric and magnetic fields on cathode rays"
+            },
+            {
+              "code": "5.1.3",
+              "text": "Determine velocity of an electron in cathode ray tube"
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Semiconductor Diode",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Describe the function of semiconductor diode"
+            },
+            {
+              "code": "5.2.2",
+              "text": "Communicate about the function of semiconductor diode and capacitor as a rectifier"
+            }
+          ]
+        },
+        {
+          "sk": "5.3",
+          "skTitle": "Transistor",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Explain the function and use of a transistor as a current amplifier"
+            },
+            {
+              "code": "5.3.2",
+              "text": "Describe circuits that consist of a transistor as an automatic switch"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall facts, concepts and scientific skills on Electronic."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand concepts of Electronic and able to comprehend it."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply concept of Electronic to explain occurrences of natural phenomenon and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information and draw connections on Electronic in the context of problem solving on occurrences of natural phenomenon."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement on Electronic in the context of problem solving and decision making to complete a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create new or original work on Electronic in the context of problem solving and decision making to complete activities/ assignments creatively and innovatively in a new situation; taking into consideration the social/ economic/ cultural values of society."
+        }
+      ],
+      "tpScope": "ELECTRONIC"
+    },
+    {
+      "level": "T5",
+      "code": "6.0",
+      "title": "Nuclear Physics",
+      "titlePrinted": "NUCLEAR PHYSICS",
+      "theme": "MODERN PHYSICS",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Radioactive Decay",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Explain with examples decay equations: (i) (ii) (iii)"
+            },
+            {
+              "code": "6.1.2",
+              "text": "Explain half-life through examples"
+            },
+            {
+              "code": "6.1.3",
+              "text": "Determine half-life of radioactive sources from decay curve"
+            },
+            {
+              "code": "6.1.4",
+              "text": "Solve problems involving half-life in daily life"
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Nuclear Energy",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Communicate about nuclear reactions: (i) nuclear fission (ii) nuclear fusion"
+            },
+            {
+              "code": "6.2.2",
+              "text": "Describe relationship between energy released during nuclear reaction and mass defect: E = mc2"
+            },
+            {
+              "code": "6.2.3",
+              "text": "Solve problems involving nuclear energy due to radioactive decay and nuclear reactions"
+            },
+            {
+              "code": "6.2.4",
+              "text": "Describe generation of electrical energy in nuclear reactor"
+            },
+            {
+              "code": "6.2.5",
+              "text": "Justify the use of nuclear energy as an alternative energy to generate electrical energy"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall facts, concepts and scientific skills on Nuclear Physics"
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand concepts of Nuclear Physics and able to comprehend them"
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply concept of Nuclear Physics to explain the occurrences of natural phenomenon and perform simple tasks"
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse information and draw connections on Nuclear Physics in the context of problem solving on occurrences of natural phenomenon."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement on Nuclear Physics in the context of problem solving and decision making to complete a task"
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create new or original work on Nuclear Physics in the context of problem solving and decision making to complete activities/ assignments creatively and innovatively in a new situation; taking into consideration the social/ economic/ cultural values of society"
+        }
+      ],
+      "tpScope": "NUCLEAR PHYSICS"
+    },
+    {
+      "level": "T5",
+      "code": "7.0",
+      "title": "Quantum Physics",
+      "titlePrinted": "QUANTUM PHYSICS",
+      "theme": "MODERN PHYSICS",
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Quantum Theory of Light",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Explain the initiation of the quantum theory"
+            },
+            {
+              "code": "7.1.2",
+              "text": "Describe quantum of energy"
+            },
+            {
+              "code": "7.1.3",
+              "text": "Explain wave-particle duality"
+            },
+            {
+              "code": "7.1.4",
+              "text": "Explain concept of photon"
+            },
+            {
+              "code": "7.1.5",
+              "text": "Solve problems using : (i) photon energy, E=hf (ii) power, P=nhf ; n is number of photon emitted per second."
+            }
+          ]
+        },
+        {
+          "sk": "7.2",
+          "skTitle": "Photoelectric Effect",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Explain photoelectric effect"
+            },
+            {
+              "code": "7.2.2",
+              "text": "Identify four characteristics of photoelectric effect that cannot be explained using wave theory"
+            }
+          ]
+        },
+        {
+          "sk": "7.3",
+          "skTitle": "Einstein's Photoelectric Theory",
+          "sp": [
+            {
+              "code": "7.3.1",
+              "text": "State minimum work function needed by a metal to emit an electron using Einstein's equation"
+            },
+            {
+              "code": "7.3.2",
+              "text": "Explain threshold frequency, fo and work function, W"
+            },
+            {
+              "code": "7.3.3",
+              "text": "Determine work function of metal, W=hfo"
+            },
+            {
+              "code": "7.3.4",
+              "text": "Solve problems involving Einstein's equation for photoelectric effect."
+            },
+            {
+              "code": "7.3.5",
+              "text": "Explain production of photoelectric current in a photocell circuit"
+            },
+            {
+              "code": "7.3.6",
+              "text": "Describe applications of photoelectric effect"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Recall facts, concepts and scientific skills on Quantum Physics."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Understand concepts of Quantum Physics and able to comprehend them."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply concept of Quantum Physics to explain occurrences of natural phenomenon and perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Analyse infromation and draw connections on Quantum Physics in the context of problem solving on occurrences of natural phenomenon."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Evaluate to make judgement on Quantum Physics in the context of problem solving and decision making to complete a task."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Create new or original work on Quantum Physics in the context of problem solving and decision making to complete activities/assignments creatively and innovatively in a new situation; taking into consideration the social/economic/cultural values of society."
+        }
+      ],
+      "tpScope": "QUANTUM PHYSICS"
+    }
+  ]
+}

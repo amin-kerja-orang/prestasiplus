@@ -1,0 +1,1736 @@
+{
+  "subject": "Matematik Tambahan",
+  "subjectCode": null,
+  "levels": [
+    "T4",
+    "T5"
+  ],
+  "language": "en",
+  "source": "Add Maths T4 n T5.pdf",
+  "edition": "KSSM Matematik Tambahan Tingkatan 4 dan 5 (Edisi Bahasa Inggeris), Bahagian Pembangunan Kurikulum, Mei 2019 (Terbitan 2019)",
+  "structureNote": "Hierarchy: Learning Area (Bidang) -> Topic (unit) -> Content Standard (SK) -> Learning Standard (SP). Performance Standard (levels 1-6) is given per Topic. English edition (printed text is English). Mathematical formulae/symbols are dropped from the extracted text.",
+  "generalPerformanceLevels": {
+    "source": "Table 4: Statements of General Performance Level of KSSM Additional Mathematics (printed p.21-22)",
+    "levels": [
+      {
+        "tp": 1,
+        "descriptor": "Demonstrate basic knowledge such as stating a certain mathematical idea either verbally or non-verbally."
+      },
+      {
+        "tp": 2,
+        "descriptor": "Demonstrate understanding such as explaining a certain mathematical concept either verbally or non-verbally."
+      },
+      {
+        "tp": 3,
+        "descriptor": "Apply understanding of concepts and ideas in mathematics such as performing calculations, constructing tables and drawing graphs"
+      },
+      {
+        "tp": 4,
+        "descriptor": "Apply suitable knowledge and skills when using algorithms, formulae, procedures or basic methods in the context of problem solving involving simple routine problems."
+      },
+      {
+        "tp": 5,
+        "descriptor": "Apply suitable knowledge and skills in new situations such as performing multi-step procedures, using representations based on different sources of information and reason out directly in the context of solving complex routine problems."
+      },
+      {
+        "tp": 6,
+        "descriptor": "Apply suitable knowledge and skills such as using information based on investigation and modelling in solving complex problems situations; reason out at high level, form new approaches and strategies in the context of solving non-routine problems creatively."
+      }
+    ]
+  },
+  "manualCorrections": [
+    "T4 SP 2.2.1",
+    "T4 SP 6.1.1",
+    "T5 SP 1.1.1",
+    "T5 SP 2.2.4",
+    "T5 SP 5.1.3"
+  ],
+  "units": [
+    {
+      "level": "T4",
+      "code": "1.0",
+      "title": "Functions",
+      "titlePrinted": "FUNCTIONS",
+      "learningArea": "ALGEBRA",
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "Functions",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Explain function using graphical representations and notations."
+            },
+            {
+              "code": "1.1.2",
+              "text": "Determine domain and range of a function."
+            },
+            {
+              "code": "1.1.3",
+              "text": "Determine the image of a function when the object is given and vice versa."
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Composite Functions",
+          "sp": [
+            {
+              "code": "1.2.1",
+              "text": "Describe the outcome of composition of two functions."
+            },
+            {
+              "code": "1.2.2",
+              "text": "Determine the composite functions."
+            },
+            {
+              "code": "1.2.3",
+              "text": "Determine the image of composite functions given the object and vice versa."
+            },
+            {
+              "code": "1.2.4",
+              "text": "Determine a related function given composite function and another function."
+            },
+            {
+              "code": "1.2.5",
+              "text": "Solve problems involving composite functions."
+            }
+          ]
+        },
+        {
+          "sk": "1.3",
+          "skTitle": "Inverse Functions",
+          "sp": [
+            {
+              "code": "1.3.1",
+              "text": "Describe inverse of a function."
+            },
+            {
+              "code": "1.3.2",
+              "text": "Make and verify conjectures related to properties of inverse functions."
+            },
+            {
+              "code": "1.3.3",
+              "text": "Determine the inverse functions. ."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of functions."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of functions."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of functions to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of functions in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of functions in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of functions in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T4",
+      "code": "2.0",
+      "title": "Quadratic Functions",
+      "titlePrinted": "QUADRATIC FUNCTIONS",
+      "learningArea": "ALGEBRA",
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Quadratic Equations and Inequalities",
+          "sp": [
+            {
+              "code": "2.1.1",
+              "text": "Solve quadratic equations using the method of completing the square and formula."
+            },
+            {
+              "code": "2.1.2",
+              "text": "Form quadratic equations from given roots."
+            },
+            {
+              "code": "2.1.3",
+              "text": "Solve quadratic inequalities."
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "Types of Roots of Quadratic Equations",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Relate types of roots of quadratic equations to the discriminant value."
+            },
+            {
+              "code": "2.2.2",
+              "text": "Solve problems involving types of roots of quadratic equations."
+            }
+          ]
+        },
+        {
+          "sk": "2.3",
+          "skTitle": "Quadratic Functions",
+          "sp": [
+            {
+              "code": "2.3.1",
+              "text": "Analyse and make generalisation about the effects of changes of a , b and c in f x ax2 bx position of the graph."
+            },
+            {
+              "code": "2.3.2",
+              "text": "Relate the position of the graph of quadratic functions with type of roots."
+            },
+            {
+              "code": "2.3.3",
+              "text": "Relate the vertex form of quadratic functions, f x ax h2 quadratic functions."
+            },
+            {
+              "code": "2.3.4",
+              "text": "Analyse and make generalisation about the effects of changes of a , h dan k in quadratic functions f x shape and position of the graphs."
+            },
+            {
+              "code": "2.3.5",
+              "text": "Sketch graphs of quadratic functions."
+            },
+            {
+              "code": "2.3.6",
+              "text": "Solve problems involving quadratic functions."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of quadratic functions."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of quadratic functions."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of quadratic functions to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of quadratic functions in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of quadratic functions in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of quadratic functions in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T4",
+      "code": "3.0",
+      "title": "Systems of Equations",
+      "titlePrinted": "SYSTEMS OF EQUATIONS",
+      "learningArea": "ALGEBRA",
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Systems of Linear Equations in Three Variables",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Describe systems of linear equations in three variables."
+            },
+            {
+              "code": "3.1.2",
+              "text": "Solve systems of linear equations in three variables."
+            },
+            {
+              "code": "3.1.3",
+              "text": "Solve problems involving systems of linear equations in three variables."
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Simultaneous Equations involving One Linear Equation and One Non-Linear Equation",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Solve simultaneous equations involving one linear equation and one non-linear equation."
+            },
+            {
+              "code": "3.2.2",
+              "text": "Solve problems involving simultaneous equations; one linear equation and one non- linear equation."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of systems of equations."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of systems of equations."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of systems of equations to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of systems of equations in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of systems of equations in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of systems of equations in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T4",
+      "code": "4.0",
+      "title": "Indices, Surds and Logarithms",
+      "titlePrinted": "INDICES, SURDS AND LOGARITHMS",
+      "learningArea": "ALGEBRA",
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Laws of Indices",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Simplify algebraic expressions involving indices using the laws of indices."
+            },
+            {
+              "code": "4.1.2",
+              "text": "Solve problems involving indices."
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Laws of Surds",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Compare rational numbers and irrational numbers, and hence relate surds to irrational numbers."
+            },
+            {
+              "code": "4.2.2",
+              "text": "Make and verify conjectures on (i) a b (ii) a b and hence make generalisation."
+            },
+            {
+              "code": "4.2.3",
+              "text": "Simplify expressions involving surds."
+            },
+            {
+              "code": "4.2.4",
+              "text": "Simplify expressions involving surds by rationalising the denominators."
+            },
+            {
+              "code": "4.2.5",
+              "text": "Solve problems involving surds."
+            }
+          ]
+        },
+        {
+          "sk": "4.3",
+          "skTitle": "Laws of Logarithms",
+          "sp": [
+            {
+              "code": "4.3.1",
+              "text": "Relate equations in the form of indices and logarithms, and hence determine the logarithm of a number."
+            },
+            {
+              "code": "4.3.2",
+              "text": "Prove laws of logarithms."
+            },
+            {
+              "code": "4.3.3",
+              "text": "Simplify algebraic expressions using the laws of logarithms."
+            },
+            {
+              "code": "4.3.4",
+              "text": "Prove log b a relationship to determine the logarithm of a number."
+            },
+            {
+              "code": "4.3.5",
+              "text": "Solve problems involving the laws of logarithms."
+            }
+          ]
+        },
+        {
+          "sk": "4.4",
+          "skTitle": "Applications of Indices, Surds and Logarithms",
+          "sp": [
+            {
+              "code": "4.4.1",
+              "text": "Solve problems involving indices, surds and logarithms"
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of indices, surds and logarithms."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of indices, surds and logarithms."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of indices, surds and logarithms to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of indices, surds and logarithms in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of indices and logarithms in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of indices and logarithms in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T4",
+      "code": "5.0",
+      "title": "Progressions",
+      "titlePrinted": "PROGRESSIONS",
+      "learningArea": "ALGEBRA",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Arithmetic Progressions",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Identify a sequence as an arithmetic progression and provide justification."
+            },
+            {
+              "code": "5.1.2",
+              "text": "Derive the formula of the nth term, Tn, of arithmetic progressions, and hence use the formula in various situations."
+            },
+            {
+              "code": "5.1.3",
+              "text": "Derive the formula of sum of the first n terms, Sn, of arithmetic progressions, and hence use the formula in various situations."
+            },
+            {
+              "code": "5.1.4",
+              "text": "Solve problems involving arithmetic progressions."
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Geometric Progressions",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Identify a sequence as a geometric progression and provide justification."
+            },
+            {
+              "code": "5.2.2",
+              "text": "Derive the formula of the nth term, Tn, of geometric progressions, and hence use the formula in various situations."
+            },
+            {
+              "code": "5.2.3",
+              "text": "Derive the formula of sum of the first n terms, Sn, of geometric progressions, and hence use the formula in various situations."
+            },
+            {
+              "code": "5.2.4",
+              "text": "Determine the sum to infinity of geometric progressions, S and hence use the formula in various situations."
+            },
+            {
+              "code": "5.2.5",
+              "text": "Solve problems involving geometric progressions."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of progressions."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of arithmetic progressions and geometric progressions."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of arithmetic progressions and geometric progressions to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of arithmetic progressions and geometric progressions in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of arithmetic progressions and geometric progressions in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of arithmetic progressions and geometric progressions in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T4",
+      "code": "6.0",
+      "title": "Linear Law",
+      "titlePrinted": "LINEAR LAW",
+      "learningArea": "ALGEBRA",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Linear and Non-Linear Relations",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Differentiate between linear and non-linear relations based on tables of data and graphs."
+            },
+            {
+              "code": "6.1.2",
+              "text": "Draw lines of best fit for graph of linear relations with and without the use of digital technology."
+            },
+            {
+              "code": "6.1.3",
+              "text": "Form equations of lines of best fit."
+            },
+            {
+              "code": "6.1.4",
+              "text": "Interpret information based on lines of best fit."
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Linear Law and Non-Linear Relations",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Apply linear law to non-linear relations."
+            }
+          ]
+        },
+        {
+          "sk": "6.3",
+          "skTitle": "Application of Linear Law",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Solve problems involving linear law."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of lines of best fit."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of lines of best fit."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of linear law to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of linear law in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of linear law in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of linear law in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T4",
+      "code": "7.0",
+      "title": "Coordinate Geometry",
+      "titlePrinted": "COORDINATE GEOMETRY",
+      "learningArea": "GEOMETRY",
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Divisor of a Line Segment",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Relate the position of a point that divides a line segment with the related ratio."
+            },
+            {
+              "code": "7.1.2",
+              "text": "Derive the formula for divisor of a line segment on a Cartesian plane, and hence use the formula in various situations."
+            },
+            {
+              "code": "7.1.3",
+              "text": "Solve problems involving divisor of a line segment."
+            }
+          ]
+        },
+        {
+          "sk": "7.2",
+          "skTitle": "Parallel Lines and Perpendicular Lines",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Make and verify conjectures about gradient of: (i) parallel lines, (ii) perpendicular lines and hence, make generalisations."
+            },
+            {
+              "code": "7.2.2",
+              "text": "Solve problems involving equations of parallel and perpendicular lines."
+            }
+          ]
+        },
+        {
+          "sk": "7.3",
+          "skTitle": "Areas of Polygons",
+          "sp": [
+            {
+              "code": "7.3.1",
+              "text": "Derive the formula of area of triangles when the coordinates of each vertex are known."
+            },
+            {
+              "code": "7.3.2",
+              "text": "Determine the area of triangles by using the formula."
+            },
+            {
+              "code": "7.3.3",
+              "text": "Determine the area of quadrilaterals by using the formula."
+            },
+            {
+              "code": "7.3.4",
+              "text": "Make generalisation about the formula of area of polygons when the coordinates of each vertex are known, and hence use the formula to determine the area of polygons."
+            },
+            {
+              "code": "7.3.5",
+              "text": "Solve problems involving areas of polygons."
+            }
+          ]
+        },
+        {
+          "sk": "7.4",
+          "skTitle": "Equations of Loci",
+          "sp": [
+            {
+              "code": "7.4.1",
+              "text": "Represent graphically, the locus that satisfies these conditions: (i) the distance of a moving point from a fixed point is constant, (ii) the ratio of a moving point from two fixed points is constant, and hence determine the equation of the locus."
+            },
+            {
+              "code": "7.4.2",
+              "text": "Solve problems involving equations of loci."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of divisor of line segments."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of divisor of line segments."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of coordinate geometry to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of coordinate geometry in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of coordinate geometry in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of coordinate geometry in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T4",
+      "code": "8.0",
+      "title": "Vectors",
+      "titlePrinted": "VECTORS",
+      "learningArea": "GEOMETRY",
+      "standards": [
+        {
+          "sk": "8.1",
+          "skTitle": "Vectors",
+          "sp": [
+            {
+              "code": "8.1.1",
+              "text": "Compare and contrast between vectors and scalars, and hence identify whether a quantity is a vector or a scalar by providing justifications."
+            },
+            {
+              "code": "8.1.2",
+              "text": "Represent vectors by using directed line segments and vector notations, and hence determine the magnitude and direction of vectors."
+            },
+            {
+              "code": "8.1.3",
+              "text": "Make and verify conjectures about the properties of scalar multiplication on vectors."
+            },
+            {
+              "code": "8.1.4",
+              "text": "Make and verify conjectures about parallel vectors."
+            }
+          ]
+        },
+        {
+          "sk": "8.2",
+          "skTitle": "Addition and Subtraction of Vectors",
+          "sp": [
+            {
+              "code": "8.2.1",
+              "text": "Perform addition and substraction involving two or more vectors to obtain a resultant vector. ."
+            },
+            {
+              "code": "8.2.2",
+              "text": "Solve problems involving vectors."
+            }
+          ]
+        },
+        {
+          "sk": "8.3",
+          "skTitle": "Vectors in a Cartesian Plane",
+          "sp": [
+            {
+              "code": "8.3.1",
+              "text": "Represent vectors and determine the magnitude of the vectors in the Cartesian plane."
+            },
+            {
+              "code": "8.3.2",
+              "text": "Describe and determine the unit vector in the direction of a vector."
+            },
+            {
+              "code": "8.3.3",
+              "text": "Perform arithmetic operations onto two or more vectors."
+            },
+            {
+              "code": "8.3.4",
+              "text": "Solve problems involving vectors."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of vectors."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of vectors."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of vectors to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of vectors in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of vectors in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of vectors in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T4",
+      "code": "9.0",
+      "title": "Solution of Triangles",
+      "titlePrinted": "SOLUTION OF TRIANGLES",
+      "learningArea": "GEOMETRY",
+      "standards": [
+        {
+          "sk": "9.1",
+          "skTitle": "Sine Rule",
+          "sp": [
+            {
+              "code": "9.1.1",
+              "text": "Make and verify conjectures on the relationship between the ratio of length of sides of a triangle with the sine of the opposite angles, and hence define the sine rule."
+            },
+            {
+              "code": "9.1.2",
+              "text": "Solve triangles involving sine rule."
+            },
+            {
+              "code": "9.1.3",
+              "text": "Determine the existence of ambiguous case of a triangle, and hence identify the conditions for such cases."
+            },
+            {
+              "code": "9.1.4",
+              "text": "Solve triangles involving ambiguous cases."
+            },
+            {
+              "code": "9.1.5",
+              "text": "Solve problems related to triangles using the sine rule."
+            }
+          ]
+        },
+        {
+          "sk": "9.2",
+          "skTitle": "Cosine Rule",
+          "sp": [
+            {
+              "code": "9.2.1",
+              "text": "Verify the cosine rule."
+            },
+            {
+              "code": "9.2.2",
+              "text": "Solve triangles involving the cosine rule."
+            },
+            {
+              "code": "9.2.3",
+              "text": "Solve problems involving the cosine rule."
+            }
+          ]
+        },
+        {
+          "sk": "9.3",
+          "skTitle": "Area of a Triangle",
+          "sp": [
+            {
+              "code": "9.3.1",
+              "text": "Derive the formula for area of triangles, and hence determine the area of a triangle."
+            },
+            {
+              "code": "9.3.2",
+              "text": "Determine the area of a triangle using the Heron's formula."
+            },
+            {
+              "code": "9.3.3",
+              "text": "Solve problems involving areas of triangles."
+            }
+          ]
+        },
+        {
+          "sk": "9.4",
+          "skTitle": "Application of Sine Rule, Cosine Rule and Area of a Triangle",
+          "sp": [
+            {
+              "code": "9.4.1",
+              "text": "Solve problems involving triangles."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of sine rule and cosine rule."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of sine rule and cosine rule."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of sine rule, cosine rule and area of a triangle to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of of solution of triangles in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of solution of triangles in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of solution of triangles in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T4",
+      "code": "10.0",
+      "title": "Index Numbers",
+      "titlePrinted": "INDEX NUMBERS",
+      "learningArea": "GEOMETRY",
+      "standards": [
+        {
+          "sk": "10.1",
+          "skTitle": "Index Numbers",
+          "sp": [
+            {
+              "code": "10.1.1",
+              "text": "Define index numbers and describe the use of it."
+            },
+            {
+              "code": "10.1.2",
+              "text": "Determine and interpret index numbers."
+            },
+            {
+              "code": "10.1.3",
+              "text": "Solve problems involving index numbers."
+            }
+          ]
+        },
+        {
+          "sk": "10.2",
+          "skTitle": "Composite Index",
+          "sp": [
+            {
+              "code": "10.2.1",
+              "text": "Determine and interpret composite index with and without the weightage."
+            },
+            {
+              "code": "10.2.2",
+              "text": "Solve problems involving index numbers and composite index."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of index numbers."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of index numbers."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of index numbers to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of index numbers in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of index numbers in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of index numbers in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T5",
+      "code": "1.0",
+      "title": "Circular Measure",
+      "titlePrinted": "CIRCULAR MEASURE",
+      "learningArea": "GEOMETRY",
+      "standards": [
+        {
+          "sk": "1.1",
+          "skTitle": "Radian",
+          "sp": [
+            {
+              "code": "1.1.1",
+              "text": "Relate angle measurement in radian and degree."
+            }
+          ]
+        },
+        {
+          "sk": "1.2",
+          "skTitle": "Arc Length of a Circle",
+          "sp": [
+            {
+              "code": "1.2.1",
+              "text": "Determine (i) arc length, (ii) radius, and (iii) angle subtended at the centre of a circle."
+            },
+            {
+              "code": "1.2.2",
+              "text": "Determine perimeter of segment of a circle."
+            },
+            {
+              "code": "1.2.3",
+              "text": "Solve problems involving arc length."
+            }
+          ]
+        },
+        {
+          "sk": "1.3",
+          "skTitle": "Area of Sector of a Circle",
+          "sp": [
+            {
+              "code": "1.3.1",
+              "text": "Determine (i) area of sector, (ii) radius, and (iii) angle subtended at the centre of a circle."
+            },
+            {
+              "code": "1.3.2",
+              "text": "Determine the area of segment of a circle."
+            },
+            {
+              "code": "1.3.3",
+              "text": "Solve problems involving areas of sectors."
+            }
+          ]
+        },
+        {
+          "sk": "1.4",
+          "skTitle": "Application of Circular Measures",
+          "sp": [
+            {
+              "code": "1.4.1",
+              "text": "Solve problems involving circular measure."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of circular measure."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of circular measure."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of circular measure to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of circular measure in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of circular measure in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of circular measure in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T5",
+      "code": "2.0",
+      "title": "Differentiation",
+      "titlePrinted": "DIFFERENTIATION",
+      "learningArea": "CALCULUS",
+      "standards": [
+        {
+          "sk": "2.1",
+          "skTitle": "Limit and its Relation to Differentiation",
+          "sp": [
+            {
+              "code": "2.1.1",
+              "text": "Investigate and determine the value of limit of a Real-life situations need to be involved throughout function when its variable approaches zero."
+            },
+            {
+              "code": "2.1.2",
+              "text": "Determine the first derivative of a function f(x) by using the first principle."
+            }
+          ]
+        },
+        {
+          "sk": "2.2",
+          "skTitle": "The First Derivative",
+          "sp": [
+            {
+              "code": "2.2.1",
+              "text": "Derive the formula of first derivative inductively for the function y is an integer."
+            },
+            {
+              "code": "2.2.2",
+              "text": "Determine the first derivative of an algebraic Further exploration using dynamic geometry function."
+            },
+            {
+              "code": "2.2.3",
+              "text": "Determine the first derivative of composite Chain rule needs to be involved. function."
+            },
+            {
+              "code": "2.2.4",
+              "text": "Determine the first derivative of a function involving product and quotient of algebraic expressions."
+            }
+          ]
+        },
+        {
+          "sk": "2.3",
+          "skTitle": "The Second Derivative",
+          "sp": [
+            {
+              "code": "2.3.1",
+              "text": "Determine the second derivative of an algebraic function."
+            }
+          ]
+        },
+        {
+          "sk": "2.4",
+          "skTitle": "Application of Differentiation",
+          "sp": [
+            {
+              "code": "2.4.1",
+              "text": "Interpret gradient of tangent to a curve at different points."
+            },
+            {
+              "code": "2.4.2",
+              "text": "Determine equation of tangent and normal to a curve at a point."
+            },
+            {
+              "code": "2.4.3",
+              "text": "Solve problems involving tangent and normal."
+            },
+            {
+              "code": "2.4.4",
+              "text": "Determine the turning points and their nature."
+            },
+            {
+              "code": "2.4.5",
+              "text": "Solve problems involving maximum and minimum values and interpret the solutions."
+            },
+            {
+              "code": "2.4.6",
+              "text": "Interpret and determine rates of change for The use of chain rule needs to be emphasised. related quantities."
+            },
+            {
+              "code": "2.4.7",
+              "text": "Solve problems involving rates of change for related quantities and interpret the solutions."
+            },
+            {
+              "code": "2.4.8",
+              "text": "Interpret and determine small changes and approximations of certain quantities."
+            },
+            {
+              "code": "2.4.9",
+              "text": "Solve problems involving small changes and Problems involved are limited to two variables. approximations of certain quantities."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of differentiation."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of differentiation."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of differentiation to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of differentiation in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of differentiation in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of differentiation in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T5",
+      "code": "3.0",
+      "title": "Integration",
+      "titlePrinted": "INTEGRATION",
+      "learningArea": "CALCULUS",
+      "standards": [
+        {
+          "sk": "3.1",
+          "skTitle": "Integration as the Inverse of Differentiation",
+          "sp": [
+            {
+              "code": "3.1.1",
+              "text": "Explain the relation between differentiation and integration."
+            }
+          ]
+        },
+        {
+          "sk": "3.2",
+          "skTitle": "Indefinite Integral",
+          "sp": [
+            {
+              "code": "3.2.1",
+              "text": "Derive the inductively."
+            },
+            {
+              "code": "3.2.2",
+              "text": "Determine indefinite integral for algebraic The following integrations need to be involved: functions."
+            },
+            {
+              "code": "3.2.3",
+              "text": "Determine indefinite integral for functions in the form of constants, n is an integer and n"
+            },
+            {
+              "code": "3.2.4",
+              "text": "Determine the equation of curve from its gradient function."
+            }
+          ]
+        },
+        {
+          "sk": "3.3",
+          "skTitle": "Definite Integral",
+          "sp": [
+            {
+              "code": "3.3.1",
+              "text": "Determine the value of definite integral for The following characteristics of definite integral algebraic functions."
+            },
+            {
+              "code": "3.3.2",
+              "text": "Investigate and explain the relation between the limit of the sum of areas of rectangles and the area under a curve."
+            },
+            {
+              "code": "3.3.3",
+              "text": "Determine the area of a region."
+            },
+            {
+              "code": "3.3.4",
+              "text": "Investigate and explain the relation between the limits of the sum of volumes of cylinders and the generated volume by revolving a region."
+            },
+            {
+              "code": "3.3.5",
+              "text": "Determine the generated volume of a region Generated volume for region between two curves is revolved at the x-axis or the y-axis."
+            }
+          ]
+        },
+        {
+          "sk": "3.4",
+          "skTitle": "Application of Integration",
+          "sp": [
+            {
+              "code": "3.4.1",
+              "text": "Solve problems involving integration."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of integration."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of integration."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of integration to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of integration in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of integration in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of integration in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T5",
+      "code": "4.0",
+      "title": "Permutation and Combination",
+      "titlePrinted": "PERMUTATION AND COMBINATION",
+      "learningArea": "STATISTICS",
+      "standards": [
+        {
+          "sk": "4.1",
+          "skTitle": "Permutation",
+          "sp": [
+            {
+              "code": "4.1.1",
+              "text": "Investigate and make generalisation about Real-life situations and tree diagrams need to multiplication rule."
+            },
+            {
+              "code": "4.1.2",
+              "text": "Determine the number of permutations for (i) n different objects (ii) n different objects taken r at a time. (iii) n objects involving identical objects."
+            },
+            {
+              "code": "4.1.3",
+              "text": "Solve problems involving permutations with certain conditions."
+            }
+          ]
+        },
+        {
+          "sk": "4.2",
+          "skTitle": "Combination",
+          "sp": [
+            {
+              "code": "4.2.1",
+              "text": "Compare and combination."
+            },
+            {
+              "code": "4.2.2",
+              "text": "Determine the number of combinations of r objects chosen from n different objects at a time."
+            },
+            {
+              "code": "4.2.3",
+              "text": "Solve problems involving combinations with certain conditions."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of permutation and combination."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of permutation and combination."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of permutation and combination to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of permutation and combination in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of permutation and combination in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of permutation and combination in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T5",
+      "code": "5.0",
+      "title": "Probability Distribution",
+      "titlePrinted": "PROBABILITY DISTRIBUTION",
+      "learningArea": "STATISTICS",
+      "standards": [
+        {
+          "sk": "5.1",
+          "skTitle": "Random Variable",
+          "sp": [
+            {
+              "code": "5.1.1",
+              "text": "Describe the meaning of random variable."
+            },
+            {
+              "code": "5.1.2",
+              "text": "Compare and contrast discrete random variable and continuous random variable."
+            },
+            {
+              "code": "5.1.3",
+              "text": "Describe the meaning of probability distribution for discrete random variables."
+            },
+            {
+              "code": "5.1.4",
+              "text": "Construct table and draw graph of probability distribution for discrete random variable."
+            }
+          ]
+        },
+        {
+          "sk": "5.2",
+          "skTitle": "Binomial Distribution",
+          "sp": [
+            {
+              "code": "5.2.1",
+              "text": "Describe the meaning of binomial distribution."
+            },
+            {
+              "code": "5.2.2",
+              "text": "Determine the probability of an event for binomial distribution."
+            },
+            {
+              "code": "5.2.3",
+              "text": "Interpret information, construct table and draw graph of binomial distribution."
+            },
+            {
+              "code": "5.2.4",
+              "text": "Determine and describe the value of mean, Mean as an expected average value when an event variance and standard deviation for a binomial distribution."
+            },
+            {
+              "code": "5.2.5",
+              "text": "Solve problems involving binomial distributions."
+            }
+          ]
+        },
+        {
+          "sk": "5.3",
+          "skTitle": "Normal Distribution",
+          "sp": [
+            {
+              "code": "5.3.1",
+              "text": "Investigate and describe the properties of normal distribution graph."
+            },
+            {
+              "code": "5.3.2",
+              "text": "Describe the meaning of standard normal distribution."
+            },
+            {
+              "code": "5.3.3",
+              "text": "Determine and interprete standard score, Z."
+            },
+            {
+              "code": "5.3.4",
+              "text": "Determine the probability of an event for normal distribution."
+            },
+            {
+              "code": "5.3.5",
+              "text": "Solve problems involving normal distributions."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of random variables."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of probability distribution."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of probability distribution to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of probability distribution in the context of simple routine problem- solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of probability distribution in the context of complex routine problem-solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of probability distribution in the context of non-routine problem- solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T5",
+      "code": "6.0",
+      "title": "Trigonometric Functions",
+      "titlePrinted": "TRIGONOMETRIC FUNCTIONS",
+      "learningArea": "TRIGONOMETRY",
+      "standards": [
+        {
+          "sk": "6.1",
+          "skTitle": "Positive Angles and Negative Angles",
+          "sp": [
+            {
+              "code": "6.1.1",
+              "text": "Represent positive angles and negative angles in a Cartesian Plane."
+            }
+          ]
+        },
+        {
+          "sk": "6.2",
+          "skTitle": "Trigonometric Ratios of any Angle",
+          "sp": [
+            {
+              "code": "6.2.1",
+              "text": "Relate secant, cosecant and cotangent with sine, cosine and tangent of any angle in a Cartesian plane."
+            },
+            {
+              "code": "6.2.2",
+              "text": "Determine the values of trigonometric ratios of any angle."
+            }
+          ]
+        },
+        {
+          "sk": "6.3",
+          "skTitle": "Graphs of Sine, Cosine and Tangent Functions",
+          "sp": [
+            {
+              "code": "6.3.1",
+              "text": "Draw and sketch graphs of trigonometric functions: (i) y = a sin bx + c (ii) y = a cos bx + c (iii) y = a tan bx + c where a, b and c are constants and b > 0."
+            },
+            {
+              "code": "6.3.2",
+              "text": "Solve trigonometric equations using graphical method."
+            }
+          ]
+        },
+        {
+          "sk": "6.4",
+          "skTitle": "Basic Identities",
+          "sp": [
+            {
+              "code": "6.4.1",
+              "text": "Derive basic identities: (i) (ii) (iii)"
+            },
+            {
+              "code": "6.4.2",
+              "text": "Prove trigonometric identities using basic identities."
+            }
+          ]
+        },
+        {
+          "sk": "6.5",
+          "skTitle": "Addition Formulae and Double Angle Formulae",
+          "sp": [
+            {
+              "code": "6.5.1",
+              "text": "Prove trigonometric identities using addition formulae for sin (A � B), cos (A � B) and tan (A � B)."
+            },
+            {
+              "code": "6.5.2",
+              "text": "Derive double angle formulae for sin 2A, cos 2A and tan 2A."
+            },
+            {
+              "code": "6.5.3",
+              "text": "Prove trigonometric identities using double- angle formulae."
+            }
+          ]
+        },
+        {
+          "sk": "6.6",
+          "skTitle": "Application of Trigonometric Functions",
+          "sp": [
+            {
+              "code": "6.6.1",
+              "text": "Solve trigonometric equations."
+            },
+            {
+              "code": "6.6.2",
+              "text": "Solve problems involving trigonometric functions."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of trigonometric functions."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of trigonometric functions."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of trigonometric functions to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of trigonometric functions in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of trigonometric functions in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of trigonometric functions in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T5",
+      "code": "7.0",
+      "title": "Linear Programming",
+      "titlePrinted": "LINEAR PROGRAMMING",
+      "learningArea": "TRIGONOMETRY",
+      "standards": [
+        {
+          "sk": "7.1",
+          "skTitle": "Linear Programming Model",
+          "sp": [
+            {
+              "code": "7.1.1",
+              "text": "Form a mathematical model for a situation based on the constraints given and hence represent the model graphically."
+            }
+          ]
+        },
+        {
+          "sk": "7.2",
+          "skTitle": "Application of Linear Programming",
+          "sp": [
+            {
+              "code": "7.2.1",
+              "text": "Solve problems involving linear programming graphically."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of linear programming model."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of linear programming model."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of linear programming model to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of linear programming in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of linear programming in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of linear programming in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    },
+    {
+      "level": "T5",
+      "code": "8.0",
+      "title": "Kinematics of Linear Motion",
+      "titlePrinted": "KINEMATICS OF LINEAR MOTION",
+      "learningArea": "TRIGONOMETRY",
+      "standards": [
+        {
+          "sk": "8.1",
+          "skTitle": "Displacement, Velocity and Acceleration as a Function of Time",
+          "sp": [
+            {
+              "code": "8.1.1",
+              "text": "Describe and determine instantaneous displacement, instantaneous velocity, instantaneous acceleration of a particle."
+            },
+            {
+              "code": "8.1.2",
+              "text": "Determine the total distance travelled The displacement function is limited to linear and by a particle in a given period of time. quadratic."
+            }
+          ]
+        },
+        {
+          "sk": "8.2",
+          "skTitle": "Differentiation in Kinematics of Linear Motion",
+          "sp": [
+            {
+              "code": "8.2.1",
+              "text": "Relate between displacement function, velocity function and acceleration function."
+            },
+            {
+              "code": "8.2.2",
+              "text": "Determine and interpret instantaneous velocities of a particle from displacement function."
+            },
+            {
+              "code": "8.2.3",
+              "text": "Determine and interpret instantaneous acceleration of a particle from velocity function and displacement function."
+            }
+          ]
+        },
+        {
+          "sk": "8.3",
+          "skTitle": "Integration in Kinematics of Linear Motion",
+          "sp": [
+            {
+              "code": "8.3.1",
+              "text": "Determine and interpret instantaneous velocity of a particle from accelaration function."
+            },
+            {
+              "code": "8.3.2",
+              "text": "Determine and interpret instantaneous displacement of a particle from velocity function and accelaration function."
+            }
+          ]
+        },
+        {
+          "sk": "8.4",
+          "skTitle": "Applications of Kinematics of Linear Motion",
+          "sp": [
+            {
+              "code": "8.4.1",
+              "text": "Solve problems of kinematics of linear motion involving differentiation and integration."
+            }
+          ]
+        }
+      ],
+      "tahapPenguasaan": [
+        {
+          "tp": 1,
+          "descriptor": "Demonstrate the basic knowledge of displacement, velocity and acceleration."
+        },
+        {
+          "tp": 2,
+          "descriptor": "Demonstrate the understanding of displacement, velocity and acceleration."
+        },
+        {
+          "tp": 3,
+          "descriptor": "Apply the understanding of displacement, velocity and acceleration to perform simple tasks."
+        },
+        {
+          "tp": 4,
+          "descriptor": "Apply appropriate knowledge and skills of kinematics of linear motion in the context of simple routine problem solving."
+        },
+        {
+          "tp": 5,
+          "descriptor": "Apply appropriate knowledge and skills of kinematics of linear motion in the context of complex routine problem solving."
+        },
+        {
+          "tp": 6,
+          "descriptor": "Apply appropriate knowledge and skills of kinematics of linear motion in the context of non-routine problem solving in a creative manner."
+        }
+      ],
+      "tpScope": "DESCRIPTOR"
+    }
+  ]
+}
