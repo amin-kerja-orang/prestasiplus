@@ -21,7 +21,6 @@ import {
   dismissNextDialog,
   expectNoHorizontalScroll,
   moduleTag,
-  viewportWidth,
 } from '../support'
 
 const MODULE = { tag: [moduleTag(7)] }
