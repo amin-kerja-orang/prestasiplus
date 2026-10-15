@@ -5,6 +5,7 @@
     "vitest.config.*",
     "playwright.config.*",
     "eslint.config.*",
+    "eslint/**/*.d.mts",
     "scripts/**/*.ts"
   ],
   "compilerOptions": {

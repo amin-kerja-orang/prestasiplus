@@ -3,6 +3,9 @@ import skipFormatting from 'eslint-config-prettier/flat'
 import type { Linter } from 'eslint'
 import pluginVue from 'eslint-plugin-vue'
 
+import { readDsStrict } from './eslint/ds-strict.mjs'
+import ppPlugin from './eslint/pp-plugin.mjs'
+
 /**
  * ESLint flat config (overview §13, ADR-0009).
  *
@@ -161,6 +164,51 @@ function boundaryRules(
   }
 }
 
+/**
+ * Design-system strict files (V2-T04, design system v2.0 guard rules G-1..G-13). The set comes from
+ * `config/ds-strict.json` (ratchet: only grows). Legacy files are not strict.
+ */
+const DS = readDsStrict()
+const DS_IGNORES = [...DS.exempt, '**/__tests__/**', '**/*.test.ts']
+
+const DS_IMPORT_PATTERNS = [
+  ...uiBoundaryPatterns,
+  DATASET_TESTING_TEST_ONLY,
+  {
+    group: ['@lucide/*', 'lucide-*', '@iconify-json/*', '@iconify/*', '@phosphor-icons/*'],
+    message:
+      'Icons come from the `i-ph-*` collection via Nuxt UI icon props (G-6, D38). No icon packages in strict files.',
+  },
+  {
+    group: ['@fontsource/*', '@fontsource-variable/*', 'chart.js', 'chart.js/*'],
+    message: 'Fonts and charts are owned by the theme / ds composites, not by pages (G-6).',
+  },
+  {
+    regex: String.raw`^(?:@|/src)/(?:components|shells)(?:/|$)`,
+    message:
+      'Legacy `@/components/*` and `@/shells/*` are frozen; use `@nuxt/ui` and `@/ds` (G-6).',
+  },
+]
+
+const DS_RAW_ELEMENTS = [
+  'button',
+  'input',
+  'select',
+  'textarea',
+  'a',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
+  'dialog',
+  'img',
+].map((element) => ({
+  element,
+  message: `Raw <${element}> is forbidden in design-system files (G-5). Use the Nuxt UI / Ds* component (UButton, UInput, USelect, UTextarea, ULink, UTable, UModal, UAvatar, DsArt3D, ...).`,
+}))
+
 export default defineConfigWithVueTs(
   {
     name: 'app/ignores',
@@ -253,6 +301,23 @@ export default defineConfigWithVueTs(
     name: 'app/boundaries-tests',
     files: ['src/**/__tests__/**/*.ts'],
     rules: boundaryRules(testBoundaryPatterns),
+  },
+
+  // Design-system strict files (config/ds-strict.json).
+  {
+    name: 'app/ds-strict',
+    files: DS.strict,
+    ignores: DS_IGNORES,
+    plugins: { pp: ppPlugin },
+    rules: {
+      'pp/ds-class-allowlist': 'error',
+      'pp/ds-no-inline-style': 'error',
+      'pp/ds-no-style-block': 'error',
+      'pp/ds-no-remote-assets': 'error',
+      'pp/ds-icon-names': 'error',
+      'vue/no-restricted-html-elements': ['error', ...DS_RAW_ELEMENTS],
+      'no-restricted-imports': ['error', { patterns: DS_IMPORT_PATTERNS }],
+    },
   },
 
   skipFormatting,

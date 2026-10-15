@@ -35,7 +35,11 @@ export default mergeConfig(
           test: {
             name: 'unit',
             // Script libraries (e.g. the E2E trace parser) keep their tests as .mjs next to them.
-            include: ['src/**/__tests__/**/*.test.ts', 'scripts/**/__tests__/**/*.test.mjs'],
+            include: [
+              'src/**/__tests__/**/*.test.ts',
+              'scripts/**/__tests__/**/*.test.mjs',
+              'eslint/**/__tests__/**/*.test.mjs',
+            ],
             exclude: [...configDefaults.exclude, 'e2e/**', PERF_TESTS],
             // Tests that boot the real registry compile the 466k-question dataset (~2 s per boot,
             // more under load); give them room so load never turns into a timeout failure.

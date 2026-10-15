@@ -1,0 +1,5 @@
+{
+  "$comment": "Ratchet list (V2-T04). `strict` globs get the design-system guard rules (ESLint pp/* + Stylelint). Append-only: config/ds-strict.baseline.json is the committed floor and a unit test fails if an entry disappears. V2-T56 flips the default to strict for all of src/.",
+  "strict": ["src/ds/**", "src/dev/ds/**"],
+  "exempt": ["src/theme/**", "src/dev/ds/DsSandbox.vue"]
+}
