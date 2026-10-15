@@ -1,6 +1,14 @@
 # PrestasiPlus App
 
-Prototaip front-end (data olok-olok) bagi pembinaan semula prestasiplus.my, modul demi modul (M01–M26).
+> **English summary.** PrestasiPlus App is a Vue 3 + Vite + TypeScript + Tailwind v4 front-end prototype (mock data,
+> no backend) that rebuilds the education platform prestasiplus.my module by module (M01–M27; all 59 role-matrix rows
+> are at G5 READY). **v2 status:** the project is now evolving into a new system (decisions D28–D32): the frontend is
+> re-themed on Nuxt UI (light + dark), there are two portals (Portal Pentadbiran and Portal Pembelajaran), and a
+> NestJS + PostgreSQL backend will follow, with data migrated from prestasiplus.cloud. Current phase: v2 G2 design.
+> AI agents and new contributors: start with [AGENTS.md](AGENTS.md), then the docs index [docs/README.md](docs/README.md)
+> and [docs/TRACKER.md](docs/TRACKER.md). The setup commands below are the same for everyone.
+
+Prototaip front-end (data olok-olok) bagi pembinaan semula prestasiplus.my, modul demi modul (M01–M27).
 Stack: Vue 3 + Vite + TypeScript + Tailwind CSS v4 + Lucide (`@lucide/vue`). Dokumentasi seni bina di
 `docs/architecture/overview.md`, keputusan di `docs/adr/`, dan status projek di `docs/TRACKER.md`.
 

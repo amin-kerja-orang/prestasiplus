@@ -1,5 +1,7 @@
 # PretasiPlus App
 
+> Cross-tool agent entry point: see [AGENTS.md](AGENTS.md). Docs index: [docs/README.md](docs/README.md).
+
 The user communicates in Bahasa Melayu; reply in Bahasa Melayu. Code, commits, and docs in `docs/` are in English unless asked otherwise.
 
 These rules are mandatory for every session in this project.
@@ -75,7 +77,7 @@ Pick the lightest track that fits; state which one you picked.
 
 ## 5. Project tracker
 
-`docs/TRACKER.md` is the single source of truth for progress. The project is a module-by-module rebuild of prestasiplus.my (26 modules, M01–M26).
+`docs/TRACKER.md` is the single source of truth for progress. The project is a module-by-module rebuild of prestasiplus.my (27 modules, M01–M27).
 - Read it at the start of every session to know where things stand.
 - Update it (board status, route checklist, summary counts, open questions, change log) whenever a module changes stage. Updating it is part of finishing any step.
 - Work one module at a time, in the phase order given there, unless the user says otherwise.
@@ -116,3 +118,7 @@ Three Playwright MCP servers exist (`.mcp.json`): `playwright` (lane 1), `playwr
 - Docs are the source of truth between phases. If code must diverge from a doc, the owning role updates the doc too.
 - **Responsive is mandatory:** every screen must work on mobile (≥320px), tablet, and desktop without horizontal page scroll. Design specs define each screen's behaviour at 375 / 768 / 1280px; E2E tests run at all three sizes; a screen that breaks at any of them fails G4/G5.
 - Never claim a gate passed without real evidence (tool output, test results, QA table).
+
+## 8. v2 direction (D28–D32)
+
+The project is evolving into v2, a new system (see `docs/TRACKER.md` D28–D32). For v2 work the §6 rules ("replicate, don't redesign", D9, D10) apply **only to unchanged flows**. Changed flows (the two portals, question intake and display), the UI theme (Nuxt UI, own theme, light + dark) and the Portal Pentadbiran follow D28–D32 and the v2 docs (`docs/requirements/v2-*.md`, `docs/architecture/v2-*.md`). **prestasiplus.cloud is the primary reference**; prestasiplus.my is used only for things not in .cloud. Old systems are never modified.
