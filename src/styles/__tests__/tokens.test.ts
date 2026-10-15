@@ -172,6 +172,6 @@ describe('design tokens (F-02)', () => {
 
   it('applies the base body and heading styles', () => {
     expect(css).toMatch(/body\s*\{[^}]*font-family: var\(--font-body\)/)
-    expect(css).toMatch(/h6\s*\{[^}]*font-family: var\(--font-heading\)/)
+    expect(css).toMatch(/h6[^{]*\{[^}]*font-family: var\(--font-heading\)/)
   })
 })

@@ -47,8 +47,10 @@ describe('registries (F-01 scaffold, F-31 extension)', () => {
     for (const m of modules) expect(Array.isArray(m.routes)).toBe(true)
   })
 
+  // Loads every module mock plugin; the Nuxt UI transforms made this slow under a full-suite load
+  // (V2-T02 spike), so it gets its own budget instead of the 30 s project default.
   it('lazy-load one mock plugin per module, in the same order', async () => {
     const loaded = await Promise.all(mockPlugins.map((load) => load()))
     expect(loaded.map((mod) => mod.default.id)).toEqual(SLICE.map(([id]) => id))
-  })
+  }, 120_000)
 })

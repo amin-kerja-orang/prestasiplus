@@ -4,7 +4,7 @@ import ui from '@nuxt/ui/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
-import { uiConfig } from './src/theme/ui.config.ts'
+import { iconBundle, uiConfig } from './src/theme/ui.config.ts'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,9 +12,10 @@ export default defineConfig({
   plugins: [
     vue(),
     ui({
-      colorMode: true,
+      colorMode: false, // own toggle: src/theme/color-mode.ts (V2-T03)
       theme: { colors: ['primary', 'secondary', 'success', 'info', 'warning', 'error', 'neutral'] },
       ui: uiConfig,
+      icon: { clientBundle: iconBundle },
     }),
   ],
   resolve: {

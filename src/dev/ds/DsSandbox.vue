@@ -3,21 +3,20 @@
  * `/__ds` Nuxt UI sandbox (V2-T02 spike). Dev and demo only. Disposable: V2-T05 replaces it with
  * the real gallery. Every component carries a `data-testid` so the spike can check forwarding.
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useToast } from '@nuxt/ui/composables'
-import { ms } from '@nuxt/ui/locale'
+
+import { useThemeMode, type Personality } from '@/theme/color-mode'
+import { uiLocale } from '@/theme/locale-ms'
+
+import DsThemePanel from './DsThemePanel.vue'
 
 const toast = useToast()
-// `useColorMode` is not auto-imported in app code; mirror the `.dark` class on <html> instead.
-const mode = ref(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
-const obs = new MutationObserver(() => {
-  mode.value = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-})
-onMounted(() => {
-  obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-})
-onBeforeUnmount(() => obs.disconnect())
+// Live controls: the page itself runs a real portal theme (data-personality + .dark on <html>),
+// so teleported overlays (modal, toast, drawer) below show the active tokens.
+const personality = ref<Personality>('staff')
+const { scheme, toggle } = useThemeMode(personality)
 
 const text = ref('')
 const picked = ref('a')
@@ -50,8 +49,8 @@ const tableColumns = [
 ]
 const navItems = [
   [
-    { label: 'Sandbox', icon: 'i-lucide-flask-conical', to: '/__ds' },
-    { label: 'Token gallery', icon: 'i-lucide-palette', to: '/__dev/tokens' },
+    { label: 'Sandbox', icon: 'i-ph-flask', to: '/__ds' },
+    { label: 'Token gallery', icon: 'i-ph-palette', to: '/__dev/tokens' },
   ],
 ]
 const groups = computed(() => [
@@ -59,8 +58,8 @@ const groups = computed(() => [
     id: 'nav',
     label: 'Navigasi',
     items: [
-      { label: 'Sandbox', icon: 'i-lucide-flask-conical', to: '/__ds' },
-      { label: 'Token gallery', icon: 'i-lucide-palette', to: '/__dev/tokens' },
+      { label: 'Sandbox', icon: 'i-ph-flask', to: '/__ds' },
+      { label: 'Token gallery', icon: 'i-ph-palette', to: '/__dev/tokens' },
     ],
   },
 ])
@@ -71,14 +70,36 @@ function fireToast(): void {
 </script>
 
 <template>
-  <UApp :locale="ms">
+  <UApp :locale="uiLocale">
     <main class="min-h-screen space-y-8 bg-muted p-4 text-default md:p-8" data-testid="ds-root">
       <header class="flex flex-wrap items-center gap-3">
         <h1 class="text-xl font-semibold">Nuxt UI sandbox (/__ds)</h1>
-        <UColorModeButton data-testid="ds-colormode" />
-        <span class="text-sm text-muted" data-testid="ds-mode">mode: {{ mode }}</span>
-        <UIcon name="i-lucide-sparkles" class="size-5" data-testid="ds-icon" />
+        <UButton
+          color="neutral"
+          :icon="scheme === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
+          aria-label="Tukar mod cerah atau gelap"
+          data-testid="ds-colormode"
+          @click="toggle"
+        />
+        <UButton
+          color="neutral"
+          data-testid="ds-personality"
+          @click="personality = personality === 'staff' ? 'learner' : 'staff'"
+          >{{ personality === 'staff' ? 'Staf' : 'Murid' }}</UButton
+        >
+        <span class="text-sm text-muted" data-testid="ds-mode">mode: {{ scheme }}</span>
+        <UIcon name="i-ph-sparkle" class="size-5" data-testid="ds-icon" />
       </header>
+
+      <section class="space-y-3" data-testid="ds-matrix">
+        <h2 class="font-semibold">Tema v2: dua personaliti, cerah dan gelap</h2>
+        <div class="grid gap-4 lg:grid-cols-2">
+          <DsThemePanel personality="staff" :dark="false" />
+          <DsThemePanel personality="staff" :dark="true" />
+          <DsThemePanel personality="learner" :dark="false" />
+          <DsThemePanel personality="learner" :dark="true" />
+        </div>
+      </section>
 
       <section class="space-y-3">
         <h2 class="font-semibold">Button, Input, Select, Badge</h2>
@@ -86,9 +107,7 @@ function fireToast(): void {
           <UButton data-testid="ds-btn-solid" variant="solid">Solid</UButton>
           <UButton data-testid="ds-btn-soft" variant="soft">Soft</UButton>
           <UButton data-testid="ds-btn-default">Default (tonal)</UButton>
-          <UButton data-testid="ds-btn-link" to="/__dev/tokens" icon="i-lucide-link"
-            >Pautan</UButton
-          >
+          <UButton data-testid="ds-btn-link" to="/__dev/tokens" icon="i-ph-link">Pautan</UButton>
           <UBadge data-testid="ds-badge">Lencana</UBadge>
         </div>
         <div class="grid max-w-xl gap-3 sm:grid-cols-2">
