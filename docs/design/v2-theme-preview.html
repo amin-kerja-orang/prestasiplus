@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ms" data-variant="b">
+<html lang="ms" data-variant="bplus">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,7 +17,7 @@
   } catch (e) {}
   try {
     var v = localStorage.getItem('gelanggang-variant');
-    if (v === 'a' || v === 'b') document.documentElement.setAttribute('data-variant', v);
+    if (v === 'a' || v === 'b' || v === 'bplus') document.documentElement.setAttribute('data-variant', v);
   } catch (e) {}
 })();
 </script>
@@ -502,14 +502,14 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
 .legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: .875rem; color: var(--text-muted); }
 .legend li { display: inline-flex; align-items: center; gap: 8px; }
 .legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; flex: none; }
-:root[data-variant="b"] .only-a { display: none; }
-:root:not([data-variant="b"]) .only-b { display: none; }
+:root:is([data-variant="b"], [data-variant="bplus"]) .only-a { display: none; }
+:root:not(:is([data-variant="b"], [data-variant="bplus"])) .only-b { display: none; }
 
 /* =====================================================================
    VERSI B (TENANG): lapisan permukaan, bukan garis. Terutamanya token.
    Cerah dahulu; token gelap ditakrif semula dua kali (media + data-theme).
    ===================================================================== */
-:root[data-variant="b"] {
+:root:is([data-variant="b"], [data-variant="bplus"]) {
   --bg-muted: #EBEEF5; --bg: #FFFFFF; --bg-elevated: #EBEEF5; --bg-accented: #D5DBE8; --bg-soft: #F5F7FB; --bg-device: #F5F7FB;
   --bg-inv: #171C2D; --text-inv: #FFFFFF; --seg-active: #FFFFFF;
   --border: transparent; --border-muted: transparent; --border-accented: transparent; --border-inv: transparent; --sticker-border: transparent;
@@ -525,7 +525,7 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
   --overlay: rgba(13, 17, 32, .6);
 }
 @media (prefers-color-scheme: dark) {
-  :root[data-variant="b"]:not([data-theme="light"]) {
+  :root:is([data-variant="b"], [data-variant="bplus"]):not([data-theme="light"]) {
     --bg-muted: #0D1120; --bg: #171C2D; --bg-elevated: #262D40; --bg-accented: #3A4258; --bg-soft: #1E2437; --bg-device: #121729;
     --bg-inv: #262D40; --text-inv: #FFFFFF; --seg-active: #3A4258;
     --border: transparent; --border-muted: transparent; --border-accented: transparent; --border-inv: transparent; --sticker-border: transparent;
@@ -537,7 +537,7 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
     --overlay: rgba(0, 0, 0, .6);
   }
 }
-:root[data-variant="b"][data-theme="dark"] {
+:root:is([data-variant="b"], [data-variant="bplus"])[data-theme="dark"] {
   --bg-muted: #0D1120; --bg: #171C2D; --bg-elevated: #262D40; --bg-accented: #3A4258; --bg-soft: #1E2437; --bg-device: #121729;
   --bg-inv: #262D40; --text-inv: #FFFFFF; --seg-active: #3A4258;
   --border: transparent; --border-muted: transparent; --border-accented: transparent; --border-inv: transparent; --sticker-border: transparent;
@@ -550,76 +550,124 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
 }
 
 /* Kepadatan staf juga tanpa garis dalam B */
-[data-variant="b"] .staff { --ctl: 0px; --pop-offset: 0px; }
+:is([data-variant="b"], [data-variant="bplus"]) .staff { --ctl: 0px; --pop-offset: 0px; }
 
 /* Bar: bayang lembut, bukan garis */
-[data-variant="b"] .skip { background: var(--primary); color: var(--primary-on); }
-[data-variant="b"] .topbar { border-bottom: 0; box-shadow: var(--shadow-bar); }
-[data-variant="b"] .phone-top { box-shadow: var(--shadow-bar); }
-[data-variant="b"] .adm-bar, [data-variant="b"] .guru-bar { position: relative; z-index: 2; box-shadow: var(--shadow-bar); }
-[data-variant="b"] .bottom-nav { box-shadow: var(--shadow-bar-up); }
-[data-variant="b"] .guru-tabs { position: relative; z-index: 2; box-shadow: var(--shadow-bar-up); }
-[data-variant="b"] .adm-side { box-shadow: var(--shadow-xs); position: relative; z-index: 1; }
+:is([data-variant="b"], [data-variant="bplus"]) .skip { background: var(--primary); color: var(--primary-on); }
+:is([data-variant="b"], [data-variant="bplus"]) .topbar { border-bottom: 0; box-shadow: var(--shadow-bar); }
+:is([data-variant="b"], [data-variant="bplus"]) .phone-top { box-shadow: var(--shadow-bar); }
+:is([data-variant="b"], [data-variant="bplus"]) .adm-bar, :is([data-variant="b"], [data-variant="bplus"]) .guru-bar { position: relative; z-index: 2; box-shadow: var(--shadow-bar); }
+:is([data-variant="b"], [data-variant="bplus"]) .bottom-nav { box-shadow: var(--shadow-bar-up); }
+:is([data-variant="b"], [data-variant="bplus"]) .guru-tabs { position: relative; z-index: 2; box-shadow: var(--shadow-bar-up); }
+:is([data-variant="b"], [data-variant="bplus"]) .adm-side { box-shadow: var(--shadow-xs); position: relative; z-index: 1; }
 
 /* Hero, kad utama: satu tahap bayang lembut (tiada bayang pop) */
-[data-variant="b"] .hero, [data-variant="b"] .card-hero, [data-variant="b"] .pop-card, [data-variant="b"] .pstat { box-shadow: var(--shadow-lift); }
-[data-variant="b"] .hero, [data-variant="b"] .card-hero { border: 0; }
-[data-variant="b"] .subj { box-shadow: var(--shadow-xs); }
-[data-variant="b"] .toast { border-left-width: 0; }
-[data-variant="b"] .mode-banner { border-bottom: 0; }
+:is([data-variant="b"], [data-variant="bplus"]) .hero, :is([data-variant="b"], [data-variant="bplus"]) .card-hero, :is([data-variant="b"], [data-variant="bplus"]) .pop-card, :is([data-variant="b"], [data-variant="bplus"]) .pstat { box-shadow: var(--shadow-lift); }
+:is([data-variant="b"], [data-variant="bplus"]) .hero, :is([data-variant="b"], [data-variant="bplus"]) .card-hero { border: 0; }
+:is([data-variant="b"], [data-variant="bplus"]) .subj { box-shadow: var(--shadow-xs); }
+:is([data-variant="b"], [data-variant="bplus"]) .toast { border-left-width: 0; }
+:is([data-variant="b"], [data-variant="bplus"]) .mode-banner { border-bottom: 0; }
 
 /* Butang: tonal, bukan garis. Hanya CTA utama ada bayang lembut. */
-[data-variant="b"] .btn-primary, [data-variant="b"] .fab { box-shadow: var(--e-cta); }
-[data-variant="b"] .btn-secondary, [data-variant="b"] .btn-hero { box-shadow: none; }
-[data-variant="b"] .btn-outline { background: var(--bg-elevated); border-color: transparent; color: var(--text-hl); }
-[data-variant="b"] .btn-outline:hover:not(:disabled) { background: var(--bg-accented); }
-[data-variant="b"] .btn:active:not(:disabled) { transform: translateY(1px); }
+:is([data-variant="b"], [data-variant="bplus"]) .btn-primary, :is([data-variant="b"], [data-variant="bplus"]) .fab { box-shadow: var(--e-cta); }
+:is([data-variant="b"], [data-variant="bplus"]) .btn-secondary, :is([data-variant="b"], [data-variant="bplus"]) .btn-hero { box-shadow: none; }
+:is([data-variant="b"], [data-variant="bplus"]) .btn-outline { background: var(--bg-elevated); border-color: transparent; color: var(--text-hl); }
+:is([data-variant="b"], [data-variant="bplus"]) .btn-outline:hover:not(:disabled) { background: var(--bg-accented); }
+:is([data-variant="b"], [data-variant="bplus"]) .btn:active:not(:disabled) { transform: translateY(1px); }
 
 /* Medan terisi (tanpa sempadan); fokus kekal cincin kobalt 2px */
-[data-variant="b"] .input, [data-variant="b"] .search-btn { background: var(--bg-elevated); border-color: transparent; }
-[data-variant="b"] .search-btn:hover { background: var(--bg-accented); }
-[data-variant="b"] .input.err { box-shadow: inset 0 0 0 2px var(--error); }
-[data-variant="b"] kbd { background: var(--bg); box-shadow: var(--shadow-xs); }
+:is([data-variant="b"], [data-variant="bplus"]) .input, :is([data-variant="b"], [data-variant="bplus"]) .search-btn { background: var(--bg-elevated); border-color: transparent; }
+:is([data-variant="b"], [data-variant="bplus"]) .search-btn:hover { background: var(--bg-accented); }
+:is([data-variant="b"], [data-variant="bplus"]) .input.err { box-shadow: inset 0 0 0 2px var(--error); }
+:is([data-variant="b"], [data-variant="bplus"]) kbd { background: var(--bg); box-shadow: var(--shadow-xs); }
 
 /* Tab segmen: tab aktif ialah cip terangkat */
-[data-variant="b"] .tabs-line { border-bottom: 0; background: var(--bg-elevated); padding: 4px; gap: 4px; border-radius: var(--r-lg); width: fit-content; max-width: 100%; }
-[data-variant="b"] .tabs-line [role="tab"] { border-bottom: 0; margin-bottom: 0; padding: 0 12px; border-radius: var(--r-md); }
-[data-variant="b"] .tabs-line [role="tab"][aria-selected="true"] { background: var(--seg-active); color: var(--text-hl); box-shadow: var(--shadow-xs); }
+:is([data-variant="b"], [data-variant="bplus"]) .tabs-line { border-bottom: 0; background: var(--bg-elevated); padding: 4px; gap: 4px; border-radius: var(--r-lg); width: fit-content; max-width: 100%; }
+:is([data-variant="b"], [data-variant="bplus"]) .tabs-line [role="tab"] { border-bottom: 0; margin-bottom: 0; padding: 0 12px; border-radius: var(--r-md); }
+:is([data-variant="b"], [data-variant="bplus"]) .tabs-line [role="tab"][aria-selected="true"] { background: var(--seg-active); color: var(--text-hl); box-shadow: var(--shadow-xs); }
 
 /* Jadual & senarai: zebra pada permukaan terangkat, tiada garis baris */
-[data-variant="b"] .tbl th { background: transparent; }
-[data-variant="b"] .tbl tbody tr:nth-child(even) { background: var(--bg-soft); }
-[data-variant="b"] .tbl tbody tr:hover td { background: var(--bg-elevated); }
-[data-variant="b"] .tcard .watch:nth-child(even) { background: var(--bg-soft); }
+:is([data-variant="b"], [data-variant="bplus"]) .tbl th { background: transparent; }
+:is([data-variant="b"], [data-variant="bplus"]) .tbl tbody tr:nth-child(even) { background: var(--bg-soft); }
+:is([data-variant="b"], [data-variant="bplus"]) .tbl tbody tr:hover td { background: var(--bg-elevated); }
+:is([data-variant="b"], [data-variant="bplus"]) .tcard .watch:nth-child(even) { background: var(--bg-soft); }
 
 /* Navigasi: nada & berat, bukan palang/garis */
-[data-variant="b"] .nv-g.on::before { display: none; }
-[data-variant="b"] .bottom-nav button[aria-current="page"]::before, [data-variant="b"] .guru-tabs button[aria-current="page"]::before { display: none; }
-[data-variant="b"] .bottom-nav button[aria-current="page"], [data-variant="b"] .guru-tabs button[aria-current="page"] { background: color-mix(in srgb, var(--primary) 10%, transparent); border-radius: var(--r-md); margin: 4px 2px; }
+:is([data-variant="b"], [data-variant="bplus"]) .nv-g.on::before { display: none; }
+:is([data-variant="b"], [data-variant="bplus"]) .bottom-nav button[aria-current="page"]::before, :is([data-variant="b"], [data-variant="bplus"]) .guru-tabs button[aria-current="page"]::before { display: none; }
+:is([data-variant="b"], [data-variant="bplus"]) .bottom-nav button[aria-current="page"], :is([data-variant="b"], [data-variant="bplus"]) .guru-tabs button[aria-current="page"] { background: color-mix(in srgb, var(--primary) 10%, transparent); border-radius: var(--r-md); margin: 4px 2px; }
 
 /* Warna ganjaran dibuang: nombor besar + ikon neutral */
-[data-variant="b"] .reward-chip, [data-variant="b"] .chip-reward, [data-variant="b"] .chip-xp, [data-variant="b"] .xp-chip { background: var(--bg-elevated); color: var(--text-hl); border-color: transparent; }
-[data-variant="b"] .reward-chip small { color: var(--text-muted); }
-[data-variant="b"] .reward-chip .ic, [data-variant="b"] .chip-sm .ic, [data-variant="b"] .pstat .ic { color: var(--text-muted); }
-[data-variant="b"] .avatar { background: var(--bg-elevated); color: var(--text-hl); }
-[data-variant="b"] .stat-ic { background: var(--bg-elevated); color: var(--text-muted); }
+:is([data-variant="b"], [data-variant="bplus"]) .reward-chip, :is([data-variant="b"], [data-variant="bplus"]) .chip-reward, :is([data-variant="b"], [data-variant="bplus"]) .chip-xp, :is([data-variant="b"], [data-variant="bplus"]) .xp-chip { background: var(--bg-elevated); color: var(--text-hl); border-color: transparent; }
+:is([data-variant="b"], [data-variant="bplus"]) .reward-chip small { color: var(--text-muted); }
+:is([data-variant="b"], [data-variant="bplus"]) .reward-chip .ic, :is([data-variant="b"], [data-variant="bplus"]) .chip-sm .ic, :is([data-variant="b"], [data-variant="bplus"]) .pstat .ic { color: var(--text-muted); }
+:is([data-variant="b"], [data-variant="bplus"]) .avatar { background: var(--bg-elevated); color: var(--text-hl); }
+:is([data-variant="b"], [data-variant="bplus"]) .stat-ic { background: var(--bg-elevated); color: var(--text-muted); }
 
 /* Subjek: ikon monokrom pada jubin neutral + titik warna kecil; bar kobalt */
-[data-variant="b"] .subj .tile { position: relative; background: var(--bg-elevated); color: var(--text-toned); }
-[data-variant="b"] .subj .tile::after { content: ""; position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--bg); }
-[data-variant="b"] .subj .pc { color: var(--text-hl); }
-[data-variant="b"] .subj .bar i { background: var(--primary); }
+:is([data-variant="b"], [data-variant="bplus"]) .subj .tile { position: relative; background: var(--bg-elevated); color: var(--text-toned); }
+:is([data-variant="b"], [data-variant="bplus"]) .subj .tile::after { content: ""; position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--bg); }
+:is([data-variant="b"], [data-variant="bplus"]) .subj .pc { color: var(--text-hl); }
+:is([data-variant="b"], [data-variant="bplus"]) .subj .bar i { background: var(--primary); }
 
 /* Semantik warna: status hanya bila bermakna */
-[data-variant="b"] .b-sticker { background: var(--bg-elevated); color: var(--text-hl); }
-[data-variant="b"] .b-trend { background: color-mix(in srgb, var(--daun-400) 16%, transparent); color: var(--daun-400); }
-[data-variant="b"] .b-soft-reward { background: var(--bg-elevated); color: var(--text-toned); }
-[data-variant="b"] .b-solid-error { background: var(--bg-elevated); color: var(--text-hl); }
-[data-variant="b"] .pulse, [data-variant="b"] .guru-tabs .livedot { background: var(--primary); }
-[data-variant="b"] .b-warn { background: color-mix(in srgb, var(--warning) 12%, transparent); color: var(--warning); }
-[data-variant="b"] .cls .badge, [data-variant="b"] .tcard-head .badge { background: var(--bg-elevated); color: var(--text-toned); }
-[data-variant="b"] .count { background: var(--primary); color: var(--primary-on); }
-[data-variant="b"] .hero-chips .badge { background: color-mix(in srgb, var(--text-inv) 14%, transparent) !important; color: var(--text-inv) !important; border-color: transparent !important; }
+:is([data-variant="b"], [data-variant="bplus"]) .b-sticker { background: var(--bg-elevated); color: var(--text-hl); }
+:is([data-variant="b"], [data-variant="bplus"]) .b-trend { background: color-mix(in srgb, var(--daun-400) 16%, transparent); color: var(--daun-400); }
+:is([data-variant="b"], [data-variant="bplus"]) .b-soft-reward { background: var(--bg-elevated); color: var(--text-toned); }
+:is([data-variant="b"], [data-variant="bplus"]) .b-solid-error { background: var(--bg-elevated); color: var(--text-hl); }
+:is([data-variant="b"], [data-variant="bplus"]) .pulse, :is([data-variant="b"], [data-variant="bplus"]) .guru-tabs .livedot { background: var(--primary); }
+:is([data-variant="b"], [data-variant="bplus"]) .b-warn { background: color-mix(in srgb, var(--warning) 12%, transparent); color: var(--warning); }
+:is([data-variant="b"], [data-variant="bplus"]) .cls .badge, :is([data-variant="b"], [data-variant="bplus"]) .tcard-head .badge { background: var(--bg-elevated); color: var(--text-toned); }
+:is([data-variant="b"], [data-variant="bplus"]) .count { background: var(--primary); color: var(--primary-on); }
+:is([data-variant="b"], [data-variant="bplus"]) .hero-chips .badge { background: color-mix(in srgb, var(--text-inv) 14%, transparent) !important; color: var(--text-inv) !important; border-color: transparent !important; }
+
+/* =====================================================================
+   VERSI B+ (IKON BERWARNA): warna hanya pada ikon, titik dan tint kecil.
+   Lapisan sama seperti B. Token ikon: langkah gelap (cerah), langkah terang (gelap).
+   ===================================================================== */
+:root:not([data-variant="bplus"]) .only-plus { display: none; }
+:root[data-variant="bplus"] {
+  --ic-kobalt: var(--kobalt-600); --ic-laut: var(--laut-700); --ic-ungu: var(--ungu-600); --ic-mangga: var(--mangga-700);
+  --ic-daun: var(--daun-700); --ic-mentari: var(--mentari-700); --ic-ink: var(--ink-600);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-variant="bplus"]:not([data-theme="light"]) {
+    --ic-kobalt: var(--kobalt-400); --ic-laut: var(--laut-400); --ic-ungu: var(--ungu-400); --ic-mangga: var(--mangga-400);
+    --ic-daun: var(--daun-400); --ic-mentari: var(--mentari-400); --ic-ink: var(--ink-300);
+  }
+}
+:root[data-variant="bplus"][data-theme="dark"] {
+  --ic-kobalt: var(--kobalt-400); --ic-laut: var(--laut-400); --ic-ungu: var(--ungu-400); --ic-mangga: var(--mangga-400);
+  --ic-daun: var(--daun-400); --ic-mentari: var(--mentari-400); --ic-ink: var(--ink-300);
+}
+
+/* Sidebar Admin: ikon kumpulan berwarna pada petak tint 12% */
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(1) { --g: var(--ic-kobalt); }
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(2) { --g: var(--ic-laut); }
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(3) { --g: var(--ic-ungu); }
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(4) { --g: var(--ic-mangga); }
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(5) { --g: var(--ic-daun); }
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(6) { --g: var(--ic-laut); }
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(7) { --g: var(--ic-mentari); }
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(8) { --g: var(--ic-daun); }
+:root[data-variant="bplus"] .adm-nav > ul > li:nth-child(9) { --g: var(--ic-ink); }
+:root[data-variant="bplus"] .adm-nav > ul > li > .nv-g > .ic:first-child { width: 32px; height: 32px; padding: 6px; border-radius: var(--r-md); color: var(--g); background: color-mix(in srgb, var(--g) 12%, transparent); }
+
+/* Ubin statistik: ikon ikut makna */
+:root[data-variant="bplus"] .stats .stat:nth-child(1) .stat-ic { --g: var(--ic-kobalt); }
+:root[data-variant="bplus"] .stats .stat:nth-child(2) .stat-ic { --g: var(--ic-laut); }
+:root[data-variant="bplus"] .stats .stat:nth-child(3) .stat-ic { --g: var(--ic-mentari); }
+:root[data-variant="bplus"] .stats .stat:nth-child(4) .stat-ic { --g: var(--ic-daun); }
+:root[data-variant="bplus"] .stat-ic { color: var(--g); background: color-mix(in srgb, var(--g) 12%, transparent); }
+
+/* Murid: ikon streak, syiling, XP berwarna; nombor kekal neutral */
+:root[data-variant="bplus"] .chips .chip-sm:nth-child(1) .ic, :root[data-variant="bplus"] .pstat:nth-child(1) .ic, :root[data-variant="bplus"] .reward-chip:nth-child(1) .ic { color: var(--ic-mangga); }
+:root[data-variant="bplus"] .chips .chip-sm:nth-child(2) .ic, :root[data-variant="bplus"] .pstat:nth-child(2) .ic, :root[data-variant="bplus"] .reward-chip:nth-child(2) .ic { color: var(--ic-mentari); }
+:root[data-variant="bplus"] .pstat.xp .ic, :root[data-variant="bplus"] .reward-chip.xp-chip .ic { color: var(--ic-kobalt); }
+
+/* Subjek: ikon warna slot pada tint 12%; bar kekal kobalt */
+:root[data-variant="bplus"] .subj .tile { background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--c); }
+:root[data-variant="bplus"] .subj .tile::after { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; }
@@ -684,7 +732,8 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
     <div class="topbar-ctrls">
       <div class="seg" role="group" aria-label="Versi tema">
         <button type="button" data-variant="a" aria-pressed="false">Versi A (Asal)</button>
-        <button type="button" data-variant="b" aria-pressed="true">Versi B (Tenang)</button>
+        <button type="button" data-variant="b" aria-pressed="false">Versi B (Tenang)</button>
+        <button type="button" data-variant="bplus" aria-pressed="true">Versi B+ (Ikon Berwarna)</button>
       </div>
       <div class="seg" role="group" aria-label="Mod paparan">
         <button type="button" data-mode="light" aria-pressed="false"><svg class="ic ic-16" aria-hidden="true"><use href="#i-sun"/></svg>Cerah</button>
@@ -703,7 +752,7 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
     <span class="t-over">Pratonton tema &middot; PrestasiPlus v2</span>
     <h1>Tema Gelanggang &mdash; Pratonton</h1>
     <p>Gelanggang ialah arena latihan SPM: yakin seperti papan skor, bukan comel seperti aplikasi kanak-kanak, dengan skor, ranking dan streak sebagai hero. Biru kobalt untuk tindakan dan satu penyerlah limau untuk kemajuan serta kemenangan, di atas permukaan dakwat yang tenang dan selesa di mata, siang mahupun malam.</p>
-    <p>Versi A (Asal) lebih berwarna dengan garis dan bayang tegas; Versi B (Tenang), yang dipaparkan secara lalai, memakai lapisan permukaan lembut, kobalt sebagai satu-satunya warna tindakan, dan limau hanya untuk detik kemenangan.</p>
+    <p>Versi A (Asal) lebih berwarna dengan garis dan bayang tegas; Versi B (Tenang) memakai lapisan permukaan lembut, kobalt sebagai satu-satunya warna tindakan, dan limau hanya untuk detik kemenangan; Versi B+ (Ikon Berwarna), yang dipaparkan secara lalai, sama seperti B tetapi menambah warna pada ikon, titik dan tint kecil sahaja.</p>
     <div class="hero-chips">
       <span class="badge b-sticker">Sedia untuk SPM.</span>
       <span class="badge b-neutral" style="background:transparent;color:var(--text-inv);border-color:color-mix(in srgb,var(--text-inv) 40%,transparent)">Cerah &amp; Gelap</span>
@@ -720,12 +769,12 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
       <p class="note">Setiap warna ada satu peranan. Tekan Cerah atau Gelap di bahagian atas untuk melihat langkah warna yang digunakan dalam setiap mod. Hex di bawah ialah nilai tepat dalam spesifikasi.</p>
     </div>
     <div class="card stack only-b" style="margin-bottom:16px">
-      <h3 class="t-over">Imbangan warna 60 &middot; 30 &middot; 10 (Versi B)</h3>
+      <h3 class="t-over">Imbangan warna 60 &middot; 30 &middot; 10 (Versi B dan B+)</h3>
       <div class="ratio" role="img" aria-label="Imbangan warna: 60 peratus dakwat neutral, 30 peratus lapisan permukaan, 10 peratus kobalt"><i style="width:60%;background:var(--bg-inv)"></i><i style="width:30%;background:var(--bg-accented)"></i><i style="width:10%;background:var(--primary)"></i></div>
       <ul class="legend">
         <li><i style="background:var(--bg-inv)"></i>60% dakwat &amp; teks neutral</li>
         <li><i style="background:var(--bg-accented)"></i>30% lapisan permukaan</li>
-        <li><i style="background:var(--primary)"></i>10% kobalt (tindakan). Limau hanya untuk detik menang.</li>
+        <li><i style="background:var(--primary)"></i>10% kobalt (tindakan). Limau hanya untuk detik menang.<span class="only-plus"> Dalam B+, warna lain hanya pada ikon dan tint kecil.</span></li>
       </ul>
     </div>
     <div class="card stack" style="margin-bottom:16px">
@@ -1181,7 +1230,7 @@ ul.subj-grid { list-style: none; margin: 0; padding: 0; }
   /* ---- Versi A / B ---- */
   var vbtns = document.querySelectorAll('.seg button[data-variant]');
   function setVariant(v) {
-    if (v !== 'a') v = 'b';
+    if (v !== 'a' && v !== 'b') v = 'bplus';
     root.setAttribute('data-variant', v);
     for (var i = 0; i < vbtns.length; i++) {
       vbtns[i].setAttribute('aria-pressed', vbtns[i].getAttribute('data-variant') === v ? 'true' : 'false');
