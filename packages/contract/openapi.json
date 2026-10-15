@@ -1,0 +1,216 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PretasiPlus API contract",
+    "version": "0.1.0",
+    "description": "Generated from packages/contract (zod). Do not edit by hand: run `npm run contract:emit`."
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "description": "Opaque entity id (string). Never parse or construct on the client.",
+        "example": "1042"
+      },
+      "ClientUuid": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Client-generated UUID used as an idempotency key."
+      },
+      "Timestamp": {
+        "type": "string",
+        "pattern": "\\+08:00$",
+        "description": "ISO 8601 instant serialised in Malaysia time (+08:00).",
+        "example": "2026-10-16T09:30:00+08:00"
+      },
+      "TimestampInput": {
+        "type": "string",
+        "format": "date-time",
+        "description": "ISO 8601 instant with an explicit offset (or Z)."
+      },
+      "DateOnly": {
+        "type": "string",
+        "format": "date",
+        "description": "Calendar date (YYYY-MM-DD) in Malaysia time.",
+        "example": "2026-10-16"
+      },
+      "RoleCode": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "school_admin",
+          "ppd_officer",
+          "teacher",
+          "student",
+          "parent",
+          "sponsor"
+        ],
+        "description": "Role code. admin = Admin Pusat, school_admin = Admin Sekolah, ppd_officer = Pegawai PPD/JPN, teacher = Guru, student = Murid, parent = Ibu Bapa, sponsor = Penaja."
+      },
+      "PortalId": {
+        "type": "string",
+        "enum": [
+          "pentadbiran",
+          "pembelajaran"
+        ]
+      },
+      "ScopeLevel": {
+        "type": "string",
+        "enum": [
+          "national",
+          "state",
+          "district",
+          "school",
+          "class",
+          "self"
+        ]
+      },
+      "AccessMode": {
+        "type": "string",
+        "enum": [
+          "F",
+          "R",
+          "S",
+          "D"
+        ]
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "VALIDATION_ERROR",
+          "NOT_FOUND",
+          "UNAUTHORIZED",
+          "FORBIDDEN",
+          "CONFLICT",
+          "SERVER_ERROR",
+          "RATE_LIMITED"
+        ]
+      },
+      "ErrorPayload": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Generic (ErrorCode) or module-specific code."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM message for direct display."
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Field name to BM message, for VALIDATION_ERROR."
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Correlation id, for support."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "ErrorBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorPayload"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "ListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages"
+        ],
+        "additionalProperties": {}
+      },
+      "PageQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        }
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {},
+  "webhooks": {}
+}

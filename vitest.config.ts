@@ -37,6 +37,7 @@ export default mergeConfig(
             // Script libraries (e.g. the E2E trace parser) keep their tests as .mjs next to them.
             include: [
               'src/**/__tests__/**/*.test.ts',
+              'packages/**/__tests__/**/*.test.ts',
               'scripts/**/__tests__/**/*.test.mjs',
               'eslint/**/__tests__/**/*.test.mjs',
             ],
