@@ -47,7 +47,9 @@
     "T5 SP 4.2.1",
     "T5 SP 5.5.5",
     "T5 SP 5.5.6",
-    "T5 SP 5.5.5-5.5.7 reconstructed"
+    "T5 SP 5.5.5-5.5.7 reconstructed",
+    "audit 2026-10-16: T4 SP 6.3.3 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 7.2.1 - removed stray \"1.\" (Notes numbering) at the end"
   ],
   "units": [
     {
@@ -629,7 +631,7 @@
             },
             {
               "code": "6.3.3",
-              "text": "Relate the support system with stability Study the support system of herbal, woody and aquatic plants. in plants."
+              "text": "Relate the support system with stability in plants."
             },
             {
               "code": "6.3.4",
@@ -1872,7 +1874,7 @@
           "sp": [
             {
               "code": "7.2.1",
-              "text": "Describes the formation of the final image formed by telescopes and microscopes. 1."
+              "text": "Describes the formation of the final image formed by telescopes and microscopes."
             },
             {
               "code": "7.2.2",

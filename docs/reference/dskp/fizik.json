@@ -61,7 +61,11 @@
     "T5 SP 4.3.2 inserted",
     "T5 SP 4.2.2 text corrected",
     "T5 SP 4.2.3 text corrected",
-    "T5 SP 4.1.6 added (merged into a neighbouring SP by the PDF layout)"
+    "T5 SP 4.1.6 added (merged into a neighbouring SP by the PDF layout)",
+    "audit 2026-10-16: T4 SP 5.1.6 - restored the wavelength symbol missing in this SP (other SPs already had it restored)",
+    "audit 2026-10-16: T5 SP 1.1.3 - restored dropped text \"≠ 0 N\"",
+    "audit 2026-10-16: T5 SP 2.1.1 - restored dropped words \"in liquids\"",
+    "audit 2026-10-16: T5 SP 6.1.1 - restored dropped words/symbols (alpha decay, beta decay, gamma decay)"
   ],
   "units": [
     {
@@ -575,7 +579,7 @@
             },
             {
               "code": "5.1.6",
-              "text": "Determine wavelength, , frequency, f and wave speed, v."
+              "text": "Determine wavelength, λ, frequency, f and wave speed, v."
             }
           ]
         },
@@ -913,7 +917,7 @@
             },
             {
               "code": "1.1.3",
-              "text": "Communicate about resultant force, F when an object is : (i) stationary, F = 0 N (ii) moving with constant velocity, F = 0 N (iii) moving with constant acceleration, F"
+              "text": "Communicate about resultant force, F when an object is : (i) stationary, F = 0 N (ii) moving with constant velocity, F = 0 N (iii) moving with constant acceleration, F ≠ 0 N"
             },
             {
               "code": "1.1.4",
@@ -1017,7 +1021,7 @@
           "sp": [
             {
               "code": "2.1.1",
-              "text": "Communicate about the concept of pressure"
+              "text": "Communicate about the concept of pressure in liquids"
             },
             {
               "code": "2.1.2",
@@ -1505,7 +1509,7 @@
           "sp": [
             {
               "code": "6.1.1",
-              "text": "Explain with examples decay equations: (i) (ii) (iii)"
+              "text": "Explain with examples decay equations: (i) α decay (ii) β decay (iii) γ decay"
             },
             {
               "code": "6.1.2",

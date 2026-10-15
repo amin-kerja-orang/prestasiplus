@@ -43,7 +43,12 @@
     "T5 SK 6.1 title",
     "T5 SP 6.1.2",
     "T5 SP 6.1.3",
-    "T5 SP 7.1.3"
+    "T5 SP 7.1.3",
+    "audit 2026-10-16: T4 SP 6.1.1 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 5.1.1 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 7.2.2 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 2.2.5 - replaced corrupt character U+FFFD with the printed multiplication sign",
+    "audit 2026-10-16: T5 SP 6.2.1 - restored plain words/symbols dropped from the text layer (\"dan bagi 0 ≤ x ≤ 360 dan\"); the three function equations are images and are still missing"
   ],
   "units": [
     {
@@ -439,7 +444,7 @@
           "sp": [
             {
               "code": "6.1.1",
-              "text": "Mewakilkan situasi dalam bentuk ketaksamaan Situasi kehidupan sebenar perlu dilibatkan linear."
+              "text": "Mewakilkan situasi dalam bentuk ketaksamaan linear."
             },
             {
               "code": "6.1.2",
@@ -937,7 +942,7 @@
             },
             {
               "code": "2.2.5",
-              "text": "Menerangkan maksud matriks songsang dan seterusnya menentukan matriks songsang bagi suatu matriks 2 � 2."
+              "text": "Menerangkan maksud matriks songsang dan seterusnya menentukan matriks songsang bagi suatu matriks 2 × 2."
             },
             {
               "code": "2.2.6",
@@ -1103,7 +1108,7 @@
           "sp": [
             {
               "code": "5.1.1",
-              "text": "Membezakan antara bentuk kongruen dan bukan Penggunaan perisian geometri dinamik kongruen berdasarkan sisi dan sudut."
+              "text": "Membezakan antara bentuk kongruen dan bukan kongruen berdasarkan sisi dan sudut."
             },
             {
               "code": "5.1.2",
@@ -1241,7 +1246,7 @@
           "sp": [
             {
               "code": "6.2.1",
-              "text": "Melukis graf fungsi trigonometri, membandingbezakan ciri-ciri graf fungsi tersebut."
+              "text": "Melukis graf fungsi trigonometri, dan bagi 0 ≤ x ≤ 360 dan membandingbezakan ciri-ciri graf fungsi tersebut."
             },
             {
               "code": "6.2.2",
@@ -1317,7 +1322,7 @@
             },
             {
               "code": "7.2.2",
-              "text": "Membina dan mentafsir plot kotak bagi suatu set Ogif dan plot kotak perlu dihubungkaitkan. data terkumpul."
+              "text": "Membina dan mentafsir plot kotak bagi suatu set data terkumpul."
             },
             {
               "code": "7.2.3",

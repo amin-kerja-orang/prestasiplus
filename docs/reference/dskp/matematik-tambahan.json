@@ -43,7 +43,31 @@
     "T4 SP 6.1.1",
     "T5 SP 1.1.1",
     "T5 SP 2.2.4",
-    "T5 SP 5.1.3"
+    "T5 SP 5.1.3",
+    "audit 2026-10-16: T4 SP 2.3.1 - restored words dropped before the formula remnants (\"c towards the shape and\")",
+    "audit 2026-10-16: T4 SP 2.3.3 - restored dropped words (\"k with other forms of\")",
+    "audit 2026-10-16: T4 SP 2.3.4 - restored dropped words (\"towards the\")",
+    "audit 2026-10-16: T4 SP 4.3.4 - restored dropped words (\"and use the\")",
+    "audit 2026-10-16: T5 SP 2.1.1 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 2.2.1 - restored dropped words (\"ax , a is a constant and n\")",
+    "audit 2026-10-16: T5 SP 2.2.2 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 2.2.3 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 2.4.6 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 2.4.9 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 3.2.1 - restored dropped words (\"indefinite integral formula\")",
+    "audit 2026-10-16: T5 SP 3.2.2 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 3.2.3 - restored dropped words/symbols (\"where a and b are\", \"≠ –1\"); the formula itself is an image and is still missing",
+    "audit 2026-10-16: T5 SP 3.3.1 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 3.3.5 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 4.1.1 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 4.2.1 - restored dropped words (\"contrast permutation\")",
+    "audit 2026-10-16: T5 SP 5.2.4 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 8.1.2 - removed Notes/Catatan-column text merged into the SP",
+    "audit 2026-10-16: T5 SP 6.5.1 - replaced corrupt character U+FFFD with the printed plus-minus sign",
+    "audit 2026-10-16: T4 9.0 learningArea GEOMETRY -> TRIGONOMETRY (the unit page prints only the elective package \"Application of Science and Technology\"; learning area taken from the Table 8 pairing of elective package and learning area); electivePackage field added",
+    "audit 2026-10-16: T4 10.0 learningArea GEOMETRY -> STATISTICS (the unit page prints only the elective package \"Application of Social Science\"; learning area taken from the Table 8 pairing of elective package and learning area); electivePackage field added",
+    "audit 2026-10-16: T5 7.0 learningArea TRIGONOMETRY -> ALGEBRA (the unit page prints only the elective package \"Application of Social Science\"; learning area taken from the Table 8 pairing of elective package and learning area); electivePackage field added",
+    "audit 2026-10-16: T5 8.0 learningArea TRIGONOMETRY -> CALCULUS (the unit page prints only the elective package \"Application of Science and Technology\"; learning area taken from the Table 8 pairing of elective package and learning area); electivePackage field added"
   ],
   "units": [
     {
@@ -189,7 +213,7 @@
           "sp": [
             {
               "code": "2.3.1",
-              "text": "Analyse and make generalisation about the effects of changes of a , b and c in f x ax2 bx position of the graph."
+              "text": "Analyse and make generalisation about the effects of changes of a , b and c in f x ax2 bx c towards the shape and position of the graph."
             },
             {
               "code": "2.3.2",
@@ -197,11 +221,11 @@
             },
             {
               "code": "2.3.3",
-              "text": "Relate the vertex form of quadratic functions, f x ax h2 quadratic functions."
+              "text": "Relate the vertex form of quadratic functions, f x ax h2 k with other forms of quadratic functions."
             },
             {
               "code": "2.3.4",
-              "text": "Analyse and make generalisation about the effects of changes of a , h dan k in quadratic functions f x shape and position of the graphs."
+              "text": "Analyse and make generalisation about the effects of changes of a , h dan k in quadratic functions f x towards the shape and position of the graphs."
             },
             {
               "code": "2.3.5",
@@ -375,7 +399,7 @@
             },
             {
               "code": "4.3.4",
-              "text": "Prove log b a relationship to determine the logarithm of a number."
+              "text": "Prove log b a and use the relationship to determine the logarithm of a number."
             },
             {
               "code": "4.3.5",
@@ -791,7 +815,7 @@
       "code": "9.0",
       "title": "Solution of Triangles",
       "titlePrinted": "SOLUTION OF TRIANGLES",
-      "learningArea": "GEOMETRY",
+      "learningArea": "TRIGONOMETRY",
       "standards": [
         {
           "sk": "9.1",
@@ -892,14 +916,15 @@
           "descriptor": "Apply appropriate knowledge and skills of solution of triangles in the context of non-routine problem solving in a creative manner."
         }
       ],
-      "tpScope": "DESCRIPTOR"
+      "tpScope": "DESCRIPTOR",
+      "electivePackage": "Application of Science and Technology"
     },
     {
       "level": "T4",
       "code": "10.0",
       "title": "Index Numbers",
       "titlePrinted": "INDEX NUMBERS",
-      "learningArea": "GEOMETRY",
+      "learningArea": "STATISTICS",
       "standards": [
         {
           "sk": "10.1",
@@ -960,7 +985,8 @@
           "descriptor": "Apply appropriate knowledge and skills of index numbers in the context of non-routine problem solving in a creative manner."
         }
       ],
-      "tpScope": "DESCRIPTOR"
+      "tpScope": "DESCRIPTOR",
+      "electivePackage": "Application of Social Science"
     },
     {
       "level": "T5",
@@ -1067,7 +1093,7 @@
           "sp": [
             {
               "code": "2.1.1",
-              "text": "Investigate and determine the value of limit of a Real-life situations need to be involved throughout function when its variable approaches zero."
+              "text": "Investigate and determine the value of limit of a function when its variable approaches zero."
             },
             {
               "code": "2.1.2",
@@ -1081,15 +1107,15 @@
           "sp": [
             {
               "code": "2.2.1",
-              "text": "Derive the formula of first derivative inductively for the function y is an integer."
+              "text": "Derive the formula of first derivative inductively for the function y ax , a is a constant and n is an integer."
             },
             {
               "code": "2.2.2",
-              "text": "Determine the first derivative of an algebraic Further exploration using dynamic geometry function."
+              "text": "Determine the first derivative of an algebraic function."
             },
             {
               "code": "2.2.3",
-              "text": "Determine the first derivative of composite Chain rule needs to be involved. function."
+              "text": "Determine the first derivative of composite function."
             },
             {
               "code": "2.2.4",
@@ -1133,7 +1159,7 @@
             },
             {
               "code": "2.4.6",
-              "text": "Interpret and determine rates of change for The use of chain rule needs to be emphasised. related quantities."
+              "text": "Interpret and determine rates of change for related quantities."
             },
             {
               "code": "2.4.7",
@@ -1145,7 +1171,7 @@
             },
             {
               "code": "2.4.9",
-              "text": "Solve problems involving small changes and Problems involved are limited to two variables. approximations of certain quantities."
+              "text": "Solve problems involving small changes and approximations of certain quantities."
             }
           ]
         }
@@ -1201,15 +1227,15 @@
           "sp": [
             {
               "code": "3.2.1",
-              "text": "Derive the inductively."
+              "text": "Derive the indefinite integral formula inductively."
             },
             {
               "code": "3.2.2",
-              "text": "Determine indefinite integral for algebraic The following integrations need to be involved: functions."
+              "text": "Determine indefinite integral for algebraic functions."
             },
             {
               "code": "3.2.3",
-              "text": "Determine indefinite integral for functions in the form of constants, n is an integer and n"
+              "text": "Determine indefinite integral for functions in the form of , where a and b are constants, n is an integer and n ≠ –1."
             },
             {
               "code": "3.2.4",
@@ -1223,7 +1249,7 @@
           "sp": [
             {
               "code": "3.3.1",
-              "text": "Determine the value of definite integral for The following characteristics of definite integral algebraic functions."
+              "text": "Determine the value of definite integral for algebraic functions."
             },
             {
               "code": "3.3.2",
@@ -1239,7 +1265,7 @@
             },
             {
               "code": "3.3.5",
-              "text": "Determine the generated volume of a region Generated volume for region between two curves is revolved at the x-axis or the y-axis."
+              "text": "Determine the generated volume of a region revolved at the x-axis or the y-axis."
             }
           ]
         },
@@ -1295,7 +1321,7 @@
           "sp": [
             {
               "code": "4.1.1",
-              "text": "Investigate and make generalisation about Real-life situations and tree diagrams need to multiplication rule."
+              "text": "Investigate and make generalisation about multiplication rule."
             },
             {
               "code": "4.1.2",
@@ -1313,7 +1339,7 @@
           "sp": [
             {
               "code": "4.2.1",
-              "text": "Compare and combination."
+              "text": "Compare and contrast permutation and combination."
             },
             {
               "code": "4.2.2",
@@ -1401,7 +1427,7 @@
             },
             {
               "code": "5.2.4",
-              "text": "Determine and describe the value of mean, Mean as an expected average value when an event variance and standard deviation for a binomial distribution."
+              "text": "Determine and describe the value of mean, variance and standard deviation for a binomial distribution."
             },
             {
               "code": "5.2.5",
@@ -1529,7 +1555,7 @@
           "sp": [
             {
               "code": "6.5.1",
-              "text": "Prove trigonometric identities using addition formulae for sin (A � B), cos (A � B) and tan (A � B)."
+              "text": "Prove trigonometric identities using addition formulae for sin (A ± B), cos (A ± B) and tan (A ± B)."
             },
             {
               "code": "6.5.2",
@@ -1589,7 +1615,7 @@
       "code": "7.0",
       "title": "Linear Programming",
       "titlePrinted": "LINEAR PROGRAMMING",
-      "learningArea": "TRIGONOMETRY",
+      "learningArea": "ALGEBRA",
       "standards": [
         {
           "sk": "7.1",
@@ -1638,14 +1664,15 @@
           "descriptor": "Apply appropriate knowledge and skills of linear programming in the context of non-routine problem solving in a creative manner."
         }
       ],
-      "tpScope": "DESCRIPTOR"
+      "tpScope": "DESCRIPTOR",
+      "electivePackage": "Application of Social Science"
     },
     {
       "level": "T5",
       "code": "8.0",
       "title": "Kinematics of Linear Motion",
       "titlePrinted": "KINEMATICS OF LINEAR MOTION",
-      "learningArea": "TRIGONOMETRY",
+      "learningArea": "CALCULUS",
       "standards": [
         {
           "sk": "8.1",
@@ -1657,7 +1684,7 @@
             },
             {
               "code": "8.1.2",
-              "text": "Determine the total distance travelled The displacement function is limited to linear and by a particle in a given period of time. quadratic."
+              "text": "Determine the total distance travelled by a particle in a given period of time."
             }
           ]
         },
@@ -1730,7 +1757,8 @@
           "descriptor": "Apply appropriate knowledge and skills of kinematics of linear motion in the context of non-routine problem solving in a creative manner."
         }
       ],
-      "tpScope": "DESCRIPTOR"
+      "tpScope": "DESCRIPTOR",
+      "electivePackage": "Application of Science and Technology"
     }
   ]
 }

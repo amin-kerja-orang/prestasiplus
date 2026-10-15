@@ -7,11 +7,11 @@ Each `<subject>.json` holds `units` (with `level` T4/T5), and each unit holds St
 | Subject | File | T4 SP | T5 SP | Notes |
 |---|---|---|---|---|
 | Matematik | matematik.json | 70 | 57 | maths symbols drawn as images are missing from SP text |
-| Matematik Tambahan | matematik-tambahan.json | 94 | 77 | BI edition |
+| Matematik Tambahan | matematik-tambahan.json | 94 | 77 | BI edition; four units carry `electivePackage`, and their learning area is inferred from Table 8 |
 | Fizik | fizik.json | 108 | 97 | BI edition |
 | Sains | sains.json | 121 | 85 | BI edition; 2 SPs reconstructed (marked) |
 | Bahasa Melayu | bahasa-melayu.json | 54 | 48 | units are skills; 4.0 and 5.0 have no TP |
-| Bahasa Inggeris | bahasa-inggeris.json | 35 | 34 | units are skills; Form 4 is "DRAF 1/2018" |
+| Bahasa Inggeris | bahasa-inggeris.json | 35 (+2 slots) | 34 (+3 slots) | units are skills; printed "No learning standard" slots are kept as rows; Form 4 is "DRAF 1/2018" |
 | Sejarah | sejarah.json | 102 | 96 | TP per SK |
 | Pendidikan Islam | pendidikan-islam.json | 133 | 106 | Jawi; text inside images was transcribed by hand |
 | Tasawwur Islam | tasawwur-islam.json | 64 | 31 | TP per SK |
@@ -20,7 +20,10 @@ Each `<subject>.json` holds `units` (with `level` T4/T5), and each unit holds St
 | Landskap dan Nurseri | landskap-dan-nurseri.json | 72 | 68 | practical; some TP rows not aligned (marked) |
 | Katering dan Penyajian | katering-dan-penyajian.json | 140 | 100 | practical |
 
-**Status:** extracted and checked by script, with manual corrections listed in each file under `manualCorrections`. These files have **not been independently audited** against the PDFs. Audit them before they become seed data.
+**Status:** extracted, then **independently audited on 2026-10-16** ([audit report](../../qa/audit/dskp-extracts-audit.md)). No subject failed. 38 text fixes were applied and logged under `manualCorrections` ("audit 2026-10-16") where present. Known limits:
+- Maths and physics formulas printed as images are missing from some Matematik, Matematik Tambahan and Fizik SPs. These SPs are kept as printed text, and tagging must not rely on exact wording for them.
+- Pendidikan Islam: image-only Jawi words in about 110 SPs are not yet independently verified. Verify them before using the text as seed content.
+- Sains T4 4.3.1 is a reconstruction.
 
 **Not covered by any DSKP:** the SPM exam paper format. DSKPs describe classroom assessment (TP1–6) only. The paper structure needs the LPM assessment formats or JSU, or the user's own exam schema.
 

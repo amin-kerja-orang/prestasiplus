@@ -52,7 +52,7 @@
             },
             {
               "code": "1.1.8",
-              "text": "Mencadangkan tumbuhan hiasan berdasarkan fungsi fizikal dan estetik dalam pelandskapan."
+              "text": "Mencadangkan tumbuhan hiasan berdasarkan fungsi fizikal dan estetika dalam pelandskapan."
             }
           ]
         },
@@ -868,5 +868,8 @@
         }
       ]
     }
+  ],
+  "manualCorrections": [
+    "audit 2026-10-16: T4 SP 1.1.8 - word truncated: \"estetik\" -> \"estetika\" as printed"
   ]
 }

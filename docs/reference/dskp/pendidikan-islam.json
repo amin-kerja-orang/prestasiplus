@@ -510,11 +510,11 @@
       },
       {
        "tp": 3,
-       "descriptor": "مغفليكاسيكفهمن حديث ."
+       "descriptor": "مغفليكاسي كفهمن حديث ."
       },
       {
        "tp": 4,
-       "descriptor": "مغاناليسيسكفهمن حديث سرتا مغعملكنث ."
+       "descriptor": "مغاناليسيس كفهمن حديث سرتا مغعملكنث ."
       },
       {
        "tp": 5,
@@ -2544,5 +2544,9 @@
     }
    ]
   }
+ ],
+ "manualCorrections": [
+  "audit 2026-10-16: T4 SK 2.9 TP3 - missing space before the image-derived word kefahaman (two words had been joined)",
+  "audit 2026-10-16: T4 SK 2.9 TP4 - missing space before the image-derived word kefahaman (two words had been joined)"
  ]
 }
