@@ -2,6 +2,7 @@
    `source('../')` limits class detection to `src/` so docs/ and discovery data are not scanned. */
 @import 'tailwindcss' source('../');
 @import '@nuxt/ui';
+@import '../theme/fonts.css';
 @import '../theme/tokens.css';
 
 @import './fonts.css';

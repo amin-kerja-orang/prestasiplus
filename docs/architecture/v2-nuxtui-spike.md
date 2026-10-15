@@ -123,3 +123,14 @@ Run in the worktree on branch `worktree-agent-a74414a970827f075`.
 - The E2E selector report should flag selectors on a wrapper for UTabs, UTable and overlays (check e rules).
 - The generated `components.d.ts` and `auto-imports.d.ts` need to be ignored by ESLint and Prettier (they are already `.gitignore`d; `npx eslint` on them reported nothing in this run, keep it that way).
 - Lint rules that forbid raw `<table>`, `<dialog>` and form elements will not trip on Nuxt UI's own output (rules run on our templates only).
+
+## 7. V2-T03 decisions on hazards 1 to 4 (2026-10-16)
+
+| Hazard | Decision |
+|---|---|
+| 1 Colour mode key | **Own the toggle.** `colorMode: false` in `vite.config.ts`; `src/theme/color-mode.ts` (`useThemeMode(personality)`) stores `pp.theme` (`light`/`dark`/`system`), default learner dark, staff system. It puts `data-personality`, `.dark` and `color-scheme` on `<html>` only while a portal layout is mounted and removes them on unmount, so legacy pages never go dark and the `seedLightColorMode` workaround is deleted. On `<html>` so teleported modals/toasts inherit the tokens. `UColorModeButton` is not available (no plugin); portal headers build their own toggle on `useThemeMode`. |
+| 2 Legacy base rules | `base.css` heading rule and `live-globals.css` `.card` rules end in `:where(:not([data-personality] *))` (specificity unchanged, v2 portals excluded). V2-T21 may still convert to `.legacy-ui` nesting. |
+| 3 see 1 | |
+| 4 Radius | `--ui-radius: 0.5rem` is set on `[data-personality]` only (tokens.css), never on `:root`. |
+
+Other T03 facts: personality tokens live under `[data-personality=staff|learner]` with `.dark` variants (`:not(.light)` lets a forced-light panel sit inside a dark page); fonts use `--font-display` and `--font-ui` (not `--font-sans`, which the legacy 404 uses); `shadow-xs` of the design is `shadow-ds-xs`; learner-only classes must be literal `[[data-personality=learner]_&]:...` strings (Tailwind cannot see interpolated class names); Phosphor icons are bundled only when named literally in `src/**/*.{vue,ts}` or listed in `iconBundle` (`src/theme/ui.config.ts`); Nuxt UI internal icons are remapped to Phosphor there.

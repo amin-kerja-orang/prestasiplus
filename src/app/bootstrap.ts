@@ -58,22 +58,6 @@ async function createTransport(
   return { transport: runtime.transport, mockRuntime: runtime }
 }
 
-/**
- * The Nuxt UI colour-mode plugin (`useDark()` of VueUse) follows the OS scheme when nothing is
- * stored, which would put `.dark` on `<html>` and a dark body on every legacy page. Until the new
- * portal layouts own dark mode (V2-T03), an unset preference is stored as `light`
- * (key `vueuse-color-scheme`, not configurable through the plugin).
- */
-function seedLightColorMode(): void {
-  try {
-    if (localStorage.getItem('vueuse-color-scheme') === null) {
-      localStorage.setItem('vueuse-color-scheme', 'light')
-    }
-  } catch {
-    // Storage blocked: the plugin then follows the OS, nothing more to do.
-  }
-}
-
 export async function bootstrap(options: BootstrapOptions = {}): Promise<BootstrappedApp> {
   const { transport, mockRuntime } = await createTransport(options.mock)
   installTransport(withSessionSliding(transport))
@@ -87,7 +71,6 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Bootstr
   connectUnauthorizedRedirect(router)
   app.use(router)
   // Nuxt UI plugin after the router so its link component finds vue-router (V2-T02).
-  seedLightColorMode()
   app.use(ui)
 
   app.mount(options.el ?? '#app')

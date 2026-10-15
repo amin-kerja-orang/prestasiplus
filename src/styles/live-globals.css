@@ -34,7 +34,8 @@
 }
 
 /* Card Utility */
-.card {
+/* V2-T03: not inside a v2 portal; `:where` keeps the specificity of `.card` unchanged. */
+.card:where(:not([data-personality] *)) {
   background: white;
   border-radius: 1rem;
   box-shadow:
@@ -46,13 +47,13 @@
 }
 
 @media (min-width: 640px) {
-  .card {
+  .card:where(:not([data-personality] *)) {
     border-radius: 1.25rem;
     padding: 1.5rem;
   }
 }
 
-.card:hover {
+.card:where(:not([data-personality] *)):hover {
   box-shadow:
     0 12px 28px rgba(99, 102, 241, 0.12),
     0 4px 12px rgba(99, 102, 241, 0.08);
