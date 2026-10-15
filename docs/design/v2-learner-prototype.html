@@ -156,11 +156,11 @@ h2.focus-t:focus { outline: none; }
 :root[data-theme="light"] .th-sun, :root[data-theme="light"] .th-sun { display: none; }
 :root:not([data-theme="light"]) .th-moon { display: none; }
 .greet { display: flex; align-items: flex-end; gap: 10px; }
-.bubble { position: relative; background: color-mix(in srgb, var(--ai) 16%, var(--bg)); border-radius: 18px 18px 18px 6px; padding: 12px 14px; font-size: .9375rem; line-height: 1.4; color: var(--text-hl); box-shadow: var(--shadow-lift); animation: rise .6s var(--ease-pop) both .15s; min-width: 0; }
+.bubble { position: relative; background: var(--bg); border-radius: 18px 18px 18px 6px; padding: 12px 14px; font-size: .9375rem; line-height: 1.4; color: var(--text-hl); box-shadow: var(--shadow-lift); animation: rise .6s var(--ease-pop) both .15s; min-width: 0; }
 .bubble b { font-weight: 700; }
-.fb .ai { background: color-mix(in srgb, var(--ai) 16%, var(--bg)); padding: 8px 12px; margin-top: 6px; border-radius: 12px; color: var(--text-hl); }
+.fb .ai { background: var(--bg-elevated); padding: 8px 12px; margin-top: 6px; border-radius: 12px; color: var(--text-hl); }
 .k1 { --cf: var(--c1); --cg: var(--c1-on); } .k2 { --cf: var(--c2); --cg: var(--c2-on); } .k3 { --cf: var(--c3); --cg: var(--c3-on); } .k4 { --cf: var(--c4); --cg: var(--c4-on); }
-.stat.tint, .subj.tint { background: color-mix(in srgb, var(--cf) 15%, var(--bg)); }
+.stat.tint, .subj.tint { background: var(--bg); }
 @keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
 .stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
 .stat { background: var(--bg); border-radius: 20px; padding: 14px 10px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; box-shadow: var(--shadow-lift); animation: rise .6s var(--ease-pop) both; }
@@ -255,7 +255,7 @@ h2.focus-t:focus { outline: none; }
 .big .ct b { font-family: var(--font-display); font-weight: 800; font-size: 3rem; line-height: 1; color: var(--text-hl); }
 .big .ct span { font-size: .75rem; color: var(--text-muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .rw { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; width: 100%; max-width: 320px; }
-.rw div { background: color-mix(in srgb, var(--cf) 15%, var(--bg)); border-radius: 18px; padding: 12px; display: flex; align-items: center; gap: 10px; text-align: left; box-shadow: var(--shadow-lift); }
+.rw div { background: var(--bg); border-radius: 18px; padding: 12px; display: flex; align-items: center; gap: 10px; text-align: left; box-shadow: var(--shadow-lift); }
 .rw b { font-family: var(--font-display); font-weight: 800; font-size: 1.375rem; color: var(--text-hl); font-variant-numeric: tabular-nums; line-height: 1.1; }
 .rw small { display: block; font-size: .75rem; color: var(--text-muted); font-weight: 600; }
 .stk { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
@@ -365,9 +365,9 @@ h2.focus-t:focus { outline: none; }
           <div class="sec-t"><h3 id="subT">Subjek</h3></div>
           <div class="subjs">
             <button class="subj tint k1 pr" type="button" data-prev><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-mat"/></svg></span>Matematik</button>
-            <button class="subj tint k3 pr" type="button" data-prev><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-bm"/></svg></span>B. Melayu</button>
-            <button class="subj tint k4 pr" type="button" data-prev><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-bi"/></svg></span>B. Inggeris</button>
-            <button class="subj tint k2 pr" type="button" data-prev><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-sej"/></svg></span>Sejarah</button>
+            <button class="subj tint k1 pr" type="button" data-prev><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-bm"/></svg></span>B. Melayu</button>
+            <button class="subj tint k1 pr" type="button" data-prev><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-bi"/></svg></span>B. Inggeris</button>
+            <button class="subj tint k1 pr" type="button" data-prev><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-sej"/></svg></span>Sejarah</button>
             <button class="subj tint k1 pr" type="button" data-prev><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-sci"/></svg></span>Sains</button>
           </div>
         </section>
