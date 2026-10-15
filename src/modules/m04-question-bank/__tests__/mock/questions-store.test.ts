@@ -580,8 +580,9 @@ describe('anchors and layout', () => {
       expect(r.subjectId).toBeNull()
       expect(r.educationLevelId).toBeNull()
       expect(r.options).toBeNull()
-      expect(r.questionText.toLowerCase()).not.toContain('inovasi')
     }
+    // M07 owns the PKSK texts: exactly the 13 observed live "inovasi" rows contain the word (BR-M07-06).
+    expect(pksk.rows.filter((r) => r.questionText.toLowerCase().includes('inovasi'))).toHaveLength(13)
     expect(questions.count('Q-PKSK', undefined, 'T1')).toBe(383)
   })
 

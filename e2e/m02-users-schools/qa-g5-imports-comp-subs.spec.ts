@@ -6,7 +6,7 @@
 
 import type { Page } from '@playwright/test'
 
-import { DEMO_PASSWORD, expect, gotoApp as gotoAppOn, test } from '../fixtures/test'
+import { expect, gotoApp as gotoAppOn, test } from '../fixtures/test'
 import {
   acceptNextDialog,
   expectNoHorizontalScroll,
