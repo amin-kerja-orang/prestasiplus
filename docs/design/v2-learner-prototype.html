@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ms" data-variant="b">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pengalaman Murid v2</title>
+<meta name="description" content="Prototaip interaktif pengalaman murid PrestasiPlus v2: Home, jawab soalan satu demi satu, dan kemenangan.">
+<meta name="color-scheme" content="dark light">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Plus+Jakarta+Sans:wght@400..800&display=swap" rel="stylesheet">
+<script>
+(function () {
+  var t = 'dark';
+  try { var s = localStorage.getItem('pp-v2-theme'); if (s === 'light' || s === 'dark') t = s; } catch (e) {}
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<style>
+/* ===== Token Versi B (gelap = lalai) ===== */
+:root {
+  color-scheme: dark;
+  --text-hl: #FFFFFF; --text: #EBEEF5; --text-toned: #D5DBE8; --text-muted: #A9B3C8; --text-dimmed: #7D88A0; --text-inv: #0D1120;
+  --bg-muted: #0D1120; --bg: #171C2D; --bg-elevated: #262D40; --bg-accented: #3A4258; --bg-soft: #1E2437; --bg-device: #121729;
+  --border: transparent;
+  --primary: #6283FF; --primary-on: #0D1120;
+  --success: #3CC57C; --error: #FF6685; --warning: #FFB91A;
+  --highlight: #BCEB27; --on-highlight: #0D1120;
+  --ic-flame: #FF8A2B; --ic-coin: #FF8A2B; --ic-xp: #6283FF; --ungu: #A06CFF;
+  --cat-1: #6283FF; --cat-3: #6283FF; --cat-4: #6283FF; --cat-5: #6283FF; --cat-8: #6283FF;
+  --shadow-lift: 0 6px 20px rgba(0,0,0,.35); --shadow-card: 0 8px 24px rgba(0,0,0,.35); --shadow-modal: 0 16px 40px rgba(0,0,0,.6);
+  --e-cta: 0 4px 12px rgba(0,0,0,.4);
+  --glow: rgba(98,131,255,.22);
+  --font-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --text-hl: #FFFFFF; --text: #EBEEF5; --text-toned: #D5DBE8; --text-muted: #A9B3C8; --text-dimmed: #7D88A0; --text-inv: #0D1120;
+  --bg-muted: #0D1120; --bg: #171C2D; --bg-elevated: #262D40; --bg-accented: #3A4258; --bg-soft: #1E2437; --bg-device: #121729;
+  --primary: #6283FF; --primary-on: #0D1120;
+  --success: #3CC57C; --error: #FF6685; --warning: #FFB91A;
+  --ic-flame: #FF8A2B; --ic-coin: #FF8A2B; --ic-xp: #6283FF; --ungu: #A06CFF;
+  --cat-1: #6283FF; --cat-3: #6283FF; --cat-4: #6283FF; --cat-5: #6283FF; --cat-8: #6283FF;
+  --shadow-lift: 0 6px 20px rgba(0,0,0,.35); --shadow-card: 0 8px 24px rgba(0,0,0,.35); --shadow-modal: 0 16px 40px rgba(0,0,0,.6);
+  --e-cta: 0 4px 12px rgba(0,0,0,.4); --glow: rgba(98,131,255,.22);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --text-hl: #0D1120; --text: #262D40; --text-toned: #3A4258; --text-muted: #49536C; --text-dimmed: #5F6A84; --text-inv: #FFFFFF;
+  --bg-muted: #EBEEF5; --bg: #FFFFFF; --bg-elevated: #EBEEF5; --bg-accented: #D5DBE8; --bg-soft: #F5F7FB; --bg-device: #F5F7FB;
+  --primary: #2440F0; --primary-on: #FFFFFF;
+  --success: #116E42; --error: #B71240; --warning: #84470A;
+  --ic-flame: #CC5003; --ic-coin: #CC5003; --ic-xp: #2440F0; --ungu: #6B2AD8;
+  --cat-1: #2440F0; --cat-3: #2440F0; --cat-4: #2440F0; --cat-5: #2440F0; --cat-8: #2440F0;
+  --shadow-lift: 0 6px 20px rgba(13,17,32,.10); --shadow-card: 0 8px 24px rgba(13,17,32,.08); --shadow-modal: 0 16px 40px rgba(13,17,32,.18);
+  --e-cta: 0 4px 12px rgba(36,64,240,.28); --glow: rgba(36,64,240,.12);
+}
+
+/* ===== Asas ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
+body { margin: 0; background: #0D1120; background: var(--bg-muted); color: var(--text); font-family: var(--font-sans); font-size: 1rem; line-height: 1.5; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+svg { display: block; }
+[hidden] { display: none !important; }
+.ic { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ic-f { fill: currentColor; stroke: none; }
+.sm { width: 18px; height: 18px; }
+.disp { font-family: var(--font-display); font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--text-hl); }
+.over { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+
+/* ===== Pentas & bingkai telefon ===== */
+.stage { min-height: 100vh; min-height: 100dvh; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 40px; padding: 16px; }
+.phone { position: relative; width: 390px; max-width: 100%; height: min(844px, calc(100dvh - 32px)); min-height: 560px; border-radius: 40px; overflow: hidden; container-type: inline-size; background: radial-gradient(120% 55% at 50% -8%, var(--glow), transparent 62%), var(--bg-muted); box-shadow: 0 0 0 10px var(--bg-device), 0 30px 80px rgba(0,0,0,.45); isolation: isolate; }
+.note { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 14px; }
+.note h1 { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; line-height: 1.2; color: var(--text-hl); }
+.note ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: n; }
+.note li { counter-increment: n; position: relative; padding: 12px 14px 12px 46px; border-radius: 14px; background: var(--bg); font-size: .875rem; color: var(--text-muted); }
+.note li b { display: block; color: var(--text-hl); font-size: .9375rem; }
+.note li::before { content: counter(n); position: absolute; left: 12px; top: 12px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg-elevated); color: var(--text-hl); font-weight: 700; font-size: .8125rem; display: grid; place-items: center; }
+.only-phone { display: none; }
+@media (max-width: 480px) {
+  .stage { padding: 0; gap: 0; display: block; }
+  .phone { width: 100%; height: 100vh; height: 100dvh; min-height: 0; border-radius: 0; box-shadow: none; }
+  .note { display: none; }
+  .only-phone { display: inline-flex; }
+}
+@media (min-width: 481px) and (max-width: 899px) { .note { max-width: 390px; } }
+
+/* ===== Skrin ===== */
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transform: translateY(18px) scale(.985); transition: opacity .3s var(--ease-out), transform .5s var(--ease-out), visibility 0s .5s; }
+.screen.on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.screen.out { transform: translateY(-10px) scale(.985); }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 18px; overscroll-behavior: contain; }
+h2.focus-t:focus { outline: none; }
+
+/* ===== Butang & tekan ===== */
+.pr { transition: transform .2s var(--ease-pop), background-color .2s, box-shadow .2s, opacity .2s; }
+.pr:active:not(:disabled):not([aria-disabled="true"]) { transform: scale(.97); }
+.btn { min-height: 52px; padding: 0 22px; border-radius: 16px; font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-p { background: var(--primary); color: var(--primary-on); box-shadow: var(--e-cta); }
+.btn-s { background: var(--bg-elevated); color: var(--text-hl); }
+.btn:disabled { opacity: .4; box-shadow: none; cursor: not-allowed; }
+.btn-block { width: 100%; }
+.icon-btn { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: var(--text-toned); background: var(--bg); }
+
+/* ===== Alesa ===== */
+.alesa { display: block; flex: none; animation: bob 4s ease-in-out infinite; }
+.alesa .blink { transform-box: fill-box; transform-origin: center; animation: blink 5s infinite; }
+.alesa.hop { animation: hop .7s var(--ease-pop) 1; }
+.alesa.party { animation: party 1.1s var(--ease-pop) infinite; }
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes blink { 0%,94%,100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes hop { 0% { transform: scale(.9) translateY(4px); } 60% { transform: scale(1.08) translateY(-6px); } 100% { transform: none; } }
+@keyframes party { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
+
+/* ===== Home ===== */
+.hd { display: flex; align-items: center; justify-content: space-between; padding: max(10px, env(safe-area-inset-top)) 16px 0; }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; color: var(--text-hl); letter-spacing: -.01em; }
+.brand span { color: var(--primary); }
+:root[data-theme="light"] .th-sun, :root[data-theme="light"] .th-sun { display: none; }
+:root:not([data-theme="light"]) .th-moon { display: none; }
+.greet { display: flex; align-items: flex-end; gap: 10px; }
+.bubble { position: relative; background: var(--bg); border-radius: 18px 18px 18px 6px; padding: 12px 14px; font-size: .9375rem; line-height: 1.4; color: var(--text-hl); box-shadow: var(--shadow-lift); animation: rise .6s var(--ease-pop) both .15s; min-width: 0; }
+.bubble b { font-weight: 700; }
+.bubble { box-shadow: inset 3px 0 0 var(--ungu), var(--shadow-lift); }
+.fb .ai { border-left: 3px solid var(--ungu); padding-left: 10px; margin-top: 4px; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.stat { background: var(--bg); border-radius: 20px; padding: 14px 10px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; box-shadow: var(--shadow-lift); animation: rise .6s var(--ease-pop) both; }
+.stat:nth-child(2) { animation-delay: .08s; } .stat:nth-child(3) { animation-delay: .16s; }
+.ico { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--c, var(--primary)) 16%, transparent); color: var(--c, var(--primary)); flex: none; }
+.stat .n { font-size: clamp(1.375rem, 7.4cqw, 1.875rem); line-height: 1; }
+.stat .u { font-size: .75rem; color: var(--text-muted); font-weight: 600; margin-top: -4px; }
+.flame { transform-origin: 50% 90%; animation: flicker 1.6s ease-in-out infinite; }
+@keyframes flicker { 0%,100% { transform: scale(1,1) rotate(0); } 25% { transform: scale(1.06,.95) rotate(-3deg); } 55% { transform: scale(.96,1.08) rotate(2deg); } 80% { transform: scale(1.04,.98) rotate(-1deg); } }
+.hero { background: var(--bg); border-radius: 24px; padding: 18px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-card); animation: rise .6s var(--ease-pop) both .24s; }
+.hero .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.hero .ttl { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; line-height: 1.2; color: var(--text-hl); }
+.hero .sub { font-size: .875rem; color: var(--text-muted); }
+.hero .btn { margin-top: 10px; min-height: 48px; }
+.ring { position: relative; width: 84px; height: 84px; flex: none; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .trk { stroke: var(--bg-elevated); } .ring .bar { stroke: var(--primary); transition: stroke-dashoffset 1.1s var(--ease-pop); }
+.ring .ct { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; color: var(--text-hl); }
+.sec-t { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.sec-t h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.125rem; color: var(--text-hl); }
+.subjs { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 4px 16px 10px; scroll-snap-type: x proximity; scrollbar-width: none; }
+.subjs::-webkit-scrollbar { display: none; }
+.subj { flex: none; width: 84px; min-height: 96px; background: var(--bg); border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px 4px; font-size: .8125rem; font-weight: 600; color: var(--text-hl); scroll-snap-align: start; }
+.nav { flex: none; display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); background: var(--bg); padding: 6px 6px max(8px, env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; }
+.tab { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: .75rem; font-weight: 600; color: var(--text-muted); border-radius: 14px; }
+.tab[aria-current="page"] { color: var(--primary); }
+.tab[aria-current="page"] .ic { animation: hop .6s var(--ease-pop); }
+.link { min-height: 44px; padding: 0 14px; border-radius: 12px; color: var(--text-muted); font-size: .875rem; font-weight: 600; align-items: center; justify-content: center; align-self: center; }
+
+/* ===== Latihan ===== */
+.pt { display: flex; align-items: center; gap: 10px; padding: max(10px, env(safe-area-inset-top)) 12px 0 8px; }
+.pbar { flex: 1; height: 10px; background: var(--bg-elevated); border-radius: 99px; overflow: hidden; }
+.pbar i { display: block; height: 100%; width: 6%; border-radius: 99px; background: var(--primary); transition: width .6s var(--ease-pop); }
+.combo { min-width: 56px; height: 44px; padding: 0 10px; border-radius: 14px; background: var(--bg); display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-family: var(--font-display); font-weight: 800; color: var(--text-muted); transition: color .3s; }
+.combo .ic { color: var(--text-dimmed); transition: color .3s; }
+.combo.lit { color: var(--text-hl); } .combo.lit .ic { color: var(--ic-flame); animation: flicker 1.4s ease-in-out infinite; }
+.combo.bump { animation: hop .6s var(--ease-pop); }
+.combo.hot { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ic-flame) 45%, transparent), 0 0 18px color-mix(in srgb, var(--ic-flame) 35%, transparent); }
+.meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px 0; }
+.chip { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px 0 6px; border-radius: 99px; background: var(--bg); font-size: .8125rem; font-weight: 700; color: var(--text-hl); }
+.chip .ico { width: 26px; height: 26px; border-radius: 99px; }
+.chip .ico .ic { width: 16px; height: 16px; }
+.qa { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px 12px; display: flex; flex-direction: column; justify-content: center; }
+.q { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.25rem, 6cqw, 1.5rem); line-height: 1.35; color: var(--text-hl); letter-spacing: -.01em; animation: rise .5s var(--ease-out) both; }
+.opts { display: flex; flex-direction: column; gap: 10px; padding: 8px 16px 12px; }
+.opt { position: relative; width: 100%; min-height: 60px; padding: 8px 14px 8px 10px; border-radius: 18px; background: var(--bg); display: flex; align-items: center; gap: 12px; text-align: left; font-size: 1.0625rem; font-weight: 600; color: var(--text-hl); box-shadow: inset 0 0 0 2px transparent; animation: rise .5s var(--ease-out) both; }
+.opt:nth-child(2) { animation-delay: .05s; } .opt:nth-child(3) { animation-delay: .1s; } .opt:nth-child(4) { animation-delay: .15s; }
+.opt .l { width: 36px; height: 36px; border-radius: 12px; background: var(--bg-elevated); display: grid; place-items: center; font-weight: 800; font-size: .875rem; color: var(--text-toned); flex: none; transition: background-color .2s, color .2s; }
+.opt .t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.opt .mk { width: 28px; height: 28px; flex: none; display: grid; place-items: center; }
+.opt[aria-pressed="true"] { background: var(--bg-soft); box-shadow: inset 0 0 0 2px var(--primary); }
+.opt[aria-pressed="true"] .l { background: var(--primary); color: var(--primary-on); }
+.opt.lock { cursor: default; }
+.opt.ok { background: color-mix(in srgb, var(--success) 18%, var(--bg)); box-shadow: inset 0 0 0 2px var(--success); }
+.opt.ok .l { background: var(--success); color: var(--bg-muted); } .opt.ok .mk { color: var(--success); }
+.opt.no { background: color-mix(in srgb, var(--error) 16%, var(--bg)); box-shadow: inset 0 0 0 2px var(--error); }
+.opt.no .l { background: var(--error); color: var(--bg-muted); } .opt.no .mk { color: var(--error); }
+.opt.dim { opacity: .55; }
+.opt.pop { animation: pop .5s var(--ease-pop); }
+.opt.nudge { animation: nudge .4s ease-out; }
+@keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(1.04); } 100% { transform: scale(1); } }
+@keyframes nudge { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 60% { transform: translateX(4px); } }
+.fl { position: absolute; right: 52px; top: 6px; font-family: var(--font-display); font-weight: 800; font-size: 1rem; background: var(--highlight); color: var(--on-highlight); padding: 2px 10px; border-radius: 99px; pointer-events: none; animation: floatup 1s var(--ease-out) forwards; z-index: 4; }
+@keyframes floatup { 0% { opacity: 0; transform: translateY(8px) scale(.7); } 20% { opacity: 1; transform: translateY(-6px) scale(1.15); } 100% { opacity: 0; transform: translateY(-54px) scale(1); } }
+.ft { flex: none; padding: 4px 16px max(14px, env(safe-area-inset-bottom)); }
+.fb { display: none; border-radius: 22px; padding: 14px; gap: 12px; align-items: flex-start; flex-wrap: wrap; animation: sheet .5s var(--ease-pop) both; }
+.fb.show { display: flex; }
+.fb.good { background: color-mix(in srgb, var(--success) 16%, var(--bg)); }
+.fb.bad { background: color-mix(in srgb, var(--error) 14%, var(--bg)); }
+.fb .bd { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.fb h3 { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; color: var(--text-hl); display: flex; align-items: center; gap: 6px; }
+.fb h3 .ic { width: 22px; height: 22px; } .fb.good h3 .ic { color: var(--success); } .fb.bad h3 .ic { color: var(--error); }
+.fb p { font-size: .9375rem; line-height: 1.45; color: var(--text); }
+.fb .cm { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--text-hl); }
+.fb .cm .ic { color: var(--ic-flame); width: 20px; height: 20px; }
+.fb .btn { width: 100%; }
+@keyframes sheet { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+
+/* ===== Kemenangan ===== */
+#s-win { background: radial-gradient(90% 50% at 50% 10%, color-mix(in srgb, var(--highlight) 16%, transparent), transparent 70%); text-align: center; }
+.win { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: max(16px, env(safe-area-inset-top)) 20px 12px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.win .ttl { font-family: var(--font-display); font-weight: 800; font-size: 1.75rem; line-height: 1.15; color: var(--text-hl); }
+.win .sub { color: var(--text-muted); font-size: .9375rem; max-width: 30ch; }
+.big { position: relative; width: 168px; height: 168px; margin-top: 4px; }
+.big svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.big .trk { stroke: var(--bg-elevated); } .big .bar { stroke: var(--highlight); transition: stroke-dashoffset 1.3s var(--ease-pop) .2s; }
+.big .ct { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.big .ct b { font-family: var(--font-display); font-weight: 800; font-size: 3rem; line-height: 1; color: var(--text-hl); }
+.big .ct span { font-size: .75rem; color: var(--text-muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.rw { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; width: 100%; max-width: 320px; }
+.rw div { background: var(--bg); border-radius: 18px; padding: 12px; display: flex; align-items: center; gap: 10px; text-align: left; box-shadow: var(--shadow-lift); }
+.rw b { font-family: var(--font-display); font-weight: 800; font-size: 1.375rem; color: var(--text-hl); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.rw small { display: block; font-size: .75rem; color: var(--text-muted); font-weight: 600; }
+.stk { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.sticker { display: inline-flex; align-items: center; gap: 6px; background: var(--highlight); color: var(--on-highlight); font-family: var(--font-display); font-weight: 800; font-size: 1.0625rem; padding: 8px 16px; border-radius: 14px; transform: rotate(-4deg); opacity: 0; }
+.sticker:nth-child(2) { transform: rotate(3deg); }
+.sticker .ic { width: 20px; height: 20px; color: var(--on-highlight); }
+#s-win.on .sticker { animation: stick .7s var(--ease-pop) .9s forwards; }
+#s-win.on .sticker:nth-child(2) { animation-delay: 1.15s; }
+@keyframes stick { 0% { opacity: 0; transform: scale(2.2) rotate(-14deg); } 100% { opacity: 1; transform: rotate(-4deg); } }
+.win-ft { flex: none; display: flex; flex-direction: column; gap: 10px; padding: 8px 16px max(16px, env(safe-area-inset-bottom)); }
+.conf { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 6; }
+.conf i { position: absolute; left: 50%; top: 32%; width: 9px; height: 14px; border-radius: 2px; will-change: transform, opacity; }
+
+/* ===== Toast ===== */
+.toast { position: absolute; z-index: 20; left: 50%; top: max(14px, env(safe-area-inset-top)); transform: translate(-50%, -20px); max-width: calc(100% - 32px); background: var(--text-hl); color: var(--text-inv); padding: 12px 18px; border-radius: 14px; font-weight: 700; font-size: .875rem; opacity: 0; pointer-events: none; transition: opacity .25s, transform .4s var(--ease-pop); box-shadow: var(--shadow-modal); }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* ===== Gerak dikurangkan: animasi besar mati, perubahan keadaan kekal ===== */
+@media (prefers-reduced-motion: reduce) {
+  .alesa, .alesa .blink, .flame, .bubble, .stat, .hero, .q, .opt, .fb, .combo.lit .ic, .combo.bump, .tab .ic, .opt.pop, .opt.nudge, .alesa.party, .alesa.hop { animation: none !important; }
+  .fl { animation: none !important; opacity: 1; }
+  .sticker { animation: none !important; opacity: 1 !important; }
+  .screen, .screen.out { transform: none; transition: opacity .2s linear, visibility 0s .2s; }
+  .screen.on { transition-delay: 0s; }
+  .ring .bar, .big .bar { transition: none; }
+  .pbar i { transition: width .2s linear; }
+  .pr, .toast { transition-duration: .01s; }
+  .pr:active:not(:disabled) { transform: none !important; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 2.5c.8 3.2-1.3 5-2.8 7C7.700 11.500 6.500 13 6.500 15.300A5.500 5.500 0 0 0 12 21a5.500 5.500 0 0 0 5.500-5.700c0-2-.9-3.500-1.900-4.700-.3 1.300-1 2.100-1.900 2.500.4-3.600-.5-7.800-1.700-10.600z"/><path d="M12 21a3 3 0 0 1-3-3c0-1.500 1.200-2.400 2-3.500.3.900.9 1.300 1.500 1.500.2-.5.300-1 .2-1.600 1 .9 2.300 2.100 2.300 3.600A3 3 0 0 1 12 21z" fill="#fff" fill-opacity=".45"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.500"/><circle cx="12" cy="12" r="6" fill="none" stroke="#0D1120" stroke-opacity=".3" stroke-width="1.800"/><path d="M12 8.500l1 2.100 2.300.3-1.700 1.600.4 2.300-2-1.100-2 1.100.4-2.300-1.700-1.600 2.300-.3z" fill="#0D1120" fill-opacity=".35"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.500 2 4.500 13.500h6L9.500 22l9-12h-6z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.500l4.500 4.500L19 7.500"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.900 4.900l1.400 1.400M17.700 17.700l1.400 1.400M2 12h2M20 12h2M4.900 19.100l1.400-1.400M17.700 6.300l1.400-1.400"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500z"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.500V20h12V9.500M10 20v-6h4v6"/></symbol>
+    <symbol id="i-spm" viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7zM15 3v4h4M10 13l2 2 3.500-4"/></symbol>
+    <symbol id="i-game" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 10.500v4M6 12.500h4M15.500 11.500h.01M17.500 13.500h.01"/></symbol>
+    <symbol id="i-topik" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3.500"/></symbol>
+    <symbol id="i-mat" viewBox="0 0 24 24"><path d="M5 7h6M8 4v6M14 17h6M5 17h6M14 7h6"/></symbol>
+    <symbol id="i-bm" viewBox="0 0 24 24"><path d="M4 5.500A2 2 0 0 1 6 4h6v16H6a2 2 0 0 0-2 1.500zM20 5.500A2 2 0 0 0 18 4h-6v16h6a2 2 0 0 1 2 1.500z"/></symbol>
+    <symbol id="i-bi" viewBox="0 0 24 24"><path d="M4 5h16v11H10l-4 4v-4H4z"/><path d="M8.500 12.500 11 8l2.500 4.500M9.300 11.200h3.400"/></symbol>
+    <symbol id="i-sej" viewBox="0 0 24 24"><path d="M3 9l9-5 9 5M5 9v9M9.500 9v9M14.500 9v9M19 9v9M3 20h18"/></symbol>
+    <symbol id="i-sci" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.800 3h10.400a2 2 0 0 0 1.800-3l-5-9V3M7.500 15h9"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.800 5.200L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800zM19 16l.8 2.200L22 19l-2.200.8L19 22l-.8-2.200L16 19l2.200-.8z"/></symbol>
+  </defs>
+</svg>
+
+<div class="stage">
+  <main class="phone" id="phone">
+
+    <!-- ========== HOME ========== -->
+    <section class="screen on" id="s-home" aria-label="Home">
+      <div class="hd">
+        <span class="brand">Prestasi<span>Plus</span></span>
+        <button class="icon-btn pr" id="btnTheme" type="button" aria-label="Tukar tema cerah atau gelap">
+          <svg class="ic th-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+          <svg class="ic th-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+        </button>
+      </div>
+      <div class="scroll" id="homeScroll">
+        <div class="greet">
+          <div id="alesaHome" aria-hidden="true"></div>
+          <div class="bubble"><h2 class="focus-t" id="homeH" tabindex="-1" style="font:inherit"><b>Hai, Aina!</b> Lima soalan pun dah cukup untuk jaga streak. Jom?</h2><span class="sr-only">Cikgu Alesa</span></div>
+        </div>
+        <div class="stats" role="list">
+          <div class="stat" role="listitem" id="st-streak">
+            <span class="ico" style="--c:var(--ic-flame)"><svg class="ic ic-f flame" aria-hidden="true"><use href="#i-flame"/></svg></span>
+            <span class="n disp" id="nStreak" aria-hidden="true">0</span><span class="u" aria-hidden="true">hari streak</span>
+          </div>
+          <div class="stat" role="listitem" id="st-coin">
+            <span class="ico" style="--c:var(--ic-coin)"><svg class="ic ic-f" aria-hidden="true"><use href="#i-coin"/></svg></span>
+            <span class="n disp" id="nCoin" aria-hidden="true">0</span><span class="u" aria-hidden="true">syiling</span>
+          </div>
+          <div class="stat" role="listitem" id="st-xp">
+            <span class="ico" style="--c:var(--ic-xp)"><svg class="ic ic-f" aria-hidden="true"><use href="#i-bolt"/></svg></span>
+            <span class="n disp" id="nXp" aria-hidden="true">0</span><span class="u" aria-hidden="true">XP</span>
+          </div>
+        </div>
+        <article class="hero" aria-labelledby="heroT">
+          <div class="tx">
+            <span class="over">Sambung latihan</span>
+            <h3 class="ttl" id="heroT">Matematik · Fungsi Kuadratik</h3>
+            <p class="sub" id="heroSub">12 daripada 20 soalan</p>
+            <button class="btn btn-p pr" id="btnMula" type="button">Mula <svg class="ic sm" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+          </div>
+          <div class="ring" id="heroRing" role="progressbar" aria-label="Kemajuan Fungsi Kuadratik" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60" aria-valuetext="60 peratus">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="trk" cx="32" cy="32" r="26" fill="none" stroke-width="7"/><circle class="bar" id="heroBar" cx="32" cy="32" r="26" fill="none" stroke-width="7" stroke-linecap="round"/></svg>
+            <span class="ct" id="heroPct" aria-hidden="true">0%</span>
+          </div>
+        </article>
+        <section aria-labelledby="subT">
+          <div class="sec-t"><h3 id="subT">Subjek</h3></div>
+          <div class="subjs">
+            <button class="subj pr" type="button" data-prev><span class="ico" style="--c:var(--cat-1)"><svg class="ic" aria-hidden="true"><use href="#i-mat"/></svg></span>Matematik</button>
+            <button class="subj pr" type="button" data-prev><span class="ico" style="--c:var(--cat-3)"><svg class="ic" aria-hidden="true"><use href="#i-bm"/></svg></span>B. Melayu</button>
+            <button class="subj pr" type="button" data-prev><span class="ico" style="--c:var(--cat-4)"><svg class="ic" aria-hidden="true"><use href="#i-bi"/></svg></span>B. Inggeris</button>
+            <button class="subj pr" type="button" data-prev><span class="ico" style="--c:var(--cat-5)"><svg class="ic" aria-hidden="true"><use href="#i-sej"/></svg></span>Sejarah</button>
+            <button class="subj pr" type="button" data-prev><span class="ico" style="--c:var(--cat-8)"><svg class="ic" aria-hidden="true"><use href="#i-sci"/></svg></span>Sains</button>
+          </div>
+        </section>
+        <button class="link pr only-phone" type="button" id="btnResetPhone">Mula semula</button>
+      </div>
+      <nav class="nav" aria-label="Navigasi utama">
+        <button class="tab pr" type="button" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>Home</button>
+        <button class="tab pr" type="button" data-prev><svg class="ic" aria-hidden="true"><use href="#i-spm"/></svg>SPM</button>
+        <button class="tab pr" type="button" data-prev><svg class="ic" aria-hidden="true"><use href="#i-game"/></svg>Game</button>
+        <button class="tab pr" type="button" data-prev><svg class="ic" aria-hidden="true"><use href="#i-topik"/></svg>Topik</button>
+        <button class="tab pr" type="button" data-prev><svg class="ic" aria-hidden="true"><use href="#i-more"/></svg>Lagi</button>
+      </nav>
+    </section>
+
+    <!-- ========== LATIHAN ========== -->
+    <section class="screen" id="s-quiz" aria-label="Jawab soalan" inert>
+      <div class="pt">
+        <button class="icon-btn pr" id="btnClose" type="button" aria-label="Tutup latihan dan kembali ke Home"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+        <div class="pbar" id="qBar" role="progressbar" aria-label="Kemajuan latihan" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" aria-valuetext="Soalan 1 daripada 5"><i id="qFill"></i></div>
+        <div class="combo pr" id="combo" role="img" aria-label="Betul berturut-turut: 0"><svg class="ic ic-f" aria-hidden="true"><use href="#i-flame"/></svg><span id="comboN" aria-hidden="true">0</span></div>
+      </div>
+      <div class="meta">
+        <span class="chip"><span class="ico" style="--c:var(--cat-1)"><svg class="ic" aria-hidden="true"><use href="#i-mat"/></svg></span>Matematik</span>
+        <span class="over" id="qCount" aria-hidden="true">Soalan 1/5</span>
+      </div>
+      <div class="qa"><h2 class="q focus-t" id="qText" tabindex="-1"></h2></div>
+      <div class="opts" id="opts" role="group" aria-label="Pilihan jawapan"></div>
+      <div class="ft">
+        <button class="btn btn-p btn-block pr" id="btnCheck" type="button" disabled>Semak</button>
+        <div class="fb" id="fb">
+          <div id="alesaFb" aria-hidden="true"></div>
+          <div class="bd"><h3 id="fbT"></h3><p id="fbP"></p><span class="cm" id="fbC" hidden><svg class="ic ic-f" aria-hidden="true"><use href="#i-flame"/></svg><span id="fbCt"></span></span></div>
+          <button class="btn btn-p pr" id="btnNext" type="button">Teruskan</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== KEMENANGAN ========== -->
+    <section class="screen" id="s-win" aria-label="Kemenangan" inert>
+      <div class="win">
+        <div id="alesaWin" aria-hidden="true"></div>
+        <h2 class="ttl focus-t" id="winT" tabindex="-1">Hebat, Aina!</h2>
+        <p class="sub" id="winSub"></p>
+        <div class="big" id="winRing" role="progressbar" aria-label="Skor latihan" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
+          <svg viewBox="0 0 150 150" aria-hidden="true"><circle class="trk" cx="75" cy="75" r="64" fill="none" stroke-width="12"/><circle class="bar" id="winBar" cx="75" cy="75" r="64" fill="none" stroke-width="12" stroke-linecap="round"/></svg>
+          <div class="ct" aria-hidden="true"><b id="winScore">0</b><span id="winOf">daripada 5</span></div>
+        </div>
+        <div class="rw">
+          <div><span class="ico" style="--c:var(--ic-xp)"><svg class="ic ic-f" aria-hidden="true"><use href="#i-bolt"/></svg></span><span><b id="winXp">+0</b><small>XP</small></span></div>
+          <div><span class="ico" style="--c:var(--ic-coin)"><svg class="ic ic-f" aria-hidden="true"><use href="#i-coin"/></svg></span><span><b id="winCoin">+0</b><small>Syiling</small></span></div>
+        </div>
+        <div class="stk" id="stk"></div>
+      </div>
+      <div class="win-ft">
+        <button class="btn btn-s btn-block pr" id="btnShare" type="button"><svg class="ic sm" aria-hidden="true"><use href="#i-share"/></svg>Kongsi</button>
+        <button class="btn btn-p btn-block pr" id="btnHome" type="button">Kembali ke Home</button>
+      </div>
+      <div class="conf" id="conf" aria-hidden="true"></div>
+    </section>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="sr-only" id="live" role="status" aria-live="polite"></div>
+  </main>
+
+  <aside class="note" aria-label="Nota prototaip">
+    <h1>Pengalaman Murid v2</h1>
+    <p class="over">Prototaip interaktif, 3 detik utama</p>
+    <ol>
+      <li><b>Home</b>Salam Alesa, nombor streak, syiling dan XP naik pantas, dan kad Sambung latihan.</li>
+      <li><b>Jawab soalan</b>Satu soalan satu skrin, 4 kad jawapan di zon ibu jari, maklum balas yang lembut.</li>
+      <li><b>Kemenangan</b>Konfeti, skor beranimasi, XP bertambah dan pelekat limau. Kembali ke Home untuk lihat nombor baharu.</li>
+    </ol>
+    <button class="btn btn-s pr" id="btnReset" type="button">Mula semula</button>
+    <p class="over" style="text-transform:none;letter-spacing:0;font-weight:500;font-size:.8125rem">Artwork Cikgu Alesa ialah ruang letak. Tab lain hanya pratonton.</p>
+  </aside>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'pp-v2-learner';
+  var DEF = { streak: 5, coins: 120, xp: 840, prog: 60 };
+  var S = { streak: DEF.streak, coins: DEF.coins, xp: DEF.xp, prog: DEF.prog };
+  var shown = { streak: 0, coins: 0, xp: 0, prog: 0 };
+  function load() { try { var r = JSON.parse(localStorage.getItem(KEY)); if (r && typeof r.xp === 'number') S = { streak: r.streak, coins: r.coins, xp: r.xp, prog: r.prog }; } catch (e) {} }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  var rmq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+  function RM() { return rmq.matches; }
+  function buzz(p) { try { if (!RM() && navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+
+  /* ---------- Alesa (ruang letak SVG) ---------- */
+  var INK = '#0D1120';
+  function alesa(mood, size, cls) {
+    var eyes, mouth, extra = '';
+    if (mood === 'happy' || mood === 'celebrating') {
+      eyes = '<path d="M29 50Q36 40 43 50M57 50Q64 40 71 50" fill="none" stroke="' + INK + '" stroke-width="4.500" stroke-linecap="round"/>';
+      mouth = '<path d="M37 58Q50 80 63 58Z" fill="' + INK + '"/><path d="M43 69Q50 74 57 69Q50 65 43 69Z" fill="#E1C9FF"/>';
+    } else if (mood === 'encouraging') {
+      eyes = '<g class="blink"><circle cx="36" cy="48" r="5.500" fill="' + INK + '"/><circle cx="64" cy="48" r="5.500" fill="' + INK + '"/><circle cx="38" cy="46" r="1.800" fill="#fff"/><circle cx="66" cy="46" r="1.800" fill="#fff"/></g><path d="M28 37L43 33M72 37L57 33" stroke="' + INK + '" stroke-width="3.200" stroke-linecap="round"/>';
+      mouth = '<path d="M41 63Q50 71 59 63" fill="none" stroke="' + INK + '" stroke-width="4" stroke-linecap="round"/>';
+    } else {
+      eyes = '<g class="blink"><circle cx="36" cy="48" r="5.500" fill="' + INK + '"/><circle cx="64" cy="48" r="5.500" fill="' + INK + '"/><circle cx="38" cy="46" r="1.800" fill="#fff"/><circle cx="66" cy="46" r="1.800" fill="#fff"/></g>';
+      mouth = '<path d="M42 63Q50 68 58 63" fill="none" stroke="' + INK + '" stroke-width="4" stroke-linecap="round"/>';
+    }
+    if (mood === 'celebrating') {
+      extra = '<path d="M10 22l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM90 16l1.600 4 4 1.600-4 1.600-1.600 4-1.600-4-4-1.600 4-1.600z" fill="#BCEB27"/>';
+    }
+    var id = 'g' + Math.floor(Math.random() * 1e6);
+    return '<svg class="alesa ' + (cls || '') + '" width="' + size + '" height="' + size + '" viewBox="0 0 100 100" role="img" aria-label="Cikgu Alesa" focusable="false">' +
+      '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BE96FF"/><stop offset="1" stop-color="#8447F5"/></linearGradient></defs>' +
+      '<path d="M50 6c24 0 42 16 42 42 0 27-17 46-42 46S8 75 8 48C8 22 26 6 50 6z" fill="url(#' + id + ')"/>' +
+      '<ellipse cx="32" cy="22" rx="12" ry="6" fill="#fff" fill-opacity=".28" transform="rotate(-25 32 22)"/>' +
+      '<circle cx="25" cy="62" r="6" fill="#fff" fill-opacity=".3"/><circle cx="75" cy="62" r="6" fill="#fff" fill-opacity=".3"/>' +
+      eyes + mouth + extra + '</svg>';
+  }
+  function setAlesa(host, mood, size, cls) { host.innerHTML = alesa(mood, size, cls); }
+
+  /* ---------- Count-up ---------- */
+  function count(el, from, to, ms, fmt) {
+    fmt = fmt || String;
+    if (el._raf) cancelAnimationFrame(el._raf);
+    if (RM() || from === to) { el.textContent = fmt(to); return; }
+    var t0 = null;
+    function step(t) {
+      if (t0 === null) t0 = t;
+      var p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(Math.round(from + (to - from) * e));
+      if (p < 1) el._raf = requestAnimationFrame(step);
+    }
+    el._raf = requestAnimationFrame(step);
+  }
+  function setRing(bar, r, pct) {
+    var C = 2 * Math.PI * r;
+    bar.style.strokeDasharray = C;
+    bar.style.strokeDashoffset = C * (1 - pct / 100);
+  }
+
+  /* ---------- Toast & umum ---------- */
+  var tt;
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(function () { t.classList.remove('on'); }, 1800); }
+  function say(msg) { var l = $('live'); l.textContent = ''; setTimeout(function () { l.textContent = msg; }, 30); }
+
+  /* ---------- Navigasi skrin ---------- */
+  var cur = 'home';
+  function go(name, focusId) {
+    var ids = { home: 's-home', quiz: 's-quiz', win: 's-win' };
+    Object.keys(ids).forEach(function (k) {
+      var el = $(ids[k]);
+      if (k === name) { el.removeAttribute('inert'); el.classList.remove('out'); requestAnimationFrame(function () { el.classList.add('on'); }); }
+      else { el.classList.remove('on'); if (k === cur) el.classList.add('out'); el.setAttribute('inert', ''); }
+    });
+    cur = name;
+    var f = $(focusId); if (f) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) {} }, 60);
+  }
+
+  /* ---------- Home ---------- */
+  function renderHome(animate) {
+    var from = animate ? shown : S;
+    count($('nStreak'), from.streak, S.streak, 900);
+    count($('nCoin'), from.coins, S.coins, 1000);
+    count($('nXp'), from.xp, S.xp, 1200);
+    count($('heroPct'), from.prog, S.prog, 1100, function (v) { return v + '%'; });
+    var done = Math.round(S.prog / 100 * 20);
+    $('heroSub').textContent = done + ' daripada 20 soalan';
+    var rg = $('heroRing'); rg.setAttribute('aria-valuenow', S.prog); rg.setAttribute('aria-valuetext', S.prog + ' peratus');
+    $('st-streak').setAttribute('aria-label', 'Streak ' + S.streak + ' hari');
+    $('st-coin').setAttribute('aria-label', S.coins + ' syiling');
+    $('st-xp').setAttribute('aria-label', S.xp + ' XP');
+    var bar = $('heroBar');
+    setRing(bar, 26, from.prog);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { setRing(bar, 26, S.prog); }); });
+    shown = { streak: S.streak, coins: S.coins, xp: S.xp, prog: S.prog };
+    setAlesa($('alesaHome'), 'happy', 72, 'hop');
+  }
+
+  /* ---------- Soalan ---------- */
+  var Q = [
+    { t: 'Nilai minimum bagi fungsi f(x) = x<sup>2</sup> &minus; 6x + 5 ialah', o: ['5', '&minus;4', '&minus;1', '4'], a: 1,
+      e: 'Tulis dalam bentuk kuasa dua sempurna: f(x) = (x &minus; 3)<sup>2</sup> &minus; 4. Nilai minimum ialah &minus;4 apabila x = 3.' },
+    { t: 'Selesaikan persamaan kuadratik x<sup>2</sup> &minus; 5x + 6 = 0.', o: ['x = &minus;2 dan x = &minus;3', 'x = 1 dan x = 6', 'x = 2 dan x = 3', 'x = &minus;1 dan x = &minus;6'], a: 2,
+      e: 'Faktorkan: (x &minus; 2)(x &minus; 3) = 0, maka x = 2 atau x = 3.' },
+    { t: 'Bagi persamaan ax<sup>2</sup> + bx + c = 0, hasil tambah punca = &minus;b/a. Hasil tambah punca bagi 2x<sup>2</sup> &minus; 8x + 3 = 0 ialah', o: ['4', '&minus;4', '3/2', '&minus;3/2'], a: 0,
+      e: 'Dengan a = 2 dan b = &minus;8, hasil tambah punca = &minus;(&minus;8)/2 = 4.' },
+    { t: 'Diberi jujukan aritmetik 3, 7, 11, &hellip; Cari T<sub>10</sub>, dengan T<sub>n</sub> = a + (n &minus; 1)d.', o: ['43', '35', '40', '39'], a: 3,
+      e: 'a = 3 dan d = 4. T<sub>10</sub> = 3 + (10 &minus; 1)(4) = 3 + 36 = 39.' },
+    { t: 'Ringkaskan 2<sup>3</sup> &times; 2<sup>4</sup> &divide; 2<sup>5</sup>.', o: ['2<sup>6</sup>', '2<sup>2</sup>', '2<sup>12</sup>', '2<sup>&minus;2</sup>'], a: 1,
+      e: 'Tambah indeks untuk darab dan tolak untuk bahagi: 3 + 4 &minus; 5 = 2, jadi jawapannya 2<sup>2</sup>.' }
+  ];
+  var LET = ['A', 'B', 'C', 'D'];
+  var qi = 0, sel = -1, answered = false, right = 0, combo = 0, gainXp = 0;
+  var GOOD = ['Betul!', 'Mantap!', 'Tepat sekali!', 'Kemas!', 'Terbaik!'];
+  var GOODMSG = ['Cara kau betul. Teruskan rentak ini.', 'Langkah kau kemas dan tersusun.', 'Konsep ini memang dah masuk kepala.', 'Bagus, kau tak tergesa-gesa.', 'Sebiji macam jawapan peperiksaan.'];
+  var BADMSG = ['Tak apa, bahagian ini memang menjerat ramai orang.', 'Hampir sampai. Kesilapan begini yang paling cepat mengajar.', 'Jangan risau, kita semak sama-sama.'];
+
+  function startQuiz() {
+    qi = 0; sel = -1; answered = false; right = 0; combo = 0; gainXp = 0;
+    setCombo(false); renderQ();
+    go('quiz', 'qText');
+  }
+  function renderQ() {
+    var q = Q[qi]; answered = false; sel = -1;
+    $('qText').innerHTML = q.t;
+    $('qText').style.animation = 'none'; void $('qText').offsetWidth; $('qText').style.animation = '';
+    var box = $('opts'); box.innerHTML = '';
+    q.o.forEach(function (txt, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'opt pr'; b.setAttribute('aria-pressed', 'false'); b.setAttribute('data-i', i);
+      b.innerHTML = '<span class="l" aria-hidden="true">' + LET[i] + '</span><span class="t">' + txt + '</span><span class="mk"></span>';
+      b.addEventListener('click', function () { pick(i); });
+      box.appendChild(b);
+    });
+    $('qCount').textContent = 'Soalan ' + (qi + 1) + '/5';
+    var bar = $('qBar'); bar.setAttribute('aria-valuenow', qi + 1); bar.setAttribute('aria-valuetext', 'Soalan ' + (qi + 1) + ' daripada 5');
+    $('qFill').style.width = Math.max(6, qi / 5 * 100) + '%';
+    $('fb').classList.remove('show', 'good', 'bad');
+    $('btnCheck').hidden = false; $('btnCheck').disabled = true;
+    say('Soalan ' + (qi + 1) + ' daripada 5');
+  }
+  function pick(i) {
+    if (answered) return;
+    sel = i;
+    var all = $('opts').children;
+    for (var k = 0; k < all.length; k++) all[k].setAttribute('aria-pressed', k === i ? 'true' : 'false');
+    $('btnCheck').disabled = false;
+    buzz(8);
+  }
+  function mark(el, ok) {
+    el.querySelector('.mk').innerHTML = '<svg class="ic" aria-hidden="true"><use href="#' + (ok ? 'i-check' : 'i-x') + '"/></svg>';
+  }
+  function setCombo(bump) {
+    var c = $('combo');
+    $('comboN').textContent = combo;
+    c.setAttribute('aria-label', 'Betul berturut-turut: ' + combo);
+    c.classList.toggle('lit', combo > 0);
+    c.classList.toggle('hot', combo >= 3);
+    if (bump) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
+  }
+  function check() {
+    if (sel < 0 || answered) return;
+    answered = true;
+    var q = Q[qi], all = $('opts').children, ok = sel === q.a;
+    for (var k = 0; k < all.length; k++) {
+      all[k].classList.add('lock'); all[k].setAttribute('aria-disabled', 'true'); all[k].tabIndex = -1;
+      all[k].setAttribute('aria-pressed', k === sel ? 'true' : 'false');
+      all[k].onclick = null;
+    }
+    var picked = all[sel], good = all[q.a];
+    var fb = $('fb'), t = $('fbT'), p = $('fbP');
+    $('btnCheck').hidden = true;
+    $('fbC').hidden = true;
+    if (ok) {
+      right++; combo++; gainXp += 10;
+      picked.classList.add('ok'); mark(picked, true);
+      for (k = 0; k < all.length; k++) if (k !== sel) all[k].classList.add('dim');
+      picked.classList.add('pop');
+      var f = document.createElement('span'); f.className = 'fl'; f.textContent = '+10 XP'; picked.appendChild(f);
+      setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 1100);
+      fb.className = 'fb good show';
+      t.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>' + GOOD[(qi + right) % GOOD.length];
+      p.textContent = GOODMSG[qi % GOODMSG.length];
+      if (combo >= 2) { $('fbCt').textContent = combo + ' betul berturut-turut!'; $('fbC').hidden = false; }
+      setAlesa($('alesaFb'), 'happy', 56, 'hop');
+      $('btnNext').textContent = 'Teruskan';
+      setCombo(true); buzz(18);
+      say('Betul! Tambah 10 XP.' + (combo >= 2 ? ' ' + combo + ' betul berturut-turut!' : ''));
+    } else {
+      combo = 0;
+      picked.classList.add('no', 'nudge'); mark(picked, false);
+      good.classList.add('ok'); mark(good, true);
+      for (k = 0; k < all.length; k++) if (k !== sel && k !== q.a) all[k].classList.add('dim');
+      fb.className = 'fb bad show';
+      t.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>Hampir!';
+      p.innerHTML = '<b>Jawapan: ' + LET[q.a] + '.</b> ' + BADMSG[qi % BADMSG.length] + '<span class="ai" style="display:block">' + q.e + '</span>';
+      setAlesa($('alesaFb'), 'encouraging', 56, 'hop');
+      $('btnNext').textContent = 'Faham';
+      setCombo(false); buzz([30, 40, 30]);
+      say('Belum tepat. Jawapan betul ialah ' + LET[q.a] + '.');
+    }
+    if (ok) { /* penjelasan ringkas bagi jawapan betul */ p.innerHTML = p.textContent + '<span class="ai" style="display:block">' + q.e + '</span>'; }
+    $('qFill').style.width = ((qi + 1) / 5 * 100) + '%';
+    setTimeout(function () { try { $('btnNext').focus({ preventScroll: true }); } catch (e) {} }, 80);
+  }
+  function next() {
+    if (qi < 4) { qi++; renderQ(); try { $('qText').focus({ preventScroll: true }); } catch (e) {} }
+    else finish();
+  }
+
+  /* ---------- Kemenangan ---------- */
+  var CONF = ['#BCEB27', '#6283FF', '#FF8A2B', '#A06CFF', '#BCEB27', '#FFFFFF'];
+  function confetti() {
+    if (RM()) return;
+    var L = $('conf'); L.innerHTML = '';
+    for (var i = 0; i < 64; i++) {
+      var e = document.createElement('i'), a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 170;
+      var dx = Math.cos(a) * d, up = -(60 + Math.random() * 190), fall = 240 + Math.random() * 280, r = (Math.random() - .5) * 900;
+      e.style.background = CONF[i % CONF.length];
+      if (i % 3 === 0) { e.style.width = '10px'; e.style.height = '10px'; e.style.borderRadius = '50%'; }
+      L.appendChild(e);
+      var an = e.animate([
+        { transform: 'translate(0,0) rotate(0deg) scale(.4)', opacity: 1 },
+        { transform: 'translate(' + dx * .8 + 'px,' + up + 'px) rotate(' + r * .4 + 'deg) scale(1)', opacity: 1, offset: .38 },
+        { transform: 'translate(' + dx + 'px,' + (up + fall) + 'px) rotate(' + r + 'deg) scale(.9)', opacity: 0 }
+      ], { duration: 1900 + Math.random() * 900, delay: Math.random() * 180, easing: 'cubic-bezier(.25,.6,.35,1)', fill: 'forwards' });
+      an.onfinish = (function (n) { return function () { if (n.parentNode) n.parentNode.removeChild(n); }; })(e);
+    }
+  }
+  function finish() {
+    var bonus = 20, xp = gainXp + bonus, coins = right * 2 + 5, lvl = right >= 4;
+    S.xp += xp; S.coins += coins; S.streak += 1; S.prog = Math.min(100, S.prog + right * 4); save();
+    var good = right >= 3;
+    $('winT').textContent = right === 5 ? 'Sempurna, Aina!' : right === 4 ? 'Hebat, Aina!' : right === 3 ? 'Bagus, Aina!' : 'Teruskan, Aina!';
+    $('winSub').textContent = good ? 'Latihan selesai. Streak kau terus menyala.' : 'Kau dah siap. Setiap kesilapan tadi satu langkah lebih dekat.';
+    setAlesa($('alesaWin'), good ? 'celebrating' : 'encouraging', 112, good ? 'party' : 'hop');
+    var st = '<span class="sticker"><svg class="ic ic-f" aria-hidden="true"><use href="#i-flame"/></svg>Streak ' + S.streak + ' hari!</span>';
+    if (lvl) st += '<span class="sticker"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>Tahap naik!</span>';
+    $('stk').innerHTML = st;
+    var r = $('winRing'); r.setAttribute('aria-valuenow', right); r.setAttribute('aria-valuetext', right + ' daripada 5 betul');
+    $('winScore').textContent = RM() ? right : 0; $('winXp').textContent = RM() ? '+' + xp : '+0'; $('winCoin').textContent = RM() ? '+' + coins : '+0';
+    var bar = $('winBar'); setRing(bar, 64, RM() ? right / 5 * 100 : 0);
+    go('win', 'winT');
+    say('Latihan selesai. Skor ' + right + ' daripada 5. Tambah ' + xp + ' XP. Streak ' + S.streak + ' hari.');
+    setTimeout(function () {
+      setRing(bar, 64, right / 5 * 100);
+      count($('winScore'), 0, right, 1200);
+      count($('winXp'), 0, xp, 1400, function (v) { return '+' + v; });
+      count($('winCoin'), 0, coins, 1200, function (v) { return '+' + v; });
+      confetti(); if (good) buzz([20, 30, 20, 30, 40]);
+    }, 380);
+  }
+
+  /* ---------- Acara ---------- */
+  document.addEventListener('click', function (e) {
+    var p = e.target.closest ? e.target.closest('[data-prev]') : null;
+    if (p) { toast('Pratonton sahaja'); }
+  });
+  $('btnMula').addEventListener('click', startQuiz);
+  $('btnCheck').addEventListener('click', check);
+  $('btnNext').addEventListener('click', next);
+  $('btnClose').addEventListener('click', function () { goHome(false); });
+  $('btnShare').addEventListener('click', function () { toast('Pratonton sahaja'); });
+  $('btnHome').addEventListener('click', function () { goHome(true); });
+  function goHome(animate) { $('conf').innerHTML = ''; go('home', 'homeH'); setTimeout(function () { renderHome(true); }, 200); }
+  function reset() {
+    S = { streak: DEF.streak, coins: DEF.coins, xp: DEF.xp, prog: DEF.prog }; shown = { streak: 0, coins: 0, xp: 0, prog: 0 };
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    $('conf').innerHTML = ''; go('home', 'homeH'); setTimeout(function () { renderHome(true); }, 200); toast('Dimulakan semula');
+  }
+  $('btnReset').addEventListener('click', reset);
+  $('btnResetPhone').addEventListener('click', reset);
+  $('btnTheme').addEventListener('click', function () {
+    var el = document.documentElement, n = el.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    el.setAttribute('data-theme', n);
+    try { localStorage.setItem('pp-v2-theme', n); } catch (e) {}
+  });
+
+  load();
+  renderHome(true);
+})();
+</script>
+</body>
+</html>
