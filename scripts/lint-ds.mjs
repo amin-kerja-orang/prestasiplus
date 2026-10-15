@@ -16,7 +16,7 @@ const eslintStatus = run('npx', [
   'eslint',
   '--no-error-on-unmatched-pattern',
   '--no-warn-ignored',
-  ...strict.map((g) => `"${g}"`),
+  ...strict.map((e) => `"${e.glob}"`),
   ...exempt.flatMap((g) => ['--ignore-pattern', `"${g}"`]),
 ])
 const cssStatus = run('node', ['scripts/lint-ds-css.mjs'])

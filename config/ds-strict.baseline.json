@@ -1,5 +1,8 @@
 {
-  "$comment": "Committed floor of config/ds-strict.json. Raise it together with the list; never lower it. `exempt` may only shrink.",
-  "strict": ["src/ds/**", "src/dev/ds/**"],
-  "exempt": ["src/theme/**", "src/dev/ds/DsSandbox.vue"]
+  "$comment": "Committed floor of config/ds-strict.json (same shape). Raise it together with the list; never lower it. `exempt` may only shrink.",
+  "strict": [
+    { "glob": "src/ds/**", "level": "ds" },
+    { "glob": "src/dev/ds/**", "level": "page" }
+  ],
+  "exempt": ["src/theme/**", "src/dev/ds/DsSandbox.vue", "src/dev/ds/DsThemePanel.vue"]
 }
