@@ -1,6 +1,8 @@
 /* Tailwind CSS v4 entry (ADR-0003).
    `source('../')` limits class detection to `src/` so docs/ and discovery data are not scanned. */
 @import 'tailwindcss' source('../');
+@import '@nuxt/ui';
+@import '../theme/tokens.css';
 
 @import './fonts.css';
 @import './theme.css';

@@ -35,6 +35,10 @@ Thumbs.db
 docs/discovery/inventory/_raw/
 docs/discovery/img/
 
+# Nuxt UI generated type declarations (V2-T02)
+auto-imports.d.ts
+components.d.ts
+
 # Per-agent Playwright outputs
 test-results-*/
 playwright-report-*/

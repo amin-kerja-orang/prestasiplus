@@ -308,7 +308,9 @@
   --font-arabic: 'Scheherazade New', 'Lateef', serif;
 
   /* Semantic colour aliases (design-system.md §1.1). Palette classes stay available. */
-  --color-primary: #6366f1; /* indigo-500 */
+  /* `live-` prefix on primary/success/warning/info: the bare names collide with the Nuxt UI colour
+     aliases (`bg-primary` = `var(--ui-primary)`), V2-T02 check f. */
+  --color-live-primary: #6366f1; /* indigo-500 */
   --color-primary-strong: #4f46e5; /* indigo-600 */
   --color-theme: #3b82f6; /* blue-500, <meta name="theme-color"> */
   --color-text: #334155; /* slate-700, body text */
@@ -319,9 +321,9 @@
   --color-border: #e2e8f0; /* slate-200 */
   --color-border-alt: #e5e7eb; /* gray-200, auth pages */
   --color-danger: #ef4444; /* red-500 */
-  --color-success: #10b981; /* emerald-500 */
-  --color-warning: #f59e0b; /* amber-500 */
-  --color-info: #3b82f6; /* blue-500 */
+  --color-live-success: #10b981; /* emerald-500 */
+  --color-live-warning: #f59e0b; /* amber-500 */
+  --color-live-info: #3b82f6; /* blue-500 */
   --color-surface: #ffffff;
   --color-surface-translucent: rgba(255, 255, 255, 0.95); /* sidebar (admin) and topbar */
 

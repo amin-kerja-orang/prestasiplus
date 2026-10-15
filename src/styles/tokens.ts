@@ -18,7 +18,7 @@ export const fontTokens: TokenEntry[] = [
 ]
 
 export const colorTokens: TokenEntry[] = [
-  { className: 'bg-primary', note: '#6366F1 indigo-500' },
+  { className: 'bg-live-primary', note: '#6366F1 indigo-500' },
   { className: 'bg-primary-strong', note: '#4F46E5 indigo-600' },
   { className: 'bg-theme', note: '#3B82F6 blue-500 (theme-color)' },
   { className: 'bg-text', note: '#334155 slate-700 (body text)' },
@@ -29,9 +29,9 @@ export const colorTokens: TokenEntry[] = [
   { className: 'bg-border', note: '#E2E8F0 slate-200' },
   { className: 'bg-border-alt', note: '#E5E7EB gray-200 (auth)' },
   { className: 'bg-danger', note: '#EF4444 red-500' },
-  { className: 'bg-success', note: '#10B981 emerald-500' },
-  { className: 'bg-warning', note: '#F59E0B amber-500' },
-  { className: 'bg-info', note: '#3B82F6 blue-500' },
+  { className: 'bg-live-success', note: '#10B981 emerald-500' },
+  { className: 'bg-live-warning', note: '#F59E0B amber-500' },
+  { className: 'bg-live-info', note: '#3B82F6 blue-500' },
   { className: 'bg-surface', note: '#FFFFFF' },
   { className: 'bg-surface-translucent', note: 'white 95% (sidebar, topbar)' },
 ]
