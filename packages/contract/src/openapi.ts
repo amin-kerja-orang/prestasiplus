@@ -8,6 +8,7 @@ import {
   LearningMenuGroupSchema,
   LearningRoleSchema,
   MatrixItemSchema,
+  PrototypeItemSchema,
   RoleModesSchema,
 } from './access/schema'
 import { ListMetaSchema, PageQuerySchema } from './common/envelope'
@@ -41,6 +42,7 @@ export const COMPONENT_SCHEMAS = {
   AccessScope: AccessScopeSchema,
   LearningRole: LearningRoleSchema,
   LearningMenuGroup: LearningMenuGroupSchema,
+  PrototypeItem: PrototypeItemSchema,
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'

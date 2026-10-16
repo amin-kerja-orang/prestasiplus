@@ -286,6 +286,10 @@
           "ppdOnly": {
             "type": "boolean",
             "description": "Visible to a PPD (district) officer only, hidden for JPN (state) officers."
+          },
+          "prototypeScope": {
+            "type": "boolean",
+            "description": "D43: true when the item maps to a row of role-access-matrix.md for school_admin (shown in the v2 prototype). False for the admin and ppd_officer views."
           }
         },
         "required": [
@@ -295,7 +299,8 @@
           "route",
           "capability",
           "modes",
-          "ppdOnly"
+          "ppdOnly",
+          "prototypeScope"
         ]
       },
       "AccessCapability": {
@@ -374,6 +379,10 @@
             },
             "description": "Item labels where the requirements name them."
           },
+          "inV2Prototype": {
+            "type": "boolean",
+            "description": "D43: the group hosts at least one prototype item of role-access-matrix.md."
+          },
           "labelSource": {
             "type": "string",
             "enum": [
@@ -388,7 +397,44 @@
           "order",
           "labelBm",
           "items",
+          "inV2Prototype",
           "labelSource"
+        ]
+      },
+      "PrototypeItem": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "student",
+              "teacher",
+              "school_admin"
+            ]
+          },
+          "row": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Row # of role-access-matrix.md section B; 0 = section A."
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "labelBm": {
+            "type": "string",
+            "minLength": 1
+          },
+          "inV2Prototype": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "role",
+          "row",
+          "section",
+          "labelBm",
+          "inV2Prototype"
         ]
       }
     },

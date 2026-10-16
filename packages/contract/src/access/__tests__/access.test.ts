@@ -9,6 +9,8 @@ import {
   ACCESS_GROUPS,
   ACCESS_MATRIX,
   LEARNING_MENU,
+  PROTOTYPE_ITEMS,
+  SCHOOL_ADMIN_PROTOTYPE_ROWS,
   LearningMenuGroupSchema,
   MatrixItemSchema,
   AccessGroupSchema,
@@ -30,7 +32,7 @@ const EXPECTED_COUNTS: Record<string, number> = {
 }
 
 const ids = (role: (typeof ROLE_CODES)[number], scope?: { level: 'state' | 'district' }) =>
-  visibleItems(role, scope).map((i) => i.id)
+  visibleItems(role, { scope }).map((i) => i.id)
 const groupIds = (role: (typeof ROLE_CODES)[number]) => visibleGroups(role).map((g) => g.id)
 
 describe('access matrix structure', () => {
@@ -163,6 +165,57 @@ describe('per-role visibility (D30, US-03, US-11 to US-13)', () => {
     // PG-12 and PG-13 are read-only for Pusat.
     expect(caps.filter((c) => c.kind === 'write')).toHaveLength(92)
     expect(capabilitiesFor('school_admin').filter((c) => c.kind === 'write')).toHaveLength(30)
+  })
+})
+
+describe('v2 prototype scope (D43, role-access-matrix.md)', () => {
+  const md = readFileSync(
+    fileURLToPath(new URL('../../../../../docs/requirements/role-access-matrix.md', import.meta.url)),
+    'utf8',
+  )
+  const rows = [...md.matchAll(/^\| (\d+) \|[^|]*\|([^|]*)\|\s*(✓|—)\s*\|\s*(✓|—)\s*\|\s*(✓|—)\s*\|$/gm)].map(
+    (m) => ({ row: Number(m[1]), label: (m[2] as string).trim(), murid: m[3], guru: m[4], sekolah: m[5] }),
+  )
+
+  it('parses the 53 rows with 37 / 15 / 18 ticks', () => {
+    expect(rows).toHaveLength(53)
+    expect(rows.filter((r) => r.murid === '✓')).toHaveLength(37)
+    expect(rows.filter((r) => r.guru === '✓')).toHaveLength(15)
+    expect(rows.filter((r) => r.sekolah === '✓')).toHaveLength(18)
+  })
+
+  it('has 37 Murid and 15 Guru module items plus 5 account items per role', () => {
+    const modules = (role: string) => PROTOTYPE_ITEMS.filter((i) => i.role === role && i.row > 0)
+    const account = (role: string) => PROTOTYPE_ITEMS.filter((i) => i.role === role && i.row === 0)
+    expect(modules('student').map((i) => i.row)).toEqual(rows.filter((r) => r.murid === '✓').map((r) => r.row))
+    expect(modules('teacher').map((i) => i.row)).toEqual(rows.filter((r) => r.guru === '✓').map((r) => r.row))
+    for (const role of ['student', 'teacher', 'school_admin']) expect(account(role)).toHaveLength(5)
+    expect(PROTOTYPE_ITEMS.every((i) => i.inV2Prototype)).toBe(true)
+  })
+
+  it('maps Admin Sekolah rows; unmappable rows are explicit (null)', () => {
+    expect(SCHOOL_ADMIN_PROTOTYPE_ROWS.map((r) => r.row)).toEqual(
+      rows.filter((r) => r.sekolah === '✓').map((r) => r.row),
+    )
+    const unmapped = SCHOOL_ADMIN_PROTOTYPE_ROWS.filter((r) => r.itemIds === null).map((r) => r.row)
+    expect(unmapped).toEqual([3, 4, 5, 6, 7, 45])
+    const proto = visibleItems('school_admin', { prototypeOnly: true })
+    expect(proto.map((i) => i.id)).toEqual([
+      'PP-01', 'PM-01', 'PM-03', 'PM-05', 'PM-06', 'PM-07', 'PM-08', 'PM-09', 'PM-10', 'PM-11',
+      'PM-12', 'PM-15', 'PM-21', 'PM-22', 'PM-23', 'PS-01', 'PS-03',
+    ])
+    expect(proto.every((i) => i.prototypeScope)).toBe(true)
+  })
+
+  it('flags only school_admin-mapped items and yields nothing for admin and ppd_officer', () => {
+    expect(ACCESS_MATRIX.filter((i) => i.prototypeScope)).toHaveLength(17)
+    expect(visibleItems('admin', { prototypeOnly: true })).toEqual([])
+    expect(visibleItems('ppd_officer', { prototypeOnly: true })).toEqual([])
+    expect(visibleGroups('school_admin', { prototypeOnly: true }).map((g) => g.id)).toEqual([
+      'papan-pemuka',
+      'pemantauan',
+      'pengguna-sekolah',
+    ])
   })
 })
 

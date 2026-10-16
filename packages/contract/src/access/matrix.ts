@@ -1,4 +1,11 @@
-import type { AccessGroup, AccessGroupId, LearningMenuGroup, MatrixItem, RoleModes } from './schema'
+import type {
+  AccessGroup,
+  AccessGroupId,
+  LearningMenuGroup,
+  MatrixItem,
+  PrototypeItem,
+  RoleModes,
+} from './schema'
 
 /**
  * Portal Pentadbiran access matrix: docs/requirements/v2-portals.md sections 5 and 6 (94 items).
@@ -156,6 +163,43 @@ function toModes(admin: Cell, ppd: Cell, school: Cell): RoleModes {
   return modes
 }
 
+/**
+ * D43 (docs/requirements/role-access-matrix.md): Admin Sekolah rows mapped to Pentadbiran items.
+ * `itemIds: null` = no Pentadbiran item exists for the row (reported, not forced).
+ */
+export const SCHOOL_ADMIN_PROTOTYPE_ROWS: readonly {
+  row: number
+  label: string
+  itemIds: readonly string[] | null
+}[] = [
+  { row: 1, label: 'Command Center', itemIds: ['PM-01'] },
+  { row: 2, label: 'Dashboard', itemIds: ['PP-01'] },
+  { row: 3, label: 'Headcount', itemIds: null },
+  { row: 4, label: 'Prestasi', itemIds: null },
+  { row: 5, label: 'Analitik Adaptif', itemIds: null },
+  { row: 6, label: 'Analisa Item', itemIds: null },
+  { row: 7, label: 'Video', itemIds: null },
+  { row: 10, label: 'Monitoring', itemIds: ['PM-03'] },
+  {
+    row: 11,
+    label: 'Kirkpatrick',
+    itemIds: ['PM-05', 'PM-06', 'PM-07', 'PM-08', 'PM-09', 'PM-10', 'PM-11'],
+  },
+  { row: 45, label: 'Sekolah Bersaing', itemIds: null },
+  { row: 46, label: 'Statistik Penggunaan', itemIds: ['PM-15'] },
+  { row: 47, label: 'DSKP Heatmap', itemIds: ['PM-21'] },
+  { row: 48, label: 'Laporan Aktiviti', itemIds: ['PM-12'] },
+  { row: 49, label: 'Amaran Awal', itemIds: ['PM-22'] },
+  { row: 50, label: 'Laporan Bulanan', itemIds: ['PM-23'] },
+  { row: 51, label: 'Senarai Pelajar', itemIds: ['PS-01'] },
+  { row: 52, label: 'Senarai Guru', itemIds: ['PS-01'] },
+  { row: 53, label: 'Kelas Sekolah', itemIds: ['PS-03'] },
+]
+
+const SCHOOL_ADMIN_PROTOTYPE_ITEM_IDS: ReadonlySet<string> = new Set(
+  SCHOOL_ADMIN_PROTOTYPE_ROWS.flatMap((r) => r.itemIds ?? []),
+)
+
 export const ACCESS_MATRIX: readonly MatrixItem[] = ACCESS_GROUPS.flatMap((group) =>
   ROWS[group.id].map(([id, labelBm, admin, ppd, school, ppdOnly]): MatrixItem => {
     const slug = slugify(labelBm)
@@ -167,9 +211,24 @@ export const ACCESS_MATRIX: readonly MatrixItem[] = ACCESS_GROUPS.flatMap((group
       capability: `admin.${group.id}.${slug}.read`,
       modes: toModes(admin, ppd, school),
       ppdOnly: ppdOnly === true,
+      prototypeScope: SCHOOL_ADMIN_PROTOTYPE_ITEM_IDS.has(id),
     }
   }),
 )
+
+/** Groups hosting at least one role-access-matrix.md item (D43). Others stay in the data, hidden. */
+const PROTOTYPE_GROUPS: Partial<Record<LearningMenuGroup['role'], readonly (string | null)[]>> = {
+  student: [null, 'SPM', 'Pembelajaran', 'Pusat AI', 'Akaun & Bantuan'],
+  teacher: [
+    'Command Center (LIVE)',
+    'HARIAN',
+    'PENILAIAN',
+    'ANALITIK',
+    'BANK SOALAN',
+    'LAIN-LAIN',
+    'Bantuan',
+  ],
+}
 
 const lg = (
   role: LearningMenuGroup['role'],
@@ -177,7 +236,14 @@ const lg = (
   labelBm: string | null,
   items: string[] = [],
   labelSource: LearningMenuGroup['labelSource'] = 'doc',
-): LearningMenuGroup => ({ role, order, labelBm, items, labelSource })
+): LearningMenuGroup => ({
+  role,
+  order,
+  labelBm,
+  items,
+  labelSource,
+  inV2Prototype: PROTOTYPE_GROUPS[role]?.includes(labelBm) ?? false,
+})
 
 /** Portal Pembelajaran menus at group level (v2-portals section 8), exact BM copy where given. */
 export const LEARNING_MENU: readonly LearningMenuGroup[] = [
@@ -217,4 +283,61 @@ export const LEARNING_MENU: readonly LearningMenuGroup[] = [
   lg('parent', 3, 'Akaun & Bantuan'),
   lg('sponsor', 1, 'Penaja', [], 'proposed'),
   lg('sponsor', 2, 'Akaun & Bantuan'),
+]
+
+type ProtoRow = readonly [number, string, string]
+const PEMBELAJARAN_LABELS = [
+  'Latih Tubi', 'Soalan Berstruktur', 'Kedudukan', 'PKSK', 'Artikel', 'Permainan', 'Cabutan Bertuah',
+  'Tournament', 'Topik', 'Peta Belajar', 'Set Soalan Guru', 'Audio KBAT', 'Syiling & Token',
+  'Tukar Token', 'Cabaran Harian', 'Kedai Hadiah', 'Marketplace', 'Papan Pendahulu', 'Pencapaian',
+  'Kotak Misteri', 'Rujuk Kawan', 'Cikgu Alesa', 'Kedai Hadiah 🎁 (DIGITAL)', 'Timeline Saya',
+  'Jemput Ibu Bapa',
+]
+const STUDENT_ROWS: readonly ProtoRow[] = [
+  [2, 'Harian', 'Dashboard'],
+  [3, 'SPM / Harian / Penilaian', 'Headcount'],
+  [4, 'SPM / Penilaian', 'Prestasi'],
+  [5, 'SPM / Analitik', 'Analitik Adaptif'],
+  [6, 'SPM / Analitik / Lain-lain', 'Analisa Item'],
+  [7, 'Pembelajaran / Lain-lain', 'Video'],
+  [8, 'Pembelajaran / Harian', 'Kelas Saya'],
+  [9, 'Pembelajaran / Harian', 'Soalan by Chapter'],
+  [12, '(top)', 'Remedial'],
+  [13, 'SPM', 'SPM'],
+  [14, 'Pusat AI', 'Heatmap Topik Lemah'],
+  [15, '—', 'Mohon Keluarga Angkat'],
+  ...PEMBELAJARAN_LABELS.map((label, i): ProtoRow => [16 + i, 'Pembelajaran', label]),
+]
+const TEACHER_ROWS: readonly ProtoRow[] = [
+  [1, '(top)', 'Command Center'],
+  [2, 'Harian', 'Dashboard Guru'],
+  [3, 'SPM / Harian / Penilaian', 'Headcount'],
+  [4, 'SPM / Penilaian', 'Prestasi'],
+  [5, 'SPM / Analitik', 'Analitik Adaptif'],
+  [6, 'SPM / Analitik / Lain-lain', 'Analisa Item'],
+  [7, 'Pembelajaran / Lain-lain', 'Video'],
+  [8, 'Pembelajaran / Harian', 'Kelas Saya'],
+  [9, 'Pembelajaran / Harian', 'Soalan by Chapter'],
+  [10, 'Analitik', 'Monitoring'],
+  [11, 'Analitik', 'Kirkpatrick'],
+  [41, 'Harian', 'Pelajar Saya'],
+  [42, 'Penilaian', 'Laporan'],
+  [43, '(Guru sidebar)', 'Laporan Mingguan'],
+  [44, 'Bank Soalan', 'Sumbang Soalan'],
+]
+const ACCOUNT_LABELS = ['Profil Saya', 'Tetapan Peribadi', 'Panduan', 'Tiket Bantuan', 'Log Keluar']
+
+/** Learner and account items of role-access-matrix.md for Murid, Guru and Admin Sekolah (D43). */
+export const PROTOTYPE_ITEMS: readonly PrototypeItem[] = [
+  ...STUDENT_ROWS.map(
+    ([row, section, labelBm]): PrototypeItem => ({ role: 'student', row, section, labelBm, inV2Prototype: true }),
+  ),
+  ...TEACHER_ROWS.map(
+    ([row, section, labelBm]): PrototypeItem => ({ role: 'teacher', row, section, labelBm, inV2Prototype: true }),
+  ),
+  ...(['student', 'teacher', 'school_admin'] as const).flatMap((role) =>
+    ACCOUNT_LABELS.map(
+      (labelBm): PrototypeItem => ({ role, row: 0, section: 'A. Account basics', labelBm, inV2Prototype: true }),
+    ),
+  ),
 ]
