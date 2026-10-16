@@ -166,13 +166,22 @@ async function dropPhoto(key: string): Promise<void> {
           >Ambil gambar jalan kerja</UButton
         >
         <p v-if="photoError" class="text-caption text-error" role="alert">{{ photoError }}</p>
-        <ul v-if="answer.photos?.length" class="flex flex-wrap gap-2" aria-label="Gambar jalan kerja">
+        <ul
+          v-if="answer.photos?.length"
+          class="flex flex-wrap gap-2"
+          aria-label="Gambar jalan kerja"
+        >
           <li
             v-for="p in answer.photos"
             :key="p.key"
             class="flex items-center gap-2 rounded-xl bg-muted p-2"
           >
-            <img v-if="urls[p.key]" :src="urls[p.key]" :alt="`Gambar ${p.name}`" class="size-12 rounded-lg object-cover" />
+            <img
+              v-if="urls[p.key]"
+              :src="urls[p.key]"
+              :alt="`Gambar ${p.name}`"
+              class="size-12 rounded-lg object-cover"
+            />
             <span class="text-caption text-toned">{{ p.name }}</span>
             <UButton
               type="button"

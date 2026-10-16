@@ -11,7 +11,10 @@ import RichText from './RichText.vue'
 
 const props = defineProps<{ result: PartResult; options?: McqOption[]; title?: string }>()
 
-const STATUS: Record<PartStatus, { text: string; color: 'success' | 'warning' | 'error' | 'neutral' | 'info' }> = {
+const STATUS: Record<
+  PartStatus,
+  { text: string; color: 'success' | 'warning' | 'error' | 'neutral' | 'info' }
+> = {
   betul: { text: 'Betul', color: 'success' },
   separa: { text: 'Separa', color: 'warning' },
   salah: { text: 'Salah', color: 'error' },
@@ -20,7 +23,8 @@ const STATUS: Record<PartStatus, { text: string; color: 'success' | 'warning' | 
 }
 
 const status = computed(() => STATUS[props.result.status])
-const optionText = (id: string | undefined): string => props.options?.find((o) => o.id === id)?.text ?? ''
+const optionText = (id: string | undefined): string =>
+  props.options?.find((o) => o.id === id)?.text ?? ''
 const letter = (id: string | undefined): string => {
   const i = props.options?.findIndex((o) => o.id === id) ?? -1
   return i >= 0 ? String.fromCharCode(65 + i) : ''
@@ -29,13 +33,19 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
 </script>
 
 <template>
-  <section class="flex flex-col gap-3 rounded-2xl bg-muted p-3" :data-testid="`part-result-${result.partId}`" :data-status="result.status">
+  <section
+    class="flex flex-col gap-3 rounded-2xl bg-muted p-3"
+    :data-testid="`part-result-${result.partId}`"
+    :data-status="result.status"
+  >
     <header class="flex flex-wrap items-center justify-between gap-2">
       <h4 class="text-label font-semibold text-highlighted">
         {{ title ?? (result.label ? `Bahagian ${result.label}` : 'Jawapan anda') }}
       </h4>
       <div class="flex items-center gap-2">
-        <UBadge :color="status.color" variant="soft" size="md" data-testid="part-status">{{ status.text }}</UBadge>
+        <UBadge :color="status.color" variant="soft" size="md" data-testid="part-status">{{
+          status.text
+        }}</UBadge>
         <span class="tabular text-label font-semibold text-highlighted" data-testid="part-marks">
           {{ result.awarded }} / {{ result.marks }}
         </span>
@@ -53,7 +63,8 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
       <p>
         Jawapan betul:
         <strong>
-          {{ letter(result.scheme.correctOption) }} <RichText :text="optionText(result.scheme.correctOption)" />
+          {{ letter(result.scheme.correctOption) }}
+          <RichText :text="optionText(result.scheme.correctOption)" />
         </strong>
       </p>
     </div>
@@ -72,16 +83,27 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
       </p>
       <p v-if="result.answer.text?.trim()">{{ result.answer.text }}</p>
       <p v-if="result.answer.photos?.length" class="text-caption text-muted">
-        {{ result.answer.photos.length }} gambar jalan kerja dilampirkan (disimpan pada peranti ini).
+        {{ result.answer.photos.length }} gambar jalan kerja dilampirkan (disimpan pada peranti
+        ini).
       </p>
       <p v-if="result.status === 'kosong'" class="text-muted">Tiada jawapan.</p>
     </div>
 
-    <p v-if="result.status === 'belum_dimarkah'" class="text-body text-info" role="status" data-testid="needs-review">
-      Belum dimarkah — perlu semakan. Markah di bawah ialah sementara; tiada markah sifar diberi secara automatik.
+    <p
+      v-if="result.status === 'belum_dimarkah'"
+      class="text-body text-info"
+      role="status"
+      data-testid="needs-review"
+    >
+      Belum dimarkah — perlu semakan. Markah di bawah ialah sementara; tiada markah sifar diberi
+      secara automatik.
     </p>
 
-    <ul class="flex flex-col gap-2" :aria-label="`Titik pemarkahan ${result.label}`.trim()" data-testid="points">
+    <ul
+      class="flex flex-col gap-2"
+      :aria-label="`Titik pemarkahan ${result.label}`.trim()"
+      data-testid="points"
+    >
       <li
         v-for="p in result.points"
         :key="p.id"
@@ -108,8 +130,12 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
     <p v-if="result.ecf" class="text-caption text-info" data-testid="ecf-note">{{ result.ecf }}</p>
 
     <div class="rounded-xl bg-elevated p-3 text-body text-default" data-testid="scheme">
-      <p class="text-label font-semibold text-highlighted">Skema Pemarkahan · {{ result.scheme.marks }} markah</p>
-      <p v-if="result.scheme.explanation" class="mt-1"><RichText :text="result.scheme.explanation" /></p>
+      <p class="text-label font-semibold text-highlighted">
+        Skema Pemarkahan · {{ result.scheme.marks }} markah
+      </p>
+      <p v-if="result.scheme.explanation" class="mt-1">
+        <RichText :text="result.scheme.explanation" />
+      </p>
       <p v-if="result.scheme.finalDisplay" class="mt-1">
         Jawapan: <strong><RichText :text="result.scheme.finalDisplay" math-only /></strong>
         <span v-if="result.scheme.unit"> ({{ result.scheme.unit }})</span>

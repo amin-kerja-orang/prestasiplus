@@ -53,7 +53,12 @@ export interface Autosave {
   picks(): Record<string, string[]>
   position(): number
   /** The complete local answer set, for the submit request. */
-  snapshot(): { answers: Record<string, StoredAnswer>; flags: string[]; picks: Record<string, string[]>; position: number }
+  snapshot(): {
+    answers: Record<string, StoredAnswer>
+    flags: string[]
+    picks: Record<string, string[]>
+    position: number
+  }
   pendingCount(): number
   status(): SaveStatus
   dispose(): void
@@ -64,7 +69,14 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   const debounceMs = opts.debounceMs ?? 800
   const retryMs = opts.retryMs ?? 5000
   const now = opts.now ?? (() => Date.now())
-  let doc: LocalDoc = { answers: {}, pending: [], flags: [], picks: {}, position: 0, metaDirty: false }
+  let doc: LocalDoc = {
+    answers: {},
+    pending: [],
+    flags: [],
+    picks: {},
+    position: 0,
+    metaDirty: false,
+  }
   let timer: ReturnType<typeof setTimeout> | undefined
   let retry: ReturnType<typeof setTimeout> | undefined
   let current: SaveStatus = 'idle'
@@ -211,7 +223,12 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
     flags: () => doc.flags,
     picks: () => doc.picks,
     position: () => doc.position,
-    snapshot: () => ({ answers: { ...doc.answers }, flags: doc.flags, picks: doc.picks, position: doc.position }),
+    snapshot: () => ({
+      answers: { ...doc.answers },
+      flags: doc.flags,
+      picks: doc.picks,
+      position: doc.position,
+    }),
     pendingCount: () => doc.pending.length,
     status: () => current,
     dispose() {

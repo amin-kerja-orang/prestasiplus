@@ -43,7 +43,8 @@ export function poolUnits(
     if (doneGroups.has(gid)) continue
     doneGroups.add(gid)
     const g = groups.get(gid)
-    if (g && g.questionIds.every((q) => inPool.has(q))) units.push({ ids: [...g.questionIds], groupId: gid })
+    if (g && g.questionIds.every((q) => inPool.has(q)))
+      units.push({ ids: [...g.questionIds], groupId: gid })
   }
   return units
 }
@@ -84,8 +85,7 @@ function fill(units: PoolUnit[], take: number): PoolUnit[] | null {
 }
 
 export type BlueprintOutcome =
-  | { ok: true; sections: Omit<SectionSnapshot, 'id'>[] }
-  | { ok: false; shortages: Shortage[] }
+  { ok: true; sections: Omit<SectionSnapshot, 'id'>[] } | { ok: false; shortages: Shortage[] }
 
 export function composeFromBlueprint(
   blueprint: Blueprint,
@@ -108,7 +108,13 @@ export function composeFromBlueprint(
       rnd,
     )
     const ordered = [...unseen, ...seenUnits]
-    const reachable = have >= bs.take ? bestReachable(all.map((u) => u.ids.length), bs.take) : have
+    const reachable =
+      have >= bs.take
+        ? bestReachable(
+            all.map((u) => u.ids.length),
+            bs.take,
+          )
+        : have
     const picked = reachable === bs.take ? fill(ordered, bs.take) : null
     if (!picked) {
       shortages.push({ section: bs.label, need: bs.take, have: reachable })

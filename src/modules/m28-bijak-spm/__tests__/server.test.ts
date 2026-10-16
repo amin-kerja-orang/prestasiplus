@@ -23,9 +23,12 @@ describe('scheme reveal rules (US-15)', () => {
     const { attemptId } = await server.startAttempt(USER, 'mat-k1-2025-a', 'exam')
     const view = await server.getAttemptView(USER, attemptId)
     const json = JSON.stringify(view)
-    for (const word of ['"correct"', 'reason', 'accept', '"scheme"', 'tolerance']) expect(json).not.toContain(word)
+    for (const word of ['"correct"', 'reason', 'accept', '"scheme"', 'tolerance'])
+      expect(json).not.toContain(word)
     await expect(server.getResult(USER, attemptId)).rejects.toMatchObject({ code: 'not_submitted' })
-    await expect(server.checkQuestion(USER, attemptId, view.questions[0]!.id)).rejects.toBeInstanceOf(BijakError)
+    await expect(
+      server.checkQuestion(USER, attemptId, view.questions[0]!.id),
+    ).rejects.toBeInstanceOf(BijakError)
   })
   it('reveals the scheme per question in Latihan only after Semak', async () => {
     const { server } = make()
@@ -73,7 +76,10 @@ describe('submit grades the union of saved and carried answers (AC-13.2, fixes N
     const payload = { idempotencyKey: 'same', changes: [] }
     await server.submit(USER, attemptId, payload)
     const a = await server.getResult(USER, attemptId)
-    await server.submit(USER, attemptId, { ...payload, answers: { x: { answer: { choice: 'y' }, rev: 9, savedAt: 9 } } })
+    await server.submit(USER, attemptId, {
+      ...payload,
+      answers: { x: { answer: { choice: 'y' }, rev: 9, savedAt: 9 } },
+    })
     const b = await server.getResult(USER, attemptId)
     expect(b.result).toEqual(a.result)
     expect((await server.history(USER)).filter((h) => h.status === 'submitted')).toHaveLength(1)
@@ -82,14 +88,20 @@ describe('submit grades the union of saved and carried answers (AC-13.2, fixes N
     const { server } = make()
     const { attemptId } = await server.startAttempt(USER, 'mat-k1-2025-a', 'exam')
     const q = (await server.getAttemptView(USER, attemptId)).questions[0]!.id
-    await server.saveAnswers(USER, attemptId, { changes: [{ partId: q, answer: { choice: 'B' }, rev: 3, savedAt: 3 }] })
-    await server.saveAnswers(USER, attemptId, { changes: [{ partId: q, answer: { choice: 'A' }, rev: 2, savedAt: 2 }] })
+    await server.saveAnswers(USER, attemptId, {
+      changes: [{ partId: q, answer: { choice: 'B' }, rev: 3, savedAt: 3 }],
+    })
+    await server.saveAnswers(USER, attemptId, {
+      changes: [{ partId: q, answer: { choice: 'A' }, rev: 2, savedAt: 2 }],
+    })
     expect(server.debugSaved(attemptId)[q]!.answer.choice).toBe('B')
   })
   it('ignores parts that are not in the served composition', async () => {
     const { server } = make()
     const { attemptId } = await server.startAttempt(USER, 'mat-k1-2025-a', 'exam')
-    await server.saveAnswers(USER, attemptId, { changes: [{ partId: 'sn2-osmosis-a', answer: { text: 'x' }, rev: 1, savedAt: 1 }] })
+    await server.saveAnswers(USER, attemptId, {
+      changes: [{ partId: 'sn2-osmosis-a', answer: { text: 'x' }, rev: 1, savedAt: 1 }],
+    })
     expect(Object.keys(server.debugSaved(attemptId))).toHaveLength(0)
   })
 })
@@ -109,7 +121,9 @@ describe('timer (US-05)', () => {
     const { server, now } = make()
     const { attemptId } = await server.startAttempt(USER, 'mat-k1-2025-a', 'exam')
     const q = (await server.getAttemptView(USER, attemptId)).questions[0]!.id
-    await server.saveAnswers(USER, attemptId, { changes: [{ partId: q, answer: { choice: correctChoice(q) }, rev: 1, savedAt: 1 }] })
+    await server.saveAnswers(USER, attemptId, {
+      changes: [{ partId: q, answer: { choice: correctChoice(q) }, rev: 1, savedAt: 1 }],
+    })
     now.t += 75 * MIN + (GRACE_SECONDS - 1) * 1000
     expect((await server.history(USER))[0]!.status).toBe('in_progress')
     now.t += 2000
@@ -133,7 +147,9 @@ describe('resume (US-12) and persistence', () => {
     const info = (await server.findInProgress(USER, 'mat-k1-2025-a'))!
     expect(info).toMatchObject({ attemptId: first.attemptId, fresh: false, elapsedSeconds: 300 })
     // same paper without restart returns the same sitting
-    expect((await server.startAttempt(USER, 'mat-k1-2025-a', 'exam')).attemptId).toBe(first.attemptId)
+    expect((await server.startAttempt(USER, 'mat-k1-2025-a', 'exam')).attemptId).toBe(
+      first.attemptId,
+    )
     // refresh
     const reloaded = new BijakServer({ storage, now: () => now.t })
     expect((await reloaded.findInProgress(USER, 'mat-k1-2025-a'))!.attemptId).toBe(first.attemptId)
@@ -162,12 +178,19 @@ describe('Jana Kertas on the server', () => {
   it('lists a shortage for a contract with an empty pool and creates nothing', async () => {
     const { server } = make()
     const out = await server.generatePaper(USER, 'SN', 1)
-    expect(out).toEqual({ ok: false, reason: 'shortage', shortages: [{ section: 'Bahagian A', need: 40, have: 0 }] })
+    expect(out).toEqual({
+      ok: false,
+      reason: 'shortage',
+      shortages: [{ section: 'Bahagian A', need: 40, have: 0 }],
+    })
     expect(Object.keys(JSON.parse(JSON.stringify(await server.history(USER))))).toHaveLength(0)
   })
   it('refuses a subject and kertas without a contract', async () => {
     const { server } = make()
-    expect(await server.generatePaper(USER, 'MAT', 3)).toEqual({ ok: false, reason: 'no_blueprint' })
+    expect(await server.generatePaper(USER, 'MAT', 3)).toEqual({
+      ok: false,
+      reason: 'no_blueprint',
+    })
   })
 })
 
@@ -180,7 +203,14 @@ describe('result: choose-N, marks and rewards', () => {
       changes: [
         // Bahagian B (choose 1 of 2): osmosis answered (2 of 4 points), photosynthesis blank,
         // the student ticked the blank one: the tick never changes the score.
-        { partId: 'sn2-osmosis-a', answer: { text: 'Air melalui membran separa telap ke dalam sel hingga sel menjadi turgid.' }, rev: 1, savedAt: 1 },
+        {
+          partId: 'sn2-osmosis-a',
+          answer: {
+            text: 'Air melalui membran separa telap ke dalam sel hingga sel menjadi turgid.',
+          },
+          rev: 1,
+          savedAt: 1,
+        },
       ],
       picks: { 'sn-k2-2025-a-s2': ['sn2-fotosintesis'] },
     })
@@ -204,8 +234,18 @@ describe('result: choose-N, marks and rewards', () => {
     await server.submit(USER, attemptId, {
       idempotencyKey: 'k',
       changes: [
-        { partId: 'mat2-segitiga-v1-q1-a', answer: { steps: ['AC^2 = 12^2 + 5^2'], final: '13', unit: 'cm' }, rev: 1, savedAt: 1 },
-        { partId: 'mat2-garis-v1-c1', answer: { steps: ['2*4+3'], final: '11' }, rev: 1, savedAt: 1 },
+        {
+          partId: 'mat2-segitiga-v1-q1-a',
+          answer: { steps: ['AC^2 = 12^2 + 5^2'], final: '13', unit: 'cm' },
+          rev: 1,
+          savedAt: 1,
+        },
+        {
+          partId: 'mat2-garis-v1-c1',
+          answer: { steps: ['2*4+3'], final: '11' },
+          rev: 1,
+          savedAt: 1,
+        },
       ],
     })
     const { result } = await server.getResult(USER, attemptId)
@@ -217,7 +257,14 @@ describe('result: choose-N, marks and rewards', () => {
     const { attemptId } = await server.startAttempt(USER, 'sn-k2-2025-a', 'exam')
     await server.submit(USER, attemptId, {
       idempotencyKey: 'k',
-      changes: [{ partId: 'sn2-sel-q1-a', answer: { text: 'Ia ialah bahagian yang mengawal semua aktiviti sel itu' }, rev: 1, savedAt: 1 }],
+      changes: [
+        {
+          partId: 'sn2-sel-q1-a',
+          answer: { text: 'Ia ialah bahagian yang mengawal semua aktiviti sel itu' },
+          rev: 1,
+          savedAt: 1,
+        },
+      ],
     })
     const { result } = await server.getResult(USER, attemptId)
     expect(result.provisional).toBe(true)

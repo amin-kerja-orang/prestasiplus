@@ -150,7 +150,9 @@ function gradePoint(
 }
 
 export interface GradeInput {
-  part: Pick<PartDef, 'id' | 'label' | 'prompt' | 'marks'> & { kind: 'mcq' | 'working' | 'numeric' | 'short_text' }
+  part: Pick<PartDef, 'id' | 'label' | 'prompt' | 'marks'> & {
+    kind: 'mcq' | 'working' | 'numeric' | 'short_text'
+  }
   scheme: SchemeDef
   answer: PartAnswer | undefined
   ctx: GradeContext
@@ -195,7 +197,12 @@ export function gradePart({ part, scheme, answer, ctx }: GradeInput): PartResult
   let fm: FinalMatch = fin
     ? matchFinal(a.final ?? '', a.unit ?? '', fin)
     : { value: 'empty', unit: 'na' }
-  const wrongForm = !!fin?.mustContain && fm.value === 'match' && !latexToPlain(a.final ?? '').replace(/\^\(([^()]*)\)/g, '^$1').includes(fin.mustContain)
+  const wrongForm =
+    !!fin?.mustContain &&
+    fm.value === 'match' &&
+    !latexToPlain(a.final ?? '')
+      .replace(/\^\(([^()]*)\)/g, '^$1')
+      .includes(fin.mustContain)
   if (wrongForm) fm = { ...fm, value: 'mismatch' }
   const hits = new Map<string, boolean>()
   const points: PointResult[] = []
@@ -204,12 +211,29 @@ export function gradePart({ part, scheme, answer, ctx }: GradeInput): PartResult
   for (const p of scheme.points) {
     const r = blank
       ? { hit: false, reason: 'Tiada jawapan.', ecf: undefined }
-      : gradePoint(p, a, scheme, hits, ctx, fm.unit, fm.value, wrongForm ? fin?.formHint : undefined)
+      : gradePoint(
+          p,
+          a,
+          scheme,
+          hits,
+          ctx,
+          fm.unit,
+          fm.value,
+          wrongForm ? fin?.formHint : undefined,
+        )
     hits.set(p.id, r.hit)
     if (r.ecf) ecf = r.ecf
     const awarded = r.hit ? p.marks : 0
     total += awarded
-    points.push({ id: p.id, code: p.code, label: p.label, marks: p.marks, awarded, hit: r.hit, reason: r.reason })
+    points.push({
+      id: p.id,
+      code: p.code,
+      label: p.label,
+      marks: p.marks,
+      awarded,
+      hit: r.hit,
+      reason: r.reason,
+    })
   }
   const awarded = Math.min(total, part.marks)
 

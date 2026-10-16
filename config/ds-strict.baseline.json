@@ -2,7 +2,9 @@
   "$comment": "Committed floor of config/ds-strict.json (same shape). Raise it together with the list; never lower it. `exempt` may only shrink.",
   "strict": [
     { "glob": "src/ds/**", "level": "ds" },
-    { "glob": "src/dev/ds/**", "level": "page" }
+    { "glob": "src/dev/ds/**", "level": "page" },
+    { "glob": "src/modules/m28-bijak-spm/pages/**", "level": "page" },
+    { "glob": "src/modules/m28-bijak-spm/components/**", "level": "ds" }
   ],
   "exempt": ["src/theme/**"]
 }

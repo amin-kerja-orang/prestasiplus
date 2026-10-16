@@ -41,7 +41,9 @@ describe('autosave', () => {
     const { auto, server, attemptId, view, localStorage } = await setup()
     const q = view.questions[0]!.id
     auto.setAnswer(q, { choice: 'x' })
-    expect(JSON.parse(localStorage.getItem(`${LOCAL_PREFIX}${attemptId}`)!).answers[q].answer.choice).toBe('x')
+    expect(
+      JSON.parse(localStorage.getItem(`${LOCAL_PREFIX}${attemptId}`)!).answers[q].answer.choice,
+    ).toBe('x')
     expect(server.debugSaved(attemptId)[q]).toBeUndefined()
     await vi.advanceTimersByTimeAsync(799)
     expect(server.debugSaved(attemptId)[q]).toBeUndefined()
@@ -67,7 +69,12 @@ describe('autosave', () => {
     auto.dispose() // the page is gone before the debounce fired
     const fresh = make()
     const sv = await server.getAttemptView(USER, attemptId)
-    fresh.init({ answers: {}, flags: sv.attempt.flags, picks: sv.attempt.picks, position: sv.attempt.position })
+    fresh.init({
+      answers: {},
+      flags: sv.attempt.flags,
+      picks: sv.attempt.picks,
+      position: sv.attempt.position,
+    })
     expect(fresh.answers()[q]).toEqual({ choice: 'kept' })
     await vi.advanceTimersByTimeAsync(900)
     expect(server.debugSaved(attemptId)[q]!.answer.choice).toBe('kept')
@@ -97,7 +104,12 @@ describe('autosave', () => {
     expect(Object.keys(server.debugSaved(attemptId))).toHaveLength(0)
     await auto.flush()
     const snap = auto.snapshot()
-    await server.submit(USER, attemptId, { idempotencyKey: 'k', changes: [], answers: snap.answers, flags: snap.flags })
+    await server.submit(USER, attemptId, {
+      idempotencyKey: 'k',
+      changes: [],
+      answers: snap.answers,
+      flags: snap.flags,
+    })
     expect((await server.getResult(USER, attemptId)).result.score).toBe(2)
   })
 
@@ -109,7 +121,11 @@ describe('autosave', () => {
     expect(await auto.flush()).toBe(false)
     server.setOffline(false)
     const snap = auto.snapshot()
-    await server.submit(USER, attemptId, { idempotencyKey: 'k', changes: [], answers: snap.answers })
+    await server.submit(USER, attemptId, {
+      idempotencyKey: 'k',
+      changes: [],
+      answers: snap.answers,
+    })
     expect((await server.getResult(USER, attemptId)).result.score).toBe(1)
   })
 
@@ -128,10 +144,22 @@ describe('autosave', () => {
     const { make, localStorage, attemptId } = await setup()
     localStorage.setItem(
       `${LOCAL_PREFIX}${attemptId}`,
-      JSON.stringify({ answers: { p: { answer: { text: 'device' }, rev: 2, savedAt: 1 } }, pending: ['p'], flags: [], picks: {}, position: 0, metaDirty: false }),
+      JSON.stringify({
+        answers: { p: { answer: { text: 'device' }, rev: 2, savedAt: 1 } },
+        pending: ['p'],
+        flags: [],
+        picks: {},
+        position: 0,
+        metaDirty: false,
+      }),
     )
     const a = make()
-    a.init({ answers: { p: { answer: { text: 'server' }, rev: 3, savedAt: 2 } }, flags: [], picks: {}, position: 0 })
+    a.init({
+      answers: { p: { answer: { text: 'server' }, rev: 3, savedAt: 2 } },
+      flags: [],
+      picks: {},
+      position: 0,
+    })
     expect(a.answers().p).toEqual({ text: 'server' })
     expect(a.pendingCount()).toBe(0)
   })

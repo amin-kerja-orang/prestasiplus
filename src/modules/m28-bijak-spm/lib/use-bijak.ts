@@ -37,5 +37,7 @@ export function friendName(id: 'aiman' | 'aisyah'): string {
 }
 
 export function formatDateTime(ms: number): string {
-  return new Intl.DateTimeFormat('ms-MY', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(ms))
+  return new Intl.DateTimeFormat('ms-MY', { dateStyle: 'medium', timeStyle: 'short' }).format(
+    new Date(ms),
+  )
 }

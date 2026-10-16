@@ -39,7 +39,11 @@ function slot(id: string): number {
 }
 
 /** Three distinct wrong answers, none equal to the correct one. */
-export function distinct(correct: string, candidates: string[], fallback: (i: number) => string): string[] {
+export function distinct(
+  correct: string,
+  candidates: string[],
+  fallback: (i: number) => string,
+): string[] {
   const seen = new Set([correct])
   const out: string[] = []
   for (const c of candidates) {
@@ -100,7 +104,12 @@ export const leaf = (
   unit?: string,
 ): PartDef => ({ id, label, prompt, marks, answer: { kind, ...(unit ? { unit } : {}) } })
 
-export const branch = (id: string, label: string, prompt: string, children: PartDef[]): PartDef => ({
+export const branch = (
+  id: string,
+  label: string,
+  prompt: string,
+  children: PartDef[],
+): PartDef => ({
   id,
   label,
   prompt,

@@ -34,7 +34,12 @@ function algebra(bank: Bank, v: number): string {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-a`, [
-      { code: 'K1', marks: 1, label: 'Mengeluarkan faktor sepunya', match: { type: 'step', accept: [`${d.k}(x^2-${d.c / d.k})`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Mengeluarkan faktor sepunya',
+        match: { type: 'step', accept: [`${d.k}(x^2-${d.c / d.k})`] },
+      },
       { code: 'N1', marks: 1, label: 'Faktor lengkap', match: { type: 'final' } },
     ]),
     final: {
@@ -48,7 +53,19 @@ function algebra(bank: Bank, v: number): string {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-b`, [
-      { code: 'K1', marks: 1, label: 'Kembangkan atau bahagi kedua-dua belah', match: { type: 'step', accept: [`x-${d.s}=${d.rhs / d.m}`, `${d.m}x-${d.m * d.s}=${d.rhs}`, `${d.m}x=${d.rhs + d.m * d.s}`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Kembangkan atau bahagi kedua-dua belah',
+        match: {
+          type: 'step',
+          accept: [
+            `x-${d.s}=${d.rhs / d.m}`,
+            `${d.m}x-${d.m * d.s}=${d.rhs}`,
+            `${d.m}x=${d.rhs + d.m * d.s}`,
+          ],
+        },
+      },
       { code: 'N1', marks: 1, label: 'Nilai x betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(d.x)], display: `x = ${d.x}` },
@@ -79,7 +96,19 @@ function triangleGroup(bank: Bank, v: number): string[] {
     kind: 'points',
     marks: 2,
     points: pts(`${q1}-a`, [
-      { code: 'K1', marks: 1, label: 'Menggunakan teorem Pythagoras', match: { type: 'step', accept: [`${d.ab}^2+${d.bc}^2`, `sqrt(${d.ab}^2+${d.bc}^2)`, String(d.ab ** 2 + d.bc ** 2)] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Menggunakan teorem Pythagoras',
+        match: {
+          type: 'step',
+          accept: [
+            `${d.ab}^2+${d.bc}^2`,
+            `sqrt(${d.ab}^2+${d.bc}^2)`,
+            String(d.ab ** 2 + d.bc ** 2),
+          ],
+        },
+      },
       { code: 'N1', marks: 1, label: 'Panjang AC betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(d.ac)], unit: 'cm', display: `${d.ac}\\text{ cm}` },
@@ -100,7 +129,15 @@ function triangleGroup(bank: Bank, v: number): string[] {
     kind: 'points',
     marks: 2,
     points: pts(`${q2}-a`, [
-      { code: 'K1', marks: 1, label: 'Menggunakan luas = 1/2 x tapak x tinggi', match: { type: 'step', accept: [`1/2*${d.ab}*${d.bc}`, `(${d.ab}*${d.bc})/2`, `${d.ab * d.bc}/2`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Menggunakan luas = 1/2 x tapak x tinggi',
+        match: {
+          type: 'step',
+          accept: [`1/2*${d.ab}*${d.bc}`, `(${d.ab}*${d.bc})/2`, `${d.ab * d.bc}/2`],
+        },
+      },
       { code: 'N1', marks: 1, label: 'Luas betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(area)], unit: 'cm²', display: `${area}\\text{ cm}^{2}` },
@@ -109,7 +146,12 @@ function triangleGroup(bank: Bank, v: number): string[] {
     kind: 'points',
     marks: 2,
     points: pts(`${q2}-b`, [
-      { code: 'K1', marks: 1, label: 'Sisi bertentangan / hipotenus', match: { type: 'step', accept: [`${d.ab}/${d.ac}`, 'AB/AC'] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Sisi bertentangan / hipotenus',
+        match: { type: 'step', accept: [`${d.ab}/${d.ac}`, 'AB/AC'] },
+      },
       { code: 'N1', marks: 1, label: 'Nilai sin betul', match: { type: 'final' } },
     ]),
     final: { accept: [`${d.ab}/${d.ac}`], tolerance: 0.001, display: `\\frac{${d.ab}}{${d.ac}}` },
@@ -122,7 +164,11 @@ function triangleGroup(bank: Bank, v: number): string[] {
       label: 'Rajah 1',
       caption: 'Segi tiga ABC bersudut tegak di B.',
       alt: `Segi tiga ABC bersudut tegak di B, AB ${d.ab} cm dan BC ${d.bc} cm.`,
-      svg: triangleSvg(d.ab, d.bc, `Segi tiga ABC bersudut tegak di B, AB ${d.ab} cm dan BC ${d.bc} cm.`),
+      svg: triangleSvg(
+        d.ab,
+        d.bc,
+        `Segi tiga ABC bersudut tegak di B, AB ${d.ab} cm dan BC ${d.bc} cm.`,
+      ),
     },
   )
   return [q1, q2]
@@ -146,7 +192,14 @@ function diskaun(bank: Bank, v: number): string {
       stem: `Harga asal sehelai baju ialah RM${d.price}. Kedai itu memberi diskaun ${d.pct}%.`,
       parts: [
         leaf(`${id}-a`, '(a)', 'Hitung jumlah diskaun, dalam RM.', 2, 'working', 'RM'),
-        leaf(`${id}-b`, '(b)', 'Hitung harga jualan baju itu selepas diskaun, dalam RM.', 1, 'numeric', 'RM'),
+        leaf(
+          `${id}-b`,
+          '(b)',
+          'Hitung harga jualan baju itu selepas diskaun, dalam RM.',
+          1,
+          'numeric',
+          'RM',
+        ),
       ],
     },
     POOL_A,
@@ -155,7 +208,15 @@ function diskaun(bank: Bank, v: number): string {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-a`, [
-      { code: 'K1', marks: 1, label: 'Peratus x harga asal', match: { type: 'step', accept: [`${d.pct}/100*${d.price}`, `${d.pct / 100}*${d.price}`, `${d.pct}%*${d.price}`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Peratus x harga asal',
+        match: {
+          type: 'step',
+          accept: [`${d.pct}/100*${d.price}`, `${d.pct / 100}*${d.price}`, `${d.pct}%*${d.price}`],
+        },
+      },
       { code: 'N1', marks: 1, label: 'Diskaun betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(disc)], unit: 'RM', display: `\\text{RM}${disc}` },
@@ -169,7 +230,11 @@ function diskaun(bank: Bank, v: number): string {
         marks: 1,
         label: 'Harga jualan betul',
         match: { type: 'final' },
-        ecf: { fromPart: `${id}-a`, expected: (prev) => d.price - prev, note: 'Diterima mengikut ECF: jawapan (a) dibawa ke hadapan.' },
+        ecf: {
+          fromPart: `${id}-a`,
+          expected: (prev) => d.price - prev,
+          note: 'Diterima mengikut ECF: jawapan (a) dibawa ke hadapan.',
+        },
       },
     ]),
     final: { accept: [String(sale)], unit: 'RM', display: `\\text{RM}${sale}` },
@@ -217,7 +282,12 @@ function garisLurus(bank: Bank, v: number): string {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-c1`, [
-      { code: 'K1', marks: 1, label: 'Gantikan nilai x', match: { type: 'step', accept: [`${d.m}*${d.x1}+${d.c}`, `${d.m * d.x1}+${d.c}`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Gantikan nilai x',
+        match: { type: 'step', accept: [`${d.m}*${d.x1}+${d.c}`, `${d.m * d.x1}+${d.c}`] },
+      },
       { code: 'N1', marks: 1, label: 'Nilai y betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(y1)], display: `y = ${y1}` },
@@ -226,7 +296,15 @@ function garisLurus(bank: Bank, v: number): string {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-c2`, [
-      { code: 'K1', marks: 1, label: 'Gantikan nilai y', match: { type: 'step', accept: [`${d.m}x+${d.c}=${d.y2}`, `${d.m}x=${d.y2 - d.c}`, `${d.y2}=${d.m}x+${d.c}`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Gantikan nilai y',
+        match: {
+          type: 'step',
+          accept: [`${d.m}x+${d.c}=${d.y2}`, `${d.m}x=${d.y2 - d.c}`, `${d.y2}=${d.m}x+${d.c}`],
+        },
+      },
       { code: 'N1', marks: 1, label: 'Nilai x betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(x2)], display: `x = ${x2}` },
@@ -261,7 +339,12 @@ function statistik(bank: Bank, v: number): string {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-a`, [
-      { code: 'K1', marks: 1, label: 'Jumlah dibahagi bilangan nilai', match: { type: 'step', accept: [`${sum}/${d.xs.length}`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Jumlah dibahagi bilangan nilai',
+        match: { type: 'step', accept: [`${sum}/${d.xs.length}`] },
+      },
       { code: 'N1', marks: 1, label: 'Min betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(d.mean)], display: String(d.mean) },
@@ -270,7 +353,9 @@ function statistik(bank: Bank, v: number): string {
     bank.schemes.set(pid, {
       kind: 'points',
       marks: 1,
-      points: pts(pid, [{ code: 'N1', marks: 1, label: 'Jawapan betul', match: { type: 'final' } }]),
+      points: pts(pid, [
+        { code: 'N1', marks: 1, label: 'Jawapan betul', match: { type: 'final' } },
+      ]),
       final: { accept: [String(ans)], display: String(ans) },
     })
   }
@@ -280,7 +365,19 @@ function statistik(bank: Bank, v: number): string {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-c`, [
-      { code: 'K1', marks: 1, label: 'Menyusun data dan mengenal pasti nilai tengah', match: { type: 'step', accept: [d.xs.length % 2 ? String(d.median) : `(${d.xs[d.xs.length / 2 - 1]}+${d.xs[d.xs.length / 2]})/2`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Menyusun data dan mengenal pasti nilai tengah',
+        match: {
+          type: 'step',
+          accept: [
+            d.xs.length % 2
+              ? String(d.median)
+              : `(${d.xs[d.xs.length / 2 - 1]}+${d.xs[d.xs.length / 2]})/2`,
+          ],
+        },
+      },
       { code: 'N1', marks: 1, label: 'Median betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(d.median)], display: String(d.median) },
@@ -315,16 +412,31 @@ function kuadratik(bank: Bank, v: number): string {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-a`, [
-      { code: 'K1', marks: 1, label: 'Dua faktor dengan satu sebutan betul', match: { type: 'step', accept: [`(x-${d.p})(x-${d.q})`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Dua faktor dengan satu sebutan betul',
+        match: { type: 'step', accept: [`(x-${d.p})(x-${d.q})`] },
+      },
       { code: 'N1', marks: 1, label: 'Faktor betul', match: { type: 'final' } },
     ]),
-    final: { accept: [`(x-${d.p})(x-${d.q})`], mustContain: '(', formHint: 'Jawapan mesti dalam bentuk faktor.', display: `(x - ${d.p})(x - ${d.q})` },
+    final: {
+      accept: [`(x-${d.p})(x-${d.q})`],
+      mustContain: '(',
+      formHint: 'Jawapan mesti dalam bentuk faktor.',
+      display: `(x - ${d.p})(x - ${d.q})`,
+    },
   })
   bank.schemes.set(`${id}-b1`, {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-b1`, [
-      { code: 'K1', marks: 1, label: 'Menyamakan setiap faktor dengan sifar', match: { type: 'step', accept: [`x-${d.p}=0`, `x-${d.q}=0`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Menyamakan setiap faktor dengan sifar',
+        match: { type: 'step', accept: [`x-${d.p}=0`, `x-${d.q}=0`] },
+      },
       { code: 'N1', marks: 1, label: 'Kedua-dua punca betul', match: { type: 'final' } },
     ]),
     final: { accept: [`${d.p}, ${d.q}`], display: `x = ${d.p},\\ x = ${d.q}` },
@@ -333,7 +445,12 @@ function kuadratik(bank: Bank, v: number): string {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-b2`, [
-      { code: 'K1', marks: 1, label: 'Menambah kedua-dua punca', match: { type: 'step', accept: [`${d.p}+${d.q}`] } },
+      {
+        code: 'K1',
+        marks: 1,
+        label: 'Menambah kedua-dua punca',
+        match: { type: 'step', accept: [`${d.p}+${d.q}`] },
+      },
       {
         code: 'N1',
         marks: 1,

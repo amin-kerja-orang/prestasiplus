@@ -33,7 +33,10 @@ export function bijakServer(): BijakServer {
 }
 
 /** Test hook: swap in a server (and its device storage). */
-export function setBijakServerForTests(server: BijakServer | null, deviceStorage?: KeyValueStore): void {
+export function setBijakServerForTests(
+  server: BijakServer | null,
+  deviceStorage?: KeyValueStore,
+): void {
   instance = server
   storage = deviceStorage ?? null
 }

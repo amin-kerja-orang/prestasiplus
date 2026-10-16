@@ -197,7 +197,9 @@ export class BijakServer {
       marks: this.paperMarks(def.sections),
       kind: def.kind,
       status: inProgress ? 'sedang' : submitted ? 'selesai' : 'belum',
-      ...(submitted?.result ? { lastScore: { score: submitted.result.score, max: submitted.result.max } } : {}),
+      ...(submitted?.result
+        ? { lastScore: { score: submitted.result.score, max: submitted.result.max } }
+        : {}),
       ...(inProgress ? { attemptId: inProgress.id } : {}),
     }
   }
@@ -223,14 +225,24 @@ export class BijakServer {
         ),
         instruction:
           s.instruction ??
-          (s.rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${s.rule.n} daripada ${s.questionIds.length} soalan.`),
+          (s.rule.type === 'all'
+            ? 'Jawab semua soalan.'
+            : `Jawab ${s.rule.n} daripada ${s.questionIds.length} soalan.`),
       })),
     }
   }
 
   /** Kontrak list for Jana Kertas: which (subject, kertas) can be generated. */
   async listContracts(): Promise<
-    { subject: SubjectCode; subjectName: string; kertas: number; source: string; code: string; durationMin: number; sections: { label: string; take: number }[] }[]
+    {
+      subject: SubjectCode
+      subjectName: string
+      kertas: number
+      source: string
+      code: string
+      durationMin: number
+      sections: { label: string; take: number }[]
+    }[]
   > {
     await this.tick()
     return BLUEPRINTS.map((b) => ({
@@ -249,7 +261,11 @@ export class BijakServer {
   }
 
   /** Jana Kertas (US-03). Returns a shortage list instead of a short paper. */
-  async generatePaper(userId: number, subject: SubjectCode, kertas: number): Promise<GenerateOutcome> {
+  async generatePaper(
+    userId: number,
+    subject: SubjectCode,
+    kertas: number,
+  ): Promise<GenerateOutcome> {
     await this.tick()
     const bp = BLUEPRINTS.find((b) => b.subject === subject && b.kertas === kertas)
     if (!bp || bp.source === 'Draf') return { ok: false, reason: 'no_blueprint' }
@@ -308,7 +324,13 @@ export class BijakServer {
       .sort((x, y) => y.startedAt - x.startedAt)[0]
     if (!a) return null
     const elapsed = Math.max(0, Math.floor((this.now() - a.startedAt) / 1000))
-    return { attemptId: a.id, title: a.title, mode: a.mode, elapsedSeconds: elapsed, fresh: elapsed <= FRESH_SECONDS }
+    return {
+      attemptId: a.id,
+      title: a.title,
+      mode: a.mode,
+      elapsedSeconds: elapsed,
+      fresh: elapsed <= FRESH_SECONDS,
+    }
   }
 
   /** Starts a sitting. `restart` closes the unsubmitted one as "Ditinggalkan" first (AC-12.2). */
@@ -409,7 +431,10 @@ export class BijakServer {
     const { result: _r, sections: _s, ...meta } = a
     void _r
     void _s
-    const checks = a.status === 'in_progress' && a.mode === 'latihan' ? a.checked.map((qid) => this.gradeQuestion(a, qid, numberOf.get(qid)!, true)) : []
+    const checks =
+      a.status === 'in_progress' && a.mode === 'latihan'
+        ? a.checked.map((qid) => this.gradeQuestion(a, qid, numberOf.get(qid)!, true))
+        : []
     return { attempt: meta, sections, questions, groups, checks }
   }
 
@@ -432,7 +457,10 @@ export class BijakServer {
   }
 
   /** Merge by per-part revision: an older revision never overwrites a newer one. */
-  private merge(a: Attempt, changes: Pick<SaveChange, 'partId' | 'answer' | 'rev' | 'savedAt'>[]): void {
+  private merge(
+    a: Attempt,
+    changes: Pick<SaveChange, 'partId' | 'answer' | 'rev' | 'savedAt'>[],
+  ): void {
     const allowed = this.allowedParts(a)
     for (const c of changes) {
       if (!allowed.has(c.partId)) continue
@@ -449,7 +477,11 @@ export class BijakServer {
   }
 
   /** Idempotent autosave (US-11). */
-  async saveAnswers(userId: number, attemptId: string, payload: SavePayload): Promise<{ savedAt: number }> {
+  async saveAnswers(
+    userId: number,
+    attemptId: string,
+    payload: SavePayload,
+  ): Promise<{ savedAt: number }> {
     await this.tick()
     const a = this.attemptOf(userId, attemptId)
     if (a.status !== 'in_progress') return { savedAt: this.now() }
@@ -464,7 +496,11 @@ export class BijakServer {
    * an answer typed just before the tap is never missing from grading. Repeats return the same
    * result (idempotent).
    */
-  async submit(userId: number, attemptId: string, payload: SubmitPayload): Promise<{ attemptId: string; late: number }> {
+  async submit(
+    userId: number,
+    attemptId: string,
+    payload: SubmitPayload,
+  ): Promise<{ attemptId: string; late: number }> {
     await this.tick()
     const a = this.attemptOf(userId, attemptId)
     if (a.status !== 'in_progress') return { attemptId: a.id, late: a.lateBySeconds ?? 0 }
@@ -492,7 +528,11 @@ export class BijakServer {
   sweep(): void {
     let changed = false
     for (const a of Object.values(this.state.attempts)) {
-      if (a.status === 'in_progress' && a.deadline && this.now() > a.deadline + GRACE_SECONDS * 1000) {
+      if (
+        a.status === 'in_progress' &&
+        a.deadline &&
+        this.now() > a.deadline + GRACE_SECONDS * 1000
+      ) {
         this.finish(a, 'auto_submitted')
         changed = true
       }
@@ -511,18 +551,38 @@ export class BijakServer {
 
   /* --------------------------------------------------------------------------- grading */
 
-  private gradeQuestion(a: Attempt, qid: string, number: number, countedDefault: boolean): QuestionResult {
+  private gradeQuestion(
+    a: Attempt,
+    qid: string,
+    number: number,
+    countedDefault: boolean,
+  ): QuestionResult {
     const q = BANK.questions.get(qid)!
     const sectionId = a.sections.find((s) => s.questionIds.includes(qid))!.id
     const finals: Record<string, number | null> = {}
     const leaves: Leaf[] = q.mcq
-      ? [{ id: q.id, label: '', prompt: q.stem, marks: this.questionMarks(q), kind: 'short_text', depth: 0 }]
+      ? [
+          {
+            id: q.id,
+            label: '',
+            prompt: q.stem,
+            marks: this.questionMarks(q),
+            kind: 'short_text',
+            depth: 0,
+          },
+        ]
       : leavesOf(q.parts ?? [])
     const parts = leaves.map((leaf) => {
       const scheme = BANK.schemes.get(leaf.id)!
       const answer = a.answers[leaf.id]?.answer
       const res = gradePart({
-        part: { id: leaf.id, label: leaf.label, prompt: leaf.prompt, marks: leaf.marks, kind: q.mcq ? 'mcq' : leaf.kind },
+        part: {
+          id: leaf.id,
+          label: leaf.label,
+          prompt: leaf.prompt,
+          marks: leaf.marks,
+          kind: q.mcq ? 'mcq' : leaf.kind,
+        },
         scheme,
         answer,
         ctx: { previousFinals: finals },
@@ -565,7 +625,10 @@ export class BijakServer {
       sections.push({
         sectionId: s.id,
         label: s.label,
-        marks: effectiveMarks(s.rule, qs.map((q) => q.marks)),
+        marks: effectiveMarks(
+          s.rule,
+          qs.map((q) => q.marks),
+        ),
         awarded: counted.reduce((x, q) => x + q.awarded, 0),
         ...(s.rule.type === 'choose' ? { chooseN: s.rule.n } : {}),
         counted: counted.map((q) => q.questionId),
@@ -573,7 +636,10 @@ export class BijakServer {
     }
     const score = sections.reduce((x, s) => x + s.awarded, 0)
     const max = sections.reduce((x, s) => x + s.marks, 0)
-    const pending = questions.filter((q) => q.counted).flatMap((q) => q.parts).filter((p) => p.status === 'belum_dimarkah').length
+    const pending = questions
+      .filter((q) => q.counted)
+      .flatMap((q) => q.parts)
+      .filter((p) => p.status === 'belum_dimarkah').length
     return {
       score,
       max,
@@ -588,12 +654,19 @@ export class BijakServer {
   }
 
   /** Latihan "Semak" (AC-15.3): grades one question and reveals only its scheme. */
-  async checkQuestion(userId: number, attemptId: string, questionId: string, payload?: SavePayload): Promise<QuestionResult> {
+  async checkQuestion(
+    userId: number,
+    attemptId: string,
+    questionId: string,
+    payload?: SavePayload,
+  ): Promise<QuestionResult> {
     await this.tick()
     const a = this.attemptOf(userId, attemptId)
-    if (a.mode !== 'latihan') throw new BijakError('forbidden', 'Skema hanya didedahkan selepas Hantar')
+    if (a.mode !== 'latihan')
+      throw new BijakError('forbidden', 'Skema hanya didedahkan selepas Hantar')
     if (a.status !== 'in_progress') throw new BijakError('bad_request', 'Percubaan sudah tamat')
-    if (!a.sections.some((s) => s.questionIds.includes(questionId))) throw new BijakError('not_found', 'Soalan tidak ditemui')
+    if (!a.sections.some((s) => s.questionIds.includes(questionId)))
+      throw new BijakError('not_found', 'Soalan tidak ditemui')
     if (payload) {
       this.merge(a, payload.changes)
       this.applyMeta(a, payload)
@@ -632,7 +705,10 @@ export class BijakServer {
         mode: a.mode,
         status: a.status,
         startedAt: a.startedAt,
-        durationSeconds: Math.max(0, Math.round(((a.submittedAt ?? this.now()) - a.startedAt) / 1000)),
+        durationSeconds: Math.max(
+          0,
+          Math.round(((a.submittedAt ?? this.now()) - a.startedAt) / 1000),
+        ),
         ...(a.result ? { score: a.result.score, max: a.result.max } : {}),
       }))
   }

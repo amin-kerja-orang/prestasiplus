@@ -34,7 +34,12 @@ export function triangleSvg(ab: number, bc: number, alt: string, unit = 'cm'): s
 }
 
 /** Bar chart with value labels. */
-export function barChartSvg(title: string, labels: string[], values: number[], alt: string): string {
+export function barChartSvg(
+  title: string,
+  labels: string[],
+  values: number[],
+  alt: string,
+): string {
   const w = 320
   const h = 230
   const max = Math.max(...values)
@@ -71,7 +76,8 @@ export function gridSvg(points: { name: string; x: number; y: number }[], alt: s
   let grid = ''
   for (let i = 0; i <= 8; i++) {
     grid += `<path d="M${ox + i * u} ${oy} L${ox + i * u} ${oy - 7 * u}" stroke-opacity="0.15" stroke-width="1"/>`
-    if (i <= 7) grid += `<path d="M${ox} ${oy - i * u} L${ox + 8 * u} ${oy - i * u}" stroke-opacity="0.15" stroke-width="1"/>`
+    if (i <= 7)
+      grid += `<path d="M${ox} ${oy - i * u} L${ox + 8 * u} ${oy - i * u}" stroke-opacity="0.15" stroke-width="1"/>`
     grid += label(ox + i * u, oy + 16, String(i))
     if (i >= 1 && i <= 7) grid += label(ox - 10, oy - i * u + 5, String(i), 'end')
   }

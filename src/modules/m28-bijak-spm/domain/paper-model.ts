@@ -51,7 +51,9 @@ export function effectiveMarks(rule: SectionSnapshot['rule'], questionMarks: num
 }
 
 /** BM instruction line of a section (authored, else derived from the rule). */
-export function sectionRuleLine(s: Pick<SectionSnapshot, 'rule' | 'instruction' | 'questionIds'>): string {
+export function sectionRuleLine(
+  s: Pick<SectionSnapshot, 'rule' | 'instruction' | 'questionIds'>,
+): string {
   if (s.instruction) return s.instruction
   return s.rule.type === 'all'
     ? 'Jawab semua soalan.'

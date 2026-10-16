@@ -4,10 +4,19 @@ import { BANK } from '../data/registry'
 import { gradePart } from '../domain/grading'
 import type { PartAnswer } from '../domain/types'
 
-function grade(partId: string, answer: PartAnswer | undefined, finals: Record<string, number | null> = {}) {
+function grade(
+  partId: string,
+  answer: PartAnswer | undefined,
+  finals: Record<string, number | null> = {},
+) {
   const scheme = BANK.schemes.get(partId)!
   const marks = scheme.marks
-  const kind = scheme.kind === 'mcq' ? 'mcq' : partId.startsWith('sn2') && !partId.includes('laju') ? 'short_text' : 'working'
+  const kind =
+    scheme.kind === 'mcq'
+      ? 'mcq'
+      : partId.startsWith('sn2') && !partId.includes('laju')
+        ? 'short_text'
+        : 'working'
   return gradePart({
     part: { id: partId, label: '(a)', prompt: '', marks, kind },
     scheme,
@@ -30,13 +39,24 @@ describe('MCQ', () => {
 
 describe('structured working: K1 / N1 / P1 per point', () => {
   it('gives K1 and N1 for a correct method and answer', () => {
-    const r = grade('mat2-segitiga-v1-q1-a', { steps: ['AC^2 = 12^2 + 5^2'], final: '13', unit: 'cm' })
-    expect(r.points.map((p) => [p.code, p.hit])).toEqual([['K1', true], ['N1', true]])
+    const r = grade('mat2-segitiga-v1-q1-a', {
+      steps: ['AC^2 = 12^2 + 5^2'],
+      final: '13',
+      unit: 'cm',
+    })
+    expect(r.points.map((p) => [p.code, p.hit])).toEqual([
+      ['K1', true],
+      ['N1', true],
+    ])
     expect(r.awarded).toBe(2)
     expect(r.status).toBe('betul')
   })
   it('gives K1 only for a right method with an arithmetic slip', () => {
-    const r = grade('mat2-segitiga-v1-q1-a', { steps: ['12^2 + 5^2 = 149'], final: '12.2', unit: 'cm' })
+    const r = grade('mat2-segitiga-v1-q1-a', {
+      steps: ['12^2 + 5^2 = 149'],
+      final: '12.2',
+      unit: 'cm',
+    })
     expect(r.points.map((p) => p.hit)).toEqual([true, false])
     expect(r.awarded).toBe(1)
     expect(r.status).toBe('separa')
@@ -88,15 +108,22 @@ describe('low confidence is not an automatic zero', () => {
     expect(r.confidence).toBe('low')
   })
   it('flags a photo-only answer for review', () => {
-    const r = grade('mat2-segitiga-v1-q1-a', { photos: [{ key: 'k', name: 'kerja.jpg', size: 100 }] })
+    const r = grade('mat2-segitiga-v1-q1-a', {
+      photos: [{ key: 'k', name: 'kerja.jpg', size: 100 }],
+    })
     expect(r.status).toBe('belum_dimarkah')
   })
   it('flags a long unmatched sentence for keyword parts, but a short wrong word is just wrong', () => {
-    expect(grade('sn2-sel-q1-a', { text: 'Ia ialah bahagian yang mengawal semua aktiviti sel itu' }).status).toBe('belum_dimarkah')
+    expect(
+      grade('sn2-sel-q1-a', { text: 'Ia ialah bahagian yang mengawal semua aktiviti sel itu' })
+        .status,
+    ).toBe('belum_dimarkah')
     expect(grade('sn2-sel-q1-a', { text: 'ribosom' }).status).toBe('salah')
   })
   it('marks keyword points one by one', () => {
-    const r = grade('sn2-osmosis-a', { text: 'Air melalui membran separa telap ke dalam sel hingga sel menjadi turgid.' })
+    const r = grade('sn2-osmosis-a', {
+      text: 'Air melalui membran separa telap ke dalam sel hingga sel menjadi turgid.',
+    })
     expect(r.points.filter((p) => p.hit).length).toBe(2)
     expect(r.awarded).toBe(2)
     expect(r.status).toBe('separa')

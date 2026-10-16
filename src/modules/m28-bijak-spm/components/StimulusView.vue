@@ -5,16 +5,24 @@ import { computed } from 'vue'
 import type { StimulusDef } from '../domain/types'
 import RichText from './RichText.vue'
 
-const props = withDefaults(defineProps<{ stimulus: StimulusDef; thumb?: boolean }>(), { thumb: false })
+const props = withDefaults(defineProps<{ stimulus: StimulusDef; thumb?: boolean }>(), {
+  thumb: false,
+})
 
-const tableColumns = computed(() => (props.stimulus.table?.head ?? []).map((h, i) => ({ accessorKey: `c${i}`, header: h })))
+const tableColumns = computed(() =>
+  (props.stimulus.table?.head ?? []).map((h, i) => ({ accessorKey: `c${i}`, header: h })),
+)
 const tableRows = computed(() =>
   (props.stimulus.table?.rows ?? []).map((r) => Object.fromEntries(r.map((c, i) => [`c${i}`, c]))),
 )
 </script>
 
 <template>
-  <figure class="flex flex-col gap-2" :data-testid="thumb ? 'stimulus-thumb' : 'stimulus'" :data-stimulus="stimulus.id">
+  <figure
+    class="flex flex-col gap-2"
+    :data-testid="thumb ? 'stimulus-thumb' : 'stimulus'"
+    :data-stimulus="stimulus.id"
+  >
     <div
       v-if="stimulus.svg"
       class="mx-auto w-full overflow-hidden rounded-xl bg-muted p-2 text-highlighted"

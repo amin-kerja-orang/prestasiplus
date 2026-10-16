@@ -3,6 +3,8 @@
   "strict": [
     { "glob": "src/ds/**", "level": "ds" },
     { "glob": "src/dev/ds/**", "level": "page" },
+    { "glob": "src/modules/m05-practice/pages/DashboardPage.vue", "level": "page" },
+    { "glob": "src/modules/m05-practice/components/dashboard-v2/**", "level": "page" },
     { "glob": "src/modules/m28-bijak-spm/pages/**", "level": "page" },
     { "glob": "src/modules/m28-bijak-spm/components/**", "level": "ds" }
   ],

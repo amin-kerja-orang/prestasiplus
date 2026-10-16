@@ -17,11 +17,17 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
 </script>
 
 <template>
-  <div class="flex flex-col gap-3" :class="(depth ?? 0) > 0 ? 'ps-3' : ''" :data-testid="`part-${part.id}`">
+  <div
+    class="flex flex-col gap-3"
+    :class="(depth ?? 0) > 0 ? 'ps-3' : ''"
+    :data-testid="`part-${part.id}`"
+  >
     <p class="flex flex-wrap items-baseline gap-x-2 text-body text-highlighted">
       <span v-if="part.label" class="font-bold">{{ part.label }}</span>
       <RichText :text="part.prompt" />
-      <span v-if="!part.children?.length" class="tabular text-caption text-muted">[{{ part.marks }} markah]</span>
+      <span v-if="!part.children?.length" class="tabular text-caption text-muted"
+        >[{{ part.marks }} markah]</span
+      >
     </p>
     <template v-if="part.children?.length">
       <PartNode

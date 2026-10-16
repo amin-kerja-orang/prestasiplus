@@ -130,7 +130,12 @@ function toggleKeypad(): void {
         @click="emit('remove')"
       />
     </div>
-    <MathKeyboard v-if="keypad" label="Papan kekunci matematik" @press="onKey" @close="keypad = false" />
+    <MathKeyboard
+      v-if="keypad"
+      label="Papan kekunci matematik"
+      @press="onKey"
+      @close="keypad = false"
+    />
     <p
       v-if="modelValue.trim()"
       class="rounded-xl bg-muted px-3 py-2 text-body text-highlighted"

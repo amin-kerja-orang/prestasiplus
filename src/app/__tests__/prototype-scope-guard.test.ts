@@ -28,6 +28,12 @@ vi.mock('@/shells/user/UserShell.vue', async () => {
     }),
   }
 })
+vi.mock('@/shells/pembelajaran/PembelajaranLayout.vue', async () => {
+  const { h } = await import('vue')
+  const stub: FunctionalComponent = (_props, { slots }) =>
+    h('div', { 'data-layout': 'pembelajaran' }, slots.default?.())
+  return { __esModule: true, default: stub }
+})
 vi.mock('@/shells/admin/AdminShell.vue', async () => {
   const { h } = await import('vue')
   const stub: FunctionalComponent = (_props, { slots }) =>
@@ -197,7 +203,9 @@ describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
     logIn(STUDENT)
     const w = await open('/misi-harian')
     expect(useRouteOutcome().value).toBe('scope')
-    expect(w.find('[data-layout="user"] [data-testid="prototype-unavailable"]').exists()).toBe(true)
+    expect(
+      w.find('[data-layout="pembelajaran"] [data-testid="prototype-unavailable"]').exists(),
+    ).toBe(true)
     expect(w.text()).toContain('Belum tersedia dalam prototaip')
     expect(w.find('[data-testid="misi-harian"]').exists()).toBe(false)
     const home = w.find('[data-testid="prototype-unavailable-home"]')
@@ -205,10 +213,12 @@ describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
     expect(document.title).toBe('Belum Tersedia dalam Prototaip | PRESTASIPLUS')
   })
 
-  it('uses the user shell even when the blocked route is a bare page', async () => {
+  it('uses the Pembelajaran layout even when the blocked route is a bare page', async () => {
     logIn(STUDENT)
     const w = await open('/pricing')
-    expect(w.find('[data-layout="user"] [data-testid="prototype-unavailable"]').exists()).toBe(true)
+    expect(
+      w.find('[data-layout="pembelajaran"] [data-testid="prototype-unavailable"]').exists(),
+    ).toBe(true)
   })
 
   it('renders an in-scope route normally and clears the outcome', async () => {

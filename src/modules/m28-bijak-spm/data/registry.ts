@@ -60,7 +60,9 @@ export const PAPERS: PaperDef[] = [
     durationMin: 75,
     instructions: matK1Instructions,
     reference: MAT_REFERENCE,
-    sections: [{ id: 'mat-k1-2025-a-s1', label: 'Bahagian A', rule: { type: 'all' }, questionIds: k1.setA }],
+    sections: [
+      { id: 'mat-k1-2025-a-s1', label: 'Bahagian A', rule: { type: 'all' }, questionIds: k1.setA },
+    ],
   },
   {
     id: 'mat-k2-2025-a',
@@ -134,7 +136,13 @@ export const BLUEPRINTS: Blueprint[] = [
     instructions: snInstructions,
     sections: [
       { label: 'Bahagian A', rule: { type: 'all' }, pool: 'SN2-A', take: 3 },
-      { label: 'Bahagian B', instruction: 'Jawab 1 daripada 2 soalan.', rule: { type: 'choose', n: 1 }, pool: 'SN2-B', take: 2 },
+      {
+        label: 'Bahagian B',
+        instruction: 'Jawab 1 daripada 2 soalan.',
+        rule: { type: 'choose', n: 1 },
+        pool: 'SN2-B',
+        take: 2,
+      },
     ],
   },
   {

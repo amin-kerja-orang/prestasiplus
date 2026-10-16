@@ -164,10 +164,7 @@ export function latexToPlain(input: string): string {
 /* ------------------------------------------------------------------------------- tokenizer */
 
 type Tok =
-  | { t: 'num'; v: number }
-  | { t: 'id'; v: string }
-  | { t: 'fn'; v: string }
-  | { t: 'op'; v: string }
+  { t: 'num'; v: number } | { t: 'id'; v: string } | { t: 'fn'; v: string } | { t: 'op'; v: string }
 
 const FUNCS = new Set(['sqrt', 'sin', 'cos', 'tan', 'log', 'ln', 'abs'])
 
@@ -309,7 +306,9 @@ class Parser {
     if (this.isOp('^')) {
       this.pos++
       // right associative; exponent may be signed
-      const exp = this.isOp('-') ? (this.pos++, { k: 'neg', a: this.parsePower() } as Expr) : this.parsePower()
+      const exp = this.isOp('-')
+        ? (this.pos++, { k: 'neg', a: this.parsePower() } as Expr)
+        : this.parsePower()
       return { k: 'bin', op: '^', a: base, b: exp }
     }
     return base
@@ -460,7 +459,8 @@ export function exprEquivalent(a: Expr, b: Expr, tolerance = 0): boolean {
     const y = evalExpr(b, env)
     if (!Number.isFinite(x) || !Number.isFinite(y)) continue
     valid++
-    if (!close(x, y, Math.max(tolerance, 1e-7 * Math.max(1, Math.abs(x), Math.abs(y))))) return false
+    if (!close(x, y, Math.max(tolerance, 1e-7 * Math.max(1, Math.abs(x), Math.abs(y)))))
+      return false
   }
   return valid >= 3
 }
@@ -472,9 +472,7 @@ export interface Relation {
 }
 
 export type Parsed =
-  | { kind: 'expr'; e: Expr }
-  | { kind: 'relation'; r: Relation }
-  | { kind: 'list'; items: Parsed[] }
+  { kind: 'expr'; e: Expr } | { kind: 'relation'; r: Relation } | { kind: 'list'; items: Parsed[] }
 
 const REL_RE = /(<=|>=|!=|=|<|>)/
 
@@ -507,7 +505,9 @@ function expandPm(plain: string): string[] {
 }
 
 export function parseAnswer(raw: string): Parsed | null {
-  const plain = latexToPlain(raw).replace(/^\$|\$$/g, '').trim()
+  const plain = latexToPlain(raw)
+    .replace(/^\$|\$$/g, '')
+    .trim()
   if (!plain) return null
   const pieces = splitList(plain).flatMap(expandPm)
   if (pieces.length === 0) return null
@@ -638,8 +638,16 @@ export function splitUnit(raw: string, expected?: string): { value: string; unit
     return { value: text.replace(CURRENCY, '').trim(), unit: 'rm' }
   }
   // Longest suffix whose normalised form equals a unit-looking token.
-  const m = /^(.*?[\d)}a-z])\s*((?:\\?[a-zA-Zµ°]+)(?:\s*(?:\^\s*[({]?\s*\d\s*[)}]?|[²³]|\d))?(?:\s*\/\s*\w+)?)\s*$/.exec(text)
-  if (m && /^(cm|m|mm|km|kg|g|s|min|jam|rm|sen|ml|l|cm2|m2|cm3|m3|mm2|km2|kmj|m\/s|km\/j|km\/h|rad|unit|unit2|biji|orang|darjah)$/.test(normaliseUnit(m[2]!))) {
+  const m =
+    /^(.*?[\d)}a-z])\s*((?:\\?[a-zA-Zµ°]+)(?:\s*(?:\^\s*[({]?\s*\d\s*[)}]?|[²³]|\d))?(?:\s*\/\s*\w+)?)\s*$/.exec(
+      text,
+    )
+  if (
+    m &&
+    /^(cm|m|mm|km|kg|g|s|min|jam|rm|sen|ml|l|cm2|m2|cm3|m3|mm2|km2|kmj|m\/s|km\/j|km\/h|rad|unit|unit2|biji|orang|darjah)$/.test(
+      normaliseUnit(m[2]!),
+    )
+  ) {
     return { value: m[1]!.trim(), unit: normaliseUnit(m[2]!) }
   }
   return { value: text, unit: '' }
@@ -683,10 +691,18 @@ function unitState(expected: string | undefined, given: string): FinalMatch['uni
 export function plainToLatex(input: string): string {
   if (!input || input.includes('\\')) return input
   let s = input
-  s = s.replace(/√\s*\(([^()]*)\)/g, '\\sqrt{$1}').replace(/√\s*(\d+(?:\.\d+)?|[a-zA-Z])/g, '\\sqrt{$1}')
+  s = s
+    .replace(/√\s*\(([^()]*)\)/g, '\\sqrt{$1}')
+    .replace(/√\s*(\d+(?:\.\d+)?|[a-zA-Z])/g, '\\sqrt{$1}')
   s = s.replace(/sqrt\(([^()]*)\)/g, '\\sqrt{$1}')
-  s = s.replace(/(\d+(?:\.\d+)?|[a-zA-Z])\s*\/\s*(\d+(?:\.\d+)?|[a-zA-Z])(?![\w^])/g, '\\frac{$1}{$2}')
+  s = s.replace(
+    /(\d+(?:\.\d+)?|[a-zA-Z])\s*\/\s*(\d+(?:\.\d+)?|[a-zA-Z])(?![\w^])/g,
+    '\\frac{$1}{$2}',
+  )
   s = s.replace(/\^\s*\(([^()]*)\)/g, '^{$1}').replace(/\^\s*(-?\d+|[a-zA-Z])/g, '^{$1}')
-  s = s.replace(/\*/g, '\\times ').replace(/π/g, '\\pi ').replace(/\bpi\b/g, '\\pi ')
+  s = s
+    .replace(/\*/g, '\\times ')
+    .replace(/π/g, '\\pi ')
+    .replace(/\bpi\b/g, '\\pi ')
   return s.replace(/\s{2,}/g, ' ').trim()
 }

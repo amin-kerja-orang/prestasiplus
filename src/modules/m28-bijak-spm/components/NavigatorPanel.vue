@@ -38,15 +38,25 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
     <section v-for="s in sections" :key="s.id" class="flex flex-col gap-2">
       <h3 class="text-label font-semibold text-highlighted">
         {{ s.label }}
-        <span v-if="s.rule.type === 'choose'" class="text-caption text-muted"> · pilih {{ s.rule.n }}</span>
+        <span v-if="s.rule.type === 'choose'" class="text-caption text-muted">
+          · pilih {{ s.rule.n }}</span
+        >
       </h3>
-      <p v-if="counters?.[s.id]" class="text-caption text-muted" role="status">{{ counters[s.id] }}</p>
+      <p v-if="counters?.[s.id]" class="text-caption text-muted" role="status">
+        {{ counters[s.id] }}
+      </p>
       <div class="flex flex-wrap gap-2">
         <UButton
           v-for="q in questions.filter((x) => x.sectionId === s.id)"
           :key="q.id"
           type="button"
-          :color="states[q.id] === 'flagged' ? 'warning' : states[q.id] === 'answered' ? 'primary' : 'neutral'"
+          :color="
+            states[q.id] === 'flagged'
+              ? 'warning'
+              : states[q.id] === 'answered'
+                ? 'primary'
+                : 'neutral'
+          "
           :variant="
             q.id === current
               ? 'outline'

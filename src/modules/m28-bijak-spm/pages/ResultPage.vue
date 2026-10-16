@@ -5,6 +5,7 @@
  * ("awak" voice) -> rewards -> Kongsi / Kembali ke Home. Below it: marks per section, per question
  * and per marking point, with the scheme revealed (only reachable after Hantar).
  */
+import PageFrame from '../components/PageFrame.vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -40,13 +41,21 @@ const friend = chosenFriend()
 const name = computed(() => (me.value?.name ?? 'Murid').split(' ')[0] ?? 'Murid')
 const result = computed(() => data.value?.result)
 const percent = computed(() => result.value?.percent ?? 0)
-const art = computed(() => (percent.value >= 90 ? 'party' : percent.value >= 60 ? 'trophy' : 'books'))
+const art = computed(() =>
+  percent.value >= 90 ? 'party' : percent.value >= 60 ? 'trophy' : 'books',
+)
 const strong = computed(() => percent.value >= 60)
 const title = computed(() =>
-  percent.value >= 90 ? `Sempurna, ${name.value}!` : strong.value ? `Hebat, ${name.value}!` : `Teruskan, ${name.value}!`,
+  percent.value >= 90
+    ? `Sempurna, ${name.value}!`
+    : strong.value
+      ? `Hebat, ${name.value}!`
+      : `Teruskan, ${name.value}!`,
 )
 const subtitle = computed(() =>
-  result.value ? `Awak dapat ${result.value.score}/${result.value.max} markah${result.value.provisional ? ' (sementara)' : ''}.` : '',
+  result.value
+    ? `Awak dapat ${result.value.score}/${result.value.max} markah${result.value.provisional ? ' (sementara)' : ''}.`
+    : '',
 )
 const friendLine = computed(() =>
   result.value
@@ -60,7 +69,9 @@ const rewards = computed(() => [
   { id: 'koin', value: `+${result.value?.coins ?? 0}`, unit: 'Koin', art: 'coin' as const },
 ])
 
-const questionMap = computed(() => new Map<string, QuestionView>((data.value?.paper.questions ?? []).map((q) => [q.id, q])))
+const questionMap = computed(
+  () => new Map<string, QuestionView>((data.value?.paper.questions ?? []).map((q) => [q.id, q])),
+)
 const shown = computed<QuestionResult[]>(() =>
   (result.value?.questions ?? []).filter((q) => {
     if (filter.value === 'semua') return true
@@ -121,106 +132,149 @@ const home = computed(() => landingPath.value || '/dashboard')
 </script>
 
 <template>
-  <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-6" data-testid="bijak-result">
-    <DsEmptyState
-      v-if="error"
-      title="Semakan belum tersedia"
-      description="Skema pemarkahan hanya dipaparkan selepas kertas dihantar."
-      icon="i-ph-lock-key"
-      data-testid="result-locked"
-    />
-    <div v-else-if="!data || !result" class="flex flex-col gap-3" aria-busy="true">
-      <USkeleton class="h-40 w-full" />
-      <USkeleton class="h-24 w-full" />
-    </div>
-
-    <template v-else>
-      <DsWinScreen
-        :art="art"
-        :title="title"
-        :subtitle="subtitle"
-        :score="result.score"
-        :max="result.max"
-        :ring-label="`Skor ${result.score} daripada ${result.max}`"
-        :ring-unit="`daripada ${result.max}`"
-        :rewards="rewards"
-        data-testid="win-screen"
-      >
-        <template #friend>
-          <DsFriendAvatar :friend="friend" :mood="strong ? 'celebrating' : 'encouraging'" size="md" />
-          <DsSpeechBubble :name="friendName(friend)" live data-testid="friend-line">{{ friendLine }}</DsSpeechBubble>
-        </template>
-        <template #actions>
-          <UButton color="neutral" size="lg" block data-testid="share" @click="share">Kongsi</UButton>
-          <UButton size="lg" block :to="home" data-testid="home">Kembali ke Home</UButton>
-        </template>
-      </DsWinScreen>
-
-      <div class="flex flex-col gap-2 sm:flex-row sm:justify-center">
-        <UButton color="neutral" icon="i-ph-arrow-counter-clockwise" data-testid="retry" @click="retry">Cuba lagi</UButton>
-        <UButton color="neutral" variant="ghost" to="/spm/bijak/sejarah" icon="i-ph-clock-counter-clockwise">Sejarah Bijak SPM</UButton>
+  <PageFrame>
+    <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-6" data-testid="bijak-result">
+      <DsEmptyState
+        v-if="error"
+        title="Semakan belum tersedia"
+        description="Skema pemarkahan hanya dipaparkan selepas kertas dihantar."
+        icon="i-ph-lock-key"
+        data-testid="result-locked"
+      />
+      <div v-else-if="!data || !result" class="flex flex-col gap-3" aria-busy="true">
+        <USkeleton class="h-40 w-full" />
+        <USkeleton class="h-24 w-full" />
       </div>
 
-      <UAlert
-        v-if="result.provisional"
-        color="info"
-        variant="soft"
-        icon="i-ph-hourglass-medium"
-        :title="`${result.pendingReview} bahagian belum dimarkah — perlu semakan`"
-        description="Jumlah markah ialah sementara sehingga semakan selesai."
-        data-testid="provisional"
-      />
+      <template v-else>
+        <DsWinScreen
+          :art="art"
+          :title="title"
+          :subtitle="subtitle"
+          :score="result.score"
+          :max="result.max"
+          :ring-label="`Skor ${result.score} daripada ${result.max}`"
+          :ring-unit="`daripada ${result.max}`"
+          :rewards="rewards"
+          data-testid="win-screen"
+        >
+          <template #friend>
+            <DsFriendAvatar
+              :friend="friend"
+              :mood="strong ? 'celebrating' : 'encouraging'"
+              size="md"
+            />
+            <DsSpeechBubble :name="friendName(friend)" live data-testid="friend-line">{{
+              friendLine
+            }}</DsSpeechBubble>
+          </template>
+          <template #actions>
+            <UButton color="neutral" size="lg" block data-testid="share" @click="share"
+              >Kongsi</UButton
+            >
+            <UButton size="lg" block :to="home" data-testid="home">Kembali ke Home</UButton>
+          </template>
+        </DsWinScreen>
 
-      <section class="flex flex-col gap-3" aria-labelledby="h-sections">
-        <h2 id="h-sections" class="text-heading text-highlighted">Markah mengikut bahagian</h2>
-        <UCard v-for="s in result.sections" :key="s.sectionId" :data-testid="`section-${s.sectionId}`">
-          <div class="flex flex-col gap-1">
-            <div class="flex items-baseline justify-between gap-3">
-              <h3 class="text-body text-highlighted">{{ s.label }}</h3>
-              <span class="tabular text-label text-highlighted" data-testid="section-score">{{ s.awarded }} / {{ s.marks }}</span>
-            </div>
-            <p class="text-caption text-muted">{{ sectionLine(s.sectionId) }}</p>
-            <p v-if="s.chooseN" class="text-caption text-toned" data-testid="counted-note">
-              Soalan yang dikira: {{ s.counted.map((id) => questionMap.get(id)?.number).filter(Boolean).join(', ') || 'tiada' }}
-            </p>
-          </div>
-        </UCard>
-      </section>
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <UButton
+            color="neutral"
+            icon="i-ph-arrow-counter-clockwise"
+            data-testid="retry"
+            @click="retry"
+            >Cuba lagi</UButton
+          >
+          <UButton
+            color="neutral"
+            variant="ghost"
+            to="/spm/bijak/sejarah"
+            icon="i-ph-clock-counter-clockwise"
+            >Sejarah Bijak SPM</UButton
+          >
+        </div>
 
-      <section v-if="weakTopics.length" class="flex flex-col gap-2" aria-labelledby="h-weak" data-testid="weak-topics">
-        <h2 id="h-weak" class="text-heading text-highlighted">Topik untuk disemak</h2>
-        <ul class="flex flex-col gap-1 text-body text-default">
-          <li v-for="[t, n] in weakTopics" :key="t">{{ t }} — {{ n }} markah hilang</li>
-        </ul>
-      </section>
+        <UAlert
+          v-if="result.provisional"
+          color="info"
+          variant="soft"
+          icon="i-ph-hourglass-medium"
+          :title="`${result.pendingReview} bahagian belum dimarkah — perlu semakan`"
+          description="Jumlah markah ialah sementara sehingga semakan selesai."
+          data-testid="provisional"
+        />
 
-      <section class="flex flex-col gap-3" aria-labelledby="h-questions">
-        <h2 id="h-questions" class="text-heading text-highlighted">Semakan soalan</h2>
-        <UTabs v-model="filter" :items="filterItems" :content="false" />
-        <p v-if="!shown.length" class="text-body text-muted">Tiada soalan dalam paparan ini.</p>
-        <UCard v-for="q in shown" :key="q.questionId" :data-testid="`result-q-${q.number}`">
-          <details>
-            <summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-body text-highlighted">
-              <span>
-                Soalan {{ q.number }}
-                <UBadge v-if="!q.counted" color="neutral" variant="subtle" class="ms-2">Tidak dikira</UBadge>
-              </span>
-              <span class="tabular" data-testid="q-score">{{ q.awarded }} / {{ q.marks }}</span>
-            </summary>
-            <div class="mt-3 flex flex-col gap-3">
-              <p v-if="questionMap.get(q.questionId)?.stem" class="text-body text-default">
-                <RichText :text="questionMap.get(q.questionId)!.stem" />
+        <section class="flex flex-col gap-3" aria-labelledby="h-sections">
+          <h2 id="h-sections" class="text-heading text-highlighted">Markah mengikut bahagian</h2>
+          <UCard
+            v-for="s in result.sections"
+            :key="s.sectionId"
+            :data-testid="`section-${s.sectionId}`"
+          >
+            <div class="flex flex-col gap-1">
+              <div class="flex items-baseline justify-between gap-3">
+                <h3 class="text-body text-highlighted">{{ s.label }}</h3>
+                <span class="tabular text-label text-highlighted" data-testid="section-score"
+                  >{{ s.awarded }} / {{ s.marks }}</span
+                >
+              </div>
+              <p class="text-caption text-muted">{{ sectionLine(s.sectionId) }}</p>
+              <p v-if="s.chooseN" class="text-caption text-toned" data-testid="counted-note">
+                Soalan yang dikira:
+                {{
+                  s.counted
+                    .map((id) => questionMap.get(id)?.number)
+                    .filter(Boolean)
+                    .join(', ') || 'tiada'
+                }}
               </p>
-              <PartResultCard
-                v-for="p in q.parts"
-                :key="p.partId"
-                :result="p"
-                :options="questionMap.get(q.questionId)?.mcq?.options"
-              />
             </div>
-          </details>
-        </UCard>
-      </section>
-    </template>
-  </main>
+          </UCard>
+        </section>
+
+        <section
+          v-if="weakTopics.length"
+          class="flex flex-col gap-2"
+          aria-labelledby="h-weak"
+          data-testid="weak-topics"
+        >
+          <h2 id="h-weak" class="text-heading text-highlighted">Topik untuk disemak</h2>
+          <ul class="flex flex-col gap-1 text-body text-default">
+            <li v-for="[t, n] in weakTopics" :key="t">{{ t }} — {{ n }} markah hilang</li>
+          </ul>
+        </section>
+
+        <section class="flex flex-col gap-3" aria-labelledby="h-questions">
+          <h2 id="h-questions" class="text-heading text-highlighted">Semakan soalan</h2>
+          <UTabs v-model="filter" :items="filterItems" :content="false" />
+          <p v-if="!shown.length" class="text-body text-muted">Tiada soalan dalam paparan ini.</p>
+          <UCard v-for="q in shown" :key="q.questionId" :data-testid="`result-q-${q.number}`">
+            <details>
+              <summary
+                class="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-body text-highlighted"
+              >
+                <span>
+                  Soalan {{ q.number }}
+                  <UBadge v-if="!q.counted" color="neutral" variant="subtle" class="ms-2"
+                    >Tidak dikira</UBadge
+                  >
+                </span>
+                <span class="tabular" data-testid="q-score">{{ q.awarded }} / {{ q.marks }}</span>
+              </summary>
+              <div class="mt-3 flex flex-col gap-3">
+                <p v-if="questionMap.get(q.questionId)?.stem" class="text-body text-default">
+                  <RichText :text="questionMap.get(q.questionId)!.stem" />
+                </p>
+                <PartResultCard
+                  v-for="p in q.parts"
+                  :key="p.partId"
+                  :result="p"
+                  :options="questionMap.get(q.questionId)?.mcq?.options"
+                />
+              </div>
+            </details>
+          </UCard>
+        </section>
+      </template>
+    </main>
+  </PageFrame>
 </template>

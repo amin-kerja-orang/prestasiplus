@@ -44,18 +44,50 @@ export interface BootstrappedApp {
   mockRuntime: MockRuntime | null
 }
 
+async function startMockRuntime(
+  mockOptions: Partial<BootMockOptions> | undefined,
+): Promise<MockRuntime> {
+  const { startMock, createMockPersistence } = await import('@/mock')
+  return startMock({
+    persistence: createMockPersistence(),
+    init: window.__MOCK_INIT__ ?? null,
+    ...mockOptions,
+  })
+}
+
+/**
+ * Published demo builds (`demo` mode, no test init) mount first and boot the mock in the
+ * background: the transport below holds every request until the mock is ready, so behaviour is
+ * identical but the login screen no longer waits for the whole mock registry. Dev, e2e and unit
+ * runs keep the original "mock first" order (they read `window.__mock` / `mockRuntime`).
+ */
+function shouldDeferMock(mockOptions: Partial<BootMockOptions> | undefined): boolean {
+  return (
+    import.meta.env.MODE === 'demo' &&
+    mockOptions === undefined &&
+    typeof window !== 'undefined' &&
+    window.__MOCK_INIT__ === undefined
+  )
+}
+
 async function createTransport(
   mockOptions: Partial<BootMockOptions> | undefined,
 ): Promise<{ transport: Transport; mockRuntime: MockRuntime | null }> {
   if (import.meta.env.VITE_API_MODE === 'http') {
     return { transport: createHttpTransport(), mockRuntime: null }
   }
-  const { startMock, createMockPersistence } = await import('@/mock')
-  const runtime = await startMock({
-    persistence: createMockPersistence(),
-    init: window.__MOCK_INIT__ ?? null,
-    ...mockOptions,
-  })
+  if (shouldDeferMock(mockOptions)) {
+    const ready = startMockRuntime(mockOptions)
+    // Log a boot failure once; each request then rejects through the same promise.
+    ready.catch((e: unknown) => {
+      console.error('Mock boot failed', e)
+    })
+    const transport: Transport = {
+      request: async (req, signal) => (await ready).transport.request(req, signal),
+    }
+    return { transport, mockRuntime: null }
+  }
+  const runtime = await startMockRuntime(mockOptions)
   return { transport: runtime.transport, mockRuntime: runtime }
 }
 

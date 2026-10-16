@@ -33,6 +33,12 @@ const MODULE = { tag: [moduleTag(5)] }
 
 test.use({ mockInit: { latency: 0 } })
 
+// The v2 Murid Home (V2 fast track, D35-D38) replaces the live DOM, classes and sizes this spec
+// measured (hero, carousel controls, 5-up quick actions, aside, text sizes). Skipped until the v2
+// QA task rewrites it against `docs/design/v2-learner-prototype.html`. The behaviour smoke is
+// `smoke-dashboard.spec.ts`.
+test.skip(true, 'Superseded by the v2 Murid Home redesign; rewrite under the v2 QA task.')
+
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
 /** Pauses the carousel autoplay (FR-M05-08 hover pause) so slide-dependent checks do not race a slow machine. */
@@ -1201,12 +1207,10 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
       await navigateInApp(page, '/dashboard')
       await expect(tid(page, 'dash-greeting')).toBeVisible()
     }
-    test
-      .info()
-      .annotations.push({
-        type: 'hrefs',
-        description: `${hrefs.length} unique: ${hrefs.filter((h) => !h.startsWith('/practice?') && !h.startsWith('/artikel/')).join(', ')}`,
-      })
+    test.info().annotations.push({
+      type: 'hrefs',
+      description: `${hrefs.length} unique: ${hrefs.filter((h) => !h.startsWith('/practice?') && !h.startsWith('/artikel/')).join(', ')}`,
+    })
     test
       .info()
       .annotations.push({ type: 'unresolved', description: unresolved.join('; ') || 'none' })

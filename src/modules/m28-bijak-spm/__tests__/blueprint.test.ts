@@ -7,7 +7,10 @@ function unitsFor(blueprintIndex: number): Map<string, PoolUnit[]> {
   const bp = BLUEPRINTS[blueprintIndex]!
   const m = new Map<string, PoolUnit[]>()
   for (const s of bp.sections)
-    m.set(s.pool, poolUnits(s.pool, BANK.pool, BANK.groups, (q) => BANK.questions.get(q)?.groupId))
+    m.set(
+      s.pool,
+      poolUnits(s.pool, BANK.pool, BANK.groups, (q) => BANK.questions.get(q)?.groupId),
+    )
   return m
 }
 
@@ -26,7 +29,9 @@ describe('seed integrity', () => {
       expect(grouped).toHaveLength(4)
       // contiguous and in published order
       const first = ids.indexOf(grouped[0]!)
-      expect(ids.slice(first, first + 4)).toEqual(BANK.groups.get(BANK.questions.get(grouped[0]!)!.groupId!)!.questionIds)
+      expect(ids.slice(first, first + 4)).toEqual(
+        BANK.groups.get(BANK.questions.get(grouped[0]!)!.groupId!)!.questionIds,
+      )
     }
   })
   it('every answerable part of every paper question has a scheme', () => {
@@ -71,7 +76,9 @@ describe('composeFromBlueprint', () => {
   it('keeps the section structure of K2 (Bahagian A, 3 questions, groups whole)', () => {
     const r = composeFromBlueprint(BLUEPRINTS[k2]!, unitsFor(k2), { seed: 5 })
     if (!r.ok) throw new Error('expected a paper')
-    expect(r.sections.map((s) => [s.label, s.rule.type, s.questionIds.length])).toEqual([['Bahagian A', 'all', 3]])
+    expect(r.sections.map((s) => [s.label, s.rule.type, s.questionIds.length])).toEqual([
+      ['Bahagian A', 'all', 3],
+    ])
     const a = r.sections[0]!.questionIds
     // a group in section A is complete
     for (const g of BANK.groups.values()) {
@@ -96,8 +103,19 @@ describe('composeFromBlueprint', () => {
     expect(shortageLine(r.shortages[0]!)).toBe('Bahagian A: perlu 40 soalan, hanya 0 tersedia')
   })
   it('reports a shortage when groups cannot add up to the count exactly', () => {
-    const units = new Map<string, PoolUnit[]>([['P', [{ ids: ['a', 'b'], groupId: 'g' }, { ids: ['c', 'd'], groupId: 'h' }]]])
-    const bp = { ...BLUEPRINTS[k1]!, sections: [{ label: 'X', rule: { type: 'all' as const }, pool: 'P', take: 3 }] }
+    const units = new Map<string, PoolUnit[]>([
+      [
+        'P',
+        [
+          { ids: ['a', 'b'], groupId: 'g' },
+          { ids: ['c', 'd'], groupId: 'h' },
+        ],
+      ],
+    ])
+    const bp = {
+      ...BLUEPRINTS[k1]!,
+      sections: [{ label: 'X', rule: { type: 'all' as const }, pool: 'P', take: 3 }],
+    }
     const r = composeFromBlueprint(bp, units, { seed: 1 })
     expect(r).toEqual({ ok: false, shortages: [{ section: 'X', need: 3, have: 2 }] })
   })

@@ -29,7 +29,11 @@ const routes: RouteRecordRaw[] = [
     path: '/spm/bijak/sejarah',
     name: 'm28.bijak.history',
     component: () => import('./pages/HistoryPage.vue'),
-    meta: { ...base, title: 'Sejarah Bijak SPM - PRESTASIPLUS', header: { title: 'Sejarah Bijak SPM' } },
+    meta: {
+      ...base,
+      title: 'Sejarah Bijak SPM - PRESTASIPLUS',
+      header: { title: 'Sejarah Bijak SPM' },
+    },
   },
   {
     path: '/spm/bijak/kertas/:paperId',
@@ -47,7 +51,11 @@ const routes: RouteRecordRaw[] = [
     path: '/spm/bijak/percubaan/:attemptId/keputusan',
     name: 'm28.bijak.result',
     component: () => import('./pages/ResultPage.vue'),
-    meta: { ...base, title: 'Semakan Bijak SPM - PRESTASIPLUS', header: { title: 'Semakan Bijak SPM' } },
+    meta: {
+      ...base,
+      title: 'Semakan Bijak SPM - PRESTASIPLUS',
+      header: { title: 'Semakan Bijak SPM' },
+    },
   },
 ]
 

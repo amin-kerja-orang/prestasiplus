@@ -4,7 +4,13 @@
  */
 import katex from 'katex'
 
-const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+const ESC: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}
 export const escapeHtml = (s: string): string => s.replace(/[&<>"']/g, (c) => ESC[c]!)
 
 const cache = new Map<string, string>()

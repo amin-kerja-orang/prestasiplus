@@ -53,11 +53,15 @@ const isExam = computed(() => view.value?.attempt.mode === 'exam')
 const questions = computed(() => view.value?.questions ?? [])
 const current = computed(() => questions.value[index.value])
 const section = computed(() => view.value?.sections.find((s) => s.id === current.value?.sectionId))
-const group = computed(() => view.value?.groups.find((g) => g.questionIds.includes(current.value?.id ?? '')))
+const group = computed(() =>
+  view.value?.groups.find((g) => g.questionIds.includes(current.value?.id ?? '')),
+)
 const isLast = computed(() => index.value >= questions.value.length - 1)
 const currentCheck = computed(() => (current.value ? checks.value[current.value.id] : undefined))
 const answeredCount = computed(() => questions.value.filter((q) => questionAnswered(q.id)).length)
-const progress = computed(() => (questions.value.length ? (answeredCount.value / questions.value.length) * 100 : 0))
+const progress = computed(() =>
+  questions.value.length ? (answeredCount.value / questions.value.length) * 100 : 0,
+)
 
 function leafIds(qid: string): string[] {
   const q = questions.value.find((x) => x.id === qid)
@@ -80,7 +84,11 @@ function questionAnswered(qid: string): boolean {
 const navStates = computed(() => {
   const out: Record<string, NavState> = {}
   for (const q of questions.value) {
-    out[q.id] = flags.value.includes(q.id) ? 'flagged' : questionAnswered(q.id) ? 'answered' : 'none'
+    out[q.id] = flags.value.includes(q.id)
+      ? 'flagged'
+      : questionAnswered(q.id)
+        ? 'answered'
+        : 'none'
   }
   return out
 })
@@ -111,7 +119,9 @@ const remaining = computed(() => {
   return Math.max(0, Math.ceil((d - (now.value + clockOffset.value)) / 1000))
 })
 const elapsed = computed(() =>
-  view.value ? Math.max(0, Math.floor((now.value + clockOffset.value - view.value.attempt.startedAt) / 1000)) : 0,
+  view.value
+    ? Math.max(0, Math.floor((now.value + clockOffset.value - view.value.attempt.startedAt) / 1000))
+    : 0,
 )
 const clockText = computed(() => formatClock(remaining.value ?? elapsed.value))
 const lowTime = computed(() => remaining.value !== null && remaining.value <= 300)
@@ -119,7 +129,8 @@ const lowTime = computed(() => remaining.value !== null && remaining.value <= 30
 watch(remaining, (r) => {
   if (r === null) return
   if (r <= 300 && r > 0) warned.value = true
-  if (r === 0 && !submitting.value && view.value?.attempt.status === 'in_progress') void submit(true)
+  if (r === 0 && !submitting.value && view.value?.attempt.status === 'in_progress')
+    void submit(true)
 })
 
 /* ------------------------------------------------------------------------------ load */
@@ -152,7 +163,10 @@ async function load(): Promise<void> {
     clockOffset.value = server.serverNow() - Date.now()
     view.value = v
   } catch (e) {
-    loadError.value = (e as { code?: string }).code === 'not_found' ? 'Percubaan tidak ditemui.' : 'Percubaan tidak dapat dimuatkan.'
+    loadError.value =
+      (e as { code?: string }).code === 'not_found'
+        ? 'Percubaan tidak ditemui.'
+        : 'Percubaan tidak dapat dimuatkan.'
   }
 }
 
@@ -184,7 +198,9 @@ function onAnswer(partId: string, a: PartAnswer): void {
 function toggleFlag(): void {
   const id = current.value?.id
   if (!id) return
-  flags.value = flags.value.includes(id) ? flags.value.filter((x) => x !== id) : [...flags.value, id]
+  flags.value = flags.value.includes(id)
+    ? flags.value.filter((x) => x !== id)
+    : [...flags.value, id]
   autosave?.setFlags(flags.value)
 }
 function toggleChoose(): void {
@@ -192,7 +208,11 @@ function toggleChoose(): void {
   const q = current.value
   if (!s || !q || s.rule.type !== 'choose') return
   const cur = picks.value[s.id] ?? []
-  const next = cur.includes(q.id) ? cur.filter((x) => x !== q.id) : cur.length < s.rule.n ? [...cur, q.id] : cur
+  const next = cur.includes(q.id)
+    ? cur.filter((x) => x !== q.id)
+    : cur.length < s.rule.n
+      ? [...cur, q.id]
+      : cur
   picks.value = { ...picks.value, [s.id]: next }
   autosave?.setPicks(picks.value)
 }
@@ -281,7 +301,13 @@ const feedback = computed(() => {
   const pending = c.parts.some((p) => p.status === 'belum_dimarkah')
   return {
     tone: full ? ('good' as const) : ('bad' as const),
-    title: pending ? 'Menunggu semakan' : full ? 'Betul!' : c.awarded > 0 ? 'Separa betul' : 'Belum tepat',
+    title: pending
+      ? 'Menunggu semakan'
+      : full
+        ? 'Betul!'
+        : c.awarded > 0
+          ? 'Separa betul'
+          : 'Belum tepat',
     body: `Markah anda: ${c.awarded} / ${c.marks}.`,
     combo: full && combo.value > 1 ? `Kombo ${combo.value}` : undefined,
   }
@@ -302,10 +328,14 @@ const feedback = computed(() => {
       <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
         <p class="min-w-0 truncate text-caption text-muted" data-testid="attempt-title">
           {{ view?.attempt.title }}
-          <UBadge color="neutral" variant="subtle" size="sm" class="ms-1">{{ isExam ? 'Mod Peperiksaan' : 'Mod Latihan' }}</UBadge>
+          <UBadge color="neutral" variant="subtle" size="sm" class="ms-1">{{
+            isExam ? 'Mod Peperiksaan' : 'Mod Latihan'
+          }}</UBadge>
         </p>
         <div class="flex items-center gap-3">
-          <span class="text-caption text-muted" role="status" data-testid="save-status">{{ saveText }}</span>
+          <span class="text-caption text-muted" role="status" data-testid="save-status">{{
+            saveText
+          }}</span>
           <UBadge
             v-if="view"
             :color="lowTime ? 'error' : 'neutral'"
@@ -354,7 +384,12 @@ const feedback = computed(() => {
         <UAlert color="error" variant="soft" title="Ralat" :description="loadError" />
         <UButton class="mt-4 min-h-11" @click="load">Cuba lagi</UButton>
       </div>
-      <div v-else-if="!view || !current" class="flex flex-col gap-3 py-4" aria-busy="true" data-testid="attempt-loading">
+      <div
+        v-else-if="!view || !current"
+        class="flex flex-col gap-3 py-4"
+        aria-busy="true"
+        data-testid="attempt-loading"
+      >
         <USkeleton class="h-8 w-1/2" />
         <USkeleton class="h-24 w-full" />
         <USkeleton class="h-16 w-full" />
@@ -364,8 +399,15 @@ const feedback = computed(() => {
           <p class="text-overline text-muted">
             {{ section.label }} · [{{ section.effectiveMarks }} markah]
           </p>
-          <p class="text-caption text-toned" data-testid="section-rule">{{ sectionRuleLine(section) }}</p>
-          <p v-if="counters[section.id]" class="text-caption text-muted" role="status" data-testid="choose-counter">
+          <p class="text-caption text-toned" data-testid="section-rule">
+            {{ sectionRuleLine(section) }}
+          </p>
+          <p
+            v-if="counters[section.id]"
+            class="text-caption text-muted"
+            role="status"
+            data-testid="choose-counter"
+          >
             {{ counters[section.id] }}
           </p>
         </div>
@@ -440,9 +482,12 @@ const feedback = computed(() => {
           class="min-h-11 lg:hidden"
           data-testid="open-map"
           @click="navOpen = true"
-          >Peta</UButton
+          >Peta {{ current?.number ?? 0 }}/{{ questions.length }}</UButton
         >
-        <p class="tabular min-w-0 flex-1 truncate text-center text-caption text-muted" data-testid="position">
+        <p
+          class="tabular hidden min-w-0 flex-1 truncate text-center text-caption text-muted sm:block"
+          data-testid="position"
+        >
           Soalan {{ current?.number ?? 0 }} / {{ questions.length }}
         </p>
         <UButton
@@ -489,13 +534,21 @@ const feedback = computed(() => {
     </template>
   </AttemptShell>
 
-  <UDrawer v-model:open="stimOpen" :title="group?.stimulus.label ?? 'Rajah'" description="Rajah kekal boleh dibuka semasa menjawab.">
+  <UDrawer
+    v-model:open="stimOpen"
+    :title="group?.stimulus.label ?? 'Rajah'"
+    description="Rajah kekal boleh dibuka semasa menjawab."
+  >
     <template #body>
       <StimulusView v-if="group" :stimulus="group.stimulus" />
     </template>
   </UDrawer>
 
-  <UDrawer v-model:open="navOpen" title="Peta soalan" description="Pilih soalan untuk melompat ke sana.">
+  <UDrawer
+    v-model:open="navOpen"
+    title="Peta soalan"
+    description="Pilih soalan untuk melompat ke sana."
+  >
     <template #body>
       <NavigatorPanel
         v-if="view && current"
@@ -512,7 +565,11 @@ const feedback = computed(() => {
   <UModal
     v-model:open="confirmSubmit"
     :title="isExam ? 'Hantar jawapan anda sekarang?' : 'Selesai latihan?'"
-    :description="isExam ? 'Selepas dihantar, anda tidak boleh mengubah jawapan.' : 'Ringkasan markah akan dipaparkan.'"
+    :description="
+      isExam
+        ? 'Selepas dihantar, anda tidak boleh mengubah jawapan.'
+        : 'Ringkasan markah akan dipaparkan.'
+    "
   >
     <template #body>
       <ul class="flex flex-col gap-1 text-body text-default" data-testid="submit-summary">
@@ -522,8 +579,15 @@ const feedback = computed(() => {
     </template>
     <template #footer>
       <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-        <UButton color="neutral" variant="soft" class="min-h-11" @click="confirmSubmit = false">Kembali</UButton>
-        <UButton class="min-h-11" :loading="submitting" data-testid="confirm-submit" @click="submit(false)">
+        <UButton color="neutral" variant="soft" class="min-h-11" @click="confirmSubmit = false"
+          >Kembali</UButton
+        >
+        <UButton
+          class="min-h-11"
+          :loading="submitting"
+          data-testid="confirm-submit"
+          @click="submit(false)"
+        >
           {{ isExam ? 'Hantar' : 'Selesai' }}
         </UButton>
       </div>
@@ -537,7 +601,9 @@ const feedback = computed(() => {
   >
     <template #footer>
       <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-        <UButton color="neutral" variant="soft" class="min-h-11" @click="confirmExit = false">Terus menjawab</UButton>
+        <UButton color="neutral" variant="soft" class="min-h-11" @click="confirmExit = false"
+          >Terus menjawab</UButton
+        >
         <UButton class="min-h-11" data-testid="confirm-exit" @click="exitNow">Keluar</UButton>
       </div>
     </template>

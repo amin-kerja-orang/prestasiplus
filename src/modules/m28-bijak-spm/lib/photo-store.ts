@@ -25,7 +25,12 @@ export function checkPhoto(file: { type: string; size: number }, existing: numbe
 const keyOf = (attemptId: string, partId: string, n: number): string =>
   `pp.bijak.photo.${attemptId}.${partId}.${n}.${Date.now()}`
 
-export async function putPhoto(attemptId: string, partId: string, file: File, n: number): Promise<PhotoMeta> {
+export async function putPhoto(
+  attemptId: string,
+  partId: string,
+  file: File,
+  n: number,
+): Promise<PhotoMeta> {
   const key = keyOf(attemptId, partId, n)
   try {
     await set(key, file)
