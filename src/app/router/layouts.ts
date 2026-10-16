@@ -19,9 +19,22 @@ import { defineAsyncComponent, type Component } from 'vue'
 
 import type { Role } from '@/stores/session-types'
 
+import { isPrototypeScopeOn } from '../prototype-scope'
+
 import type { LayoutMode } from './meta'
 
-export type ShellKind = 'admin' | 'user' | 'public'
+export type ShellKind = 'admin' | 'user' | 'pembelajaran' | 'public'
+
+/**
+ * The frame of a logged-in user: the v2 Pembelajaran layout for the student and the teacher (the
+ * prototype portal roles) while the prototype scope is on (D43); the legacy user shell for every
+ * other role and for the unscoped e2e build.
+ */
+export function userShellFor(role: Role | null): ShellKind {
+  return isPrototypeScopeOn() && (role === 'student' || role === 'teacher')
+    ? 'pembelajaran'
+    : 'user'
+}
 
 /** The shell for `mode`, or `null` for `bare`. Pure, for unit tests. */
 export function resolveShell(
@@ -32,11 +45,11 @@ export function resolveShell(
     case 'admin':
       return 'admin'
     case 'user':
-      return 'user'
+      return userShellFor(session.role)
     case 'role':
-      return session.role === 'admin' ? 'admin' : 'user'
+      return session.role === 'admin' ? 'admin' : userShellFor(session.role)
     case 'public-or-user':
-      return session.isLoggedIn ? 'user' : 'public'
+      return session.isLoggedIn ? userShellFor(session.role) : 'public'
     case 'bare':
       return null
   }
@@ -47,5 +60,6 @@ export const shellComponents: Readonly<Record<ShellKind, Component>> = {
   // Loaded lazily so the router and its tests do not depend on the shell build (F13-2).
   admin: defineAsyncComponent(() => import('@/shells/admin/AdminShell.vue')), // F-18
   user: defineAsyncComponent(() => import('@/shells/user/UserShell.vue')), // F-19
+  pembelajaran: defineAsyncComponent(() => import('@/shells/pembelajaran/PembelajaranLayout.vue')), // V2-T15 subset (student, teacher)
   public: defineAsyncComponent(() => import('@/shells/public/PublicLayout.vue')), // F-20
 }

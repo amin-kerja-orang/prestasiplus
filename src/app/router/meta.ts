@@ -44,6 +44,8 @@ declare module 'vue-router' {
     /** Static shell header. Pages with a data-driven header use `usePageMeta().setHeader()`. */
     header?: PageHeader
     module?: ModuleId
+    /** Page already built in v2: renders directly in the Pembelajaran layout (others sit in a light island). */
+    v2?: boolean
   }
 }
 
