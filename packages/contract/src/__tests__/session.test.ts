@@ -4,6 +4,9 @@ import {
   AUTH_ERROR_CODES,
   AUTH_ERROR_MESSAGES,
   AUTH_ERROR_STATUS,
+  ROLE_CODES,
+  ROLE_PORTAL,
+  capabilitiesFor,
   EnterModeRequestSchema,
   LoginRequestSchema,
   ScopeSchema,
@@ -20,7 +23,7 @@ const classScope = { level: 'class', schoolId: '3', label: 'Kelas 5A' }
 const selfScope = { level: 'self', label: 'Diri sendiri' }
 const base = {
   user,
-  capabilities: ['PM-01'],
+  capabilities: ['admin.pemantauan.langsung.read', 'admin.pemantauan.langsung.write'],
   landingPath: '/admin',
   expiresAt: '2026-10-16T17:30:00+08:00',
   csrf: 'tok',
@@ -67,6 +70,34 @@ describe('Scope', () => {
     expect(ScopeSchema.safeParse({ level: 'state', label: 'Negeri' }).success).toBe(false)
     expect(ScopeSchema.safeParse({ level: 'school', label: 'x' }).success).toBe(false)
     expect(ScopeSchema.safeParse({ level: 'planet', label: 'x' }).success).toBe(false)
+  })
+})
+
+describe('Session.capabilities (V2-T08 alignment)', () => {
+  const scopes: Record<string, unknown> = {
+    admin: { level: 'national', label: 'Kebangsaan' },
+    ppd_officer: { level: 'district', districtCode: 'D01', label: 'PPD Contoh' },
+    school_admin: schoolScope,
+    teacher: classScope,
+    student: selfScope,
+    parent: selfScope,
+    sponsor: selfScope,
+  }
+  const accessScope = { admin: { level: 'national' }, ppd_officer: { level: 'district' }, school_admin: { level: 'school' } } as const
+  it.each(ROLE_CODES)('a %s session built from capabilitiesFor validates', (role) => {
+    const scope = scopes[role]
+    const keys = capabilitiesFor(role, accessScope[role as keyof typeof accessScope]).map((c) => c.key)
+    const s = {
+      ...base,
+      capabilities: keys,
+      roles: [{ role, portal: ROLE_PORTAL[role], scope }],
+      active: { role, portal: ROLE_PORTAL[role], scope, via: 'direct' },
+      mode: null,
+    }
+    expect(SessionSchema.safeParse(s).success).toBe(true)
+  })
+  it('rejects a free-form capability string', () => {
+    expect(SessionSchema.safeParse({ ...adminSession(), capabilities: ['PM-01'] }).success).toBe(false)
   })
 })
 

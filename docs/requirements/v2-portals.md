@@ -84,7 +84,7 @@ Scope levels: `national` > `state` > `district` > `school` > `class` (guru) > `s
 ## 5. Portal Pentadbiran — structure
 
 Menu groups, in this order (D30): **Papan Pemuka · Pemantauan · Bank Soalan · Kertas & SPM · Kurikulum & Kandungan · Pengguna & Sekolah · Penglibatan · Kewangan · Sistem**.
-Group visibility: Pusat all nine. PPD/JPN: Pemantauan, Pengguna & Sekolah. Sekolah: Papan Pemuka, Pemantauan, Pengguna & Sekolah, Kewangan [D30]. A group with no visible item for the active role is not rendered.
+Group visibility: Pusat all nine. PPD/JPN: Pemantauan, Pengguna & Sekolah. Sekolah: Papan Pemuka, Pemantauan, Kurikulum & Kandungan (Video only, KK-12), Pengguna & Sekolah, Kewangan [D30; KK-12 per D43]. A group with no visible item for the active role is not rendered.
 
 Legend for the tables: Pusat / PPD·JPN / Sekolah columns use F, R, S, D, — (§4.2). "PPD" = district only, "JPN" = state only. `*` = scope enforcement in .cloud for that page was not verified or was absent; v2 must scope it (R-02).
 
@@ -98,7 +98,7 @@ Surfaces: **B** = `/admin` Blade, **P** = `admin.` React panel, **F** = `/admin-
 | PP-01 | Dashboard | platform counts, widgets (PlatformOverview, QuestionStatusChart) | F national | — | S own school | B `web.php:535`; P `/` `:185`; F Dashboard (group Harian) |
 | PP-02 | Laporan Eksekutif | executive report; league tables withheld when scoped | F | — | S | B `:725`; `helpers.php` nav_school_scoped |
 
-### 6.2 Pemantauan (23)
+### 6.2 Pemantauan (28)
 | ID | Item | Function(s) merged | Pusat | PPD·JPN | Sekolah | Evidence |
 |---|---|---|---|---|---|---|
 | PM-01 | **Langsung** (was Command Center) | live metrics, drill school→teacher→class→student, full-screen mode | F national | R PPD district; JPN — (Q7) | S own school | B `:738-739` (+ `:1048-1049` school/student drill); `/ppd/command-center` `:831`; guru twin `:1749-1754` |
@@ -124,6 +124,11 @@ Surfaces: **B** = `/admin` Blade, **P** = `admin.` React panel, **F** = `/admin-
 | PM-21 | DSKP Heatmap | [.my/M27 L52] | F | — | S | M27 L52; Q6 |
 | PM-22 | Amaran Awal | early-warning (school) [.my/M27 L54] | F | — | S | M27 L54; Q6 |
 | PM-23 | Laporan Bulanan | monthly report [.my/M27 L55] | F | — | S | M27 L55; Q6 |
+| PM-24 | Headcount | school headcount (matrix row 3) | F | — | S | role-access-matrix.md row 3; D43/D-RAM-2 |
+| PM-25 | Prestasi | performance (matrix row 4) | F | — | S | role-access-matrix.md row 4; D43/D-RAM-2 |
+| PM-26 | Analitik Adaptif | adaptive analytics (matrix row 5) | F | — | S | role-access-matrix.md row 5; D43/D-RAM-2 |
+| PM-27 | Analisa Item | item analysis (matrix row 6) | F | — | S | role-access-matrix.md row 6; D43/D-RAM-2 |
+| PM-28 | Sekolah Bersaing | competing schools (matrix row 45); restored from §6.11 | F | D | S | role-access-matrix.md row 45; D43/D-RAM-2 |
 
 Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all schools but detail only in scope — detail left to design; default = show full national ranking (it is what .cloud ppd/jpn pages render) with in-scope schools highlighted. [Confirm in Q8-adjacent design review; not blocking.]
 
@@ -154,7 +159,7 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 | KS-11 | Ramalan SPM | grade prediction | F | — | — | F RamalanGred |
 | KS-12 | Set Soalan | SPM question sets | F | — | — | F SpmSets |
 
-### 6.5 Kurikulum & Kandungan (11) — Pusat only
+### 6.5 Kurikulum & Kandungan (12) — Pusat only, except KK-12 (Sekolah R)
 | ID | Item | Pusat | PPD·JPN | Sekolah | Evidence |
 |---|---|---|---|---|---|
 | KK-01 | Kurikulum | F | — | — | B `:748`; F CurriculumOverview |
@@ -168,6 +173,7 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 | KK-09 | Laluan Kerjaya | F | — | — | F CareerPaths only |
 | KK-10 | Universiti | F | — | — | F Universities only |
 | KK-11 | Biasiswa | F | — | — | F Scholarships only |
+| KK-12 | Video Sekolah | F | — | R | role-access-matrix.md row 7 (Video): read-only view for Admin Sekolah, separate from KK-08 content management; D43/D-RAM-2 |
 
 ### 6.6 Pengguna & Sekolah (6)
 | ID | Item | Function(s) merged | Pusat | PPD·JPN | Sekolah | Evidence |
@@ -236,21 +242,21 @@ Scope note PM-16: ranking compares schools; PPD/JPN see ranking positions of all
 
 ### 6.11 Not placed (unresolved) and removed from the admin menu
 **Could not place (no .cloud admin function; .my/prototype only, not built):** Aktiviti Guru (`/admin-sekolah/aktiviti-guru`), Semakan Nota Master (`/admin/master-notes`), Admin Tebusan (`/admin/hadiah/tebusan`), Kelulusan Hadiah (admin view), Mark/PBD/RPH "Cikgu Alesa Tools" admin copies. Proposed disposition: **Won't (v2)** per D28c, listed in Q6/Q9.
-**Removed from admin menu (student/teacher pages, reachable only via Pratonton or their own portal):** Bilik Duta, Akademi Duta, Duta Dashboard, Jemput Duta, Kem & Bootcamp, all Pusat AI tools, Profil Cerah, Sekolah Bersaing, Cita-Cita Hijrah, Kombo, Cikgu Suara, SPM Mock Exam, Tetapan Peribadi (becomes account menu), "Ke Dashboard"/"Student View", "Ke Admin Panel", PPD/JPN section of the user menu, admin's "Portal Guru" block, Pakej/Invois Saya.
+**Removed from admin menu (student/teacher pages, reachable only via Pratonton or their own portal):** Bilik Duta, Akademi Duta, Duta Dashboard, Jemput Duta, Kem & Bootcamp, all Pusat AI tools, Profil Cerah, Cita-Cita Hijrah, Kombo, Cikgu Suara, SPM Mock Exam, Tetapan Peribadi (becomes account menu), "Ke Dashboard"/"Student View", "Ke Admin Panel", PPD/JPN section of the user menu, admin's "Portal Guru" block, Pakej/Invois Saya.
 
 ### 6.12 Function count per group
 | Group | Items |
 |---|---|
 | Papan Pemuka | 2 |
-| Pemantauan | 23 (Kirkpatrick = 7) |
+| Pemantauan | 28 (Kirkpatrick = 7) |
 | Bank Soalan | 7 |
 | Kertas & SPM | 12 |
-| Kurikulum & Kandungan | 11 |
+| Kurikulum & Kandungan | 12 |
 | Pengguna & Sekolah | 6 |
 | Penglibatan | 22 |
 | Kewangan | 6 |
 | Sistem | 5 |
-| **Total** | **94** |
+| **Total** | **100** |
 
 Merges applied ("one function = one place"): Analitik (B+P) → PM-04; Users (B+P+F) → PS-01; Schools (B+P+F) → PS-02; Studio (B+P) → BS-01/BS-02/KS-09; SPM hub (B+P) → KS-01..; legacy "Bank Lama" list and Soalan Berstruktur → BS-01/KS-05; Statistik Penggunaan (ppd, jpn, M27) → PM-15; Laporan (B) = Laporan Aktiviti (M27) → PM-12.
 
@@ -312,7 +318,7 @@ As a product owner, I want one route = one portal = one layout, so that users ne
 
 ### US-03 [Must] Role-filtered menu, no visible-but-forbidden items
 As a staff user, I want to see only items I can use, so that I am never shown a door that refuses me.
-- AC-03.1 Given Admin Pusat, then all nine groups and all 94 items of §6 are present.
+- AC-03.1 Given Admin Pusat, then all nine groups and all 100 items of §6 are present.
 - AC-03.2 Given PPD/JPN, then only Pemantauan and Pengguna & Sekolah groups appear, and only items whose PPD·JPN cell is D or R (PPD-only items hidden for JPN).
 - AC-03.3 Given Admin Sekolah, then only Papan Pemuka, Pemantauan, Pengguna & Sekolah, Kewangan appear, with Sekolah-cell items only.
 - AC-03.4 No lock icon, greyed or disabled item exists for any role (replaces .cloud padlock + "Diuruskan oleh Admin Pusat" tooltip).
@@ -385,7 +391,7 @@ As a staff user, I want to jump to any allowed page or record by typing, so that
 
 ### US-11 [Must] Admin Pusat has the complete menu
 As Admin Pusat, I want every former admin function reachable once, so that nothing is lost in the merge.
-- AC-11.1 Each of the 94 functions in §6 is reachable from exactly one menu item (no duplicates across groups).
+- AC-11.1 Each of the 100 functions in §6 is reachable from exactly one menu item (no duplicates across groups).
 - AC-11.2 Every route in the three .cloud surfaces listed in §6 "Evidence" has a destination in v2 or an entry in §6.11.
 - AC-11.3 No "Filament", "Panel", "Blade" or legacy "Bank Lama (Legasi)" grouping appears in the UI.
 
@@ -465,3 +471,6 @@ As any user, I want the shell and the new components to work on phone, tablet an
 | Q7 | JPN gets Langsung (state level)? .cloud has `/ppd/command-center` only. | No; PPD only. |
 | Q8 | Battle Ranking Sekolah / Leaderboard as read-only admin reports (Pusat) and "Battle Live" removed from admin? | Yes. |
 | Q9 | Single login form: replicate .cloud `/login` (school + username + password, email accepted for any role) and retire the separate admin login page? | Yes. |
+
+## Change log
+- 2026-10-16: D43/D-RAM-2 — Admin Sekolah matrix rows 3–7, 45 restored as items (PM-24 to PM-28, KK-12); Sekolah Bersaing removed from the §6.11 removal list; total 94 → 100.

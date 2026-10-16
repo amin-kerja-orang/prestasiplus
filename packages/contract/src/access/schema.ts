@@ -87,10 +87,20 @@ export const LearningMenuGroupSchema = z
   .meta({ id: 'LearningMenuGroup' })
 export type LearningMenuGroup = z.infer<typeof LearningMenuGroupSchema>
 
-/** One entry of the capability list sent to the client (`Session.capabilities`). */
+/**
+ * Capability key as produced by `capabilitiesFor`: `admin.<group>.<item-slug>.read|write`.
+ * `Session.capabilities` is a list of these keys (the keys of the `Capability` entries).
+ */
+export const CapabilityKeySchema = z
+  .string()
+  .regex(/^admin(\.[a-z0-9-]+){2}\.(read|write)$/)
+  .meta({ id: 'CapabilityKey' })
+export type CapabilityKey = z.infer<typeof CapabilityKeySchema>
+
+/** One entry of the capability list computed by the server (`capabilitiesFor`). */
 export const CapabilitySchema = z
   .object({
-    key: z.string().min(1),
+    key: CapabilityKeySchema,
     itemId: z.string().nullable(),
     mode: AccessModeSchema,
     kind: z.enum(['read', 'write']),

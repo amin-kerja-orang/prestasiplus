@@ -2,6 +2,7 @@ import { z } from '../zod'
 import { PortalIdSchema, RoleCodeSchema, type PortalId, type RoleCode } from '../common/enums'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { CapabilityKeySchema } from '../access/schema'
 import { ScopeSchema } from './scope'
 
 /** Portal is a pure function of the active role (ADR-0017 item 3). */
@@ -67,16 +68,15 @@ export const ModeSchema = z
   .meta({ id: 'Mode' })
 export type Mode = z.infer<typeof ModeSchema>
 
-/** Capability key of the active role (menu item id or feature key). Access modes: see V2-T08. */
-export const CapabilityKeySchema = z.string().min(1).max(64).meta({ id: 'CapabilityKey' })
-
 export const SessionSchema = z
   .object({
     user: SessionUserSchema,
     roles: z.array(RoleGrantSchema).min(1),
     active: ActiveRoleSchema,
     mode: ModeSchema.nullable(),
-    capabilities: z.array(CapabilityKeySchema),
+    capabilities: z
+      .array(CapabilityKeySchema)
+      .meta({ description: 'Keys from capabilitiesFor(role, scope): <item>.read, plus <item>.write for F/S modes.' }),
     landingPath: z.string().startsWith('/'),
     expiresAt: TimestampSchema,
     csrf: z.string().min(1),

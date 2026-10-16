@@ -21,10 +21,10 @@ import {
 
 const EXPECTED_COUNTS: Record<string, number> = {
   'papan-pemuka': 2,
-  pemantauan: 23,
+  pemantauan: 28,
   'bank-soalan': 7,
   'kertas-spm': 12,
-  'kurikulum-kandungan': 11,
+  'kurikulum-kandungan': 12,
   'pengguna-sekolah': 6,
   penglibatan: 22,
   kewangan: 6,
@@ -36,8 +36,8 @@ const ids = (role: (typeof ROLE_CODES)[number], scope?: { level: 'state' | 'dist
 const groupIds = (role: (typeof ROLE_CODES)[number]) => visibleGroups(role).map((g) => g.id)
 
 describe('access matrix structure', () => {
-  it('has exactly 94 items in 9 groups', () => {
-    expect(ACCESS_MATRIX).toHaveLength(94)
+  it('has exactly 100 items in 9 groups', () => {
+    expect(ACCESS_MATRIX).toHaveLength(100)
     expect(ACCESS_GROUPS).toHaveLength(9)
   })
 
@@ -74,9 +74,9 @@ describe('access matrix structure', () => {
   })
 
   it('has unique ids, routes and capability keys', () => {
-    expect(new Set(ACCESS_MATRIX.map((i) => i.id)).size).toBe(94)
-    expect(new Set(ACCESS_MATRIX.map((i) => i.route)).size).toBe(94)
-    expect(new Set(ACCESS_MATRIX.map((i) => i.capability)).size).toBe(94)
+    expect(new Set(ACCESS_MATRIX.map((i) => i.id)).size).toBe(100)
+    expect(new Set(ACCESS_MATRIX.map((i) => i.route)).size).toBe(100)
+    expect(new Set(ACCESS_MATRIX.map((i) => i.capability)).size).toBe(100)
     const all = ROLE_CODES.flatMap((r) => capabilitiesFor(r).map((c) => `${r}:${c.key}`))
     expect(new Set(all).size).toBe(all.length)
     for (const role of ROLE_CODES) {
@@ -105,15 +105,15 @@ describe('access matrix structure', () => {
 })
 
 describe('per-role visibility (D30, US-03, US-11 to US-13)', () => {
-  it('admin sees all nine groups and all 94 items', () => {
+  it('admin sees all nine groups and all 100 items', () => {
     expect(groupIds('admin')).toHaveLength(9)
-    expect(ids('admin')).toHaveLength(94)
+    expect(ids('admin')).toHaveLength(100)
   })
 
   it('ppd_officer sees only Pemantauan and Pengguna & Sekolah, read-only', () => {
     expect(groupIds('ppd_officer')).toEqual(['pemantauan', 'pengguna-sekolah'])
     const items = visibleItems('ppd_officer')
-    expect(items).toHaveLength(11)
+    expect(items).toHaveLength(12)
     for (const item of items) expect(['R', 'D']).toContain(item.modes.ppd_officer)
     expect(capabilitiesFor('ppd_officer').every((c) => c.kind === 'read')).toBe(true)
     expect(ids('ppd_officer')).toContain('PM-14')
@@ -123,14 +123,15 @@ describe('per-role visibility (D30, US-03, US-11 to US-13)', () => {
   it('hides PPD-only items from a JPN (state) officer', () => {
     const state = ids('ppd_officer', { level: 'state' })
     const district = ids('ppd_officer', { level: 'district' })
-    expect(district).toHaveLength(11)
+    expect(district).toHaveLength(12)
     expect(state).toEqual(district.filter((id) => !['PM-01', 'PM-17', 'PM-18', 'PM-19', 'PM-20'].includes(id)))
   })
 
-  it('school_admin sees only Papan Pemuka, Pemantauan, Pengguna & Sekolah, Kewangan', () => {
-    expect(groupIds('school_admin')).toEqual(['papan-pemuka', 'pemantauan', 'pengguna-sekolah', 'kewangan'])
-    expect(visibleItems('school_admin')).toHaveLength(2 + 17 + 5 + 6)
-    for (const item of visibleItems('school_admin')) expect(item.modes.school_admin).toBe('S')
+  it('school_admin sees Papan Pemuka, Pemantauan, Kurikulum & Kandungan (Video only), Pengguna & Sekolah, Kewangan', () => {
+    expect(groupIds('school_admin')).toEqual(['papan-pemuka', 'pemantauan', 'kurikulum-kandungan', 'pengguna-sekolah', 'kewangan'])
+    expect(visibleItems('school_admin').filter((i) => i.group === 'kurikulum-kandungan').map((i) => i.id)).toEqual(['KK-12'])
+    expect(visibleItems('school_admin')).toHaveLength(2 + 22 + 1 + 5 + 6)
+    for (const item of visibleItems('school_admin')) expect(item.modes.school_admin).toBe(item.id === 'KK-12' ? 'R' : 'S')
   })
 
   it('learner roles see no Pentadbiran item or capability', () => {
@@ -152,7 +153,7 @@ describe('per-role visibility (D30, US-03, US-11 to US-13)', () => {
 
   it('keeps Bank Soalan and the whole Pusat-only groups closed to ppd and school admins (D30, D40a)', () => {
     for (const group of ['bank-soalan', 'kertas-spm', 'kurikulum-kandungan', 'penglibatan', 'sistem']) {
-      for (const item of ACCESS_MATRIX.filter((i) => i.group === group)) {
+      for (const item of ACCESS_MATRIX.filter((i) => i.group === group && i.id !== 'KK-12')) {
         expect(item.modes.ppd_officer).toBeUndefined()
         expect(item.modes.school_admin).toBeUndefined()
       }
@@ -161,10 +162,10 @@ describe('per-role visibility (D30, US-03, US-11 to US-13)', () => {
 
   it('gives write capabilities only to F and S modes', () => {
     const caps = capabilitiesFor('admin')
-    expect(caps.filter((c) => c.kind === 'read')).toHaveLength(94)
+    expect(caps.filter((c) => c.kind === 'read')).toHaveLength(100)
     // PG-12 and PG-13 are read-only for Pusat.
-    expect(caps.filter((c) => c.kind === 'write')).toHaveLength(92)
-    expect(capabilitiesFor('school_admin').filter((c) => c.kind === 'write')).toHaveLength(30)
+    expect(caps.filter((c) => c.kind === 'write')).toHaveLength(98)
+    expect(capabilitiesFor('school_admin').filter((c) => c.kind === 'write')).toHaveLength(35)
   })
 })
 
@@ -197,23 +198,25 @@ describe('v2 prototype scope (D43, role-access-matrix.md)', () => {
     expect(SCHOOL_ADMIN_PROTOTYPE_ROWS.map((r) => r.row)).toEqual(
       rows.filter((r) => r.sekolah === '✓').map((r) => r.row),
     )
-    const unmapped = SCHOOL_ADMIN_PROTOTYPE_ROWS.filter((r) => r.itemIds === null).map((r) => r.row)
-    expect(unmapped).toEqual([3, 4, 5, 6, 7, 45])
+    expect(SCHOOL_ADMIN_PROTOTYPE_ROWS.filter((r) => r.itemIds === null)).toEqual([])
+    expect(SCHOOL_ADMIN_PROTOTYPE_ROWS).toHaveLength(18)
     const proto = visibleItems('school_admin', { prototypeOnly: true })
     expect(proto.map((i) => i.id)).toEqual([
       'PP-01', 'PM-01', 'PM-03', 'PM-05', 'PM-06', 'PM-07', 'PM-08', 'PM-09', 'PM-10', 'PM-11',
-      'PM-12', 'PM-15', 'PM-21', 'PM-22', 'PM-23', 'PS-01', 'PS-03',
+      'PM-12', 'PM-15', 'PM-21', 'PM-22', 'PM-23', 'PM-24', 'PM-25', 'PM-26', 'PM-27', 'PM-28',
+      'KK-12', 'PS-01', 'PS-03',
     ])
     expect(proto.every((i) => i.prototypeScope)).toBe(true)
   })
 
   it('flags only school_admin-mapped items and yields nothing for admin and ppd_officer', () => {
-    expect(ACCESS_MATRIX.filter((i) => i.prototypeScope)).toHaveLength(17)
+    expect(ACCESS_MATRIX.filter((i) => i.prototypeScope)).toHaveLength(23)
     expect(visibleItems('admin', { prototypeOnly: true })).toEqual([])
     expect(visibleItems('ppd_officer', { prototypeOnly: true })).toEqual([])
     expect(visibleGroups('school_admin', { prototypeOnly: true }).map((g) => g.id)).toEqual([
       'papan-pemuka',
       'pemantauan',
+      'kurikulum-kandungan',
       'pengguna-sekolah',
     ])
   })

@@ -8,7 +8,7 @@ import type {
 } from './schema'
 
 /**
- * Portal Pentadbiran access matrix: docs/requirements/v2-portals.md sections 5 and 6 (94 items).
+ * Portal Pentadbiran access matrix: docs/requirements/v2-portals.md sections 5 and 6 (100 items).
  * Cell codes: F full, R read-only, S scoped (own school), D district/state read-only, '-' hidden.
  * Menu visibility = any non-hidden mode (4.2). Routes are PROPOSED (`/admin/<group>/<item>`); the
  * route mapping is owned by V2-T14. Capability key = `admin.<group>.<item-slug>.read`.
@@ -60,6 +60,11 @@ const ROWS: Record<AccessGroupId, readonly Row[]> = {
     ['PM-21', 'DSKP Heatmap', 'F', '-', 'S'],
     ['PM-22', 'Amaran Awal', 'F', '-', 'S'],
     ['PM-23', 'Laporan Bulanan', 'F', '-', 'S'],
+    ['PM-24', 'Headcount', 'F', '-', 'S'],
+    ['PM-25', 'Prestasi', 'F', '-', 'S'],
+    ['PM-26', 'Analitik Adaptif', 'F', '-', 'S'],
+    ['PM-27', 'Analisa Item', 'F', '-', 'S'],
+    ['PM-28', 'Sekolah Bersaing', 'F', 'D', 'S'],
   ],
   'bank-soalan': [
     ['BS-01', 'Bank Soalan', 'F', '-', '-'],
@@ -96,6 +101,7 @@ const ROWS: Record<AccessGroupId, readonly Row[]> = {
     ['KK-09', 'Laluan Kerjaya', 'F', '-', '-'],
     ['KK-10', 'Universiti', 'F', '-', '-'],
     ['KK-11', 'Biasiswa', 'F', '-', '-'],
+    ['KK-12', 'Video Sekolah', 'F', '-', 'R'],
   ],
   'pengguna-sekolah': [
     ['PS-01', 'Pengguna', 'F', 'D', 'S'],
@@ -165,7 +171,7 @@ function toModes(admin: Cell, ppd: Cell, school: Cell): RoleModes {
 
 /**
  * D43 (docs/requirements/role-access-matrix.md): Admin Sekolah rows mapped to Pentadbiran items.
- * `itemIds: null` = no Pentadbiran item exists for the row (reported, not forced).
+ * `itemIds: null` = no Pentadbiran item exists for the row (none left since D43/D-RAM-2).
  */
 export const SCHOOL_ADMIN_PROTOTYPE_ROWS: readonly {
   row: number
@@ -174,18 +180,18 @@ export const SCHOOL_ADMIN_PROTOTYPE_ROWS: readonly {
 }[] = [
   { row: 1, label: 'Command Center', itemIds: ['PM-01'] },
   { row: 2, label: 'Dashboard', itemIds: ['PP-01'] },
-  { row: 3, label: 'Headcount', itemIds: null },
-  { row: 4, label: 'Prestasi', itemIds: null },
-  { row: 5, label: 'Analitik Adaptif', itemIds: null },
-  { row: 6, label: 'Analisa Item', itemIds: null },
-  { row: 7, label: 'Video', itemIds: null },
+  { row: 3, label: 'Headcount', itemIds: ['PM-24'] },
+  { row: 4, label: 'Prestasi', itemIds: ['PM-25'] },
+  { row: 5, label: 'Analitik Adaptif', itemIds: ['PM-26'] },
+  { row: 6, label: 'Analisa Item', itemIds: ['PM-27'] },
+  { row: 7, label: 'Video', itemIds: ['KK-12'] },
   { row: 10, label: 'Monitoring', itemIds: ['PM-03'] },
   {
     row: 11,
     label: 'Kirkpatrick',
     itemIds: ['PM-05', 'PM-06', 'PM-07', 'PM-08', 'PM-09', 'PM-10', 'PM-11'],
   },
-  { row: 45, label: 'Sekolah Bersaing', itemIds: null },
+  { row: 45, label: 'Sekolah Bersaing', itemIds: ['PM-28'] },
   { row: 46, label: 'Statistik Penggunaan', itemIds: ['PM-15'] },
   { row: 47, label: 'DSKP Heatmap', itemIds: ['PM-21'] },
   { row: 48, label: 'Laporan Aktiviti', itemIds: ['PM-12'] },

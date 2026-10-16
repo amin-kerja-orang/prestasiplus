@@ -5,9 +5,9 @@ import { AuthErrorCodeSchema } from '../auth/errors'
 import { LoginRequestSchema, LoginSchoolCandidateSchema } from '../auth/login'
 import { ErrorBodySchema } from '../common/error'
 import { envelopeOf } from '../common/envelope'
+import { CapabilityKeySchema } from '../access/schema'
 import {
   ActiveRoleSchema,
-  CapabilityKeySchema,
   EnterModeRequestSchema,
   ModeKindSchema,
   ModeSchema,

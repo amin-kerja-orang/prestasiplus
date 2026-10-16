@@ -32,5 +32,5 @@ Rules encoded in the schemas (`SessionSchema` cross-field checks):
 - Roles: English codes; `roles` is a non-empty unique list, one active. `student` never combines with another role; `admin` is single-role. `portal` is a function of the role (`ROLE_PORTAL`).
 - Scope is server-derived: it appears only in responses (`RoleGrant.scope`, `ActiveRole.scope`). Every request schema is strict, so a client-sent `scope` (or `role` on login) is rejected. `ppd_officer` gets `district` in v2.0; `state` is kept open.
 - Mod Pelajar (`mode.kind = 'mod_pelajar'`, `canEnterModPelajar`): `admin` and `school_admin` only (D33b). The session then acts as the account itself as `student` with `self` scope (`active.via = 'mod_pelajar'`), `mode.returnRole` is the role to return to and `mode.isTest` is always `true` (data written is test data). `mode` is `null` in normal operation. Role switching is blocked while a mode is on.
-- `capabilities` is a plain list of capability keys for now; V2-T08 (access matrix) replaces it with key to access mode.
+- `capabilities` is the list of capability keys from `capabilitiesFor(role, scope)` (V2-T08): `admin.<group>.<item>.read`, plus `.write` for F/S modes (type `CapabilityKey`, from `src/access`). Learner roles get `[]`.
 - Error messages (BM) are in `AUTH_ERROR_MESSAGES`; the first three are the exact live copy (AC-01.4 to AC-01.6).
