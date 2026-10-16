@@ -1,0 +1,1202 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PretasiPlus API contract",
+    "version": "0.1.0",
+    "description": "Generated from packages/contract (zod). Do not edit by hand: run `npm run contract:emit`."
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "description": "Opaque entity id (string). Never parse or construct on the client.",
+        "example": "1042"
+      },
+      "ClientUuid": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Client-generated UUID used as an idempotency key."
+      },
+      "Timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "\\+08:00$",
+        "description": "ISO 8601 instant serialised in Malaysia time (+08:00).",
+        "example": "2026-10-16T09:30:00+08:00"
+      },
+      "TimestampInput": {
+        "type": "string",
+        "format": "date-time",
+        "description": "ISO 8601 instant with an explicit offset (or Z)."
+      },
+      "DateOnly": {
+        "type": "string",
+        "format": "date",
+        "description": "Calendar date (YYYY-MM-DD) in Malaysia time.",
+        "example": "2026-10-16"
+      },
+      "RoleCode": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "school_admin",
+          "ppd_officer",
+          "teacher",
+          "student",
+          "parent",
+          "sponsor"
+        ],
+        "description": "Role code. admin = Admin Pusat, school_admin = Admin Sekolah, ppd_officer = Pegawai PPD/JPN, teacher = Guru, student = Murid, parent = Ibu Bapa, sponsor = Penaja."
+      },
+      "PortalId": {
+        "type": "string",
+        "enum": [
+          "pentadbiran",
+          "pembelajaran"
+        ]
+      },
+      "ScopeLevel": {
+        "type": "string",
+        "enum": [
+          "national",
+          "state",
+          "district",
+          "school",
+          "class",
+          "self"
+        ]
+      },
+      "AccessMode": {
+        "type": "string",
+        "enum": [
+          "F",
+          "R",
+          "S",
+          "D"
+        ]
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "VALIDATION_ERROR",
+          "NOT_FOUND",
+          "UNAUTHORIZED",
+          "FORBIDDEN",
+          "CONFLICT",
+          "SERVER_ERROR",
+          "RATE_LIMITED"
+        ]
+      },
+      "ErrorPayload": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Generic (ErrorCode) or module-specific code."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM message for direct display."
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Field name to BM message, for VALIDATION_ERROR."
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Correlation id, for support."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "ErrorBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorPayload"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "ListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages"
+        ],
+        "additionalProperties": {}
+      },
+      "PageQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        }
+      },
+      "IdEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IdListEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "Scope": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "national",
+              "state",
+              "district",
+              "school",
+              "class",
+              "self"
+            ]
+          },
+          "stateCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
+          },
+          "districtCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Chip text value, formed by the server (BM)."
+          }
+        },
+        "required": [
+          "level",
+          "label"
+        ]
+      },
+      "SessionUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "schoolId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "username",
+          "avatarUrl",
+          "schoolId"
+        ]
+      },
+      "RoleGrant": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/RoleCode"
+          },
+          "portal": {
+            "$ref": "#/components/schemas/PortalId"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "required": [
+          "role",
+          "portal",
+          "scope"
+        ]
+      },
+      "ActiveRole": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/RoleCode"
+          },
+          "portal": {
+            "$ref": "#/components/schemas/PortalId"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "via": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "mod_pelajar"
+            ],
+            "description": "mod_pelajar while the student mode is on."
+          }
+        },
+        "required": [
+          "role",
+          "portal",
+          "scope",
+          "via"
+        ]
+      },
+      "ModeKind": {
+        "type": "string",
+        "enum": [
+          "mod_pelajar"
+        ]
+      },
+      "Mode": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ModeKind"
+          },
+          "returnRole": {
+            "$ref": "#/components/schemas/RoleCode"
+          },
+          "since": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "isTest": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Data written under the mode is stamped is_test."
+          }
+        },
+        "required": [
+          "kind",
+          "returnRole",
+          "since",
+          "isTest"
+        ]
+      },
+      "CapabilityKey": {
+        "type": "string",
+        "pattern": "^admin(\\.[a-z0-9-]+){2}\\.(read|write)$"
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/SessionUser"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleGrant"
+            },
+            "minItems": 1
+          },
+          "active": {
+            "$ref": "#/components/schemas/ActiveRole"
+          },
+          "mode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Mode"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityKey"
+            },
+            "description": "Keys from capabilitiesFor(role, scope): <item>.read, plus <item>.write for F/S modes."
+          },
+          "landingPath": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "csrf": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "user",
+          "roles",
+          "active",
+          "mode",
+          "capabilities",
+          "landingPath",
+          "expiresAt",
+          "csrf"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 254,
+            "description": "E-mail or username."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "schoolId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Needed only when a username exists in more than one school.",
+            "example": "1042"
+          },
+          "remember": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "identifier",
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "LoginSchoolCandidate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "SwitchRoleRequest": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/RoleCode"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "additionalProperties": false
+      },
+      "EnterModeRequest": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/ModeKind"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false
+      },
+      "AuthErrorCode": {
+        "type": "string",
+        "enum": [
+          "INVALID_CREDENTIALS",
+          "ACCOUNT_INACTIVE",
+          "SCHOOL_INACTIVE",
+          "AMBIGUOUS_USERNAME",
+          "ROLE_NOT_ALLOWED",
+          "MODE_ACTIVE",
+          "MODE_ALREADY_ACTIVE",
+          "MODE_NOT_ALLOWED",
+          "NO_MODE_ACTIVE",
+          "CSRF_INVALID"
+        ],
+        "description": "Error codes of the auth and session endpoints, in addition to the generic ones."
+      },
+      "AccessGroupId": {
+        "type": "string",
+        "enum": [
+          "papan-pemuka",
+          "pemantauan",
+          "bank-soalan",
+          "kertas-spm",
+          "kurikulum-kandungan",
+          "pengguna-sekolah",
+          "penglibatan",
+          "kewangan",
+          "sistem"
+        ]
+      },
+      "AccessGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/AccessGroupId"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "labelBm": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "order",
+          "labelBm"
+        ]
+      },
+      "AccessRoleModes": {
+        "type": "object",
+        "properties": {
+          "admin": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "ppd_officer": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "school_admin": {
+            "$ref": "#/components/schemas/AccessMode"
+          }
+        },
+        "description": "Access mode per role. A missing key means hidden for that role."
+      },
+      "AccessMatrixItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}-\\d{2}$"
+          },
+          "group": {
+            "$ref": "#/components/schemas/AccessGroupId"
+          },
+          "labelBm": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route": {
+            "type": "string",
+            "pattern": "^\\/admin(\\/[a-z0-9-]+)*$"
+          },
+          "capability": {
+            "type": "string",
+            "pattern": "^admin(\\.[a-z0-9-]+){3}$"
+          },
+          "modes": {
+            "$ref": "#/components/schemas/AccessRoleModes"
+          },
+          "ppdOnly": {
+            "type": "boolean",
+            "description": "Visible to a PPD (district) officer only, hidden for JPN (state) officers."
+          },
+          "prototypeScope": {
+            "type": "boolean",
+            "description": "D43: true when the item maps to a row of role-access-matrix.md for school_admin (shown in the v2 prototype). False for the admin and ppd_officer views."
+          }
+        },
+        "required": [
+          "id",
+          "group",
+          "labelBm",
+          "route",
+          "capability",
+          "modes",
+          "ppdOnly",
+          "prototypeScope"
+        ]
+      },
+      "AccessCapability": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/CapabilityKey"
+          },
+          "itemId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "read",
+              "write"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "itemId",
+          "mode",
+          "kind"
+        ]
+      },
+      "AccessScope": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/ScopeLevel"
+          }
+        },
+        "required": [
+          "level"
+        ]
+      },
+      "LearningRole": {
+        "type": "string",
+        "enum": [
+          "student",
+          "teacher",
+          "parent",
+          "sponsor"
+        ]
+      },
+      "LearningMenuGroup": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/LearningRole"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "labelBm": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "null = unlabelled top block."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Item labels where the requirements name them."
+          },
+          "inV2Prototype": {
+            "type": "boolean",
+            "description": "D43: the group hosts at least one prototype item of role-access-matrix.md."
+          },
+          "labelSource": {
+            "type": "string",
+            "enum": [
+              "doc",
+              "proposed"
+            ],
+            "description": "proposed = the doc describes the group but gives no exact copy."
+          }
+        },
+        "required": [
+          "role",
+          "order",
+          "labelBm",
+          "items",
+          "inV2Prototype",
+          "labelSource"
+        ]
+      },
+      "PrototypeItem": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "student",
+              "teacher",
+              "school_admin"
+            ]
+          },
+          "row": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Row # of role-access-matrix.md section B; 0 = section A."
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "labelBm": {
+            "type": "string",
+            "minLength": 1
+          },
+          "inV2Prototype": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "role",
+          "row",
+          "section",
+          "labelBm",
+          "inV2Prototype"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Log in with e-mail or username and password",
+        "description": "Regenerates the session id and sets the session cookie. The role, scope and capabilities in the returned Session are decided by the server.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logged in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS (never reveals which part was wrong).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_INACTIVE or SCHOOL_INACTIVE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR, or AMBIGUOUS_USERNAME with details.schools (LoginSchoolCandidate[]).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "End the session (both portals)",
+        "description": "Idempotent: returns 204 even when there is no session. When a session exists, X-CSRF-Token is checked (403 CSRF_INVALID).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": false,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Logged out, or there was no session. No body."
+          },
+          "403": {
+            "description": "CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session": {
+      "get": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Current session",
+        "description": "One call resolves roles, active role, scope, capabilities, mode and landing path.",
+        "responses": {
+          "200": {
+            "description": "The current session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/role": {
+      "post": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Switch the active role",
+        "description": "The role must be in the account role list. Scope is never accepted from the client.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchRoleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session with the new active role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ROLE_NOT_ALLOWED (role not in the account list) or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MODE_ACTIVE: leave the mode first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (unknown role, or any unknown key such as scope).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/mode": {
+      "post": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Enter a session mode (Mod Pelajar)",
+        "description": "Allowed for admin and school_admin only. The session acts as self (student), data is test data.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnterModeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session in the mode.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "MODE_NOT_ALLOWED (active role may not use this mode) or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MODE_ALREADY_ACTIVE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Leave the session mode (Keluar Mod Pelajar)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session with the return role active.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NO_MODE_ACTIVE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}
