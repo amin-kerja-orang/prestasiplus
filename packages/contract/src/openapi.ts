@@ -1,5 +1,15 @@
 import { OpenApiGeneratorV31, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 
+import {
+  AccessGroupIdSchema,
+  AccessGroupSchema,
+  AccessScopeSchema,
+  CapabilitySchema,
+  LearningMenuGroupSchema,
+  LearningRoleSchema,
+  MatrixItemSchema,
+  RoleModesSchema,
+} from './access/schema'
 import { ListMetaSchema, PageQuerySchema } from './common/envelope'
 import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } from './common/enums'
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
@@ -22,6 +32,15 @@ export const COMPONENT_SCHEMAS = {
   ErrorBody: ErrorBodySchema,
   ListMeta: ListMetaSchema,
   PageQuery: PageQuerySchema,
+  // V2-T08 access matrix
+  AccessGroupId: AccessGroupIdSchema,
+  AccessGroup: AccessGroupSchema,
+  AccessRoleModes: RoleModesSchema,
+  AccessMatrixItem: MatrixItemSchema,
+  AccessCapability: CapabilitySchema,
+  AccessScope: AccessScopeSchema,
+  LearningRole: LearningRoleSchema,
+  LearningMenuGroup: LearningMenuGroupSchema,
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'

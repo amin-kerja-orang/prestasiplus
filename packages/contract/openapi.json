@@ -207,6 +207,189 @@
             "default": 20
           }
         }
+      },
+      "AccessGroupId": {
+        "type": "string",
+        "enum": [
+          "papan-pemuka",
+          "pemantauan",
+          "bank-soalan",
+          "kertas-spm",
+          "kurikulum-kandungan",
+          "pengguna-sekolah",
+          "penglibatan",
+          "kewangan",
+          "sistem"
+        ]
+      },
+      "AccessGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/AccessGroupId"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "labelBm": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "order",
+          "labelBm"
+        ]
+      },
+      "AccessRoleModes": {
+        "type": "object",
+        "properties": {
+          "admin": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "ppd_officer": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "school_admin": {
+            "$ref": "#/components/schemas/AccessMode"
+          }
+        },
+        "description": "Access mode per role. A missing key means hidden for that role."
+      },
+      "AccessMatrixItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}-\\d{2}$"
+          },
+          "group": {
+            "$ref": "#/components/schemas/AccessGroupId"
+          },
+          "labelBm": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route": {
+            "type": "string",
+            "pattern": "^\\/admin(\\/[a-z0-9-]+)*$"
+          },
+          "capability": {
+            "type": "string",
+            "pattern": "^admin(\\.[a-z0-9-]+){3}$"
+          },
+          "modes": {
+            "$ref": "#/components/schemas/AccessRoleModes"
+          },
+          "ppdOnly": {
+            "type": "boolean",
+            "description": "Visible to a PPD (district) officer only, hidden for JPN (state) officers."
+          }
+        },
+        "required": [
+          "id",
+          "group",
+          "labelBm",
+          "route",
+          "capability",
+          "modes",
+          "ppdOnly"
+        ]
+      },
+      "AccessCapability": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "itemId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "read",
+              "write"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "itemId",
+          "mode",
+          "kind"
+        ]
+      },
+      "AccessScope": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/ScopeLevel"
+          }
+        },
+        "required": [
+          "level"
+        ]
+      },
+      "LearningRole": {
+        "type": "string",
+        "enum": [
+          "student",
+          "teacher",
+          "parent",
+          "sponsor"
+        ]
+      },
+      "LearningMenuGroup": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/LearningRole"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "labelBm": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "null = unlabelled top block."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Item labels where the requirements name them."
+          },
+          "labelSource": {
+            "type": "string",
+            "enum": [
+              "doc",
+              "proposed"
+            ],
+            "description": "proposed = the doc describes the group but gives no exact copy."
+          }
+        },
+        "required": [
+          "role",
+          "order",
+          "labelBm",
+          "items",
+          "labelSource"
+        ]
       }
     },
     "parameters": {}
