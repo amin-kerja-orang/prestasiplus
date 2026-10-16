@@ -42,6 +42,13 @@ import {
   type RouteDef,
 } from '@/mock/define'
 
+import {
+  isPrototypeRole,
+  isPrototypeScopeOn,
+  MSG_ROLE_OUT_OF_SCOPE,
+  ROLE_OUT_OF_SCOPE_CODE,
+} from '@/app/prototype-scope'
+
 import type { SessionPayload } from '../../api/types'
 import { isSessionUser, type SessionUserRow, type UserRow } from '../datasets/users-types'
 import { emailKey, usersRepo as users } from '../repository/users'
@@ -128,6 +135,10 @@ function login(req: MockRequest, ctx: MockContext): MockResponse {
   }
   // BR-23: checked after the credentials match; the refused attempt does not count.
   if (!user.isActive) return inactive()
+  // Prototype scope (D43): Admin Pusat, PPD/JPN, Ibu Bapa and Penaja are not part of the prototype.
+  if (isPrototypeScopeOn() && !isPrototypeRole(user.role)) {
+    return forbidden(MSG_ROLE_OUT_OF_SCOPE, ROLE_OUT_OF_SCOPE_CODE)
+  }
 
   loginThrottleRepo.clear(address)
   return ok(startSession(user, body.remember === true || body.remember === 'true', ctx))

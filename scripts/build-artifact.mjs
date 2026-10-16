@@ -21,6 +21,8 @@ const vite = spawnSync(
       // Shell values must not override .env.demo.
       VITE_TEST_HOOKS: 'false',
       VITE_API_MODE: 'mock',
+      // The prototype scope (D43) is always on in the artifact, whatever the shell env says.
+      VITE_PROTOTYPE_SCOPE: 'on',
     },
   },
 )

@@ -12,7 +12,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { LaravelPager } from '@/components/data'
-import { confirmNative, useApi, useFlash } from '@/composables'
+import { confirmNative, useApi, useFlash, usePrototypeScope } from '@/composables'
 
 import {
   deleteContributedQuestion,
@@ -29,6 +29,8 @@ import QuestionCard from '../components/soalan/QuestionCard.vue'
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+// Prototype scope (D43): the Audio KBAT card links to screens outside the matrix.
+const { allows } = usePrototypeScope()
 
 const page = computed(() => {
   const n = Number(route.query.page)
@@ -97,7 +99,7 @@ const retry = (): void => {
     <ContributionSummary v-else :summary="summary.data.value" />
 
     <ImportCard @imported="onImported" />
-    <AudioKbatCard />
+    <AudioKbatCard v-if="allows('/guru/audio-kbat')" />
 
     <section class="min-w-0 space-y-3" data-testid="soalan-saya">
       <div class="flex flex-wrap items-center justify-between gap-3">

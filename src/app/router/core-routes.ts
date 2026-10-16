@@ -9,6 +9,7 @@ import NotFoundPage from '@/pages/NotFoundPage.vue'
 import { useNotificationBadgeStore } from '@/stores/notification-badge'
 import { useSessionStore } from '@/stores/session'
 
+import { isPrototypeScopeOn } from '../prototype-scope'
 import { LOGIN_PATH } from './guards'
 import { NOT_FOUND_TITLE } from './outcome'
 import EmptyRoute from './placeholders/EmptyRoute.vue'
@@ -63,7 +64,11 @@ const notFoundRoute: RouteRecordRaw = {
 export function devRoutes(): RouteRecordRaw[] {
   // The preview hub (D20) is also shown in the demo build; it carries no test-hook marker, so the
   // demo-bundle guard is unaffected. The e2e build gets neither.
-  const hub = import.meta.env.DEV || import.meta.env.MODE === 'demo' ? previewHubRoutes() : []
+  // Prototype scope (D43): neither the hub ("pautan semua skrin") nor the `/__dev/*` pages exist in
+  // any mode; only the design-system sandbox `/__ds` stays. `VITE_PROTOTYPE_SCOPE=off` restores them.
+  const scoped = isPrototypeScopeOn()
+  const hub =
+    !scoped && (import.meta.env.DEV || import.meta.env.MODE === 'demo') ? previewHubRoutes() : []
   // Design-system gallery (V2-T05): dev and demo, never the e2e build.
   const ds: RouteRecordRaw[] =
     import.meta.env.DEV || import.meta.env.MODE === 'demo'
@@ -76,7 +81,7 @@ export function devRoutes(): RouteRecordRaw[] {
           },
         ]
       : []
-  if (!import.meta.env.DEV) return [...hub, ...ds]
+  if (!import.meta.env.DEV || scoped) return [...hub, ...ds]
   return [
     ...hub,
     ...ds,

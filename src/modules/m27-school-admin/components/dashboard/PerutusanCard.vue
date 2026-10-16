@@ -7,12 +7,16 @@
 import { Megaphone } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 
+import { usePrototypeScope } from '@/composables'
 import { diffForHumans } from '@/lib/time'
 
 import type { DashboardPerutusan } from '../../api/dashboard'
 import { PATHS } from './dashboard-format'
 
 defineProps<{ rows: readonly DashboardPerutusan[] }>()
+
+// Prototype scope (D43): "Perutusan" is not in the role-access matrix, so its link is hidden.
+const { allows } = usePrototypeScope()
 </script>
 
 <template>
@@ -30,6 +34,7 @@ defineProps<{ rows: readonly DashboardPerutusan[] }>()
         Perutusan Terkini
       </h2>
       <RouterLink
+        v-if="allows(PATHS.perutusan)"
         :to="PATHS.perutusan"
         class="inline-flex min-h-11 shrink-0 items-center text-xs font-semibold text-blue-300 hover:text-blue-200"
         data-testid="sd-perutusan-all"

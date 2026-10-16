@@ -9,6 +9,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import { AlertBox } from '@/components/feedback'
+import { usePrototypeScope } from '@/composables'
 
 import { fetchClassItemAnalysis, fetchItemAnalysisClasses } from '../api/performance'
 import DifficultyTab from '../components/analisa-item/DifficultyTab.vue'
@@ -16,6 +17,7 @@ import DiscriminationTab from '../components/analisa-item/DiscriminationTab.vue'
 import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
 
 const route = useRoute()
+const { home } = usePrototypeScope()
 const classId = computed(() => Number(route.params.id))
 
 const { data, error, reload } = useRouteData(
@@ -88,7 +90,7 @@ const BADGE = 'rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text
         data-testid="breadcrumb"
       >
         <RouterLink
-          to="/dashboard"
+          :to="home"
           class="inline-flex min-h-11 items-center gap-1 hover:text-slate-700"
           ><ArrowLeft class="h-4 w-4" />Papan Pemuka</RouterLink
         >

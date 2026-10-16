@@ -5,11 +5,18 @@
  * not built: the event has no listener yet, so the button is inert). Live "Lagi" dispatches
  * `toggle-drawer`, i.e. it opens the same drawer as the header hamburger.
  */
-import { USER_BOTTOM_NAV, bottomNavActive } from '@/shells/nav/user-nav'
+import { computed } from 'vue'
+
+import { userBottomNavFor, bottomNavActive } from '@/shells/nav/user-nav'
 import NavIcon from '@/shells/shared/NavIcon.vue'
 import ShellLink from '@/shells/shared/ShellLink.vue'
+import { useSessionStore } from '@/stores/session'
 
 defineProps<{ currentPath: string }>()
+
+const session = useSessionStore()
+// Prototype scope (D43): link tabs outside the role's allowed set are not rendered.
+const tabs = computed(() => userBottomNavFor(session.role))
 
 const emit = defineEmits<{ 'toggle-drawer': [] }>()
 
@@ -28,7 +35,7 @@ const ICON = 'text-lg sm:text-xl mb-0.5 sm:mb-1'
     data-testid="shell-user-bottom-nav"
   >
     <div class="flex h-14 items-center justify-around px-1 sm:h-16 sm:px-2">
-      <template v-for="entry in USER_BOTTOM_NAV" :key="entry.id">
+      <template v-for="entry in tabs" :key="entry.id">
         <ShellLink
           v-if="entry.kind === 'link'"
           :to="entry.to"

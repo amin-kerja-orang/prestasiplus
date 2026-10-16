@@ -9,7 +9,7 @@ import { watchEffect } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import { useApi, usePageMeta } from '@/composables'
+import { useApi, usePageMeta, usePrototypeScope } from '@/composables'
 import { useSessionStore } from '@/stores/session'
 
 import { fetchGuruDashboard } from '../api/guru'
@@ -21,6 +21,7 @@ import StatCards from '../components/dashboard/StatCards.vue'
 import TodayPanel from '../components/dashboard/TodayPanel.vue'
 
 const session = useSessionStore()
+const { allows } = usePrototypeScope()
 const { setHeader } = usePageMeta()
 const { data, error, reload } = useApi((signal) => fetchGuruDashboard({ signal }))
 
@@ -95,22 +96,24 @@ const QUICK_TONES = [
               <Zap class="h-5 w-5 text-amber-500" />{{ DASH_COPY.quickTitle }}
             </h2>
             <div class="mt-3 space-y-3">
-              <RouterLink
-                v-for="(q, i) in DASH_COPY.quick"
-                :key="q.to"
-                :to="q.to"
-                :class="['flex min-h-11 items-center gap-3 rounded-xl p-3', QUICK_TONES[i]]"
-                data-testid="quick-tile"
-              >
-                <span
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white"
-                  ><component :is="QUICK_ICONS[i]" class="h-5 w-5"
-                /></span>
-                <span class="min-w-0">
-                  <span class="block text-sm font-bold text-slate-800">{{ q.title }}</span>
-                  <span class="block text-xs text-slate-500">{{ q.text }}</span>
-                </span>
-              </RouterLink>
+              <template v-for="(q, i) in DASH_COPY.quick" :key="q.to">
+                <!-- Prototype scope (D43): tiles that lead outside the matrix are not shown. -->
+                <RouterLink
+                  v-if="allows(q.to)"
+                  :to="q.to"
+                  :class="['flex min-h-11 items-center gap-3 rounded-xl p-3', QUICK_TONES[i]]"
+                  data-testid="quick-tile"
+                >
+                  <span
+                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white"
+                    ><component :is="QUICK_ICONS[i]" class="h-5 w-5"
+                  /></span>
+                  <span class="min-w-0">
+                    <span class="block text-sm font-bold text-slate-800">{{ q.title }}</span>
+                    <span class="block text-xs text-slate-500">{{ q.text }}</span>
+                  </span>
+                </RouterLink>
+              </template>
             </div>
           </section>
 

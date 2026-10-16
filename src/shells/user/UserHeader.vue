@@ -10,6 +10,9 @@
  * (OBSERVED); a single "{n} syiling" coin pill for teacher (guru screenshot; value source
  * INFERRED = coins); none for other roles (admin-sekolah screenshot shows none; others INFERRED).
  */
+import { computed } from 'vue'
+
+import { isPathAllowed, shellHomePath } from '@/app/prototype-scope'
 import { CountBadge } from '@/components/badge'
 import type { PageHeader } from '@/composables/usePageMeta'
 import type { UserMe } from '@/stores/session-types'
@@ -21,13 +24,17 @@ import ShellLink from '@/shells/shared/ShellLink.vue'
 import type { ChipsMode } from './constants'
 import type { GamificationSummary } from './useGamificationSummary'
 
-defineProps<{
+const props = defineProps<{
   header: PageHeader
   summary: GamificationSummary
   chips: ChipsMode
   user: UserMe | null
   bellCount: number
 }>()
+
+// Prototype scope (D43): the bell links to /notifikasi, which is not in the role-access matrix.
+const showBell = computed(() => isPathAllowed(props.user?.role ?? null, '/notifikasi'))
+const home = computed(() => shellHomePath(props.user?.role ?? null))
 
 const emit = defineEmits<{ 'toggle-sidebar': []; 'toggle-drawer': [] }>()
 
@@ -116,6 +123,7 @@ const BELL_BADGE =
       <!-- Bell + avatar (desktop) + mobile hamburger and logo -->
       <div class="flex items-center space-x-4">
         <ShellLink
+          v-if="showBell"
           to="/notifikasi"
           class="pp-hit relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-indigo-50 hover:text-indigo-600"
           title="Notifikasi"
@@ -158,7 +166,7 @@ const BELL_BADGE =
           >
             <NavIcon fa="fa-bars" class="text-lg text-indigo-600" />
           </button>
-          <ShellLink to="/dashboard" class="pp-hit flex items-center space-x-0.5">
+          <ShellLink :to="home" class="pp-hit flex items-center space-x-0.5">
             <img :src="LOGO_URL" alt="PRESTASIPLUS" class="h-7 w-auto sm:h-8" />
           </ShellLink>
         </div>

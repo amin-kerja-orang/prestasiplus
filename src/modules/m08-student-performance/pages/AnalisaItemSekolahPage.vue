@@ -12,6 +12,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { ChartCanvas } from '@/components/chart'
 import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
 import { AlertBox } from '@/components/feedback'
+import { usePrototypeScope } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchSchoolItemAnalysis } from '../api/performance'
@@ -22,6 +23,7 @@ import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
 
 const route = useRoute()
 const pageMeta = usePageMeta()
+const { home, allows } = usePrototypeScope()
 
 const schoolId = computed(() => {
   const raw = route.params.id
@@ -108,7 +110,7 @@ const STAT_LABEL = 'text-xs text-slate-500'
         data-testid="breadcrumb"
       >
         <RouterLink
-          to="/dashboard"
+          :to="home"
           class="inline-flex min-h-11 items-center gap-1 hover:text-slate-700"
           ><ArrowLeft class="h-4 w-4" />Papan Pemuka</RouterLink
         >
@@ -279,6 +281,7 @@ const STAT_LABEL = 'text-xs text-slate-500'
               test-id="school-gps-spark"
             />
             <RouterLink
+              v-if="allows(`/sekolah/${data.school.id}/prestasi`)"
               :to="`/sekolah/${data.school.id}/prestasi`"
               class="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-indigo-600"
               ><ChartPie class="h-4 w-4" />Prestasi 360</RouterLink

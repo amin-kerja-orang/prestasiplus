@@ -25,9 +25,10 @@ import {
   UserPlus,
   X,
 } from '@lucide/vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { isPrototypeRole, isPrototypeScopeOn } from '@/app/prototype-scope'
 import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useSessionStore } from '@/stores/session'
 
@@ -66,6 +67,12 @@ const name = ref('')
 const email = ref('')
 const phone = ref('')
 const role = ref<RegisterRole>('student')
+
+// Prototype scope (D43): no parent card and no sponsor-registration link.
+const scoped = isPrototypeScopeOn()
+const roleCards = computed(() =>
+  ROLE_CARDS.filter((card) => !scoped || isPrototypeRole(card.value)),
+)
 const grade = ref<number | null>(null)
 const icNumber = ref('')
 const password = ref('')
@@ -221,10 +228,10 @@ async function submit(): Promise<void> {
 
       <div>
         <div :class="AUTH_LABEL_CLASS">Saya adalah...</div>
-        <div class="grid grid-cols-3 gap-2 sm:gap-3">
+        <div class="grid gap-2 sm:gap-3" :class="scoped ? 'grid-cols-2' : 'grid-cols-3'">
           <!-- Click/tap only, no keyboard or ARIA semantics (FR-M01-66). -->
           <div
-            v-for="card in ROLE_CARDS"
+            v-for="card in roleCards"
             :key="card.value"
             class="min-h-11 cursor-pointer rounded-2xl border-2 p-2 text-center transition hover:-translate-y-1 sm:p-3"
             :class="
@@ -471,7 +478,7 @@ async function submit(): Promise<void> {
         </RouterLink>
       </p>
 
-      <p class="text-center text-sm text-gray-600">
+      <p v-if="!scoped" class="text-center text-sm text-gray-600">
         <RouterLink
           to="/sponsor/register"
           class="inline-flex min-h-11 items-center gap-2 text-gray-600 hover:text-gray-800"

@@ -8,10 +8,14 @@
 import { LayoutGrid, Menu, Newspaper, House, Rocket, X } from '@lucide/vue'
 import { ref } from 'vue'
 
+import { usePrototypeScope } from '@/composables'
 import { LOGO_URL } from '@/shells/shared/brand'
 import ShellLink from '@/shells/shared/ShellLink.vue'
 
 defineProps<{ loggedIn: boolean }>()
+
+// Prototype scope (D43): "Artikel" only where the role may open it; "Dashboard" is the role's own.
+const { allows, home } = usePrototypeScope()
 
 const mobileOpen = ref(false)
 
@@ -36,10 +40,10 @@ const cta =
         <ShellLink to="/" :class="plain"
           ><House class="h-4 w-4" aria-hidden="true" />Laman Utama</ShellLink
         >
-        <ShellLink to="/artikel" :class="plain">
+        <ShellLink v-if="allows('/artikel')" to="/artikel" :class="plain">
           <Newspaper class="h-4 w-4" aria-hidden="true" />Artikel
         </ShellLink>
-        <ShellLink v-if="loggedIn" to="/dashboard" :class="cta">
+        <ShellLink v-if="loggedIn" :to="home" :class="cta">
           <LayoutGrid class="h-4 w-4" aria-hidden="true" />Dashboard
         </ShellLink>
         <template v-else>
@@ -69,10 +73,10 @@ const cta =
       <ShellLink to="/" :class="plain"
         ><House class="h-4 w-4" aria-hidden="true" />Laman Utama</ShellLink
       >
-      <ShellLink to="/artikel" :class="plain">
+      <ShellLink v-if="allows('/artikel')" to="/artikel" :class="plain">
         <Newspaper class="h-4 w-4" aria-hidden="true" />Artikel
       </ShellLink>
-      <ShellLink v-if="loggedIn" to="/dashboard" :class="cta">
+      <ShellLink v-if="loggedIn" :to="home" :class="cta">
         <LayoutGrid class="h-4 w-4" aria-hidden="true" />Dashboard
       </ShellLink>
       <template v-else>

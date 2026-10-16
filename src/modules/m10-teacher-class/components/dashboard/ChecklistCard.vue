@@ -4,11 +4,15 @@ import { ClipboardCheck, Laptop, Rocket, Users } from '@lucide/vue'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { usePrototypeScope } from '@/composables'
+
 import type { GuruDashboard } from '../../api/types'
 import { DASH_COPY } from './copy'
 import { checklistProgress } from './lib'
 
 const props = defineProps<{ checklist: GuruDashboard['checklist'] }>()
+// Prototype scope (D43): the "Misi harian" row links to a screen outside the matrix.
+const { allows } = usePrototypeScope()
 const progress = computed(() => checklistProgress(props.checklist))
 const ICONS = [Laptop, Users, Rocket]
 </script>
@@ -56,6 +60,7 @@ const ICONS = [Laptop, Users, Rocket]
           <p class="text-xs text-slate-500">{{ row.text }}</p>
         </div>
         <RouterLink
+          v-if="allows(row.to)"
           :to="row.to"
           class="inline-flex min-h-11 shrink-0 items-center rounded-lg bg-teal-600 px-3 text-xs font-bold text-white hover:bg-teal-700"
           data-testid="checklist-link"
