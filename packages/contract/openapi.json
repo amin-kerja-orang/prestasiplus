@@ -26,6 +26,7 @@
       },
       "Timestamp": {
         "type": "string",
+        "format": "date-time",
         "pattern": "\\+08:00$",
         "description": "ISO 8601 instant serialised in Malaysia time (+08:00).",
         "example": "2026-10-16T09:30:00+08:00"
@@ -161,7 +162,7 @@
           },
           "totalPages": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 1
           },
           "from": {
             "type": [
@@ -207,6 +208,35 @@
             "default": 20
           }
         }
+      },
+      "IdEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IdListEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
       }
     },
     "parameters": {}

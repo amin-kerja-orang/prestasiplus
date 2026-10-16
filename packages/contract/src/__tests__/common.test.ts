@@ -70,7 +70,7 @@ describe('error body', () => {
 })
 
 describe('list meta and envelopes', () => {
-  const meta = { page: 1, pageSize: 20, totalItems: 0, totalPages: 0, from: null, to: null }
+  const meta = { page: 1, pageSize: 20, totalItems: 0, totalPages: 1, from: null, to: null }
   it('accepts an empty page and module aggregates', () => {
     expect(ListMetaSchema.safeParse(meta).success).toBe(true)
     expect(ListMetaSchema.parse({ ...meta, averageScore: 71 })).toMatchObject({ averageScore: 71 })
@@ -99,6 +99,20 @@ describe('enums', () => {
     )
     expect(RoleCodeSchema.safeParse('jpn_officer').success).toBe(false)
     expect(ACCESS_MODES).toEqual(['F', 'R', 'S', 'D'])
+  })
+})
+
+describe('role codes vs the app session store', () => {
+  it('matches the Role union in src/stores/session-types.ts (minus legacy jpn_officer)', () => {
+    const src = readFileSync(
+      fileURLToPath(new URL('../../../../src/stores/session-types.ts', import.meta.url)),
+      'utf8',
+    )
+    const union = /export type Role =([\s\S]*?)\r?\n\r?\n/.exec(src)?.[1] ?? ''
+    const appRoles = [...union.matchAll(/'([a-z_]+)'/g)].map((m) => m[1])
+    expect(appRoles.length).toBeGreaterThan(0)
+    // jpn_officer is removed by V2-T09 (D31a: one PPD/JPN role); everything else must match.
+    expect([...ROLE_CODES].sort()).toEqual(appRoles.filter((r) => r !== 'jpn_officer').sort())
   })
 })
 

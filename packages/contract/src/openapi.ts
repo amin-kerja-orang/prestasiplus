@@ -1,6 +1,6 @@
 import { OpenApiGeneratorV31, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 
-import { ListMetaSchema, PageQuerySchema } from './common/envelope'
+import { envelopeOf, listEnvelopeOf, ListMetaSchema, PageQuerySchema } from './common/envelope'
 import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } from './common/enums'
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
@@ -22,6 +22,9 @@ export const COMPONENT_SCHEMAS = {
   ErrorBody: ErrorBodySchema,
   ListMeta: ListMetaSchema,
   PageQuery: PageQuerySchema,
+  // Reference examples of the two envelope shapes; each endpoint registers its own concrete ones.
+  IdEnvelope: envelopeOf(IdSchema).meta({ id: 'IdEnvelope' }),
+  IdListEnvelope: listEnvelopeOf(IdSchema).meta({ id: 'IdListEnvelope' }),
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'

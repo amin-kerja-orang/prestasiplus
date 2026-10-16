@@ -15,6 +15,7 @@ export const TimestampSchema = z.iso
   .regex(MYT_TIMESTAMP, 'Timestamp must be ISO 8601 with the +08:00 offset')
   .meta({
     id: 'Timestamp',
+    format: 'date-time',
     description: 'ISO 8601 instant serialised in Malaysia time (+08:00).',
     example: '2026-10-16T09:30:00+08:00',
   })

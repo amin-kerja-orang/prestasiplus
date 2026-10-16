@@ -9,7 +9,7 @@ export const ListMetaSchema = z
     page: z.number().int().min(1),
     pageSize: z.number().int().min(1),
     totalItems: z.number().int().min(0),
-    totalPages: z.number().int().min(0),
+    totalPages: z.number().int().min(1),
     from: z.number().int().min(1).nullable().optional(),
     to: z.number().int().min(1).nullable().optional(),
     counts: z.record(z.string(), z.number()).optional(),

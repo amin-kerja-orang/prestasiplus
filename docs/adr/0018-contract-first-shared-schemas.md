@@ -11,7 +11,7 @@
 
 ## Decision
 1. **A workspace package `packages/contract`** (name `@pp/contract`, npm workspaces) is the single source of API truth: zod schemas for requests, responses, enums, the envelope and error format, the session and the access matrix; TypeScript types are `z.infer` of those schemas.
-2. **OpenAPI 3.1 is generated** from the schemas (`zod-to-openapi` or equivalent) into `packages/contract/openapi/openapi.json`, committed, and diffed in CI (breaking-change check) so reviewers see contract changes as a file diff.
+2. **OpenAPI 3.1 is generated** from the schemas (`zod-to-openapi` or equivalent) into `packages/contract/openapi.json`, committed, and diffed in CI (breaking-change check) so reviewers see contract changes as a file diff.
 3. **Mock handlers validate** every request body/query against the schema, and in dev and test also validate every response, so the mock cannot drift from the contract. Module `api/` functions import types from `@pp/contract`; per-module `types.ts` files re-export from it as modules are touched.
 4. **NestJS consumes the same package** (zod pipes for DTO validation, for example `nestjs-zod`, and the access matrix for guards) by package or git dependency; the backend repo may also read `openapi.json`. Whether the backend lives in this repo or a separate one is a devops decision; the package is publishable either way.
 5. **Conformance suite:** the scenarios used to test mock handlers are written against the HTTP contract (vitest + a transport parameter) so the same suite later runs against NestJS (V2-T30).
