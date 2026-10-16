@@ -28,6 +28,8 @@ Start with [TRACKER.md](TRACKER.md) (progress and decisions) and the repo-level 
 | [design/v2-visual-choices.html](design/v2-visual-choices.html) | Record of the visual choices (icon set, 3D, friend style) |
 | [design/v2-shells.md](design/v2-shells.md) | Approved v2.0: shells for both portals at 375/768/1280 |
 | [architecture/v2-frontend.md](architecture/v2-frontend.md) | Written: frontend architecture, ADR 0015–0018, task list V2-T01–T60 |
+| [discovery/BIJAK-SPM-cloud.md](discovery/BIJAK-SPM-cloud.md) | Written: .cloud Bijak SPM / Simulasi discovery (student, admin, panel; flows, grading, data model, defects N-01..N-21, diff vs .my SPM Mock) |
+| [requirements/v2-bijak-spm.md](requirements/v2-bijak-spm.md) | Draft G1: Bijak SPM v2 (Kertas Pilihan + Jana Kertas under Kontrak Blueprint), 33 stories, replicate-vs-redesign table, 4 blocking questions |
 
 Reading order for newcomers: TRACKER decisions D28–D38, then `requirements/v2-portals.md`,
 `requirements/v2-cloud-gap.md`, `architecture/overview.md`, `architecture/v2-data-migration.md`.
