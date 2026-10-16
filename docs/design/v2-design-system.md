@@ -292,21 +292,21 @@ All built from Nuxt UI (L1) or a thin `Ds*` composite (L2). Anatomy from the pro
 
 | Pattern | Anatomy and rules | Nuxt UI mapping |
 |---|---|---|
-| **Hero card** | Gradient A1 card, radius 24, `shadow-hero`; overline + title (`text-heading`) + sub + white pill CTA (`primary-on` bg, A1 text); 84px progress ring (track `primary-on` @30%, bar `primary-on`, centre number display); optional 76px 3D art overlapping top-right. | `UCard variant="hero"` + `DsProgressRing` + `UButton` + `DsArt3D` |
-| **Stat tile** | Raised, radius 20, `shadow-lift`, left-aligned: 40px **solid accent icon chip** (A1 white glyph / A3 ink / A2 ink / A4 white), display number (fluid 22→30px), 12px unit. With 3D rewards on, the chip is replaced by the 40px Fluent 3D image (no chip background). Entrance `rise` staggered 80ms. | `DsStat` (UCard + `DsIconChip`/`DsArt3D`) |
+| **Hero card** | Gradient A1 card, radius 24, `shadow-hero`; overline + title (`text-heading`) + sub + white pill CTA (`primary-on` bg, A1 text); 84px progress ring (track `primary-on` @30%, bar `primary-on`, centre number display); optional 76px 3D art overlapping top-right. | `DsHeroCard` (shipped V2-T05: gradient surface + `DsScoreRing tone="onPrimary"` + `UButton` + `DsArt3D` over a glow) |
+| **Stat tile** | Raised, radius 20, `shadow-lift`, left-aligned: 40px **solid accent icon chip** (A1 white glyph / A3 ink / A2 ink / A4 white), display number (fluid 22→30px), 12px unit. With 3D rewards on, the chip is replaced by the 40px Fluent 3D image (no chip background). Entrance `rise` staggered 80ms. | `DsStatTile` (`DsIconChip`/`DsArt3D`; staggered entrance deferred, see 12.4) |
 | **Icon chip** | 40px (26/36/48 variants) rounded 14px, **solid** accent fill, white or ink glyph per accent's `on` colour. Never tint + same-hue glyph. | `DsIconChip` (div + `UIcon`) |
-| **Subject tile** | 88×104 scroll-snap tile, solid A1 icon chip + label; subject identity is the label, not a hue. Horizontal scroll inside its own strip. | `UCarousel`-free `DsSubjectStrip` (flex + overflow-x auto in config) or `UCarousel` |
+| **Subject tile** | 88×104 scroll-snap tile, solid A1 icon chip + label; subject identity is the label, not a hue. Horizontal scroll inside its own strip. | `DsSubjectStrip` (flex + own overflow-x container; scroll-snap deferred, see 12.4) |
 | **Character card** | Radius 28, meaning-tinted surface (§3.3), solid icon chip or 3D art (56–64px), title, one-line muted text, solid accent CTA (48px). Variants: trial (amber), warning (orange), info carousel (violet; `UCarousel` with dots, "Baca lagi"/"Tutup" toggle), achievements (lime), action (blue). | `DsCharacterCard` (UCard + `UBadge` + `UButton`); info carousel = `UCarousel` |
-| **Friend greeting** | Friend avatar (56px, tap target) + speech bubble (raised, radius 18/18/18/6, `shadow-lift`) with friend name caption + peer-voice line. | `DsFriendAvatar` + `DsBubble` |
-| **Friend avatar** | Circle, face PNG with 6% padding on `--ds-ai` @20% bg, 5px halo ring of `--ds-ai` @22% + glow shadow; mood badge (emoji, raised circle, bottom-right); idle `bob` 4s. Sizes 40 / 56 / 96 / 120. Tap opens the picker. Min hit 56px. | `DsFriendAvatar` (UAvatar-based) |
+| **Friend greeting** | Friend avatar (56px, tap target) + speech bubble (raised, radius 18/18/18/6, `shadow-lift`) with friend name caption + peer-voice line. | `DsFriendAvatar` + `DsSpeechBubble` (+ typing dots) |
+| **Friend avatar** | Circle, face PNG with 6% padding on `--ds-ai` @20% bg, 5px halo ring of `--ds-ai` @22% + glow shadow; mood badge (emoji, raised circle, bottom-right); idle `bob` 4s. Sizes 40 / 56 / 96 / 120. Tap opens the picker. Min hit 56px. | `DsFriendAvatar` + internal `DsFriendFace` (one AI tint on the halo; glow shadow deferred) |
 | **Picker sheet** | Bottom sheet (`UDrawer`), `bg-elevated`, radius 28 top, title "Pilih rakan belajar awak", description "Dia akan temankan awak sepanjang latihan. Boleh tukar bila-bila masa.", two radio cards (`role="radio"`): friend avatar 96px, name (display), one trait line ("Tenang & suka cabaran" / "Ceria & sentiasa beri semangat"); selected = A4 22% surface + ✓ A4 badge top-right + scale 1.02; primary CTA "Pilih" (disabled until a card is chosen; "Batal" when changing); on confirm toast "Rakan belajar: {nama}". | `DsFriendPicker` (UDrawer + URadioGroup `variant="card"`) |
 | **Bottom nav** | 5 tabs on raised bar, radius 22 top, `shadow-bar-up`; tab 56px min, icon 24 + 12px label; **active = filled gradient pill** with white label, icon `hop`; safe-area padding. | `DsBottomNav` (UNavigationMenu horizontal) |
-| **Quiz option** | Full-width 60px, raised, radius 18; leading 36px letter chip (elevated; selected: solid A1 + white); text 17px/600; marker circle at right when locked. States: default, selected (A1 18% mix), correct (success 22% mix, solid green chip + check), wrong (error 20% mix, solid red chip + x, `nudge`), dimmed 55%. 2px inset ring only for focus. | `DsOption` (UButton `variant` composite) |
-| **Combo chip** | 44px high raised pill with flame; lit state = number highlight + flame A3 flicker; `hot` adds soft A3 glow (no ring line). | `UBadge` composite in `DsQuizHeader` |
-| **Feedback sheet** | Bottom panel radius 22: good (success 16% mix) / bad (error 14% mix); h3 with solid green/red round glyph, explanation, friend/AI line in an elevated bubble, `+n` combo chip, full-width CTA "Teruskan" (check button before it is "Semak"); titles "Betul!/Mantap!/Tepat sekali!/Kemas!/Terbaik!" or "Hampir!". Enters `sheet` 500ms. | `DsFeedback` (UCard + UButton) |
-| **Win screen** | Order: 3D achievement hero (party popper 5/5, trophy 3–4/5, books 0–2/5) → title ("Sempurna/Hebat/Bagus/Teruskan, {nama}!") → score ring 168px (track elevated; bar lime `win-ring` when ≥ 3/5, A1 below 3; display number 48px + "daripada 5") → friend congratulation dialog (avatar + chat bubble with typing dots) → reward tiles +Mata / +Koin (3D icon + display number + label) → **stickers** ("Streak {n} hari!", "Tahap naik!"; lime A2, rotate −4°/+3°, stamp-in) → buttons "Kongsi" (tonal) and "Kembali ke Home" (primary); confetti burst. | `DsWinScreen` (composes DsProgressRing, DsStat, DsFriendAvatar) |
-| **Reward chip** | Pill with 3D coin/flame/bolt + display number (+ small label ≥ md). | `UBadge` + `DsArt3D` |
-| **Toast / float** | `+n Mata` float-up pill in A2 above the tapped option. | `DsFloatScore` (CSS animation only) |
+| **Quiz option** | Full-width 60px, raised, radius 18; leading 36px letter chip (elevated; selected: solid A1 + white); text 17px/600; marker circle at right when locked. States: default, selected (A1 18% mix), correct (success 22% mix, solid green chip + check), wrong (error 20% mix, solid red chip + x, `nudge`), dimmed 55%. 2px inset ring only for focus. | `DsQuizOption` (UButton composite; locked states carry `aria-disabled`) |
+| **Combo chip** | 44px high raised pill with flame; lit state = number highlight + flame A3 flicker; `hot` adds soft A3 glow (no ring line). | combo chip inside `DsQuizHeader` (close + gradient progress + combo); amber glow deferred |
+| **Feedback sheet** | Bottom panel radius 22: good (success 16% mix) / bad (error 14% mix); h3 with solid green/red round glyph, explanation, friend/AI line in an elevated bubble, `+n` combo chip, full-width CTA "Teruskan" (check button before it is "Semak"); titles "Betul!/Mantap!/Tepat sekali!/Kemas!/Terbaik!" or "Hampir!". Enters `sheet` 500ms. | `DsFeedbackSheet` (only its text block is the live region) |
+| **Win screen** | Order: 3D achievement hero (party popper 5/5, trophy 3–4/5, books 0–2/5) → title ("Sempurna/Hebat/Bagus/Teruskan, {nama}!") → score ring 168px (track elevated; bar lime `win-ring` when ≥ 3/5, A1 below 3; display number 48px + "daripada 5") → friend congratulation dialog (avatar + chat bubble with typing dots) → reward tiles +Mata / +Koin (3D icon + display number + label) → **stickers** ("Streak {n} hari!", "Tahap naik!"; lime A2, rotate −4°/+3°, stamp-in) → buttons "Kongsi" (tonal) and "Kembali ke Home" (primary); confetti burst. | `DsWinScreen` (composes `DsWinHero`, `DsScoreRing`, `DsStatTile`, `DsSticker`; friend dialog and actions are slots; confetti deferred) |
+| **Reward chip** | Pill with 3D coin/flame/bolt + display number (+ small label ≥ md). | `DsRewardChip` (`DsArt3D` or `DsIcon`) |
+| **Toast / float** | `+n Mata` float-up pill in A2 above the tapped option. | `DsFloatScore` (CSS animation only, `aria-hidden`; callers announce the score via `DsFeedbackSheet`) |
 
 ---
 
@@ -340,7 +340,7 @@ Colour from text tokens only. Running copy `max-w-prose` (≤ 65ch).
 
 ## 8. Spacing, layout
 
-4px base; pages use steps **1, 2, 3, 4, 6, 8, 12, 16** only. Gutters 16 / 24 / 32 at 375 / 768 / 1280. Grid gaps 12 / 16 / 24 (learner stat tiles use 10px via `DsStat` grid, config-only). Max content width: learner 72rem (quiz column 40rem), staff 100rem. Breakpoints Tailwind default (`lg` = 1024 switches mobile ↔ desktop chrome). No horizontal page scroll at ≥ 320px; wide tables/strips scroll inside their own container.
+4px base; pages use steps **1, 2, 3, 4, 6, 8, 12, 16** only. Gutters 16 / 24 / 32 at 375 / 768 / 1280. Grid gaps 12 / 16 / 24 (learner stat tiles use 10px via `DsStatTile` grid, config-only). Max content width: learner 72rem (quiz column 40rem), staff 100rem. Breakpoints Tailwind default (`lg` = 1024 switches mobile ↔ desktop chrome). No horizontal page scroll at ≥ 320px; wide tables/strips scroll inside their own container.
 
 ---
 
@@ -467,7 +467,7 @@ Layers: **L1** Nuxt UI as-is (themed centrally) · **L2** `Ds*` pattern composed
 | `overlay/BaseModal.vue` | `DsDialog` (`UModal` ≥ sm / `UDrawer` < sm) | |
 | `overlay/native-dialogs.ts` | `useConfirm()` (themed dialog, same BM text) | D33a |
 | `form/classes.ts`, `feedback/classes.ts`, `overlay/classes.ts`, `data/classes.ts` | Deleted | Class-string constants are what G-3 forbids |
-| (inline) stat card / progress ring / empty / 404-403 / tabs / avatar / tooltip / accordion / stepper / timeline / date pickers / upload | `DsStat`, `DsProgressRing`, `UEmpty`, `DsErrorPage`, `UTabs`, `UAvatar`, `UTooltip`, `UAccordion`, `UStepper`, `UTimeline`, `UInputDate`/`UCalendar`, `UFileUpload` | |
+| (inline) stat card / progress ring / empty / 404-403 / tabs / avatar / tooltip / accordion / stepper / timeline / date pickers / upload | `DsStatTile`, `DsScoreRing`, `UEmpty`, `DsErrorPage`, `UTabs`, `UAvatar`, `UTooltip`, `UAccordion`, `UStepper`, `UTimeline`, `UInputDate`/`UCalendar`, `UFileUpload` | |
 
 ### 12.2 `src/shells/*`
 
@@ -485,7 +485,23 @@ Layers: **L1** Nuxt UI as-is (themed centrally) · **L2** `Ds*` pattern composed
 
 ### 12.3 L2 pattern inventory (complete)
 
-`DsPage` · `DsDataTable` · `DsFilterBar` · `DsStat` · `DsIconChip` · `DsProgressRing` · `DsChart` · `DsDialog` · `useConfirm` · `DsErrorPage` · `DsIcon` · `DsArt3D` · `DsBottomNav` · `DsModeBanner` · `DsRoleChip` (+ switcher) · `DsServerStatus` · `DsLiveTiles` · `DsDrillTable` · `DsCharacterCard` · `DsFriendAvatar` · `DsBubble` · `DsFriendPicker` · `DsQuizHeader` · `DsOption` · `DsFeedback` · `DsWinScreen` · `DsFloatScore` · `DsShellPentadbiran` · `DsShellPembelajaran` · `DsShellAuth`. Question card/intake UI is out of scope (D28e).
+**Shipped in V2-T05 (`src/ds/`; these names are the source of truth):** `DsIcon` · `DsIconChip` · `DsArt3D` · `DsStatTile` · `DsRewardChip` · `DsHeroCard` · `DsCharacterCard` · `DsCarousel` · `DsSubjectStrip` · `DsFriendAvatar` (+ internal `DsFriendFace`) · `DsSpeechBubble` · `DsFriendPicker` · `DsQuizHeader` · `DsQuizOption` · `DsFeedbackSheet` · `DsFloatScore` · `DsScoreRing` · `DsWinHero` · `DsSticker` · `DsWinScreen` · `DsLiveBadge` · `DsLiveTiles` · `DsDrillTable` · `DsEmptyState` · `DsThemeScope` (gallery / preview scope) · `usePersonality()`.
+
+**Still to build (owner task in brackets):** `DsPage`, `DsDataTable`, `DsFilterBar` [V2-T32, first consumer: Urus Tiket]; `DsChart` [V2-T34, dashboards; evaluates `UChart` first]; `DsDialog`, `useConfirm`, `DsServerStatus`, `DsShellPentadbiran` [V2-T13]; `DsBottomNav`, `DsShellPembelajaran` [V2-T15]; `DsShellAuth` [V2-T16]; `DsErrorPage` [V2-T17]; `DsModeBanner`, `DsRoleChip` (+ switcher) [V2-T18]. Old names map as: `DsStat` = `DsStatTile`, `DsProgressRing` = `DsScoreRing`, `DsBubble` = `DsSpeechBubble`, `DsOption` = `DsQuizOption`, `DsFeedback` = `DsFeedbackSheet`. Question card/intake UI is out of scope (D28e).
+
+#### 12.4 Visual details deferred from V2-T05 (listed in the gallery as "Jurang diketahui")
+
+| Detail | Why | Owner |
+|---|---|---|
+| Second sticker rotation +3° (the first is -4° from the stamp animation) | no `rotate-*` utility and no per-element rotation token | V2-T48 (may add a token) |
+| Picker selected card scale 1.02 | no `scale-*` utility | V2-T48 |
+| Drop shadow under 3D art | no `drop-shadow-*` utility or `shadow-art` token | V2-T48 |
+| Radial glow behind the win hero and hero-card art (flat translucent discs shipped) | no radial-gradient token | V2-T48 |
+| Confetti burst | screen-level effect, not a composite | V2-T48 |
+| Staggered `rise` delay on stat tiles | Tailwind `delay-*` is `transition-delay` only | V2-T48 |
+| Subject strip scroll-snap | no `snap-*` utility | V2-T48 |
+| Combo chip `hot` glow | no coloured-shadow token | V2-T48 |
+| axe-core accessibility pass on `/__ds` | `axe-core` is not a dependency yet | V2-T21 (cut-over E2E) |
 
 ---
 
@@ -499,7 +515,7 @@ Scope: `src/**/*.vue`, `src/**/*.ts` except `src/design-system/**`.
 | G-2 | Spacing steps only 1, 2, 3, 4, 6, 8, 12, 16 (+ 0, auto, full, fractions, screen/dvh). | same |
 | G-3 | **Banned in pages**: arbitrary values `[...]`/`(--x)`; palette/colour utilities with palette name or step; `#hex/rgb()/hsl()/oklch()`; gradients (`bg-gradient-*`, `from-/via-/to-`; the gradient lives inside component variants); `shadow-*`, `rounded-*`, `z-*`, `animate-*`, `transition-*`, `duration-*`, `ease-*`, `font-*`, stock `text-xs…9xl`, `opacity-*`. | same |
 | **G-3b** | **No lines: `border`, `border-*`, `divide`, `divide-*`, `outline`, `outline-*`, `ring`, `ring-*`, `ring-offset-*` utilities are forbidden in pages** (and in `design-system/**` except focus/error ring definitions in `theme.config.ts`). `border-default/-muted/-accented` tokens are transparent. | same + stylelint `declaration-property-value-disallowed-list` for `border*`/`outline*` outside `tokens.css`/`theme.config.ts` |
-| G-4 | No `<style>`, `style=`/`:style=` in pages; dynamic values through props (`UProgress :model-value`, `DsProgressRing :value`). | ESLint |
+| G-4 | No `<style>`, `style=`/`:style=` in pages; dynamic values through props (`UProgress :model-value`, `DsScoreRing :value`). | ESLint |
 | G-5 | No raw `<button> <input> <select> <textarea> <a> <table> <dialog> <img>` in pages (use `UButton`, `UInput`, …, `DsArt3D`, `DsFriendAvatar`, `UAvatar`). Layout elements allowed. | `vue/no-restricted-html-elements` |
 | G-6 | Pages import UI only from `@nuxt/ui` and `@/design-system`. Banned in pages: `@lucide/vue`, `@iconify-json/*`, `@phosphor-icons/*`, `@fontsource/*`, `chart.js`, `@/components/*` (legacy, frozen), `@/shells/*` internals. Icons are referenced by base name via `DsIcon`. | `no-restricted-imports` |
 | G-7 | Colour/radius/shadow/font/motion/icon-weight decisions only in `tokens.css`, `theme.config.ts`, `density.ts`. Hex/rgb outside `tokens.css` fail. | stylelint `color-no-hex` + path allowlist |

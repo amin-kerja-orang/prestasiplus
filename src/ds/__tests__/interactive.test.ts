@@ -94,8 +94,11 @@ describe('DsFeedbackSheet', () => {
         continueLabel: 'Teruskan',
       },
     })
-    expect(w.attributes('role')).toBe('status')
-    expect(w.attributes('aria-live')).toBe('polite')
+    // Only the text block is live; the region holding the button is not.
+    expect(w.attributes('role')).toBeUndefined()
+    expect(w.get('[data-ds="feedback-live"]').attributes('role')).toBe('status')
+    expect(w.get('[data-ds="feedback-live"]').attributes('aria-live')).toBe('polite')
+    expect(w.get('[data-ds="feedback-live"]').find('button').exists()).toBe(false)
     expect(w.attributes('data-tone')).toBe('good')
     expect(w.text()).toContain('Betul!')
     expect(w.get('[data-ds="feedback-ai"]').text()).toContain('Bagus')

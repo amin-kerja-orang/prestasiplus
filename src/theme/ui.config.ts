@@ -13,6 +13,8 @@
  * `ring-error/25` on subtle alerts and badges).
  */
 
+import { dsIconClasses } from './ds-icons.ts'
+
 /** Filled, borderless field with a 2px primary focus ring (D34). */
 const filled =
   'bg-elevated text-highlighted hover:bg-accented focus:bg-elevated disabled:bg-elevated/50 focus-visible:ring-2 focus-visible:ring-inset'
@@ -89,7 +91,7 @@ const icons = {
  * literal "i-ph-*" string (a future DsIcon that builds names from a base name must list its set here).
  */
 export const iconBundle = {
-  icons: Object.values(icons),
+  icons: [...Object.values(icons), ...dsIconClasses],
   scan: {
     globInclude: ['src/**/*.{vue,ts}'],
     globExclude: ['node_modules', 'dist', '**/__tests__/**'],
@@ -241,6 +243,15 @@ export const uiConfig = {
       { color: 'primary', variant: 'solid', class: 'text-primary-on' },
       { color: ['error', 'success', 'info', 'warning'], variant: 'solid', class: 'text-on-sem' },
       { color: 'secondary', variant: 'solid', class: 'bg-highlight text-on-highlight' },
+    ],
+  },
+
+  // Card radios: selected = tinted surface (info mix), never a line (the stock card draws a
+  // coloured border).
+  radioGroup: {
+    compoundVariants: [
+      { variant: 'card', class: { item: 'border-0' } },
+      { variant: 'card', color: 'info', class: { item: 'has-data-[state=checked]:bg-info/20' } },
     ],
   },
 

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-/** "+n Mata" float-up pill (design system 6, "Toast / float"). CSS animation only, decorative. */
+/**
+ * "+n Mata" float-up pill (design system 6, "Toast / float"). CSS animation only and `aria-hidden`:
+ * it is NOT announced. Callers must announce the score through `DsFeedbackSheet` (its text block
+ * is the live region), for example by naming the points in the title or body.
+ */
 defineProps<{
   /** Text of the pill, e.g. "+10". */
   text: string

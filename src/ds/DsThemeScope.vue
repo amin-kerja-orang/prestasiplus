@@ -4,14 +4,18 @@
  * staff and learner, light and dark side by side. It mirrors what a portal layout puts on <html>
  * (`data-personality` + `.dark`); `.light` stops an outer `.dark` from leaking in.
  */
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 
 import type { Personality, Scheme } from '@/theme/color-mode'
+
+import { providePersonality } from './personality'
 
 const props = defineProps<{
   personality: Personality
   scheme: Scheme
 }>()
+
+providePersonality(toRef(props, 'personality'))
 
 /** Marker class read by the token scopes in `tokens.css` (not a utility). */
 const marker = computed(() => (props.scheme === 'dark' ? 'dark' : 'light'))

@@ -23,7 +23,11 @@ const props = withDefaults(
 
 const emit = defineEmits<{ select: [] }>()
 
-const locked = computed(() => props.state === 'correct' || props.state === 'wrong')
+/** Verdict states stop reacting (the check has been made). */
+const locked = computed(
+  () => props.state === 'correct' || props.state === 'wrong' || props.state === 'dimmed',
+)
+const marked = computed(() => props.state === 'correct' || props.state === 'wrong')
 
 const tint: Record<QuizOptionState, string> = {
   idle: '',
@@ -52,10 +56,13 @@ function onClick(): void {
     block
     class="relative h-auto min-h-15 justify-start gap-3 overflow-hidden rounded-2xl bg-default py-2 pr-3.5 pl-2.5 text-start text-body font-semibold text-highlighted shadow-none hover:bg-default"
     :class="[
-      state === 'dimmed' && 'opacity-55',
+      state === 'dimmed'
+        ? 'opacity-55 aria-disabled:opacity-55'
+        : locked && 'aria-disabled:opacity-100',
       state === 'wrong' && 'animate-ds-nudge motion-reduce:animate-none',
     ]"
     :aria-pressed="locked ? undefined : state === 'selected'"
+    :aria-disabled="locked ? 'true' : undefined"
     :data-state="state"
     data-ds="quiz-option"
     @click="onClick"
@@ -69,7 +76,7 @@ function onClick(): void {
     >
     <span class="relative min-w-0 flex-1 break-words"><slot /></span>
     <span
-      v-if="locked"
+      v-if="marked"
       class="relative inline-grid size-7 shrink-0 place-items-center rounded-full text-on-sem"
       :class="state === 'correct' ? 'bg-success' : 'bg-error'"
       data-ds="option-marker"

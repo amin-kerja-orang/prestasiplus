@@ -2,7 +2,8 @@
 /**
  * Quiz feedback sheet (design system 6, "Feedback sheet"). Bottom panel in a green (good) or red
  * (bad) mix: round glyph + title, explanation, an optional friend / AI line in an elevated bubble,
- * a combo chip and the full-width continue button. A polite `role="status"` region. No
+ * a combo chip and the full-width continue button. Only the text block (title, explanation, AI
+ * line) is a polite `role="status"` region, never the button. No
  * celebration on a wrong answer: the "bad" tone only shows an x glyph and the text from the caller.
  */
 import DsArt3D from './DsArt3D.vue'
@@ -31,8 +32,6 @@ defineEmits<{ continue: [] }>()
 <template>
   <section
     class="relative animate-ds-sheet overflow-hidden rounded-3xl bg-default p-3.5 motion-reduce:animate-none"
-    role="status"
-    aria-live="polite"
     :data-tone="tone"
     data-ds="feedback-sheet"
   >
@@ -42,7 +41,7 @@ defineEmits<{ continue: [] }>()
       aria-hidden="true"
     />
     <div class="relative flex flex-col gap-3">
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1" role="status" aria-live="polite" data-ds="feedback-live">
         <h3
           class="flex items-center gap-2 font-display text-heading font-extrabold text-highlighted"
         >

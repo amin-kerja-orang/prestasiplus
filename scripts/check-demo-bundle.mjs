@@ -51,10 +51,13 @@ if (hits.length > 0) {
  * 2,186,106; all css 481,979 / 73,171.
  */
 const BUDGET = {
-  'entry js raw': { max: 268_100, get: (m) => m.entryJs.raw },
+  // V2-T05 (G4 round): 310_300 (= 282,101 + 10 %), same chunk-inlining reason as the gzip limit below.
+  'entry js raw': { max: 310_300, get: (m) => m.entryJs.raw },
   // V2-T05: 83_800 (= 76,148 measured + 10 %). The old budget measured the entry file only; once the
   // gallery stopped being the sole consumer of Nuxt UI's app-config chunk, rolldown inlined that
   // 14,751 B gzip chunk into the entry. Entry + that chunk was 82,606 B before, 76,148 B now.
+  // The entry figure moves with chunk inlining, not only with real growth; "all js" below is the
+  // real regression guard (it was 2,186,106 B gzip measured, now about 2.12 MB).
   'entry js gzip': { max: 83_800, get: (m) => m.entryJs.gzip },
   'entry css raw': { max: 504_600, get: (m) => m.entryCss.raw },
   'entry css gzip': { max: 73_100, get: (m) => m.entryCss.gzip },

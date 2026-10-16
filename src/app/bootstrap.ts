@@ -23,6 +23,7 @@ import type { Router, RouterHistory } from 'vue-router'
 import { createHttpTransport, installTransport, type Transport } from '@/api'
 import type { BootMockOptions, MockRuntime } from '@/mock'
 import { useSessionStore, withSessionSliding } from '@/stores'
+import { uiLocale, uiLocaleKey } from '@/theme/locale-ms'
 
 import App from '../App.vue'
 import { connectUnauthorizedRedirect, createAppRouter } from './router'
@@ -72,6 +73,8 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Bootstr
   app.use(router)
   // Nuxt UI plugin after the router so its link component finds vue-router (V2-T02).
   app.use(ui)
+  // Bahasa Melayu for every Nuxt UI label (carousel, modal close, pagination), not only under a <UApp>.
+  app.provide(uiLocaleKey, uiLocale)
 
   app.mount(options.el ?? '#app')
   return { app, router, mockRuntime }

@@ -28,7 +28,7 @@ const props = withDefaults(
     /** Screen-reader text for the selected tick. */
     selectedLabel?: string
   }>(),
-  { description: undefined, cancelLabel: undefined, selectedLabel: undefined },
+  { description: undefined, cancelLabel: undefined, selectedLabel: 'Dipilih' },
 )
 
 /** Open state of the sheet. */

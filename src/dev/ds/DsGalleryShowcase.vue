@@ -19,15 +19,21 @@ import {
   DsFloatScore,
   DsFriendAvatar,
   DsFriendPicker,
+  DsHeroCard,
+  DsIcon,
   DsIconChip,
   DsLiveBadge,
   DsLiveTiles,
+  DsQuizHeader,
   DsQuizOption,
+  DsRewardChip,
   DsScoreRing,
   DsSpeechBubble,
   DsStatTile,
+  DsSubjectStrip,
   DsSticker,
   DsWinHero,
+  DsWinScreen,
   art3dNames,
   type FriendId,
   type FriendMood,
@@ -51,6 +57,26 @@ function onPicked(chosen: FriendId): void {
 
 const moods: FriendMood[] = ['neutral', 'happy', 'encouraging', 'celebrating']
 const typing = ref(false)
+const allStates: QuizOptionState[] = ['idle', 'selected', 'correct', 'wrong', 'dimmed']
+const fbTone = ref<'good' | 'bad'>('good')
+const subjects = [
+  { id: 'mat', label: 'Matematik', icon: 'i-ph-calculator-duotone' },
+  { id: 'bm', label: 'B. Melayu', icon: 'i-ph-book-open-text-duotone' },
+  { id: 'bi', label: 'B. Inggeris', icon: 'i-ph-translate-duotone' },
+  { id: 'sej', label: 'Sejarah', icon: 'i-ph-scroll-duotone' },
+  { id: 'sci', label: 'Sains', icon: 'i-ph-flask-duotone' },
+  { id: 'topik', label: 'Topik', icon: 'i-ph-books-duotone' },
+]
+const iconBases = ['house', 'fire', 'coins', 'lightning', 'graduation-cap', 'game-controller']
+const rewards = [
+  { id: 'p', value: '+50', unit: 'Mata', art: 'bolt' as const },
+  { id: 'k', value: '+12', unit: 'Koin', art: 'coin' as const },
+]
+const stickers = [
+  { id: 's1', text: 'Streak 5 hari!', art: 'fire' as const },
+  { id: 's2', text: 'Tahap naik!' },
+]
+const heroPct = ref(60)
 
 // Quiz: pick an option, then "Semak" locks it (correct = 42).
 const options = ['36', '42', '48', '54']
@@ -129,6 +155,38 @@ const drilled = ref('')
         <DsStatTile value="12" unit="hari" art="fire" />
         <DsStatTile value="1,240" unit="mata" art="bolt" />
         <DsStatTile value="86" unit="koin" art="coin" />
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-3" aria-labelledby="g-hero">
+      <h3 id="g-hero" class="text-subheading">DsHeroCard, DsRewardChip, DsSubjectStrip, DsIcon</h3>
+      <DsHeroCard
+        overline="Sambung latihan"
+        title="Matematik · Fungsi Kuadratik"
+        :subtitle="`12 daripada 20 soalan`"
+        :progress="heroPct"
+        ring-label="Kemajuan Fungsi Kuadratik"
+        art="rocket"
+        cta-label="Mula"
+      />
+      <div class="flex flex-wrap gap-3">
+        <UButton color="neutral" variant="soft" @click="heroPct = Math.max(0, heroPct - 20)">
+          Kurang
+        </UButton>
+        <UButton color="neutral" variant="soft" @click="heroPct = Math.min(100, heroPct + 20)">
+          Tambah
+        </UButton>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <DsRewardChip art="fire" value="12" label="hari" />
+        <DsRewardChip art="coin" value="86" label="koin" />
+        <DsRewardChip icon="fire" value="12" label="hari" />
+        <DsRewardChip icon="lightning" value="1,240" label="mata" />
+      </div>
+      <DsSubjectStrip :items="subjects" label="Mata pelajaran" />
+      <div class="flex flex-wrap items-center gap-3" aria-label="Berat ikon ikut personaliti">
+        <DsIcon v-for="name in iconBases" :key="name" :name="name" class="size-6" />
+        <DsIcon name="check" weight="bold" class="size-4" />
       </div>
     </section>
 
@@ -216,6 +274,43 @@ const drilled = ref('')
 
     <section class="flex flex-col gap-3" aria-labelledby="g-quiz">
       <h3 id="g-quiz" class="text-subheading">DsQuizOption, DsFeedbackSheet, DsFloatScore</h3>
+      <DsQuizHeader
+        close-label="Tutup latihan"
+        :progress="chosen === null ? 20 : 60"
+        progress-label="Kemajuan latihan"
+        :combo="checked && chosen === correctIndex ? 3 : 0"
+        combo-label="Kombo"
+      />
+      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2" aria-label="Semua keadaan pilihan">
+        <DsQuizOption v-for="s in allStates" :key="s" letter="A" :state="s">
+          {{ s }}
+        </DsQuizOption>
+      </div>
+      <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Nada maklum balas">
+        <UButton
+          :variant="fbTone === 'good' ? 'solid' : 'soft'"
+          :color="fbTone === 'good' ? 'primary' : 'neutral'"
+          :aria-pressed="fbTone === 'good'"
+          @click="fbTone = 'good'"
+        >
+          Betul
+        </UButton>
+        <UButton
+          :variant="fbTone === 'bad' ? 'solid' : 'soft'"
+          :color="fbTone === 'bad' ? 'primary' : 'neutral'"
+          :aria-pressed="fbTone === 'bad'"
+          @click="fbTone = 'bad'"
+        >
+          Salah
+        </UButton>
+      </div>
+      <DsFeedbackSheet
+        :tone="fbTone"
+        :title="fbTone === 'good' ? 'Betul!' : 'Hampir!'"
+        :body="fbTone === 'good' ? '6 × 7 = 42.' : 'Cuba lihat semula jadual darab tujuh.'"
+        :combo="fbTone === 'good' ? '+10' : undefined"
+        continue-label="Teruskan"
+      />
       <p class="text-heading">Berapakah 6 × 7?</p>
       <div class="flex flex-col gap-2" role="group" aria-label="Pilihan jawapan">
         <DsQuizOption
@@ -289,6 +384,30 @@ const drilled = ref('')
         <DsSticker>Tahap naik!</DsSticker>
       </div>
       <DsWinHero art="books" tone="keep" title="Teruskan, Murid Contoh!" />
+    </section>
+
+    <section class="flex flex-col gap-3" aria-labelledby="g-winscreen">
+      <h3 id="g-winscreen" class="text-subheading">DsWinScreen</h3>
+      <DsWinScreen
+        art="trophy"
+        title="Hebat, Murid Contoh!"
+        subtitle="Awak dapat 4/5."
+        :score="4"
+        :max="5"
+        ring-label="Skor 4 daripada 5"
+        ring-unit="daripada 5"
+        :rewards="rewards"
+        :stickers="stickers"
+      >
+        <template #friend>
+          <DsFriendAvatar friend="aiman" mood="celebrating" size="md" />
+          <DsSpeechBubble live>Tahniah, Murid Contoh! Awak dapat 4/5. Hebat!</DsSpeechBubble>
+        </template>
+        <template #actions>
+          <UButton color="neutral" variant="soft" size="lg" block>Kongsi</UButton>
+          <UButton size="lg" block>Kembali ke Home</UButton>
+        </template>
+      </DsWinScreen>
     </section>
 
     <section class="flex flex-col gap-3" aria-labelledby="g-carousel">

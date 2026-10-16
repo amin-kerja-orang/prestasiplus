@@ -81,7 +81,15 @@ const panels = computed(() => {
         </div>
       </header>
 
-      <div class="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
+      <UAlert
+        color="info"
+        variant="subtle"
+        icon="i-ph-info"
+        title="Jurang diketahui (V2-T05)"
+        description="Putaran pelekat tetap -4° (tiada token untuk +3°), kad pilihan rakan tidak diskala 1.02, seni 3D tiada drop-shadow, cahaya kemenangan ialah cakera rata (bukan radial), tiada konfeti, kelewatan masuk berperingkat pada jubin statistik tiada."
+      />
+
+      <div class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
         <DsThemeScope
           v-for="panel in panels"
           :key="`${panel.personality}-${panel.scheme}`"
