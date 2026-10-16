@@ -1,0 +1,53 @@
+/**
+ * Phosphor base names that `DsIcon` may build at run time (`i-ph-<name>`, `i-ph-<name>-duotone`,
+ * `i-ph-<name>-bold`). The icon bundler only finds literal `i-ph-*` strings, so every base name
+ * used through `DsIcon` is listed here and added to `iconBundle` (vite.config). Add a name here when
+ * a composite or page starts using it. Weights per design system 10.1: learner Duotone, staff
+ * Regular, Bold for tiny status glyphs.
+ */
+export const dsIconBaseNames = [
+  'arrow-right',
+  'books',
+  'book-open-text',
+  'calculator',
+  'chalkboard-teacher',
+  'chart-line-up',
+  'check',
+  'coins',
+  'dots-three-circle',
+  'fire',
+  'flask',
+  'game-controller',
+  'gift',
+  'graduation-cap',
+  'house',
+  'lightbulb',
+  'lightning',
+  'moon',
+  'pencil-simple-line',
+  'rocket-launch',
+  'scroll',
+  'share-network',
+  'sparkle',
+  'star',
+  'sun',
+  'translate',
+  'trophy',
+  'tray',
+  'users',
+  'x',
+] as const
+
+export const dsIconWeights = ['regular', 'duotone', 'bold'] as const
+export type DsIconWeight = (typeof dsIconWeights)[number]
+
+export const dsIconWeightSuffix: Record<DsIconWeight, string> = {
+  regular: '',
+  duotone: '-duotone',
+  bold: '-bold',
+}
+
+/** Every `i-ph-*` class the `DsIcon` name space can produce. */
+export const dsIconClasses: string[] = dsIconBaseNames.flatMap((name) =>
+  dsIconWeights.map((w) => `i-ph-${name}${dsIconWeightSuffix[w]}`),
+)

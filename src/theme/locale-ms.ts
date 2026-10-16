@@ -7,3 +7,6 @@
 import { ms } from '@nuxt/ui/locale'
 
 export const uiLocale = ms
+
+/** Injection key Nuxt UI reads the locale from (`Symbol.for`, so no internal import is needed). */
+export const uiLocaleKey = Symbol.for('nuxt-ui.locale-context')

@@ -26,6 +26,9 @@ export default mergeConfig(
       // with it off. Scope tests turn it on with `vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')`.
       env: { VITE_PROTOTYPE_SCOPE: 'off' },
       root: fileURLToPath(new URL('./', import.meta.url)),
+      // Nuxt UI components import virtual modules (`#build/*`, `#imports`) that only the Vite
+      // plugin resolves; inline the package so Vitest runs it through that pipeline (V2-T05).
+      server: { deps: { inline: [/@nuxt\/ui/] } },
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,vue}'],

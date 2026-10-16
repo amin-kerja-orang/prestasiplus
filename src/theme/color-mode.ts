@@ -73,7 +73,7 @@ const systemDark = ref(false)
 /** Mounted portal layouts, oldest first; the last one is the active personality. */
 const owners = shallowRef<{ personality: ComputedRef<Personality> }[]>([])
 
-const activePersonality = computed<Personality | null>(() => {
+export const activePersonality = computed<Personality | null>(() => {
   const top = owners.value[owners.value.length - 1]
   return top ? top.personality.value : null
 })

@@ -16,7 +16,13 @@ import NotFoundPage from '@/pages/NotFoundPage.vue'
 import PrototypeUnavailablePage from '@/pages/PrototypeUnavailablePage.vue'
 import { useSessionStore } from '@/stores/session'
 
-import { DEFAULT_LAYOUT, resolveShell, shellComponents, useRouteOutcome } from './router'
+import {
+  DEFAULT_LAYOUT,
+  resolveShell,
+  shellComponents,
+  useRouteOutcome,
+  userShellFor,
+} from './router'
 
 const route = useRoute()
 const session = useSessionStore()
@@ -30,7 +36,9 @@ const shellKind = computed(() => {
   })
   // The "not available" page (prototype scope) always sits inside a shell for a logged-in user,
   // so the menus stay usable even when the blocked route is a bare page.
-  return outcome.value === 'scope' && kind === null && session.isLoggedIn ? 'user' : kind
+  return outcome.value === 'scope' && kind === null && session.isLoggedIn
+    ? userShellFor(session.role)
+    : kind
 })
 const shell = computed(() => (shellKind.value ? shellComponents[shellKind.value] : null))
 </script>

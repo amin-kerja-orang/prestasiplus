@@ -1,0 +1,54 @@
+<script setup lang="ts">
+/** "Statistik Platform" (FR-M05-25): four counted figures. */
+import { DsStatTile } from '@/ds'
+
+import type { Dashboard } from '../../api/types'
+import { COUNT_RULES } from '../dashboard/dashboard-lib'
+import { useDisplayCount } from './useDisplayCount'
+
+const props = defineProps<{ stats: Dashboard['stats'] }>()
+
+const total = useDisplayCount(() => props.stats.totalQuestions, COUNT_RULES.totalQuestions)
+const subjects = useDisplayCount(() => props.stats.activeSubjects, COUNT_RULES.activeSubjects)
+const levels = useDisplayCount(() => props.stats.activeLevels, COUNT_RULES.activeLevels)
+const approved = useDisplayCount(() => props.stats.approvedQuestions, COUNT_RULES.approvedQuestions)
+</script>
+
+<template>
+  <section
+    class="flex flex-col gap-3"
+    aria-labelledby="dash-platform-h"
+    data-testid="dash-platform"
+  >
+    <h2 id="dash-platform-h" class="text-heading text-highlighted">📊 Statistik Platform</h2>
+    <ul class="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <li class="min-w-0" data-testid="dash-platform-total">
+        <DsStatTile :value="total" unit="Total Soalan" icon="i-ph-books-duotone" />
+      </li>
+      <li class="min-w-0" data-testid="dash-platform-subjects">
+        <DsStatTile
+          :value="subjects"
+          unit="Subjek Aktif"
+          icon="i-ph-book-open-text-duotone"
+          accent="friend"
+        />
+      </li>
+      <li class="min-w-0" data-testid="dash-platform-levels">
+        <DsStatTile
+          :value="levels"
+          unit="Tahap Pendidikan"
+          icon="i-ph-graduation-cap-duotone"
+          accent="heat"
+        />
+      </li>
+      <li class="min-w-0" data-testid="dash-platform-approved">
+        <DsStatTile
+          :value="approved"
+          unit="Soalan Approved"
+          icon="i-ph-check-duotone"
+          accent="win"
+        />
+      </li>
+    </ul>
+  </section>
+</template>

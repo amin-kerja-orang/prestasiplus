@@ -47,14 +47,37 @@ const CASES: Record<string, RoleCase> = {
   'Admin Sekolah': {
     email: 'adminsekolah@demo.test',
     home: '/admin-sekolah',
-    shown: ['Senarai Pelajar', 'Senarai Guru', 'Kelas Sekolah', 'Statistik Penggunaan', 'Amaran Awal'],
-    hidden: ['Urus Pengguna', 'Import Pelajar', 'Langganan', 'Invois', 'Kombo Harian', 'Tournament'],
+    shown: [
+      'Senarai Pelajar',
+      'Senarai Guru',
+      'Kelas Sekolah',
+      'Statistik Penggunaan',
+      'Amaran Awal',
+    ],
+    hidden: [
+      'Urus Pengguna',
+      'Import Pelajar',
+      'Langganan',
+      'Invois',
+      'Kombo Harian',
+      'Tournament',
+    ],
     blocked: '/admin-sekolah/pengguna',
   },
 }
 
-/** The navigation container: the sidebar on desktop, the opened drawer below `lg`. */
-async function menu(page: Page) {
+/**
+ * The navigation container. Murid and Guru use the v2 Pembelajaran layout (sidebar on desktop, the
+ * "Lagi" slide-over below `lg`); Admin Sekolah still uses the legacy user shell.
+ */
+async function menu(page: Page, v2: boolean) {
+  if (v2) {
+    if (isDesktopShell(page)) return page.getByTestId('pembelajaran-sidebar')
+    await page.locator('[data-nav-id="tab-lagi"]').click()
+    const panel = page.getByRole('navigation', { name: 'Menu penuh' })
+    await expect(panel).toBeVisible()
+    return panel
+  }
   if (isDesktopShell(page)) return page.getByTestId('shell-user-sidebar')
   await page.getByTestId('shell-user-hamburger').click()
   const drawer = page.getByTestId('shell-user-drawer')
@@ -65,9 +88,11 @@ async function menu(page: Page) {
 for (const [role, c] of Object.entries(CASES)) {
   test.describe(`prototype scope: ${role}`, { tag: [TAG.smoke] }, () => {
     test('the menu shows only the allowed items', async ({ page, loginAs, gotoApp }) => {
+      // The friend picker opens on a Murid's first visit; a stored friend keeps it closed.
+      await page.addInitScript(() => localStorage.setItem('pp.friend', 'aiman'))
       await loginAs(c.email)
       await gotoApp(c.home)
-      const nav = await menu(page)
+      const nav = await menu(page, role !== 'Admin Sekolah')
       const text = await nav.innerText()
       for (const label of c.shown) expect(text, label).toContain(label)
       // Exact item texts: "Invois" must not match "Invois Saya" and vice versa.
@@ -97,7 +122,12 @@ for (const [role, c] of Object.entries(CASES)) {
 }
 
 test.describe('prototype scope: accounts', { tag: [TAG.smoke] }, () => {
-  for (const email of ['admin@demo.test', 'ppd@demo.test', 'ibubapa@demo.test', 'penaja@demo.test']) {
+  for (const email of [
+    'admin@demo.test',
+    'ppd@demo.test',
+    'ibubapa@demo.test',
+    'penaja@demo.test',
+  ]) {
     test(`${email} cannot log in`, async ({ page, gotoApp }) => {
       await gotoApp('/login')
       await page.getByTestId('login-email').fill(email)
