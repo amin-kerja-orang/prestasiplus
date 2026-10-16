@@ -21,9 +21,9 @@ Files: `src/session/{scope,session,paths}.ts`, `src/auth/{login,errors}.ts`. Des
 | Endpoint | Request | Success | Errors |
 |---|---|---|---|
 | `POST /auth/login` | `LoginRequest { identifier (e-mail or username), password, schoolId?, remember }` | 200 `{ data: Session }` | 401 `INVALID_CREDENTIALS`; 403 `ACCOUNT_INACTIVE`, `SCHOOL_INACTIVE`; 422 `VALIDATION_ERROR`, `AMBIGUOUS_USERNAME` (`details.schools`); 429 `RATE_LIMITED` |
-| `POST /auth/logout` | none | 204 | 401 |
+| `POST /auth/logout` | none (`X-CSRF-Token` when a session exists) | 204, idempotent (also without a session) | 403 `CSRF_INVALID` |
 | `GET /session` | none | 200 `{ data: Session }` | 401 |
-| `POST /session/role` | `SwitchRoleRequest { role }` | 200 `{ data: Session }` | 401; 403 `ROLE_NOT_ALLOWED`; 409 `MODE_ACTIVE`; 422 |
+| `POST /session/role` | `SwitchRoleRequest { role }` | 200 `{ data: Session }` | 401; 403 `ROLE_NOT_ALLOWED`, `CSRF_INVALID`; 409 `MODE_ACTIVE`; 422 |
 | `POST /session/mode` | `EnterModeRequest { mode: 'mod_pelajar' }` | 200 `{ data: Session }` | 401; 403 `MODE_NOT_ALLOWED`; 409 `MODE_ALREADY_ACTIVE`; 422 |
 | `DELETE /session/mode` | none | 200 `{ data: Session }` (return role active) | 401; 409 `NO_MODE_ACTIVE` |
 

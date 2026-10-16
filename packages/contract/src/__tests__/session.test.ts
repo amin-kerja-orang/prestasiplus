@@ -78,7 +78,7 @@ describe('Session.capabilities (V2-T08 alignment)', () => {
     admin: { level: 'national', label: 'Kebangsaan' },
     ppd_officer: { level: 'district', districtCode: 'D01', label: 'PPD Contoh' },
     school_admin: schoolScope,
-    teacher: classScope,
+    teacher: schoolScope,
     student: selfScope,
     parent: selfScope,
     sponsor: selfScope,
@@ -107,10 +107,10 @@ describe('Session', () => {
     const dual = {
       ...base,
       roles: [
-        { role: 'teacher', portal: 'pembelajaran', scope: classScope },
+        { role: 'teacher', portal: 'pembelajaran', scope: schoolScope },
         { role: 'school_admin', portal: 'pentadbiran', scope: schoolScope },
       ],
-      active: { role: 'teacher', portal: 'pembelajaran', scope: classScope, via: 'direct' },
+      active: { role: 'teacher', portal: 'pembelajaran', scope: schoolScope, via: 'direct' },
       mode: null,
     }
     expect(SessionSchema.safeParse(dual).success).toBe(true)
@@ -130,7 +130,7 @@ describe('Session', () => {
     const withRoles = (roles: unknown[]) => ({ ...adminSession(), roles })
     expect(
       SessionSchema.safeParse(
-        withRoles([grant('student', 'pembelajaran', selfScope), grant('teacher', 'pembelajaran', classScope)]),
+        withRoles([grant('student', 'pembelajaran', selfScope), grant('teacher', 'pembelajaran', schoolScope)]),
       ).success,
     ).toBe(false)
     expect(
@@ -154,7 +154,7 @@ describe('Mod Pelajar mode', () => {
     const m = modeSession()
     const teacherReturn = {
       ...m,
-      roles: [{ role: 'teacher', portal: 'pembelajaran', scope: classScope }],
+      roles: [{ role: 'teacher', portal: 'pembelajaran', scope: schoolScope }],
       mode: { ...m.mode, returnRole: 'teacher' },
     }
     expect(SessionSchema.safeParse(teacherReturn).success).toBe(false)

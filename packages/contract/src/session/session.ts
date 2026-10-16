@@ -1,9 +1,9 @@
 import { z } from '../zod'
-import { PortalIdSchema, RoleCodeSchema, type PortalId, type RoleCode } from '../common/enums'
+import { PortalIdSchema, RoleCodeSchema, type PortalId, type RoleCode, type ScopeLevel } from '../common/enums'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import { CapabilityKeySchema } from '../access/schema'
-import { ScopeSchema } from './scope'
+import { ScopeSchema, type Scope } from './scope'
 
 /** Portal is a pure function of the active role (ADR-0017 item 3). */
 export const ROLE_PORTAL: Readonly<Record<RoleCode, PortalId>> = {
@@ -14,6 +14,27 @@ export const ROLE_PORTAL: Readonly<Record<RoleCode, PortalId>> = {
   admin: 'pentadbiran',
   school_admin: 'pentadbiran',
   ppd_officer: 'pentadbiran',
+}
+
+/** Scope levels a role may carry (grant and active). parent: self = the account's linked children. */
+export const ROLE_SCOPE_LEVELS: Readonly<Record<RoleCode, readonly ScopeLevel[]>> = {
+  student: ['self'],
+  parent: ['self'],
+  sponsor: ['self'],
+  teacher: ['school'],
+  school_admin: ['school'],
+  ppd_officer: ['district', 'state'],
+  admin: ['national'],
+}
+
+function sameScope(a: Scope, b: Scope): boolean {
+  return (
+    a.level === b.level &&
+    a.stateCode === b.stateCode &&
+    a.districtCode === b.districtCode &&
+    a.schoolId === b.schoolId &&
+    a.label === b.label
+  )
 }
 
 /** Roles that may enter Mod Pelajar (D33b): Admin Pusat and Admin Sekolah only. */
@@ -96,10 +117,16 @@ export const SessionSchema = z
       bad(['active', 'portal'], 'portal does not match role')
     if ((s.mode !== null) !== (s.active.via === 'mod_pelajar'))
       bad(['mode'], 'mode and active.via must agree')
+    s.roles.forEach((g, i) => {
+      if (!ROLE_SCOPE_LEVELS[g.role].includes(g.scope.level))
+        bad(['roles', i, 'scope', 'level'], `scope level ${g.scope.level} is not valid for ${g.role}`)
+    })
+    if (!ROLE_SCOPE_LEVELS[s.active.role].includes(s.active.scope.level))
+      bad(['active', 'scope', 'level'], `scope level ${s.active.scope.level} is not valid for ${s.active.role}`)
     if (s.mode === null) {
       const grant = s.roles.find((g) => g.role === s.active.role)
       if (!grant) bad(['active', 'role'], 'active role must be one of roles')
-      else if (JSON.stringify(grant.scope) !== JSON.stringify(s.active.scope))
+      else if (!sameScope(grant.scope, s.active.scope))
         bad(['active', 'scope'], 'active scope must equal the grant scope')
     } else {
       if (s.active.role !== 'student' || s.active.scope.level !== 'self')

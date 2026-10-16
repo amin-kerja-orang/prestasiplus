@@ -552,7 +552,8 @@
           "MODE_ACTIVE",
           "MODE_ALREADY_ACTIVE",
           "MODE_NOT_ALLOWED",
-          "NO_MODE_ACTIVE"
+          "NO_MODE_ACTIVE",
+          "CSRF_INVALID"
         ],
         "description": "Error codes of the auth and session endpoints, in addition to the generic ones."
       },
@@ -873,12 +874,26 @@
           "auth"
         ],
         "summary": "End the session (both portals)",
+        "description": "Idempotent: returns 204 even when there is no session. When a session exists, X-CSRF-Token is checked (403 CSRF_INVALID).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": false,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
         "responses": {
           "204": {
-            "description": "Logged out. No body."
+            "description": "Logged out, or there was no session. No body."
           },
-          "401": {
-            "description": "UNAUTHORIZED: no valid session.",
+          "403": {
+            "description": "CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -936,6 +951,19 @@
         ],
         "summary": "Switch the active role",
         "description": "The role must be in the account role list. Scope is never accepted from the client.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -976,7 +1004,7 @@
             }
           },
           "403": {
-            "description": "ROLE_NOT_ALLOWED: role not in the account list.",
+            "description": "ROLE_NOT_ALLOWED (role not in the account list) or CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1015,6 +1043,19 @@
         ],
         "summary": "Enter a session mode (Mod Pelajar)",
         "description": "Allowed for admin and school_admin only. The session acts as self (student), data is test data.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1055,7 +1096,7 @@
             }
           },
           "403": {
-            "description": "MODE_NOT_ALLOWED: active role may not use this mode.",
+            "description": "MODE_NOT_ALLOWED (active role may not use this mode) or CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1091,6 +1132,19 @@
           "session"
         ],
         "summary": "Leave the session mode (Keluar Mod Pelajar)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Session with the return role active.",
@@ -1112,6 +1166,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {

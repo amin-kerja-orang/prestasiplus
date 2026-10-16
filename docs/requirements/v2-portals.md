@@ -320,7 +320,7 @@ As a product owner, I want one route = one portal = one layout, so that users ne
 As a staff user, I want to see only items I can use, so that I am never shown a door that refuses me.
 - AC-03.1 Given Admin Pusat, then all nine groups and all 100 items of §6 are present.
 - AC-03.2 Given PPD/JPN, then only Pemantauan and Pengguna & Sekolah groups appear, and only items whose PPD·JPN cell is D or R (PPD-only items hidden for JPN).
-- AC-03.3 Given Admin Sekolah, then only Papan Pemuka, Pemantauan, Pengguna & Sekolah, Kewangan appear, with Sekolah-cell items only.
+- AC-03.3 Given Admin Sekolah, then only Papan Pemuka, Pemantauan, Kurikulum & Kandungan (Video Sekolah only, KK-12), Pengguna & Sekolah, Kewangan appear, with Sekolah-cell items only.
 - AC-03.4 No lock icon, greyed or disabled item exists for any role (replaces .cloud padlock + "Diuruskan oleh Admin Pusat" tooltip).
 - AC-03.5 A group with zero visible items is not rendered.
 - AC-03.6 The menu is the single definition used for desktop sidebar and mobile navigation (same items, same order).
@@ -404,7 +404,7 @@ As Pegawai PPD/JPN, I want to monitor schools in my district/state, so that I ca
 
 ### US-13 [Must] Admin Sekolah own-school administration
 As Admin Sekolah, I want to monitor and administer my own school, so that I do not depend on Admin Pusat for routine tasks.
-- AC-13.1 Menu is limited to four groups (AC-03.3).
+- AC-13.1 Menu is limited to the five groups of AC-03.3.
 - AC-13.2 Every list/figure shows own school only; the school name is in the chip.
 - AC-13.3 Imported accounts are created inactive and a note tells the user that Admin Pusat must approve them.
 - AC-13.4 School create/edit/toggle and join-code rotation controls are not shown (join code is displayed read-only).

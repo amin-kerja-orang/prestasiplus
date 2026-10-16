@@ -50,6 +50,9 @@ export function registerSessionPaths(registry: OpenAPIRegistry): void {
     content: { 'application/json': { schema } },
   })
   const unauthorized = err('UNAUTHORIZED: no valid session.')
+  const csrfHeaders = z.object({
+    'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on authenticated mutating requests.' }),
+  })
 
   registry.registerPath({
     method: 'post',
@@ -73,7 +76,10 @@ export function registerSessionPaths(registry: OpenAPIRegistry): void {
     path: '/auth/logout',
     tags: ['auth'],
     summary: 'End the session (both portals)',
-    responses: { 204: { description: 'Logged out. No body.' }, 401: unauthorized },
+    description:
+      'Idempotent: returns 204 even when there is no session. When a session exists, X-CSRF-Token is checked (403 CSRF_INVALID).',
+    request: { headers: [csrfHeaders.partial()] },
+    responses: { 204: { description: 'Logged out, or there was no session. No body.' }, 403: err('CSRF_INVALID.') },
   })
 
   registry.registerPath({
@@ -91,11 +97,11 @@ export function registerSessionPaths(registry: OpenAPIRegistry): void {
     tags: ['session'],
     summary: 'Switch the active role',
     description: 'The role must be in the account role list. Scope is never accepted from the client.',
-    request: { body: body(SwitchRoleRequestSchema) },
+    request: { headers: [csrfHeaders], body: body(SwitchRoleRequestSchema) },
     responses: {
       200: json(SessionEnvelope, 'Session with the new active role.'),
       401: unauthorized,
-      403: err('ROLE_NOT_ALLOWED: role not in the account list.'),
+      403: err('ROLE_NOT_ALLOWED (role not in the account list) or CSRF_INVALID.'),
       409: err('MODE_ACTIVE: leave the mode first.'),
       422: err('VALIDATION_ERROR (unknown role, or any unknown key such as scope).'),
     },
@@ -107,11 +113,11 @@ export function registerSessionPaths(registry: OpenAPIRegistry): void {
     tags: ['session'],
     summary: 'Enter a session mode (Mod Pelajar)',
     description: 'Allowed for admin and school_admin only. The session acts as self (student), data is test data.',
-    request: { body: body(EnterModeRequestSchema) },
+    request: { headers: [csrfHeaders], body: body(EnterModeRequestSchema) },
     responses: {
       200: json(SessionEnvelope, 'Session in the mode.'),
       401: unauthorized,
-      403: err('MODE_NOT_ALLOWED: active role may not use this mode.'),
+      403: err('MODE_NOT_ALLOWED (active role may not use this mode) or CSRF_INVALID.'),
       409: err('MODE_ALREADY_ACTIVE.'),
       422: err('VALIDATION_ERROR.'),
     },
@@ -122,9 +128,11 @@ export function registerSessionPaths(registry: OpenAPIRegistry): void {
     path: '/session/mode',
     tags: ['session'],
     summary: 'Leave the session mode (Keluar Mod Pelajar)',
+    request: { headers: [csrfHeaders] },
     responses: {
       200: json(SessionEnvelope, 'Session with the return role active.'),
       401: unauthorized,
+      403: err('CSRF_INVALID.'),
       409: err('NO_MODE_ACTIVE.'),
     },
   })

@@ -15,6 +15,7 @@ export const AUTH_ERROR_CODES = [
   'MODE_ALREADY_ACTIVE',
   'MODE_NOT_ALLOWED',
   'NO_MODE_ACTIVE',
+  'CSRF_INVALID',
 ] as const
 export const AuthErrorCodeSchema = z.enum(AUTH_ERROR_CODES).meta({
   id: 'AuthErrorCode',
@@ -33,6 +34,7 @@ export const AUTH_ERROR_STATUS: Readonly<Record<AuthErrorCode, number>> = {
   MODE_ALREADY_ACTIVE: 409,
   MODE_NOT_ALLOWED: 403,
   NO_MODE_ACTIVE: 409,
+  CSRF_INVALID: 403,
 }
 
 /**
@@ -51,5 +53,21 @@ export const AUTH_ERROR_MESSAGES = {
   MODE_ALREADY_ACTIVE: 'Mod Pelajar sedang aktif.',
   MODE_NOT_ALLOWED: 'Mod Pelajar tidak tersedia untuk peranan anda.',
   NO_MODE_ACTIVE: 'Tiada mod yang sedang aktif.',
+  CSRF_INVALID: 'Sesi tidak sah. Sila muat semula halaman dan cuba lagi.',
   RATE_LIMITED: 'Terlalu banyak percubaan. Sila cuba sebentar lagi.',
 } as const satisfies Record<AuthErrorCode | 'RATE_LIMITED', string>
+
+/** Provenance of each BM message: `live` = exact copy observed on the live site, `proposed` = new copy. */
+export const AUTH_ERROR_SOURCE = {
+  INVALID_CREDENTIALS: 'live',
+  ACCOUNT_INACTIVE: 'live',
+  SCHOOL_INACTIVE: 'live',
+  AMBIGUOUS_USERNAME: 'proposed',
+  ROLE_NOT_ALLOWED: 'proposed',
+  MODE_ACTIVE: 'proposed',
+  MODE_ALREADY_ACTIVE: 'proposed',
+  MODE_NOT_ALLOWED: 'proposed',
+  NO_MODE_ACTIVE: 'proposed',
+  CSRF_INVALID: 'proposed',
+  RATE_LIMITED: 'proposed',
+} as const satisfies Record<AuthErrorCode | 'RATE_LIMITED', 'live' | 'proposed'>
