@@ -4,5 +4,5 @@
     { "glob": "src/ds/**", "level": "ds" },
     { "glob": "src/dev/ds/**", "level": "page" }
   ],
-  "exempt": ["src/theme/**", "src/dev/ds/DsSandbox.vue", "src/dev/ds/DsThemePanel.vue"]
+  "exempt": ["src/theme/**"]
 }

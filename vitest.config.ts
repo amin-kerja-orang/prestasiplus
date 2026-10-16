@@ -23,6 +23,9 @@ export default mergeConfig(
       // to jsdom with a `// @vitest-environment jsdom` docblock (ADR-0011).
       environment: 'node',
       root: fileURLToPath(new URL('./', import.meta.url)),
+      // Nuxt UI components import virtual modules (`#build/*`, `#imports`) that only the Vite
+      // plugin resolves; inline the package so Vitest runs it through that pipeline (V2-T05).
+      server: { deps: { inline: [/@nuxt\/ui/] } },
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,vue}'],

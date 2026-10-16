@@ -64,15 +64,15 @@ export function devRoutes(): RouteRecordRaw[] {
   // The preview hub (D20) is also shown in the demo build; it carries no test-hook marker, so the
   // demo-bundle guard is unaffected. The e2e build gets neither.
   const hub = import.meta.env.DEV || import.meta.env.MODE === 'demo' ? previewHubRoutes() : []
-  // Nuxt UI sandbox (V2-T02 spike): dev and demo, never the e2e build.
+  // Design-system gallery (V2-T05): dev and demo, never the e2e build.
   const ds: RouteRecordRaw[] =
     import.meta.env.DEV || import.meta.env.MODE === 'demo'
       ? [
           {
             path: '/__ds',
-            name: 'dev.ds-sandbox',
-            component: () => import('@/dev/ds/DsSandbox.vue'),
-            meta: { layout: 'bare', access: 'public', title: 'Nuxt UI sandbox (dev)' },
+            name: 'dev.ds-gallery',
+            component: () => import('@/dev/ds/DsGallery.vue'),
+            meta: { layout: 'bare', access: 'public', title: 'Galeri komposit (dev)' },
           },
         ]
       : []

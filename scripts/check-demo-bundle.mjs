@@ -52,7 +52,10 @@ if (hits.length > 0) {
  */
 const BUDGET = {
   'entry js raw': { max: 268_100, get: (m) => m.entryJs.raw },
-  'entry js gzip': { max: 74_700, get: (m) => m.entryJs.gzip },
+  // V2-T05: 83_800 (= 76,148 measured + 10 %). The old budget measured the entry file only; once the
+  // gallery stopped being the sole consumer of Nuxt UI's app-config chunk, rolldown inlined that
+  // 14,751 B gzip chunk into the entry. Entry + that chunk was 82,606 B before, 76,148 B now.
+  'entry js gzip': { max: 83_800, get: (m) => m.entryJs.gzip },
   'entry css raw': { max: 504_600, get: (m) => m.entryCss.raw },
   'entry css gzip': { max: 73_100, get: (m) => m.entryCss.gzip },
   'all js raw': { max: 8_527_000, get: (m) => m.allJs.raw },
