@@ -236,5 +236,5 @@ export const IMAGE_COUNTS: readonly number[] = [4, 5, 5, 3, 4, 4, 5, 5, 5, 5]
 
 /** Path of a seeded product photo (SRS §6.4, §6.11 C). The files are copied once, read-only, from live. */
 export function imageUrl(productId: number, position: number): string {
-  return `/images/marketplace/products/${String(productId)}/img_${String(position)}.jpg`
+  return `${import.meta.env.BASE_URL}images/marketplace/products/${String(productId)}/img_${String(position)}.jpg`
 }

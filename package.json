@@ -3,12 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build --mode demo && node scripts/check-demo-bundle.mjs",
+    "build:artifact": "vue-tsc -b && node scripts/build-artifact.mjs",
     "build:e2e": "vite build --mode e2e --outDir dist-e2e",
     "preview": "vite preview",
     "typecheck": "vue-tsc -b --noEmit",
@@ -27,6 +31,8 @@
     "test:e2e:observed": "playwright test --grep-invert @provisional",
     "test:e2e:module": "node scripts/e2e-module.mjs",
     "check:trace": "node scripts/check-e2e-trace.mjs",
+    "contract:emit": "npm run emit -w @pp/contract",
+    "contract:check": "npm run check -w @pp/contract",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
@@ -39,6 +45,7 @@
     "@iconify-json/ph": "^1.2.2",
     "@lucide/vue": "^1.48.0",
     "@nuxt/ui": "^4.12.0",
+    "@pp/contract": "*",
     "chart.js": "^4.5.1",
     "html2canvas": "1.4.1",
     "idb-keyval": "^6.3.0",

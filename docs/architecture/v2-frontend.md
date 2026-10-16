@@ -99,7 +99,7 @@ Recommendation: option 1. If an organisational split is needed later, the portal
 packages/
   contract/                     # @pp/contract: zod schemas, openapi.json, access matrix
     src/{common,session,identity,curriculum,practice,content,gamification,billing,system}/
-    openapi/openapi.json
+    openapi.json
 src/
   app/
     bootstrap.ts  modules.ts  portals.ts      # portals.ts = registry per build mode
