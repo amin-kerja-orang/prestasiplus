@@ -26,6 +26,7 @@
       },
       "Timestamp": {
         "type": "string",
+        "format": "date-time",
         "pattern": "\\+08:00$",
         "description": "ISO 8601 instant serialised in Malaysia time (+08:00).",
         "example": "2026-10-16T09:30:00+08:00"
@@ -161,7 +162,7 @@
           },
           "totalPages": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 1
           },
           "from": {
             "type": [
@@ -207,6 +208,35 @@
             "default": 20
           }
         }
+      },
+      "IdEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IdListEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
       },
       "Scope": {
         "type": "object",
@@ -525,6 +555,235 @@
           "NO_MODE_ACTIVE"
         ],
         "description": "Error codes of the auth and session endpoints, in addition to the generic ones."
+      },
+      "AccessGroupId": {
+        "type": "string",
+        "enum": [
+          "papan-pemuka",
+          "pemantauan",
+          "bank-soalan",
+          "kertas-spm",
+          "kurikulum-kandungan",
+          "pengguna-sekolah",
+          "penglibatan",
+          "kewangan",
+          "sistem"
+        ]
+      },
+      "AccessGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/AccessGroupId"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "labelBm": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "order",
+          "labelBm"
+        ]
+      },
+      "AccessRoleModes": {
+        "type": "object",
+        "properties": {
+          "admin": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "ppd_officer": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "school_admin": {
+            "$ref": "#/components/schemas/AccessMode"
+          }
+        },
+        "description": "Access mode per role. A missing key means hidden for that role."
+      },
+      "AccessMatrixItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}-\\d{2}$"
+          },
+          "group": {
+            "$ref": "#/components/schemas/AccessGroupId"
+          },
+          "labelBm": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route": {
+            "type": "string",
+            "pattern": "^\\/admin(\\/[a-z0-9-]+)*$"
+          },
+          "capability": {
+            "type": "string",
+            "pattern": "^admin(\\.[a-z0-9-]+){3}$"
+          },
+          "modes": {
+            "$ref": "#/components/schemas/AccessRoleModes"
+          },
+          "ppdOnly": {
+            "type": "boolean",
+            "description": "Visible to a PPD (district) officer only, hidden for JPN (state) officers."
+          },
+          "prototypeScope": {
+            "type": "boolean",
+            "description": "D43: true when the item maps to a row of role-access-matrix.md for school_admin (shown in the v2 prototype). False for the admin and ppd_officer views."
+          }
+        },
+        "required": [
+          "id",
+          "group",
+          "labelBm",
+          "route",
+          "capability",
+          "modes",
+          "ppdOnly",
+          "prototypeScope"
+        ]
+      },
+      "AccessCapability": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "itemId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AccessMode"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "read",
+              "write"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "itemId",
+          "mode",
+          "kind"
+        ]
+      },
+      "AccessScope": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/ScopeLevel"
+          }
+        },
+        "required": [
+          "level"
+        ]
+      },
+      "LearningRole": {
+        "type": "string",
+        "enum": [
+          "student",
+          "teacher",
+          "parent",
+          "sponsor"
+        ]
+      },
+      "LearningMenuGroup": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/LearningRole"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "labelBm": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "null = unlabelled top block."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Item labels where the requirements name them."
+          },
+          "inV2Prototype": {
+            "type": "boolean",
+            "description": "D43: the group hosts at least one prototype item of role-access-matrix.md."
+          },
+          "labelSource": {
+            "type": "string",
+            "enum": [
+              "doc",
+              "proposed"
+            ],
+            "description": "proposed = the doc describes the group but gives no exact copy."
+          }
+        },
+        "required": [
+          "role",
+          "order",
+          "labelBm",
+          "items",
+          "inV2Prototype",
+          "labelSource"
+        ]
+      },
+      "PrototypeItem": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "student",
+              "teacher",
+              "school_admin"
+            ]
+          },
+          "row": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Row # of role-access-matrix.md section B; 0 = section A."
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "labelBm": {
+            "type": "string",
+            "minLength": 1
+          },
+          "inV2Prototype": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "role",
+          "row",
+          "section",
+          "labelBm",
+          "inV2Prototype"
+        ]
       }
     },
     "parameters": {}

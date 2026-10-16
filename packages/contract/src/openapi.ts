@@ -1,5 +1,16 @@
 import { OpenApiGeneratorV31, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 
+import {
+  AccessGroupIdSchema,
+  AccessGroupSchema,
+  AccessScopeSchema,
+  CapabilitySchema,
+  LearningMenuGroupSchema,
+  LearningRoleSchema,
+  MatrixItemSchema,
+  PrototypeItemSchema,
+  RoleModesSchema,
+} from './access/schema'
 import { envelopeOf, listEnvelopeOf, ListMetaSchema, PageQuerySchema } from './common/envelope'
 import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } from './common/enums'
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
@@ -27,6 +38,16 @@ export const COMPONENT_SCHEMAS = {
   IdEnvelope: envelopeOf(IdSchema).meta({ id: 'IdEnvelope' }),
   IdListEnvelope: listEnvelopeOf(IdSchema).meta({ id: 'IdListEnvelope' }),
   ...SESSION_COMPONENT_SCHEMAS, // V2-T07
+  // V2-T08 access matrix
+  AccessGroupId: AccessGroupIdSchema,
+  AccessGroup: AccessGroupSchema,
+  AccessRoleModes: RoleModesSchema,
+  AccessMatrixItem: MatrixItemSchema,
+  AccessCapability: CapabilitySchema,
+  AccessScope: AccessScopeSchema,
+  LearningRole: LearningRoleSchema,
+  LearningMenuGroup: LearningMenuGroupSchema,
+  PrototypeItem: PrototypeItemSchema,
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -36,7 +57,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   const registry = new OpenAPIRegistry()
   for (const [name, schema] of Object.entries(COMPONENT_SCHEMAS)) registry.register(name, schema)
   registerSessionPaths(registry) // V2-T07
-  const generator =new OpenApiGeneratorV31(registry.definitions)
+  const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
     info: {
