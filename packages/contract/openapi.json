@@ -207,10 +207,674 @@
             "default": 20
           }
         }
+      },
+      "Scope": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "national",
+              "state",
+              "district",
+              "school",
+              "class",
+              "self"
+            ]
+          },
+          "stateCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
+          },
+          "districtCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Chip text value, formed by the server (BM)."
+          }
+        },
+        "required": [
+          "level",
+          "label"
+        ]
+      },
+      "SessionUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "schoolId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "username",
+          "avatarUrl",
+          "schoolId"
+        ]
+      },
+      "RoleGrant": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/RoleCode"
+          },
+          "portal": {
+            "$ref": "#/components/schemas/PortalId"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "required": [
+          "role",
+          "portal",
+          "scope"
+        ]
+      },
+      "ActiveRole": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/RoleCode"
+          },
+          "portal": {
+            "$ref": "#/components/schemas/PortalId"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "via": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "mod_pelajar"
+            ],
+            "description": "mod_pelajar while the student mode is on."
+          }
+        },
+        "required": [
+          "role",
+          "portal",
+          "scope",
+          "via"
+        ]
+      },
+      "ModeKind": {
+        "type": "string",
+        "enum": [
+          "mod_pelajar"
+        ]
+      },
+      "Mode": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ModeKind"
+          },
+          "returnRole": {
+            "$ref": "#/components/schemas/RoleCode"
+          },
+          "since": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "isTest": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Data written under the mode is stamped is_test."
+          }
+        },
+        "required": [
+          "kind",
+          "returnRole",
+          "since",
+          "isTest"
+        ]
+      },
+      "CapabilityKey": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/SessionUser"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleGrant"
+            },
+            "minItems": 1
+          },
+          "active": {
+            "$ref": "#/components/schemas/ActiveRole"
+          },
+          "mode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Mode"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityKey"
+            }
+          },
+          "landingPath": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "csrf": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "user",
+          "roles",
+          "active",
+          "mode",
+          "capabilities",
+          "landingPath",
+          "expiresAt",
+          "csrf"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 254,
+            "description": "E-mail or username."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "schoolId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Needed only when a username exists in more than one school.",
+            "example": "1042"
+          },
+          "remember": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "identifier",
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "LoginSchoolCandidate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "SwitchRoleRequest": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/RoleCode"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "additionalProperties": false
+      },
+      "EnterModeRequest": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/ModeKind"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false
+      },
+      "AuthErrorCode": {
+        "type": "string",
+        "enum": [
+          "INVALID_CREDENTIALS",
+          "ACCOUNT_INACTIVE",
+          "SCHOOL_INACTIVE",
+          "AMBIGUOUS_USERNAME",
+          "ROLE_NOT_ALLOWED",
+          "MODE_ACTIVE",
+          "MODE_ALREADY_ACTIVE",
+          "MODE_NOT_ALLOWED",
+          "NO_MODE_ACTIVE"
+        ],
+        "description": "Error codes of the auth and session endpoints, in addition to the generic ones."
       }
     },
     "parameters": {}
   },
-  "paths": {},
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Log in with e-mail or username and password",
+        "description": "Regenerates the session id and sets the session cookie. The role, scope and capabilities in the returned Session are decided by the server.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logged in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS (never reveals which part was wrong).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_INACTIVE or SCHOOL_INACTIVE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR, or AMBIGUOUS_USERNAME with details.schools (LoginSchoolCandidate[]).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "End the session (both portals)",
+        "responses": {
+          "204": {
+            "description": "Logged out. No body."
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session": {
+      "get": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Current session",
+        "description": "One call resolves roles, active role, scope, capabilities, mode and landing path.",
+        "responses": {
+          "200": {
+            "description": "The current session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/role": {
+      "post": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Switch the active role",
+        "description": "The role must be in the account role list. Scope is never accepted from the client.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchRoleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session with the new active role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ROLE_NOT_ALLOWED: role not in the account list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MODE_ACTIVE: leave the mode first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (unknown role, or any unknown key such as scope).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/mode": {
+      "post": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Enter a session mode (Mod Pelajar)",
+        "description": "Allowed for admin and school_admin only. The session acts as self (student), data is test data.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnterModeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session in the mode.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "MODE_NOT_ALLOWED: active role may not use this mode.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MODE_ALREADY_ACTIVE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Leave the session mode (Keluar Mod Pelajar)",
+        "responses": {
+          "200": {
+            "description": "Session with the return role active.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NO_MODE_ACTIVE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "webhooks": {}
 }

@@ -4,6 +4,7 @@ import { ListMetaSchema, PageQuerySchema } from './common/envelope'
 import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } from './common/enums'
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
+import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
@@ -22,6 +23,7 @@ export const COMPONENT_SCHEMAS = {
   ErrorBody: ErrorBodySchema,
   ListMeta: ListMetaSchema,
   PageQuery: PageQuerySchema,
+  ...SESSION_COMPONENT_SCHEMAS, // V2-T07
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -30,7 +32,8 @@ export const CONTRACT_VERSION = '0.1.0'
 export function buildOpenApiDocument(): Record<string, unknown> {
   const registry = new OpenAPIRegistry()
   for (const [name, schema] of Object.entries(COMPONENT_SCHEMAS)) registry.register(name, schema)
-  const generator = new OpenApiGeneratorV31(registry.definitions)
+  registerSessionPaths(registry) // V2-T07
+  const generator =new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
     info: {
