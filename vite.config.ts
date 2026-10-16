@@ -35,6 +35,20 @@ export default defineConfig({
         rollupOptions: {
           output: {
             manualChunks(id: string) {
+              // The in-process mock (seeds, handlers, datasets) is its own chunk, so the UI chunks
+              // (login, shells) load without it and the mock boots in the background.
+              if (
+                /[\\/]src[\\/]mock[\\/]/.test(id) ||
+                /[\\/]src[\\/]modules[\\/][^\\/]+[\\/]mock[\\/]/.test(id)
+              )
+                return 'mock-data'
+              // Shared code the mock also imports is pinned to the app core, otherwise it is
+              // pulled into `mock-data` and the entry then has to download the whole mock.
+              if (
+                /[\\/]src[\\/](api|lib|app)[\\/]/.test(id) ||
+                /[\\/]src[\\/]modules[\\/][^\\/]+[\\/](api|lib)[\\/]/.test(id)
+              )
+                return 'app-core'
               const m = /[\\/]src[\\/]modules[\\/]([^\\/]+)[\\/]/.exec(id)
               if (m) return `mod-${m[1]}`
               if (id.includes('node_modules')) {

@@ -46,19 +46,28 @@ const html = readFileSync(join(OUT, 'index.html'), 'utf8')
 const tags = (re) => [...html.matchAll(re)].map((m) => m[0])
 const title = tags(/<title>.*?<\/title>/gs)[0] ?? '<title>PRESTASIPLUS</title>'
 const links = tags(/<link\b[^>]*rel="stylesheet"[^>]*>/g)
+const preloads = tags(/<link\b[^>]*rel="modulepreload"[^>]*>/g)
 const scripts = tags(/<script\b[^>]*type="module"[^>]*><\/script>/g)
 if (scripts.length === 0) throw new Error('build-artifact: no module script found in index.html')
+// Inline splash (style + markup inside #app); Vue's mount replaces it. Order matters: the splash
+// style and #app come BEFORE the render-blocking stylesheet and module script, so it paints first.
+const splashStyle = tags(/<style\b[^>]*id="pp-splash-css"[^>]*>.*?<\/style>/gs)[0]
+const appDiv = tags(/<div id="app">.*?<\/div>\s*<\/div>/gs)[0]
+if (!splashStyle || !appDiv) throw new Error('build-artifact: splash markup missing in index.html')
 const fragment =
   [
     title,
     '<meta name="claude:viewport-fit-sides" content="cover">',
+    splashStyle,
+    appDiv,
     ...links,
+    ...preloads,
     ...scripts,
-    '<div id="app"></div>',
   ]
     .join('\n')
     .replace(/(src|href)="\/(?!\/)/g, '$1="./') + '\n'
-if (/<(!doctype|html|head|body)\b/i.test(fragment)) throw new Error('build-artifact: skeleton tag left')
+if (/<(!doctype|html|head|body)\b/i.test(fragment))
+  throw new Error('build-artifact: skeleton tag left')
 writeFileSync(join(OUT, 'index.html'), fragment)
 
 const all = walk(OUT)
