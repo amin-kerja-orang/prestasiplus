@@ -12,6 +12,7 @@ const base = {
   roles: ['student', 'admin'],
   onForbidden: '403',
   module: 'M06',
+  v2: true,
 } as const
 
 const routes: RouteRecordRaw[] = [

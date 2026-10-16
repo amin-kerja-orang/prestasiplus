@@ -6,7 +6,7 @@
 </script>
 
 <template>
-  <div class="min-h-dvh w-full bg-default text-default">
+  <div class="w-full bg-default text-default">
     <slot />
   </div>
 </template>
