@@ -60,6 +60,24 @@ export class MemoryStorage implements KeyValueStore {
 export const SERVER_STORAGE_KEY = 'pp.bijak.server.v1'
 /** After the deadline the server closes an unattended exam attempt itself (AC-05.4). */
 export const GRACE_SECONDS = 300
+/** Late sync window after the deadline (AC-05.4). */
+export const LATE_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000
+/** Latihan: at most this many "Semak" per question per attempt (NFR-05). */
+export const MAX_CHECKS_PER_QUESTION = 3
+
+export interface SaveResult {
+  savedAt: number
+  /** The attempt is already closed; the device keeps its local copy. */
+  closed?: boolean
+  /** Late-synced changes that were accepted and re-graded (AC-05.4). */
+  regraded?: boolean
+}
+export interface SubmitResult {
+  attemptId: string
+  late: number
+  closed?: boolean
+  regraded?: boolean
+}
 /** A sitting younger than this resumes silently (AC-12.5). */
 export const FRESH_SECONDS = 60
 
@@ -462,12 +480,49 @@ export class BijakServer {
     changes: Pick<SaveChange, 'partId' | 'answer' | 'rev' | 'savedAt'>[],
   ): void {
     const allowed = this.allowedParts(a)
+    const locked = this.lockedParts(a)
+    const at = this.now()
     for (const c of changes) {
-      if (!allowed.has(c.partId)) continue
+      if (!allowed.has(c.partId) || locked.has(c.partId)) continue
       const cur = a.answers[c.partId]
       if (cur && cur.rev >= c.rev) continue
-      a.answers[c.partId] = { answer: c.answer, rev: c.rev, savedAt: c.savedAt }
+      // The device clock is not trusted: a save time never lies in the future of the server.
+      a.answers[c.partId] = { answer: c.answer, rev: c.rev, savedAt: Math.min(c.savedAt, at) }
     }
+  }
+
+  /** Latihan: after the check cap the answer of a question is final. */
+  private lockedParts(a: Attempt): Set<string> {
+    const ids = new Set<string>()
+    if (a.mode !== 'latihan') return ids
+    for (const [qid, n] of Object.entries(a.checkCounts ?? {})) {
+      if (n < MAX_CHECKS_PER_QUESTION) continue
+      const q = BANK.questions.get(qid)
+      if (!q) continue
+      if (q.mcq) ids.add(q.id)
+      else for (const l of leavesOf(q.parts ?? [])) ids.add(l.id)
+    }
+    return ids
+  }
+
+  /**
+   * An exam attempt the server already closed at the deadline still accepts what the device saved
+   * before the deadline, within 24 h, and is graded again (AC-05.4).
+   */
+  private lateSync(
+    a: Attempt,
+    changes: Pick<SaveChange, 'partId' | 'answer' | 'rev' | 'savedAt'>[],
+  ): boolean {
+    if (a.status !== 'auto_submitted' || !a.deadline) return false
+    if (this.now() > a.deadline + LATE_SYNC_WINDOW_MS) return false
+    const at = this.now()
+    const ok = changes.filter((c) => Math.min(c.savedAt, at) <= a.deadline!)
+    if (!ok.length) return false
+    const before = JSON.stringify(a.answers)
+    this.merge(a, ok)
+    if (JSON.stringify(a.answers) === before) return false
+    a.result = this.gradeAttempt(a)
+    return true
   }
 
   private applyMeta(a: Attempt, p: SavePayload): void {
@@ -477,14 +532,15 @@ export class BijakServer {
   }
 
   /** Idempotent autosave (US-11). */
-  async saveAnswers(
-    userId: number,
-    attemptId: string,
-    payload: SavePayload,
-  ): Promise<{ savedAt: number }> {
+  async saveAnswers(userId: number, attemptId: string, payload: SavePayload): Promise<SaveResult> {
     await this.tick()
+    this.sweep()
     const a = this.attemptOf(userId, attemptId)
-    if (a.status !== 'in_progress') return { savedAt: this.now() }
+    if (a.status !== 'in_progress') {
+      const regraded = this.lateSync(a, payload.changes)
+      if (regraded) this.persist()
+      return { savedAt: this.now(), closed: true, ...(regraded ? { regraded } : {}) }
+    }
     this.merge(a, payload.changes)
     this.applyMeta(a, payload)
     this.persist()
@@ -496,18 +552,24 @@ export class BijakServer {
    * an answer typed just before the tap is never missing from grading. Repeats return the same
    * result (idempotent).
    */
-  async submit(
-    userId: number,
-    attemptId: string,
-    payload: SubmitPayload,
-  ): Promise<{ attemptId: string; late: number }> {
+  async submit(userId: number, attemptId: string, payload: SubmitPayload): Promise<SubmitResult> {
     await this.tick()
+    this.sweep()
     const a = this.attemptOf(userId, attemptId)
-    if (a.status !== 'in_progress') return { attemptId: a.id, late: a.lateBySeconds ?? 0 }
     const carried = [
       ...payload.changes,
       ...Object.entries(payload.answers ?? {}).map(([partId, v]) => ({ partId, ...v })),
     ]
+    if (a.status !== 'in_progress') {
+      const regraded = this.lateSync(a, carried)
+      if (regraded) this.persist()
+      return {
+        attemptId: a.id,
+        late: a.lateBySeconds ?? 0,
+        closed: true,
+        ...(regraded ? { regraded } : {}),
+      }
+    }
     this.merge(a, carried)
     this.applyMeta(a, payload)
     this.finish(a, payload.auto ? 'auto_submitted' : 'submitted', payload.idempotencyKey)
@@ -515,12 +577,21 @@ export class BijakServer {
     return { attemptId: a.id, late: a.lateBySeconds ?? 0 }
   }
 
-  private finish(a: Attempt, status: 'submitted' | 'auto_submitted', key?: string): void {
+  private finish(
+    a: Attempt,
+    status: 'submitted' | 'auto_submitted',
+    key?: string,
+    swept = false,
+  ): void {
     const at = this.now()
     a.status = status
     a.submittedAt = at
     if (key) a.idempotencyKey = key
-    if (a.deadline && at > a.deadline) a.lateBySeconds = Math.round((at - a.deadline) / 1000)
+    if (a.deadline && at > a.deadline) {
+      const late = Math.round((at - a.deadline) / 1000)
+      // A sweep closes long after the deadline; the lateness it records stops at the grace period.
+      a.lateBySeconds = swept ? Math.min(late, GRACE_SECONDS) : late
+    }
     a.result = this.gradeAttempt(a)
   }
 
@@ -533,7 +604,7 @@ export class BijakServer {
         a.deadline &&
         this.now() > a.deadline + GRACE_SECONDS * 1000
       ) {
-        this.finish(a, 'auto_submitted')
+        this.finish(a, 'auto_submitted', undefined, true)
         changed = true
       }
     }
@@ -667,9 +738,15 @@ export class BijakServer {
     if (a.status !== 'in_progress') throw new BijakError('bad_request', 'Percubaan sudah tamat')
     if (!a.sections.some((s) => s.questionIds.includes(questionId)))
       throw new BijakError('not_found', 'Soalan tidak ditemui')
-    if (payload) {
-      this.merge(a, payload.changes)
-      this.applyMeta(a, payload)
+    const counts = (a.checkCounts ??= {})
+    const used = counts[questionId] ?? 0
+    // After the cap the answer is shown and no further payload can change it.
+    if (used < MAX_CHECKS_PER_QUESTION) {
+      if (payload) {
+        this.merge(a, payload.changes)
+        this.applyMeta(a, payload)
+      }
+      counts[questionId] = used + 1
     }
     if (!a.checked.includes(questionId)) a.checked.push(questionId)
     this.persist()

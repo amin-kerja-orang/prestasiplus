@@ -8,7 +8,7 @@
 import type { KeyValueStore } from '../server/store'
 import type { PartAnswer, SavePayload, StoredAnswer } from '../domain/types'
 
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error'
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error' | 'closed'
 
 export interface AutosaveApi {
   save(payload: SavePayload): Promise<unknown>
@@ -33,6 +33,8 @@ export interface AutosaveOptions {
   retryMs?: number
   now?: () => number
   onStatus?: (status: SaveStatus) => void
+  /** The server reports the attempt closed (deadline passed); the local copy is kept. */
+  onClosed?: () => void
 }
 
 export interface Autosave {
@@ -82,6 +84,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   let current: SaveStatus = 'idle'
   let inFlight: Promise<boolean> | null = null
   let disposed = false
+  let closed = false
 
   const setStatus = (s: SaveStatus): void => {
     current = s
@@ -133,7 +136,13 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       position: doc.position,
     }
     try {
-      await opts.api.save(payload)
+      const res = (await opts.api.save(payload)) as { closed?: boolean } | undefined
+      if (res?.closed) {
+        closed = true
+        setStatus('closed')
+        opts.onClosed?.()
+        return false
+      }
     } catch (e) {
       setStatus((e as { code?: string }).code === 'offline' ? 'offline' : 'error')
       if (!disposed) {
@@ -150,6 +159,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   }
 
   async function flush(): Promise<boolean> {
+    if (closed) return false
     if (timer) {
       clearTimeout(timer)
       timer = undefined

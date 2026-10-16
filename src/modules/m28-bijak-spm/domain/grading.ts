@@ -33,6 +33,15 @@ export function normaliseText(s: string): string {
     .trim()
 }
 
+/** Whole-word (or whole-phrase) match on normalised text: "air" is not found inside "airport". */
+export function containsPhrase(text: string, phrase: string): boolean {
+  if (!phrase) return false
+  return ` ${text} `.includes(` ${phrase} `)
+}
+
+/** A keyword answer longer than this is routed to review (keyword stuffing). */
+export const MAX_KEYWORD_ANSWER_WORDS = 80
+
 function wordCount(s: string): number {
   const t = normaliseText(s)
   return t ? t.split(' ').length : 0
@@ -141,7 +150,7 @@ function gradePoint(
       }
     case 'keywords': {
       const text = pointText(answer)
-      const found = m.anyOf.find((k) => text.includes(normaliseText(k)))
+      const found = m.anyOf.find((k) => containsPhrase(text, normaliseText(k)))
       return found
         ? { hit: true, reason: `Isi dikesan: "${found}"` }
         : { hit: false, reason: 'Isi yang dikehendaki tidak dikesan.' }
@@ -241,7 +250,8 @@ export function gradePart({ part, scheme, answer, ctx }: GradeInput): PartResult
   let low = false
   if (!blank) {
     if (part.kind === 'short_text') {
-      low = awarded === 0 && wordCount(a.text ?? '') >= 3
+      const words = wordCount(a.text ?? '')
+      low = (awarded === 0 && words >= 3) || words > MAX_KEYWORD_ANSWER_WORDS
     } else if (fin) {
       const typedNothing = !(a.final ?? '').trim() && !(a.steps ?? []).some((s) => s.trim())
       low = fm.value === 'unparseable' || (typedNothing && !!a.photos?.length)

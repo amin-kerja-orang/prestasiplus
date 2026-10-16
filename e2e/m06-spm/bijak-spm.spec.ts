@@ -110,16 +110,24 @@ test.describe('Bijak SPM', () => {
     const inputs = page.locator('input[data-testid=math-input]')
     await inputs.nth(0).fill('AC^2 = 12^2 + 5^2')
     await inputs.nth(0).blur()
-    // The on-screen keyboard inserts LaTeX at the caret.
+    // The on-screen keyboard inserts friendly tokens; the student never sees LaTeX source.
     await page.getByTestId('math-keypad-toggle').nth(1).click()
     await expect(page.getByTestId('math-keyboard')).toBeVisible()
     await page.locator('[data-key=frac]').click()
-    await expect(inputs.nth(1)).toHaveValue('\\frac{}{}')
-    await shot(page, 'maths-keyboard')
+    await expect(inputs.nth(1)).toHaveValue('()/()')
+    // an empty template shows no empty preview bar (only the filled step line has one)
+    await expect(page.getByTestId('math-preview')).toHaveCount(1)
     await page.locator('[data-key="1"]').click()
     await page.locator('[data-key=right]').click()
     await page.locator('[data-key="2"]').click()
-    await expect(inputs.nth(1)).toHaveValue('\\frac{1}{2}')
+    await expect(inputs.nth(1)).toHaveValue('(1)/(2)')
+    await expect(page.getByTestId('math-preview').nth(1).locator('.katex').first()).toBeVisible()
+    for (const v of await inputs.evaluateAll((els) =>
+      els.map((e) => (e as HTMLInputElement).value),
+    )) {
+      expect(v).not.toContain('\\')
+    }
+    await shot(page, 'maths-keyboard')
     // replace by the real answer typed with the physical keyboard
     await inputs.nth(1).fill('13')
     await page.locator('input[data-testid=unit-input]').fill('cm')
@@ -160,6 +168,9 @@ test.describe('Bijak SPM', () => {
     await expect(page.getByTestId('shortage-line')).toHaveText(
       'Bahagian A: perlu 40 soalan, hanya 0 tersedia',
     )
+    await page
+      .getByTestId('shortage-line')
+      .evaluate((el) => el.scrollIntoView({ block: 'center' }))
     await shot(page, 'jana-shortage')
   })
 })

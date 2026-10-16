@@ -216,6 +216,8 @@ export interface Attempt {
   position: number
   /** Latihan: question ids already checked with "Semak". */
   checked: string[]
+  /** Latihan: how many times each question was checked (capped, NFR-05). */
+  checkCounts?: Record<string, number>
   submittedAt?: number
   lateBySeconds?: number
   idempotencyKey?: string

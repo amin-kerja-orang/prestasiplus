@@ -18,24 +18,6 @@ export function useLearnerTheme(): void {
   useThemeMode('learner')
 }
 
-/**
- * The virtual friend chosen on Home; falls back to Aiman. The storage key is the one the approved
- * learner prototype uses for the friend choice (docs/design/v2-learner-prototype.html).
- */
-export const FRIEND_STORAGE_KEY = 'pp-v2-friend'
-export function chosenFriend(): 'aiman' | 'aisyah' {
-  try {
-    const v = typeof localStorage === 'undefined' ? null : localStorage.getItem(FRIEND_STORAGE_KEY)
-    return v === 'aisyah' ? 'aisyah' : 'aiman'
-  } catch {
-    return 'aiman'
-  }
-}
-
-export function friendName(id: 'aiman' | 'aisyah'): string {
-  return id === 'aisyah' ? 'Aisyah' : 'Aiman'
-}
-
 export function formatDateTime(ms: number): string {
   return new Intl.DateTimeFormat('ms-MY', { dateStyle: 'medium', timeStyle: 'short' }).format(
     new Date(ms),

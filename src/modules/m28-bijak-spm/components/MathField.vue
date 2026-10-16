@@ -1,17 +1,19 @@
 <script setup lang="ts">
 /**
- * One maths entry line. The value is LaTeX (the canonical stored form). Typing works from the
- * physical keyboard (friendly forms such as `1/2`, `x^2`, `sqrt(3)` become LaTeX when the field
- * loses focus) or from the on-screen maths keyboard. A KaTeX preview shows what was understood.
+ * One maths entry line. The student types friendly notation (`1/2`, `x^2`, `√3`, `2×3`) with the
+ * keyboard or the on-screen maths keyboard, which also inserts friendly tokens; LaTeX source is never
+ * shown. The stored value is LaTeX (converted on every change) and a KaTeX preview right under the
+ * box shows how the line was understood.
  */
-import { nextTick, ref, useId } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 
-import { plainToLatex } from '../domain/math-expr'
+import { latexToFriendly, plainToLatex } from '../domain/math-expr'
 import MathKeyboard, { type KeyPress } from './MathKeyboard.vue'
 import RichText from './RichText.vue'
 
 const props = withDefaults(
   defineProps<{
+    /** Stored value (LaTeX). */
     modelValue: string
     label: string
     placeholder?: string
@@ -28,24 +30,37 @@ const emit = defineEmits<{ 'update:modelValue': [string]; remove: [] }>()
 const id = useId()
 const wrap = ref<HTMLElement | null>(null)
 const keypad = ref(false)
+/** What the student sees and edits (friendly notation); the LaTeX is derived from it. */
+const text = ref(latexToFriendly(props.modelValue))
+
+// A value that did not come from this box (reload, restore) replaces the text.
+watch(
+  () => props.modelValue,
+  (m) => {
+    if (m !== plainToLatex(text.value)) text.value = latexToFriendly(m)
+  },
+)
 
 function input(): HTMLInputElement | null {
   return wrap.value?.querySelector('input') ?? null
 }
 
-function onInput(v: string | number | undefined): void {
-  emit('update:modelValue', String(v ?? ''))
+/** The preview shows once there is something to show (an empty `()/()` template is not content). */
+const hasContent = computed(() => text.value.replace(/[()/\s^√]/g, '').length > 0)
+
+function setText(v: string): void {
+  text.value = v
+  emit('update:modelValue', plainToLatex(v))
 }
 
-function commit(): void {
-  const converted = plainToLatex(props.modelValue)
-  if (converted !== props.modelValue) emit('update:modelValue', converted)
+function onInput(v: string | number | undefined): void {
+  setText(String(v ?? ''))
 }
 
 async function onKey(k: KeyPress): Promise<void> {
   const el = input()
   if (!el) return
-  const v = props.modelValue
+  const v = text.value
   const a = el.selectionStart ?? v.length
   const b = el.selectionEnd ?? a
   let next = v
@@ -58,21 +73,18 @@ async function onKey(k: KeyPress): Promise<void> {
       next = v.slice(0, a) + v.slice(b)
       caret = a
     } else if (a > 0) {
-      // Remove an empty `{}` pair or a whole `\command` in one step.
-      const before = v.slice(0, a)
-      const cmd = /\\[a-zA-Z]+\s?$/.exec(before)
-      const cut = cmd ? cmd[0].length : 1
-      next = v.slice(0, a - cut) + v.slice(a)
-      caret = a - cut
+      // An empty `()` pair goes in one step.
+      const pair = v.slice(a - 1, a + 1) === '()'
+      next = v.slice(0, a - 1) + v.slice(a + (pair ? 1 : 0))
+      caret = a - 1
     }
   } else if (k.action === 'left') {
     caret = Math.max(0, a - 1)
   } else if (k.action === 'right') {
-    // Step over the `}{` of a template so "▶" goes from numerator to denominator.
-    caret = a + 1
-    while (v[caret - 1] === '}' && v[caret] === '{') caret += 1
+    // Step over the `)/(` of a fraction so "▶" goes from numerator to denominator.
+    caret = v.slice(a, a + 3) === ')/(' ? a + 3 : Math.min(v.length, a + 1)
   }
-  if (next !== v) emit('update:modelValue', next)
+  if (next !== v) setText(next)
   await nextTick()
   const again = input()
   again?.focus()
@@ -91,7 +103,7 @@ function toggleKeypad(): void {
     <div class="flex items-center gap-2">
       <UInput
         :id="id"
-        :model-value="modelValue"
+        :model-value="text"
         :placeholder="placeholder"
         :disabled="disabled"
         :aria-label="hideLabel ? label : undefined"
@@ -103,8 +115,7 @@ function toggleKeypad(): void {
         class="min-w-0 flex-1"
         data-testid="math-input"
         @update:model-value="onInput"
-        @blur="commit"
-        @keydown.enter.prevent="commit"
+        @keydown.enter.prevent
       />
       <UButton
         type="button"
@@ -137,7 +148,7 @@ function toggleKeypad(): void {
       @close="keypad = false"
     />
     <p
-      v-if="modelValue.trim()"
+      v-if="hasContent"
       class="rounded-xl bg-muted px-3 py-2 text-body text-highlighted"
       data-testid="math-preview"
     >

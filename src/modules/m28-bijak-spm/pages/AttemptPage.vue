@@ -48,6 +48,10 @@ const warned = ref(false)
 const questionRef = ref<{ focus: () => void } | null>(null)
 let autosave: Autosave | null = null
 let tick: ReturnType<typeof setInterval> | undefined
+let retryTimer: ReturnType<typeof setInterval> | undefined
+/** A submit (or the auto-submit at 0) that could not reach the server yet. */
+const submitPending = ref<{ auto: boolean } | null>(null)
+const RETRY_MS = 30_000
 
 const isExam = computed(() => view.value?.attempt.mode === 'exam')
 const questions = computed(() => view.value?.questions ?? [])
@@ -148,6 +152,7 @@ async function load(): Promise<void> {
       storage: browserStorage(),
       api: { save: (p) => server.saveAnswers(user.value, attemptId.value, p) },
       onStatus: (s) => (saveStatus.value = s),
+      onClosed: () => void goResult(),
     })
     autosave.init({
       answers: v.attempt.answers,
@@ -178,6 +183,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick)
+  stopRetry()
   document.removeEventListener('visibilitychange', onVisibility)
   window.removeEventListener('online', onOnline)
   void autosave?.flush()
@@ -187,7 +193,28 @@ function onVisibility(): void {
   if (document.visibilityState === 'hidden') void autosave?.flush()
 }
 function onOnline(): void {
-  void autosave?.flush()
+  if (submitPending.value) void retrySubmit()
+  else void autosave?.flush()
+}
+
+function startRetry(): void {
+  retryTimer ??= setInterval(() => void retrySubmit(), RETRY_MS)
+}
+function stopRetry(): void {
+  if (retryTimer) clearInterval(retryTimer)
+  retryTimer = undefined
+}
+/** Offline submit: try again on "online" and every 30 s until it succeeds or the server says closed. */
+async function retrySubmit(): Promise<void> {
+  if (!submitPending.value || submitting.value) return
+  await submit(submitPending.value.auto)
+}
+async function goResult(): Promise<void> {
+  stopRetry()
+  submitPending.value = null
+  clearLocal(browserStorage(), attemptId.value)
+  autosave?.dispose()
+  await router.replace({ name: 'm28.bijak.result', params: { attemptId: attemptId.value } })
 }
 
 /* --------------------------------------------------------------------------- actions */
@@ -259,7 +286,7 @@ async function submit(auto = false): Promise<void> {
   await autosave.flush()
   const snap = autosave.snapshot()
   try {
-    await server.submit(user.value, attemptId.value, {
+    const res = await server.submit(user.value, attemptId.value, {
       idempotencyKey: `${attemptId.value}-hantar`,
       changes: [],
       answers: snap.answers,
@@ -268,12 +295,13 @@ async function submit(auto = false): Promise<void> {
       position: snap.position,
       auto,
     })
-    clearLocal(browserStorage(), attemptId.value)
-    autosave.dispose()
-    await router.replace({ name: 'm28.bijak.result', params: { attemptId: attemptId.value } })
+    void res // closed or not, the attempt is final on the server: show its Semakan
+    await goResult()
   } catch {
     submitError.value =
       'Luar talian. Jawapan anda disimpan pada peranti ini dan akan dihantar apabila sambungan pulih.'
+    submitPending.value = { auto }
+    startRetry()
     submitting.value = false
   }
 }
@@ -291,6 +319,7 @@ const saveText = computed(
       saved: 'Disimpan',
       offline: 'Luar talian — jawapan disimpan pada peranti ini',
       error: 'Gagal simpan — cuba lagi',
+      closed: 'Masa tamat. Jawapan yang disimpan sebelum masa tamat telah dihantar.',
     })[saveStatus.value],
 )
 

@@ -22,17 +22,17 @@ interface Key {
 }
 
 const KEYS: Key[] = [
-  { id: 'frac', label: 'a/b', aria: 'Pecahan', insert: '\\frac{}{}', cursor: 6, tone: 'math' },
-  { id: 'pow', label: 'xⁿ', aria: 'Kuasa', insert: '^{}', cursor: 2, tone: 'math' },
-  { id: 'sq', label: 'x²', aria: 'Kuasa dua', insert: '^{2}', cursor: 4, tone: 'math' },
-  { id: 'sqrt', label: '√', aria: 'Punca kuasa dua', insert: '\\sqrt{}', cursor: 6, tone: 'math' },
-  { id: 'pi', label: 'π', aria: 'Pi', insert: '\\pi ', tone: 'math' },
-  { id: 'pm', label: '±', aria: 'Tambah atau tolak', insert: '\\pm ', tone: 'math' },
+  { id: 'frac', label: 'a/b', aria: 'Pecahan', insert: '()/()', cursor: 1, tone: 'math' },
+  { id: 'pow', label: 'xⁿ', aria: 'Kuasa', insert: '^()', cursor: 2, tone: 'math' },
+  { id: 'sq', label: 'x²', aria: 'Kuasa dua', insert: '^2', tone: 'math' },
+  { id: 'sqrt', label: '√', aria: 'Punca kuasa dua', insert: '√()', cursor: 2, tone: 'math' },
+  { id: 'pi', label: 'π', aria: 'Pi', insert: 'π', tone: 'math' },
+  { id: 'pm', label: '±', aria: 'Tambah atau tolak', insert: '±', tone: 'math' },
   { id: '7', label: '7', aria: '7', insert: '7', tone: 'num' },
   { id: '8', label: '8', aria: '8', insert: '8', tone: 'num' },
   { id: '9', label: '9', aria: '9', insert: '9', tone: 'num' },
-  { id: 'times', label: '×', aria: 'Darab', insert: '\\times ', tone: 'math' },
-  { id: 'div', label: '÷', aria: 'Bahagi', insert: '\\div ', tone: 'math' },
+  { id: 'times', label: '×', aria: 'Darab', insert: '×', tone: 'math' },
+  { id: 'div', label: '÷', aria: 'Bahagi', insert: '÷', tone: 'math' },
   { id: 'back', label: '⌫', aria: 'Padam', action: 'backspace', tone: 'act' },
   { id: '4', label: '4', aria: '4', insert: '4', tone: 'num' },
   { id: '5', label: '5', aria: '5', insert: '5', tone: 'num' },
@@ -53,9 +53,9 @@ const KEYS: Key[] = [
   { id: 'eq', label: '=', aria: 'Sama dengan', insert: '=', tone: 'math' },
   { id: 'lt', label: '<', aria: 'Kurang daripada', insert: '<', tone: 'math' },
   { id: 'gt', label: '>', aria: 'Lebih daripada', insert: '>', tone: 'math' },
-  { id: 'le', label: '≤', aria: 'Kurang daripada atau sama dengan', insert: '\\le ', tone: 'math' },
-  { id: 'ge', label: '≥', aria: 'Lebih daripada atau sama dengan', insert: '\\ge ', tone: 'math' },
-  { id: 'percent', label: '%', aria: 'Peratus', insert: '\\%', tone: 'math' },
+  { id: 'le', label: '≤', aria: 'Kurang daripada atau sama dengan', insert: '≤', tone: 'math' },
+  { id: 'ge', label: '≥', aria: 'Lebih daripada atau sama dengan', insert: '≥', tone: 'math' },
+  { id: 'percent', label: '%', aria: 'Peratus', insert: '%', tone: 'math' },
   { id: 'comma', label: ',', aria: 'Koma', insert: ', ', tone: 'math' },
 ]
 

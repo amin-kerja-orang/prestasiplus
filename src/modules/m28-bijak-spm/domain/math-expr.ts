@@ -84,6 +84,12 @@ export function latexToPlain(input: string): string {
     .replace(/°/g, '')
     .replace(/²/g, '^2')
     .replace(/³/g, '^3')
+  // Thousands groupings first: "1 000" and "3,000" are 1000 and 3000 (a separator followed by
+  // exactly three digits); "0,5" and "1,2345" stay decimal commas.
+  s = s.replace(
+    /(?<![\d.])(\d{1,3})((?:[ ,]\d{3})+)(?!\d)/g,
+    (_m, a: string, rest: string) => a + rest.replace(/[ ,]/g, ''),
+  )
   // Decimal commas: digit,digit -> digit.digit.
   s = s.replace(/(\d),(\d)/g, '$1.$2')
   let out = ''
@@ -180,7 +186,7 @@ function tokenize(src: string): Tok[] {
       continue
     }
     if (/\d|\./.test(ch)) {
-      const m = /^\d*\.?\d+|^\d+\.?/.exec(src.slice(i))
+      const m = /^\d+(?:\.\d+)?|^\.\d+/.exec(src.slice(i))
       if (!m) throw new ParseError('number')
       toks.push({ t: 'num', v: Number(m[0]) })
       i += m[0].length
@@ -231,7 +237,47 @@ function tokenize(src: string): Tok[] {
     }
     throw new ParseError(`char ${ch}`)
   }
-  return toks
+  const folded = foldMixed(toks)
+  // Two numbers side by side ("1 000" that is not a grouping, "1.2.3") are unreadable, never a product.
+  for (let k = 0; k + 1 < folded.length; k++) {
+    if (folded[k]!.t === 'num' && folded[k + 1]!.t === 'num')
+      throw new ParseError('adjacent numbers')
+  }
+  return folded
+}
+
+/** `1 1/2` is the mixed number (1 + 1/2); the folding keeps it from reading as 1 times 1/2. */
+function foldMixed(toks: Tok[]): Tok[] {
+  const out: Tok[] = []
+  for (let i = 0; i < toks.length; i++) {
+    const a = toks[i]
+    const b = toks[i + 1]
+    const op = toks[i + 2]
+    const c = toks[i + 3]
+    const prev = out[out.length - 1]
+    if (
+      a?.t === 'num' &&
+      b?.t === 'num' &&
+      op?.t === 'op' &&
+      op.v === '/' &&
+      c?.t === 'num' &&
+      Number.isInteger(a.v) &&
+      Number.isInteger(b.v) &&
+      Number.isInteger(c.v) &&
+      c.v > 0 &&
+      b.v < c.v &&
+      !(prev?.t === 'op' && prev.v === '^')
+    ) {
+      out.push({ t: 'op', v: '(' }, a, { t: 'op', v: '+' }, b, { t: 'op', v: '/' }, c, {
+        t: 'op',
+        v: ')',
+      })
+      i += 3
+      continue
+    }
+    out.push(toks[i]!)
+  }
+  return out
 }
 
 /* ---------------------------------------------------------------------------------- parser */
@@ -424,22 +470,25 @@ export function variablesOf(e: Expr, into = new Set<string>()): Set<string> {
 
 /* ---------------------------------------------------------------------------- equivalence */
 
-/** Deterministic sample points (never 0, 1 or -1, which hide differences). */
-const SAMPLES: number[][] = [
-  [1.7, 2.3, 3.1, 0.6],
-  [2.9, 0.8, 1.3, 2.2],
-  [0.4, 3.6, 2.7, 1.9],
-  [3.3, 1.2, 0.7, 3.4],
-  [1.1, 2.8, 3.9, 0.5],
-  [2.4, 3.1, 1.6, 2.6],
-  [4.2, 0.9, 2.1, 1.4],
-]
+/** Number of sample points per comparison. */
+const SAMPLE_COUNT = 24
+
+/**
+ * Deterministic pseudo-random sample over negative and positive values (-8 to 24), so abs(x) and
+ * x differ, and sqrt(x - 5) still finds points inside its domain. Values near 0 and +-1, which hide
+ * differences, are nudged away.
+ */
+function sampleValue(n: number, i: number): number {
+  let h = Math.imul(n + 1, 2654435761) ^ Math.imul(i + 7, 40503)
+  h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0
+  const v = (h % 3200) / 100 - 8
+  return Math.abs(v) < 0.4 || Math.abs(Math.abs(v) - 1) < 0.1 ? v + 0.77 : v
+}
 
 function envAt(vars: string[], n: number): Record<string, number> {
-  const row = SAMPLES[n % SAMPLES.length]!
   const env: Record<string, number> = {}
   vars.forEach((v, i) => {
-    env[v] = row[i % row.length]! + (Math.floor(n / SAMPLES.length) + 1) * 0.013 * (i + 1)
+    env[v] = sampleValue(n, i)
   })
   return env
 }
@@ -451,16 +500,19 @@ function close(a: number, b: number, tol: number): boolean {
 /** Numeric / algebraic equivalence of two parsed expressions. */
 export function exprEquivalent(a: Expr, b: Expr, tolerance = 0): boolean {
   const vars = [...new Set([...variablesOf(a), ...variablesOf(b)])].sort()
+  // Variable-free: the scheme tolerance applies. With variables only a relative tolerance does.
   if (vars.length === 0) return close(evalExpr(a, {}), evalExpr(b, {}), tolerance)
   let valid = 0
-  for (let n = 0; n < 9; n++) {
+  for (let n = 0; n < SAMPLE_COUNT; n++) {
     const env = envAt(vars, n)
     const x = evalExpr(a, env)
     const y = evalExpr(b, env)
-    if (!Number.isFinite(x) || !Number.isFinite(y)) continue
+    const fx = Number.isFinite(x)
+    const fy = Number.isFinite(y)
+    if (!fx && !fy) continue
+    if (fx !== fy) return false // different domains are different expressions
     valid++
-    if (!close(x, y, Math.max(tolerance, 1e-7 * Math.max(1, Math.abs(x), Math.abs(y)))))
-      return false
+    if (Math.abs(x - y) > 1e-9 + 1e-7 * Math.max(Math.abs(x), Math.abs(y))) return false
   }
   return valid >= 3
 }
@@ -521,17 +573,20 @@ export function parseAnswer(raw: string): Parsed | null {
   return { kind: 'list', items }
 }
 
-/** `x = 3` -> the value expression `3` (variable alone on the left, absent on the right). */
-function valueOf(p: Parsed): Expr | null {
-  if (p.kind === 'expr') return p.e
+/** `x = 3`: a variable alone on one side and absent from the other. */
+function assignment(p: Parsed): { name: string; value: Expr } | null {
   if (p.kind === 'relation' && p.r.op === '=') {
-    const lv = variablesOf(p.r.lhs)
-    if (p.r.lhs.k === 'var' && !variablesOf(p.r.rhs).has(p.r.lhs.v)) return p.r.rhs
-    if (p.r.rhs.k === 'var' && lv.size === 0) return p.r.lhs
-    // `y = 2x + 3`: compare the right-hand side when the left is a single variable
-    if (p.r.lhs.k === 'var') return p.r.rhs
+    const { lhs, rhs } = p.r
+    if (lhs.k === 'var' && !variablesOf(rhs).has(lhs.v)) return { name: lhs.v, value: rhs }
+    if (rhs.k === 'var' && !variablesOf(lhs).has(rhs.v)) return { name: rhs.v, value: lhs }
   }
   return null
+}
+
+/** The value expression of a plain expression or of `x = value` (the name is checked apart). */
+function valueOf(p: Parsed): Expr | null {
+  if (p.kind === 'expr') return p.e
+  return assignment(p)?.value ?? null
 }
 
 function diff(r: Relation): Expr {
@@ -543,7 +598,7 @@ function constantRatio(f: Expr, g: Expr): number | null {
   const vars = [...new Set([...variablesOf(f), ...variablesOf(g)])].sort()
   let ratio: number | null = null
   let valid = 0
-  for (let n = 0; n < 9; n++) {
+  for (let n = 0; n < SAMPLE_COUNT; n++) {
     const env = envAt(vars, n)
     const x = evalExpr(f, env)
     const y = evalExpr(g, env)
@@ -578,6 +633,10 @@ function parsedEquivalent(a: Parsed, b: Parsed, tolerance: number): boolean {
     })
   }
   if (a.kind === 'expr' && b.kind === 'expr') return exprEquivalent(a.e, b.e, tolerance)
+  const sa = assignment(a)
+  const sb = assignment(b)
+  // `x = 3` against `y = 3` is a different answer: the names must agree.
+  if (sa && sb) return sa.name === sb.name && exprEquivalent(sa.value, sb.value, tolerance)
   const va = valueOf(a)
   const vb = valueOf(b)
   if (va && vb) return exprEquivalent(va, vb, tolerance)
@@ -603,14 +662,21 @@ export function answersEquivalent(a: string, b: string, tolerance = 0): boolean 
   return parsedEquivalent(pa, pb, tolerance)
 }
 
-/** The numeric value of an answer without variables, or null. */
-export function numericValue(raw: string): number | null {
+function numericOf(raw: string): number | null {
   const p = parseAnswer(raw)
   if (!p) return null
   const e = p.kind === 'list' ? null : valueOf(p)
   if (!e || variablesOf(e).size) return null
   const v = evalExpr(e, {})
   return Number.isFinite(v) ? v : null
+}
+
+/** The numeric value of an answer without variables, or null. "12 cm" and "RM12" read as 12. */
+export function numericValue(raw: string): number | null {
+  const direct = numericOf(raw)
+  if (direct !== null) return direct
+  const stripped = splitAnyUnit(latexToPlain(raw))
+  return stripped.unit ? numericOf(stripped.value) : null
 }
 
 /* -------------------------------------------------------------------------------- units */
@@ -626,31 +692,41 @@ export function normaliseUnit(u: string): string {
 
 const CURRENCY = /^(rm)\s*(?=[\d.(-])/i
 
+const UNIT_TOKENS =
+  /^(cm|m|mm|km|kg|g|s|min|jam|rm|sen|ml|l|cm2|m2|cm3|m3|mm2|km2|kmj|m\/s|km\/j|km\/h|rad|unit|unit2|biji|orang|darjah)$/
+
+/** A trailing known unit ("12 cm", "30cm^2") or null. */
+function trailingUnit(text: string): { value: string; unit: string } | null {
+  const m =
+    /^(.*?[\d)}a-z])\s*((?:\\?[a-zA-Zµ°]+)(?:\s*(?:\^\s*[({]?\s*\d\s*[)}]?|[²³]|\d))?(?:\s*\/\s*\w+)?)\s*$/.exec(
+      text,
+    )
+  if (m && UNIT_TOKENS.test(normaliseUnit(m[2]!))) {
+    return { value: m[1]!.trim(), unit: normaliseUnit(m[2]!) }
+  }
+  return null
+}
+
+/** Strips a leading RM or a trailing known unit, whatever the part expects (for ECF values). */
+export function splitAnyUnit(raw: string): { value: string; unit: string } {
+  const text = raw.trim()
+  if (CURRENCY.test(text)) return { value: text.replace(CURRENCY, '').trim(), unit: 'rm' }
+  return trailingUnit(text) ?? { value: text, unit: '' }
+}
+
 /**
  * Separates a trailing (or leading RM) unit from a final answer when the part expects `unit`.
- * `12 cm` -> `{ value: '12', unit: 'cm' }`.
+ * `12 cm` -> `{ value: '12', unit: 'cm' }`; `25%` with unit `%` -> `{ value: '25', unit: '%' }`.
  */
 export function splitUnit(raw: string, expected?: string): { value: string; unit: string } {
   const text = raw.trim()
   if (!expected) return { value: text, unit: '' }
   const exp = normaliseUnit(expected)
+  if (exp === '%' && text.endsWith('%')) return { value: text.slice(0, -1).trim(), unit: '%' }
   if (CURRENCY.test(text) && exp === 'rm') {
     return { value: text.replace(CURRENCY, '').trim(), unit: 'rm' }
   }
-  // Longest suffix whose normalised form equals a unit-looking token.
-  const m =
-    /^(.*?[\d)}a-z])\s*((?:\\?[a-zA-Zµ°]+)(?:\s*(?:\^\s*[({]?\s*\d\s*[)}]?|[²³]|\d))?(?:\s*\/\s*\w+)?)\s*$/.exec(
-      text,
-    )
-  if (
-    m &&
-    /^(cm|m|mm|km|kg|g|s|min|jam|rm|sen|ml|l|cm2|m2|cm3|m3|mm2|km2|kmj|m\/s|km\/j|km\/h|rad|unit|unit2|biji|orang|darjah)$/.test(
-      normaliseUnit(m[2]!),
-    )
-  ) {
-    return { value: m[1]!.trim(), unit: normaliseUnit(m[2]!) }
-  }
-  return { value: text, unit: '' }
+  return trailingUnit(text) ?? { value: text, unit: '' }
 }
 
 /* --------------------------------------------------------------------------- final matching */
@@ -695,14 +771,53 @@ export function plainToLatex(input: string): string {
     .replace(/√\s*\(([^()]*)\)/g, '\\sqrt{$1}')
     .replace(/√\s*(\d+(?:\.\d+)?|[a-zA-Z])/g, '\\sqrt{$1}')
   s = s.replace(/sqrt\(([^()]*)\)/g, '\\sqrt{$1}')
+  // Fractions: operands are a number, a letter or one bracketed group (the keyboard inserts `()/()`).
+  const operand = '(\\d+(?:\\.\\d+)?|[a-zA-Z]|\\([^()]*\\))'
+  const unwrap = (x: string): string => (x.startsWith('(') ? x.slice(1, -1) : x)
   s = s.replace(
-    /(\d+(?:\.\d+)?|[a-zA-Z])\s*\/\s*(\d+(?:\.\d+)?|[a-zA-Z])(?![\w^])/g,
-    '\\frac{$1}{$2}',
+    new RegExp(`${operand}\\s*\\/\\s*${operand}(?![\\w^])`, 'g'),
+    (_m, a: string, b: string) => `\\frac{${unwrap(a)}}{${unwrap(b)}}`,
   )
   s = s.replace(/\^\s*\(([^()]*)\)/g, '^{$1}').replace(/\^\s*(-?\d+|[a-zA-Z])/g, '^{$1}')
   s = s
-    .replace(/\*/g, '\\times ')
+    .replace(/\*|×/g, '\\times ')
+    .replace(/÷/g, '\\div ')
+    .replace(/≤/g, '\\le ')
+    .replace(/≥/g, '\\ge ')
+    .replace(/±/g, '\\pm ')
     .replace(/π/g, '\\pi ')
     .replace(/\bpi\b/g, '\\pi ')
   return s.replace(/\s{2,}/g, ' ').trim()
+}
+
+const SIMPLE = /^[A-Za-z0-9.]+$/
+const wrap = (x: string): string => (SIMPLE.test(x) ? x : `(${x})`)
+
+/**
+ * The reverse, for showing a stored LaTeX answer in the friendly text box: students never see LaTeX
+ * source. `\frac{1}{2}` -> `1/2`, `x^{2}` -> `x^2`, `\sqrt{3}` -> `√3`, `\times` -> `×`.
+ */
+export function latexToFriendly(latex: string): string {
+  let s = latex
+  for (let i = 0; i < 4; i++) {
+    s = s.replace(
+      /\\frac\{([^{}]*)\}\{([^{}]*)\}/g,
+      (_m, a: string, b: string) => `${wrap(a)}/${wrap(b)}`,
+    )
+  }
+  s = s
+    .replace(/\\sqrt\{([^{}]*)\}/g, (_m, a: string) => (SIMPLE.test(a) ? `√${a}` : `√(${a})`))
+    .replace(/\^\{([^{}]*)\}/g, (_m, a: string) =>
+      SIMPLE.test(a) || /^-\d+$/.test(a) ? `^${a}` : `^(${a})`,
+    )
+    .replace(/\\left|\\right/g, '')
+    .replace(/\\(times|cdot)\s?/g, '×')
+    .replace(/\\div\s?/g, '÷')
+    .replace(/\\pi\s?/g, 'π')
+    .replace(/\\pm\s?/g, '±')
+    .replace(/\\(le|leq)\s?/g, '≤')
+    .replace(/\\(ge|geq)\s?/g, '≥')
+    .replace(/\\%/g, '%')
+    .replace(/\\,|\\ /g, ' ')
+  return s
 }
