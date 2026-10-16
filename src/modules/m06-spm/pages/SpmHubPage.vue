@@ -160,6 +160,24 @@ const mine = computed(() => {
         </p>
       </div>
 
+      <!-- v2 Bijak SPM (Kertas Pilihan + Jana Kertas): full-paper practice in the exam format -->
+      <RouterLink
+        to="/spm/bijak"
+        class="mb-6 flex items-center justify-between gap-3 rounded-2xl bg-slate-800 p-4 text-white shadow-sm transition hover:bg-slate-900 sm:mb-8 sm:p-5"
+        data-testid="spm-bijak-link"
+      >
+        <span class="flex flex-col">
+          <span class="font-heading text-lg font-extrabold">Bijak SPM</span>
+          <span class="text-sm text-slate-200">
+            Duduki kertas SPM penuh dalam format kertas sebenar — bermasa, dengan skema.
+          </span>
+        </span>
+        <span class="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-amber-300">
+          Buka
+          <ArrowRight class="h-4 w-4" aria-hidden="true" />
+        </span>
+      </RouterLink>
+
       <template v-if="data">
         <!-- Stats -->
         <div

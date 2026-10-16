@@ -2,7 +2,9 @@
   "$comment": "Ratchet list (V2-T04). Each strict entry has a glob and a level: 'page' (G-1..G-3b: pages, modules, portal layouts) or 'ds' (composites in src/ds: G-3b, G-4, G-6, G-7, G-12, token-only colours). Append-only: config/ds-strict.baseline.json is the committed floor; a unit test fails if an entry disappears or a 'page' entry is relaxed to 'ds'. V2-T56 flips the default to strict for all of src/.",
   "strict": [
     { "glob": "src/ds/**", "level": "ds" },
-    { "glob": "src/dev/ds/**", "level": "page" }
+    { "glob": "src/dev/ds/**", "level": "page" },
+    { "glob": "src/modules/m28-bijak-spm/pages/**", "level": "page" },
+    { "glob": "src/modules/m28-bijak-spm/components/**", "level": "ds" }
   ],
   "exempt": ["src/theme/**"]
 }
