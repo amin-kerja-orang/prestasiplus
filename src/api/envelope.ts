@@ -11,6 +11,11 @@
  * Lists that live does not paginate still use the list envelope with `page: 1, totalPages: 1`.
  */
 
+import type {
+  ErrorBody as ContractErrorBody,
+  ErrorPayload as ContractErrorPayload,
+} from '@pp/contract'
+
 export interface BaseListMeta {
   page: number
   pageSize: number
@@ -39,19 +44,10 @@ export interface ListEnvelope<T, X extends object = Record<never, never>> {
 /** What `api.list()` (and an unwrapped list response) resolves to. */
 export type ListResult<T, X extends object = Record<never, never>> = ListEnvelope<T, X>
 
-export interface ErrorPayload {
-  code: string
-  /** BM copy suitable for direct display (FR-G-09/FR-G-10). */
-  message: string
-  /** Field name → message, for `VALIDATION_ERROR`. */
-  fields?: Record<string, string>
-  /** Seconds until a retry is allowed, for `RATE_LIMITED`. */
-  retryAfter?: number
-}
+/** `{ code, message (BM), fields?, retryAfter?, ... }`: defined once in `@pp/contract` (ADR-0018). */
+export type ErrorPayload = ContractErrorPayload
 
-export interface ErrorBody {
-  error: ErrorPayload
-}
+export type ErrorBody = ContractErrorBody
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
