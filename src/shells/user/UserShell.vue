@@ -17,6 +17,7 @@
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { isPathAllowed } from '@/app/prototype-scope'
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
 import { useIntervalWhileVisible } from '@/composables/useIntervalWhileVisible'
@@ -53,6 +54,8 @@ const { refresh: refreshNavBadges } = provideNavBadges(() => session.role === 'a
 
 const role = computed(() => session.role)
 const user = computed(() => session.user)
+// Prototype scope (D43): the banner links to /tournament; roles without it do not see the banner.
+const showTournamentBanner = computed(() => isPathAllowed(role.value, '/tournament'))
 const sidebarEntries = computed(() => navFor(role.value, 'sidebar'))
 const drawerEntries = computed(() => navFor(role.value, 'drawer'))
 
@@ -150,7 +153,7 @@ onBeforeUnmount(() => {
         <!-- M16 S30: live `tournamentBanner()` block (`mb-4`, hidden while
              `GET /api/tournament/active` returns []); mounted once per page (`:key` above).
              Order agreed with Session 2: ImpersonationBanner (M27) first, then TournamentBanner (M16). -->
-        <TournamentBanner />
+        <TournamentBanner v-if="showTournamentBanner" />
         <FlashOutlet :flash="flash" class="mb-4" />
         <slot />
       </main>

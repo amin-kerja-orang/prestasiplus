@@ -9,11 +9,13 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { AlertBox } from '@/components/feedback'
+import { usePrototypeScope } from '@/composables'
 
 import { fetchItemAnalysisClasses } from '../api/performance'
 import ClassPickCard from '../components/prestasi/ClassPickCard.vue'
 import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
 
+const { home } = usePrototypeScope()
 const { data, error, reload } = useRouteData((signal) => fetchItemAnalysisClasses({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
 </script>
@@ -34,7 +36,7 @@ const loadFailed = computed(() => isLoadError(error.value))
     <template v-else-if="data">
       <nav class="text-sm text-slate-500" data-testid="breadcrumb">
         <RouterLink
-          to="/dashboard"
+          :to="home"
           class="inline-flex min-h-11 items-center gap-1 hover:text-slate-700"
           ><ArrowLeft class="h-4 w-4" />Papan Pemuka</RouterLink
         >

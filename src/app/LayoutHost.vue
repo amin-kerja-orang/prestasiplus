@@ -13,6 +13,7 @@ import { RouterView, useRoute } from 'vue-router'
 
 import ForbiddenPage from '@/pages/ForbiddenPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
+import PrototypeUnavailablePage from '@/pages/PrototypeUnavailablePage.vue'
 import { useSessionStore } from '@/stores/session'
 
 import { DEFAULT_LAYOUT, resolveShell, shellComponents, useRouteOutcome } from './router'
@@ -21,14 +22,16 @@ const route = useRoute()
 const session = useSessionStore()
 const outcome = useRouteOutcome()
 
-const shellKind = computed(() =>
-  outcome.value === null
-    ? resolveShell(route.meta.layout ?? DEFAULT_LAYOUT, {
-        isLoggedIn: session.isLoggedIn,
-        role: session.role,
-      })
-    : null,
-)
+const shellKind = computed(() => {
+  if (outcome.value !== null && outcome.value !== 'scope') return null
+  const kind = resolveShell(route.meta.layout ?? DEFAULT_LAYOUT, {
+    isLoggedIn: session.isLoggedIn,
+    role: session.role,
+  })
+  // The "not available" page (prototype scope) always sits inside a shell for a logged-in user,
+  // so the menus stay usable even when the blocked route is a bare page.
+  return outcome.value === 'scope' && kind === null && session.isLoggedIn ? 'user' : kind
+})
 const shell = computed(() => (shellKind.value ? shellComponents[shellKind.value] : null))
 </script>
 
@@ -36,7 +39,9 @@ const shell = computed(() => (shellKind.value ? shellComponents[shellKind.value]
   <ForbiddenPage v-if="outcome === 403" />
   <NotFoundPage v-else-if="outcome === 404" />
   <component :is="shell" v-else-if="shell" :key="shellKind">
-    <RouterView />
+    <PrototypeUnavailablePage v-if="outcome === 'scope'" />
+    <RouterView v-else />
   </component>
+  <PrototypeUnavailablePage v-else-if="outcome === 'scope'" />
   <RouterView v-else />
 </template>

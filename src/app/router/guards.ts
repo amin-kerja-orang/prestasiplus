@@ -28,6 +28,13 @@ import { useSessionStore } from '@/stores/session'
 import type { Role } from '@/stores/session-types'
 import { useShellStore } from '@/stores/shell'
 
+import {
+  isPathAllowed,
+  isPrototypeRole,
+  isPrototypeScopeOn,
+  SCOPE_PAGE_TITLE,
+  scopeHomePath,
+} from '../prototype-scope'
 import { resolveShell } from './layouts'
 import { DEFAULT_ACCESS, DEFAULT_LAYOUT, DEFAULT_ON_FORBIDDEN, resolveTitle } from './meta'
 import {
@@ -39,6 +46,9 @@ import {
 } from './outcome'
 
 export const LOGIN_PATH = '/login'
+
+/** Name of the catch-all 404 route (core-routes.ts). */
+const NOT_FOUND_ROUTE_NAME = 'core.not-found'
 
 /** What the guard needs from the session store. */
 export interface GuardSession {
@@ -70,6 +80,19 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
     // A landing path that itself refuses the role would loop; show the 403 page instead.
     if (landing === null || landing === to.path) return { kind: 'in-place', status: 403 }
     return { kind: 'redirect', to: landing }
+  }
+
+  // Prototype scope (D43): a route outside the role's allowed set renders the friendly "Belum
+  // tersedia" page in place (URL unchanged). That includes a path no screen exists for (an unbuilt
+  // or mistyped URL): a logged-in user gets the friendly page, a guest keeps the plain 404.
+  if (isPrototypeScopeOn() && (to.name !== NOT_FOUND_ROUTE_NAME || session.isLoggedIn)) {
+    // The server-given landing of a teacher / school admin is `/dashboard` (the student page, M01
+    // BR-07, INFERRED); in the prototype they land on their own dashboard instead.
+    const home = scopeHomePath(session.role)
+    if (to.path === '/dashboard' && home !== '/dashboard' && isPrototypeRole(session.role)) {
+      return { kind: 'redirect', to: home }
+    }
+    if (!isPathAllowed(session.role, to.path)) return { kind: 'in-place', status: 'scope' }
   }
 
   return ALLOW
@@ -126,6 +149,7 @@ function titleFor(to: RouteLocationNormalized): string | null {
   const status = useRouteOutcome().value
   if (status === 403) return FORBIDDEN_TITLE
   if (status === 404) return NOT_FOUND_TITLE
+  if (status === 'scope') return SCOPE_PAGE_TITLE
   // A guest on a `public-or-user` route sees the public layout's title (F-20, M09 FR-M09-29/82).
   const guestTitle = to.meta.guestTitle
   if (

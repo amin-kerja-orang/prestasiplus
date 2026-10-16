@@ -32,6 +32,7 @@
  * resolve to the 404 page (overview §5.5, build-plan §S.5).
  */
 
+import { isPathAllowed, isPrototypeScopeOn } from '@/app/prototype-scope'
 import type { Role } from '@/stores/session-types'
 
 /** Where an entry is rendered. */
@@ -689,6 +690,50 @@ function visibleTo(entry: EntryBase, role: Role | null, surface: NavSurface): bo
 }
 
 /**
+ * Pusat AI shortcuts that only repeat a matrix item under another label ("Cikgu Alesa Chat" is the
+ * same screen as the matrix item "Cikgu Alesa"): not shown in scope mode.
+ */
+const SCOPE_DUPLICATE_IDS: ReadonlySet<string> = new Set(['cikgu-alesa-chat'])
+
+/** The "Tetapan Peribadi" entry lives in the Pusat AI block on live; scope mode moves it. */
+const SETTINGS_ID = 'tetapan-peribadi'
+/** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
+const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
+
+/**
+ * Prototype scope (D43, `src/app/prototype-scope.ts`): keeps only the items whose route is in the
+ * role's allowed set (groups keep their allowed children; an empty group goes). "Tetapan
+ * Peribadi" (section A) moves out of the Pusat AI block to sit with "Profil Saya", so no heading
+ * is left with a lone unrelated item; the drawer shows it in its account block instead.
+ * No-op when the scope is off.
+ */
+function scopeEntries(
+  entries: readonly NavEntry[],
+  role: Role | null,
+  surface: NavSurface,
+): NavEntry[] {
+  if (!isPrototypeScopeOn()) return [...entries]
+  const kept: NavEntry[] = []
+  for (const entry of entries) {
+    if (entry.kind === 'item') {
+      if (!SCOPE_DUPLICATE_IDS.has(entry.id) && isPathAllowed(role, entry.to)) kept.push(entry)
+    } else if (entry.kind === 'group') {
+      const children = entry.children.filter((child) => isPathAllowed(role, child.to))
+      if (children.length > 0) kept.push({ ...entry, children })
+    } else {
+      kept.push(entry)
+    }
+  }
+  const settingsAt = kept.findIndex((e) => e.kind === 'item' && e.id === SETTINGS_ID)
+  if (settingsAt < 0) return kept
+  const [settings] = kept.splice(settingsAt, 1)
+  if (surface === 'drawer' || settings === undefined) return kept
+  const profileAt = kept.findIndex((e) => e.kind === 'item' && PROFILE_IDS.includes(e.id))
+  kept.splice(profileAt < 0 ? kept.length : profileAt + 1, 0, settings)
+  return kept
+}
+
+/**
  * The entries a role sees on a surface, in menu order. Hidden entries are removed (FR-G-04).
  * A section or sub-heading with no visible item after it (before the next heading) is dropped
  * too, so no empty heading is left behind.
@@ -698,7 +743,11 @@ export function navFor(
   surface: NavSurface,
   entries: readonly NavEntry[] = USER_NAV,
 ): NavEntry[] {
-  const visible = entries.filter((entry) => visibleTo(entry, role, surface))
+  const visible = scopeEntries(
+    entries.filter((entry) => visibleTo(entry, role, surface)),
+    role,
+    surface,
+  )
   return visible.filter((entry, index) => {
     if (entry.kind !== 'section' && entry.kind !== 'subheading') return true
     for (const next of visible.slice(index + 1)) {
@@ -732,6 +781,19 @@ export function isActivePath(
 /** Whether a bottom-nav link tab is active on `currentPath` (its `to` plus any `activeAlso`). */
 export function bottomNavActive(entry: BottomNavLink, currentPath: string): boolean {
   return [entry.to, ...(entry.activeAlso ?? [])].some((to) => isActivePath(currentPath, to))
+}
+
+/**
+ * Drawer account links of a role (Profil Saya, Tetapan, Panduan; the logout is separate). Prototype
+ * scope (D43): only the links whose route is in the role's allowed set.
+ */
+export function userDrawerAccountFor(role: Role | null): readonly NavItem[] {
+  return USER_DRAWER_ACCOUNT.filter((item) => isPathAllowed(role, item.to))
+}
+
+/** Bottom nav of a role: link tabs whose route is in the prototype scope; buttons always stay. */
+export function userBottomNavFor(role: Role | null): readonly BottomNavEntry[] {
+  return USER_BOTTOM_NAV.filter((entry) => entry.kind === 'button' || isPathAllowed(role, entry.to))
 }
 
 /** Drawer badge classes: 10px pills become 9px (design-system §4). */

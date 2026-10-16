@@ -8,10 +8,15 @@
 import { ChartPie, Download, FileText } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 
+import { usePrototypeScope } from '@/composables'
+
 import { BUTTON_CLASS, csvHref, keberkesananHref, ringkasanHref } from './amaran-format'
 
 defineProps<{ schoolId: number; downloading: boolean }>()
 defineEmits<{ download: [] }>()
+
+// Prototype scope (D43): the two deferred pages are outside the matrix, so their buttons are hidden.
+const { allows } = usePrototypeScope()
 </script>
 
 <template>
@@ -20,6 +25,7 @@ defineEmits<{ download: [] }>()
     data-testid="am-actions"
   >
     <RouterLink
+      v-if="allows(keberkesananHref)"
       :to="keberkesananHref"
       :class="[BUTTON_CLASS, 'bg-indigo-600 hover:bg-indigo-700']"
       data-icon="fa-chart-pie"
@@ -29,6 +35,7 @@ defineEmits<{ download: [] }>()
       Keberkesanan Intervensi
     </RouterLink>
     <RouterLink
+      v-if="allows(ringkasanHref(schoolId))"
       :to="ringkasanHref(schoolId)"
       :class="[BUTTON_CLASS, 'bg-slate-700 hover:bg-slate-800']"
       data-icon="fa-file-alt"

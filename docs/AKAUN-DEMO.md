@@ -42,6 +42,9 @@ Token sah boleh digunakan sekali sahaja. Jika mahu cuba lagi, set semula data de
 | `/__dev/shell` | Pratonton bingkai menu setiap peranan: Murid, Guru, Admin Sekolah, Admin |
 | `/__dev/tokens` | Galeri warna dan token reka bentuk |
 | `/__dev/feedback` | Galeri komponen mesej, amaran dan modal |
+| `/__ds` | Galeri sistem reka bentuk (sentiasa boleh dibuka dalam semua mod) |
+
+Skop prototaip (TRACKER D43) aktif secara lalai dalam semua mod (`npm run dev`, demo dan artifact): hanya skrin Murid, Guru dan Admin Sekolah dalam `docs/requirements/role-access-matrix.md` dipaparkan. Pautan `/__dev/*` dan halaman pautan semua skrin (`/admin`) tidak wujud dalam skop ini. Satu suis sahaja: `VITE_PROTOTYPE_SCOPE=off` (contoh: `VITE_PROTOTYPE_SCOPE=off npm run dev`) mematikan skop. Akaun di luar skop (admin, ibu bapa, penaja, PPD, JPN) hanya muncul apabila `VITE_PROTOTYPE_SCOPE=off`; dalam skop, log masuk akaun ini dipaparkan "Peranan ini tidak termasuk dalam prototaip."
 
 ## Status skrin (dikemas kini oleh Delivery Lead)
 

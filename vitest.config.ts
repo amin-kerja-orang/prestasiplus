@@ -22,6 +22,9 @@ export default mergeConfig(
       // Node by default (mock handlers, datasets, libs); component tests opt in
       // to jsdom with a `// @vitest-environment jsdom` docblock (ADR-0011).
       environment: 'node',
+      // The prototype scope (D43) is ON by default; the existing admin/PPD/parent unit tests run
+      // with it off. Scope tests turn it on with `vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')`.
+      env: { VITE_PROTOTYPE_SCOPE: 'off' },
       root: fileURLToPath(new URL('./', import.meta.url)),
       coverage: {
         provider: 'v8',
