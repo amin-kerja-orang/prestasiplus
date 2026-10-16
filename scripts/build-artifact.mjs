@@ -12,7 +12,17 @@ rmSync(OUT, { recursive: true, force: true })
 const vite = spawnSync(
   process.execPath,
   ['node_modules/vite/bin/vite.js', 'build', '--mode', 'demo', '--outDir', OUT, '--emptyOutDir'],
-  { stdio: 'inherit', env: { ...process.env, VITE_ARTIFACT: '1', VITE_HASH_HISTORY: 'true' } },
+  {
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      VITE_ARTIFACT: '1',
+      VITE_HASH_HISTORY: 'true',
+      // Shell values must not override .env.demo.
+      VITE_TEST_HOOKS: 'false',
+      VITE_API_MODE: 'mock',
+    },
+  },
 )
 if (vite.status !== 0) process.exit(vite.status ?? 1)
 
