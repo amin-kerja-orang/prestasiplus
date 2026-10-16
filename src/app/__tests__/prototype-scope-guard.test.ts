@@ -13,7 +13,7 @@ import { setUnauthorizedRedirect } from '@/stores'
 import LayoutHost from '../LayoutHost.vue'
 import type { ModuleManifest } from '../modules'
 import { createAppRouter, decideAccess, setRouteOutcome, useRouteOutcome } from '../router'
-import { fakeTransport, logIn, NOW, STUDENT } from './router-fixtures'
+import { ADMIN, fakeTransport, logIn, NOW, STUDENT } from './router-fixtures'
 
 vi.mock('@/shells/user/UserShell.vue', async () => {
   const { defineComponent, h } = await import('vue')
@@ -217,6 +217,14 @@ describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
     expect(useRouteOutcome().value).toBeNull()
     expect(w.find('[data-testid="practice"]').exists()).toBe(true)
     expect(w.find('[data-testid="prototype-unavailable"]').exists()).toBe(false)
+  })
+
+  it('a role outside the prototype restored from storage gets a "Log Keluar" button, not /login', async () => {
+    logIn(ADMIN)
+    const w = await open('/misi-harian')
+    const home = w.find('[data-testid="prototype-unavailable-home"]')
+    expect(home.attributes('href')).toBe('/logout')
+    expect(home.text()).toBe('Log Keluar')
   })
 
   it('shows it on its own (no shell) for a guest on a public page outside the scope', async () => {

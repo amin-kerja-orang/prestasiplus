@@ -18,6 +18,15 @@
 
 import type { Role } from '@/stores/session-types'
 
+/*
+ * Known gaps (by design, D43):
+ * - The Murid bottom-nav "Chat" button is not a route: it dispatches `toggle-chatbot`, which has no
+ *   listener yet, so it is inert.
+ * - The notification bell (`/notifikasi`) is not in the role-access matrix, so the user shell hides it.
+ * - Guru "Laporan Mingguan" (`/guru/laporan-mingguan-kelas`) has no built screen; its route shows
+ *   the "Belum tersedia dalam prototaip" page.
+ */
+
 export const SCOPE_SWITCH_ENV = 'VITE_PROTOTYPE_SCOPE'
 
 /** Whether the prototype scope applies. ON unless `VITE_PROTOTYPE_SCOPE=off`. Read at call time. */
@@ -143,7 +152,7 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
   item(35, 'Kotak Misteri', p('/gamification/mystery-box')),
   item(36, 'Rujuk Kawan', p('/gamification/referral'), p('/gamification/kad-kongsi')),
   item(37, 'Cikgu Alesa', p('/cikgu')),
-  item(38, 'Kedai Hadiah 🎁', p('/cikgu/hadiah')),
+  item(38, 'Kedai Hadiah 🎁 (DIGITAL)', p('/cikgu/hadiah')),
   item(39, 'Timeline Saya', p('/timeline')),
   item(40, 'Jemput Ibu Bapa', p('/jemput-ibu-bapa'), p('/ibu-bapa/terima')),
 ]
@@ -257,5 +266,7 @@ export function scopeHomePath(role: Role | null): string {
   if (role === 'teacher') return '/guru'
   if (role === 'school_admin') return '/admin-sekolah'
   if (role === null) return '/login'
-  return isPrototypeRole(role) ? '/dashboard' : '/login'
+  // A role outside the prototype (e.g. restored from storage) has no dashboard: sign out. `/logout`
+  // clears the session and ends on `/login`, so there is no redirect loop.
+  return isPrototypeRole(role) ? '/dashboard' : '/logout'
 }

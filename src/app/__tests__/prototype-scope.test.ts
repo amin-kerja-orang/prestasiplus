@@ -242,6 +242,9 @@ describe('home paths', () => {
     expect(scopeHomePath('teacher')).toBe('/guru')
     expect(scopeHomePath('school_admin')).toBe('/admin-sekolah')
     expect(scopeHomePath(null)).toBe('/login')
+    // A role outside the prototype signs out (no dashboard to return to, no /login loop).
+    expect(scopeHomePath('admin')).toBe('/logout')
+    expect(scopeHomePath('parent')).toBe('/logout')
   })
 
   it('shellHomePath keeps /dashboard when the scope is off', () => {
