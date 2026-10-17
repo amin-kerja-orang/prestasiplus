@@ -42,3 +42,6 @@ components.d.ts
 # Per-agent Playwright outputs
 test-results-*/
 playwright-report-*/
+
+# Local compose overrides (see .env.example)
+.env

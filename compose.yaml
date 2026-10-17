@@ -1,0 +1,62 @@
+# PrestaPlus v2 containers. Guide: docs/ops/containers.md
+#   cp .env.example .env     (optional; defaults work for the prototype)
+#   docker compose build
+#   docker compose up -d     -> http://localhost:5192
+#   docker compose down
+# The older docker-compose.preview.yml (host-built dist-preview, port 5191) still works unchanged.
+name: pretasiplus
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        BUILD_MODE: ${BUILD_MODE:-demo}
+        VITE_API_MODE: ${VITE_API_MODE:-mock}
+        VITE_TEST_HOOKS: ${VITE_TEST_HOOKS:-false}
+        VITE_PROTOTYPE_SCOPE: ${VITE_PROTOTYPE_SCOPE:-on}
+        VITE_MOCK_LATENCY_MS: ${VITE_MOCK_LATENCY_MS:-400}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    image: pretasiplus-frontend:local
+    container_name: pretasiplus-frontend
+    ports:
+      - '${FRONTEND_PORT:-5192}:8080'
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: 'no'
+
+  # ---- Later: NestJS API (not built yet; ADR-0015..0018, docs/architecture/v2-frontend.md) ----
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/api/Dockerfile
+  #   image: pretasiplus-api:local
+  #   env_file: .env.api            # secrets: DATABASE_URL, JWT secrets; never committed
+  #   environment:
+  #     PORT: 3000
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   expose:
+  #     - '3000'                    # frontend nginx would proxy /api to api:3000
+  #   restart: 'no'
+
+  # ---- Later: PostgreSQL ----
+  # db:
+  #   image: postgres:16-alpine
+  #   env_file: .env.db             # POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: 'no'                 # no host port: 5432/5433 are used by other stacks
+
+# volumes:
+#   pgdata:

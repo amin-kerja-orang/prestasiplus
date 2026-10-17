@@ -10,6 +10,8 @@
 
 Prototaip front-end (data olok-olok) bagi pembinaan semula prestasiplus.my, modul demi modul (M01–M27).
 Stack: Vue 3 + Vite + TypeScript + Tailwind CSS v4 + Lucide (`@lucide/vue`). Dokumentasi seni bina di
+
+Container (Docker): `docker compose up -d` (http://localhost:5192); lihat `docs/ops/containers.md`.
 `docs/architecture/overview.md`, keputusan di `docs/adr/`, dan status projek di `docs/TRACKER.md`.
 
 ## Mula menggunakan
