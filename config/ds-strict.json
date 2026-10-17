@@ -88,7 +88,18 @@
     { "glob": "src/modules/m15-rewards-shop/pages/*.vue", "level": "page" },
     { "glob": "src/modules/m15-rewards-shop/components/*.vue", "level": "page" },
     { "glob": "src/modules/m20-marketplace/pages/*.vue", "level": "page" },
-    { "glob": "src/modules/m20-marketplace/components/**/*.vue", "level": "page" }
+    { "glob": "src/modules/m20-marketplace/components/**/*.vue", "level": "page" },
+    { "glob": "src/modules/m03-curriculum/pages/TopicsPage.vue", "level": "ds" },
+    { "glob": "src/modules/m03-curriculum/pages/TopicDetailPage.vue", "level": "ds" },
+    { "glob": "src/modules/m03-curriculum/pages/LearningMapPage.vue", "level": "ds" },
+    { "glob": "src/modules/m03-curriculum/components/student/**", "level": "ds" },
+    { "glob": "src/modules/m25-ai-centre/pages/HeatmapTopikLemahPage.vue", "level": "ds" },
+    { "glob": "src/modules/m25-ai-centre/components/heatmap/**", "level": "ds" },
+    { "glob": "src/modules/m21-sponsorship/pages/MohonKeluargaAngkatPage.vue", "level": "ds" },
+    { "glob": "src/modules/m21-sponsorship/components/mohon/**", "level": "ds" },
+    { "glob": "src/modules/m13-cikgu-alesa/pages/ChatPage.vue", "level": "ds" },
+    { "glob": "src/modules/m02-users-schools/pages/JemputIbuBapaPage.vue", "level": "ds" },
+    { "glob": "src/modules/m02-users-schools/components/jemput/**", "level": "ds" }
   ],
   "exempt": [
     "src/theme/**"

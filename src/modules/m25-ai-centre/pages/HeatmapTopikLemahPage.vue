@@ -7,8 +7,8 @@
  */
 import { computed } from 'vue'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi, usePrototypeScope } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { getDutaRecommendation, getHeatmap } from '../api'
 import CikguPakarBlock from '../components/heatmap/CikguPakarBlock.vue'
@@ -26,7 +26,7 @@ const card = computed(() => (duta.error.value ? null : (duta.data.value ?? null)
 </script>
 
 <template>
-  <div class="mx-auto max-w-[1200px] min-w-0 space-y-4" data-testid="heatmap-page">
+  <DsPage data-testid="heatmap-page">
     <template v-if="heatmap.data.value">
       <!-- Prototype scope (D43): the card links to Bilik Duta, which is outside the matrix. -->
       <CikguPakarBlock v-if="card && allows('/bilik-duta')" :card="card" />
@@ -34,13 +34,21 @@ const card = computed(() => (duta.error.value ? null : (duta.data.value ?? null)
       <HeatmapSubjectBlock v-for="s in subjects" :key="s.subjectId" :subject="s" />
       <HeatmapEmpty v-if="subjects.length === 0" />
     </template>
-    <AlertBox
+    <UAlert
       v-else-if="heatmap.error.value"
-      :messages="heatmap.error.value.message"
+      color="error"
+      variant="soft"
+      icon="i-ph-warning-circle-duotone"
+      :title="heatmap.error.value.message"
       data-testid="heatmap-error"
     />
-    <p v-else class="flex justify-center py-10 text-slate-500" data-testid="heatmap-loading">
-      <LoadingSpinner :size="28" />
+    <p
+      v-else
+      class="flex justify-center py-10 text-muted"
+      role="status"
+      data-testid="heatmap-loading"
+    >
+      <UIcon name="i-ph-spinner-gap" class="size-7 animate-spin motion-reduce:animate-none" />
     </p>
-  </div>
+  </DsPage>
 </template>

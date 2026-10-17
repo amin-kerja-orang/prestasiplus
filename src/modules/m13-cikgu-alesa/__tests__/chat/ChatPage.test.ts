@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { formStubs } from '@/test-support/form-stubs'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
@@ -37,7 +38,7 @@ async function mountPage(url = '/cikgu') {
   currentRouter = router
   await router.push(url)
   await router.isReady()
-  wrapper = mount(ChatPage, { attachTo: document.body, global: { plugins: [router] } })
+  wrapper = mount(ChatPage, { attachTo: document.body, global: { plugins: [router], components: formStubs } })
   await flushPromises()
   return wrapper
 }
@@ -46,7 +47,7 @@ const input = () => wrapper!.get<HTMLInputElement>('#cikgu-input')
 const send = () => wrapper!.get<HTMLButtonElement>('#cikgu-send')
 const meta = () => wrapper!.get('#cikgu-meta').text()
 const status = () => wrapper!.get('#cikgu-voice-status').text()
-const msgs = () => wrapper!.findAll('.cikgu-msg')
+const msgs = () => wrapper!.findAll('[data-msg]')
 
 async function submit(text: string) {
   await input().setValue(text)
@@ -69,17 +70,17 @@ afterEach(() => {
 describe('S1 chat page: static copy (FR-M13-12..16)', () => {
   it('renders the header, the greeting, the toolbar and the form', async () => {
     await mountPage()
-    expect(wrapper!.get('h1').text()).toBe('Cikgu Alesa')
-    expect(wrapper!.get('.ca-sub').text()).toBe(
+    expect(wrapper!.get('h1').text()).toBe('Cikgu Alesa AI')
+    expect(wrapper!.get('[data-testid=ca-sub]').text()).toBe(
       'Guru maya · Powered by Cikgu Nur Demo · Cikgu Amin Demo · Cikgu Siti Demo + 50K+ soalan DSKP',
     )
     expect(msgs()).toHaveLength(1)
-    expect(msgs()[0]!.classes()).toContain('cikgu-msg-bot')
+    expect(msgs()[0]!.attributes('data-role')).toBe('bot')
     expect(msgs()[0]!.text()).toBe(
       'Cikgu Alesa: Hai! Saya Cikgu Alesa. Apa nak belajar hari ni? Cuba tanya pasal subjek tertentu, atau minta latihan soalan.',
     )
     expect(wrapper!.get('#cikgu-voice-toolbar').text()).toContain('🎙️ Voice Mode:')
-    expect(wrapper!.get<HTMLInputElement>('#cikgu-voice-mode').element.checked).toBe(false)
+    expect(wrapper!.get('#cikgu-voice-mode').attributes('aria-checked')).toBe('false')
     expect(input().attributes('placeholder')).toBe('Taip atau tekan 🎤 untuk cakap…')
     expect(input().attributes('required')).toBeDefined()
     expect(input().attributes('maxlength')).toBe('4000')
@@ -111,8 +112,8 @@ describe('S1 sending (FR-M13-17..20, 23)', () => {
     resolve({ status: 200, body: okBody('Baris 1\n<b>x</b>') })
     await flushPromises()
     const bot = msgs()[2]!
-    expect(bot.get('.cikgu-msg-body').element.querySelectorAll('br')).toHaveLength(1)
-    expect(bot.get('.cikgu-msg-body').text()).toContain('<b>x</b>')
+    expect(bot.get('[data-msg-body]').element.querySelectorAll('br')).toHaveLength(1)
+    expect(bot.get('[data-msg-body]').text()).toContain('<b>x</b>')
     expect(bot.element.querySelector('b')).toBeNull()
     expect(meta()).toBe('Tier: guru · Turns remaining: 27 · Tool hops: 0 · Tokens: in=126 out=10')
     expect(send().element.disabled).toBe(false)
@@ -199,11 +200,11 @@ describe('S1 voice mode and the simulated speaker (FR-M13-29, 30)', () => {
   it('loads from localStorage and writes 1 / 0 on change', async () => {
     localStorage.setItem('cikgu_voice_mode', '1')
     await mountPage()
-    const box = wrapper!.get<HTMLInputElement>('#cikgu-voice-mode')
-    expect(box.element.checked).toBe(true)
-    await box.setValue(false)
+    const box = wrapper!.get('#cikgu-voice-mode')
+    expect(box.attributes('aria-checked')).toBe('true')
+    await box.trigger('click')
     expect(localStorage.getItem('cikgu_voice_mode')).toBe('0')
-    await box.setValue(true)
+    await box.trigger('click')
     expect(localStorage.getItem('cikgu_voice_mode')).toBe('1')
   })
 
@@ -242,7 +243,7 @@ describe('S1 simulated recogniser (FR-M13-31..33, BR-M13-20)', () => {
     await mountPage()
     await mic().trigger('click')
     expect(mic().text()).toBe('🔴')
-    expect(mic().classes()).toContain('ca-mic-on')
+    expect(mic().attributes('data-listening')).toBe('true')
     expect(status()).toBe('Mendengar...')
     await vi.advanceTimersByTimeAsync(600)
     expect(input().element.value).toBe('Terangkan pecahan')
@@ -294,7 +295,7 @@ describe('S1 simulated recogniser (FR-M13-31..33, BR-M13-20)', () => {
     await mountPage()
     expect(mic().element.disabled).toBe(true)
     expect(mic().attributes('title')).toBe('Browser tidak sokong voice — guna Chrome/Edge')
-    expect(mic().classes()).toContain('ca-mic-off')
+    expect(mic().attributes('data-unsupported')).toBe('true')
   })
 
   it('never touches a browser speech API (D4)', async () => {

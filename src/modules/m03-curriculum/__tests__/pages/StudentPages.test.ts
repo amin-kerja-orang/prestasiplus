@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { formStubs } from '@/test-support/form-stubs'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -37,7 +38,7 @@ async function render(component: object, path: string, url: string, props = {}) 
     routes: [{ path, component }, { path: '/:rest(.*)', component: STUB }],
   })
   await router.push(url)
-  wrapper = mount(component, { props, global: { plugins: [router] } })
+  wrapper = mount(component, { props, global: { plugins: [router], components: formStubs } })
   await flushPromises()
   return wrapper
 }
@@ -167,7 +168,7 @@ describe('TopicDetailPage (S13)', () => {
       'Level 2',
       'Level 3',
     ])
-    expect(cards[0]?.get('[data-testid=subtopic-bar]').attributes('style')).toContain('width: 15%')
+    expect(cards[0]?.get('[data-testid=subtopic-bar] [role=progressbar]').attributes('aria-valuenow')).toBe('15')
     expect(cards[0]?.get('[data-testid=subtopic-practice]').attributes('href')).toBe('/practice/MATH')
     expect(cards[0]?.find('[data-testid=subtopic-description]').exists()).toBe(false)
   })
@@ -197,12 +198,12 @@ describe('LearningMapPage (S14)', () => {
     )
     expect(w.get('[data-testid=map-done]').text()).toBe('1/4')
     expect(w.get('[data-testid=map-progress]').text()).toBe('26%')
-    expect(w.get('[data-testid=map-bar]').attributes('style')).toContain('width: 26%')
+    expect(w.get('[data-testid=map-bar] [role=progressbar]').attributes('aria-valuenow')).toBe('26')
     const pills = w.findAll('[data-testid=map-subject-pill]')
     expect(pills[0]?.text()).toBe('🔢 Matematik')
     expect(pills[0]?.attributes('href')).toBe('/peta-belajar?subject=MATEMATIK&grade=DARJAH_4')
-    expect(pills[0]?.attributes('style')).toContain('rgb(59, 130, 246)')
-    expect(pills[1]?.attributes('style') ?? '').toBe('')
+    expect(pills[0]?.attributes('data-active')).toBe('true')
+    expect(pills[1]?.attributes('data-active')).toBe('false')
     const chips = w.findAll('[data-testid=map-grade-chip]')
     expect(chips.map((c) => c.text())).toEqual(['Darjah 1', 'Darjah 2', 'Darjah 3', 'Darjah 4'])
     expect(chips[3]?.attributes('data-active')).toBe('true')
@@ -217,8 +218,6 @@ describe('LearningMapPage (S14)', () => {
     expect(islands[3]?.attributes('href')).toBeUndefined()
     expect(islands[3]?.text()).toContain('Selesaikan topik sebelumnya dulu')
     expect(islands[2]?.text()).toContain('2 sesi · 7 soalan dijawab')
-    expect(w.findAll('[data-testid=path-dot]')).toHaveLength(4)
-    expect(w.findAll('[data-testid=path-dot]')[3]?.attributes('style')).toContain('top: 100%')
   })
 
   it('shows the empty card and 0/0 for a map without topics', async () => {

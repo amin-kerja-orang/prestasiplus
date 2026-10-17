@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Cikgu Alesa',
       header: { title: 'Cikgu Alesa', subtitle: 'Selamat datang kembali' },
       module: 'M13',
+      v2: true,
     },
   },
 ]

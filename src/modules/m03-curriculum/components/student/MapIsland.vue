@@ -33,34 +33,30 @@ onMounted(() => {
 onBeforeUnmount(() => observer?.disconnect())
 
 const CARD: Record<string, string> = {
-  mastered: 'border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-100',
-  started: 'border-blue-400 bg-gradient-to-br from-blue-50 to-sky-100',
-  unlocked: 'island-glow border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-100',
-  locked: 'cursor-not-allowed border-slate-300 bg-gradient-to-br from-slate-100 to-slate-200 opacity-60',
+  mastered: 'bg-default',
+  started: 'bg-default',
+  unlocked: 'bg-default ring-2 ring-heat',
+  locked: 'cursor-not-allowed bg-elevated opacity-70',
 }
 const LABEL: Record<string, string> = {
-  mastered: 'text-emerald-600',
-  started: 'text-blue-600',
-  unlocked: 'text-amber-600',
-  locked: 'text-slate-500',
+  mastered: 'text-success',
+  started: 'text-primary',
+  unlocked: 'text-heat',
+  locked: 'text-muted',
 }
 const TILE: Record<string, string> = {
-  mastered: 'bg-emerald-200',
-  started: 'bg-blue-200',
-  unlocked: 'bg-amber-200',
-  locked: 'bg-slate-300',
+  mastered: 'bg-success text-on-sem',
+  started: 'bg-primary text-primary-on',
+  unlocked: 'bg-heat text-on-highlight',
+  locked: 'bg-accented text-default',
 }
 </script>
 
 <template>
   <div
     ref="node"
-    class="relative w-full max-w-md transition-all duration-500 ease-out mx-auto min-[769px]:w-[45%] min-[769px]:max-w-none"
-    :class="[
-      index % 2 === 0 ? 'min-[769px]:mr-0 min-[769px]:ml-auto' : 'min-[769px]:mr-auto min-[769px]:ml-0',
-      visible ? 'translate-y-0 opacity-100' : 'translate-y-[30px] opacity-0',
-    ]"
-    :style="{ transitionDelay: `${String(index * 0.1)}s` }"
+    class="relative mx-auto w-full max-w-md transition-all duration-500 ease-out md:w-5/12 md:max-w-none"
+    :class="[index % 2 === 0 ? 'md:ms-auto' : 'md:me-auto', visible ? 'opacity-100' : 'opacity-0']"
     :data-state="topic.state"
     :data-visible="visible ? 'true' : 'false'"
     data-testid="map-node"
@@ -68,13 +64,13 @@ const TILE: Record<string, string> = {
     <component
       :is="topic.state === 'locked' ? 'div' : RouterLink"
       v-bind="topic.state === 'locked' ? {} : { to: practiceHref(topic.id) }"
-      class="block rounded-3xl border-2 p-4 shadow"
+      class="block rounded-card p-4 shadow-lift"
       :class="CARD[topic.state]"
       data-testid="island"
     >
       <div class="flex items-center gap-3">
         <span
-          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl"
+          class="flex size-12 shrink-0 items-center justify-center rounded-2xl text-heading"
           :class="TILE[topic.state]"
           data-testid="island-emoji"
         >
@@ -82,49 +78,33 @@ const TILE: Record<string, string> = {
           <template v-else>{{ topic.icon ?? '' }}</template>
         </span>
         <div class="min-w-0 flex-1">
-          <div class="text-xs font-bold tracking-wide" :class="LABEL[topic.state]" data-testid="island-label">
+          <div class="text-overline" :class="LABEL[topic.state]" data-testid="island-label">
             {{ ISLAND_LABEL[topic.state] }}
           </div>
-          <h3 class="font-heading text-base font-bold break-words text-slate-800" data-testid="island-name">
+          <h3 class="text-subheading break-words text-highlighted" data-testid="island-name">
             {{ topic.name }}
           </h3>
         </div>
       </div>
-      <p v-if="topic.state === 'locked'" class="mt-3 text-sm text-slate-500">
+      <p v-if="topic.state === 'locked'" class="mt-3 text-body text-muted">
         Selesaikan topik sebelumnya dulu
       </p>
       <template v-else>
         <div class="mt-3 flex items-center gap-2">
-          <div class="h-2 flex-1 overflow-hidden rounded-full bg-white/80">
-            <div
-              class="h-full rounded-full bg-blue-500"
-              :style="{ width: `${String(topic.progress)}%` }"
-              data-testid="island-bar"
-            ></div>
-          </div>
-          <span class="text-xs font-bold text-slate-600" data-testid="island-progress">
+          <UProgress
+            :model-value="topic.progress"
+            size="sm"
+            class="flex-1"
+            data-testid="island-bar"
+          />
+          <span class="text-caption font-bold text-default" data-testid="island-progress">
             {{ topic.progress }}%
           </span>
         </div>
-        <p class="mt-2 text-xs text-slate-600" data-testid="island-sessions">
+        <p class="mt-2 text-caption text-muted" data-testid="island-sessions">
           {{ sessionsLine(topic.sessions, topic.questionsAnswered) }}
         </p>
       </template>
     </component>
   </div>
 </template>
-
-<style scoped>
-.island-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-@keyframes pulse-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgb(251 191 36 / 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgb(251 191 36 / 0);
-  }
-}
-</style>

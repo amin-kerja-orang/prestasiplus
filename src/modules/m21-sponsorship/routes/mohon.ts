@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Mohon Keluarga Angkat',
       header: { title: 'Mohon Keluarga Angkat', subtitle: 'Selamat datang kembali' },
       module: 'M21',
+      v2: true,
     },
   },
 ]

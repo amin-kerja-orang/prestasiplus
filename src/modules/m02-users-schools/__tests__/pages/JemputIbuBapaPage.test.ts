@@ -122,11 +122,11 @@ describe('copy (FR-L45-08)', () => {
     await flushPromises()
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/ibu-bapa/terima/${TOKEN_A}`)
     expect(t('jemput-copy').text()).toBe('Disalin!')
-    expect(t('jemput-copy').classes()).toContain('bg-emerald-600')
+    expect(t('jemput-copy').attributes('data-copied')).toBe('true')
     vi.advanceTimersByTime(2000)
     await flushPromises()
     expect(t('jemput-copy').text()).toBe('Salin')
-    expect(t('jemput-copy').classes()).toContain('bg-indigo-600')
+    expect(t('jemput-copy').attributes('data-copied')).toBe('false')
   })
 
   it('keeps "Salin" and shows no error when the clipboard rejects (DV-L45-04)', async () => {

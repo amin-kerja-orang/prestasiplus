@@ -122,16 +122,16 @@ describe('HeatmapTopikLemahPage', () => {
       expect(c.attributes('title')).toBeUndefined()
     }
     expect(cells.map((c) => c.attributes('data-band'))).toEqual(['red', 'amber', 'green', 'red'])
-    expect(cells[0]!.classes()).toContain('bg-red-100')
-    expect(cells[1]!.classes()).toContain('bg-amber-100')
-    expect(cells[2]!.classes()).toContain('bg-emerald-100')
+    expect(cells[0]!.classes()).toContain('bg-heat')
+    expect(cells[1]!.classes()).toContain('bg-heat/35')
+    expect(cells[2]!.classes()).toContain('bg-elevated')
     expect(w.find('[data-testid="heatmap-empty"]').exists()).toBe(false)
   })
 
   it('renders no gray cell and no subject block for an empty heatmap, with the SERVER empty state', async () => {
     const w = await mountPage({ subjects: [] })
     expect(w.findAll('[data-testid="heatmap-cell"]')).toHaveLength(0)
-    expect(w.findAll('h2')).toHaveLength(0)
+    expect(w.findAll('[data-testid="heatmap-subject"]')).toHaveLength(0)
     expect(w.find('[data-testid="heatmap-hero"]').exists()).toBe(true)
     expect(w.findAll('[data-testid="heatmap-legend"] li')).toHaveLength(4)
     const empty = w.get('[data-testid="heatmap-empty"]')
@@ -167,7 +167,7 @@ describe('HeatmapTopikLemahPage', () => {
     expect(card.attributes('title')).toBeUndefined()
     expect(w.get('[data-testid="cikgu-avatar"]').text()).toBe('CM')
     expect(w.get('[data-testid="cikgu-avatar"]').classes()).toEqual(
-      expect.arrayContaining(['rounded-[50%]', 'size-14', 'from-indigo-700', 'to-fuchsia-600']),
+      expect.arrayContaining(['rounded-full', 'size-14', 'bg-heat']),
     )
     expect(w.get('h4').text()).toBe('Cikgu Demo Matematik')
     expect(w.get('[data-testid="cikgu-tagline"]').text()).toBe(CARD.tagline)
@@ -178,7 +178,7 @@ describe('HeatmapTopikLemahPage', () => {
       '📍 Johor',
       '⭐ 4.90',
     ])
-    for (const p of pills) expect(p.classes()).toContain('text-xs')
+    for (const p of pills) expect(p.classes()).toContain('text-caption')
   })
 
   it.each([
