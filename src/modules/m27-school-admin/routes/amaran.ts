@@ -19,6 +19,8 @@ const routes: RouteRecordRaw[] = [
       title: 'Amaran Awal — Sekolah | PRESTASIPLUS',
       header: { title: 'Amaran Awal — Sekolah' },
       module: 'M27',
+
+      v2: true,
     },
   },
 ]

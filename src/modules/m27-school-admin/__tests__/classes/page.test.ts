@@ -120,10 +120,8 @@ describe('route and header (FR-M27-38, 40, 44)', () => {
       title: 'Kelas Sekolah',
       subtitle: 'SMK Contoh Ujian',
     })
-    expect(text(w, 'kl-crumb-back')).toBe('← Dashboard Sekolah')
+    expect(text(w, 'kl-crumb-back')).toBe('Dashboard Sekolah')
     expect(w.get('[data-testid="kl-crumb-back"]').attributes('href')).toBe('/admin-sekolah')
-    expect(text(w, 'kl-crumb-current')).toBe('Kelas Sekolah')
-    expect(w.get('[data-testid="kl-crumb-current"]').element.tagName).not.toBe('A')
   })
 })
 
@@ -132,8 +130,8 @@ describe('tile and count line (FR-M27-111; AC-M27-31.1)', () => {
     const w = await mountPage(
       list([row(1), row(2), row(3, { isActive: false })], { tiles: { activeClasses: 2 } }),
     )
-    expect(text(w, 'kl-tile-label')).toBe('Kelas Aktif')
-    expect(text(w, 'kl-tile-value')).toBe('2')
+    expect(text(w, 'kl-tile')).toContain('Kelas Aktif')
+    expect(text(w, 'kl-tile')).toContain('2')
     expect(text(w, 'kl-displayed')).toBe('3 kelas dipaparkan')
   })
 })
@@ -159,7 +157,7 @@ describe('table (FR-M27-112, 113, 115; AC-M27-31.2, 32.3)', () => {
         row(2002, { subject: null, teacherName: null, joinCode: null }),
       ]),
     )
-    const rows = w.findAll('[data-testid="kl-row"]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(2)
     expect(rows[0]?.findAll('td').map((c) => c.text())).toEqual([
       '1',
@@ -189,7 +187,7 @@ describe('table (FR-M27-112, 113, 115; AC-M27-31.2, 32.3)', () => {
     expect(badges).toHaveLength(1)
     expect(badges[0]?.text()).toBe('Tidak Aktif')
     expect(
-      w.findAll('[data-testid="kl-row"]')[1]?.find('[data-testid="kl-inactive"]').exists(),
+      w.findAll('tbody tr')[1]?.find('[data-testid="kl-inactive"]').exists(),
     ).toBe(true)
   })
 
@@ -212,11 +210,11 @@ describe('empty state (AC-M27-31.4)', () => {
   it('shows "0 kelas dipaparkan", "Tiada kelas dijumpai" and "Sila cipta kelas terlebih dahulu"', async () => {
     const w = await mountPage(list([], { levels: [] }))
     expect(text(w, 'kl-displayed')).toBe('0 kelas dipaparkan')
-    expect(text(w, 'kl-tile-value')).toBe('0')
+    expect(text(w, 'kl-tile')).toContain('0')
     expect(text(w, 'kl-empty')).toContain('Tiada kelas dijumpai')
     expect(text(w, 'kl-empty')).toContain('Sila cipta kelas terlebih dahulu')
     expect(has(w, 'kl-row')).toBe(false)
-    expect(w.find('nav[aria-label="Pagination Navigation"]').exists()).toBe(false)
+    expect(w.find('[data-ds="data-table-pager"]').exists()).toBe(false)
   })
 })
 
@@ -229,7 +227,7 @@ describe('filters (FR-M27-114; AC-M27-32.1)', () => {
       'Tingkatan 4',
       'Tingkatan 5',
     ])
-    expect(w.get('label[for="kl-level"]').text()).toBe('Tingkatan / Darjah')
+    expect(w.findAll('label').map((l) => l.text())).toContain('Tingkatan / Darjah')
     expect(w.get('[data-testid="kl-search"]').attributes('placeholder')).toBe('Cari kelas...')
   })
 
@@ -275,7 +273,7 @@ describe('filters (FR-M27-114; AC-M27-32.1)', () => {
 describe('paginator (FR-M27-49; AC-M27-32.2)', () => {
   it('is hidden for one page and shows the Laravel wording for 26 or more classes', async () => {
     const one = await mountPage(list([row(1)]))
-    expect(one.find('nav[aria-label="Pagination Navigation"]').exists()).toBe(false)
+    expect(one.find('[data-ds="data-table-pager"]').exists()).toBe(false)
 
     const rows = Array.from({ length: 25 }, (_, i) => row(i + 1))
     const base = list(rows)
@@ -286,11 +284,13 @@ describe('paginator (FR-M27-49; AC-M27-32.2)', () => {
       },
       '/admin-sekolah/kelas?level=tingkatan-5',
     )
-    expect(w.findAll('[data-testid="kl-row"]')).toHaveLength(25)
-    const nav = w.get('nav[aria-label="Pagination Navigation"]')
-    expect(nav.text()).toContain('Showing 1 to 25 of 30 results')
-    const next = nav.findAll('a').find((a) => a.text().includes('Next'))
-    expect(next?.attributes('href')).toBe('/admin-sekolah/kelas?level=tingkatan-5&page=2')
+    expect(w.findAll('tbody tr')).toHaveLength(25)
+    const nav = w.get('[data-ds="data-table-pager"]')
+    expect(nav.text()).toContain('Menunjukkan 1-25 daripada 30 hasil')
+    const next = nav.findAll('button').find((b) => b.text() === '2')
+    await next!.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ level: 'tingkatan-5', page: '2' })
   })
 })
 

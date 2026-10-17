@@ -13,9 +13,9 @@ import { useRoute } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { DsPage } from '@/ds'
 
 import { fetchSchoolUsage } from '../api/school-admin'
 import UsageBreadcrumb from '../components/usage/UsageBreadcrumb.vue'
@@ -55,7 +55,7 @@ watch(
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="su-page" :data-period="data?.period">
+  <DsPage data-testid="su-page" :data-period="data?.period">
     <template v-if="data">
       <UsageBreadcrumb :title="TITLE" />
       <UsagePeriodPills :active="period" />
@@ -63,19 +63,24 @@ watch(
       <UsageModeCard :modes="data.modes" :period="data.period" :label="data.label" />
       <p
         v-if="data.tiles.accuracy === null"
-        class="text-xs text-slate-500"
+        class="text-caption text-muted"
         data-testid="su-footnote"
       >
         Ketepatan dipaparkan sebagai “—” kerana belum ada sesi latihan direkodkan dalam skop ini.
       </p>
     </template>
-    <AlertBox v-else-if="error && !refused" :messages="error.message" data-testid="su-error" />
-    <p
-      v-else-if="loading"
-      class="flex justify-center py-10 text-slate-500"
-      data-testid="su-loading"
-    >
-      <LoadingSpinner class="h-6 w-6" />
-    </p>
-  </div>
+    <UAlert
+      v-else-if="error && !refused"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      :description="error.message"
+      role="alert"
+      data-testid="su-error"
+    />
+    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="su-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
+  </DsPage>
 </template>

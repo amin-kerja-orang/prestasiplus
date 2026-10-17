@@ -70,7 +70,7 @@ describe('S6 header (AC-M12-25.1, 27.1)', () => {
     expect(w.text()).toContain('Bukti keberkesanan Prestasi Plus berdasarkan 4 Tahap Kirkpatrick')
     expect(has(w, 'kirk-tabs')).toBe(false)
     expect(t(w, 'chain-back').attributes('href')).toBe('/admin/kirkpatrick')
-    expect(t(w, 'chain-back').text()).toBe('← Kembali')
+    expect(t(w, 'chain-back').text()).toBe('Kembali')
     const exp = t(w, 'chain-export')
     expect(exp.text()).toBe('Muat Turun Laporan')
     expect(exp.attributes('href')).toBe('/admin/kirkpatrick/export-pdf')
@@ -85,7 +85,7 @@ describe('S6 header (AC-M12-25.1, 27.1)', () => {
 })
 
 describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
-  it('T1 shows NPS Purata, Kepuasan and Responden in green', async () => {
+  it('T1 shows NPS Purata, Kepuasan and Responden as success', async () => {
     const w = await open()
     const card = t(w, 'chain-t1')
     expect(flat(card)).toContain('T1 Reaksi Kepuasan pengguna terhadap Prestasi Plus')
@@ -94,10 +94,10 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
       '4.6/5',
       '336',
     ])
-    expect(card.classes()).toContain('border-green-300')
+    expect(card.attributes('data-tone')).toBe('success')
   })
 
-  it('T2 shows Ketepatan, Soalan Dijawab and Skor Purata in green', async () => {
+  it('T2 shows Ketepatan, Soalan Dijawab and Skor Purata as success', async () => {
     const w = await open()
     const card = t(w, 'chain-t2')
     expect(flat(card)).toContain('Perkembangan akademik melalui Head Count')
@@ -106,10 +106,10 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
       '306,133',
       '80.3%',
     ])
-    expect(card.classes()).toContain('border-green-300')
+    expect(card.attributes('data-tone')).toBe('success')
   })
 
-  it('T3 shows 946/4158 (22.8%), Sesi Latihan with a separator and the English band labels, in yellow', async () => {
+  it('T3 shows 946/4158 (22.8%), Sesi Latihan with a separator and the English band labels as warning', async () => {
     const w = await open()
     const card = t(w, 'chain-t3')
     expect(flat(card)).toContain('Konsistensi penggunaan platform (Mastery Learning)')
@@ -125,10 +125,10 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
       'Minimal 5',
       'Disengaged 3212',
     ])
-    expect(card.classes()).toContain('border-yellow-300')
+    expect(card.attributes('data-tone')).toBe('warning')
   })
 
-  it('T4 shows GPS, r and Kekuatan in yellow, and "-" without a GPS', async () => {
+  it('T4 shows GPS, r and Kekuatan as warning, and "-" without a GPS', async () => {
     const w = await open()
     const card = t(w, 'chain-t4')
     expect(card.findAll('[data-testid="chain-value"]').map((e) => e.text())).toEqual([
@@ -136,7 +136,7 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
       '0.1298',
       'Lemah',
     ])
-    expect(card.classes()).toContain('border-yellow-300')
+    expect(card.attributes('data-tone')).toBe('warning')
     wrapper?.unmount()
     api.fetchKirkpatrickChain.mockResolvedValue(
       chain({ t4: { gps: null, r: 0.1298, strength: 'Lemah' } }),
@@ -145,24 +145,24 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
     expect(t(w2, 'chain-t4').findAll('[data-testid="chain-value"]')[0]?.text()).toBe('-')
   })
 
-  it('stacks in one column below md and shows the arrows only from md', async () => {
+  it('stacks in one column below lg and shows the arrows only from lg', async () => {
     const w = await open()
     expect(t(w, 'chain-cards').classes()).toEqual(
-      expect.arrayContaining(['flex-col', 'md:flex-row']),
+      expect.arrayContaining(['flex-col', 'lg:flex-row']),
     )
     const arrows = all(w, 'chain-arrow')
     expect(arrows).toHaveLength(3)
     for (const a of arrows) {
-      expect(a.classes()).toEqual(expect.arrayContaining(['hidden', 'md:flex']))
-      expect(a.text()).toBe('→')
+      expect(a.classes()).toEqual(expect.arrayContaining(['hidden', 'lg:flex']))
     }
   })
 })
 
 describe('S6 correlation and conclusions (AC-M12-26.1, 26.2)', () => {
-  it('shows exactly three rows with bars (yellow below 60, green otherwise)', async () => {
+  it('shows exactly three rows with bars (warning below 60, success otherwise)', async () => {
     const w = await open()
-    const rows = all(w, 'corr-row')
+    expect(all(w, 'corr-row')).toHaveLength(3)
+    const rows = t(w, 'chain-correlation').findAll('tbody tr')
     expect(
       rows.map((r) =>
         r
@@ -176,10 +176,10 @@ describe('S6 correlation and conclusions (AC-M12-26.1, 26.2)', () => {
       ['100+ soalan', '348', '75.2%'],
     ])
     const bars = all(w, 'corr-bar')
-    expect(bars[0]?.classes()).toContain('bg-yellow-500')
-    expect(bars[1]?.classes()).toContain('bg-green-500')
-    expect(bars[2]?.classes()).toContain('bg-green-500')
-    expect(bars[2]?.attributes('style')).toContain('width: 75.2%')
+    expect(bars[0]?.html()).toContain('bg-warning')
+    expect(bars[1]?.html()).toContain('bg-success')
+    expect(bars[2]?.html()).toContain('bg-success')
+    expect(bars[2]?.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('75.2')
   })
 
   it('composes the Kesimpulan ALESA sentence from the constants (+15.5%)', async () => {
@@ -190,7 +190,7 @@ describe('S6 correlation and conclusions (AC-M12-26.1, 26.2)', () => {
     expect(t(w, 'corr-conclusion').get('strong').text()).toBe('Kesimpulan ALESA:')
   })
 
-  it('shows the static gradient conclusion', async () => {
+  it('shows the static conclusion', async () => {
     const w = await open()
     const box = t(w, 'chain-conclusion')
     expect(box.get('h2').text()).toBe('Kesimpulan Model Kirkpatrick')
@@ -201,9 +201,6 @@ describe('S6 correlation and conclusions (AC-M12-26.1, 26.2)', () => {
       'Tahap 3 (Tingkah Laku)',
       'Tahap 4 (Hasil)',
     ])
-    expect(box.classes()).toEqual(
-      expect.arrayContaining(['bg-gradient-to-r', 'from-indigo-600', 'to-purple-600']),
-    )
   })
 
   it('scrolls the correlation table inside its card', async () => {

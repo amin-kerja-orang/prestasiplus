@@ -4,6 +4,7 @@
  * against a mocked client: exact BM copy, tile colours and `title`, legend, filters, empty and error states.
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import USelect from '@nuxt/ui/components/Select.vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
@@ -115,7 +116,7 @@ describe('header, breadcrumb and card (FR-M27-44, 58)', () => {
     const current = w.get('[data-testid="dh-crumb-current"]')
     expect(current.text()).toBe('DSKP Heatmap')
     expect(current.element.tagName).not.toBe('A')
-    expect(current.classes()).toContain('font-bold')
+    expect(current.classes()).toContain('text-highlighted')
   })
 
   it('shows the card heading and the caption', async () => {
@@ -128,10 +129,13 @@ describe('header, breadcrumb and card (FR-M27-44, 58)', () => {
 describe('filters (FR-M27-59; AC-M27-18.1)', () => {
   it('lists the subjects of the level only, with no "all" option, and selects the shown one', async () => {
     const w = await mountPage(heatmap(), '/admin-sekolah/dskp-heatmap?tingkatan=T5')
-    const select = w.get('[data-testid="dh-subject"]')
-    expect(select.findAll('option').map((o) => o.text())).toEqual(['Fizik', 'Kimia'])
-    expect((select.element as HTMLSelectElement).value).toBe('9')
-    expect(w.get('label[for="dh-subject"]').text()).toBe('Subjek')
+    const select = w.findComponent(USelect)
+    expect((select.props() as Record<string, unknown>).items).toEqual([
+      { label: 'Fizik', value: 7 },
+      { label: 'Kimia', value: 9 },
+    ])
+    expect((select.props() as Record<string, unknown>).modelValue).toBe(9)
+    expect(w.text()).toContain('Subjek')
   })
 
   it('shows the pills "Tingkatan 4" and "Tingkatan 5" with the data level active', async () => {
@@ -151,7 +155,7 @@ describe('filters (FR-M27-59; AC-M27-18.1)', () => {
 
   it('reloads with ?subjectId=…&tingkatan=… when the select changes', async () => {
     const w = await mountPage(heatmap())
-    await w.get('[data-testid="dh-subject"]').setValue('7')
+    w.findComponent(USelect).vm.$emit('update:modelValue', 7)
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({ subjectId: '7', tingkatan: 'T5' })
     expect(api.fetchSchoolDskpHeatmap).toHaveBeenLastCalledWith(
@@ -168,53 +172,23 @@ describe('filters (FR-M27-59; AC-M27-18.1)', () => {
 })
 
 describe('tiles (FR-M27-60…63; AC-M27-17.2…17.4)', () => {
-  it('groups tiles under "{code} {name}" headings in the given order', async () => {
+  it('shows one heat row per Bidang as "{code} {name}", in the given order', async () => {
     const w = await mountPage(heatmap())
-    expect(w.findAll('[data-testid="dh-bidang-title"]').map((e) => e.text())).toEqual([
-      '1.0 Kadar Tindak Balas',
-      'Bidang Tanpa Kod',
-    ])
-    expect(w.findAll('[data-testid="dh-tile-code"]').map((e) => e.text())).toEqual([
-      '1.1.1',
-      '1.1.2',
-      '1.1.3',
-      '1.1.4',
-      '2.1.1',
-    ])
+    const grid = text(w, 'dh-tiles')
+    expect(grid.indexOf('1.0 Kadar Tindak Balas')).toBeGreaterThanOrEqual(0)
+    expect(grid.indexOf('Bidang Tanpa Kod')).toBeGreaterThan(grid.indexOf('1.0 Kadar Tindak Balas'))
   })
 
-  it('colours by status on the shown integer and shows no value for "Belum cuba"', async () => {
+  it('prints the shown integer in every answered cell and no value for "Belum cuba"', async () => {
     const w = await mountPage(heatmap())
-    const tiles = w.findAll('[data-testid="dh-tile"]')
-    expect(tiles.map((t) => t.attributes('data-status'))).toEqual([
-      'mahir',
-      'sederhana',
-      'lemah',
-      'belum',
-      'mahir',
-    ])
-    expect(tiles[0]?.classes()).toContain('bg-green-100')
-    expect(tiles[1]?.classes()).toContain('bg-yellow-100')
-    expect(tiles[2]?.classes()).toContain('bg-red-100')
-    expect(tiles[3]?.classes()).toContain('bg-slate-100')
-    expect(tiles.map((t) => t.find('[data-testid="dh-tile-pct"]').exists())).toEqual([
-      true,
-      true,
-      true,
-      false,
-      true,
-    ])
-    expect(tiles[0]?.get('[data-testid="dh-tile-pct"]').text()).toBe('90%')
-  })
-
-  it('has the title "{code}: {title} — {status}" plus the counts when answered; tiles are not links', async () => {
-    const w = await mountPage(heatmap())
-    const tiles = w.findAll('[data-testid="dh-tile"]')
-    expect(tiles[0]?.attributes('title')).toBe(
-      '1.1.1: Murid boleh 1.1.1 — Mahir · 20 cuba · 90% betul',
-    )
-    expect(tiles[3]?.attributes('title')).toBe('1.1.4: Murid boleh 1.1.4 — Belum cuba')
-    expect(w.find('[data-testid="dh-tiles"] a').exists()).toBe(false)
+    const cells = w.findAll('[data-ds="heat-cell"]')
+    // 2 Bidang x 4 columns (the widest Bidang has 4 SP); cells past the last SP are empty
+    expect(cells).toHaveLength(8)
+    expect(cells.slice(0, 4).map((c) => c.text())).toEqual(['90%', '60%', '20%', '-'])
+    expect(cells[4]?.text()).toBe('75%')
+    expect(cells.slice(5).map((c) => c.text())).toEqual(['-', '-', '-'])
+    expect(cells[0]?.attributes('aria-label')).toBe('1.0 Kadar Tindak Balas - 1: 90%')
+    expect(cells[3]?.attributes('aria-label')).toBe('1.0 Kadar Tindak Balas - 4: Belum Cuba')
   })
 
   it('judges the status on the shown integer (74.5 shows 75 and is "Mahir")', () => {
@@ -224,7 +198,7 @@ describe('tiles (FR-M27-60…63; AC-M27-17.2…17.4)', () => {
 
   it('shows the legend in order', async () => {
     const w = await mountPage(heatmap())
-    expect(w.findAll('[data-testid="dh-legend"] > span').map((e) => e.text())).toEqual([
+    expect(w.findAll('[data-testid="dh-legend"] > li').map((e) => e.text())).toEqual([
       'Mahir (75%+)',
       'Sederhana (50-74%)',
       'Lemah (<50%)',
@@ -239,15 +213,15 @@ describe('empty states (FR-M27-64; AC-M27-18.2, 18.3)', () => {
   it('shows the text and no tiles or caption when no subject has an SP at the level', async () => {
     const w = await mountPage(heatmap({ subjects: [], subject: null, caption: null, bidang: [] }))
     expect(text(w, 'dh-empty')).toBe(EMPTY)
-    expect(has(w, 'dh-tile')).toBe(false)
+    expect(has(w, 'dh-tiles')).toBe(false)
     expect(has(w, 'dh-caption')).toBe(false)
-    expect(w.get('[data-testid="dh-subject"]').findAll('option')).toHaveLength(1)
+    expect((w.findComponent(USelect).props() as Record<string, unknown>).items).toEqual([])
   })
 
   it('shows the text for a subjectId that is not a subject of the level', async () => {
     const w = await mountPage(heatmap(), '/admin-sekolah/dskp-heatmap?subjectId=999&tingkatan=T5')
     expect(text(w, 'dh-empty')).toBe(EMPTY)
-    expect(has(w, 'dh-tile')).toBe(false)
+    expect(has(w, 'dh-tiles')).toBe(false)
   })
 
   it('shows every tile "Belum cuba" without a percentage and without an error for a school with no records', async () => {
@@ -256,10 +230,9 @@ describe('empty states (FR-M27-64; AC-M27-18.2, 18.3)', () => {
       ...base,
       bidang: base.bidang.map((b) => ({ ...b, sp: b.sp.map((s) => sp(s.id, s.code, 0, 0)) })),
     })
-    const tiles = w.findAll('[data-testid="dh-tile"]')
-    expect(tiles).toHaveLength(5)
-    expect(tiles.every((t) => t.attributes('data-status') === 'belum')).toBe(true)
-    expect(has(w, 'dh-tile-pct')).toBe(false)
+    const cells = w.findAll('[data-ds="heat-cell"]')
+    expect(cells).toHaveLength(8)
+    expect(cells.every((c) => c.text() === '-' && c.attributes('aria-label')?.endsWith('Belum Cuba'))).toBe(true)
     expect(has(w, 'dh-error')).toBe(false)
     expect(has(w, 'dh-empty')).toBe(false)
   })

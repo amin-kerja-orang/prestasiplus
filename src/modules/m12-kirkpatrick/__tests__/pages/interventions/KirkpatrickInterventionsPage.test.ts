@@ -7,7 +7,7 @@ import { setRouteOutcome } from '@/app/router/outcome'
 
 import type { InterventionList, InterventionRow } from '../../../api/types'
 import KirkpatrickInterventionsPage from '../../../pages/KirkpatrickInterventionsPage.vue'
-import { all, has, mountPage, squash, t } from '../fixtures'
+import { all, has, itemLabels, mountPage, pick, rowOf, select, squash, t } from '../fixtures'
 
 const api = vi.hoisted(() => ({
   fetchKirkpatrickInterventions: vi.fn(),
@@ -92,13 +92,13 @@ describe('S7 KPIs and empty list (AC-M12-28.1, 28.3)', () => {
 })
 
 describe('S7 form panel (AC-M12-29.1, 29.2, 29.6)', () => {
-  it('is closed on load, opens and closes by the header button, and rotates the chevron', async () => {
+  it('is closed on load, opens and closes by the header button, and flips the caret (aria-expanded)', async () => {
     const w = await open()
     expect(isOpen(w)).toBe(false)
-    expect(t(w, 'int-form-chevron').classes()).not.toContain('rotate-180')
+    expect(t(w, 'int-form-toggle').attributes('aria-expanded')).toBe('false')
     await t(w, 'int-form-toggle').trigger('click')
     expect(isOpen(w)).toBe(true)
-    expect(t(w, 'int-form-chevron').classes()).toContain('rotate-180')
+    expect(t(w, 'int-form-toggle').attributes('aria-expanded')).toBe('true')
     await t(w, 'int-form-toggle').trigger('click')
     expect(isOpen(w)).toBe(false)
   })
@@ -121,16 +121,12 @@ describe('S7 form panel (AC-M12-29.1, 29.2, 29.6)', () => {
     expect(student.attributes('type')).toBe('number')
     expect(student.attributes('placeholder')).toBe('ID pelajar')
     expect(student.attributes('required')).toBeDefined()
-    expect(
-      t(w, 'int-type')
-        .findAll('option')
-        .map((o) => [o.attributes('value'), o.text()]),
-    ).toEqual([
-      ['mood', 'Mood / Kesejahteraan'],
-      ['inactive', 'Tidak Aktif'],
-      ['declining', 'Prestasi Menurun'],
+    expect(select(w, 'alert_type').props('items')).toEqual([
+      { value: 'mood', label: 'Mood / Kesejahteraan' },
+      { value: 'inactive', label: 'Tidak Aktif' },
+      { value: 'declining', label: 'Prestasi Menurun' },
     ])
-    expect((t(w, 'int-type').element as HTMLSelectElement).value).toBe('mood')
+    expect(select(w, 'alert_type').props('modelValue')).toBe('mood')
     expect(t(w, 'int-date').attributes('required')).toBeDefined()
     expect((t(w, 'int-date').element as HTMLInputElement).value).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(t(w, 'int-desc').attributes('placeholder')).toBe(
@@ -143,12 +139,8 @@ describe('S7 form panel (AC-M12-29.1, 29.2, 29.6)', () => {
     expect(t(w, 'int-before').attributes('step')).toBe('0.1')
     expect(t(w, 'int-before').attributes('placeholder')).toBe('0.0')
     expect(t(w, 'int-after').attributes('placeholder')).toBe('Isi selepas semakan')
-    for (const id of ['int-before-mood', 'int-after-mood']) {
-      expect(
-        t(w, id)
-          .findAll('option')
-          .map((o) => o.text()),
-      ).toEqual(['-- Pilih --', 'Gembira', 'Okay', 'Sedih', 'Tertekan'])
+    for (const name of ['before_mood', 'after_mood']) {
+      expect(itemLabels(w, name)).toEqual(['-- Pilih --', 'Gembira', 'Okay', 'Sedih', 'Tertekan'])
     }
     expect(form.attributes('autocomplete')).toBe('off')
     expect(t(w, 'int-submit').text()).toBe('Simpan Intervensi')
@@ -186,7 +178,7 @@ describe('S7 save (AC-M12-29.4, 29.5)', () => {
   async function fill(w: VueWrapper, studentId: string) {
     await t(w, 'int-form-toggle').trigger('click')
     await t(w, 'int-student').setValue(studentId)
-    await t(w, 'int-type').setValue('inactive')
+    await pick(w, 'alert_type', 'inactive')
     await t(w, 'int-desc').setValue('Tidak aktif 2 minggu')
     await t(w, 'int-action').setValue('Hubungi guru kelas')
     await t(w, 'int-before').setValue('73.1')
@@ -212,7 +204,7 @@ describe('S7 save (AC-M12-29.4, 29.5)', () => {
       beforeMood: null,
       afterMood: null,
     })
-    await vi.waitFor(() => expect(all(w, 'int-row')).toHaveLength(1))
+    await vi.waitFor(() => expect(all(w, 'int-row-student')).toHaveLength(1))
     expect(isOpen(w)).toBe(false)
     expect(all(w, 'kirk-stat-value').map((e) => e.text())).toEqual(['1', '1', '0', '0'])
     expect((t(w, 'int-student').element as HTMLInputElement).value).toBe('')
@@ -270,11 +262,11 @@ describe('S7 list (AC-M12-28.2)', () => {
       'Ketepatan Selepas (%)',
       'Status',
     ])
-    const rows = all(w, 'int-row')
+    const rows = all(w, 'int-row-student').map(rowOf)
     expect(rows).toHaveLength(2)
     expect(all(w, 'int-row-status').map((e) => e.text())).toEqual(['Meningkat', 'Menunggu Semakan'])
-    expect(all(w, 'int-row-status')[0]?.classes()).toContain('bg-green-100')
-    expect(all(w, 'int-row-status')[1]?.classes()).toContain('bg-amber-100')
+    expect(all(w, 'int-row-status')[0]?.classes()).toContain('text-success')
+    expect(all(w, 'int-row-status')[1]?.classes()).toContain('text-warning')
     expect(rows[0]?.get('[data-testid="int-row-after"]').text()).toBe('55.5% · Gembira')
     expect(rows[1]?.get('[data-testid="int-row-after"]').text()).toBe('-')
     expect(rows[0]?.text()).toContain('25 Sep 2026')

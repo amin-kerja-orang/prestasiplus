@@ -20,9 +20,9 @@ export function alesaParagraph(d: StudentKirkpatrick): string {
   return parts.join(' ')
 }
 
-/** BR-M12-28 bar colours: green >= 70, yellow 50 to < 70, red below 50. */
-export const barFill = (accuracy: number) =>
-  accuracy >= 70 ? 'bg-green-500' : accuracy >= 50 ? 'bg-yellow-500' : 'bg-red-400'
+/** BR-M12-28 bar colours: success >= 70, warning 50 to < 70, error below 50. */
+export const barColor = (accuracy: number): 'success' | 'warning' | 'error' =>
+  accuracy >= 70 ? 'success' : accuracy >= 50 ? 'warning' : 'error'
 
 /**
  * The form ("Tingkatan") of a user grade: the API gives the school year of the users dataset (grade 10 = Tingkatan 4,

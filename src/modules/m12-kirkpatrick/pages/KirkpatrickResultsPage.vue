@@ -7,6 +7,8 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { DsPage } from '@/ds'
+
 import { fetchKirkpatrickResults } from '../api'
 import {
   KIRKPATRICK_ADMIN_BASE,
@@ -45,8 +47,8 @@ const { data, error, loading } = useKirkpatrickPage(
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="kirk-results">
-    <KirkpatrickTabs :base-path="basePath" current="results" class="!mb-0" />
+  <DsPage data-testid="kirk-results">
+    <KirkpatrickTabs :base-path="basePath" current="results" />
     <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
     <template v-if="data">
       <ResultsKpis :kpi="data.kpi" />
@@ -59,5 +61,5 @@ const { data, error, loading } = useKirkpatrickPage(
       <ResultsRoi :roi="data.roi" />
       <ResultsInsights :insights="data.insights" />
     </template>
-  </div>
+  </DsPage>
 </template>

@@ -1,83 +1,139 @@
 <script setup lang="ts">
 /**
  * "Engagement Mengikut Sekolah" (FN-M12-5.4.1; FR-M12-44; BR-M12-11/12): # · Sekolah (link + code line) ·
- * Pelajar · Aktif · Soalan · Sesi · Purata/Aktif · Skor · Tahap; the table scrolls inside its card.
+ * Pelajar · Aktif · Soalan · Sesi · Purata/Aktif · Skor · Tahap. Staff table (`DsDataTable`: card list below
+ * md, inner scroll when wide).
  */
+import { computed } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
-import { AppIcon } from '@/components/icon'
+import { DsDataTable } from '@/ds'
 
-import type { BehaviorSchoolRow } from '../../../api/types'
+import type { BandKey, BehaviorSchoolRow } from '../../../api/types'
+import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { BAND, count, mean, plain } from '../common/kirkpatrick-format'
-import { BAND_FILL } from './behavior-format'
 
-defineProps<{ rows: BehaviorSchoolRow[]; schoolPath: (id: number) => string }>()
+const props = defineProps<{ rows: BehaviorSchoolRow[]; schoolPath: (id: number) => string }>()
 
-const NUM = `${T.td} text-center`
-const HEAD = `${T.th} text-center`
+/** Slot rows are untyped; this narrows the band key for the token lookups. */
+const band = (key: unknown) => BAND[key as BandKey]
+
+interface Row extends Record<string, unknown> {
+  schoolId: number
+  index: number
+  name: string
+  code: string
+  students: string
+  active: number
+  activeText: string
+  answers: string
+  sessions: string
+  perActive: string
+  score: string
+  tahap: BehaviorSchoolRow['tahap']
+  tahapText: string
+}
+
+const data = computed<Row[]>(() =>
+  props.rows.map((r, i) => ({
+    schoolId: r.schoolId,
+    index: i + 1,
+    name: r.name,
+    code: r.code ?? '-',
+    students: count(r.students),
+    active: r.active,
+    activeText: plain(r.active),
+    answers: count(r.answers),
+    sessions: plain(r.sessions),
+    perActive: mean(r.perActive),
+    score: mean(r.score),
+    tahap: r.tahap,
+    tahapText: BAND[r.tahap].label,
+  })),
+)
+
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'index', header: '#' },
+  { accessorKey: 'name', header: 'Sekolah' },
+  { accessorKey: 'students', header: 'Pelajar' },
+  { accessorKey: 'activeText', header: 'Aktif' },
+  { accessorKey: 'answers', header: 'Soalan' },
+  { accessorKey: 'sessions', header: 'Sesi' },
+  { accessorKey: 'perActive', header: 'Purata/Aktif' },
+  { accessorKey: 'score', header: 'Skor' },
+  { accessorKey: 'tahapText', header: 'Tahap' },
+]
+const cardFields = [
+  { key: 'students', label: 'Pelajar' },
+  { key: 'activeText', label: 'Aktif' },
+  { key: 'answers', label: 'Soalan' },
+  { key: 'sessions', label: 'Sesi' },
+  { key: 'perActive', label: 'Purata/Aktif' },
+  { key: 'score', label: 'Skor' },
+  { key: 'tahapText', label: 'Tahap' },
+]
 </script>
 
 <template>
-  <DataTableCard :min-width="820" data-testid="beh-schools">
-    <template #header>
-      <h2
-        class="flex items-center gap-2 px-4 pt-4 font-heading text-base font-bold text-slate-800 sm:px-5"
-      >
-        <AppIcon name="fa-school" class="h-4 w-4 text-indigo-600" />Engagement Mengikut Sekolah
-      </h2>
-    </template>
-    <table :class="T.table">
-      <thead>
-        <tr>
-          <th :class="T.th">#</th>
-          <th :class="T.th">Sekolah</th>
-          <th :class="HEAD">Pelajar</th>
-          <th :class="HEAD">Aktif</th>
-          <th :class="HEAD">Soalan</th>
-          <th :class="HEAD">Sesi</th>
-          <th :class="HEAD">Purata/Aktif</th>
-          <th :class="HEAD">Skor</th>
-          <th :class="HEAD">Tahap</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(r, i) in rows" :key="r.schoolId" :class="T.row" data-testid="beh-school-row">
-          <td :class="`${T.td} text-slate-400`">{{ i + 1 }}</td>
-          <td :class="T.td">
-            <RouterLink
-              :to="schoolPath(r.schoolId)"
-              class="font-medium text-indigo-600 hover:underline"
-              data-testid="beh-school-link"
-              >{{ r.name }}</RouterLink
-            >
-            <span class="block text-xs text-slate-400">{{ r.code ?? '-' }}</span>
-          </td>
-          <td :class="NUM" data-testid="cell-students">{{ count(r.students) }}</td>
-          <td
-            :class="[NUM, 'font-semibold', r.active > 0 ? 'text-green-600' : 'text-slate-300']"
-            data-testid="cell-active"
+  <KirkpatrickTableSection
+    title="Engagement Mengikut Sekolah"
+    icon="i-ph-buildings"
+    data-testid="beh-schools"
+  >
+    <DsDataTable
+      :data="data"
+      :columns="columns"
+      caption="Engagement mengikut sekolah"
+      card-title="name"
+      :card-fields="cardFields"
+      :page-size="1000"
+    >
+      <template #name-cell="{ row }">
+        <span class="flex flex-col">
+          <RouterLink
+            :to="schoolPath(row.original.schoolId)"
+            class="text-label text-primary"
+            data-testid="beh-school-link"
+            >{{ row.original.name }}</RouterLink
           >
-            {{ plain(r.active) }}
-          </td>
-          <td :class="NUM" data-testid="cell-answers">{{ count(r.answers) }}</td>
-          <td :class="NUM" data-testid="cell-sessions">{{ plain(r.sessions) }}</td>
-          <td :class="NUM" data-testid="cell-per-active">{{ mean(r.perActive) }}</td>
-          <td :class="[NUM, 'font-bold', BAND[r.tahap].text]" data-testid="cell-score">
-            {{ mean(r.score) }}
-          </td>
-          <td :class="NUM">
-            <span
-              :class="[
-                'inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-white',
-                BAND_FILL[r.tahap],
-              ]"
-              data-testid="cell-tahap"
-              >{{ BAND[r.tahap].label }}</span
-            >
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </DataTableCard>
+          <span class="text-caption text-muted" data-testid="beh-school-code">{{
+            row.original.code
+          }}</span>
+        </span>
+      </template>
+      <template #students-cell="{ row }">
+        <span data-testid="cell-students">{{ row.original.students }}</span>
+      </template>
+      <template #activeText-cell="{ row }">
+        <span
+          :class="['text-label', row.original.active > 0 ? 'text-success' : 'text-dimmed']"
+          data-testid="cell-active"
+          >{{ row.original.activeText }}</span
+        >
+      </template>
+      <template #answers-cell="{ row }">
+        <span data-testid="cell-answers">{{ row.original.answers }}</span>
+      </template>
+      <template #sessions-cell="{ row }">
+        <span data-testid="cell-sessions">{{ row.original.sessions }}</span>
+      </template>
+      <template #perActive-cell="{ row }">
+        <span data-testid="cell-per-active">{{ row.original.perActive }}</span>
+      </template>
+      <template #score-cell="{ row }">
+        <span :class="['text-label', band(row.original.tahap).text]" data-testid="cell-score">{{
+          row.original.score
+        }}</span>
+      </template>
+      <template #tahapText-cell="{ row }">
+        <UBadge
+          :color="band(row.original.tahap).color"
+          variant="soft"
+          :label="row.original.tahapText"
+          data-testid="cell-tahap"
+        />
+      </template>
+    </DsDataTable>
+  </KirkpatrickTableSection>
 </template>

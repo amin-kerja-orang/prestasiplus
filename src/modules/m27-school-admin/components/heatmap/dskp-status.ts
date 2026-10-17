@@ -5,13 +5,6 @@
 
 import type { DskpStatus, HeatmapSp } from '../../api/school-admin'
 
-export const TILE_STYLE: Readonly<Record<DskpStatus, string>> = {
-  mahir: 'border-green-200 bg-green-100 text-green-700',
-  sederhana: 'border-yellow-200 bg-yellow-100 text-yellow-700',
-  lemah: 'border-red-200 bg-red-100 text-red-700',
-  belum: 'border-slate-200 bg-slate-100 text-slate-500',
-}
-
 /** Status word of the tile `title` (FR-M27-63). */
 export const STATUS_LABEL: Readonly<Record<DskpStatus, string>> = {
   mahir: 'Mahir',

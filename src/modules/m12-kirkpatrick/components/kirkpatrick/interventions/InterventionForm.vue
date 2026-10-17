@@ -1,41 +1,35 @@
 <script setup lang="ts">
 /**
  * "Rekod Intervensi Baru" (FN-M12-8.2.1 ... 8.2.4; FR-M12-71 ... 74; DV-M12-01, DV-M12-07): a collapsible card, closed on
- * load; the header button (>= 36 px, here 44) opens and closes it and rotates the chevron 180°. Validation is
+ * load; the header button (44 px) opens and closes it and swaps the caret. Validation is
  * the native `required` check only (no custom alert, no "Batal"). On submit the record is posted; a refusal of
  * the student id shows under "Pelajar (ID)" with the values kept and the panel open; on success the form
  * resets, closes and `saved` fires so the page reloads the list and the KPIs (no success message).
  */
-import { ChevronDown, CirclePlus, Save } from '@lucide/vue'
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 import { isApiError } from '@/api'
-import {
-  FORM_ERROR_MODIFIER,
-  FORM_ERROR_TEXT_CLASS,
-  FORM_INPUT_CLASS,
-  FORM_SELECT_CLASS,
-  FORM_TEXTAREA_CLASS,
-} from '@/components/form'
 import { clock, formatMyt } from '@/lib/time'
 
 import { createKirkpatrickIntervention } from '../../../api'
 import type { AlertType, Mood } from '../../../api/types'
-import { CARD } from '../common/kirkpatrick-format'
 import { ALERT_TYPES, MOODS } from './intervention-format'
 
 const emit = defineEmits<{ saved: [] }>()
 
+/** A select item cannot carry an empty value, so "-- Pilih --" travels as this word and maps to "". */
+const NONE = 'none'
+
 const today = () => formatMyt(clock.now(), 'yyyy-MM-dd')
 const blank = () => ({
-  studentId: '' as string | number,
+  studentId: '',
   alertType: 'mood' as AlertType,
   actionDate: today(),
   alertDescription: '',
   actionTaken: '',
-  beforeAccuracy: '' as string | number,
+  beforeAccuracy: '',
   beforeMood: '' as Mood | '',
-  afterAccuracy: '' as string | number,
+  afterAccuracy: '',
   afterMood: '' as Mood | '',
 })
 
@@ -44,8 +38,26 @@ const saving = ref(false)
 const studentError = ref('')
 const form = reactive(blank())
 
-/** A number input binds a number (Vue casts it), or "" when empty. */
-const num = (v: string | number) => (String(v).trim() === '' ? null : Number(v))
+const typeItems = ALERT_TYPES.map((t) => ({ label: t.label, value: t.value }))
+const moodItems = [
+  { label: '-- Pilih --', value: NONE },
+  ...MOODS.map((m) => ({ label: m.label, value: m.value })),
+]
+const beforeMood = computed({
+  get: () => (form.beforeMood === '' ? NONE : form.beforeMood),
+  set: (v: string) => {
+    form.beforeMood = v === NONE ? '' : (v as Mood)
+  },
+})
+const afterMood = computed({
+  get: () => (form.afterMood === '' ? NONE : form.afterMood),
+  set: (v: string) => {
+    form.afterMood = v === NONE ? '' : (v as Mood)
+  },
+})
+
+/** A number input binds its text; "" (empty) means no value. */
+const num = (v: string) => (String(v).trim() === '' ? null : Number(v))
 
 async function submit() {
   if (saving.value) return
@@ -75,164 +87,145 @@ async function submit() {
     saving.value = false
   }
 }
-
-const LABEL = 'mb-1 block text-xs font-medium text-slate-600'
 </script>
 
 <template>
-  <section :class="[CARD, 'min-w-0']" data-testid="int-form-card">
-    <button
+  <UCard class="min-w-0" data-testid="int-form-card">
+    <UButton
       type="button"
-      class="flex min-h-11 w-full items-center justify-between gap-2 px-4 py-2 text-left sm:px-5"
+      block
+      size="lg"
+      color="neutral"
+      variant="ghost"
+      class="min-h-11 justify-between"
+      icon="i-ph-plus-circle"
+      :trailing-icon="open ? 'i-ph-caret-up' : 'i-ph-caret-down'"
+      label="Rekod Intervensi Baru"
+      :aria-expanded="open"
+      aria-controls="int-form"
       data-testid="int-form-toggle"
       @click="open = !open"
-    >
-      <span class="flex items-center gap-2 font-heading text-sm font-bold text-slate-800">
-        <CirclePlus class="h-4 w-4 text-indigo-600" />Rekod Intervensi Baru
-      </span>
-      <ChevronDown
-        :class="['h-4 w-4 shrink-0 text-slate-400 transition-transform', open ? 'rotate-180' : '']"
-        data-testid="int-form-chevron"
-      />
-    </button>
+    />
     <form
       v-show="open"
+      id="int-form"
       autocomplete="off"
-      class="space-y-3 px-4 pb-4 sm:px-5"
+      class="mt-4 flex flex-col gap-3"
       data-testid="int-form"
       @submit.prevent="submit"
     >
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div class="min-w-0">
-          <label :class="LABEL" for="int-student">Pelajar (ID)</label>
-          <input
-            id="int-student"
+        <UFormField label="Pelajar (ID)" name="student_id" class="min-w-0" required>
+          <UInput
             v-model="form.studentId"
             type="number"
             name="student_id"
             required
             placeholder="ID pelajar"
-            :class="[FORM_INPUT_CLASS, studentError ? FORM_ERROR_MODIFIER : '']"
+            :color="studentError ? 'error' : 'neutral'"
+            class="w-full"
             data-testid="int-student"
           />
-          <p v-if="studentError" :class="FORM_ERROR_TEXT_CLASS" data-testid="int-student-error">
-            {{ studentError }}
-          </p>
-        </div>
-        <div class="min-w-0">
-          <label :class="LABEL" for="int-type">Jenis Amaran</label>
-          <select
-            id="int-type"
+          <template v-if="studentError" #error>
+            <span data-testid="int-student-error">{{ studentError }}</span>
+          </template>
+        </UFormField>
+        <UFormField label="Jenis Amaran" name="alert_type" class="min-w-0" required>
+          <USelect
             v-model="form.alertType"
+            :items="typeItems"
             name="alert_type"
             required
-            :class="FORM_SELECT_CLASS"
+            class="w-full"
             data-testid="int-type"
-          >
-            <option v-for="t in ALERT_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
-          </select>
-        </div>
-        <div class="min-w-0">
-          <label :class="LABEL" for="int-date">Tarikh Tindakan</label>
-          <input
-            id="int-date"
+          />
+        </UFormField>
+        <UFormField label="Tarikh Tindakan" name="action_date" class="min-w-0" required>
+          <UInput
             v-model="form.actionDate"
             type="date"
             name="action_date"
             required
-            :class="FORM_INPUT_CLASS"
+            class="w-full"
             data-testid="int-date"
           />
-        </div>
+        </UFormField>
       </div>
-      <div>
-        <label :class="LABEL" for="int-desc">Penerangan Amaran</label>
-        <textarea
-          id="int-desc"
+      <UFormField label="Penerangan Amaran" name="alert_description" required>
+        <UTextarea
           v-model="form.alertDescription"
           name="alert_description"
-          rows="2"
+          :rows="2"
           required
           placeholder="Contoh: Pelajar tidak aktif selama 2 minggu"
-          :class="FORM_TEXTAREA_CLASS"
+          class="w-full"
           data-testid="int-desc"
         />
-      </div>
-      <div>
-        <label :class="LABEL" for="int-action">Tindakan Diambil</label>
-        <textarea
-          id="int-action"
+      </UFormField>
+      <UFormField label="Tindakan Diambil" name="action_taken" required>
+        <UTextarea
           v-model="form.actionTaken"
           name="action_taken"
-          rows="2"
+          :rows="2"
           required
           placeholder="Contoh: Hubungi pelajar melalui guru kelas"
-          :class="FORM_TEXTAREA_CLASS"
+          class="w-full"
           data-testid="int-action"
         />
-      </div>
+      </UFormField>
       <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div class="min-w-0">
-          <label :class="LABEL" for="int-before">Ketepatan Sebelum (%)</label>
-          <input
-            id="int-before"
+        <UFormField label="Ketepatan Sebelum (%)" name="before_accuracy" class="min-w-0">
+          <UInput
             v-model="form.beforeAccuracy"
             type="number"
             step="0.1"
             name="before_accuracy"
             placeholder="0.0"
-            :class="FORM_INPUT_CLASS"
+            class="w-full"
             data-testid="int-before"
           />
-        </div>
-        <div class="min-w-0">
-          <label :class="LABEL" for="int-before-mood">Mood Sebelum</label>
-          <select
-            id="int-before-mood"
-            v-model="form.beforeMood"
+        </UFormField>
+        <UFormField label="Mood Sebelum" name="before_mood" class="min-w-0">
+          <USelect
+            v-model="beforeMood"
+            :items="moodItems"
             name="before_mood"
-            :class="FORM_SELECT_CLASS"
+            class="w-full"
             data-testid="int-before-mood"
-          >
-            <option value="">-- Pilih --</option>
-            <option v-for="m in MOODS" :key="m.value" :value="m.value">{{ m.label }}</option>
-          </select>
-        </div>
-        <div class="min-w-0">
-          <label :class="LABEL" for="int-after">Ketepatan Selepas (%)</label>
-          <input
-            id="int-after"
+          />
+        </UFormField>
+        <UFormField label="Ketepatan Selepas (%)" name="after_accuracy" class="min-w-0">
+          <UInput
             v-model="form.afterAccuracy"
             type="number"
             step="0.1"
             name="after_accuracy"
             placeholder="Isi selepas semakan"
-            :class="FORM_INPUT_CLASS"
+            class="w-full"
             data-testid="int-after"
           />
-        </div>
-        <div class="min-w-0">
-          <label :class="LABEL" for="int-after-mood">Mood Selepas</label>
-          <select
-            id="int-after-mood"
-            v-model="form.afterMood"
+        </UFormField>
+        <UFormField label="Mood Selepas" name="after_mood" class="min-w-0">
+          <USelect
+            v-model="afterMood"
+            :items="moodItems"
             name="after_mood"
-            :class="FORM_SELECT_CLASS"
+            class="w-full"
             data-testid="int-after-mood"
-          >
-            <option value="">-- Pilih --</option>
-            <option v-for="m in MOODS" :key="m.value" :value="m.value">{{ m.label }}</option>
-          </select>
-        </div>
+          />
+        </UFormField>
       </div>
-      <button
-        type="submit"
-        :disabled="saving"
-        class="flex min-h-11 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-        data-testid="int-submit"
-      >
-        <Save class="h-4 w-4" />Simpan Intervensi
-      </button>
+      <div>
+        <UButton
+          type="submit"
+          size="lg"
+          class="min-h-11"
+          :disabled="saving"
+          icon="i-ph-floppy-disk"
+          label="Simpan Intervensi"
+          data-testid="int-submit"
+        />
+      </div>
     </form>
-  </section>
+  </UCard>
 </template>

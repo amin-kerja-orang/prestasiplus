@@ -9,17 +9,17 @@
  * States: loading shows the spinner only; a 403 renders the global 403 page in place; any other failure
  * shows the server's own message.
  */
-import { Printer } from '@lucide/vue'
 import { computed, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { DsPage } from '@/ds'
 
 import { fetchMonthlyReport } from '../api/school-admin'
+import ReportCrumb from '../components/shared/ReportCrumb.vue'
 import MonthlyCards from '../components/monthly/MonthlyCards.vue'
 import MonthlyTable from '../components/monthly/MonthlyTable.vue'
 import { generatedAtLabel, monthLabel } from '../components/monthly/monthly-format'
@@ -60,46 +60,41 @@ watch(
 /** FR-M27-83: a month without answers shows the cards only. */
 const hasAnswers = computed(() => (data.value?.cards.answers ?? 0) > 0)
 
-const LINK =
-  'inline-flex min-h-11 items-center rounded-lg px-1 text-sm font-semibold text-blue-700 hover:underline'
-
 function print() {
   window.print()
 }
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="lb-page">
+  <DsPage data-testid="lb-page">
     <template v-if="data">
-      <nav class="flex min-w-0 flex-wrap items-center gap-x-2 text-sm" data-testid="lb-breadcrumb">
-        <RouterLink
-          to="/admin-sekolah"
-          class="inline-flex min-h-11 items-center text-slate-500 hover:text-slate-700"
-          data-testid="lb-crumb-back"
-          >← Dashboard Sekolah</RouterLink
-        >
-        <span class="text-slate-300">/</span>
-        <span class="font-bold text-slate-700" data-testid="lb-crumb-current">{{ TITLE }}</span>
-      </nav>
+      <ReportCrumb prefix="lb" back-label="← Dashboard Sekolah" back-to="/admin-sekolah" :title="TITLE" />
 
       <div
         class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1"
         data-testid="lb-month-nav"
       >
-        <h2 class="text-xl font-bold text-slate-800" data-testid="lb-heading">
+        <h2 class="text-title text-highlighted" data-testid="lb-heading">
           Laporan {{ data.label }}
         </h2>
         <div class="flex flex-wrap items-center gap-x-4">
-          <RouterLink :to="{ query: { bulan: data.prev } }" :class="LINK" data-testid="lb-prev"
-            >← {{ monthLabel(data.prev) }}</RouterLink
-          >
-          <RouterLink
+          <UButton
+            :to="{ query: { bulan: data.prev } }"
+            color="neutral"
+            variant="ghost"
+            size="lg"
+            :label="`← ${monthLabel(data.prev)}`"
+            data-testid="lb-prev"
+          />
+          <UButton
             v-if="data.next"
             :to="{ query: { bulan: data.next } }"
-            :class="LINK"
+            color="neutral"
+            variant="ghost"
+            size="lg"
+            :label="`${monthLabel(data.next)} →`"
             data-testid="lb-next"
-            >{{ monthLabel(data.next) }} →</RouterLink
-          >
+          />
         </div>
       </div>
 
@@ -114,26 +109,34 @@ function print() {
         class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         data-testid="lb-footer"
       >
-        <p class="text-xs text-slate-500" data-testid="lb-generated">
+        <p class="text-caption text-muted" data-testid="lb-generated">
           Laporan dijana: {{ generatedAtLabel(data.generatedAt) }} · PrestasiPlus
         </p>
-        <button
+        <UButton
           type="button"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 text-sm font-semibold text-white hover:bg-blue-800 print:hidden"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          icon="i-ph-printer"
+          label="Cetak / PDF"
+          class="print:hidden"
           data-testid="lb-print"
           @click="print"
-        >
-          <Printer class="h-4 w-4" />Cetak / PDF
-        </button>
+        />
       </div>
     </template>
-    <AlertBox v-else-if="error && !refused" :messages="error.message" data-testid="lb-error" />
-    <p
-      v-else-if="loading"
-      class="flex justify-center py-10 text-slate-500"
-      data-testid="lb-loading"
-    >
-      <LoadingSpinner class="h-6 w-6" />
-    </p>
-  </div>
+    <UAlert
+      v-else-if="error && !refused"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      :description="error.message"
+      role="alert"
+      data-testid="lb-error"
+    />
+    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="lb-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
+  </DsPage>
 </template>

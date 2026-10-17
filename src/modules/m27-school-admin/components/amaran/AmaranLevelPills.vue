@@ -1,31 +1,31 @@
 <script setup lang="ts">
 /**
- * S4 level pills (FR-M27-75): "Semua Tingkatan" (`/amaran/sekolah`), "Tingkatan 4" (`?tingkatan=T4`),
- * "Tingkatan 5" (`T5`). The alias keeps the school admin on `/amaran/sekolah`. Pills wrap; 44 px high.
+ * S4 level pills (FR-M27-74; restyle spec AS-49): "Semua Tingkatan", "Tingkatan 4", "Tingkatan 5" as a
+ * segmented row of links to `?tingkatan=`; the active one is the solid kobalt button.
  */
-import { RouterLink } from 'vue-router'
+import { computed } from 'vue'
 
 import type { LevelFilter } from '../../api/amaran'
+import PillNav, { type PillItem } from '../shared/PillNav.vue'
 import { AMARAN_PATH, LEVEL_PILLS } from './amaran-format'
 
-defineProps<{ active: LevelFilter | null }>()
+const props = defineProps<{ active: LevelFilter | null }>()
+
+const items = computed<PillItem<string>[]>(() =>
+  LEVEL_PILLS.map((p) => ({
+    key: p.level ?? 'all',
+    label: p.label,
+    to: p.level ? { path: AMARAN_PATH, query: { tingkatan: p.level } } : { path: AMARAN_PATH },
+  })),
+)
 </script>
 
 <template>
-  <nav class="flex min-w-0 flex-wrap gap-2" data-testid="am-pills">
-    <RouterLink
-      v-for="p in LEVEL_PILLS"
-      :key="p.label"
-      :to="p.level ? { path: AMARAN_PATH, query: { tingkatan: p.level } } : { path: AMARAN_PATH }"
-      :class="[
-        'inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold transition-colors',
-        p.level === active
-          ? 'border-indigo-600 bg-indigo-600 text-white'
-          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
-      ]"
-      :data-testid="`am-pill-${p.level ?? 'all'}`"
-      :data-active="p.level === active ? 'true' : 'false'"
-      >{{ p.label }}</RouterLink
-    >
-  </nav>
+  <PillNav
+    :items="items"
+    :active="props.active ?? 'all'"
+    nav-id="am-pills"
+    prefix="am-pill"
+    label="Tingkatan"
+  />
 </template>

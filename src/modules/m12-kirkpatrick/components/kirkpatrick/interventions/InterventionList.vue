@@ -1,17 +1,23 @@
 <script setup lang="ts">
 /**
  * "Senarai Intervensi" (FN-M12-8.3.1 / 8.3.2; FR-M12-75 / 76): the empty state (icon and one line, DV-M12-01), or the
- * PROPOSED table, newest first (the API order), scrolling inside its card.
+ * PROPOSED table, newest first (the API order). Staff table (`DsDataTable`: card list below md, inner scroll
+ * when wide); the status is a badge with its word.
  */
-import { ClipboardCheck, ClipboardList } from '@lucide/vue'
+import { computed } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
 
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
+import { DsDataTable, DsEmptyState } from '@/ds'
 
 import type { InterventionRow } from '../../../api/types'
+import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { dateEn, pct } from '../common/kirkpatrick-format'
-import { alertLabel, moodLabel, STATUS_PILL } from './intervention-format'
+import { alertLabel, moodLabel, STATUS_COLOR } from './intervention-format'
 
-defineProps<{ rows: InterventionRow[] }>()
+const props = defineProps<{ rows: InterventionRow[] }>()
+
+/** Slot rows are untyped; this narrows the status for the badge colour. */
+const statusColor = (status: unknown) => STATUS_COLOR[status as NonNullable<InterventionRow['status']>]
 
 /** "55.5% · Gembira" / "-" (accuracy then mood, as option labels). */
 function accuracyCell(accuracy: number | null, mood: InterventionRow['beforeMood']): string {
@@ -20,65 +26,102 @@ function accuracyCell(accuracy: number | null, mood: InterventionRow['beforeMood
   )
   return parts.length > 0 ? parts.join(' · ') : '-'
 }
+
+interface Row extends Record<string, unknown> {
+  id: number
+  date: string
+  studentId: number
+  studentName: string | null
+  alert: string
+  description: string
+  action: string
+  before: string
+  after: string
+  status: InterventionRow['status']
+}
+
+const data = computed<Row[]>(() =>
+  props.rows.map((r) => ({
+    id: r.id,
+    date: dateEn(r.actionDate),
+    studentId: r.studentId,
+    studentName: r.studentName,
+    alert: alertLabel(r.alertType),
+    description: r.alertDescription,
+    action: r.actionTaken,
+    before: accuracyCell(r.beforeAccuracy, r.beforeMood),
+    after: accuracyCell(r.afterAccuracy, r.afterMood),
+    status: r.status,
+  })),
+)
+
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'date', header: 'Tarikh Tindakan' },
+  { accessorKey: 'studentId', header: 'Pelajar (ID)' },
+  { accessorKey: 'alert', header: 'Jenis Amaran' },
+  { accessorKey: 'description', header: 'Penerangan Amaran' },
+  { accessorKey: 'action', header: 'Tindakan Diambil' },
+  { accessorKey: 'before', header: 'Ketepatan Sebelum (%)' },
+  { accessorKey: 'after', header: 'Ketepatan Selepas (%)' },
+  { accessorKey: 'status', header: 'Status' },
+]
+const cardFields = [
+  { key: 'alert', label: 'Jenis Amaran' },
+  { key: 'description', label: 'Penerangan Amaran' },
+  { key: 'action', label: 'Tindakan Diambil' },
+  { key: 'before', label: 'Ketepatan Sebelum (%)' },
+  { key: 'after', label: 'Ketepatan Selepas (%)' },
+  { key: 'status', label: 'Status' },
+]
 </script>
 
 <template>
-  <DataTableCard :min-width="900" data-testid="int-list">
-    <template #header>
-      <h2
-        class="flex items-center gap-2 px-4 pt-4 font-heading text-sm font-bold text-slate-800 sm:px-5"
-      >
-        <ClipboardList class="h-4 w-4 text-amber-500" />Senarai Intervensi
-      </h2>
-    </template>
-    <div v-if="rows.length === 0" class="px-4 py-10 text-center" data-testid="int-empty">
-      <ClipboardCheck class="mx-auto h-8 w-8 text-slate-300" />
-      <p class="mt-2 text-sm text-slate-400">Tiada intervensi direkodkan lagi.</p>
-    </div>
-    <table v-else :class="T.table">
-      <thead>
-        <tr>
-          <th :class="T.th">Tarikh Tindakan</th>
-          <th :class="T.th">Pelajar (ID)</th>
-          <th :class="T.th">Jenis Amaran</th>
-          <th :class="T.th">Penerangan Amaran</th>
-          <th :class="T.th">Tindakan Diambil</th>
-          <th :class="T.th">Ketepatan Sebelum (%)</th>
-          <th :class="T.th">Ketepatan Selepas (%)</th>
-          <th :class="T.th">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="r in rows" :key="r.id" :class="T.row" data-testid="int-row">
-          <td :class="`${T.td} whitespace-nowrap`">{{ dateEn(r.actionDate) }}</td>
-          <td :class="T.td" data-testid="int-row-student">
-            {{ r.studentId }}
-            <span v-if="r.studentName" class="block text-xs text-slate-400">{{
-              r.studentName
-            }}</span>
-          </td>
-          <td :class="T.td">{{ alertLabel(r.alertType) }}</td>
-          <td :class="`${T.td} min-w-44`">{{ r.alertDescription }}</td>
-          <td :class="`${T.td} min-w-44`">{{ r.actionTaken }}</td>
-          <td :class="T.td" data-testid="int-row-before">
-            {{ accuracyCell(r.beforeAccuracy, r.beforeMood) }}
-          </td>
-          <td :class="T.td" data-testid="int-row-after">
-            {{ accuracyCell(r.afterAccuracy, r.afterMood) }}
-          </td>
-          <td :class="T.td">
-            <span
-              v-if="r.status"
-              :class="[
-                'inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap',
-                STATUS_PILL[r.status],
-              ]"
-              data-testid="int-row-status"
-              >{{ r.status }}</span
-            >
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </DataTableCard>
+  <KirkpatrickTableSection
+    title="Senarai Intervensi"
+    icon="i-ph-clipboard-text"
+    data-testid="int-list"
+  >
+    <UCard v-if="rows.length === 0" data-testid="int-empty">
+      <DsEmptyState icon="i-ph-clipboard" title="Tiada intervensi direkodkan lagi." />
+    </UCard>
+    <DsDataTable
+      v-else
+      :data="data"
+      :columns="columns"
+      caption="Senarai intervensi"
+      card-title="date"
+      :card-fields="cardFields"
+      :page-size="1000"
+    >
+      <template #studentId-cell="{ row }">
+        <span class="flex flex-col" data-testid="int-row-student">
+          <span>{{ row.original.studentId }}</span>
+          <span v-if="row.original.studentName" class="text-caption text-muted">{{
+            row.original.studentName
+          }}</span>
+        </span>
+      </template>
+      <template #description-cell="{ row }">
+        <span class="block min-w-44 whitespace-normal">{{ row.original.description }}</span>
+      </template>
+      <template #action-cell="{ row }">
+        <span class="block min-w-44 whitespace-normal">{{ row.original.action }}</span>
+      </template>
+      <template #before-cell="{ row }">
+        <span data-testid="int-row-before">{{ row.original.before }}</span>
+      </template>
+      <template #after-cell="{ row }">
+        <span data-testid="int-row-after">{{ row.original.after }}</span>
+      </template>
+      <template #status-cell="{ row }">
+        <UBadge
+          v-if="row.original.status"
+          :color="statusColor(row.original.status)"
+          variant="soft"
+          :label="row.original.status"
+          data-testid="int-row-status"
+        />
+      </template>
+    </DsDataTable>
+  </KirkpatrickTableSection>
 </template>

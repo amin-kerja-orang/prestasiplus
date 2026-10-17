@@ -18,6 +18,8 @@ const routes: RouteRecordRaw[] = [
       title: 'Laporan Bulanan - PRESTASIPLUS',
       header: { title: 'Laporan Bulanan' },
       module: 'M27',
+
+      v2: true,
     },
   },
 ]

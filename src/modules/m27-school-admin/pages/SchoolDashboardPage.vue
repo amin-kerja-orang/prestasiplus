@@ -12,9 +12,9 @@ import { computed, watch } from 'vue'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { DsPage } from '@/ds'
 
 import { fetchSchoolDashboard } from '../api/dashboard'
 import PerformanceSummary from '../components/dashboard/PerformanceSummary.vue'
@@ -45,20 +45,25 @@ watch(
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="sd-page">
+  <DsPage data-testid="sd-page">
     <template v-if="data">
       <PerutusanCard :rows="data.perutusan" />
       <SchoolBanner :school="data.school" :role-label="data.roleLabel" />
       <SummaryCards :cards="data.cards" />
       <PerformanceSummary :performance="data.performance" />
     </template>
-    <AlertBox v-else-if="error && !refused" :messages="error.message" data-testid="sd-error" />
-    <p
-      v-else-if="loading"
-      class="flex justify-center py-10 text-slate-500"
-      data-testid="sd-loading"
-    >
-      <LoadingSpinner class="h-6 w-6" />
-    </p>
-  </div>
+    <UAlert
+      v-else-if="error && !refused"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      :description="error.message"
+      role="alert"
+      data-testid="sd-error"
+    />
+    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="sd-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
+  </DsPage>
 </template>

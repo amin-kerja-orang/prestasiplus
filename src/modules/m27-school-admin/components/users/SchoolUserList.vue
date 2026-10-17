@@ -2,25 +2,24 @@
 /**
  * S6 `/admin-sekolah/pelajar` and S7 `/admin-sekolah/guru` (SRS M27 Part B FR-M27-88 to 93, 99 to 103, 119;
  * BR-M27-30, 36, 40). One list for both roles (`role` prop): the role and the school are fixed by the server,
- * there is no role, school or class control. Top to bottom: breadcrumb, one count card, the header-actions row
- * ("{n} pengguna dijumpai", "Eksport CSV", "Tambah Pelajar" / "Cipta Pengguna"), the GET filter card, the table.
+ * there is no role, school or class control. Top to bottom: back link, one count tile, the header-actions row
+ * ("{n} pengguna dijumpai", "Eksport CSV", "Tambah Pelajar" / "Cipta Pengguna"), the filter bar, the table
+ * (card list below `md`).
  *
  * The query string is the state (`is_active`, `search`, `page`). "Eksport CSV" sends the Status and Cari values
- * as they stand in the form, whether or not "Cari" was pressed (FR-M27-119). The S7 "Aktif?" button asks the native
- * confirm and switches the teacher (FR-M27-102); S6 shows a read-only badge (G1-1). Errors: the server message in a
- * red box (FR-M27-48, no M27 copy); a 403 renders the global 403 page in place.
+ * as they stand in the form, whether or not "Cari" was pressed (FR-M27-119). The S7 "Aktif?" button asks the
+ * confirm (`useConfirm`) and switches the teacher (FR-M27-102); S6 shows a read-only badge (G1-1). Errors: the
+ * server message in an alert (FR-M27-48, no M27 copy); a 403 renders the global 403 page in place.
  */
-import { FileSpreadsheet, Funnel, GraduationCap, Presentation, Search, ToggleRight, UserPlus, Users } from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter, type LocationQueryValue } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
 import { isApiError, type ListResult } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { DataTableCard, LaravelPager, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
-import { confirmNative, useApi, useFlash, useSession } from '@/composables'
+import { useApi, useFlash, useSession } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, DsStatTile, useConfirm, type CardField } from '@/ds'
 import { formatDateKey } from '@/lib/time'
 import { clock } from '@/lib/time/clock'
 import { saveBlob } from '@/lib/save-blob'
@@ -35,25 +34,48 @@ import {
   type SchoolTeacherRow,
   type SchoolUserListMeta,
 } from '../../api/school-admin'
-import PupilRow from './PupilRow.vue'
-import TeacherRow from './TeacherRow.vue'
+import NativeSelect from '../native/NativeSelect.vue'
+import ImpersonateButton from './ImpersonateButton.vue'
+import UserRowActions from './UserRowActions.vue'
 import {
   DASHBOARD_PATH,
   errorLines,
   formatCount,
+  formatDate,
+  lastLoginText,
+  phoneText,
   PUPIL_CREATE_PATH,
+  PUPIL_LIST_PATH,
   ROLE_CONFIG,
   TEACHER_CREATE_PATH,
+  TEACHER_LIST_PATH,
   type SchoolUserRole,
 } from './users-format'
 
 type ListRow = SchoolPupilRow | SchoolTeacherRow
+
+interface Item extends Record<string, unknown> {
+  id: number
+  index: number
+  name: string
+  initials: string
+  email: string
+  phone: string
+  grade: string
+  kelas: string
+  lastLogin: string
+  isActive: boolean
+  date: string
+  canEdit: boolean
+  editTo: string
+}
 
 const props = defineProps<{ role: SchoolUserRole }>()
 
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+const confirm = useConfirm()
 const pageMeta = usePageMeta()
 const { user: me } = useSession()
 
@@ -124,15 +146,38 @@ watch(
   { immediate: true },
 )
 
-const pupilRows = computed<SchoolPupilRow[]>(() =>
-  isPupil.value ? ((data.value?.data ?? []) as SchoolPupilRow[]) : [],
-)
-const teacherRows = computed<SchoolTeacherRow[]>(() =>
-  isPupil.value ? [] : ((data.value?.data ?? []) as SchoolTeacherRow[]),
-)
 const rowCount = computed(() => data.value?.data.length ?? 0)
 const firstLoad = computed(() => data.value === null && error.value === null)
 const from = computed(() => data.value?.meta.from ?? 1)
+const activeCount = computed(() => (status.value !== '' ? 1 : 0))
+
+const items = computed<Item[]>(() =>
+  (data.value?.data ?? []).map((row, i) => {
+    const pupil = isPupil.value ? (row as SchoolPupilRow) : null
+    const teacher = isPupil.value ? null : (row as SchoolTeacherRow)
+    return {
+      id: row.id,
+      index: from.value + i,
+      name: row.name,
+      initials: row.initials,
+      email: row.email,
+      phone: phoneText(row.phone),
+      grade: pupil ? (pupil.gradeLabel ?? '-') : '',
+      kelas: pupil
+        ? pupil.classNames.length > 0
+          ? pupil.classNames.join(', ')
+          : '-'
+        : teacher && teacher.classCount > 0
+          ? `${teacher.classCount} kelas`
+          : '-',
+      lastLogin: teacher ? lastLoginText(teacher.lastLoginAt) : '',
+      isActive: row.isActive,
+      date: formatDate(row.createdAt),
+      canEdit: row.canEdit,
+      editTo: `${isPupil.value ? PUPIL_LIST_PATH : TEACHER_LIST_PATH}/${row.id}`,
+    }
+  }),
+)
 
 function filterQuery(): Record<string, string> {
   const out: Record<string, string> = {}
@@ -160,19 +205,25 @@ async function submitFilter(): Promise<void> {
   }
 }
 
+async function resetFilter(): Promise<void> {
+  status.value = ''
+  search.value = ''
+  await router.push({ path: cfg.value.listPath, query: {} })
+}
+
 function goToPage(page: number): void {
   void router.push({ path: cfg.value.listPath, query: { ...pagerQuery.value, page: String(page) } })
 }
 
-// --- "Aktif?" of S7 (FR-M27-102): native confirm, then the toggle and a reload at the same URL.
+// --- "Aktif?" of S7 (FR-M27-102): confirm, then the toggle and a reload at the same URL.
 const togglingId = ref<number | null>(null)
 
-async function toggle(row: SchoolTeacherRow): Promise<void> {
-  if (!confirmNative('Pasti untuk menukar status pengguna ini?')) return
+async function toggle(id: number): Promise<void> {
   if (togglingId.value !== null) return
-  togglingId.value = row.id
+  if (!(await confirm({ message: 'Pasti untuk menukar status pengguna ini?' }))) return
+  togglingId.value = id
   try {
-    const result = await toggleSchoolTeacherActive(row.id)
+    const result = await toggleSchoolTeacherActive(id)
     await reload()
     flash.show({ type: 'success', message: result.status })
   } catch (err) {
@@ -203,206 +254,285 @@ async function exportCsv(): Promise<void> {
   }
 }
 
-const SKELETON_ROWS = 5
-const COLUMN_COUNT = 9
-const HEADERS = computed(() =>
+const columns = computed<TableColumn<Item>[]>(() =>
   isPupil.value
-    ? ['#', 'Nama', 'Emel', 'Telefon', 'Tingkatan', 'Kelas', 'Aktif?', 'Tarikh', 'Tindakan']
-    : ['#', 'Nama', 'Emel', 'Telefon', 'Kelas', 'Login Terakhir', 'Aktif?', 'Tarikh', 'Tindakan'],
+    ? [
+        { accessorKey: 'index', header: '#' },
+        { accessorKey: 'name', header: 'Nama' },
+        { accessorKey: 'email', header: 'Emel' },
+        { accessorKey: 'phone', header: 'Telefon' },
+        { accessorKey: 'grade', header: 'Tingkatan' },
+        { accessorKey: 'kelas', header: 'Kelas' },
+        { accessorKey: 'isActive', header: 'Aktif?' },
+        { accessorKey: 'date', header: 'Tarikh' },
+        { id: 'actions', header: 'Tindakan' },
+      ]
+    : [
+        { accessorKey: 'index', header: '#' },
+        { accessorKey: 'name', header: 'Nama' },
+        { accessorKey: 'email', header: 'Emel' },
+        { accessorKey: 'phone', header: 'Telefon' },
+        { accessorKey: 'kelas', header: 'Kelas' },
+        { accessorKey: 'lastLogin', header: 'Login Terakhir' },
+        { accessorKey: 'isActive', header: 'Aktif?' },
+        { accessorKey: 'date', header: 'Tarikh' },
+        { id: 'actions', header: 'Tindakan' },
+      ],
 )
 
-const HEAD = 'px-2.5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide whitespace-nowrap'
-const LABEL = 'mb-1 flex items-center gap-1.5 text-sm font-medium text-slate-700'
-const ACTION_BTN =
-  'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shadow transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:cursor-wait disabled:opacity-60 sm:w-auto'
+const cardFields = computed<CardField[]>(() =>
+  isPupil.value
+    ? [
+        { key: 'email', label: 'Emel' },
+        { key: 'phone', label: 'Telefon' },
+        { key: 'grade', label: 'Tingkatan' },
+        { key: 'kelas', label: 'Kelas' },
+      ]
+    : [
+        { key: 'email', label: 'Emel' },
+        { key: 'phone', label: 'Telefon' },
+        { key: 'kelas', label: 'Kelas' },
+        { key: 'lastLogin', label: 'Login Terakhir' },
+      ],
+)
+
+function openRow(row: Item): void {
+  if (row.canEdit) void router.push(row.editTo)
+}
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4 sm:space-y-6" :data-testid="`${cfg.testid}-page`">
-    <!-- FR-M27-44: breadcrumb "← Dashboard Sekolah", separator, the screen title in bold (not a link). -->
-    <nav class="flex min-w-0 flex-wrap items-center gap-x-2 text-sm" data-testid="user-breadcrumb">
-      <RouterLink
+  <DsPage :data-testid="`${cfg.testid}-page`">
+    <div>
+      <UButton
         :to="DASHBOARD_PATH"
-        class="inline-flex min-h-11 items-center text-slate-500 hover:text-slate-700"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-arrow-left"
+        class="min-h-11"
         data-testid="user-crumb-back"
-        >← Dashboard Sekolah</RouterLink
+        >Dashboard Sekolah</UButton
       >
-      <span class="text-slate-300">/</span>
-      <span class="font-bold text-slate-700" data-testid="user-crumb-current">{{
-        cfg.listTitle
-      }}</span>
-    </nav>
+    </div>
 
-    <!-- FR-M27-88 / 99: one count card, unaffected by the filters. -->
+    <!-- FR-M27-88 / 99: one count tile, unaffected by the filters. -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" data-testid="user-count-card">
-      <div class="flex min-w-0 items-center gap-3 rounded-2xl bg-white p-4 shadow">
-        <span
-          :class="[
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-            isPupil ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600',
-          ]"
-          aria-hidden="true"
-        >
-          <GraduationCap v-if="isPupil" class="h-5 w-5" />
-          <Presentation v-else class="h-5 w-5" />
-        </span>
-        <span class="min-w-0">
-          <span
-            v-if="data"
-            class="block font-heading text-xl leading-tight font-bold text-slate-800"
-            data-testid="user-count"
-            >{{ formatCount(data.meta.counts?.total ?? 0) }}</span
-          >
-          <span v-else class="block h-6 w-10 animate-pulse rounded bg-slate-100"></span>
-          <span class="block text-xs leading-tight text-slate-500" data-testid="user-count-label">{{
-            cfg.cardLabel
-          }}</span>
-        </span>
-      </div>
+      <USkeleton v-if="!data" class="h-24 w-full" />
+      <DsStatTile
+        v-else
+        :value="formatCount(data.meta.counts?.total ?? 0)"
+        :unit="cfg.cardLabel"
+        :icon="isPupil ? 'i-ph-graduation-cap' : 'i-ph-chalkboard-teacher'"
+      />
     </section>
 
-    <!-- FR-M27-88: text left, buttons right; at 375 the buttons wrap below the text, each full width. -->
+    <!-- FR-M27-88: text left, buttons right; at 375 the buttons wrap below the text. -->
     <div
       class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
       data-testid="user-actions-row"
     >
-      <p class="text-sm font-medium text-slate-600" data-testid="user-found">
+      <p class="text-body text-muted" data-testid="user-found">
         <template v-if="data">{{ formatCount(data.meta.totalItems) }} pengguna dijumpai</template>
       </p>
       <div class="flex flex-col gap-2 sm:flex-row">
-        <button
+        <UButton
           type="button"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          icon="i-ph-file-csv"
           title="Muat turun senarai mengikut tapisan di atas"
+          :loading="exporting"
           :disabled="exporting"
-          :class="[ACTION_BTN, 'bg-teal-600 hover:bg-teal-700']"
+          class="min-h-11 justify-center"
           data-testid="user-export"
           @click="exportCsv"
+          >Eksport CSV</UButton
         >
-          <FileSpreadsheet class="h-4 w-4" aria-hidden="true" />
-          Eksport CSV
-        </button>
-        <RouterLink
+        <UButton
           :to="isPupil ? PUPIL_CREATE_PATH : TEACHER_CREATE_PATH"
-          :class="[ACTION_BTN, 'bg-indigo-600 hover:bg-indigo-700']"
+          size="lg"
+          icon="i-ph-user-plus"
+          class="min-h-11 justify-center"
           data-testid="user-add"
+          >{{ isPupil ? 'Tambah Pelajar' : 'Cipta Pengguna' }}</UButton
         >
-          <UserPlus class="h-4 w-4" aria-hidden="true" />
-          {{ isPupil ? 'Tambah Pelajar' : 'Cipta Pengguna' }}
-        </RouterLink>
       </div>
     </div>
 
     <!-- FR-M27-89: Status, Cari, submit "Cari"; no role, school or class control. -->
-    <form
-      method="get"
-      class="grid grid-cols-1 items-end gap-3 rounded-2xl bg-white p-4 shadow sm:grid-cols-2 sm:p-5 lg:grid-cols-[1fr_2fr_auto]"
+    <DsFilterBar
+      :active-count="activeCount"
       data-testid="user-filter"
-      @submit.prevent="submitFilter"
+      @apply="submitFilter"
+      @reset="resetFilter"
     >
-      <div class="min-w-0">
-        <label for="user-status" :class="LABEL"
-          ><ToggleRight class="h-4 w-4" aria-hidden="true" />Status</label
-        >
-        <select
+      <template #search>
+        <UFormField label="Cari" name="search" class="min-w-0 grow">
+          <UInput
+            v-model="search"
+            type="text"
+            name="search"
+            icon="i-ph-magnifying-glass"
+            placeholder="Nama atau emel..."
+            class="w-full"
+            data-testid="user-search"
+          />
+        </UFormField>
+      </template>
+      <UFormField label="Status" name="is_active" class="min-w-40">
+        <NativeSelect
           id="user-status"
           v-model="status"
           name="is_active"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="user-status-filter"
         >
           <option value="">Semua</option>
           <option value="1">Aktif</option>
           <option value="0">Tidak Aktif</option>
-        </select>
-      </div>
-      <div class="min-w-0">
-        <label for="user-search" :class="LABEL"
-          ><Search class="h-4 w-4" aria-hidden="true" />Cari</label
-        >
-        <input
-          id="user-search"
-          v-model="search"
-          type="text"
-          name="search"
-          placeholder="Nama atau emel..."
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
-          data-testid="user-search"
-        />
-      </div>
-      <button
-        type="submit"
-        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 sm:col-span-2 lg:col-span-1"
-        data-testid="user-search-submit"
-      >
-        <Funnel class="h-4 w-4" aria-hidden="true" />
-        Cari
-      </button>
-    </form>
+        </NativeSelect>
+      </UFormField>
+    </DsFilterBar>
 
-    <AlertBox
+    <UAlert
       v-if="error && !refused"
-      :messages="errorLines(error)"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      :title="errorLines(error).join(' ')"
+      role="alert"
       data-testid="user-error"
     />
 
-    <DataTableCard v-else-if="!refused" :min-width="880">
-      <table :class="T.table" data-testid="user-table">
-        <thead class="bg-slate-50">
-          <tr>
-            <th v-for="label in HEADERS" :key="label" scope="col" :class="HEAD">{{ label }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-if="firstLoad">
-            <tr v-for="n in SKELETON_ROWS" :key="n" :class="T.row" data-testid="user-skeleton">
-              <td v-for="c in COLUMN_COUNT" :key="c" class="px-2.5 py-3">
-                <div class="h-4 w-full max-w-24 animate-pulse rounded bg-slate-100"></div>
-              </td>
-            </tr>
-          </template>
-
-          <tr v-else-if="rowCount === 0" :class="T.row" data-testid="user-empty">
-            <td :colspan="COLUMN_COUNT" class="px-4 py-12 text-center text-slate-400">
-              <Users class="mx-auto mb-2 h-10 w-10" aria-hidden="true" />
-              <p class="font-medium text-slate-500">Tiada pengguna dijumpai</p>
-              <p class="text-sm">Cuba ubah kriteria carian anda</p>
-            </td>
-          </tr>
-
-          <template v-else-if="isPupil">
-            <PupilRow
-              v-for="(row, i) in pupilRows"
-              :key="row.id"
-              :row="row"
-              :index="from + i"
+    <template v-else-if="!refused">
+      <UCard v-if="!firstLoad && rowCount === 0" data-testid="user-empty">
+        <DsEmptyState
+          title="Tiada pengguna dijumpai"
+          description="Cuba ubah kriteria carian anda"
+          icon="i-ph-users"
+        />
+      </UCard>
+      <DsDataTable
+        v-else
+        :data="items"
+        :columns="columns"
+        :loading="firstLoad"
+        :total="data?.meta.totalItems ?? 0"
+        :page-size="data?.meta.pageSize ?? 25"
+        :page="applied.page"
+        :caption="cfg.listTitle"
+        card-title="name"
+        :card-fields="cardFields"
+        data-testid="user-table"
+        @update:page="goToPage"
+        @row-click="openRow"
+      >
+        <template #index-cell="{ row }">
+          <span data-testid="user-index">{{ row.original.index }}</span>
+        </template>
+        <template #name-cell="{ row }">
+          <div class="flex min-w-0 items-center gap-2" data-testid="user-row" :data-user-id="row.original.id">
+            <UAvatar
+              :text="row.original.initials"
+              size="sm"
+              aria-hidden="true"
+              data-testid="user-avatar"
             />
-          </template>
-          <template v-else>
-            <TeacherRow
-              v-for="(row, i) in teacherRows"
-              :key="row.id"
-              :row="row"
-              :index="from + i"
-              :toggling="togglingId === row.id"
-              @toggle="toggle"
-            />
-          </template>
-        </tbody>
-      </table>
-
-      <template #footer>
-        <div class="border-t border-slate-100 px-4 py-3 empty:hidden" data-testid="user-pager">
-          <LaravelPager
-            v-if="data && rowCount > 0"
-            :page="data.meta.page"
-            :total="data.meta.totalItems"
-            :per-page="data.meta.pageSize"
-            :path="cfg.listPath"
-            :query="pagerQuery"
-            @change="goToPage"
+            <RouterLink
+              v-if="row.original.canEdit"
+              :to="row.original.editTo"
+              class="inline-flex min-h-11 min-w-0 items-center  text-label text-highlighted"
+              data-testid="user-name"
+              >{{ row.original.name }}</RouterLink
+            >
+            <span v-else class="min-w-0  text-label text-highlighted" data-testid="user-name">{{
+              row.original.name
+            }}</span>
+          </div>
+        </template>
+        <template #email-cell="{ row }">
+          <span class="break-all" data-testid="user-email">{{ row.original.email }}</span>
+        </template>
+        <template #phone-cell="{ row }">
+          <span class="whitespace-nowrap" data-testid="user-phone">{{ row.original.phone }}</span>
+        </template>
+        <template #grade-cell="{ row }">
+          <span class="whitespace-nowrap" data-testid="user-grade">{{ row.original.grade }}</span>
+        </template>
+        <template #kelas-cell="{ row }">
+          <span data-testid="user-classes">{{ row.original.kelas }}</span>
+        </template>
+        <template #lastLogin-cell="{ row }">
+          <span class="whitespace-nowrap" data-testid="user-last-login">{{
+            row.original.lastLogin
+          }}</span>
+        </template>
+        <template #isActive-cell="{ row }">
+          <UBadge
+            v-if="isPupil"
+            :color="row.original.isActive ? 'success' : 'error'"
+            variant="soft"
+            :label="row.original.isActive ? 'Aktif' : 'Tidak'"
+            data-testid="user-status"
           />
-        </div>
-      </template>
-    </DataTableCard>
-  </div>
+          <UButton
+            v-else
+            type="button"
+            size="lg"
+            variant="soft"
+            :color="row.original.isActive ? 'success' : 'error'"
+            :icon="row.original.isActive ? 'i-ph-check-circle' : 'i-ph-x-circle'"
+            :loading="togglingId === row.original.id"
+            :disabled="togglingId === row.original.id"
+            class="min-h-11"
+            data-testid="user-toggle"
+            @click="toggle(row.original.id)"
+            >{{ row.original.isActive ? 'Aktif' : 'Tidak' }}</UButton
+          >
+        </template>
+        <template #date-cell="{ row }">
+          <span class="whitespace-nowrap" data-testid="user-date">{{ row.original.date }}</span>
+        </template>
+        <template #actions-cell="{ row }">
+          <UserRowActions :edit-to="row.original.editTo" :can-edit="row.original.canEdit">
+            <ImpersonateButton
+              :user-id="row.original.id"
+              :name="row.original.name"
+              :is-active="row.original.isActive"
+              :role="role"
+            />
+          </UserRowActions>
+        </template>
+        <template #card-actions="{ row }">
+          <div class="flex flex-col items-end gap-2">
+            <UBadge
+              v-if="isPupil"
+              :color="row.isActive ? 'success' : 'error'"
+              variant="soft"
+              :label="row.isActive ? 'Aktif' : 'Tidak'"
+            />
+            <UButton
+              v-else
+              type="button"
+              size="lg"
+              variant="soft"
+              :color="row.isActive ? 'success' : 'error'"
+              :loading="togglingId === row.id"
+              class="min-h-11"
+              @click="toggle(row.id)"
+              >{{ row.isActive ? 'Aktif' : 'Tidak' }}</UButton
+            >
+            <UserRowActions :edit-to="row.editTo" :can-edit="row.canEdit">
+              <ImpersonateButton
+                :user-id="row.id"
+                :name="row.name"
+                :is-active="row.isActive"
+                :role="role"
+              />
+            </UserRowActions>
+          </div>
+        </template>
+      </DsDataTable>
+    </template>
+  </DsPage>
 </template>

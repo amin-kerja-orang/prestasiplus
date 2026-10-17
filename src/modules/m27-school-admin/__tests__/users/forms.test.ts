@@ -64,12 +64,13 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
       'Nama *',
       'Emel *',
       'No. Telefon (Pilihan)',
+      'Status',
       'Kata Laluan Baru',
       'Sahkan Kata Laluan Baru',
     ])
     expect((w.get('[data-testid="user-name"]').element as HTMLInputElement).value).toBe('Murid Contoh Satu')
     expect((w.get('[data-testid="user-phone"]').element as HTMLInputElement).value).toBe('0191234567')
-    expect(text(w, 'user-status-line')).toBe('Status Aktif')
+    expect(text(w, 'user-status-line')).toBe('StatusAktif')
     expect(has(w, 'user-status-line')).toBe(true)
     expect(w.text()).not.toMatch(/Peranan|Sekolah|Tingkatan|Kad Pengenalan|Nota Keselamatan/)
     expect(w.find('select').exists()).toBe(false)
@@ -241,6 +242,8 @@ describe('S11 Cipta Pengguna (FR-M27-108 to 110)', () => {
     expect(text(w, 'user-school-name')).toBe('SMK Contoh Ujian')
     expect(text(w, 'user-school-meta')).toBe('ABC1234 · PPD Contoh · Selangor')
     expect(w.findAll('label').map((l) => l.text().replace(/\s+/g, ' ').trim())).toEqual([
+      'Peranan',
+      'Sekolah',
       'Nama *',
       'Emel *',
       'No. Telefon (Pilihan)',
@@ -325,6 +328,7 @@ describe('S12 Tambah Pelajar (FR-M27-117, 118, 120)', () => {
     const { wrapper: w } = await open()
     expect(w.findAll('label').map((l) => l.text().replace(/\s+/g, ' ').trim())).toEqual([
       'Nama penuh *',
+      'Sekolah',
       'Kelas',
       'Emel *',
       'Kata laluan',

@@ -193,7 +193,7 @@ describe('heading and month links (FR-M27-81; AC-M27-23.1, 23.3)', () => {
 describe('cards (FR-M27-82, 83; AC-M27-23.2, 23.4)', () => {
   it('shows four cards in order with the sub-lines', async () => {
     const w = await mountPage(report())
-    const labels = w.findAll('[data-testid="lb-cards"] p.uppercase').map((e) => e.text())
+    const labels = texts(w, 'lb-card-label')
     expect(labels).toEqual(['Penglibatan', 'Soalan Dijawab', 'Ketepatan', 'Sesi Latihan'])
     expect(texts(w, 'lb-card-value')).toEqual(['60%', '1,234', '61.4%', '82'])
     expect(texts(w, 'lb-card-sub')).toEqual(['6 aktif / 10 daftar', '206 soalan/pelajar'])
@@ -220,24 +220,21 @@ describe('Statistik Bulanan (FR-M27-84; AC-M27-24.1, 24.2)', () => {
       'Purata/Pelajar',
       'Accuracy',
     ])
-    const rows = w.findAll('[data-testid="lb-table-row"]')
+    // the "Jumlah" row closes the table
+    const rows = w.findAll('[data-testid="lb-table"] tbody tr')
     expect(rows.map((r) => r.findAll('td').map((c) => c.text()))).toEqual([
       ['Ogos 2026', '200', '100', '4', '50.0', '50.0%'],
       ['September 2026', '1,234', '666', '6', '205.7', '61.4%'],
+      ['Jumlah', '1,434', '766', '—', '—', '53.4%'],
     ])
-    expect(
-      w
-        .get('[data-testid="lb-table-total"]')
-        .findAll('td')
-        .map((c) => c.text()),
-    ).toEqual(['Jumlah', '1,434', '766', '—', '—', '53.4%'])
   })
 
   it('has no footer with one row', async () => {
     const base = report()
     const w = await mountPage({ ...base, months: base.months.slice(1), total: base.total })
-    expect(w.findAll('[data-testid="lb-table-row"]')).toHaveLength(1)
-    expect(has(w, 'lb-table-total')).toBe(false)
+    const rows = w.findAll('[data-testid="lb-table"] tbody tr')
+    expect(rows).toHaveLength(1)
+    expect(w.text()).not.toContain('Jumlah')
   })
 
   it('shows "Tiada data" and "Tiada aktiviti direkodkan buat masa ini" without a month with sessions', async () => {
