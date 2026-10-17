@@ -104,7 +104,7 @@ async function render(props: Record<string, unknown> = {}): Promise<VueWrapper> 
       api: api as unknown as QuizApi,
       ...props,
     },
-    global: { plugins: [router] },
+    global: { plugins: [router], stubs: { teleport: true } },
   })
   await flushPromises()
   return wrapper
@@ -114,6 +114,7 @@ const t = (w: VueWrapper, id: string) => w.get(`[data-testid=${id}]`)
 
 beforeEach(() => {
   window.scrollTo = vi.fn()
+  vi.spyOn(window, 'alert').mockImplementation(native.alertNative)
   api = { start: vi.fn(), check: vi.fn(), submit: vi.fn() }
   api.start.mockResolvedValue(session())
   native.alertNative.mockReset()
@@ -137,7 +138,7 @@ describe('QuizRunner start', () => {
     expect(t(w, 'quiz-title').text()).toBe('Bahasa Melayu')
     expect(t(w, 'quiz-progress-text').text()).toBe('Soalan 1 daripada 2')
     expect(t(w, 'quiz-timer').text()).toBe('00:00')
-    expect(t(w, 'quiz-progress-bar').attributes('style')).toContain('width: 50%')
+    expect(t(w, 'quiz-header').get('[role=progressbar]').attributes('aria-valuenow')).toBe('50')
     expect(w.emitted('loaded')?.[0]?.[0]).toMatchObject({ sessionId: 's1', questionCount: 2 })
   })
 
@@ -240,7 +241,7 @@ describe('QuizRunner question', () => {
     expect(api.check).toHaveBeenCalledWith('s1', { questionId: 10, selectedOptionId: 0 })
     expect(t(w, 'option-A').attributes('data-state')).toBe('wrong')
     expect(t(w, 'option-B').attributes('data-state')).toBe('correct')
-    expect(t(w, 'option-A').attributes('disabled')).toBeDefined()
+    expect(t(w, 'option-A').attributes('aria-disabled')).toBe('true')
     expect(t(w, 'feedback-title').text()).toBe('Salah')
     expect(t(w, 'feedback-text').text()).toBe('Cuba lagi')
     expect(t(w, 'feedback-explanation').text()).toContain('Penjelasan:')
@@ -278,7 +279,7 @@ describe('QuizRunner question', () => {
     await t(w, 'btn-check').trigger('click')
     await flushPromises()
     expect(t(w, 'feedback-title').text()).toBe('Masih belum tepat')
-    expect(t(w, 'option-B').attributes('data-state')).toBe('dim')
+    expect(t(w, 'option-B').attributes('data-state')).toBe('dimmed')
     expect(t(w, 'option-A').attributes('data-state')).toBe('wrong')
   })
 
@@ -382,7 +383,7 @@ describe('QuizRunner results', () => {
     expect(t(w, 'result-percent').attributes('data-band')).toBe('low')
     expect(t(w, 'result-message').text()).toBe('Jangan putus asa! Cuba ulang kaji lagi!')
     expect(w.find('[data-testid=result-corrected]').exists()).toBe(false)
-    expect(t(w, 'result-bar').attributes('style')).toContain('width: 0%')
+    expect(t(w, 'result-bar').get('[role=progressbar]').attributes('aria-valuenow')).toBe('0')
   })
 
   it('shows the corrected line from 50 % for S7', async () => {

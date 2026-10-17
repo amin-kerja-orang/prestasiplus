@@ -103,7 +103,7 @@ async function render(component: unknown, url: string): Promise<VueWrapper> {
     ],
   })
   await router.push(url)
-  wrapper = mount(component as never, { global: { plugins: [router] } })
+  wrapper = mount(component as never, { global: { plugins: [router], stubs: { teleport: true } } })
   await flushPromises()
   return wrapper
 }
@@ -129,7 +129,6 @@ describe('S2 PracticeListPage', () => {
     const w = await render(PracticeListPage, '/practice')
     expect(t(w, 'practice-title').text()).toBe('Latih Tubi 🎯')
     expect(w.text()).toContain('Pilih subjek dan mula berlatih!')
-    expect(w.findAll('[data-testid=practice-circles] > div')).toHaveLength(4)
     const banner = t(w, 'chapter-banner')
     expect(banner.attributes('href')).toBe('/practice/chapter')
     expect(banner.text()).toContain('Mode Baru')
@@ -274,8 +273,7 @@ describe('S3 PracticeConfigPage', () => {
     expect(w.find('[data-testid=config-ready]').exists()).toBe(false)
     const start = t(w, 'config-start')
     expect(start.attributes('data-startable')).toBe('false')
-    expect(start.classes()).toContain('bg-slate-300')
-    expect(start.classes()).toContain('cursor-not-allowed')
+    expect(start.attributes('aria-disabled')).toBe('true')
     await start.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/practice/MATH')

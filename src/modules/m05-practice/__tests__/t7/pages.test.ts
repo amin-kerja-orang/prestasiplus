@@ -48,7 +48,7 @@ async function render(component: unknown, url: string): Promise<VueWrapper> {
     ],
   })
   await router.push(url)
-  wrapper = mount(component as never, { global: { plugins: [router] } })
+  wrapper = mount(component as never, { global: { plugins: [router], stubs: { teleport: true } } })
   await flushPromises()
   return wrapper
 }
@@ -109,7 +109,8 @@ describe('S10 StructuredListPage', () => {
     expect(t(w, 'card-footer').text()).toContain('2 soalan · Tingkatan 5')
     expect(t(w, 'card-start').attributes('href')).toBe('/latihan-berstruktur/4454/jawab')
     expect(w.find('[data-testid=card-parts]').exists()).toBe(false)
-    expect(w.findAll('[data-testid=filter-subject] option').map((o) => o.text())).toEqual([
+    const subjectSelect = w.findAllComponents({ name: 'Select' })[0]
+    expect(((subjectSelect?.props('items') ?? []) as { label: string }[]).map((o) => o.label)).toEqual([
       'Semua Subjek',
       'Perniagaan',
     ])
@@ -155,7 +156,8 @@ describe('S10 StructuredListPage', () => {
   it('submits the filter with both parameters and keeps scope', async () => {
     api.fetchStructured.mockResolvedValue(listOf([card()], { scope: 'spm' }))
     const w = await render(StructuredListPage, '/latihan-berstruktur?scope=spm')
-    await t(w, 'filter-kbat').setValue('4')
+    w.findAllComponents({ name: 'Select' })[1]?.vm.$emit('update:modelValue', '4')
+    await flushPromises()
     await t(w, 'structured-filter').trigger('submit')
     await flushPromises()
     expect(router.currentRoute.value.query).toMatchObject({
@@ -282,7 +284,7 @@ describe('S13 RemedialListPage', () => {
     api.fetchRemedialTests.mockResolvedValue({ data: [], meta: {} })
     const w = await render(RemedialListPage, '/remedial/saya')
     expect(t(w, 'remedial-h1').text()).toBe('Ujian Remedial Saya')
-    expect(t(w, 'remedial-empty').text()).toBe('🎯Tiada ujian remedial. Bagus — teruskan usaha!')
+    expect(t(w, 'remedial-empty').text()).toContain('Tiada ujian remedial. Bagus — teruskan usaha!')
   })
 
   it('lists tests; only an active one has "Mula Ujian"', async () => {

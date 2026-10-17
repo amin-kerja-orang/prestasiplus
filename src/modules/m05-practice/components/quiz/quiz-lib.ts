@@ -4,6 +4,7 @@
  */
 
 import { API_ERROR_CODES, ApiError } from '@/api'
+import type { QuizOptionState } from '@/ds'
 
 import type { StartSessionResponse } from '../../api/types'
 import type { QuizAnswerRecord, QuizLabels } from './quiz-types'
@@ -79,29 +80,16 @@ export function optionState(
   return 'dim'
 }
 
-export const OPTION_BOX_CLASS: Record<OptionState, string> = {
-  idle: 'cursor-pointer border-gray-200 bg-white hover:scale-[1.02] hover:border-orange-300 hover:bg-orange-50',
-  selected:
-    'cursor-pointer scale-[1.02] border-orange-500 bg-orange-50 shadow-lg ring-2 ring-orange-200',
-  correct: 'cursor-not-allowed border-green-500 bg-green-50 shadow-lg',
-  wrong: 'cursor-not-allowed border-red-500 bg-red-50 shadow-lg',
-  dim: 'cursor-not-allowed border-gray-200 bg-white opacity-50',
+/** The design-system option state of an `OptionState` (the composite names the dim state `dimmed`). */
+export function dsOptionState(state: OptionState): QuizOptionState {
+  return state === 'dim' ? 'dimmed' : state
 }
 
-export const OPTION_TILE_CLASS: Record<OptionState, string> = {
-  idle: 'bg-gray-100 text-gray-500',
-  selected: 'bg-orange-500 text-white',
-  correct: 'bg-green-500 text-white',
-  wrong: 'bg-red-500 text-white',
-  dim: 'bg-gray-100 text-gray-400',
-}
-
-export const OPTION_TEXT_CLASS: Record<OptionState, string> = {
-  idle: 'text-slate-700',
-  selected: 'text-slate-700',
-  correct: 'font-semibold text-green-700',
-  wrong: 'text-red-700',
-  dim: 'text-slate-400',
+/** Trailing run of correct answers (the combo chip of the quiz header). */
+export function comboOf(answers: readonly { isCorrect: boolean }[]): number {
+  let n = 0
+  for (let i = answers.length - 1; i >= 0 && answers[i]?.isCorrect; i--) n += 1
+  return n
 }
 
 /** A `profileUrl` is a link only for http(s) or an internal path (no `javascript:` etc.). */

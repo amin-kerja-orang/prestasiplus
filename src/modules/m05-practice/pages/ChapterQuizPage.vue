@@ -10,19 +10,19 @@
  * - shell header "Soalan by Chapter" / "{subject}", tab title "Chapter {subject} - PRESTASIPLUS" (UNVERIFIED);
  * - results "Keputusan Latihan", "Ulang Lagi" (a new session with the same parameters) and "Kembali" → S5.
  */
-import { RotateCw } from '@lucide/vue'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox } from '@/components/feedback'
 import { usePageMeta } from '@/composables'
 
 import { fetchChapterSubject } from '../api/practice'
 import type { StartSessionRequest, StartSessionResponse } from '../api/types'
 import { chapterListHref, chapterQuizTitle } from '../components/chapter/chapter-lib'
 import { parseQuizQuery } from '../components/quiz/practice-config'
+import LoadError from '../components/quiz/LoadError.vue'
+import QuizLoading from '../components/quiz/QuizLoading.vue'
 import QuizRunner from '../components/quiz/QuizRunner.vue'
 import { PRACTICE_LABELS } from '../components/quiz/quiz-labels'
 
@@ -127,36 +127,17 @@ const headerTitle = (s: StartSessionResponse): string => chapterQuizTitle(s.chap
     :report="{ source: 'latihan' }"
   />
   <!-- The same loading look as the runner while the level is looked up (no blank page). -->
-  <div
+  <QuizLoading
     v-else-if="!failed"
-    class="min-h-screen px-2 py-4 sm:px-4 sm:py-8"
+    :title="PRACTICE_LABELS.loadingTitle"
+    :text="PRACTICE_LABELS.loadingText"
     data-testid="chapter-quiz-resolving"
-  >
-    <div class="mx-auto max-w-2xl rounded-2xl bg-white p-12 text-center shadow-lg">
-      <div class="relative mx-auto mb-3 h-16 w-16 sm:mb-6 sm:h-24 sm:w-24">
-        <div class="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-        <div
-          class="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-blue-500"
-        ></div>
-        <div class="absolute inset-0 flex items-center justify-center">
-          <RotateCw class="h-9 w-9 text-blue-500" />
-        </div>
-      </div>
-      <h2 class="mb-2 text-sm font-bold text-slate-800 sm:text-2xl">
-        {{ PRACTICE_LABELS.loadingTitle }}
-      </h2>
-      <p class="text-slate-500">{{ PRACTICE_LABELS.loadingText }}</p>
-    </div>
-  </div>
-  <div v-else class="max-w-xl space-y-3 p-4" data-testid="chapter-quiz-error">
-    <AlertBox messages="Maaf, berlaku ralat. Sila cuba semula." />
-    <button
-      type="button"
-      class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
-      data-testid="chapter-quiz-retry"
-      @click="attempt += 1"
-    >
-      Cuba Semula
-    </button>
-  </div>
+  />
+  <LoadError
+    v-else
+    message="Maaf, berlaku ralat. Sila cuba semula."
+    retry-testid="chapter-quiz-retry"
+    data-testid="chapter-quiz-error"
+    @retry="attempt += 1"
+  />
 </template>

@@ -20,14 +20,14 @@ export const KBAT_OPTIONS: readonly { value: string; label: string }[] = [
 
 export interface KbatBadge {
   label: string
-  /** Tailwind classes (BR-23: 1–2 LOTS green, 3 MOTS amber, 4–6 HOTS red; all OBSERVED). */
-  cls: string
+  /** Semantic colour (BR-23: 1–2 LOTS green, 3 MOTS amber, 4–6 HOTS red; all OBSERVED). */
+  color: 'success' | 'warning' | 'error'
 }
 
 export function kbatBadge(level: number): KbatBadge {
-  if (level <= 2) return { label: `LOTS ${String(level)}`, cls: 'bg-green-100 text-green-700' }
-  if (level === 3) return { label: 'MOTS 3', cls: 'bg-amber-100 text-amber-700' }
-  return { label: `HOTS ${String(level)}`, cls: 'bg-red-100 text-red-700' }
+  if (level <= 2) return { label: `LOTS ${String(level)}`, color: 'success' }
+  if (level === 3) return { label: 'MOTS 3', color: 'warning' }
+  return { label: `HOTS ${String(level)}`, color: 'error' }
 }
 
 const first = (v: LocationQuery[string] | undefined): string | null => {

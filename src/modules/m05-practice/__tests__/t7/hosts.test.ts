@@ -57,7 +57,7 @@ async function mountAt(component: unknown, path: string, url: string) {
     routes: [{ path, component: component as never }],
   })
   await router.push(url)
-  const w = mount(component as never, { global: { plugins: [router] } })
+  const w = mount(component as never, { global: { plugins: [router], stubs: { teleport: true } } })
   await flushPromises()
   return w
 }

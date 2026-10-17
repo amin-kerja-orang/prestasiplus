@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
  * S5 `/practice/chapter/:code` (`?level=`) "Chapter {subject} - PRESTASIPLUS" (M05-T5; FR-M05-59…65,
- * 67, 132; BR-11, BR-15, BR-16; DV-M05-07, DV-M05-09, DV-M05-15).
+ * 67, 132; BR-11, BR-15, BR-16; DV-M05-07, DV-M05-09, DV-M05-15), restyled for v2 (batch B01).
  *
- * - Dark hero: "Semua Subjek" → S4, "Progressive Unlock", the subject and the level select; a change
+ * - Title block: "Semua Subjek" → S4, "Progressive Unlock", the subject and the level select; a change
  *   navigates to `?level={id}`. With no offered level the select is not rendered (DV-M05-07).
  * - One card per chapter of the level: open (count links to Q2) or locked, from the API (BR-16);
  *   no chapter → `Tiada bab tersedia untuk tahap ini.`.
@@ -11,19 +11,19 @@
  *   The page reads the API on every visit, so the stats and unlock state are fresh after a session
  *   (FR-M05-67).
  */
-import { ArrowLeft, Layers } from '@lucide/vue'
 import { computed, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox } from '@/components/feedback'
 import { useApi, usePageMeta } from '@/composables'
+import { DsEmptyState } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchChapterSubject } from '../api/practice'
 import { chapterListHref, parseLevelParam } from '../components/chapter/chapter-lib'
 import ChapterCardItem from '../components/chapter/ChapterCardItem.vue'
+import LoadError from '../components/quiz/LoadError.vue'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
@@ -59,87 +59,72 @@ watch(
   { immediate: true },
 )
 
-function onLevelChange(event: Event): void {
-  const id = Number.parseInt((event.target as HTMLSelectElement).value, 10)
-  if (Number.isNaN(id)) return
+const levelItems = computed(() =>
+  (data.value?.levels ?? []).map((l) => ({
+    label: `${l.name} — ${formatCount(l.count)} soalan`,
+    value: l.id,
+  })),
+)
+
+function onLevelChange(id: unknown): void {
+  if (typeof id !== 'number' || Number.isNaN(id)) return
   void router.push(chapterListHref(code.value, id))
 }
 </script>
 
 <template>
-  <div class="space-y-6" data-testid="chapter-subject-page">
+  <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="chapter-subject-page">
     <template v-if="data">
-      <div
-        class="rounded-3xl bg-gradient-to-br from-slate-900 via-teal-900 to-emerald-800 p-6 text-white"
-        data-testid="chapter-subject-hero"
-      >
-        <RouterLink
+      <div class="flex flex-col gap-3" data-testid="chapter-subject-hero">
+        <UButton
           to="/practice/chapter"
-          class="mb-4 inline-flex items-center text-sm text-emerald-100 hover:text-white max-lg:min-h-11"
+          color="neutral"
+          variant="ghost"
+          icon="i-ph-arrow-left-bold"
+          class="min-h-11 self-start"
           data-testid="chapter-all-subjects"
+          >Semua Subjek</UButton
         >
-          <ArrowLeft class="mr-2 h-4 w-4" /> Semua Subjek
-        </RouterLink>
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p class="text-xs font-black tracking-[0.25em] text-emerald-200 uppercase">
-              Progressive Unlock
-            </p>
-            <h1
-              class="mt-2 font-heading text-2xl font-black text-white sm:text-4xl"
-              data-testid="chapter-subject-name"
-            >
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div class="flex min-w-0 flex-col gap-1">
+            <p class="text-overline text-primary">Progressive Unlock</p>
+            <h1 class="text-title text-highlighted" data-testid="chapter-subject-name">
               {{ data.subject.name }}
             </h1>
-            <p class="mt-2 text-sm text-emerald-50">
+            <p class="max-w-prose text-body text-muted">
               Lengkapkan semua soalan bab semasa dan capai 70% untuk buka bab seterusnya.
             </p>
           </div>
-          <form v-if="data.levels.length > 0" @submit.prevent>
-            <select
-              name="level"
-              :value="data.levelId ?? ''"
-              class="max-w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white"
-              data-testid="chapter-level-select"
-              @change="onLevelChange"
-            >
-              <option
-                v-for="l in data.levels"
-                :key="l.id"
-                :value="l.id"
-                class="text-slate-900"
-                :selected="l.id === data.levelId"
-              >
-                {{ l.name }} — {{ formatCount(l.count) }} soalan
-              </option>
-            </select>
-          </form>
+          <USelect
+            v-if="data.levels.length > 0"
+            :model-value="data.levelId ?? undefined"
+            :items="levelItems"
+            size="xl"
+            class="w-full lg:w-80"
+            aria-label="Tahap pendidikan"
+            data-testid="chapter-level-select"
+            @update:model-value="onLevelChange"
+          />
         </div>
       </div>
 
-      <div class="space-y-4" data-testid="chapter-list">
+      <div class="flex flex-col gap-3 md:gap-4" data-testid="chapter-list">
         <ChapterCardItem v-for="c in data.chapters" :key="c.id" :code="code" :chapter="c" />
-        <div
+        <DsEmptyState
           v-if="data.chapters.length === 0"
-          class="rounded-3xl border border-slate-100 bg-white p-10 text-center"
+          title="Tiada bab tersedia untuk tahap ini."
+          icon="i-ph-stack-duotone"
           data-testid="chapter-empty"
-        >
-          <Layers class="mx-auto h-10 w-10 text-slate-300" />
-          <h3 class="mt-4 font-bold text-slate-700">Tiada bab tersedia untuk tahap ini.</h3>
-        </div>
+        />
       </div>
     </template>
 
-    <div v-else-if="error && !notFound" class="max-w-xl space-y-3" data-testid="chapter-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
-        data-testid="chapter-retry"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
-    </div>
+    <LoadError
+      v-else-if="error && !notFound"
+      :message="LOAD_ERROR"
+      retry-testid="chapter-retry"
+      data-testid="chapter-error"
+      @retry="reload()"
+    />
   </div>
 </template>

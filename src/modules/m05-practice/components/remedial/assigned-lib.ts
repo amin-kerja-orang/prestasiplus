@@ -12,10 +12,10 @@ export function parseId(raw: unknown): number | null {
 }
 
 /** S13 status chip (PROPOSED COPY §8.3): "Aktif" amber, "Selesai" green. */
-export function remedialChip(status: RemedialTestItem['status']): { label: string; cls: string } {
+export function remedialChip(status: RemedialTestItem['status']): { label: string; color: 'success' | 'warning' } {
   return status === 'completed'
-    ? { label: 'Selesai', cls: 'bg-green-100 text-green-700' }
-    : { label: 'Aktif', cls: 'bg-amber-100 text-amber-700' }
+    ? { label: 'Selesai', color: 'success' }
+    : { label: 'Aktif', color: 'warning' }
 }
 
 /** `resourceUrl` is linked only when it is http(s) or an internal path (SEC: no `javascript:`). */

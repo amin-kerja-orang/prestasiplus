@@ -14,11 +14,11 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox } from '@/components/feedback'
 import { useApi, usePageMeta } from '@/composables'
 
 import { fetchRevisionSubject } from '../api/practice'
 import type { StartSessionRequest, StartSessionResponse } from '../api/types'
+import LoadError from '../components/quiz/LoadError.vue'
 import QuizRunner from '../components/quiz/QuizRunner.vue'
 import { REVISION_LABELS } from '../components/quiz/quiz-labels'
 import { setRevisionFlash } from '../components/revision/revision-flash'
@@ -83,19 +83,11 @@ const headerTitle = (s: StartSessionResponse): string =>
     :report="{ source: 'revision', failureText: 'Gagal menghantar laporan. Sila cuba lagi.' }"
     :accent-color="ready.subject.color"
   />
-  <div
+  <LoadError
     v-else-if="error && !notFound"
-    class="max-w-xl space-y-3 p-4"
+    :message="LOAD_ERROR"
+    retry-testid="revision-quiz-retry"
     data-testid="revision-quiz-error"
-  >
-    <AlertBox :messages="LOAD_ERROR" />
-    <button
-      type="button"
-      class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
-      data-testid="revision-quiz-retry"
-      @click="reload()"
-    >
-      Cuba Semula
-    </button>
-  </div>
+    @retry="reload()"
+  />
 </template>
