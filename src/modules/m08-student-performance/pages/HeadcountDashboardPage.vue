@@ -1,21 +1,20 @@
 <script setup lang="ts">
 /**
  * S13 `/headcount/dashboard` "Dashboard Headcount" (M08-T6; FR-M08-82…86, BR-M08-22). Level filter,
- * 4 stat cards and the "Keseluruhan On-Track" bar over the filtered configs, then one small chart per
+ * 4 stat tiles and the "Keseluruhan On-Track" bar over the filtered configs, then one small chart per
  * config (placement SOURCE-DERIVED, PROPOSED; DV-11: "Jumlah Murid" follows the filter, live shows the
  * unfiltered server value).
  */
-import { Funnel, Gauge, List } from '@lucide/vue'
 import { computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { ChartCanvas } from '@/components/chart'
+import { DsChart, DsEmptyState, DsPage } from '@/ds'
 
 import { fetchHeadcountDashboard } from '../api/headcount'
-import HeadcountHero from '../components/headcount/HeadcountHero.vue'
-import LoadError from '../components/headcount/LoadError.vue'
-import { dashboardChartData, dashboardChartOptions } from '../lib/headcount/charts'
-import { dashboardLevels, dashboardStats, onTrackTone } from '../lib/headcount/format'
+import PageHeader from '../components/shared/PageHeader.vue'
+import PageLoadError from '../components/shared/PageLoadError.vue'
+import PageSkeleton from '../components/shared/PageSkeleton.vue'
+import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
+import { dashboardLevels, dashboardStats } from '../lib/headcount/format'
 import { isLoadError, useRouteData } from '../lib/prestasi/load'
 
 const { data, error, reload } = useRouteData((signal) => fetchHeadcountDashboard({ signal }))
@@ -31,135 +30,113 @@ const filtered = computed(() =>
 )
 const stats = computed(() => dashboardStats(filtered.value))
 
-const FILTER = 'inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold transition'
-const ACTIVE = 'bg-blue-600 text-white'
-const INACTIVE = 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+const tiles = computed<StatItem[]>(() => [
+  { id: 'configs', label: 'Konfigurasi', value: stats.value.configs, icon: 'list-numbers' },
+  { id: 'students', label: 'Jumlah Murid', value: stats.value.students, icon: 'users' },
+  { id: 'on', label: 'On Track', value: stats.value.onTrack, icon: 'check-circle' },
+  { id: 'off', label: 'Off Track', value: stats.value.offTrack, icon: 'warning', accent: 'heat' },
+])
+
+/** A gap (no AR yet) is a `null` point; the chart draws it as a break. */
+const gaps = (v: (number | null)[]): number[] => v as number[]
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="headcount-dashboard-page">
-    <HeadcountHero
-      title="Dashboard Headcount"
-      subtitle="Ringkasan prestasi semua kelas anda"
-      :icon="Gauge"
-    >
-      <RouterLink
-        to="/headcount"
-        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white/20 px-4 text-xs font-semibold text-white transition hover:bg-white/30 sm:text-sm"
-        data-testid="hero-list"
-      >
-        <List class="h-4 w-4" />Senarai Penuh
-      </RouterLink>
-    </HeadcountHero>
+  <DsPage data-testid="headcount-dashboard-page">
+    <PageHeader title="Dashboard Headcount" subtitle="Ringkasan prestasi semua kelas anda">
+      <template #actions>
+        <UButton
+          to="/headcount"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-list"
+          label="Senarai Penuh"
+          data-testid="hero-list"
+        />
+      </template>
+    </PageHeader>
 
-    <LoadError v-if="isLoadError(error)" @retry="reload()" />
+    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
 
     <template v-else-if="data">
-      <div class="flex flex-wrap items-center gap-2" data-testid="level-filter">
-        <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600"
-          ><Funnel class="h-4 w-4" />Tapis:</span
+      <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Tapis" data-testid="level-filter">
+        <span class="inline-flex items-center gap-1 text-label text-muted"
+          ><UIcon name="i-ph-funnel" class="size-5" />Tapis:</span
         >
-        <button
+        <UButton
           type="button"
-          :class="[FILTER, filterLevel === null ? ACTIVE : INACTIVE]"
+          size="lg"
+          :color="filterLevel === null ? 'primary' : 'neutral'"
+          :variant="filterLevel === null ? 'solid' : 'soft'"
+          :aria-pressed="filterLevel === null"
+          :label="`Semua (${String(configs.length)})`"
           data-testid="filter-all"
           @click="filterLevel = null"
-        >
-          Semua ({{ configs.length }})
-        </button>
-        <button
+        />
+        <UButton
           v-for="l in levels"
           :key="l.level"
           type="button"
-          :class="[FILTER, filterLevel === l.level ? ACTIVE : INACTIVE]"
-          :data-testid="`filter-level-${l.level}`"
+          size="lg"
+          :color="filterLevel === l.level ? 'primary' : 'neutral'"
+          :variant="filterLevel === l.level ? 'solid' : 'soft'"
+          :aria-pressed="filterLevel === l.level"
+          :label="l.name"
+          :data-testid="`filter-level-${String(l.level)}`"
           @click="filterLevel = l.level"
-        >
-          {{ l.name }}
-        </button>
+        />
       </div>
 
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="dashboard-stats">
-        <div class="rounded-2xl bg-white p-4 shadow">
-          <p class="text-xs font-semibold text-slate-500 sm:text-sm">Konfigurasi</p>
-          <p class="font-heading text-2xl font-bold text-blue-600" data-testid="stat-configs">
-            {{ stats.configs }}
-          </p>
+      <StatGrid :items="tiles" prefix="stat" />
+
+      <UCard v-if="stats.tracked > 0" data-testid="overall-card">
+        <div class="flex flex-col gap-3">
+          <div class="flex items-baseline justify-between gap-3">
+            <h2 class="text-subheading text-highlighted">Keseluruhan On-Track</h2>
+            <span class="tabular text-heading text-highlighted" data-testid="overall-pct"
+              >{{ stats.onPct }}%</span
+            >
+          </div>
+          <UProgress
+            :model-value="stats.onPct"
+            :max="100"
+            color="success"
+            aria-label="Keseluruhan On-Track"
+            data-testid="bar-on"
+          />
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted" data-testid="legend">
+            <span>On Track: {{ stats.onTrack }}</span>
+            <span>Off Track: {{ stats.offTrack }}</span>
+            <span>Tiada Data: {{ stats.noData }}</span>
+          </div>
         </div>
-        <div class="rounded-2xl bg-white p-4 shadow">
-          <p class="text-xs font-semibold text-slate-500 sm:text-sm">Jumlah Murid</p>
-          <p class="font-heading text-2xl font-bold text-slate-700" data-testid="stat-students">
-            {{ stats.students }}
-          </p>
-        </div>
-        <div class="rounded-2xl bg-white p-4 shadow">
-          <p class="text-xs font-semibold text-slate-500 sm:text-sm">On Track</p>
-          <p class="font-heading text-2xl font-bold text-emerald-600" data-testid="stat-on">
-            {{ stats.onTrack }}
-          </p>
-        </div>
-        <div class="rounded-2xl bg-white p-4 shadow">
-          <p class="text-xs font-semibold text-slate-500 sm:text-sm">Off Track</p>
-          <p class="font-heading text-2xl font-bold text-red-500" data-testid="stat-off">
-            {{ stats.offTrack }}
-          </p>
-        </div>
+      </UCard>
+
+      <div v-if="configs.length === 0" data-testid="dashboard-empty">
+        <DsEmptyState title="Belum ada headcount." icon="i-ph-clipboard-text" />
       </div>
-
-      <section
-        v-if="stats.tracked > 0"
-        class="rounded-2xl bg-white p-5 shadow"
-        data-testid="overall-card"
-      >
-        <div class="flex items-baseline justify-between gap-3">
-          <h3 class="text-sm font-bold text-slate-700">Keseluruhan On-Track</h3>
-          <span
-            :class="['font-heading text-2xl font-bold', onTrackTone(stats.onPct)]"
-            data-testid="overall-pct"
-            >{{ stats.onPct }}%</span
-          >
-        </div>
-        <div class="mt-3 flex h-3 overflow-hidden rounded-full bg-slate-100">
-          <div class="bg-emerald-500" :style="{ width: `${stats.onPct}%` }" data-testid="bar-on" />
-          <div class="bg-red-500" :style="{ width: `${stats.offPct}%` }" data-testid="bar-off" />
-        </div>
-        <div
-          class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600"
-          data-testid="legend"
-        >
-          <span>On Track: {{ stats.onTrack }}</span>
-          <span>Off Track: {{ stats.offTrack }}</span>
-          <span>Tiada Data: {{ stats.noData }}</span>
-        </div>
-      </section>
-
-      <section
-        v-if="configs.length === 0"
-        class="rounded-2xl bg-white p-8 text-center shadow"
-        data-testid="dashboard-empty"
-      >
-        <p class="text-lg font-bold text-slate-700">Belum ada headcount.</p>
-      </section>
 
       <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2" data-testid="dashboard-charts">
-        <section
+        <UCard
           v-for="c in filtered"
           :key="c.id"
-          class="min-w-0 rounded-2xl bg-white p-4 shadow"
-          :data-testid="`chart-card-${c.id}`"
+          class="min-w-0"
+          :data-testid="`chart-card-${String(c.id)}`"
         >
-          <h3 class="mb-2 text-sm font-bold break-words text-slate-700">
-            {{ c.className }} · {{ c.subjectName }} · {{ c.year }}
-          </h3>
-          <ChartCanvas
+          <DsChart
             type="line"
-            :data="dashboardChartData(c.chart)"
-            :options="dashboardChartOptions"
-            height="180px"
-            :test-id="`headcount-chart-${c.id}`"
+            :title="`${c.className} · ${c.subjectName} · ${String(c.year)}`"
+            :labels="c.chart.labels"
+            :series="[
+              { label: 'Sasaran', data: gaps(c.chart.target), slot: 1 },
+              { label: 'Sebenar (AR)', data: gaps(c.chart.actual), slot: 2 },
+            ]"
+            unit="%"
+            :data-testid="`headcount-chart-${String(c.id)}`"
           />
-        </section>
+        </UCard>
       </div>
     </template>
-  </div>
+    <PageSkeleton v-else-if="!error" />
+  </DsPage>
 </template>

@@ -1,26 +1,13 @@
 <script setup lang="ts">
 /**
  * One S15 section: the card of one config that holds an entry of the pupil (FR-M08-93…96, FR-M08-127,
- * BR-M08-08 rule 1, BR-M08-23/24/33). Status pill, RS badge, summary chips, 200px line chart, the
- * Checkpoint table (scrolls inside the card) and the "Ketepatan Ramalan ETR vs RS" box.
+ * BR-M08-08 rule 1, BR-M08-23/24/33). Status badge, RS badge, summary chips, line chart, the Checkpoint
+ * table (cards below `md`) and the "Ketepatan Ramalan ETR vs RS" box.
  */
-import {
-  ArrowDown,
-  ArrowUp,
-  CircleAlert,
-  CircleCheck,
-  CircleX,
-  Layers,
-  Minus,
-  School,
-  Star,
-  TrendingUp,
-  Users,
-} from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { ChartCanvas } from '@/components/chart'
-import { TABLE_CLASSES as T } from '@/components/data'
+import { DsChart, DsDataTable, type CardField, type ChartSeries } from '@/ds'
 import { formatMyt } from '@/lib/time'
 
 import type {
@@ -31,75 +18,63 @@ import type {
   RowTone,
   TrendLabel,
 } from '../../api/headcount-types'
-import { studentChartData, studentChartOptions } from '../../lib/headcount/charts'
 import { DASH, fixed1, gradeOfPercent, num1, selisihText } from '../../lib/headcount/format'
+import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{ section: HeadcountSection }>()
 
-const STATUS: Record<HeadcountSection['status'], { text: string; cls: string }> = {
-  on: { text: 'On Track', cls: 'bg-green-100 text-green-700' },
-  below: { text: 'Below Target', cls: 'bg-red-100 text-red-700' },
-  none: { text: 'Belum Ada Data', cls: 'bg-slate-100 text-slate-500' },
-}
+type BadgeColor = 'success' | 'error' | 'warning' | 'neutral' | 'info'
 
-const PROJECTION: Record<ProjectionVariant, string> = {
-  green: 'border-green-200 bg-green-50 text-green-700',
-  amber: 'border-amber-200 bg-amber-50 text-amber-700',
-  red: 'border-red-200 bg-red-50 text-red-700',
+const STATUS: Record<HeadcountSection['status'], { text: string; color: BadgeColor }> = {
+  on: { text: 'On Track', color: 'success' },
+  below: { text: 'Below Target', color: 'error' },
+  none: { text: 'Belum Ada Data', color: 'neutral' },
 }
-const TREND = {
-  Meningkat: { icon: ArrowUp, cls: 'border-green-200 bg-green-50 text-green-700' },
-  Stabil: { icon: Minus, cls: 'border-amber-200 bg-amber-50 text-amber-700' },
-  Menurun: { icon: ArrowDown, cls: 'border-red-200 bg-red-50 text-red-700' },
-} satisfies Record<TrendLabel, { icon: unknown; cls: string }>
+const PROJECTION: Record<ProjectionVariant, BadgeColor> = {
+  green: 'success',
+  amber: 'warning',
+  red: 'error',
+}
+const TREND: Record<TrendLabel, { icon: string; color: BadgeColor }> = {
+  Meningkat: { icon: 'i-ph-arrow-up', color: 'success' },
+  Stabil: { icon: 'i-ph-minus', color: 'warning' },
+  Menurun: { icon: 'i-ph-arrow-down', color: 'error' },
+}
 const CONFIDENCE: Record<ConfidenceLabel, string> = {
-  Tinggi: 'text-green-600',
-  Sederhana: 'text-amber-600',
-  Rendah: 'text-slate-400',
+  Tinggi: 'text-success',
+  Sederhana: 'text-warning',
+  Rendah: 'text-dimmed',
 }
-
-const ROW: Record<RowTone, { row: string; ar: string; grade: string }> = {
-  on: { row: 'bg-green-50', ar: 'text-green-700', grade: 'bg-green-100 text-green-700' },
-  below: {
-    row: 'border-l-4 border-l-red-400 bg-red-100',
-    ar: 'text-red-700',
-    grade: 'bg-red-100 text-red-700',
-  },
-  noAr: { row: '', ar: 'text-slate-400', grade: 'bg-slate-100 text-slate-500' },
-  noTarget: { row: '', ar: 'text-slate-400', grade: 'bg-slate-100 text-slate-500' },
+const ROW_AR: Record<RowTone, string> = {
+  on: 'text-success',
+  below: 'text-error',
+  noAr: 'text-dimmed',
+  noTarget: 'text-dimmed',
 }
-
 const VERDICT: Record<
   PredictionVerdict,
-  { box: string; icon: unknown; iconCls: string; text: string; note: string }
+  { icon: string; iconTone: string; text: string; note: string }
 > = {
   'Ramalan Tepat': {
-    box: 'border-green-200 bg-green-50',
-    icon: CircleCheck,
-    iconCls: 'text-green-500',
-    text: 'text-green-700',
+    icon: 'i-ph-check-circle',
+    iconTone: 'text-success',
+    text: 'text-success',
     note: 'Ramalan ETR sangat tepat — selisih dalam lingkungan ±5 markah.',
   },
   'Hampir Tepat': {
-    box: 'border-amber-200 bg-amber-50',
-    icon: CircleAlert,
-    iconCls: 'text-amber-500',
-    text: 'text-amber-700',
+    icon: 'i-ph-warning-circle',
+    iconTone: 'text-warning',
+    text: 'text-warning',
     note: 'Ramalan ETR agak tepat — selisih dalam lingkungan ±10 markah. Boleh diperbaiki lagi.',
   },
   'Selisih Besar': {
-    box: 'border-red-200 bg-red-50',
-    icon: CircleX,
-    iconCls: 'text-red-500',
-    text: 'text-red-700',
+    icon: 'i-ph-x-circle',
+    iconTone: 'text-error',
+    text: 'text-error',
     note: 'Selisih melebihi 10 markah. Semak semula kaedah penetapan ETR.',
   },
 }
 
-const CHIP = 'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold'
-const PILL = 'rounded-full px-2 py-0.5 text-xs font-semibold'
-
-const chartData = computed(() => studentChartData(props.section))
 const recorded = computed(() => {
   const at = props.section.rs?.recordedAt
   return at ? formatMyt(`${at.slice(0, 10)}T00:00:00+08:00`, 'd MMM yyyy') : ''
@@ -107,219 +82,253 @@ const recorded = computed(() => {
 const verdict = computed(() =>
   props.section.prediction ? VERDICT[props.section.prediction.verdict] : null,
 )
+
+/** The chart lines over TOV, OTR1…OTRn, ETR (+ RS); a missing point is a gap. */
+const series = computed<ChartSeries[]>(() => {
+  const { target, actual, projection, rs } = props.section.chart
+  const gaps = (v: (number | null)[]): number[] => v as number[]
+  const out: ChartSeries[] = [
+    { label: 'Target (OTR)', data: gaps(target), slot: 1 },
+    { label: 'Markah Sebenar (AR)', data: gaps(actual), slot: 2 },
+  ]
+  if (props.section.projection !== null)
+    out.push({ label: 'Unjuran (Trend)', data: gaps(projection), slot: 3 })
+  if (rs !== null)
+    out.push({
+      label: 'RS (SPM Sebenar)',
+      data: gaps(props.section.chart.labels.map((l) => (l === 'RS' ? rs : null))),
+      slot: 4,
+    })
+  return out
+})
+
+interface Row extends Record<string, unknown> {
+  kind: 'otr' | 'etr' | 'rs'
+  checkpoint: string
+  tone: RowTone
+  target: string
+  targetGrade: string
+  ar: string
+  arGrade: string
+  arText: string
+  note: string
+}
+
+const rows = computed<Row[]>(() => {
+  const s = props.section
+  const out: Row[] = s.rows.map((r) => ({
+    kind: 'otr',
+    checkpoint: `OTR${String(r.checkpoint)}`,
+    tone: r.tone,
+    target: r.target === null ? DASH : fixed1(r.target),
+    targetGrade: r.targetGrade && r.target !== null ? r.targetGrade : '-',
+    ar: r.ar === null ? DASH : fixed1(r.ar),
+    arGrade: r.arGrade && r.ar !== null ? r.arGrade : '-',
+    arText: r.ar === null ? DASH : `${fixed1(r.ar)} (${r.arGrade ?? '-'})`,
+    note: '',
+  }))
+  out.push({
+    kind: 'etr',
+    checkpoint: 'ETR (Sasaran Akhir)',
+    tone: 'noAr',
+    target: s.etr === null ? DASH : fixed1(s.etr),
+    targetGrade: s.etr === null ? '-' : gradeOfPercent(s.etr),
+    ar: '',
+    arGrade: '',
+    arText: '',
+    note: 'Sasaran akhir',
+  })
+  if (s.rs)
+    out.push({
+      kind: 'rs',
+      checkpoint: 'RS (SPM Sebenar)',
+      tone: 'noAr',
+      target: fixed1(s.rs.value),
+      targetGrade: gradeOfPercent(s.rs.value),
+      ar: '',
+      arGrade: '',
+      arText: '',
+      note: recorded.value ? `Direkod: ${recorded.value}` : '',
+    })
+  return out
+})
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'checkpoint', header: 'Checkpoint' },
+  { accessorKey: 'target', header: 'Target (%)' },
+  { accessorKey: 'targetGrade', header: 'Gred Target' },
+  { accessorKey: 'ar', header: 'AR (%)' },
+  { accessorKey: 'arGrade', header: 'Gred AR' },
+  { id: 'status', header: 'Status' },
+]
+const cardFields: CardField[] = [
+  { key: 'target', label: 'Target (%)' },
+  { key: 'targetGrade', label: 'Gred Target' },
+  { key: 'arText', label: 'AR (%)' },
+  { key: 'note', label: 'Catatan' },
+]
+const rowTone = (r: Row): string => ROW_AR[r.tone]
+const rowTestId =(r: Row, i: number): string =>
+  r.kind === 'otr' ? `row-otr-${String(i + 1)}` : `row-${r.kind}`
 </script>
 
 <template>
-  <section
-    class="min-w-0 space-y-4 rounded-2xl bg-white p-4 shadow sm:p-5"
-    :data-testid="`section-${section.configId}`"
-  >
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <h2 class="min-w-0 text-lg font-bold break-words text-slate-800">{{ section.subject }}</h2>
-      <span :class="[PILL, STATUS[section.status].cls]" data-testid="status-pill">{{
-        STATUS[section.status].text
-      }}</span>
-      <span
-        v-if="section.rs"
-        class="inline-flex items-center gap-1 rounded-full bg-indigo-700 px-2.5 py-0.5 text-xs font-semibold text-white"
-        data-testid="rs-badge"
-      >
-        <Star class="h-3.5 w-3.5 text-yellow-300" />RS: {{ fixed1(section.rs.value) }}% ({{
-          gradeOfPercent(section.rs.value)
-        }})
-      </span>
-    </div>
+  <section class="flex min-w-0 flex-col gap-4" :data-testid="`section-${section.configId}`">
+    <UCard>
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h2 class="min-w-0 text-heading break-words text-highlighted">{{ section.subject }}</h2>
+          <UBadge
+            :color="STATUS[section.status].color"
+            variant="subtle"
+            :label="STATUS[section.status].text"
+            data-testid="status-pill"
+          />
+          <UBadge
+            v-if="section.rs"
+            color="primary"
+            variant="subtle"
+            icon="i-ph-star"
+            :label="`RS: ${fixed1(section.rs.value)}% (${gradeOfPercent(section.rs.value)})`"
+            data-testid="rs-badge"
+          />
+        </div>
 
-    <div class="flex flex-wrap gap-2 text-xs">
-      <span v-if="section.school" :class="[CHIP, 'border-blue-100 bg-blue-50 text-blue-700']"
-        ><School class="h-3.5 w-3.5" />{{ section.school }}</span
-      >
-      <span :class="[CHIP, 'border-slate-200 bg-slate-50 text-slate-600']"
-        ><Layers class="h-3.5 w-3.5" />{{ section.levelName }}</span
-      >
-      <span :class="[CHIP, 'border-slate-200 bg-slate-50 text-slate-600']"
-        ><Users class="h-3.5 w-3.5" />{{ section.className }}</span
-      >
-      <span :class="[CHIP, 'border-slate-200 bg-slate-50 text-slate-600']">{{ section.year }}</span>
-    </div>
+        <div class="flex flex-wrap gap-2">
+          <UBadge
+            v-if="section.school"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-buildings"
+            :label="section.school"
+          />
+          <UBadge color="neutral" variant="soft" icon="i-ph-stack" :label="section.levelName" />
+          <UBadge color="neutral" variant="soft" icon="i-ph-users" :label="section.className" />
+          <UBadge color="neutral" variant="soft" :label="String(section.year)" />
+        </div>
 
-    <div class="flex flex-wrap items-center gap-2" data-testid="summary-chips">
-      <span :class="[CHIP, 'border-amber-200 bg-amber-50 text-amber-700']" data-testid="chip-tov">
-        TOV:
-        {{
-          section.tov === null ? DASH : `${fixed1(section.tov)}% (${gradeOfPercent(section.tov)})`
-        }}
-      </span>
-      <span
-        :class="[CHIP, 'border-purple-200 bg-purple-50 text-purple-700']"
-        data-testid="chip-etr"
-      >
-        ETR:
-        {{
-          section.etr === null ? DASH : `${fixed1(section.etr)}% (${gradeOfPercent(section.etr)})`
-        }}
-      </span>
-      <span
-        v-if="section.rs"
-        :class="[CHIP, 'border-indigo-200 bg-indigo-50']"
-        data-testid="chip-rs"
-      >
-        <span class="text-indigo-600">RS:</span>
-        <span class="text-indigo-700"
-          >{{ fixed1(section.rs.value) }}% ({{ gradeOfPercent(section.rs.value) }})</span
-        >
-      </span>
-      <template v-if="section.projection">
-        <span :class="[CHIP, PROJECTION[section.projection.variant]]" data-testid="chip-projection">
-          <TrendingUp class="h-3.5 w-3.5" />Unjuran: {{ num1(section.projection.value) }}% ({{
-            gradeOfPercent(section.projection.value)
-          }})
-        </span>
-        <span :class="[CHIP, TREND[section.projection.trend].cls]" data-testid="chip-trend">
-          <component :is="TREND[section.projection.trend].icon" class="h-3.5 w-3.5" />{{
-            section.projection.trend
-          }}
-        </span>
-        <span class="text-xs text-slate-500" data-testid="chip-confidence"
-          >Keyakinan:
-          <strong :class="CONFIDENCE[section.projection.confidence]">{{
-            section.projection.confidence
-          }}</strong></span
+        <div class="flex flex-wrap items-center gap-2" data-testid="summary-chips">
+          <UBadge
+            color="neutral"
+            variant="soft"
+            data-testid="chip-tov"
+            :label="`TOV: ${section.tov === null ? DASH : `${fixed1(section.tov)}% (${gradeOfPercent(section.tov)})`}`"
+          />
+          <UBadge
+            color="neutral"
+            variant="soft"
+            data-testid="chip-etr"
+            :label="`ETR: ${section.etr === null ? DASH : `${fixed1(section.etr)}% (${gradeOfPercent(section.etr)})`}`"
+          />
+          <UBadge
+            v-if="section.rs"
+            color="neutral"
+            variant="soft"
+            data-testid="chip-rs"
+            :label="`RS: ${fixed1(section.rs.value)}% (${gradeOfPercent(section.rs.value)})`"
+          />
+          <template v-if="section.projection">
+            <UBadge
+              :color="PROJECTION[section.projection.variant]"
+              variant="subtle"
+              icon="i-ph-trend-up"
+              data-testid="chip-projection"
+              :data-variant="section.projection.variant"
+              :label="`Unjuran: ${num1(section.projection.value)}% (${gradeOfPercent(section.projection.value)})`"
+            />
+            <UBadge
+              :color="TREND[section.projection.trend].color"
+              variant="subtle"
+              :icon="TREND[section.projection.trend].icon"
+              data-testid="chip-trend"
+              :label="section.projection.trend"
+            />
+            <span class="text-caption text-muted" data-testid="chip-confidence"
+              >Keyakinan:
+              <ToneText :tone="CONFIDENCE[section.projection.confidence]" class="text-label">{{
+                section.projection.confidence
+              }}</ToneText></span
+            >
+          </template>
+        </div>
+
+        <DsChart
+          type="line"
+          :title="`Prestasi ${section.subject}`"
+          :labels="section.chart.labels"
+          :series="series"
+          unit="%"
+          :level="3"
+          :data-testid="`student-chart-${section.configId}`"
+        />
+      </div>
+    </UCard>
+
+    <DsDataTable
+      :data="rows"
+      :columns="columns"
+      caption="Checkpoint"
+      card-title="checkpoint"
+      :card-fields="cardFields"
+      :page-size="rows.length"
+      :data-testid="`table-${section.configId}`"
+    >
+      <template #checkpoint-cell="{ row }">
+        <span
+          class="text-label whitespace-nowrap text-highlighted"
+          :data-testid="rowTestId(row.original, row.index)"
+          :data-tone="row.original.tone"
+          >{{ row.original.checkpoint }}</span
         >
       </template>
-    </div>
+      <template #ar-cell="{ row }">
+        <ToneText v-if="row.original.kind === 'otr'" :tone="rowTone(row.original)">{{
+          row.original.ar
+        }}</ToneText>
+        <span v-else class="text-caption text-muted">{{ row.original.note }}</span>
+      </template>
+      <template #status-cell="{ row }">
+        <UIcon
+          v-if="row.original.kind === 'otr' && row.original.tone === 'on'"
+          name="i-ph-check-circle"
+          class="size-5 text-success"
+        />
+        <UIcon
+          v-else-if="row.original.kind === 'otr' && row.original.tone === 'below'"
+          name="i-ph-arrow-down"
+          class="size-5 text-error"
+        />
+        <span v-else class="text-dimmed">{{ DASH }}</span>
+      </template>
+    </DsDataTable>
 
-    <ChartCanvas
-      type="line"
-      :data="chartData"
-      :options="studentChartOptions"
-      height="200px"
-      :test-id="`student-chart-${section.configId}`"
-    />
-
-    <div :class="[T.card, 'rounded-xl']">
-      <div :class="T.scroller">
-        <table :class="[T.table, 'min-w-[34rem]']" :data-testid="`table-${section.configId}`">
-          <thead>
-            <tr class="bg-slate-50">
-              <th :class="T.th">Checkpoint</th>
-              <th :class="T.th">Target (%)</th>
-              <th :class="T.th">Gred Target</th>
-              <th :class="T.th">AR (%)</th>
-              <th :class="T.th">Gred AR</th>
-              <th :class="[T.th, 'text-center']">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="r in section.rows"
-              :key="r.checkpoint"
-              :class="[T.row, ROW[r.tone].row]"
-              :data-testid="`row-otr-${r.checkpoint}`"
-              :data-tone="r.tone"
-            >
-              <td :class="[T.td, 'font-semibold whitespace-nowrap']">OTR{{ r.checkpoint }}</td>
-              <td
-                :class="[
-                  T.td,
-                  r.target === null ? 'text-slate-400' : 'font-semibold text-blue-700',
-                ]"
-              >
-                {{ r.target === null ? DASH : fixed1(r.target) }}
-              </td>
-              <td :class="T.td">
-                <span
-                  v-if="r.targetGrade && r.target !== null"
-                  :class="[PILL, 'bg-blue-100 text-blue-600']"
-                  >{{ r.targetGrade }}</span
-                >
-                <span v-else class="text-slate-400">-</span>
-              </td>
-              <td :class="[T.td, 'font-semibold', ROW[r.tone].ar]">
-                {{ r.ar === null ? DASH : fixed1(r.ar) }}
-              </td>
-              <td :class="T.td">
-                <span v-if="r.arGrade && r.ar !== null" :class="[PILL, ROW[r.tone].grade]">{{
-                  r.arGrade
-                }}</span>
-                <span v-else class="text-slate-400">-</span>
-              </td>
-              <td :class="[T.td, 'text-center']">
-                <CircleCheck v-if="r.tone === 'on'" class="mx-auto h-4 w-4 text-green-500" />
-                <ArrowDown v-else-if="r.tone === 'below'" class="mx-auto h-4 w-4 text-red-500" />
-                <span v-else class="text-slate-300">{{ DASH }}</span>
-              </td>
-            </tr>
-            <tr :class="[T.row, 'bg-purple-50']" data-testid="row-etr">
-              <td :class="[T.td, 'font-semibold whitespace-nowrap text-purple-700']">
-                ETR (Sasaran Akhir)
-              </td>
-              <td :class="[T.td, 'font-semibold text-purple-700']">
-                {{ section.etr === null ? DASH : fixed1(section.etr) }}
-              </td>
-              <td :class="T.td">
-                <span
-                  v-if="section.etr !== null"
-                  :class="[PILL, 'bg-purple-100 text-purple-700']"
-                  >{{ gradeOfPercent(section.etr) }}</span
-                >
-                <span v-else class="text-slate-400">-</span>
-              </td>
-              <td :class="[T.td, 'text-xs text-purple-500']" colspan="3">Sasaran akhir</td>
-            </tr>
-            <tr
-              v-if="section.rs"
-              :class="[T.row, 'border-l-4 border-l-indigo-400 bg-indigo-50']"
-              data-testid="row-rs"
-            >
-              <td :class="[T.td, 'font-semibold whitespace-nowrap text-indigo-700']">
-                <span class="inline-flex items-center gap-1"
-                  ><Star class="h-4 w-4 text-yellow-500" />RS (SPM Sebenar)</span
-                >
-              </td>
-              <td :class="[T.td, 'text-base font-bold text-indigo-700']">
-                {{ fixed1(section.rs.value) }}
-              </td>
-              <td :class="T.td">
-                <span :class="[PILL, 'bg-indigo-200 text-indigo-800']">{{
-                  gradeOfPercent(section.rs.value)
-                }}</span>
-              </td>
-              <td :class="[T.td, 'text-xs text-indigo-500']" colspan="3">
-                <template v-if="recorded">Direkod: {{ recorded }}</template>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <UCard v-if="section.prediction && verdict" data-testid="prediction-box">
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <ToneText :tone="verdict.iconTone" class="flex shrink-0"
+            ><UIcon :name="verdict.icon" class="size-6"
+          /></ToneText>
+          <h3 class="text-subheading text-highlighted">Ketepatan Ramalan ETR vs RS</h3>
+        </div>
+        <p class="text-body text-default">
+          ETR (Ramalan): {{ fixed1(section.prediction.etr) }}% ({{
+            gradeOfPercent(section.prediction.etr)
+          }})
+        </p>
+        <p class="text-body text-default">
+          RS (Sebenar): {{ fixed1(section.prediction.rs) }}% ({{
+            gradeOfPercent(section.prediction.rs)
+          }})
+        </p>
+        <p class="text-label" data-testid="selisih">
+          <ToneText :tone="verdict.text"
+            >Selisih: {{ selisihText(section.prediction.diff) }} markah</ToneText
+          >
+        </p>
+        <p class="text-label" data-testid="verdict">
+          <ToneText :tone="verdict.text">{{ section.prediction.verdict }}</ToneText>
+        </p>
+        <p class="text-caption text-muted">{{ verdict.note }}</p>
       </div>
-    </div>
-
-    <div
-      v-if="section.prediction && verdict"
-      :class="['space-y-2 rounded-xl border p-4', verdict.box]"
-      data-testid="prediction-box"
-    >
-      <div class="flex items-center gap-2">
-        <component :is="verdict.icon" :class="['h-5 w-5 shrink-0', verdict.iconCls]" />
-        <h3 class="text-sm font-bold text-slate-700">Ketepatan Ramalan ETR vs RS</h3>
-      </div>
-      <p class="text-sm text-purple-700">
-        ETR (Ramalan): {{ fixed1(section.prediction.etr) }}% ({{
-          gradeOfPercent(section.prediction.etr)
-        }})
-      </p>
-      <p class="text-sm text-indigo-700">
-        RS (Sebenar): {{ fixed1(section.prediction.rs) }}% ({{
-          gradeOfPercent(section.prediction.rs)
-        }})
-      </p>
-      <p :class="['text-sm font-semibold', verdict.text]" data-testid="selisih">
-        Selisih: {{ selisihText(section.prediction.diff) }} markah
-      </p>
-      <p :class="['text-sm font-bold', verdict.text]" data-testid="verdict">
-        {{ section.prediction.verdict }}
-      </p>
-      <p class="text-xs text-slate-400">{{ verdict.note }}</p>
-    </div>
+    </UCard>
   </section>
 </template>
