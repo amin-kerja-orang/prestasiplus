@@ -120,6 +120,8 @@
   --font-display:
     'Bricolage Grotesque Variable', 'Plus Jakarta Sans Variable', system-ui, sans-serif;
   --font-ui: 'Plus Jakarta Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Arabic-script (Jawi) question text; the font is bundled by src/styles/fonts.css. */
+  --font-jawi: 'Scheherazade New', 'Lateef', serif;
 
   --text-display: clamp(2.5rem, 2.085rem + 1.77vw, 3.5rem);
   --text-display--line-height: 1.05;

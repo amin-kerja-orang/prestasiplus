@@ -39,8 +39,10 @@ const props = withDefaults(
     ringUnit?: string
     rewards?: WinReward[]
     stickers?: WinSticker[]
+    /** Optional test id of the title heading. */
+    titleTestid?: string
   }>(),
-  { subtitle: undefined, ringUnit: undefined, rewards: () => [], stickers: () => [] },
+  { subtitle: undefined, ringUnit: undefined, rewards: () => [], stickers: () => [], titleTestid: undefined },
 )
 
 const strong = computed(() => props.max > 0 && props.score / props.max >= 0.6)
@@ -56,6 +58,7 @@ defineExpose({ focus: () => hero.value?.focus() })
       :title="title"
       :subtitle="subtitle"
       :tone="strong ? 'win' : 'keep'"
+      :title-testid="titleTestid"
     />
     <DsScoreRing
       :value="score"
