@@ -1,6 +1,6 @@
 /**
- * Formats and class strings of the Kirkpatrick screens (SRS M12 BR-M12-33). Class strings are full
- * literals so Tailwind sees them.
+ * Formats and token colour names of the Kirkpatrick screens (SRS M12 BR-M12-33). Class strings are full
+ * literals so Tailwind sees them; colours are theme tokens only (v2 staff theme).
  */
 
 import { formatCount, formatNumber, formatPercent } from '@/lib/number'
@@ -26,37 +26,13 @@ export const dateEn = (dayKey: string) => formatDateEn(dayKey)
 /** A failed fetch (no M12-specific copy on live, SRS §8.3). */
 export const LOAD_ERROR_COPY = 'Gagal memuatkan data. Sila cuba lagi.'
 
-export const CARD = 'rounded-2xl bg-white shadow-sm border border-indigo-500/10'
+/** Semantic colour of a badge or progress bar (Nuxt UI colour names, theme tokens only). */
+export type KirkColor = 'primary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
 
-export interface StatTone {
-  box: string
-  label: string
-  value: string
-}
-
-export const STAT_TONE = {
-  blue: { box: 'bg-blue-50 border-blue-100', label: 'text-blue-600', value: 'text-blue-900' },
-  green: { box: 'bg-green-50 border-green-100', label: 'text-green-600', value: 'text-green-900' },
-  emerald: {
-    box: 'bg-emerald-50 border-emerald-100',
-    label: 'text-emerald-600',
-    value: 'text-emerald-900',
-  },
-  purple: {
-    box: 'bg-purple-50 border-purple-100',
-    label: 'text-purple-600',
-    value: 'text-purple-900',
-  },
-  amber: { box: 'bg-amber-50 border-amber-100', label: 'text-amber-600', value: 'text-amber-900' },
-  rose: { box: 'bg-rose-50 border-rose-100', label: 'text-rose-600', value: 'text-rose-900' },
-  cyan: { box: 'bg-cyan-50 border-cyan-100', label: 'text-cyan-600', value: 'text-cyan-900' },
-} as const satisfies Record<string, StatTone>
-
-/** The five engagement bands (BR-M12-06; colours of FN-M12-2.6.1 as Tailwind classes). */
+/** The five engagement bands (BR-M12-06): label, semantic colour and the matching text token. */
 export interface BandStyle {
   label: string
-  /** Tile background (the live `{hex}15`), icon and number colour. */
-  tile: string
+  color: KirkColor
   text: string
 }
 
@@ -69,13 +45,13 @@ export const BAND_ORDER: readonly BandKey[] = [
 ]
 
 export const BAND: Record<BandKey, BandStyle> = {
-  champion: { label: 'Champion', tile: 'bg-green-700/10', text: 'text-green-700' },
-  konsisten: { label: 'Konsisten', tile: 'bg-blue-600/10', text: 'text-blue-600' },
-  berkembang: { label: 'Berkembang', tile: 'bg-yellow-600/10', text: 'text-yellow-600' },
-  minimum: { label: 'Minimum', tile: 'bg-orange-600/10', text: 'text-orange-600' },
-  tidakTerlibat: { label: 'Tidak Terlibat', tile: 'bg-red-600/10', text: 'text-red-600' },
+  champion: { label: 'Champion', color: 'success', text: 'text-success' },
+  konsisten: { label: 'Konsisten', color: 'primary', text: 'text-primary' },
+  berkembang: { label: 'Berkembang', color: 'info', text: 'text-info' },
+  minimum: { label: 'Minimum', color: 'warning', text: 'text-warning' },
+  tidakTerlibat: { label: 'Tidak Terlibat', color: 'error', text: 'text-error' },
 }
 
-/** BR-M12-10: Ketepatan colour of the school tables of S3 (>= 70 green, 50-69.9 amber, < 50 red). */
+/** BR-M12-10: Ketepatan colour of the school tables of S3 (>= 70 success, 50-69.9 warning, < 50 error). */
 export const accuracyText = (p: number) =>
-  p >= 70 ? 'text-green-600' : p >= 50 ? 'text-amber-600' : 'text-red-600'
+  p >= 70 ? 'text-success' : p >= 50 ? 'text-warning' : 'text-error'

@@ -11,6 +11,7 @@ import { computed } from 'vue'
 import { isNavigationFailure, NavigationFailureType, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchKirkpatrickFilterOptions, fetchKirkpatrickOverview } from '../api'
 import {
@@ -63,7 +64,7 @@ async function apply(value: { schoolId: string; state: string }) {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="kirk-overview-page">
+  <DsPage data-testid="kirk-overview-page">
     <KirkpatrickFilterBar
       :options="options"
       :school-id="schoolId"
@@ -82,5 +83,5 @@ async function apply(value: { schoolId: string; state: string }) {
       <OverviewBands :bands="data.bands" :behavior-path="detailLinks ? paths.behavior : null" />
       <OverviewInfo />
     </template>
-  </div>
+  </DsPage>
 </template>

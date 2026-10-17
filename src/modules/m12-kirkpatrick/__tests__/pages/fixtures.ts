@@ -1,4 +1,5 @@
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import USelect from '@nuxt/ui/components/Select.vue'
 import type { Component } from 'vue'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
@@ -144,3 +145,26 @@ export const flat = (w: { html: () => string }) =>
       .replace(/<[^>]+>/g, ' ')
       .replace(/&amp;/g, '&'),
   )
+
+/** The `USelect` with this `name` prop (a Reka select has no native `option` elements to query). */
+export const select = (w: VueWrapper, name: string) => {
+  const found = w
+    .findAllComponents(USelect)
+    .find((c) => (c.props() as Record<string, unknown>).name === name)
+  if (!found) throw new Error(`no USelect named ${name}`)
+  return found as unknown as {
+    props: (key: string) => unknown
+    vm: { $emit: (event: string, value: unknown) => void }
+  }
+}
+/** Labels of a `USelect`'s items. */
+export const itemLabels = (w: VueWrapper, name: string) =>
+  (select(w, name).props('items') as { label: string }[]).map((i) => i.label)
+/** Picks an item value of a `USelect`. */
+export const pick = async (w: VueWrapper, name: string, value: string) => {
+  select(w, name).vm.$emit('update:modelValue', value)
+  await flushPromises()
+}
+/** The table row (or card item) that holds the element. */
+export const rowOf = (el: { element: Element }) =>
+  new DOMWrapper(el.element.closest('tr') ?? el.element.closest('li') ?? el.element)

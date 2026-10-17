@@ -84,7 +84,9 @@
     { "glob": "src/modules/m17-admin-dashboard/pages/CommandCenter*.vue", "level": "page" },
     { "glob": "src/modules/m17-admin-dashboard/components/command-center-board/*.vue", "level": "page" },
     { "glob": "src/modules/m17-admin-dashboard/components/command-center/*.vue", "level": "page" },
-    { "glob": "src/modules/m17-admin-dashboard/components/frame/CcBoardFrame.vue", "level": "ds" }
+    { "glob": "src/modules/m17-admin-dashboard/components/frame/CcBoardFrame.vue", "level": "ds" },
+    { "glob": "src/modules/m12-kirkpatrick/pages/Kirkpatrick*.vue", "level": "page" },
+    { "glob": "src/modules/m12-kirkpatrick/components/kirkpatrick/**/*.vue", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

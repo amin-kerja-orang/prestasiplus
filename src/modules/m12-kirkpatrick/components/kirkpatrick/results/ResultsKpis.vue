@@ -8,7 +8,7 @@ import { computed } from 'vue'
 
 import type { Results } from '../../../api/types'
 import KirkpatrickStatCard from '../common/KirkpatrickStatCard.vue'
-import { count, gps, pct, plain, STAT_TONE } from '../common/kirkpatrick-format'
+import { count, gps, pct, plain } from '../common/kirkpatrick-format'
 
 const props = defineProps<{ kpi: Results['kpi'] }>()
 
@@ -35,37 +35,27 @@ const gradeACaption = computed(() =>
       label="GPS Headcount"
       :value="kpi.gps === null ? '-' : gps(kpi.gps)"
       :caption="gpsCaption"
-      :tone="STAT_TONE.amber"
     />
     <KirkpatrickStatCard
       label="Kadar Lulus"
       :value="kpi.passPct === null ? '-' : pct(kpi.passPct)"
       :caption="passCaption"
-      :tone="STAT_TONE.green"
     />
     <KirkpatrickStatCard
       label="Pelajar Gred A"
       :value="kpi.gradeA === null ? '-' : plain(kpi.gradeA)"
       :caption="gradeACaption"
-      :tone="STAT_TONE.emerald"
     />
     <KirkpatrickStatCard
       label="Ketepatan Platform"
       :value="pct(kpi.accuracy)"
       :caption="`${count(kpi.answers)} soalan`"
-      :tone="STAT_TONE.blue"
     />
     <KirkpatrickStatCard
       label="Pelajar Aktif"
       :value="plain(kpi.active)"
       :caption="`${pct(kpi.activePct)} daripada ${count(kpi.t4t5)}`"
-      :tone="STAT_TONE.purple"
     />
-    <KirkpatrickStatCard
-      label="Rekod Headcount"
-      :value="plain(kpi.records)"
-      caption="Data OTR"
-      :tone="STAT_TONE.rose"
-    />
+    <KirkpatrickStatCard label="Rekod Headcount" :value="plain(kpi.records)" caption="Data OTR" />
   </div>
 </template>

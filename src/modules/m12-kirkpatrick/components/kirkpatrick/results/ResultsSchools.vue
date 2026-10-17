@@ -1,102 +1,142 @@
 <script setup lang="ts">
 /**
  * "Prestasi Mengikut Sekolah (Platform + Headcount)" (FN-M12-6.5.1; FR-M12-52; BR-M12-10): # · Sekolah · Pelajar · Aktif ·
- * Ketepatan · Soalan · Engagement · Tahap, by Engagement descending. A school with no active student is faded
- * (`opacity-50`) with "-" for Ketepatan and Soalan; Engagement shows "-" unless the school has a session (940).
+ * Ketepatan · Soalan · Engagement · Tahap, by Engagement descending. A school with no active student is dimmed
+ * (`data-faded`) with "-" for Ketepatan and Soalan; Engagement shows "-" unless the school has a session (940).
+ * Staff table (`DsDataTable`).
  */
+import { computed } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
-import { AppIcon } from '@/components/icon'
+import { DsDataTable } from '@/ds'
 
-import type { ResultsSchoolRow } from '../../../api/types'
+import type { BandKey, ResultsSchoolRow } from '../../../api/types'
+import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { BAND, count, mean, pct, plain } from '../common/kirkpatrick-format'
-import { BAND_FILL } from '../behavior/behavior-format'
 
-defineProps<{ rows: ResultsSchoolRow[]; schoolPath: (id: number) => string }>()
+const props = defineProps<{ rows: ResultsSchoolRow[]; schoolPath: (id: number) => string }>()
 
-const HEAD = `${T.th} text-center`
-const NUM = `${T.td} text-center`
+/** Slot rows are untyped; this narrows the band key for the token lookups. */
+const band = (key: unknown) => BAND[key as BandKey]
+
+interface Row extends Record<string, unknown> {
+  schoolId: number
+  index: number
+  name: string
+  faded: boolean
+  students: string
+  active: number
+  activeText: string
+  accuracy: number | null
+  accuracyText: string
+  answers: string
+  engagement: string
+  tahap: ResultsSchoolRow['tahap']
+  tahapText: string
+}
+
+const data = computed<Row[]>(() =>
+  props.rows.map((r, i) => ({
+    schoolId: r.schoolId,
+    index: i + 1,
+    name: r.name,
+    faded: r.faded,
+    students: count(r.students),
+    active: r.active,
+    activeText: plain(r.active),
+    accuracy: r.accuracy,
+    accuracyText: r.accuracy === null ? '-' : pct(r.accuracy),
+    answers: r.answers === null ? '-' : count(r.answers),
+    engagement: r.engagement === null ? '-' : mean(r.engagement),
+    tahap: r.tahap,
+    tahapText: BAND[r.tahap].label,
+  })),
+)
+
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'index', header: '#' },
+  { accessorKey: 'name', header: 'Sekolah' },
+  { accessorKey: 'students', header: 'Pelajar' },
+  { accessorKey: 'activeText', header: 'Aktif' },
+  { accessorKey: 'accuracyText', header: 'Ketepatan' },
+  { accessorKey: 'answers', header: 'Soalan' },
+  { accessorKey: 'engagement', header: 'Engagement' },
+  { accessorKey: 'tahapText', header: 'Tahap' },
+]
+const cardFields = [
+  { key: 'students', label: 'Pelajar' },
+  { key: 'activeText', label: 'Aktif' },
+  { key: 'accuracyText', label: 'Ketepatan' },
+  { key: 'answers', label: 'Soalan' },
+  { key: 'engagement', label: 'Engagement' },
+  { key: 'tahapText', label: 'Tahap' },
+]
 </script>
 
 <template>
-  <DataTableCard :min-width="780" data-testid="res-schools">
-    <template #header>
-      <h2
-        class="flex items-center gap-2 px-4 pt-4 font-heading text-base font-bold text-slate-800 sm:px-5"
-      >
-        <AppIcon name="fa-school" class="h-4 w-4 text-indigo-600" />Prestasi Mengikut Sekolah
-        (Platform + Headcount)
-      </h2>
-    </template>
-    <table :class="T.table">
-      <thead>
-        <tr>
-          <th :class="T.th">#</th>
-          <th :class="T.th">Sekolah</th>
-          <th :class="HEAD">Pelajar</th>
-          <th :class="HEAD">Aktif</th>
-          <th :class="HEAD">Ketepatan</th>
-          <th :class="HEAD">Soalan</th>
-          <th :class="HEAD">Engagement</th>
-          <th :class="HEAD">Tahap</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="(r, i) in rows"
-          :key="r.schoolId"
-          :class="[T.row, r.faded ? 'opacity-50' : '']"
-          :data-faded="r.faded ? 'true' : 'false'"
-          data-testid="res-school-row"
+  <KirkpatrickTableSection
+    title="Prestasi Mengikut Sekolah (Platform + Headcount)"
+    icon="i-ph-buildings"
+    data-testid="res-schools"
+  >
+    <DsDataTable
+      :data="data"
+      :columns="columns"
+      caption="Prestasi mengikut sekolah"
+      card-title="name"
+      :card-fields="cardFields"
+      :page-size="1000"
+    >
+      <template #name-cell="{ row }">
+        <RouterLink
+          :to="schoolPath(row.original.schoolId)"
+          :class="['text-label', row.original.faded ? 'text-dimmed' : 'text-primary']"
+          :data-faded="row.original.faded ? 'true' : 'false'"
+          data-testid="res-school-link"
+          >{{ row.original.name }}</RouterLink
         >
-          <td :class="`${T.td} text-slate-400`">{{ i + 1 }}</td>
-          <td :class="T.td">
-            <RouterLink
-              :to="schoolPath(r.schoolId)"
-              class="font-medium text-indigo-600 hover:underline"
-              data-testid="res-school-link"
-              >{{ r.name }}</RouterLink
-            >
-          </td>
-          <td :class="NUM" data-testid="cell-students">{{ count(r.students) }}</td>
-          <td
-            :class="[NUM, 'font-semibold', r.active > 0 ? 'text-green-600' : 'text-slate-300']"
-            data-testid="cell-active"
-          >
-            {{ plain(r.active) }}
-          </td>
-          <td
-            :class="[
-              NUM,
-              r.accuracy === null
-                ? 'text-slate-300'
-                : r.accuracy >= 60
-                  ? 'text-green-600'
-                  : 'text-amber-600',
-            ]"
-            data-testid="cell-accuracy"
-          >
-            {{ r.accuracy === null ? '-' : pct(r.accuracy) }}
-          </td>
-          <td :class="NUM" data-testid="cell-answers">
-            {{ r.answers === null ? '-' : count(r.answers) }}
-          </td>
-          <td :class="[NUM, 'font-bold', BAND[r.tahap].text]" data-testid="cell-engagement">
-            {{ r.engagement === null ? '-' : mean(r.engagement) }}
-          </td>
-          <td :class="NUM">
-            <span
-              :class="[
-                'inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-white',
-                BAND_FILL[r.tahap],
-              ]"
-              data-testid="cell-tahap"
-              >{{ BAND[r.tahap].label }}</span
-            >
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </DataTableCard>
+      </template>
+      <template #students-cell="{ row }">
+        <span data-testid="cell-students">{{ row.original.students }}</span>
+      </template>
+      <template #activeText-cell="{ row }">
+        <span
+          :class="['text-label', row.original.active > 0 ? 'text-success' : 'text-dimmed']"
+          data-testid="cell-active"
+          >{{ row.original.activeText }}</span
+        >
+      </template>
+      <template #accuracyText-cell="{ row }">
+        <span
+          :class="
+            row.original.accuracy === null
+              ? 'text-dimmed'
+              : row.original.accuracy >= 60
+                ? 'text-success'
+                : 'text-warning'
+          "
+          data-testid="cell-accuracy"
+          >{{
+          row.original.accuracyText
+        }}</span>
+      </template>
+      <template #answers-cell="{ row }">
+        <span data-testid="cell-answers">{{ row.original.answers }}</span>
+      </template>
+      <template #engagement-cell="{ row }">
+        <span :class="['text-label', band(row.original.tahap).text]" data-testid="cell-engagement">{{
+          row.original.engagement
+        }}</span>
+      </template>
+      <template #tahapText-cell="{ row }">
+        <UBadge
+          :color="band(row.original.tahap).color"
+          variant="soft"
+          :label="row.original.tahapText"
+          data-testid="cell-tahap"
+        />
+      </template>
+    </DsDataTable>
+  </KirkpatrickTableSection>
 </template>

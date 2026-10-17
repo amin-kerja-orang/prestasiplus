@@ -1,14 +1,11 @@
 <script setup lang="ts">
-/** The static gradient conclusion of S6 (FN-M12-7.4.1; FR-M12-69). */
+/** The static conclusion of S6 (FN-M12-7.4.1; FR-M12-69). */
 </script>
 
 <template>
-  <section
-    class="min-w-0 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white sm:p-5"
-    data-testid="chain-conclusion"
-  >
-    <h2 class="mb-2 font-heading text-base font-bold text-white">Kesimpulan Model Kirkpatrick</h2>
-    <p class="text-sm leading-relaxed">
+  <UCard variant="soft" class="min-w-0" data-testid="chain-conclusion">
+    <h2 class="mb-2 text-subheading text-highlighted">Kesimpulan Model Kirkpatrick</h2>
+    <p class="text-body text-default">
       Berdasarkan analisis empat tahap Model Kirkpatrick, Prestasi Plus menunjukkan keberkesanan
       sebagai platform pembelajaran digital. <strong>Tahap 1 (Reaksi)</strong> menunjukkan maklum
       balas positif daripada pengguna. <strong>Tahap 2 (Pembelajaran)</strong> melalui Head Count
@@ -18,5 +15,5 @@
       penggunaan aktif dengan ketepatan jawapan membuktikan impak positif terhadap pencapaian.
       Empat-empat tahap Kirkpatrick dipenuhi dalam Prestasi Plus.
     </p>
-  </section>
+  </UCard>
 </template>

@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchKirkpatrickBehavior, fetchKirkpatrickFilterOptions } from '../api'
 import BehaviorAlerts from '../components/kirkpatrick/behavior/BehaviorAlerts.vue'
@@ -53,8 +54,8 @@ function apply(value: { schoolId: string }) {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="kirk-behavior">
-    <KirkpatrickTabs :base-path="basePath" current="behavior" class="!mb-0" />
+  <DsPage data-testid="kirk-behavior">
+    <KirkpatrickTabs :base-path="basePath" current="behavior" />
     <KirkpatrickFilterBar
       :options="options"
       :school-id="schoolQuery"
@@ -71,5 +72,5 @@ function apply(value: { schoolId: string }) {
       <BehaviorAlerts :alerts="data.alerts" />
       <BehaviorMood :mood-count="data.moodCount" />
     </template>
-  </div>
+  </DsPage>
 </template>

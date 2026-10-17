@@ -3,9 +3,9 @@
  * S6 Rantaian Impak (FR-M12-60 ... 69; URS EP-M12-7). No tab strip, no filter (`school_id` is ignored). "Muat Turun
  * Laporan" opens `{prefix}/export-pdf` in a new tab (see `KirkpatrickChainPdfPage`).
  */
-import { Download } from '@lucide/vue'
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+
+import { DsPage } from '@/ds'
 
 import { fetchKirkpatrickChain } from '../api'
 import ChainCards from '../components/kirkpatrick/chain/ChainCards.vue'
@@ -29,39 +29,40 @@ const { data, error, loading } = useKirkpatrickPage((signal) => fetchKirkpatrick
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="kirk-chain">
-    <header class="flex flex-wrap items-start justify-between gap-3">
-      <div class="min-w-0">
-        <h1 class="font-heading text-xl font-bold text-gray-900 sm:text-2xl">
-          Model Kirkpatrick — Rantaian Impak
-        </h1>
-        <p class="text-sm text-gray-500">
-          Bukti keberkesanan Prestasi Plus berdasarkan 4 Tahap Kirkpatrick
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
-        <a
-          :href="exportPath"
-          target="_blank"
-          rel="noopener"
-          class="flex min-h-11 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
-          data-testid="chain-export"
-        >
-          <Download class="h-4 w-4" />Muat Turun Laporan
-        </a>
-        <RouterLink
-          :to="paths.overview"
-          class="flex min-h-11 items-center text-sm text-indigo-600 hover:underline"
-          data-testid="chain-back"
-          >← Kembali</RouterLink
-        >
-      </div>
-    </header>
+  <DsPage
+    title="Model Kirkpatrick — Rantaian Impak"
+    subtitle="Bukti keberkesanan Prestasi Plus berdasarkan 4 Tahap Kirkpatrick"
+    data-testid="kirk-chain"
+  >
+    <template #actions>
+      <UButton
+        :to="exportPath"
+        target="_blank"
+        rel="noopener"
+        size="lg"
+        class="min-h-11"
+        color="primary"
+        variant="soft"
+        icon="i-ph-download-simple"
+        label="Muat Turun Laporan"
+        data-testid="chain-export"
+      />
+      <UButton
+        :to="paths.overview"
+        size="lg"
+        class="min-h-11"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-arrow-left"
+        label="Kembali"
+        data-testid="chain-back"
+      />
+    </template>
     <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
     <template v-if="data">
       <ChainCards :chain="data" />
       <ChainCorrelation :correlation="data.correlation" :strength="data.t4.strength" />
       <ChainConclusion />
     </template>
-  </div>
+  </DsPage>
 </template>

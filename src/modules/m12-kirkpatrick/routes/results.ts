@@ -14,6 +14,7 @@ const routes: RouteRecordRaw[] = STAFF_MOUNTS.map((mount): RouteRecordRaw => ({
     access: 'auth',
     roles: rolesOf(mount),
     module: 'M12',
+    v2: true,
     title: 'Tahap 4: Hasil — Kirkpatrick',
     header: {
       title: 'Tahap 4: Hasil',

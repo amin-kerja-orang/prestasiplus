@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/api'
 
 import KirkpatrickOverviewPage from '../../../pages/KirkpatrickOverviewPage.vue'
-import { all, has, mountPage, options, overview, flat, squash, t } from '../fixtures'
+import { all, flat, has, itemLabels, mountPage, options, overview, pick, select, squash, t } from '../fixtures'
 
 const api = vi.hoisted(() => ({
   fetchKirkpatrickOverview: vi.fn(),
@@ -89,12 +89,12 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
 describe('S1 filter (AC-M12-05.1, 05.2)', () => {
   it('lists the options, no Reset by default, and calls the API without a scope', async () => {
     const { wrapper: w } = await open()
-    expect(w.findAll('[data-testid="kirk-filter-school"] option').map((o) => o.text())).toEqual([
+    expect(itemLabels(w, 'school_id')).toEqual([
       'Semua Sekolah',
       'SMK Demo Satu',
       'SMK Demo Dua',
     ])
-    expect(w.findAll('[data-testid="kirk-filter-state"] option').map((o) => o.text())).toEqual([
+    expect(itemLabels(w, 'state')).toEqual([
       'Semua Negeri',
       'Johor',
       'Kelantan',
@@ -109,7 +109,7 @@ describe('S1 filter (AC-M12-05.1, 05.2)', () => {
 
   it('"Tapis" navigates with school_id and state, then Reset appears', async () => {
     const { wrapper: w, router } = await open()
-    await t(w, 'kirk-filter-school').setValue('8080')
+    await pick(w, 'school_id', '8080')
     await t(w, 'kirk-filter').trigger('submit')
     await vi.waitFor(() => {
       expect(router.currentRoute.value.fullPath).toBe('/admin/kirkpatrick?school_id=8080&state=')
@@ -122,12 +122,12 @@ describe('S1 filter (AC-M12-05.1, 05.2)', () => {
     })
     await vi.waitFor(() => expect(has(w, 'kirk-filter-reset')).toBe(true))
     expect(t(w, 'kirk-filter-reset').attributes('href')).toBe('/admin/kirkpatrick')
-    expect((t(w, 'kirk-filter-school').element as HTMLSelectElement).value).toBe('8080')
+    expect(select(w, 'school_id').props('modelValue')).toBe('8080')
   })
 
   it('a bookmarked ?state= is preloaded and sent', async () => {
     const { wrapper: w } = await open('/admin/kirkpatrick?state=Kelantan')
-    expect((t(w, 'kirk-filter-state').element as HTMLSelectElement).value).toBe('Kelantan')
+    expect(select(w, 'state').props('modelValue')).toBe('Kelantan')
     expect(has(w, 'kirk-filter-reset')).toBe(true)
     expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
       { schoolId: null, state: 'Kelantan' },
@@ -137,7 +137,7 @@ describe('S1 filter (AC-M12-05.1, 05.2)', () => {
 })
 
 describe('S1 comparison (AC-M12-08.1..08.5)', () => {
-  it('default: ranges, panel values, green deltas, Ringkasan', async () => {
+  it('default: ranges, panel values, up deltas, Ringkasan', async () => {
     const { wrapper: w } = await open()
     expect(t(w, 'kirk-comparison-subtitle').text()).toBe('Januari 2026 vs September 2026')
     expect(values(w, 'kirk-panel-range')).toEqual([
@@ -159,7 +159,7 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
     )
   })
 
-  it('negative deltas are red with a down arrow', async () => {
+  it('negative deltas are error-toned with a down arrow', async () => {
     api.fetchKirkpatrickOverview.mockResolvedValue(
       overview({
         comparison: {
@@ -175,7 +175,6 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
     const { wrapper: w } = await open('/admin/kirkpatrick?school_id=8080')
     expect(values(w, 'kirk-delta-value')).toEqual(['-11', '-16.6%', '-451', '-2'])
     expect(t(w, 'kirk-delta-active').attributes('data-tone')).toBe('down')
-    expect(t(w, 'kirk-delta-active').classes()).toContain('border-red-200')
   })
 
   it('no data: "Tiada Data vs Tiada Data", "-" ranges, 0 values, one sentence', async () => {

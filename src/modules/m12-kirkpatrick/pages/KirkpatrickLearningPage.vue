@@ -6,6 +6,8 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { DsPage } from '@/ds'
+
 import { fetchKirkpatrickLearning } from '../api'
 import {
   KIRKPATRICK_ADMIN_BASE,
@@ -39,16 +41,16 @@ const { data, error, loading } = useKirkpatrickPage(
 </script>
 
 <template>
-  <div class="min-w-0" data-testid="kirk-learning-page">
+  <DsPage data-testid="kirk-learning-page">
     <KirkpatrickTabs :base-path="basePath" current="learning" />
 
     <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
 
-    <div v-if="data" class="space-y-4">
+    <template v-if="data">
       <LearningKpis :kpi="data.kpi" />
       <LearningGainCard />
       <LearningSubjects :subjects="data.subjects" />
       <LearningSchools :schools="data.schools" :paths="paths" />
-    </div>
-  </div>
+    </template>
+  </DsPage>
 </template>

@@ -1,23 +1,22 @@
 <script setup lang="ts">
 /**
  * S1 "Taburan Engagement Pelajar" (FN-M12-2.6.1; FR-M12-30): five band links (to the T3 page; plain boxes on
- * the alias), `grid-cols-5` at every width, each a round icon tile, count (no separator), label and "%" of
+ * the alias), `grid-cols-5` at every width, each an icon chip, count (no separator), label and "%" of
  * T4/T5.
  */
-import { CheckCheck, ChartPie, CircleMinus, CircleX, Crown, Sprout } from '@lucide/vue'
-import type { Component } from 'vue'
+import { DsIconChip } from '@/ds'
 
 import type { BandCount, BandKey } from '../../../api/types'
-import { BAND, BAND_ORDER, CARD, KirkpatrickLink, pct, plain } from '../common'
+import { BAND, BAND_ORDER, KirkpatrickLink, KirkpatrickPanel, pct, plain } from '../common'
 
 const props = defineProps<{ bands: BandCount[]; behaviorPath: string | null }>()
 
-const ICON: Record<BandKey, Component> = {
-  champion: Crown,
-  konsisten: CheckCheck,
-  berkembang: Sprout,
-  minimum: CircleMinus,
-  tidakTerlibat: CircleX,
+const ICON: Record<BandKey, string> = {
+  champion: 'i-ph-crown',
+  konsisten: 'i-ph-checks',
+  berkembang: 'i-ph-plant',
+  minimum: 'i-ph-minus-circle',
+  tidakTerlibat: 'i-ph-x-circle',
 }
 
 const ordered = () =>
@@ -25,10 +24,7 @@ const ordered = () =>
 </script>
 
 <template>
-  <section :class="[CARD, 'p-3 sm:p-5']" data-testid="kirk-bands">
-    <h2 class="mb-3 flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-      <ChartPie class="h-5 w-5 text-indigo-600" />Taburan Engagement Pelajar
-    </h2>
+  <KirkpatrickPanel title="Taburan Engagement Pelajar" icon="i-ph-chart-pie" data-testid="kirk-bands">
     <div class="grid grid-cols-5 gap-1 sm:gap-3">
       <KirkpatrickLink
         v-for="b in ordered()"
@@ -37,28 +33,15 @@ const ordered = () =>
         class="flex min-w-0 flex-col items-center gap-1 text-center"
         :data-testid="`kirk-band-${b.key}`"
       >
-        <span
-          :class="[
-            'flex h-9 w-9 items-center justify-center rounded-full sm:h-12 sm:w-12',
-            BAND[b.key].tile,
-            BAND[b.key].text,
-          ]"
-        >
-          <component :is="ICON[b.key]" class="h-4 w-4 sm:h-5 sm:w-5" />
-        </span>
-        <span
-          :class="['font-heading text-base font-bold sm:text-xl', BAND[b.key].text]"
-          data-testid="kirk-band-count"
-          >{{ plain(b.count) }}</span
-        >
-        <span
-          class="text-[10px] leading-tight [overflow-wrap:anywhere] text-slate-500 sm:text-xs"
-          >{{ BAND[b.key].label }}</span
-        >
-        <span :class="['text-[10px] sm:text-xs', BAND[b.key].text]" data-testid="kirk-band-pct">{{
+        <DsIconChip :icon="ICON[b.key]" size="sm" />
+        <span :class="['tabular text-subheading', BAND[b.key].text]" data-testid="kirk-band-count">{{
+          plain(b.count)
+        }}</span>
+        <span class="text-caption break-words text-muted">{{ BAND[b.key].label }}</span>
+        <span :class="['tabular text-caption', BAND[b.key].text]" data-testid="kirk-band-pct">{{
           pct(b.pct)
         }}</span>
       </KirkpatrickLink>
     </div>
-  </section>
+  </KirkpatrickPanel>
 </template>
