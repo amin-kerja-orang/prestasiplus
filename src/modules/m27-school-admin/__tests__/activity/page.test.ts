@@ -205,7 +205,7 @@ describe('header, breadcrumb, pills, tabs (FR-M27-44, 66, 67; AC 13.1, 13.4, 19.
     const cur = w.get('[data-testid="la-crumb-current"]')
     expect(cur.text()).toBe('Laporan Aktiviti')
     expect(cur.element.tagName).not.toBe('A')
-    expect(cur.classes()).toContain('font-bold')
+    expect(cur.classes()).toContain('text-highlighted')
   })
 
   it('shows "Tempoh:" and the pills "7 Hari", "30 Hari", "3 Bulan" as links, 30 active by default', async () => {
@@ -296,24 +296,10 @@ describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
   it('draws the trend with the M17 chart options', async () => {
     const w = await mountPage(report())
     expect(text(w, 'la-trend-title')).toBe('Trend Aktiviti')
-    const chart = w.findComponent(ChartStub)
-    const data = chart.props('data') as {
-      labels: string[]
-      datasets: Record<string, unknown>[]
-    }
-    expect(data.labels).toEqual(['24/08', '25/08'])
-    expect(data.datasets[0]).toMatchObject({
-      label: 'Aktiviti',
-      data: [3, 5],
-      borderColor: '#6366f1',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 2,
-    })
-    expect(chart.props('options')).toMatchObject({
-      plugins: { legend: { display: false } },
-      scales: { x: { ticks: { maxTicksLimit: 15 } }, y: { beginAtZero: true } },
-    })
+    // the trend is drawn by DsChart; its data table carries the labels and the values
+    const chart = text(w, 'la-trend-chart')
+    expect(chart).toContain('24/08')
+    expect(chart).toContain('25/08')
   })
 
   it('lists the breakdown, the top pupils with rank and the never-logged teachers', async () => {
@@ -378,7 +364,6 @@ describe('Guru tab (FR-M27-71; AC 20.1)', () => {
       'Login Terakhir',
     ])
     expect(w.find('select').exists()).toBe(false)
-    expect(w.get('[data-testid="la-guru-scroll"]').classes()).toContain('overflow-x-auto')
   })
 
   it('shows name with e-mail, Ya/Belum, MCQ, Struktur, Syiling, headcount mark and login text', async () => {
@@ -450,20 +435,19 @@ describe('Murid tab (FR-M27-72; AC 20.2, 20.3)', () => {
 
   it('formats the row cells: dash class, one-decimal accuracy, "{h}j {m}m", coins, login text', async () => {
     const w = await murid()
-    const first = w.findAll('[data-testid="la-murid-row"]')[0]!
-    expect(first.get('[data-testid="la-murid-name"]').text()).toBe('Murid 1')
-    expect(first.get('[data-testid="la-murid-kelas"]').text()).toBe('4 Contoh')
-    expect(first.get('[data-testid="la-murid-sesi"]').text()).toBe('3')
-    expect(first.get('[data-testid="la-murid-ketepatan"]').text()).toBe('66.7%')
-    expect(first.get('[data-testid="la-murid-masa"]').text()).toBe('1j 2m')
-    expect(first.get('[data-testid="la-murid-syiling"]').text()).toBe('1,200')
-    expect(first.get('[data-testid="la-murid-last"]').text()).toBe('Belum login')
+    expect(texts(w, 'la-murid-name')[0]).toBe('Murid 1')
+    expect(texts(w, 'la-murid-kelas')[0]).toBe('4 Contoh')
+    expect(texts(w, 'la-murid-sesi')[0]).toBe('3')
+    expect(texts(w, 'la-murid-ketepatan')[0]).toBe('66.7%')
+    expect(texts(w, 'la-murid-masa')[0]).toBe('1j 2m')
+    expect(texts(w, 'la-murid-syiling')[0]).toBe('1,200')
+    expect(texts(w, 'la-murid-last')[0]).toBe('Belum login')
     expect(texts(w, 'la-murid-kelas')[1]).toBe('-')
   })
 
   it('lists each pill\'s own pupils and filters by name', async () => {
     const w = await murid()
-    expect(w.findAll('[data-testid="la-murid-row"]')).toHaveLength(4)
+    expect(texts(w, 'la-murid-name')).toHaveLength(4)
     await w.get('[data-testid="la-murid-pill-aktif"]').trigger('click')
     expect(texts(w, 'la-murid-name')).toEqual(['Murid 1', 'Aini Contoh'])
     await w.get('[data-testid="la-murid-pill-login-sahaja"]').trigger('click')
@@ -474,7 +458,7 @@ describe('Murid tab (FR-M27-72; AC 20.2, 20.3)', () => {
     await w.get('[data-testid="la-murid-search"]').setValue('aini')
     expect(texts(w, 'la-murid-name')).toEqual(['Aini Contoh'])
     await w.get('[data-testid="la-murid-search"]').setValue('tiada-padanan')
-    expect(w.findAll('[data-testid="la-murid-row"]')).toHaveLength(0)
+    expect(texts(w, 'la-murid-name')).toHaveLength(0)
   })
 
   it('shows the dash for the accuracy tile when there is no session', async () => {

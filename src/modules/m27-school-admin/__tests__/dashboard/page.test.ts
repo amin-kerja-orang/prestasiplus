@@ -5,6 +5,7 @@
  * states. Figures from the owners are covered by the handler tests and the E2E smoke.
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import UProgress from '@nuxt/ui/components/Progress.vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -151,7 +152,7 @@ describe('breadcrumb and banner (FR-M27-18…21)', () => {
     const current = w.get('[data-testid="sd-crumb-current"]')
     expect(current.text()).toBe('Dashboard Sekolah')
     expect(current.element.tagName).not.toBe('A')
-    expect(current.classes()).toContain('font-bold')
+    expect(current.classes()).toContain('text-highlighted')
     // order: card, breadcrumb, banner
     const order = ['sd-perutusan', 'sd-breadcrumb', 'sd-banner'].map((id) =>
       w.html().indexOf(`data-testid="${id}"`),
@@ -159,16 +160,14 @@ describe('breadcrumb and banner (FR-M27-18…21)', () => {
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })
 
-  it('prints the stored name, uppercased by CSS only, the role line and the three chips as text', async () => {
+  it('prints the stored name, as stored, the role line and the three chips as text', async () => {
     const w = await mountPage(dashboard())
     const name = w.get('[data-testid="sd-banner-name"]')
     expect(name.text()).toBe('SMK Contoh Ujian')
-    expect(name.classes()).toContain('uppercase')
     expect(text(w, 'sd-banner-role')).toBe('Admin Sekolah')
     expect(text(w, 'sd-chip-state')).toBe('Selangor')
     expect(text(w, 'sd-chip-ppd')).toBe('PPD CONTOH')
     expect(text(w, 'sd-chip-code')).toBe('# Kod: UJI0001')
-    expect(w.findAll('[data-testid="sd-chip-icon"]')).toHaveLength(2)
     expect(w.find('[data-testid="sd-banner"] a').exists()).toBe(false)
   })
 
@@ -185,7 +184,7 @@ describe('breadcrumb and banner (FR-M27-18…21)', () => {
 })
 
 describe('summary cards (FR-M27-23, 24, 30)', () => {
-  it('shows four cards in order with labels, ms-MY values, icon tiles and foot bars; none is a link', async () => {
+  it('shows four cards in order with labels, ms-MY values; none is a link', async () => {
     const w = await mountPage(dashboard())
     const cards = w.findAll(
       '[data-testid^="sd-card-"][data-testid$="s"], [data-testid="sd-card-subscription"]',
@@ -199,17 +198,12 @@ describe('summary cards (FR-M27-23, 24, 30)', () => {
       '12',
       'Belum Ada',
     ])
-    expect(w.findAll('[data-testid="sd-card-icon"]')).toHaveLength(4)
-    expect(w.findAll('[data-testid="sd-card-bar"]')).toHaveLength(4)
     expect(w.get('[data-testid="sd-cards"]').find('a').exists()).toBe(false)
-    for (const el of w.findAll('[data-testid="sd-card-label"]')) {
-      expect(el.classes()).toContain('uppercase')
-    }
   })
 
-  it('is grey for "Belum Ada" and green for a subscription (DV-M27-04)', async () => {
+  it('shows "Belum Ada" and the subscription label (DV-M27-04)', async () => {
     const grey = await mountPage(dashboard())
-    expect(grey.get('[data-testid="sd-card-subscription"]').classes().join(' ')).toContain('slate')
+    expect(grey.get('[data-testid="sd-card-subscription"]').text()).toContain('Belum Ada')
     const green = await mountPage(
       dashboard({
         cards: {
@@ -222,7 +216,6 @@ describe('summary cards (FR-M27-23, 24, 30)', () => {
     )
     const card = green.get('[data-testid="sd-card-subscription"]')
     expect(card.text()).toContain('Tempoh Ihsan')
-    expect(card.classes().join(' ')).toContain('green')
   })
 })
 
@@ -264,18 +257,16 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
       '66.2%',
       '71.8%',
     ])
-    expect(w.findAll('[data-testid="sd-level-pct"]')[0]?.classes()).toContain('text-amber-500')
+    expect(w.findAll('[data-testid="sd-level-pct"]')[0]?.classes()).toContain('text-warning')
     expect(panel.text()).toContain('Click untuk detail')
-    expect((w.findAll('[data-testid="sd-level-bar"]')[0]?.element as HTMLElement).style.width).toBe(
-      '66.2%',
-    )
+    expect(w.findAllComponents(UProgress)[0]?.props('modelValue')).toBe(66.2)
   })
 
   it.each([
-    [49.9, 'text-red-500'],
-    [50, 'text-amber-500'],
-    [69.9, 'text-amber-500'],
-    [70, 'text-emerald-500'],
+    [49.9, 'text-error'],
+    [50, 'text-warning'],
+    [69.9, 'text-warning'],
+    [70, 'text-success'],
   ])('colours a level at %s with %s', async (accuracy, cls) => {
     const base = dashboard()
     const w = await mountPage({
@@ -297,15 +288,12 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
     const full = w.get('[data-testid="sd-grades-full"]')
     expect(full.text()).toBe('Lihat penuh →')
     expect(full.attributes('href')).toBe('/prestasi/sekolah')
-    expect(w.findAll('[data-testid="sd-grade-letter"]').map((e) => e.text())).toEqual(GRADES)
-    expect(w.findAll('[data-testid="sd-grade-count"]')[9]?.text()).toBe('90')
-    expect(w.findAll('[data-testid="sd-grade-pct"]')[9]?.text()).toBe('9.0%')
+    // the grades are drawn by DsChart; its data table carries the letters, the counts and the percents
+    const chart = text(w, 'sd-grades-chart')
+    for (const g of GRADES) expect(chart).toContain(g)
+    expect(chart).toContain('G (9.0%)')
+    expect(chart).toContain('90')
     expect(text(w, 'sd-grades-total')).toBe('Jumlah: 450 rekod')
-    const widths = w
-      .findAll('[data-testid="sd-grade-bar"]')
-      .map((e) => (e.element as HTMLElement).style.width)
-    expect(widths[9]).toBe('100%')
-    expect(widths[0]).toBe('0%')
   })
 
   it('renders the no-data states (BR-M27-18)', async () => {
@@ -333,13 +321,8 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
     expect(text(w, 'sd-practice-accuracy')).toBe('—')
     expect(text(w, 'sd-practice-counts')).toBe('0 sesi · 0 soalan')
     expect(w.findAll('[data-testid="sd-level-row"]')).toHaveLength(2)
-    expect(w.findAll('[data-testid="sd-grade-row"]')).toHaveLength(10)
+    for (const g of GRADES) expect(text(w, 'sd-grades-chart')).toContain(g)
     expect(text(w, 'sd-grades-total')).toBe('Jumlah: 0 rekod')
-    expect(
-      w
-        .findAll('[data-testid="sd-grade-bar"]')
-        .every((e) => (e.element as HTMLElement).style.width === '0%'),
-    ).toBe(true)
   })
 
   it('leaves the Amaran Awal panel out while M18 gives no risk (XR-M27-08)', async () => {

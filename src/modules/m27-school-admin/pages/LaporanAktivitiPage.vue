@@ -14,9 +14,9 @@ import { useRoute } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { DsPage } from '@/ds'
 import { useSession } from '@/composables/useSession'
 
 import { fetchSchoolActivityReport } from '../api/school-admin'
@@ -66,7 +66,7 @@ watch(
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="la-page" :data-range="data?.range">
+  <DsPage data-testid="la-page" :data-range="data?.range">
     <template v-if="data">
       <ActivityBreadcrumb :title="TITLE" />
       <ActivityRangePills :active="range" />
@@ -80,13 +80,18 @@ watch(
       <ActivityTeachersTab v-else-if="tab === 'guru'" :report="data" />
       <ActivityPupilsTab v-else :report="data" />
     </template>
-    <AlertBox v-else-if="error && !refused" :messages="error.message" data-testid="la-error" />
-    <p
-      v-else-if="loading"
-      class="flex justify-center py-10 text-slate-500"
-      data-testid="la-loading"
-    >
-      <LoadingSpinner class="h-6 w-6" />
-    </p>
-  </div>
+    <UAlert
+      v-else-if="error && !refused"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      :description="error.message"
+      role="alert"
+      data-testid="la-error"
+    />
+    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="la-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
+  </DsPage>
 </template>

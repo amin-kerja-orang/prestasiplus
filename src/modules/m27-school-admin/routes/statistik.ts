@@ -19,6 +19,8 @@ const routes: RouteRecordRaw[] = [
       title: 'Statistik Penggunaan - PRESTASIPLUS',
       header: { title: 'Statistik Penggunaan' },
       module: 'M27',
+
+      v2: true,
     },
   },
 ]

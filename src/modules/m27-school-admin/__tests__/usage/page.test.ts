@@ -132,7 +132,7 @@ describe('header, breadcrumb and pills (FR-M27-44, 51; AC 13.1, 13.4, 15.1, 15.3
     const current = w.get('[data-testid="su-crumb-current"]')
     expect(current.text()).toBe('Statistik Penggunaan')
     expect(current.element.tagName).not.toBe('A')
-    expect(current.classes()).toContain('font-bold')
+    expect(current.classes()).toContain('text-highlighted')
   })
 
   it('shows the three pills in order, each a link, with 30 Hari active by default', async () => {

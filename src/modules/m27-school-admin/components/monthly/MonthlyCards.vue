@@ -1,41 +1,41 @@
 <script setup lang="ts">
 /**
- * S5 four cards of the shown month (FR-M27-82, 83; BR-M27-28): "Penglibatan" ("{p}%", "{n} aktif / {n}
- * daftar"), "Soalan Dijawab" ("{n}", "{x} soalan/pelajar"), "Ketepatan" ("{p}%" one decimal or "—"),
- * "Sesi Latihan" ("{n}"). Two per row at 375 and 768, four at 1280. PROPOSED composition (D23).
+ * S4 four summary cards (restyle spec AS-50): Penglibatan, Soalan Dijawab, Ketepatan, Sesi Latihan as stat
+ * tiles. 2 per row below `lg`, 4 from `lg`.
  */
+import { computed } from 'vue'
+
 import type { MonthlyReport } from '../../api/school-admin'
+import StatRow, { type StatItem } from '../shared/StatRow.vue'
 import { count, pct0, pct1 } from './monthly-format'
 
-defineProps<{ cards: MonthlyReport['cards'] }>()
+const props = defineProps<{ cards: MonthlyReport['cards'] }>()
 
-const CARD = 'flex min-w-0 flex-col rounded-2xl bg-white p-4 shadow'
-const LABEL = 'text-xs font-bold tracking-wide text-slate-500 uppercase'
-const VALUE = 'mt-1 text-2xl font-bold text-slate-800 sm:text-3xl'
-const SUB = 'mt-1 text-xs text-slate-500'
+const items = computed<StatItem[]>(() => [
+  {
+    key: 'participation',
+    label: 'Penglibatan',
+    value: pct0(props.cards.participationPct),
+    sub: `${count(props.cards.active)} aktif / ${count(props.cards.registered)} daftar`,
+    icon: 'i-ph-users-three',
+  },
+  {
+    key: 'answers',
+    label: 'Soalan Dijawab',
+    value: count(props.cards.answers),
+    sub: `${count(props.cards.perPupil)} soalan/pelajar`,
+    icon: 'i-ph-check-circle',
+  },
+  { key: 'accuracy', label: 'Ketepatan', value: pct1(props.cards.accuracy), icon: 'i-ph-target' },
+  {
+    key: 'sessions',
+    label: 'Sesi Latihan',
+    value: count(props.cards.sessions),
+    icon: 'i-ph-clipboard-text',
+  },
+])
 </script>
 
 <template>
-  <div class="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4" data-testid="lb-cards">
-    <div :class="CARD" data-testid="lb-card-participation">
-      <p :class="LABEL">Penglibatan</p>
-      <p :class="VALUE" data-testid="lb-card-value">{{ pct0(cards.participationPct) }}</p>
-      <p :class="SUB" data-testid="lb-card-sub">
-        {{ count(cards.active) }} aktif / {{ count(cards.registered) }} daftar
-      </p>
-    </div>
-    <div :class="CARD" data-testid="lb-card-answers">
-      <p :class="LABEL">Soalan Dijawab</p>
-      <p :class="VALUE" data-testid="lb-card-value">{{ count(cards.answers) }}</p>
-      <p :class="SUB" data-testid="lb-card-sub">{{ count(cards.perPupil) }} soalan/pelajar</p>
-    </div>
-    <div :class="CARD" data-testid="lb-card-accuracy">
-      <p :class="LABEL">Ketepatan</p>
-      <p :class="VALUE" data-testid="lb-card-value">{{ pct1(cards.accuracy) }}</p>
-    </div>
-    <div :class="CARD" data-testid="lb-card-sessions">
-      <p :class="LABEL">Sesi Latihan</p>
-      <p :class="VALUE" data-testid="lb-card-value">{{ count(cards.sessions) }}</p>
-    </div>
-  </div>
+  <StatRow :items="items" prefix="lb-card" nav-id="lb-cards" />
 </template>

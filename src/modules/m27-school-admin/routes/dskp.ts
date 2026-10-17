@@ -19,6 +19,8 @@ const routes: RouteRecordRaw[] = [
       title: 'DSKP Heatmap - PRESTASIPLUS',
       header: { title: 'DSKP Heatmap' },
       module: 'M27',
+
+      v2: true,
     },
   },
 ]

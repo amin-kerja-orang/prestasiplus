@@ -9,15 +9,16 @@
  * the level, shows "Tiada Standard Pembelajaran untuk subjek dan tingkatan ini." (FR-M27-64).
  */
 import { computed, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { DsPage } from '@/ds'
 
 import { fetchSchoolDskpHeatmap } from '../api/school-admin'
+import ReportCrumb from '../components/shared/ReportCrumb.vue'
 import HeatmapFilters from '../components/heatmap/HeatmapFilters.vue'
 import HeatmapMap from '../components/heatmap/HeatmapMap.vue'
 
@@ -93,18 +94,9 @@ function pickSubject(id: number) {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="dh-page">
+  <DsPage data-testid="dh-page">
     <template v-if="data">
-      <nav class="flex min-w-0 flex-wrap items-center gap-x-2 text-sm" data-testid="dh-breadcrumb">
-        <RouterLink
-          to="/admin-sekolah"
-          class="inline-flex min-h-11 items-center text-slate-500 hover:text-slate-700"
-          data-testid="dh-crumb-back"
-          >← Dashboard Sekolah</RouterLink
-        >
-        <span class="text-slate-300">/</span>
-        <span class="font-bold text-slate-700" data-testid="dh-crumb-current">{{ TITLE }}</span>
-      </nav>
+      <ReportCrumb prefix="dh" back-label="← Dashboard Sekolah" back-to="/admin-sekolah" :title="TITLE" />
       <HeatmapFilters
         :subjects="data.subjects"
         :subject-id="selectValue"
@@ -117,13 +109,18 @@ function pickSubject(id: number) {
         :empty="empty"
       />
     </template>
-    <AlertBox v-else-if="error && !refused" :messages="error.message" data-testid="dh-error" />
-    <p
-      v-else-if="loading"
-      class="flex justify-center py-10 text-slate-500"
-      data-testid="dh-loading"
-    >
-      <LoadingSpinner class="h-6 w-6" />
-    </p>
-  </div>
+    <UAlert
+      v-else-if="error && !refused"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      :description="error.message"
+      role="alert"
+      data-testid="dh-error"
+    />
+    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="dh-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
+  </DsPage>
 </template>
