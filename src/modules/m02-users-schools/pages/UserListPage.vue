@@ -1,40 +1,19 @@
 ﻿<script setup lang="ts">
 /**
- * S1 `/admin/users` "Pengurusan Pengguna - Admin Panel" (M02-T4; FR-M02-01..19).
+ * S1 `/admin/users` "Pengurusan Pengguna - Admin Panel" (M02-T4; FR-M02-01..19), v2 staff theme.
  *
- * - 7 role stat cards (all users, unaffected by the filters), GET filter form, three action links.
+ * - 7 role stat tiles (all users, unaffected by the filters), a filter bar, three action buttons.
  * - Table of 25 rows per page: bulk select (own row excluded), "Aktif?" toggle, Edit / Pakej /
  *   Login As / Padam. The query string is the state; the form navigates and the list follows it.
- * - Native `confirm` for the toggle and Login As, modals for delete and bulk delete.
- * - DV-M02-01: the table fits from 1280, scrolls inside its card below (`DataTableCard`).
+ * - `useConfirm` for the toggle and Login As (same BM text as the native confirm), dialogs for delete
+ *   and bulk delete.
+ * - The table scrolls inside its card from `md`; below `md` every row is a card (`CardTable`).
  */
-import {
-  CircleCheck,
-  CircleX,
-  Funnel,
-  FileInput,
-  LoaderCircle,
-  LogIn,
-  PackageOpen,
-  Search,
-  School as SchoolIcon,
-  SquareCheckBig,
-  SquarePen,
-  ToggleRight,
-  Trash,
-  UserCog,
-  UserPlus,
-  Users,
-  UsersRound,
-} from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter, type LocationQueryValue } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
-import { DataTableCard, LaravelPager, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
-import { confirmNative, useApi, useFlash, useSession } from '@/composables'
-import { initialsAvatarUrl } from '@/shells/shared/avatar'
+import { useApi, useFlash, useSession } from '@/composables'
+import { DsFilterBar, DsPage, useConfirm } from '@/ds'
 
 import {
   bulkDeleteAdminUsers,
@@ -46,20 +25,27 @@ import {
   type AdminUserListItem,
   type AdminUserRole,
 } from '../api/users'
+import AdminAlert from '../components/AdminAlert.vue'
+import CardCell from '../components/native/CardCell.vue'
+import CardRow from '../components/native/CardRow.vue'
+import CardTable from '../components/native/CardTable.vue'
+import NativeCheckbox from '../components/native/NativeCheckbox.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import UserDeleteModals from '../components/UserDeleteModals.vue'
 import UserStatCards from '../components/UserStatCards.vue'
 import {
   errorLines,
   formatUserDate,
-  roleBadgeClass,
-  roleLabel,
+  initialsOf,
   ROLE_FILTER_OPTIONS,
+  roleLabel,
   USERS_LIST_PATH,
 } from '../lib/user-list'
 
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+const confirm = useConfirm()
 const { store: session, user: me } = useSession()
 
 function queryText(value: LocationQueryValue | LocationQueryValue[] | undefined): string {
@@ -80,7 +66,7 @@ const applied = computed(() => {
   }
 })
 
-// Draft values of the form controls; re-synced when the URL changes (back/forward, reset, cards).
+// Draft values of the form controls; re-synced when the URL changes (back/forward, reset, tiles).
 const role = ref(queryText(route.query.role))
 const school = ref(queryText(route.query.school))
 const status = ref(queryText(route.query.is_active))
@@ -121,6 +107,14 @@ const rows = computed<AdminUserListItem[]>(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.roleCounts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
 const from = computed(() => data.value?.meta.from ?? 1)
+const summary = computed(() => {
+  const meta = data.value?.meta
+  if (!meta || rows.value.length === 0) return ''
+  return `Menunjukkan ${String(meta.from ?? 1)}-${String(meta.to ?? rows.value.length)} daripada ${String(meta.totalItems)} hasil`
+})
+const activeCount = computed(
+  () => [role.value, school.value, status.value].filter((v) => v !== '').length,
+)
 
 function filterQuery(): Record<string, string> {
   const out: Record<string, string> = {}
@@ -152,6 +146,14 @@ async function submitFilter(): Promise<void> {
   }
 }
 
+async function resetFilter(): Promise<void> {
+  role.value = ''
+  school.value = ''
+  status.value = ''
+  search.value = ''
+  await submitFilter()
+}
+
 function goToPage(page: number): void {
   void router.push({ path: USERS_LIST_PATH, query: { ...pagerQuery.value, page: String(page) } })
 }
@@ -178,7 +180,7 @@ function toggleAll(event: Event): void {
   selected.value = (event.target as HTMLInputElement).checked ? [...selectableIds.value] : []
 }
 
-// --- Toggle, Login As (native confirm), delete.
+// --- Toggle, Login As (confirm), delete.
 const busy = ref(false)
 const togglingId = ref<number | null>(null)
 
@@ -194,7 +196,7 @@ async function reloadAfterMutation(): Promise<void> {
 }
 
 async function toggle(user: AdminUserListItem): Promise<void> {
-  if (!confirmNative('Pasti untuk menukar status pengguna ini?')) return
+  if (!(await confirm({ message: 'Pasti untuk menukar status pengguna ini?' }))) return
   if (togglingId.value !== null) return
   togglingId.value = user.id
   try {
@@ -209,7 +211,7 @@ async function toggle(user: AdminUserListItem): Promise<void> {
 }
 
 async function loginAs(user: AdminUserListItem): Promise<void> {
-  if (!confirmNative(`Login sebagai ${user.name}?`)) return
+  if (!(await confirm({ message: `Login sebagai ${user.name}?` }))) return
   if (busy.value) return
   busy.value = true
   try {
@@ -268,346 +270,291 @@ async function confirmBulk(): Promise<void> {
 }
 
 const SKELETON_ROWS = 5
-const COLUMN_COUNT = 10
-const HEADERS = [
-  '#',
-  'Nama',
-  'Emel',
-  'Telefon',
-  'Peranan',
-  'Sekolah',
-  'Aktif?',
-  'Tarikh',
-  'Tindakan',
+const COLUMNS = [
+  { key: 'select', label: 'Pilih' },
+  { key: 'no', label: '#' },
+  { key: 'name', label: 'Nama' },
+  { key: 'email', label: 'Emel' },
+  { key: 'phone', label: 'Telefon' },
+  { key: 'role', label: 'Peranan' },
+  { key: 'school', label: 'Sekolah' },
+  { key: 'active', label: 'Aktif?' },
+  { key: 'date', label: 'Tarikh' },
+  { key: 'actions', label: 'Tindakan' },
 ]
-
-const CELL = 'px-2.5 py-3 text-sm text-slate-700'
-const HEAD = 'px-2.5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide'
-const LABEL = 'mb-1 flex items-center gap-1.5 text-sm font-medium text-slate-700'
-const ACTION =
-  'inline-flex min-h-11 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 lg:min-h-8'
-const LINK_BTN =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shadow transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4 sm:space-y-6" data-testid="users-page">
+  <DsPage data-testid="users-page">
+    <template #actions>
+      <UButton
+        to="/admin/users/create"
+        icon="i-ph-user-plus"
+        label="Tambah"
+        data-testid="users-add"
+      />
+      <UButton
+        to="/admin/import-students"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-file-arrow-up"
+        label="Import Pelajar"
+        data-testid="users-import-students"
+      />
+      <UButton
+        to="/admin/users/bulk-import"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-users-three"
+        label="Import Pengguna"
+        data-testid="users-import-users"
+      />
+    </template>
+
     <UserStatCards :counts="counts" :active-role="applied.role" />
 
-    <!-- Filter (GET form): 2 columns below lg, one row from lg. -->
-    <form
-      method="get"
-      class="grid grid-cols-2 items-end gap-3 rounded-2xl bg-white p-4 shadow sm:p-5 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+    <DsFilterBar
+      :active-count="activeCount"
       data-testid="users-filter"
-      @submit.prevent="submitFilter"
+      @apply="submitFilter"
+      @reset="resetFilter"
     >
-      <div class="min-w-0">
-        <label for="users-role" :class="LABEL"
-          ><UserCog class="h-4 w-4" aria-hidden="true" />Peranan</label
-        >
-        <select
-          id="users-role"
-          v-model="role"
-          name="role"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
-          data-testid="users-role"
-        >
-          <option value="">Semua Peranan</option>
-          <option v-for="o in ROLE_FILTER_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
-      </div>
-      <div class="min-w-0">
-        <label for="users-school" :class="LABEL"
-          ><SchoolIcon class="h-4 w-4" aria-hidden="true" />Sekolah</label
-        >
-        <select
-          id="users-school"
-          v-model="school"
-          name="school"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
-          data-testid="users-school"
-        >
-          <option value="">Semua Sekolah</option>
-          <option v-for="s in schoolOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
-        </select>
-      </div>
-      <div class="min-w-0">
-        <label for="users-status" :class="LABEL"
-          ><ToggleRight class="h-4 w-4" aria-hidden="true" />Status</label
-        >
-        <select
-          id="users-status"
-          v-model="status"
-          name="is_active"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
-          data-testid="users-status"
-        >
-          <option value="">Semua</option>
-          <option value="1">Aktif</option>
-          <option value="0">Tidak Aktif</option>
-        </select>
-      </div>
-      <div class="min-w-0">
-        <label for="users-search" :class="LABEL"
-          ><Search class="h-4 w-4" aria-hidden="true" />Cari</label
-        >
-        <input
-          id="users-search"
+      <template #search>
+        <UInput
           v-model="search"
           type="text"
           name="search"
+          aria-label="Cari"
           placeholder="Nama atau emel..."
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
+          icon="i-ph-magnifying-glass"
+          size="lg"
+          class="md:w-64"
           data-testid="users-search"
         />
+      </template>
+      <NativeSelect
+        id="users-role"
+        v-model="role"
+        name="role"
+        aria-label="Peranan"
+        class="md:w-48"
+        data-testid="users-role"
+      >
+        <option value="">Semua Peranan</option>
+        <option v-for="o in ROLE_FILTER_OPTIONS" :key="o.value" :value="o.value">
+          {{ o.label }}
+        </option>
+      </NativeSelect>
+      <NativeSelect
+        id="users-school"
+        v-model="school"
+        name="school"
+        aria-label="Sekolah"
+        class="md:w-56"
+        data-testid="users-school"
+      >
+        <option value="">Semua Sekolah</option>
+        <option v-for="s in schoolOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+      </NativeSelect>
+      <NativeSelect
+        id="users-status"
+        v-model="status"
+        name="is_active"
+        aria-label="Status"
+        class="md:w-40"
+        data-testid="users-status"
+      >
+        <option value="">Semua</option>
+        <option value="1">Aktif</option>
+        <option value="0">Tidak Aktif</option>
+      </NativeSelect>
+    </DsFilterBar>
+
+    <!-- Load failure: red box in place of the table + retry (design-system 7.4, INFERRED copy). -->
+    <div v-if="error" class="flex flex-col gap-3" data-testid="users-error">
+      <AdminAlert :messages="errorLines(error)" />
+      <div>
+        <UButton label="Cuba Lagi" data-testid="users-retry" @click="reload()" />
       </div>
-      <button
-        type="submit"
-        class="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 lg:col-span-1"
-        data-testid="users-search-submit"
-      >
-        <Funnel class="h-4 w-4" aria-hidden="true" />
-        Cari
-      </button>
-    </form>
-
-    <div class="flex flex-wrap gap-3">
-      <RouterLink
-        to="/admin/users/create"
-        :class="[LINK_BTN, 'bg-indigo-600 hover:bg-indigo-700']"
-        data-testid="users-add"
-      >
-        <UserPlus class="h-4 w-4" aria-hidden="true" />
-        Tambah
-      </RouterLink>
-      <RouterLink
-        to="/admin/import-students"
-        :class="[LINK_BTN, 'bg-teal-600 hover:bg-teal-700']"
-        data-testid="users-import-students"
-      >
-        <FileInput class="h-4 w-4" aria-hidden="true" />
-        Import Pelajar
-      </RouterLink>
-      <RouterLink
-        to="/admin/users/bulk-import"
-        :class="[LINK_BTN, 'bg-purple-600 hover:bg-purple-700']"
-        data-testid="users-import-users"
-      >
-        <UsersRound class="h-4 w-4" aria-hidden="true" />
-        Import Pengguna
-      </RouterLink>
     </div>
 
-    <!-- Load failure: red box in place of the table + retry (design-system §7.4, INFERRED copy). -->
-    <div v-if="error" class="space-y-3" data-testid="users-error">
-      <AlertBox :messages="errorLines(error)" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        data-testid="users-retry"
-        @click="reload()"
-      >
-        Cuba Lagi
-      </button>
-    </div>
-
-    <DataTableCard v-else :min-width="880">
+    <CardTable v-else :columns="COLUMNS" caption="Senarai pengguna" data-testid="users-table">
       <template #header>
         <div
           v-if="selected.length > 0"
-          class="flex items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-4 py-3"
+          class="flex items-center justify-between gap-3 bg-elevated p-3"
           data-testid="users-bulk-bar"
         >
-          <span class="inline-flex items-center gap-2 text-sm font-medium text-red-700">
-            <SquareCheckBig class="h-4 w-4" aria-hidden="true" />
+          <span class="flex items-center gap-2 text-label text-default">
+            <UIcon name="i-ph-check-square" class="size-4" aria-hidden="true" />
             <span data-testid="users-selected-count">{{ selected.length }}</span> dipilih
           </span>
-          <button
+          <UButton
             type="button"
-            class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white shadow transition hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+            color="error"
+            icon="i-ph-trash"
+            label="Padam"
             data-testid="users-bulk-delete"
             @click="bulkOpen = true"
-          >
-            <Trash class="h-4 w-4" aria-hidden="true" />
-            Padam
-          </button>
-        </div>
-      </template>
-
-      <table :class="T.table" data-testid="users-table">
-        <thead class="bg-slate-50">
-          <tr>
-            <th scope="col" :class="[HEAD, 'w-10']">
-              <input
-                type="checkbox"
-                class="h-5 w-5 rounded border-slate-300 accent-indigo-600"
-                :checked="allSelected"
-                data-testid="users-select-all"
-                @change="toggleAll"
-              />
-            </th>
-            <th v-for="label in HEADERS" :key="label" scope="col" :class="HEAD">{{ label }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-if="firstLoad">
-            <tr v-for="n in SKELETON_ROWS" :key="n" :class="T.row" data-testid="users-skeleton">
-              <td v-for="c in COLUMN_COUNT" :key="c" :class="CELL">
-                <div class="h-4 w-full max-w-24 animate-pulse rounded bg-slate-100"></div>
-              </td>
-            </tr>
-          </template>
-
-          <tr v-else-if="rows.length === 0" :class="T.row" data-testid="users-empty">
-            <td :colspan="COLUMN_COUNT" class="px-4 py-12 text-center text-slate-400">
-              <Users class="mx-auto mb-2 h-10 w-10" aria-hidden="true" />
-              <p class="font-medium text-slate-500">Tiada pengguna dijumpai</p>
-              <p class="text-sm">Cuba ubah kriteria carian anda</p>
-            </td>
-          </tr>
-
-          <template v-else>
-            <tr
-              v-for="(user, index) in rows"
-              :key="user.id"
-              :class="[T.row, 'align-middle']"
-              data-testid="user-row"
-              :data-user-id="user.id"
-            >
-              <td :class="CELL">
-                <input
-                  v-if="user.id !== ownId"
-                  v-model="selected"
-                  type="checkbox"
-                  :value="user.id"
-                  class="h-5 w-5 rounded border-slate-300 accent-indigo-600"
-                  data-testid="user-select"
-                />
-              </td>
-              <td :class="CELL">{{ from + index }}</td>
-              <td :class="[CELL, 'min-w-36 font-medium text-slate-800']">
-                <div class="flex items-center gap-2">
-                  <img
-                    :src="user.avatarUrl || initialsAvatarUrl(user.name, '#4F46E5')"
-                    alt=""
-                    class="h-8 w-8 shrink-0 rounded-full object-cover"
-                  />
-                  <span class="min-w-0 break-words" data-testid="user-name">{{ user.name }}</span>
-                </div>
-              </td>
-              <td :class="[CELL, 'min-w-36 break-all']">{{ user.email }}</td>
-              <td :class="[CELL, 'whitespace-nowrap']">{{ user.phone || '-' }}</td>
-              <td :class="CELL">
-                <span :class="roleBadgeClass(user.role)" data-testid="user-role">{{
-                  roleLabel(user.role)
-                }}</span>
-              </td>
-              <td :class="[CELL, 'min-w-32 break-words']">{{ user.school?.name || '-' }}</td>
-              <td :class="CELL">
-                <form method="post" @submit.prevent="toggle(user)">
-                  <button
-                    type="submit"
-                    :disabled="togglingId === user.id"
-                    :class="[
-                      ACTION,
-                      'disabled:cursor-wait',
-                      user.isActive
-                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                        : 'bg-red-100 text-red-700 hover:bg-red-200',
-                    ]"
-                    data-testid="user-toggle"
-                  >
-                    <LoaderCircle
-                      v-if="togglingId === user.id"
-                      class="h-4 w-4 animate-spin"
-                      aria-hidden="true"
-                    />
-                    <template v-else-if="user.isActive">
-                      <CircleCheck class="h-3.5 w-3.5" aria-hidden="true" />Aktif
-                    </template>
-                    <template v-else>
-                      <CircleX class="h-3.5 w-3.5" aria-hidden="true" />Tidak
-                    </template>
-                  </button>
-                </form>
-              </td>
-              <td :class="[CELL, 'whitespace-nowrap']">{{ formatUserDate(user.createdAt) }}</td>
-              <td :class="CELL">
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <RouterLink
-                    :to="`/admin/users/${user.id}/edit`"
-                    title="Edit"
-                    :class="[ACTION, 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200']"
-                    data-testid="user-edit"
-                  >
-                    <SquarePen class="h-3.5 w-3.5" aria-hidden="true" />Edit
-                  </RouterLink>
-                  <RouterLink
-                    v-if="user.role === 'school_admin'"
-                    :to="`/admin/users/${user.id}/packages`"
-                    title="Pakej"
-                    :class="[ACTION, 'bg-teal-100 text-teal-700 hover:bg-teal-200']"
-                    data-testid="user-packages"
-                  >
-                    <PackageOpen class="h-3.5 w-3.5" aria-hidden="true" />Pakej
-                  </RouterLink>
-                  <form
-                    v-if="user.id !== ownId"
-                    method="post"
-                    class="inline-flex"
-                    @submit.prevent="loginAs(user)"
-                  >
-                    <button
-                      type="submit"
-                      title="Login As"
-                      :disabled="busy"
-                      :class="[
-                        ACTION,
-                        'bg-amber-100 text-amber-700 hover:bg-amber-200 disabled:opacity-60',
-                      ]"
-                      data-testid="user-login-as"
-                    >
-                      <LogIn class="h-3.5 w-3.5" aria-hidden="true" />
-                      <span class="hidden sm:inline">Login As</span
-                      ><span class="sm:hidden">LA</span>
-                    </button>
-                  </form>
-                  <button
-                    v-if="user.id !== ownId"
-                    type="button"
-                    title="Padam"
-                    :class="[
-                      ACTION,
-                      'min-w-11 bg-red-100 text-red-700 hover:bg-red-200 lg:min-w-8',
-                    ]"
-                    data-testid="user-delete"
-                    @click="deleting = { id: user.id, name: user.name }"
-                  >
-                    <Trash class="h-3.5 w-3.5" aria-hidden="true" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-
-      <template #footer>
-        <div class="border-t border-slate-100 px-4 py-3 empty:hidden" data-testid="users-pager">
-          <LaravelPager
-            v-if="data && rows.length > 0"
-            :page="data.meta.page"
-            :total="data.meta.totalItems"
-            :per-page="data.meta.pageSize"
-            :path="USERS_LIST_PATH"
-            :query="pagerQuery"
-            @change="goToPage"
           />
         </div>
       </template>
-    </DataTableCard>
+
+      <template #head-select>
+        <NativeCheckbox
+          :model-value="allSelected"
+          aria-label="Pilih semua"
+          data-testid="users-select-all"
+          @change="toggleAll"
+        />
+      </template>
+
+      <template v-if="firstLoad">
+        <CardRow v-for="n in SKELETON_ROWS" :key="n" data-testid="users-skeleton">
+          <CardCell v-for="c in COLUMNS.length" :key="c">
+            <USkeleton class="h-4 w-full max-w-24" />
+          </CardCell>
+        </CardRow>
+      </template>
+
+      <CardRow v-else-if="rows.length === 0" data-testid="users-empty">
+        <CardCell :colspan="COLUMNS.length">
+          <UIcon name="i-ph-users" class="mx-auto mb-2 size-8 text-muted" aria-hidden="true" />
+          <p class="text-label text-default">Tiada pengguna dijumpai</p>
+          <p class="text-label text-muted">Cuba ubah kriteria carian anda</p>
+        </CardCell>
+      </CardRow>
+
+      <template v-else>
+        <CardRow
+          v-for="(user, index) in rows"
+          :key="user.id"
+          data-testid="user-row"
+          :data-user-id="user.id"
+        >
+          <CardCell label="Pilih">
+            <NativeCheckbox
+              v-if="user.id !== ownId"
+              v-model="selected"
+              :value="user.id"
+              :aria-label="`Pilih ${user.name}`"
+              data-testid="user-select"
+            />
+          </CardCell>
+          <CardCell label="#">{{ from + index }}</CardCell>
+          <CardCell label="Nama">
+            <div class="flex min-w-0 items-center gap-2 text-label text-highlighted">
+              <UAvatar
+                :src="user.avatarUrl || undefined"
+                :text="initialsOf(user.name)"
+                alt=""
+                size="sm"
+              />
+              <span class="min-w-0 break-words" data-testid="user-name">{{ user.name }}</span>
+            </div>
+          </CardCell>
+          <CardCell label="Emel"
+            ><span class="break-all">{{ user.email }}</span></CardCell
+          >
+          <CardCell label="Telefon"
+            ><span class="text-nowrap">{{ user.phone || '-' }}</span></CardCell
+          >
+          <CardCell label="Peranan">
+            <UBadge
+              color="neutral"
+              variant="subtle"
+              :label="roleLabel(user.role)"
+              data-testid="user-role"
+            />
+          </CardCell>
+          <CardCell label="Sekolah">{{ user.school?.name || '-' }}</CardCell>
+          <CardCell label="Aktif?">
+            <form method="post" @submit.prevent="toggle(user)">
+              <UButton
+                type="submit"
+                size="sm"
+                variant="soft"
+                :color="user.isActive ? 'success' : 'neutral'"
+                :icon="user.isActive ? 'i-ph-check-circle' : 'i-ph-x-circle'"
+                :label="user.isActive ? 'Aktif' : 'Tidak'"
+                :loading="togglingId === user.id"
+                :disabled="togglingId === user.id"
+                data-testid="user-toggle"
+              />
+            </form>
+          </CardCell>
+          <CardCell label="Tarikh"
+            ><span class="text-nowrap">{{ formatUserDate(user.createdAt) }}</span></CardCell
+          >
+          <CardCell label="Tindakan">
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              <UButton
+                :to="`/admin/users/${user.id}/edit`"
+                size="sm"
+                color="neutral"
+                variant="soft"
+                icon="i-ph-pencil-simple"
+                label="Edit"
+                data-testid="user-edit"
+              />
+              <UButton
+                v-if="user.role === 'school_admin'"
+                :to="`/admin/users/${user.id}/packages`"
+                size="sm"
+                color="neutral"
+                variant="soft"
+                icon="i-ph-package"
+                label="Pakej"
+                data-testid="user-packages"
+              />
+              <form v-if="user.id !== ownId" method="post" @submit.prevent="loginAs(user)">
+                <UButton
+                  type="submit"
+                  size="sm"
+                  color="neutral"
+                  variant="soft"
+                  icon="i-ph-sign-in"
+                  label="Login As"
+                  :disabled="busy"
+                  data-testid="user-login-as"
+                />
+              </form>
+              <UButton
+                v-if="user.id !== ownId"
+                type="button"
+                size="sm"
+                color="error"
+                variant="soft"
+                icon="i-ph-trash"
+                aria-label="Padam"
+                data-testid="user-delete"
+                @click="deleting = { id: user.id, name: user.name }"
+              />
+            </div>
+          </CardCell>
+        </CardRow>
+      </template>
+
+      <template #footer>
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 p-3 empty:hidden"
+          data-testid="users-pager"
+        >
+          <template v-if="data && rows.length > 0">
+            <p class="text-caption text-muted" role="status">{{ summary }}</p>
+            <UPagination
+              v-if="data.meta.totalItems > data.meta.pageSize"
+              :page="data.meta.page"
+              :total="data.meta.totalItems"
+              :items-per-page="data.meta.pageSize"
+              :prev="{ 'aria-label': 'Sebelum' }"
+              :next="{ 'aria-label': 'Seterusnya' }"
+              @update:page="goToPage"
+            />
+          </template>
+        </div>
+      </template>
+    </CardTable>
 
     <UserDeleteModals
       :single="deleting"
@@ -618,5 +565,5 @@ const LINK_BTN =
       @confirm-single="confirmDelete"
       @confirm-bulk="confirmBulk"
     />
-  </div>
+  </DsPage>
 </template>

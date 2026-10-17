@@ -32,12 +32,15 @@ export const FORM_LEVEL_FILTER_OPTIONS = [
   { value: 't5', label: 'Tingkatan 5' },
 ] as const
 
-/** BR-23 badge labels and their full class strings. */
-export const STATUS_BADGE: Record<SubscriptionStatus, { label: string; cls: string }> = {
-  active: { label: 'Aktif', cls: 'bg-emerald-100 text-emerald-700' },
-  grace: { label: 'Tempoh Ihsan', cls: 'bg-amber-100 text-amber-700' },
-  expired: { label: 'Tamat', cls: 'bg-red-100 text-red-700' },
-  cancelled: { label: 'Batal', cls: 'bg-slate-100 text-slate-500' },
+/** BR-23 badge labels and their Nuxt UI badge colour. */
+export const STATUS_BADGE: Record<
+  SubscriptionStatus,
+  { label: string; color: 'success' | 'warning' | 'error' | 'neutral' }
+> = {
+  active: { label: 'Aktif', color: 'success' },
+  grace: { label: 'Tempoh Ihsan', color: 'warning' },
+  expired: { label: 'Tamat', color: 'error' },
+  cancelled: { label: 'Batal', color: 'neutral' },
 }
 
 export const TIER_LABEL: Record<PackageTier, string> = { basic: 'Pemantauan', full: 'Penuh' }
@@ -68,6 +71,11 @@ export function money(value: number | string): string {
 /** The bar colour at `percent` (FR-M02-88: emerald below 100, red at 100; threshold INFERRED). */
 export function barClass(percent: number): string {
   return percent >= 100 ? 'bg-red-500' : 'bg-emerald-500'
+}
+
+/** The progress colour at `percent` (same threshold as `barClass`). */
+export function barColor(percent: number): 'error' | 'success' {
+  return percent >= 100 ? 'error' : 'success'
 }
 
 /** Form level badge text: upper-case ("T5", "D1_D6"). */

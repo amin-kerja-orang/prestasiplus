@@ -144,7 +144,9 @@ describe('SchoolFormPage create (M02 S10)', () => {
     expect(w.get('[data-testid=school-form-alert]').text()).toContain(
       'The code has already been taken.',
     )
-    expect(w.get('[data-testid=school-code]').classes()).toContain('border-red-400')
+    expect(w.findAll('p[role=alert]').map((p) => p.text())).toEqual([
+      'The code has already been taken.',
+    ])
     expect(w.text()).toContain('The code has already been taken.')
     expect((w.get('[data-testid=school-code]').element as HTMLInputElement).value).toBe('JBA1234')
     expect(router.currentRoute.value.path).toBe('/form')

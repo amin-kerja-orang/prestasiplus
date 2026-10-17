@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * S13 `/admin/school-subscriptions/create` "Langganan Baru - Admin PRESTASIPLUS" (M02-T9; FR-M02-84..87).
+ * S13 `/admin/school-subscriptions/create` "Langganan Baru - Admin PRESTASIPLUS" (M02-T9; FR-M02-84..87),
+ * v2 staff theme.
  *
  * Card "Borang Langganan Baru": school picker, tier radio cards (Pemantauan default, Penuh), package
  * radio cards from #30 (none checked), student count (1-2000, default 100), live summary (DV-M02-08:
@@ -8,25 +9,18 @@
  * `VALIDATION_ERROR` (e.g. no school or package) shows the red alert and keeps the input. Success goes
  * to the new subscription's S14 with the flash.
  */
-import {
-  ArrowLeft,
-  Check,
-  FileText,
-  GraduationCap,
-  Layers,
-  NotebookText,
-  Receipt,
-  Users,
-} from '@lucide/vue'
 import { computed, reactive, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS, FORM_TEXTAREA_CLASS } from '@/components/form'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import type { SchoolSummary } from '../api/schools'
 import { createSubscription, fetchSchoolPackages, type PackageTier } from '../api/subscriptions'
+import AdminAlert from '../components/AdminAlert.vue'
+import AdminField from '../components/AdminField.vue'
+import NativeChoice from '../components/native/NativeChoice.vue'
+import NativePanel from '../components/native/NativePanel.vue'
 import SubscriptionSchoolPicker from '../components/SubscriptionSchoolPicker.vue'
 import { errorLines } from '../lib/school-errors'
 import {
@@ -44,10 +38,10 @@ const school = ref<SchoolSummary | null>(null)
 const form = reactive<{
   tier: PackageTier
   packageId: number | null
-  quota: number | null
+  quota: string
   reference: string
   notes: string
-}>({ tier: 'basic', packageId: null, quota: 100, reference: '', notes: '' })
+}>({ tier: 'basic', packageId: null, quota: '100', reference: '', notes: '' })
 
 const {
   data: packages,
@@ -56,7 +50,10 @@ const {
 } = useApi((signal) => fetchSchoolPackages({ signal }))
 
 const chosen = computed(() => packages.value?.find((p) => p.id === form.packageId) ?? null)
-const quotaValue = computed(() => (typeof form.quota === 'number' ? form.quota : 0))
+const quotaValue = computed(() => {
+  const n = Number(form.quota)
+  return form.quota !== '' && Number.isFinite(n) ? n : 0
+})
 
 /** FR-M02-86 live summary. */
 const summary = computed(() => {
@@ -99,225 +96,174 @@ async function submit(): Promise<void> {
     saving.value = false
   }
 }
-
-const LABEL = 'mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700'
-const CARD_BASE =
-  'flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-xl border-2 p-4 text-center transition peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-300'
 </script>
 
 <template>
-  <div data-testid="sub-create-page">
-    <form
-      method="post"
-      class="space-y-6 rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="sub-form"
-      @submit.prevent="submit"
-    >
-      <h2 class="flex items-center gap-2 font-heading text-lg font-bold text-slate-800">
-        <FileText class="h-5 w-5 text-purple-500" aria-hidden="true" />
-        Borang Langganan Baru
-      </h2>
+  <DsPage data-testid="sub-create-page">
+    <UCard class="max-w-4xl">
+      <form
+        method="post"
+        class="flex min-w-0 flex-col gap-6"
+        data-testid="sub-form"
+        @submit.prevent="submit"
+      >
+        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+          <UIcon name="i-ph-file-text" class="size-5 text-muted" aria-hidden="true" />
+          Borang Langganan Baru
+        </h2>
 
-      <AlertBox :messages="errors" data-testid="sub-form-alert" />
+        <AdminAlert :messages="errors" data-testid="sub-form-alert" />
 
-      <SubscriptionSchoolPicker v-model="school" />
+        <SubscriptionSchoolPicker v-model="school" />
 
-      <fieldset>
-        <legend :class="LABEL">
-          <Layers class="h-4 w-4 text-purple-500" aria-hidden="true" />
-          Jenis Pakej <span class="text-red-500">*</span>
-        </legend>
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label class="relative block">
-            <input
+        <fieldset class="flex min-w-0 flex-col gap-2">
+          <legend class="mb-2 flex items-center gap-2 text-label text-default">
+            <UIcon name="i-ph-stack" class="size-4 text-muted" aria-hidden="true" />
+            Jenis Pakej <span class="text-error">*</span>
+          </legend>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <NativeChoice
               v-model="form.tier"
-              type="radio"
               name="package_tier"
               value="basic"
-              class="peer sr-only"
-              data-testid="sub-tier-basic"
-            />
-            <span
-              :class="[
-                CARD_BASE,
-                form.tier === 'basic'
-                  ? 'border-emerald-500 bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow'
-                  : 'border-slate-200 text-slate-700',
-              ]"
+              input-testid="sub-tier-basic"
             >
-              <span class="font-heading font-bold">Pemantauan</span>
-              <span class="text-sm">500 soalan/bulan · PERCUMA</span>
-              <span class="text-xs">1 bulan (demo/trial)</span>
-            </span>
-          </label>
-          <label class="relative block">
-            <input
+              <span class="flex flex-col items-center gap-1">
+                <span class="text-label">Pemantauan</span>
+                <span class="text-caption">500 soalan/bulan · PERCUMA</span>
+                <span class="text-caption">1 bulan (demo/trial)</span>
+              </span>
+            </NativeChoice>
+            <NativeChoice
               v-model="form.tier"
-              type="radio"
               name="package_tier"
               value="full"
-              class="peer sr-only"
-              data-testid="sub-tier-full"
-            />
-            <span
-              :class="[
-                CARD_BASE,
-                form.tier === 'full'
-                  ? 'border-emerald-500 bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow'
-                  : 'border-slate-200 text-slate-700',
-              ]"
+              input-testid="sub-tier-full"
             >
-              <span class="font-heading font-bold">Penuh</span>
-              <span class="text-sm">Tanpa had · RM30/pelajar</span>
-              <span class="text-xs">1 tahun</span>
-            </span>
-          </label>
-        </div>
-      </fieldset>
+              <span class="flex flex-col items-center gap-1">
+                <span class="text-label">Penuh</span>
+                <span class="text-caption">Tanpa had · RM30/pelajar</span>
+                <span class="text-caption">1 tahun</span>
+              </span>
+            </NativeChoice>
+          </div>
+        </fieldset>
 
-      <fieldset>
-        <legend :class="LABEL">
-          <GraduationCap class="h-4 w-4 text-blue-500" aria-hidden="true" />
-          Tingkatan <span class="text-red-500">*</span>
-        </legend>
-        <div v-if="packagesError" class="space-y-3" data-testid="sub-packages-error">
-          <AlertBox :messages="errorLines(packagesError)" />
-          <button
-            type="button"
-            class="inline-flex min-h-11 items-center rounded-xl bg-indigo-500 px-6 py-2.5 text-sm font-bold text-white"
-            @click="reloadPackages()"
-          >
-            Cuba Lagi
-          </button>
-        </div>
-        <div v-else-if="!packages" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div v-for="n in 4" :key="n" class="h-24 animate-pulse rounded-xl bg-slate-100"></div>
-        </div>
-        <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="sub-packages">
-          <label v-for="pkg in packages" :key="pkg.id" class="relative block">
-            <input
+        <fieldset class="flex min-w-0 flex-col gap-2">
+          <legend class="mb-2 flex items-center gap-2 text-label text-default">
+            <UIcon name="i-ph-graduation-cap" class="size-4 text-muted" aria-hidden="true" />
+            Tingkatan <span class="text-error">*</span>
+          </legend>
+          <div v-if="packagesError" class="flex flex-col gap-3" data-testid="sub-packages-error">
+            <AdminAlert :messages="errorLines(packagesError)" />
+            <div>
+              <UButton label="Cuba Lagi" @click="reloadPackages()" />
+            </div>
+          </div>
+          <div v-else-if="!packages" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <USkeleton v-for="n in 4" :key="n" class="h-24 w-full" />
+          </div>
+          <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="sub-packages">
+            <NativeChoice
+              v-for="pkg in packages"
+              :key="pkg.id"
               v-model="form.packageId"
-              type="radio"
               name="school_package_id"
               :value="pkg.id"
-              class="peer sr-only"
-              data-testid="sub-package"
-            />
-            <span
-              :class="[
-                CARD_BASE,
-                form.packageId === pkg.id
-                  ? 'border-blue-500 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow'
-                  : 'border-slate-200 text-slate-700',
-              ]"
+              input-testid="sub-package"
             >
-              <span class="font-heading font-bold">{{ pkg.code }}</span>
-              <span class="text-sm">{{ pkg.name }}</span>
-              <span class="text-xs">{{ pkg.maxRenewals + 1 }} tahun</span>
-            </span>
-          </label>
-        </div>
-      </fieldset>
-
-      <div>
-        <label for="sub-quota" :class="LABEL">
-          <Users class="h-4 w-4 text-orange-500" aria-hidden="true" />
-          Bilangan Pelajar <span class="text-red-500">*</span>
-        </label>
-        <input
-          id="sub-quota"
-          v-model.number="form.quota"
-          type="number"
-          name="student_quota"
-          required
-          :min="QUOTA_MIN"
-          :max="QUOTA_MAX"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
-          data-testid="sub-quota"
-        />
-      </div>
-
-      <div
-        v-if="summary"
-        class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800"
-        data-testid="sub-summary"
-      >
-        <template v-if="summary.kind === 'basic'">
-          <p class="text-sm">
-            Pakej Pemantauan: <strong>PERCUMA</strong> · 500 soalan/bulan/pelajar · 1 bulan
-          </p>
-          <p class="mt-1 border-t border-amber-200 pt-1 text-xs text-amber-700">
-            Sekolah boleh naik taraf ke Pakej Penuh bila-bila masa.
-          </p>
-        </template>
-        <template v-else>
-          <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <span class="text-sm" data-testid="sub-summary-line">{{ summary.line }}</span>
-            <span class="font-heading text-xl font-bold" data-testid="sub-summary-total">{{
-              summary.total
-            }}</span>
+              <span class="flex flex-col items-center gap-1">
+                <span class="text-label">{{ pkg.code }}</span>
+                <span class="text-caption">{{ pkg.name }}</span>
+                <span class="text-caption">{{ pkg.maxRenewals + 1 }} tahun</span>
+              </span>
+            </NativeChoice>
           </div>
-          <p
-            v-if="summary.grand"
-            class="mt-1 border-t border-amber-200 pt-1 text-xs text-amber-700"
-            data-testid="sub-summary-grand"
-          >
-            {{ summary.grand }}
-          </p>
-        </template>
-      </div>
+        </fieldset>
 
-      <div>
-        <label for="sub-reference" :class="LABEL">
-          <Receipt class="h-4 w-4 text-emerald-500" aria-hidden="true" />
-          Rujukan Pembayaran
-        </label>
-        <input
-          id="sub-reference"
-          v-model="form.reference"
-          type="text"
-          name="payment_reference"
-          placeholder="cth: Bank transfer ref, nombor resit"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
-          data-testid="sub-reference"
-        />
-      </div>
+        <AdminField for="sub-quota" label="Bilangan Pelajar" icon="i-ph-users" required>
+          <UInput
+            id="sub-quota"
+            v-model="form.quota"
+            type="number"
+            name="student_quota"
+            required
+            :min="QUOTA_MIN"
+            :max="QUOTA_MAX"
+            size="lg"
+            class="w-full"
+            data-testid="sub-quota"
+          />
+        </AdminField>
 
-      <div>
-        <label for="sub-notes" :class="LABEL">
-          <NotebookText class="h-4 w-4 text-slate-500" aria-hidden="true" />
-          Nota
-        </label>
-        <textarea
-          id="sub-notes"
-          v-model="form.notes"
-          name="payment_notes"
-          rows="3"
-          placeholder="Nota tambahan (opsional)"
-          :class="FORM_TEXTAREA_CLASS"
-          data-testid="sub-notes"
-        ></textarea>
-      </div>
+        <NativePanel v-if="summary" tone="soft" class="flex flex-col gap-1" data-testid="sub-summary">
+          <template v-if="summary.kind === 'basic'">
+            <p class="text-label text-default">
+              Pakej Pemantauan: <strong>PERCUMA</strong> · 500 soalan/bulan/pelajar · 1 bulan
+            </p>
+            <p class="text-caption text-muted">
+              Sekolah boleh naik taraf ke Pakej Penuh bila-bila masa.
+            </p>
+          </template>
+          <template v-else>
+            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <span class="text-label text-default" data-testid="sub-summary-line">{{
+                summary.line
+              }}</span>
+              <span class="text-heading text-highlighted" data-testid="sub-summary-total">{{
+                summary.total
+              }}</span>
+            </div>
+            <p v-if="summary.grand" class="text-caption text-muted" data-testid="sub-summary-grand">
+              {{ summary.grand }}
+            </p>
+          </template>
+        </NativePanel>
 
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <RouterLink
-          :to="SUBSCRIPTIONS_LIST_PATH"
-          class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-500 transition hover:text-slate-700"
-          data-testid="sub-back"
-        >
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          Kembali
-        </RouterLink>
-        <button
-          type="submit"
-          :disabled="saving"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white shadow transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 disabled:cursor-wait disabled:opacity-60"
-          data-testid="sub-submit"
-        >
-          <Check class="h-4 w-4" aria-hidden="true" />
-          Cipta Langganan
-        </button>
-      </div>
-    </form>
-  </div>
+        <AdminField for="sub-reference" label="Rujukan Pembayaran" icon="i-ph-receipt">
+          <UInput
+            id="sub-reference"
+            v-model="form.reference"
+            type="text"
+            name="payment_reference"
+            placeholder="cth: Bank transfer ref, nombor resit"
+            size="lg"
+            class="w-full"
+            data-testid="sub-reference"
+          />
+        </AdminField>
+
+        <AdminField for="sub-notes" label="Nota" icon="i-ph-note">
+          <UTextarea
+            id="sub-notes"
+            v-model="form.notes"
+            name="payment_notes"
+            :rows="3"
+            placeholder="Nota tambahan (opsional)"
+            class="w-full"
+            data-testid="sub-notes"
+          />
+        </AdminField>
+
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <UButton
+            :to="SUBSCRIPTIONS_LIST_PATH"
+            color="neutral"
+            variant="ghost"
+            icon="i-ph-arrow-left"
+            label="Kembali"
+            data-testid="sub-back"
+          />
+          <UButton
+            type="submit"
+            icon="i-ph-check"
+            label="Cipta Langganan"
+            :loading="saving"
+            :disabled="saving"
+            data-testid="sub-submit"
+          />
+        </div>
+      </form>
+    </UCard>
+  </DsPage>
 </template>

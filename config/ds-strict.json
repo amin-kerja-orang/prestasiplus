@@ -123,7 +123,13 @@
     { "glob": "src/modules/m27-school-admin/components/heatmap/**", "level": "page" },
     { "glob": "src/modules/m27-school-admin/components/activity/**", "level": "page" },
     { "glob": "src/modules/m27-school-admin/components/amaran/**", "level": "page" },
-    { "glob": "src/modules/m27-school-admin/components/monthly/**", "level": "page" }
+    { "glob": "src/modules/m27-school-admin/components/monthly/**", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/User*.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/School*.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/BulkImportPage.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/StudentImportPage.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/Subscription*.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/components/*.vue", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

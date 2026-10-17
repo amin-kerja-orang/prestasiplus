@@ -22,6 +22,7 @@ const routes: RouteRecordRaw[] = [
           'Daftarkan guru, ibu bapa, atau admin sekolah secara pukal melalui CSV atau paste',
       },
       module: 'M02',
+      v2: true,
     },
   },
   {
@@ -38,6 +39,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Daftarkan pelajar sekolah secara pukal menggunakan ID Delima KPM',
       },
       module: 'M02',
+      v2: true,
     },
   },
 ]
