@@ -71,18 +71,15 @@ const stickers = computed<WinSticker[]>(() =>
     : [],
 )
 
-const win = ref<{ focus: () => void; $el: HTMLElement } | null>(null)
-onMounted(() => {
-  // The win hero owns its heading; the results only restore its test id.
-  win.value?.$el?.querySelector('[data-ds="win-hero"] h2')?.setAttribute('data-testid', 'result-title')
-  win.value?.focus()
-})
+const win = ref<{ focus: () => void } | null>(null)
+onMounted(() => win.value?.focus())
 </script>
 
 <template>
   <div class="flex flex-col gap-4" data-testid="quiz-results">
     <DsWinScreen
       ref="win"
+      title-testid="result-title"
       :art="strong ? 'trophy' : 'rocket'"
       :title="labels.resultTitle"
       :subtitle="subtitle"

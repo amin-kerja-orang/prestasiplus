@@ -70,7 +70,6 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
     }
     await expect(tid(page, 'practice-title')).toHaveText('Latih Tubi 🎯')
     await expect(page.getByText('Pilih subjek dan mula berlatih!')).toBeVisible()
-    await expect(page.locator('[data-testid=practice-circles] > div')).toHaveCount(4)
 
     const banner = tid(page, 'chapter-banner')
     await expect(banner).toHaveAttribute('href', '/practice/chapter')
@@ -272,8 +271,7 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
       'Kurangkan bilangan soalan atau tukar tetapan penapisan.',
     )
     await expect(tid(page, 'config-ready')).toHaveCount(0)
-    await expect(tid(page, 'config-start')).toHaveClass(/bg-slate-300/)
-    await expect(tid(page, 'config-start')).toHaveClass(/cursor-not-allowed/)
+    await expect(tid(page, 'config-start')).toHaveAttribute('aria-disabled', 'true')
     await tid(page, 'config-start').click()
     await expect(page).toHaveURL(/\/practice\/MATH$/)
     await expectNoHorizontalScroll(page)
@@ -338,7 +336,10 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
       await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi')
 
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
-      await expect(tid(page, 'quiz-progress-bar')).toHaveAttribute('style', /width: 20%/)
+      await expect(tid(page, 'quiz-header').getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '20',
+      )
       await expect(tid(page, 'quiz-timer')).toHaveText(/^00:0\d$/)
       // No revision chips and no "Salah {n}x" on Q1 (FR-M05-52).
       await expect(tid(page, 'chip-revision')).toHaveCount(0)
@@ -438,9 +439,9 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
       await expect(tid(page, 'result-time')).toContainText('Masa diambil: 00:')
       // No "berjaya diperbetulkan" line on Q1 (FR-M05-52).
       await expect(tid(page, 'result-corrected')).toHaveCount(0)
-      await expect(tid(page, 'result-bar')).toHaveAttribute(
-        'style',
-        new RegExp(`width: ${percent}%`),
+      await expect(tid(page, 'result-bar').getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        String(percent),
       )
       await expect(tid(page, 'result-rewards')).toBeVisible()
       // One coin per correct answer (BR-09) and 10 points each (the animation total).

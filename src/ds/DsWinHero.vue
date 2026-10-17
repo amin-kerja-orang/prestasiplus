@@ -15,8 +15,10 @@ withDefaults(
     title: string
     subtitle?: string
     tone?: 'win' | 'keep'
+    /** Optional test id of the title heading. */
+    titleTestid?: string
   }>(),
-  { subtitle: undefined, tone: 'win' },
+  { subtitle: undefined, tone: 'win', titleTestid: undefined },
 )
 
 const heading = ref<HTMLElement | null>(null)
@@ -36,7 +38,7 @@ defineExpose({ focus: () => heading.value?.focus() })
       />
       <DsArt3D :name="art" size="hero" class="relative animate-ds-hop motion-reduce:animate-none" />
     </div>
-    <h2 ref="heading" tabindex="-1" class="font-display text-title font-extrabold text-highlighted">
+    <h2 ref="heading" tabindex="-1" :data-testid="titleTestid" class="font-display text-title font-extrabold text-highlighted">
       {{ title }}
     </h2>
     <p v-if="subtitle" class="max-w-prose text-body text-muted">{{ subtitle }}</p>

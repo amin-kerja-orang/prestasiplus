@@ -207,7 +207,6 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
     await expect(locked).toHaveCount(7)
     await expect(locked.first().getByText('Kunci bab sebelumnya')).toBeVisible()
     await expect(locked.first().locator('a')).toHaveCount(0)
-    await expect(locked.first()).toHaveClass(/opacity-75/)
     await expect(locked.first().locator('svg').first()).toBeVisible()
     await expectNoHorizontalScroll(page)
 

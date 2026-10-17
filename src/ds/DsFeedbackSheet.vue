@@ -22,8 +22,10 @@ withDefaults(
     /** Combo chip text, e.g. "+10". Shown with the flame. */
     combo?: string
     continueLabel: string
+    /** Optional test ids of the inner parts (callers with E2E contracts). */
+    testids?: { title?: string; body?: string; ai?: string; continue?: string }
   }>(),
-  { body: undefined, aiLine: undefined, aiLabel: undefined, combo: undefined },
+  { body: undefined, aiLine: undefined, aiLabel: undefined, combo: undefined, testids: undefined },
 )
 
 defineEmits<{ continue: [] }>()
@@ -44,6 +46,7 @@ defineEmits<{ continue: [] }>()
       <div class="flex flex-col gap-1" role="status" aria-live="polite" data-ds="feedback-live">
         <h3
           class="flex items-center gap-2 font-display text-heading font-extrabold text-highlighted"
+          :data-testid="testids?.title"
         >
           <span
             class="inline-grid size-6.5 shrink-0 place-items-center rounded-full text-on-sem"
@@ -58,11 +61,12 @@ defineEmits<{ continue: [] }>()
           </span>
           {{ title }}
         </h3>
-        <p v-if="body" class="text-body text-default">{{ body }}</p>
+        <p v-if="body" class="text-body text-default" :data-testid="testids?.body">{{ body }}</p>
         <p
           v-if="aiLine"
           class="mt-1.5 rounded-xl bg-elevated px-3 py-2 text-body text-highlighted"
           data-ds="feedback-ai"
+          :data-testid="testids?.ai"
         >
           <UBadge v-if="aiLabel" color="info" variant="solid" size="sm" class="me-2">{{
             aiLabel
@@ -84,6 +88,7 @@ defineEmits<{ continue: [] }>()
         size="lg"
         block
         data-ds="feedback-continue"
+        :data-testid="testids?.continue"
         @click="$emit('continue')"
         >{{ continueLabel }}</UButton
       >

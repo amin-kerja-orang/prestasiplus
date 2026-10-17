@@ -306,6 +306,20 @@ describe('QuizRunner question', () => {
       duplicate: 'blue',
     })
   })
+
+  it('keeps the Arabic-script font on Jawi (rtl) text and its options, not on Latin text', async () => {
+    api.check.mockResolvedValue({ isCorrect: true, correctOptionId: 0, feedback: '', explanation: null })
+    const w = await render()
+    expect(t(w, 'question-text').classes()).not.toContain('font-jawi')
+    await t(w, 'option-A').trigger('click')
+    await t(w, 'btn-check').trigger('click')
+    await flushPromises()
+    await t(w, 'btn-next').trigger('click')
+    await flushPromises()
+    expect(t(w, 'question-text').attributes('dir')).toBe('rtl')
+    expect(t(w, 'question-text').classes()).toContain('font-jawi')
+    expect(t(w, 'option-A').classes()).toContain('font-jawi')
+  })
 })
 
 describe('QuizRunner results', () => {

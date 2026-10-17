@@ -245,16 +245,9 @@ const checkedState = computed(() =>
 )
 // --- v2 quiz kit: combo chip, exit, the feedback sheet's continue button
 const combo = computed(() => comboOf(answers.value))
-// The sheet owns its markup; the runner only restores the test ids the E2E specs use.
-function tagSheet(instance: unknown): void {
-  const root = (instance as { $el?: HTMLElement } | null)?.$el
-  if (!root) return
-  const tag = (selector: string, id: string): void =>
-    root.querySelector(selector)?.setAttribute('data-testid', id)
-  tag('[data-ds="feedback-continue"]', 'btn-next')
-  tag('[data-ds="feedback-live"] > h3', 'feedback-title')
-  tag('[data-ds="feedback-live"] > p:not([data-ds])', 'feedback-text')
-  tag('[data-ds="feedback-ai"]', 'feedback-explanation')
+/** Jawi (rtl) and mixed-script text keeps the Arabic-script font. */
+function jawi(q: { textDirection?: string; scriptType?: string }): boolean {
+  return q.textDirection === 'rtl' || q.scriptType === 'mixed'
 }
 function leave(): void {
   void router.push(props.backUrl)
@@ -369,6 +362,7 @@ const feedbackExplanation = computed(() =>
 
               <h2
                 class="text-heading break-words text-highlighted"
+                :class="jawi(current) && 'font-jawi leading-loose'"
                 :dir="current.textDirection || 'ltr'"
                 data-testid="question-text"
               >
@@ -401,6 +395,7 @@ const feedbackExplanation = computed(() =>
                   :key="option.id"
                   :letter="option.label"
                   :state="dsOptionState(optionState(option.id, selected, checkedState))"
+                  :class="jawi(current) && 'font-jawi'"
                   :dir="current.textDirection || 'ltr'"
                   :data-testid="`option-${option.label}`"
                   @select="run.select(option.id)"
@@ -432,7 +427,12 @@ const feedbackExplanation = computed(() =>
               <DsFloatScore text="+10" />
             </div>
             <DsFeedbackSheet
-              :ref="tagSheet"
+              :testids="{
+                continue: 'btn-next',
+                title: 'feedback-title',
+                body: 'feedback-text',
+                ai: 'feedback-explanation',
+              }"
               :tone="result.isCorrect ? 'good' : 'bad'"
               :title="result.isCorrect ? labels.correctTitle : labels.wrongTitle"
               :body="result.feedback || undefined"
