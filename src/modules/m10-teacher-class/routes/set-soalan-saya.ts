@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Set Soalan Guru - PRESTASIPLUS',
       header: { title: 'Set Soalan Guru', subtitle: 'Set soalan yang disediakan oleh guru anda' },
       module: 'M10',
+      v2: true,
     },
   },
 ]

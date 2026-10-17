@@ -9,7 +9,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { AlertBox } from '@/components/feedback'
+import { DsPage, DsQuizHeader } from '@/ds'
 
 import { fetchPkskExam, submitPkskExam } from '../api/pksk'
 import type { PkskAnswer, PkskLevel } from '../api/types'
@@ -21,15 +21,24 @@ import { isLoadError, usePkskData } from '../lib/load'
 const props = defineProps<{ level: PkskLevel }>()
 const router = useRouter()
 
-const { data, error, reload } = usePkskData((signal) => fetchPkskExam(props.level, { signal }), [
-  () => props.level,
-])
+const { data, error, reload } = usePkskData(
+  (signal) => fetchPkskExam(props.level, { signal }),
+  [() => props.level],
+)
 const loadFailed = computed(() => isLoadError(error.value))
 
 const answers = reactive<Record<number, PkskAnswer>>({})
 const saving = ref(false)
 const submitError = ref<string | null>(null)
 
+const progress = computed(() => {
+  const qs = data.value?.sections.flatMap((s) => s.questions) ?? []
+  if (qs.length === 0) return 0
+  const done = qs.filter(
+    (q) => answerOf(q.id).optionIndex !== undefined || !!answerOf(q.id).text,
+  ).length
+  return (done / qs.length) * 100
+})
 const answerOf = (id: number): PkskAnswer => answers[id] ?? { questionId: id }
 const SECTION_TITLE = { A: 'Bahagian A', B: 'Bahagian B', C: 'Bahagian C' } as const
 
@@ -50,23 +59,33 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="pksk-exam" data-provisional="L-3">
+  <DsPage class="max-w-2xl" data-testid="pksk-exam" data-provisional="L-3">
     <BackLink :to="`/pksk/level/${level}`" label="Kembali ke Dashboard" />
 
     <LoadError v-if="loadFailed" @retry="reload()" />
 
-    <form v-else-if="data" class="space-y-6" novalidate @submit.prevent="submit">
-      <h2 class="text-xl font-bold text-slate-800 sm:text-2xl" data-testid="exam-title">
-        Peperiksaan Penuh
-      </h2>
-      <AlertBox v-if="submitError" :messages="submitError" />
+    <form v-else-if="data" class="flex flex-col gap-6" novalidate @submit.prevent="submit">
+      <DsQuizHeader
+        close-label="Kembali ke Dashboard"
+        :progress="progress"
+        progress-label="Kemajuan peperiksaan"
+        @close="router.push(`/pksk/level/${level}`)"
+      />
+      <h2 class="text-heading text-highlighted" data-testid="exam-title">Peperiksaan Penuh</h2>
+      <UAlert
+        v-if="submitError"
+        color="error"
+        variant="soft"
+        icon="i-ph-warning-circle-duotone"
+        :title="submitError"
+      />
       <section
         v-for="s in data.sections"
         :key="s.bahagian"
-        class="space-y-3"
+        class="flex flex-col gap-3"
         :data-testid="`exam-section-${s.bahagian}`"
       >
-        <h3 class="text-lg font-bold text-slate-800">{{ SECTION_TITLE[s.bahagian] }}</h3>
+        <h3 class="text-subheading text-highlighted">{{ SECTION_TITLE[s.bahagian] }}</h3>
         <QuestionItem
           v-for="(q, i) in s.questions"
           :key="q.id"
@@ -76,14 +95,17 @@ async function submit(): Promise<void> {
           @update:model-value="answers[q.id] = $event"
         />
       </section>
-      <button
+      <UButton
         type="submit"
-        class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 disabled:opacity-60 sm:w-auto"
+        size="xl"
+        block
+        icon="i-ph-paper-plane-tilt-duotone"
+        class="min-h-12"
+        :loading="saving"
         :disabled="saving"
         data-testid="exam-submit"
+        >Hantar</UButton
       >
-        Hantar
-      </button>
     </form>
-  </div>
+  </DsPage>
 </template>

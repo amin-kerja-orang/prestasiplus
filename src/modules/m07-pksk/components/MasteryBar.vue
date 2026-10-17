@@ -1,13 +1,24 @@
 <script setup lang="ts">
-defineProps<{ pct: number; color: string }>()
+import type { DsAccent } from '@/ds'
+
+withDefaults(defineProps<{ pct: number; accent?: DsAccent }>(), { accent: 'action' })
+
+const bar: Record<DsAccent, string> = {
+  action: 'rounded-full bg-gradient-primary-h',
+  win: 'rounded-full bg-highlight',
+  heat: 'rounded-full bg-heat',
+  friend: 'rounded-full bg-friend',
+  trial: 'rounded-full bg-trial',
+}
 </script>
 
 <template>
-  <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-    <div
-      class="h-2 rounded-full"
-      :style="{ width: `${String(pct)}%`, backgroundColor: color }"
-      data-testid="mastery-bar"
-    ></div>
-  </div>
+  <UProgress
+    :model-value="pct"
+    :max="100"
+    size="sm"
+    aria-label="Penguasaan"
+    :ui="{ base: 'bg-elevated rounded-full', indicator: bar[accent] }"
+    data-testid="mastery-bar"
+  />
 </template>

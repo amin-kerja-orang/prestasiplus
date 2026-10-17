@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kelas Saya',
       header: { title: 'Kelas Saya', subtitle: 'Sertai kelas guru anda 🏫' },
       module: 'M10',
+      v2: true,
     },
   },
 ]

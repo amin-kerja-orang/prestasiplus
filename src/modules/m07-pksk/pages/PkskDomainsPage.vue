@@ -4,17 +4,17 @@
  * Bahagian sections with one link card per domain (question count, mastery).
  */
 import { computed, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { AppIcon } from '@/components/icon'
 import { usePageMeta } from '@/composables'
+import { DsIconChip, DsPage } from '@/ds'
 
 import { fetchPkskDomainSections } from '../api/pksk'
 import type { PkskLevel } from '../api/types'
 import BackLink from '../components/BackLink.vue'
 import LoadError from '../components/LoadError.vue'
+import AccentBadge from '../components/AccentBadge.vue'
 import MasteryBar from '../components/MasteryBar.vue'
-import { SECTION_STYLE, tint } from '../lib/levels'
+import { SECTION_STYLE } from '../lib/levels'
 import { isLoadError, usePkskData } from '../lib/load'
 
 const props = defineProps<{ level: PkskLevel }>()
@@ -39,7 +39,7 @@ const loadFailed = computed(() => isLoadError(error.value))
 </script>
 
 <template>
-  <div class="min-w-0 space-y-6" data-testid="pksk-domains">
+  <DsPage data-testid="pksk-domains">
     <BackLink :to="`/pksk/level/${level}`" label="Kembali ke Dashboard" />
 
     <LoadError v-if="loadFailed" @retry="reload()" />
@@ -49,65 +49,68 @@ const loadFailed = computed(() => isLoadError(error.value))
         v-for="s in data"
         :key="s.bahagian"
         :data-testid="`section-${s.bahagian}`"
-        class="min-w-0"
+        class="flex min-w-0 flex-col gap-3"
       >
-        <div class="mb-4 flex items-center gap-3">
-          <span
-            :class="[
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold text-white',
-              SECTION_STYLE[s.bahagian].badge,
-            ]"
-            data-testid="section-badge"
-            >{{ s.bahagian }}</span
-          >
+        <div class="flex items-center gap-3">
+          <AccentBadge :accent="SECTION_STYLE[s.bahagian].accent" data-testid="section-badge">{{
+            s.bahagian
+          }}</AccentBadge>
           <div class="min-w-0">
-            <h2 class="text-lg font-bold text-slate-800 sm:text-xl">{{ s.name }}</h2>
-            <p class="text-sm text-slate-500">{{ s.subtitle }}</p>
+            <h2 class="text-heading text-highlighted">{{ s.name }}</h2>
+            <p class="text-label text-muted">{{ s.subtitle }}</p>
           </div>
         </div>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <RouterLink
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <ULink
             v-for="d in s.domains"
             :key="d.code"
             :to="`/pksk/level/${level}/domain/${d.code}`"
-            :class="[
-              'block min-w-0 rounded-2xl border-2 border-transparent bg-white p-4 shadow-sm transition hover:scale-105 hover:shadow-xl',
-              SECTION_STYLE[s.bahagian].hover,
-            ]"
+            raw
+            class="block min-w-0"
             data-testid="domain-card"
             :data-code="d.code"
           >
-            <div class="flex items-center gap-3">
-              <span
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-                :style="{ backgroundColor: tint(d.color), color: d.color }"
-                data-testid="domain-icon"
-              >
-                <AppIcon :name="d.icon" class="h-6 w-6" />
-              </span>
-              <div class="min-w-0">
-                <h3 class="font-bold break-words text-slate-800">{{ d.name }}</h3>
-                <p class="text-xs text-slate-500">{{ d.code }}</p>
+            <UCard>
+              <div class="flex min-w-0 flex-col gap-3">
+                <div class="flex min-w-0 items-center gap-3">
+                  <DsIconChip
+                    icon="i-ph-target-duotone"
+                    :accent="SECTION_STYLE[s.bahagian].accent"
+                    size="lg"
+                    data-testid="domain-icon"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <h3 class="text-subheading break-words text-highlighted">
+                      {{ d.name }}
+                    </h3>
+                    <p class="text-caption text-muted">{{ d.code }}</p>
+                  </div>
+                  <UIcon
+                    name="i-ph-caret-right-bold"
+                    class="size-5 shrink-0 text-muted"
+                    aria-hidden="true"
+                  />
+                </div>
+                <div class="flex items-center justify-between text-label">
+                  <span class="inline-flex items-center gap-2 text-muted">
+                    <UIcon name="i-ph-question-duotone" class="size-4" aria-hidden="true" /> Soalan
+                  </span>
+                  <span class="tabular text-highlighted" data-testid="question-count">{{
+                    d.questionCount
+                  }}</span>
+                </div>
+                <div class="flex items-center justify-between text-label">
+                  <span class="text-muted">Penguasaan</span>
+                  <span class="tabular text-highlighted" data-testid="mastery-pct"
+                    >{{ d.masteryPct }}%</span
+                  >
+                </div>
+                <MasteryBar :pct="d.masteryPct" :accent="SECTION_STYLE[s.bahagian].accent" />
               </div>
-            </div>
-            <div class="mt-3 flex items-center justify-between text-sm">
-              <span class="inline-flex items-center gap-1.5 text-slate-600">
-                <AppIcon name="fa-question-circle" class="h-4 w-4" /> Soalan
-              </span>
-              <span class="font-bold text-slate-800" data-testid="question-count">{{
-                d.questionCount
-              }}</span>
-            </div>
-            <div class="mt-2 flex items-center justify-between text-sm">
-              <span class="text-slate-600">Penguasaan</span>
-              <span class="font-bold" :style="{ color: d.color }" data-testid="mastery-pct"
-                >{{ d.masteryPct }}%</span
-              >
-            </div>
-            <MasteryBar :pct="d.masteryPct" :color="d.color" />
-          </RouterLink>
+            </UCard>
+          </ULink>
         </div>
       </section>
     </template>
-  </div>
+  </DsPage>
 </template>

@@ -7,8 +7,8 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsEmptyState, DsPage } from '@/ds'
 
 import { fetchJoinedClasses } from '../api/guru'
 import { KELAS_COPY } from '../components/kelas-saya/copy'
@@ -26,47 +26,43 @@ const { data, error, loading, reload } = useApi((signal) => fetchJoinedClasses({
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="kelas-saya-page">
+  <DsPage data-testid="kelas-saya-page">
     <JoinClassForm :initial-code="kod" @joined="reload" />
 
-    <div
-      v-if="error"
-      class="min-w-0 space-y-3 rounded-2xl bg-white p-4 shadow-sm"
-      data-testid="classes-error"
-    >
-      <AlertBox :messages="KELAS_COPY.loadFailed" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
-        data-testid="classes-retry"
-        @click="reload"
-      >
-        {{ KELAS_COPY.retry }}
-      </button>
+    <div v-if="error" class="flex max-w-xl min-w-0 flex-col gap-3" data-testid="classes-error">
+      <UAlert
+        color="error"
+        variant="soft"
+        icon="i-ph-warning-circle-duotone"
+        :title="KELAS_COPY.loadFailed"
+      />
+      <UButton size="lg" class="min-h-11 self-start" data-testid="classes-retry" @click="reload">{{
+        KELAS_COPY.retry
+      }}</UButton>
     </div>
 
     <div
       v-else-if="loading && !data"
-      class="flex justify-center rounded-2xl bg-white px-4 py-10 text-slate-400 shadow-sm"
+      class="flex justify-center py-8 text-muted"
       data-testid="classes-loading"
     >
-      <LoadingSpinner :size="24" />
+      <UProgress animation="carousel" class="w-full max-w-xs" aria-label="Memuatkan" />
     </div>
 
-    <section
-      v-else-if="data && data.data.length === 0"
-      class="rounded-2xl bg-white px-4 py-10 text-center shadow-sm"
-      data-testid="classes-empty"
-    >
-      <p class="text-5xl">📚</p>
-      <h3 class="mt-3 font-heading text-lg font-bold text-slate-800">
-        {{ KELAS_COPY.emptyTitle }}
-      </h3>
-      <p class="mt-1 text-slate-500">{{ KELAS_COPY.emptyText }}</p>
-    </section>
+    <UCard v-else-if="data && data.data.length === 0" data-testid="classes-empty">
+      <DsEmptyState
+        :title="KELAS_COPY.emptyTitle"
+        :description="KELAS_COPY.emptyText"
+        icon="i-ph-chalkboard-teacher-duotone"
+      />
+    </UCard>
 
-    <ul v-else-if="data" class="grid min-w-0 grid-cols-1 gap-3" data-testid="classes-list">
+    <ul
+      v-else-if="data"
+      class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2"
+      data-testid="classes-list"
+    >
       <JoinedClassCard v-for="item in data.data" :key="item.id" :item="item" />
     </ul>
-  </div>
+  </DsPage>
 </template>
