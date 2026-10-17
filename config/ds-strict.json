@@ -141,7 +141,13 @@
     { "glob": "src/modules/m16-battle-games/components/battle/ChallengeFriendModal.vue", "level": "page" },
     { "glob": "src/modules/m16-battle-games/components/battle/{StatRow,BattleRecentList,InvitationsModal}.vue", "level": "ds" },
     { "glob": "src/modules/m16-battle-games/components/lobby/{RoomBoard,RoomPlayers,GradeField,JoinCodeForm,QuickMatchCard}.vue", "level": "ds" },
-    { "glob": "src/modules/m16-battle-games/components/tournament/*.vue", "level": "ds" }
+    { "glob": "src/modules/m16-battle-games/components/tournament/*.vue", "level": "ds" },
+    { "glob": "src/modules/m02-users-schools/pages/User*.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/School*.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/BulkImportPage.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/StudentImportPage.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/Subscription*.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/components/*.vue", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

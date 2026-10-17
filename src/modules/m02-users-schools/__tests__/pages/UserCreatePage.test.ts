@@ -324,8 +324,8 @@ describe('UserCreatePage (M02 S2) parent', () => {
 
     await search(w, 'linker-search', 'pel')
     rows = w.findAll('[data-testid=linker-result]')
-    expect(rows[0]?.classes()).toContain('opacity-40')
-    expect(rows[0]?.classes()).toContain('cursor-not-allowed')
+    expect(rows[0]?.attributes('disabled')).toBeDefined()
+    expect(rows[0]?.attributes('disabled')).toBeDefined()
     await rows[0]?.trigger('click')
     expect(w.findAll('[data-testid=linker-chip]')).toHaveLength(1)
     await rows[1]?.trigger('click')

@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Urus Sekolah - Admin PRESTASIPLUS',
       header: { title: 'Sekolah', subtitle: 'Urus senarai sekolah' },
       module: 'M02',
+      v2: true,
     },
   },
   {
@@ -34,6 +35,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tambah Sekolah - Admin PRESTASIPLUS',
       header: { title: 'Tambah Sekolah', subtitle: 'Daftarkan sekolah baru' },
       module: 'M02',
+      v2: true,
     },
   },
   {
@@ -48,6 +50,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Edit Sekolah - Admin PRESTASIPLUS',
       header: { title: 'Edit Sekolah' },
       module: 'M02',
+      v2: true,
     },
   },
 ]

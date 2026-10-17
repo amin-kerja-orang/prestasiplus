@@ -125,7 +125,7 @@ describe('UserEditPage (M02 S3) student record', () => {
     expect(t(w, 'user-profile-email').text()).toBe('pelajar@demo.test')
     expect(t(w, 'user-profile-created').text()).toBe('Daftar: 21/09/2026')
     expect(t(w, 'user-profile-updated').text()).toBe('Kemaskini: 22/09/2026 13:45')
-    expect(w.get('img[alt=Avatar]').attributes('src')).toContain('data:image/svg+xml')
+    expect(t(w, 'user-profile').text()).toContain('PD')
     expect((t(w, 'user-name').element as HTMLInputElement).value).toBe('Pelajar Demo')
     expect((t(w, 'user-email').element as HTMLInputElement).value).toBe('pelajar@demo.test')
     expect((t(w, 'user-phone').element as HTMLInputElement).value).toBe('0191234567')
@@ -181,9 +181,7 @@ describe('UserEditPage (M02 S3) student record', () => {
   it('toggles the password panel with its copy', async () => {
     const w = await render()
     expect(t(w, 'user-password-toggle').text()).toContain('Tukar Kata Laluan')
-    expect(t(w, 'user-password-toggle').text()).toContain(
-      'Klik untuk buka bahagian reset kata laluan',
-    )
+    expect(w.text()).toContain('Klik untuk buka bahagian reset kata laluan')
     expect(t(w, 'user-password-panel').isVisible()).toBe(false)
     await t(w, 'user-password-toggle').trigger('click')
     expect(t(w, 'user-password-panel').isVisible()).toBe(true)
@@ -424,7 +422,7 @@ describe('UserEditPage (M02 S3) parent record', () => {
     const w = await render(6)
     await search(w, 'linker-search', 'maj')
     const rows = w.findAll('[data-testid=linker-result]')
-    expect(rows[0]?.classes()).toContain('opacity-40')
+    expect(rows[0]?.attributes('disabled')).toBeDefined()
     await rows[0]?.trigger('click')
     expect(w.findAll('[data-testid=linker-chip]')).toHaveLength(1)
     await rows[1]?.trigger('click')

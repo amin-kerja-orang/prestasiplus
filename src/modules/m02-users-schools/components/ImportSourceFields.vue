@@ -5,18 +5,13 @@
  * sini" / "atau" / "Pilih Fail", `accept=".csv,.txt"`; a drop copies the file into the input; status "Tiada
  * fail dipilih" / "Fail dipilih: {name}"). The format box differs per screen and comes in the `format` slot.
  */
-import { ClipboardPaste, FileSpreadsheet, Upload } from '@lucide/vue'
-import { computed, ref } from 'vue'
-
-import { FORM_TEXTAREA_CLASS } from '@/components/form'
+import { ref } from 'vue'
 
 import type { ImportMode } from '../api/imports'
+import NativeFile from './native/NativeFile.vue'
+import NativePanel from './native/NativePanel.vue'
 
-const props = defineProps<{
-  /** S4 indigo/purple, S5 amber/orange (the live active-button gradients). */
-  accent: 'indigo' | 'amber'
-  pastePlaceholder: string
-}>()
+defineProps<{ pastePlaceholder: string }>()
 
 const mode = defineModel<ImportMode>('mode', { required: true })
 const paste = defineModel<string>('paste', { required: true })
@@ -24,28 +19,8 @@ const file = defineModel<File | null>('file', { required: true })
 
 defineSlots<{ format?: (props: { mode: ImportMode }) => unknown }>()
 
-const input = ref<HTMLInputElement | null>(null)
+const input = ref<{ el: HTMLInputElement | null } | null>(null)
 const dragging = ref(false)
-
-const ACTIVE = computed(() =>
-  props.accent === 'indigo'
-    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
-    : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg',
-)
-const FOCUS = computed(() =>
-  props.accent === 'indigo' ? 'focus-visible:ring-indigo-300' : 'focus-visible:ring-amber-300',
-)
-const ZONE_ACTIVE = computed(() =>
-  props.accent === 'indigo' ? 'border-indigo-400 bg-indigo-50' : 'border-amber-400 bg-amber-50',
-)
-const PICK = computed(() =>
-  props.accent === 'indigo'
-    ? 'bg-indigo-600 hover:bg-indigo-700 focus-within:ring-indigo-300'
-    : 'bg-amber-500 hover:bg-amber-600 focus-within:ring-amber-300',
-)
-
-const BUTTON =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-slate-200 px-4 py-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2'
 
 function onPick(event: Event): void {
   file.value = (event.target as HTMLInputElement).files?.[0] ?? null
@@ -56,97 +31,76 @@ function onDrop(event: DragEvent): void {
   const dropped = event.dataTransfer?.files
   if (!dropped || dropped.length === 0) return
   // As live `handleDrop`: the dropped file is copied into the file input.
-  if (input.value) input.value.files = dropped
+  if (input.value?.el) input.value.el.files = dropped
   file.value = dropped[0] ?? null
 }
 </script>
 
 <template>
-  <div data-testid="import-source">
-    <p class="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
-      <Upload class="h-4 w-4 text-purple-500" aria-hidden="true" />
-      Kaedah Import <span class="text-red-500">*</span>
+  <div class="flex flex-col gap-4" data-testid="import-source">
+    <p class="flex items-center gap-2 text-label text-default">
+      <UIcon name="i-ph-upload-simple" class="size-4 text-muted" aria-hidden="true" />
+      Kaedah Import <span class="text-error">*</span>
     </p>
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <button
+      <UButton
         type="button"
-        :class="[
-          BUTTON,
-          FOCUS,
-          mode === 'csv'
-            ? [ACTIVE, 'border-transparent']
-            : 'bg-white text-slate-700 hover:bg-slate-50',
-        ]"
+        block
+        :color="mode === 'csv' ? 'primary' : 'neutral'"
+        :variant="mode === 'csv' ? 'solid' : 'soft'"
+        icon="i-ph-file-csv"
+        label="Upload CSV"
         data-testid="import-mode-csv"
         @click="mode = 'csv'"
-      >
-        <FileSpreadsheet class="h-4 w-4" aria-hidden="true" />
-        Upload CSV
-      </button>
-      <button
+      />
+      <UButton
         type="button"
-        :class="[
-          BUTTON,
-          FOCUS,
-          mode === 'paste'
-            ? [ACTIVE, 'border-transparent']
-            : 'bg-white text-slate-700 hover:bg-slate-50',
-        ]"
+        block
+        :color="mode === 'paste' ? 'primary' : 'neutral'"
+        :variant="mode === 'paste' ? 'solid' : 'soft'"
+        icon="i-ph-clipboard-text"
+        label="Paste Manual"
         data-testid="import-mode-paste"
         @click="mode = 'paste'"
-      >
-        <ClipboardPaste class="h-4 w-4" aria-hidden="true" />
-        Paste Manual
-      </button>
+      />
     </div>
 
-    <div v-if="mode === 'csv'" class="mt-4" data-testid="import-csv">
-      <div
-        :class="[
-          'rounded-xl border-2 border-dashed p-6 text-center transition',
-          dragging ? ZONE_ACTIVE : 'border-slate-300 bg-slate-50',
-        ]"
+    <div v-if="mode === 'csv'" data-testid="import-csv">
+      <NativePanel
+        :tone="dragging ? 'primary' : 'soft'"
+        class="flex flex-col items-center gap-2 p-6 text-center"
         data-testid="import-dropzone"
         @dragover.prevent="dragging = true"
         @dragleave.prevent="dragging = false"
         @drop.prevent="onDrop"
       >
-        <Upload class="mx-auto mb-2 h-8 w-8 text-slate-400" aria-hidden="true" />
-        <p class="text-sm font-medium text-slate-600">Seret &amp; Lepas fail CSV di sini</p>
-        <p class="my-1 text-xs text-slate-400">atau</p>
-        <label
-          :class="[
-            'inline-flex min-h-11 cursor-pointer items-center rounded-lg px-4 py-2 text-sm font-semibold text-white transition focus-within:ring-2',
-            PICK,
-          ]"
+        <UIcon name="i-ph-upload-simple" class="size-8 text-muted" aria-hidden="true" />
+        <p class="text-label text-default">Seret &amp; Lepas fail CSV di sini</p>
+        <p class="text-caption text-muted">atau</p>
+        <NativeFile
+          ref="input"
+          name="csv_file"
+          accept=".csv,.txt"
+          input-testid="import-file"
+          @change="onPick"
         >
           Pilih Fail
-          <input
-            ref="input"
-            type="file"
-            name="csv_file"
-            accept=".csv,.txt"
-            class="sr-only"
-            data-testid="import-file"
-            @change="onPick"
-          />
-        </label>
-        <p class="mt-3 text-sm text-slate-500" data-testid="import-file-status">
+        </NativeFile>
+        <p class="text-label text-muted" data-testid="import-file-status">
           {{ file ? `Fail dipilih: ${file.name}` : 'Tiada fail dipilih' }}
         </p>
-      </div>
+      </NativePanel>
     </div>
 
-    <div v-else class="mt-4">
-      <textarea
-        v-model="paste"
-        name="paste_content"
-        rows="8"
-        :placeholder="pastePlaceholder"
-        :class="[FORM_TEXTAREA_CLASS, 'resize-y font-mono']"
-        data-testid="import-paste"
-      />
-    </div>
+    <UTextarea
+      v-else
+      v-model="paste"
+      name="paste_content"
+      :rows="8"
+      :placeholder="pastePlaceholder"
+      class="w-full"
+      data-testid="import-paste"
+    />
 
     <slot name="format" :mode="mode" />
   </div>

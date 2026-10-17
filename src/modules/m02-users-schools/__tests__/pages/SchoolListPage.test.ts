@@ -152,16 +152,19 @@ describe('SchoolListPage (M02 S9)', () => {
     )
   })
 
-  it('has no reset link without a filter, and shows it with one', async () => {
-    let w = await render()
-    expect(w.find('[data-testid=schools-reset]').exists()).toBe(false)
-    w.unmount()
-    w = await render('/admin/schools?state=Perlis')
-    const reset = w.get('[data-testid=schools-reset]')
-    expect(reset.attributes('title')).toBe('Reset')
-    expect(reset.attributes('href')).toBe('/admin/schools')
+  it('resets the filters from the filter bar and refetches the unfiltered list', async () => {
+    const w = await render('/admin/schools?state=Perlis')
     expect(api.fetchAdminSchools).toHaveBeenLastCalledWith(
       expect.objectContaining({ state: 'Perlis', search: null, type: null, page: 1 }),
+    )
+    const reset = w.findAll('button').find((b) => b.text() === 'Set Semula')
+    expect(reset).toBeDefined()
+    await reset?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/admin/schools')
+    expect(router.currentRoute.value.query).toEqual({})
+    expect(api.fetchAdminSchools).toHaveBeenLastCalledWith(
+      expect.objectContaining({ state: null, search: null, type: null, page: 1 }),
     )
   })
 
@@ -188,17 +191,14 @@ describe('SchoolListPage (M02 S9)', () => {
     const empty = w.get('[data-testid=schools-empty]')
     expect(empty.text()).toBe('Tiada sekolah dijumpai')
     expect(empty.get('td').attributes('colspan')).toBe('9')
-    expect(w.find('nav[aria-label="Pagination Navigation"]').exists()).toBe(false)
+    expect(w.find('nav').exists()).toBe(false)
   })
 
-  it('renders the Laravel pager with the filters kept in the links', async () => {
+  it('renders the pager summary and keeps the filters when paging', async () => {
     const w = await render('/admin/schools?type=SK')
-    const nav = w.get('nav[aria-label="Pagination Navigation"]')
-    expect(nav.text()).toContain('Showing')
-    expect(nav.text()).toContain('10220')
-    const next = nav.get('a[rel=next]')
-    expect(next.attributes('href')).toBe('/admin/schools?type=SK&page=2')
-    await next.trigger('click')
+    const pager = w.get('[data-testid=schools-pager]')
+    expect(pager.text()).toContain('Menunjukkan 1-30 daripada 10220 hasil')
+    await pager.get('button[aria-label="Page 2"]').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({ type: 'SK', page: '2' })
   })
