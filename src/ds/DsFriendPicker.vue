@@ -27,8 +27,10 @@ const props = withDefaults(
     groupLabel: string
     /** Screen-reader text for the selected tick. */
     selectedLabel?: string
+    /** False keeps the page behind the sheet usable (no overlay, no scroll lock). */
+    modal?: boolean
   }>(),
-  { description: undefined, cancelLabel: undefined, selectedLabel: 'Dipilih' },
+  { description: undefined, cancelLabel: undefined, selectedLabel: 'Dipilih', modal: true },
 )
 
 /** Open state of the sheet. */
@@ -62,6 +64,7 @@ function cancel(): void {
 <template>
   <UDrawer
     v-model:open="open"
+    :modal="modal"
     :title="title"
     :description="description"
     :ui="{ content: 'rounded-t-sheet', title: 'font-display text-subheading', body: 'pb-6' }"

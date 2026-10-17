@@ -71,6 +71,17 @@ const personality = usePersonality()
 const root = useTemplateRef<HTMLElement>('root')
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 
+/** Used when the chart sits outside any `[data-personality]` scope (older shells), where `--ds-cat-*` is unset. */
+const CAT_FALLBACK = [
+  '--color-kobalt-600',
+  '--color-limau-800',
+  '--color-delima-700',
+  '--color-laut-700',
+  '--color-mentari-800',
+  '--color-ungu-600',
+  '--color-ungu-600',
+  '--color-daun-700',
+]
 const LEARNER_VARS = ['--ds-c1', '--ds-c4', '--ds-c2', '--ds-c3']
 const colours = ref<string[]>([])
 const dimmed = ref('')
@@ -99,7 +110,9 @@ function readTokens(): void {
   const pool =
     personality.value === 'learner'
       ? LEARNER_VARS.map(get)
-      : [1, 2, 3, 4, 5, 6, 7, 8].map((n) => get(`--ds-cat-${n}`))
+      : [1, 2, 3, 4, 5, 6, 7, 8].map(
+          (n) => get(`--ds-cat-${n}`) || get(CAT_FALLBACK[n - 1] ?? '') || get('--ui-primary'),
+        )
   colours.value = pool
   dimmed.value = get('--ui-text-dimmed')
 }

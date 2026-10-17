@@ -126,7 +126,7 @@ const themeLabel = computed(() =>
       <div class="flex min-h-dvh min-w-0 flex-col lg:ps-72">
         <!-- Header -->
         <header
-          class="sticky top-0 z-20 flex min-h-16 items-center gap-2 bg-default px-3 pt-[env(safe-area-inset-top)] shadow-bar sm:px-4"
+          class="sticky top-0 z-20 flex min-h-16 items-center gap-1 bg-default px-2 pt-[env(safe-area-inset-top)] shadow-bar sm:px-4"
           data-testid="pembelajaran-header"
         >
           <RouterLink
@@ -149,7 +149,7 @@ const themeLabel = computed(() =>
             </template>
             <button
               type="button"
-              class="grid size-11 place-items-center rounded-chip bg-elevated text-default hover:bg-accented"
+              class="grid size-11 shrink-0 place-items-center rounded-chip bg-elevated text-default hover:bg-accented"
               :aria-label="themeLabel"
               data-testid="pembelajaran-theme-toggle"
               @click="theme.toggle()"
@@ -206,11 +206,11 @@ const themeLabel = computed(() =>
         aria-label="Navigasi bawah"
         data-testid="pembelajaran-bottom-nav"
       >
-        <ul class="mx-auto flex max-w-xl items-stretch justify-around gap-1 p-2">
+        <ul class="mx-auto flex max-w-xl items-stretch justify-around gap-0.5 p-1.5 sm:gap-1 sm:p-2">
           <li v-for="tab in tabs" :key="tab.id" class="min-w-0 flex-1">
             <RouterLink
               :to="tab.to"
-              class="relative flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-chip px-1 text-caption"
+              class="relative flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-chip px-0.5 text-caption"
               :class="
                 tabActive(tab, route.path)
                   ? learner
@@ -222,7 +222,7 @@ const themeLabel = computed(() =>
               :data-nav-id="`tab-${tab.id}`"
             >
               <DsIcon :name="tab.icon" class="size-6" />
-              <span class="max-w-full truncate" :title="tab.label">{{ tab.label }}</span>
+              <span class="max-w-full text-center leading-tight break-words" :title="tab.label">{{ tab.label }}</span>
               <span
                 v-if="tab.live"
                 class="absolute end-3 top-1.5 size-2 rounded-full bg-error"
@@ -286,6 +286,7 @@ const themeLabel = computed(() =>
       <DsFriendPicker
         v-if="learner"
         v-model:open="pickerOpen"
+        :modal="false"
         :selected="friend"
         :friends="FRIEND_OPTIONS"
         title="Pilih rakan belajar awak"

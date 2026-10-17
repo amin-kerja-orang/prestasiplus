@@ -42,7 +42,7 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
           <p
             class="tabular text-display"
             :class="
-              performance.gps.band === 'Cemerlang' ? 'text-success' : performance.gps.band === 'Baik' ? 'text-info' : performance.gps.band === 'Perlu Perhatian' ? 'text-error' : 'text-warning'
+              performance.gps.band === 'Cemerlang' ? 'text-success' : performance.gps.band === 'Baik' ? 'text-info' : performance.gps.band === 'Perlu Perhatian' ? 'text-error' : 'text-cat-5'
             "
             data-testid="sd-gps-value"
           >
@@ -52,7 +52,7 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
             v-if="performance.gps.grade && performance.gps.band"
             class="text-label"
             :class="
-              performance.gps.band === 'Cemerlang' ? 'text-success' : performance.gps.band === 'Baik' ? 'text-info' : performance.gps.band === 'Perlu Perhatian' ? 'text-error' : 'text-warning'
+              performance.gps.band === 'Cemerlang' ? 'text-success' : performance.gps.band === 'Baik' ? 'text-info' : performance.gps.band === 'Perlu Perhatian' ? 'text-error' : 'text-cat-5'
             "
             data-testid="sd-gps-grade"
           >
