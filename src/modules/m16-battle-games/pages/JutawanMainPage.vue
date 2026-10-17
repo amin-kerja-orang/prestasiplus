@@ -6,9 +6,10 @@
  * the client. The result updates "Rekod Tertinggi" and "Permainan" of S19.
  */
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
+import { DsArt3D, DsQuizOption, DsSticker } from '@/ds'
+import type { QuizOptionState } from '@/ds'
 
 import { answerJutawan, lifelineJutawan, startJutawan } from '../api'
 import type { RoomQuestion } from '../api'
@@ -112,13 +113,10 @@ async function useLifeline(): Promise<void> {
   }
 }
 
-function optionClass(id: number): string {
-  if (picked.value?.id === id) {
-    return picked.value.correct
-      ? 'correct border-emerald-400 bg-emerald-500/20'
-      : 'wrong border-red-400 bg-red-500/20'
-  }
-  return 'border-white/15 bg-white/5 hover:border-amber-400/60'
+function optionState(id: number): QuizOptionState {
+  if (picked.value === null) return 'idle'
+  if (picked.value.id === id) return picked.value.correct ? 'correct' : 'wrong'
+  return 'dimmed'
 }
 
 onMounted(() => void start())
@@ -126,90 +124,79 @@ onMounted(() => void start())
 
 <template>
   <div data-testid="jutawan-game">
-    <GamePanel theme="navy">
-      <div class="mx-auto max-w-4xl space-y-4">
-        <LoadState :loading="phase === 'loading'" error="" />
-        <div v-if="phase === 'error'" class="space-y-3">
-          <AlertBox :messages="error" />
-          <RouterLink
-            to="/permainan/jutawan"
-            class="inline-flex min-h-11 items-center text-sm font-semibold text-amber-400"
-            >← Pilih subjek</RouterLink
-          >
-        </div>
+    <GamePanel>
+      <LoadState :loading="phase === 'loading'" error="" />
+      <div v-if="phase === 'error'" class="flex flex-col items-start gap-3">
+        <UAlert color="error" variant="subtle" :title="error" class="w-full" />
+        <UButton to="/permainan/jutawan" color="neutral" variant="soft" class="min-h-11">
+          ← Pilih subjek
+        </UButton>
+      </div>
 
-        <div v-else-if="phase === 'playing' && question" class="grid gap-4 md:grid-cols-[8rem_1fr]">
-          <JutawanLadder :level="level" />
-          <div class="space-y-4">
-            <div class="flex items-center justify-between gap-2">
-              <p class="text-sm font-bold text-slate-200" data-testid="jutawan-progress">
-                Soalan {{ level + 1 }} / {{ JUTAWAN_LEVELS }}
-              </p>
-              <button
-                type="button"
-                class="min-h-11 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-sm font-bold text-amber-300 hover:bg-amber-400/20 disabled:opacity-40"
-                :disabled="busy || lifelines <= 0 || removed.length > 0"
-                data-testid="jutawan-lifeline"
-                @click="useLifeline"
-              >
-                50:50 ({{ lifelines }})
-              </button>
-            </div>
-            <div
-              class="rounded-3xl border border-white/10 bg-white/5 p-5"
-              data-testid="jutawan-question"
-            >
-              <p class="font-heading text-lg font-bold break-words text-white">
-                {{ question.text }}
-              </p>
-              <div class="mt-4 grid gap-3">
-                <template v-for="option in question.options" :key="option.id">
-                  <button
-                    v-if="!removed.includes(option.id)"
-                    type="button"
-                    class="min-h-12 rounded-2xl border-2 px-4 py-3 text-left text-base font-bold break-words text-white transition"
-                    :class="optionClass(option.id)"
-                    :disabled="busy"
-                    data-testid="jutawan-option"
-                    @click="choose(option.id)"
-                  >
-                    {{ option.label }}. {{ option.text }}
-                  </button>
-                </template>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <section
-          v-else-if="phase === 'done'"
-          class="mx-auto w-full max-w-md rounded-3xl border border-amber-400/30 bg-white/5 p-6 text-center"
-          data-testid="jutawan-result"
-        >
-          <div class="text-5xl">💰</div>
-          <h2 class="mt-2 font-heading text-2xl font-extrabold text-white">
-            Tahniah! Anda sampai L{{ result.level }}.
-          </h2>
-          <p v-if="result.credited > 0" class="mt-2 text-lg font-extrabold text-amber-300">
-            +{{ result.credited }} 🪙
-          </p>
-          <div class="mt-6 grid grid-cols-2 gap-3">
-            <button
+      <div v-else-if="phase === 'playing' && question" class="grid gap-4 md:grid-cols-4">
+        <div class="md:col-span-1"><JutawanLadder :level="level" /></div>
+        <div class="flex min-w-0 flex-col gap-4 md:col-span-3">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-label text-toned" data-testid="jutawan-progress">
+              Soalan {{ level + 1 }} / {{ JUTAWAN_LEVELS }}
+            </p>
+            <UButton
               type="button"
-              class="min-h-12 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-3 text-base font-bold text-slate-950 hover:brightness-110"
+              color="warning"
+              variant="soft"
+              size="lg"
+              class="min-h-11"
+              :disabled="busy || lifelines <= 0 || removed.length > 0"
+              data-testid="jutawan-lifeline"
+              @click="useLifeline"
+            >
+              50:50 ({{ lifelines }})
+            </UButton>
+          </div>
+          <UCard data-testid="jutawan-question">
+            <p class="text-subheading break-words text-highlighted">
+              {{ question.text }}
+            </p>
+            <div class="mt-4 grid gap-3">
+              <template v-for="option in question.options" :key="option.id">
+                <DsQuizOption
+                  v-if="!removed.includes(option.id)"
+                  :letter="option.label"
+                  :state="optionState(option.id)"
+                  data-testid="jutawan-option"
+                  @select="choose(option.id)"
+                >
+                  {{ option.text }}
+                </DsQuizOption>
+              </template>
+            </div>
+          </UCard>
+        </div>
+      </div>
+
+      <UCard v-else-if="phase === 'done'" class="mx-auto w-full max-w-md text-center" data-testid="jutawan-result">
+        <div class="flex flex-col items-center gap-3">
+          <DsArt3D name="coin" size="hero" float />
+          <h1 class="text-title text-highlighted">Tahniah! Anda sampai L{{ result.level }}.</h1>
+          <DsSticker v-if="result.credited > 0" art="coin">+{{ result.credited }} 🪙</DsSticker>
+          <div class="mt-3 grid w-full grid-cols-2 gap-3">
+            <UButton
+              type="button"
+              size="xl"
+              color="primary"
+              variant="solid"
+              class="min-h-12 justify-center"
               data-testid="jutawan-again"
               @click="start"
             >
               🔄 Main Lagi
-            </button>
-            <RouterLink
-              to="/permainan"
-              class="flex min-h-12 items-center justify-center rounded-xl bg-white/10 px-3 py-3 text-base font-bold text-slate-100 hover:bg-white/20"
-              >🎮 Hub</RouterLink
-            >
+            </UButton>
+            <UButton to="/permainan" size="xl" color="neutral" variant="soft" class="min-h-12 justify-center">
+              🎮 Hub
+            </UButton>
           </div>
-        </section>
-      </div>
+        </div>
+      </UCard>
     </GamePanel>
   </div>
 </template>

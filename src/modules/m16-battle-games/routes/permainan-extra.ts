@@ -22,6 +22,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Pertandingan Mingguan — PRESTASIPLUS',
       header: { title: 'Pertandingan Mingguan', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -34,6 +35,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Uji Minda — Belum Ada Cabaran',
       header: { title: 'Uji Minda', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -45,6 +47,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       title: '500 - Ralat Pelayan | PRESTASIPLUS',
       module: 'M16',
+      v2: true,
     },
   },
 ]

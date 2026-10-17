@@ -55,19 +55,19 @@ describe('S17 Kad Memori (FR-M16-86..89)', () => {
     await card(1).trigger('click') // question of pair 0
     await card(8).trigger('click') // answer of pair 1
     expect(wrapper.get('[data-testid="solo-moves"]').text()).toBe('👆 1 langkah')
-    expect(card(1).classes()).toContain('wrong')
+    expect(card(1).attributes('data-state')).toBe('wrong')
     // Locked while the mismatch shows.
     await card(2).trigger('click')
-    expect(card(2).classes()).not.toContain('flipped')
+    expect(card(2).attributes('data-state')).not.toBe('flipped')
     await vi.advanceTimersByTimeAsync(799)
-    expect(card(1).classes()).toContain('wrong')
+    expect(card(1).attributes('data-state')).toBe('wrong')
     await vi.advanceTimersByTimeAsync(1)
-    expect(card(1).classes()).not.toContain('wrong')
+    expect(card(1).attributes('data-state')).not.toBe('wrong')
     expect(card(1).text()).toBe('❓')
 
     await flipPair(0)
-    expect(card(1).classes()).toContain('matched')
-    expect(card(7).classes()).toContain('matched')
+    expect(card(1).attributes('data-state')).toBe('matched')
+    expect(card(7).attributes('data-state')).toBe('matched')
     expect(wrapper.get('[data-testid="solo-matched"]').text()).toBe('✅ 1 / 6 padan')
     expect(wrapper.get('[data-testid="solo-moves"]').text()).toBe('👆 2 langkah')
   })

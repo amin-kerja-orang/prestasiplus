@@ -6,8 +6,8 @@
  */
 import { computed } from 'vue'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsArt3D, DsPage } from '@/ds'
 
 import { fetchGamesHub } from '../api'
 import GameCard from '../components/hub/GameCard.vue'
@@ -21,24 +21,28 @@ const loading = computed(() => hub.value === null && error.value === null)
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl space-y-4 sm:space-y-6" data-testid="hub-page">
-    <div v-if="loading" class="flex justify-center py-16 text-indigo-500" data-testid="hub-loading">
-      <LoadingSpinner :size="32" />
+  <DsPage data-testid="hub-page">
+    <div v-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="hub-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-28 w-full" />
     </div>
-    <AlertBox v-else-if="error" :messages="LOAD_ERROR" data-testid="hub-error" />
+    <UAlert
+      v-else-if="error"
+      color="error"
+      variant="subtle"
+      :title="LOAD_ERROR"
+      data-testid="hub-error"
+    />
     <template v-else-if="hub">
-      <header
-        class="relative overflow-hidden rounded-2xl bg-linear-to-r from-indigo-500 via-purple-500 to-fuchsia-300 p-5 text-white shadow-lg sm:p-6"
-      >
-        <h1 class="font-heading text-2xl font-bold text-white sm:text-3xl" data-testid="hub-h1">
-          {{ HUB_HEADING }}
-        </h1>
-        <p class="mt-1 max-w-xl text-sm sm:text-base">{{ HUB_INTRO }}</p>
-        <span
-          class="pointer-events-none absolute top-1/2 right-6 hidden -translate-y-1/2 text-7xl opacity-20 select-none sm:block sm:text-8xl"
-          >🎮</span
-        >
-      </header>
+      <UCard>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h1 class="text-title text-highlighted" data-testid="hub-h1">{{ HUB_HEADING }}</h1>
+            <p class="max-w-prose text-body text-muted">{{ HUB_INTRO }}</p>
+          </div>
+          <DsArt3D name="trophy" size="hero" float class="hidden sm:block" />
+        </div>
+      </UCard>
 
       <OpenRoomsStrip :rooms="hub.openRooms" />
 
@@ -46,5 +50,5 @@ const loading = computed(() => hub.value === null && error.value === null)
         <GameCard v-for="card in HUB_CARDS" :key="card.id" :card="card" :chips="hub.chips" />
       </div>
     </template>
-  </div>
+  </DsPage>
 </template>

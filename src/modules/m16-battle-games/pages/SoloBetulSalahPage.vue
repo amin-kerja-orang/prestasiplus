@@ -117,10 +117,10 @@ async function finish(): Promise<void> {
 }
 
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-violet-300' },
-  { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-emerald-400' },
-  { label: 'Kombo Max', value: `${String(maxStreak.value)} 🔥`, tone: 'text-amber-400' },
-  { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-cyan-300' },
+  { label: 'Skor Total', value: String(score.value), tone: 'text-primary' },
+  { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-success' },
+  { label: 'Kombo Max', value: `${String(maxStreak.value)} 🔥`, tone: 'text-warning' },
+  { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])
 
 watch(darjah, () => void start(), { immediate: true })
@@ -128,77 +128,67 @@ watch(darjah, () => void start(), { immediate: true })
 
 <template>
   <div data-testid="solo-betul-salah">
-    <DarjahPicker
-      v-if="darjah === null"
-      emoji="✅"
-      title="Betul atau Salah"
-      color="var(--color-emerald-500)"
-    />
-    <GamePanel theme="indigo">
+    <DarjahPicker v-if="darjah === null" title="Betul atau Salah" art="trophy" />
+    <GamePanel>
       <LoadState :loading="loading" :error="error" />
 
-      <CountdownView
-        v-if="phase === 'countdown'"
-        title="✅❌ BETUL ATAU SALAH"
-        :count="count"
-        tone="text-violet-500"
-      />
+      <CountdownView v-if="phase === 'countdown'" title="✅❌ BETUL ATAU SALAH" :count="count" />
 
-      <div v-if="phase === 'playing' && current" class="mx-auto max-w-lg space-y-4">
-        <!-- As live: a fixed pill at the top of the viewport, centred, over the shell header. -->
-        <span
-          v-if="streak >= 2"
-          class="fixed top-4 left-1/2 z-[160] -translate-x-1/2 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-4 py-1.5 text-sm font-extrabold whitespace-nowrap text-white shadow-lg"
-          :class="{ hot: streak >= 5 }"
-          data-testid="solo-combo"
-          >🔥 {{ streak }} KOMBO</span
-        >
+      <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
+        <div v-if="streak >= 2" class="flex justify-center">
+          <UBadge
+            color="warning"
+            variant="solid"
+            size="xl"
+            :data-hot="streak >= 5"
+            data-testid="solo-combo"
+            >🔥 {{ streak }} KOMBO</UBadge
+          >
+        </div>
         <StatBar :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" />
-        <!-- Live: dim grey (≈ 3.2:1), kept as live (G4 minor 4). -->
-        <p class="text-center text-xs text-slate-500">Kenyataan {{ index + 1 }}</p>
-        <div
-          class="relative rounded-3xl border border-white/10 bg-white/5 p-6 text-center transition"
-          :class="{
-            'ring-2 ring-emerald-400': feedback === '✅',
-            'ring-2 ring-red-400': feedback === '❌',
-          }"
-          data-testid="solo-card"
-        >
-          <p class="font-heading text-lg font-bold break-words text-white">
+        <p class="text-center text-caption text-muted">Kenyataan {{ index + 1 }}</p>
+        <UCard class="relative text-center" :data-feedback="feedback" data-testid="solo-card">
+          <p class="text-subheading break-words text-highlighted">
             {{ current.statement }}
           </p>
           <div
             v-if="feedback"
-            class="absolute inset-0 flex items-center justify-center rounded-3xl bg-slate-950/70 text-7xl"
+            class="absolute inset-0 grid place-items-center bg-default/80 text-display"
             data-testid="solo-feedback"
           >
             {{ feedback }}
           </div>
-        </div>
+        </UCard>
         <div class="flex justify-center gap-8 pt-2">
-          <div class="text-center">
-            <button
+          <div class="flex flex-col items-center gap-2">
+            <UButton
               type="button"
-              class="flex h-20 w-20 items-center justify-center rounded-full border-2 border-red-500/50 bg-red-950/40 text-4xl transition hover:bg-red-900/60 disabled:opacity-60"
+              color="error"
+              variant="soft"
+              class="size-20 justify-center"
+              aria-label="Salah"
               :disabled="feedback !== ''"
               data-testid="solo-salah"
               @click="answer(false)"
             >
-              ❌
-            </button>
-            <p class="mt-2 text-xs text-slate-500">❌ SALAH</p>
+              <UIcon name="i-ph-x-bold" class="size-10" aria-hidden="true" />
+            </UButton>
+            <p class="text-caption text-muted">❌ SALAH</p>
           </div>
-          <div class="text-center">
-            <button
+          <div class="flex flex-col items-center gap-2">
+            <UButton
               type="button"
-              class="flex h-20 w-20 items-center justify-center rounded-full border-2 border-emerald-500/50 bg-emerald-950/40 text-4xl transition hover:bg-emerald-900/60 disabled:opacity-60"
+              color="success"
+              variant="soft"
+              class="size-20 justify-center"
+              aria-label="Betul"
               :disabled="feedback !== ''"
               data-testid="solo-betul"
               @click="answer(true)"
             >
-              ✅
-            </button>
-            <p class="mt-2 text-xs text-slate-500">✅ BETUL</p>
+              <UIcon name="i-ph-check-bold" class="size-10" aria-hidden="true" />
+            </UButton>
+            <p class="text-caption text-muted">✅ BETUL</p>
           </div>
         </div>
       </div>
