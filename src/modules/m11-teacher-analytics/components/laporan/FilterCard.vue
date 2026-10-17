@@ -3,12 +3,8 @@
  * FN-M11-2.1.1 / 2.1.2: "Tapis:" card. The class select submits on change and keeps `range`; the range
  * pills link to `?range=N` only, so they drop `classroom_id` (live behaviour, replicated).
  */
-import { Funnel } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
-
-import { FORM_SELECT_CLASS } from '@/components/form'
-
 import type { ReportClassOption } from '../../api/types'
+import NativeSelect from '../native/NativeSelect.vue'
 import { LAPORAN_COPY, RANGE_PILLS } from './copy'
 
 defineProps<{
@@ -18,57 +14,40 @@ defineProps<{
   classroomId: number | null
 }>()
 defineEmits<{ 'update:classroom': [value: string] }>()
-
-const PILL =
-  'inline-flex min-h-11 items-center lg:min-h-0 lg:py-1 rounded-lg px-3 text-sm font-semibold transition'
 </script>
 
 <template>
-  <section
-    class="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-center sm:p-5"
-    data-testid="filter-card"
-  >
-    <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-      <Funnel class="h-4 w-4 text-indigo-500" />{{ LAPORAN_COPY.filterLabel }}
-    </div>
-    <select
-      :class="[FORM_SELECT_CLASS, 'min-h-11 sm:w-64 lg:min-h-0']"
-      name="classroom_id"
-      data-testid="filter-classroom"
-      @change="$emit('update:classroom', ($event.target as HTMLSelectElement).value)"
-    >
-      <option value="" :selected="classroomId === null">{{ LAPORAN_COPY.allClasses }}</option>
-      <option
-        v-for="c in classes"
-        :key="c.id"
-        :value="String(c.id)"
-        :selected="c.id === classroomId"
+  <UCard data-testid="filter-card">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div class="flex items-center gap-2 text-label text-highlighted">
+        <UIcon name="i-ph-funnel" class="size-4" />{{ LAPORAN_COPY.filterLabel }}
+      </div>
+      <NativeSelect
+        class="sm:w-64"
+        name="classroom_id"
+        aria-label="Kelas"
+        :model-value="classroomId === null ? '' : String(classroomId)"
+        data-testid="filter-classroom"
+        @update:model-value="$emit('update:classroom', $event)"
       >
-        {{ c.name }}
-      </option>
-    </select>
-    <div class="flex w-fit gap-0.5 rounded-xl bg-slate-100 p-1" data-testid="range-pills">
-      <RouterLink
-        v-for="p in RANGE_PILLS"
-        :key="p.range"
-        v-slot="{ href, navigate }"
-        custom
-        :to="{ path: '/guru/laporan', query: { range: String(p.range) } }"
-      >
-        <a
-          :href="href"
-          :class="[
-            PILL,
-            p.range === range
-              ? 'bg-white text-indigo-700 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700',
-          ]"
+        <option value="">{{ LAPORAN_COPY.allClasses }}</option>
+        <option v-for="c in classes" :key="c.id" :value="String(c.id)">
+          {{ c.name }}
+        </option>
+      </NativeSelect>
+      <div class="flex w-fit gap-1" data-testid="range-pills">
+        <UButton
+          v-for="p in RANGE_PILLS"
+          :key="p.range"
+          :to="{ path: '/guru/laporan', query: { range: String(p.range) } }"
+          size="lg"
+          :color="p.range === range ? 'primary' : 'neutral'"
+          :variant="p.range === range ? 'soft' : 'ghost'"
+          :label="p.label"
           :data-testid="`range-${p.range}`"
           :data-active="p.range === range ? 'true' : 'false'"
-          @click="navigate"
-          >{{ p.label }}</a
-        >
-      </RouterLink>
+        />
+      </div>
     </div>
-  </section>
+  </UCard>
 </template>

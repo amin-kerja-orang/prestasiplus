@@ -34,6 +34,8 @@ export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions):
     access: 'auth' as const,
     roles,
     module: 'M11' as const,
+    // v2 staff theme: only where the page renders in the user shell (the admin shell keeps its island).
+    ...(layout === 'user' ? { v2: true } : {}),
   }
   return [
     {

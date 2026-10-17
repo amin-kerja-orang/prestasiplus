@@ -1,70 +1,97 @@
 <script setup lang="ts">
 /**
- * FN-M11-5.1.5 (provisional, PROPOSED layout): Soalan · Subjek · Percubaan · % Betul (legend dot) ·
- * Diskriminasi (+ "baik" / "semak semula"). Scrolls inside its card, never the page.
+ * FN-M11-5.1.5 (provisional, PROPOSED layout): Soalan · Subjek · Percubaan · % Betul (band badge) ·
+ * Diskriminasi (+ "baik" / "semak semula"). Scrolls inside its card, never the page. Every cell element
+ * carries `data-question-id`, so a row is found by its question id.
  */
-import { TABLE_CLASSES as T } from '@/components/data'
+import type { TableColumn } from '@nuxt/ui'
+import { computed } from 'vue'
+
+import { DsDrillTable } from '@/ds'
 
 import type { ItemAnalysisRow } from '../../api/types'
-import { BAND_DOT, clip80, discLabel, discNote, pctLabel } from './bands'
+import { BAND_COLOR, clip80, discLabel, discNote, pctLabel } from './bands'
 import { ITEM_COPY } from './copy'
 
-defineProps<{ rows: ItemAnalysisRow[] }>()
+const props = defineProps<{ rows: ItemAnalysisRow[] }>()
+const bandColor = (b: ItemAnalysisRow['band']) => BAND_COLOR[b]
+
+type Row = ItemAnalysisRow & Record<string, unknown>
+const data = computed<Row[]>(() => props.rows.map((r) => ({ ...r })))
+const columns = computed<TableColumn<Row>[]>(() => [
+  { accessorKey: 'textPlain', header: ITEM_COPY.colQuestion },
+  { accessorKey: 'subjectName', header: ITEM_COPY.colSubject },
+  { accessorKey: 'attempts', header: ITEM_COPY.colAttempts },
+  { accessorKey: 'pct', header: ITEM_COPY.colPct },
+  { accessorKey: 'discrimination', header: ITEM_COPY.colDiscrimination },
+])
 </script>
 
 <template>
-  <div :class="T.card" data-testid="item-table-card">
-    <div :class="T.scroller">
-      <table :class="[T.table, 'min-w-[40rem]']" data-testid="item-table">
-        <thead>
-          <tr>
-            <th :class="T.th">{{ ITEM_COPY.colQuestion }}</th>
-            <th :class="T.th">{{ ITEM_COPY.colSubject }}</th>
-            <th :class="[T.th, 'text-right']">{{ ITEM_COPY.colAttempts }}</th>
-            <th :class="T.th">{{ ITEM_COPY.colPct }}</th>
-            <th :class="T.th">{{ ITEM_COPY.colDiscrimination }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="r in rows"
-            :key="r.questionId"
-            :class="T.row"
-            data-testid="item-row"
-            :data-question-id="r.questionId"
-            :data-band="r.band"
+  <UCard data-testid="item-table-card">
+    <DsDrillTable :data="data" :columns="columns" caption="Analisis item soalan">
+      <template #textPlain-cell="{ row }">
+        <div
+          class="min-w-48 break-words"
+          data-testid="item-row"
+          :data-question-id="row.original.questionId"
+          :data-band="row.original.band"
+        >
+          <span data-testid="item-question" :data-question-id="row.original.questionId">{{
+            clip80(row.original.textPlain)
+          }}</span>
+        </div>
+      </template>
+      <template #subjectName-cell="{ row }">
+        <span
+          class="whitespace-nowrap"
+          data-testid="item-subject"
+          :data-question-id="row.original.questionId"
+          >{{ row.original.subjectName }}</span
+        >
+      </template>
+      <template #attempts-cell="{ row }">
+        <span
+          class="tabular"
+          data-testid="item-attempts"
+          :data-question-id="row.original.questionId"
+          >{{ row.original.attempts }}</span
+        >
+      </template>
+      <template #pct-cell="{ row }">
+        <UBadge
+          :color="bandColor(row.original.band)"
+          variant="subtle"
+          icon="i-ph-circle-fill"
+          :data-band="row.original.band"
+          :data-question-id="row.original.questionId"
+          data-testid="item-dot"
+        >
+          <span
+            class="tabular"
+            data-testid="item-pct"
+            :data-question-id="row.original.questionId"
+            >{{ pctLabel(row.original.pct) }}</span
           >
-            <td :class="[T.td, 'min-w-56 break-words']" data-testid="item-question">
-              {{ clip80(r.textPlain) }}
-            </td>
-            <td :class="[T.td, 'whitespace-nowrap']" data-testid="item-subject">
-              {{ r.subjectName }}
-            </td>
-            <td :class="[T.td, 'text-right']" data-testid="item-attempts">{{ r.attempts }}</td>
-            <td :class="[T.td, 'whitespace-nowrap']">
-              <span class="inline-flex items-center gap-2 font-semibold">
-                <span
-                  :class="['h-3 w-3 shrink-0 rounded-full', BAND_DOT[r.band]]"
-                  data-testid="item-dot"
-                />
-                <span data-testid="item-pct">{{ pctLabel(r.pct) }}</span>
-              </span>
-            </td>
-            <td :class="[T.td, 'whitespace-nowrap']">
-              <span data-testid="item-disc">{{ discLabel(r.discrimination) }}</span>
-              <span
-                v-if="discNote(r.discrimination)"
-                :class="[
-                  'ml-2 text-xs font-semibold',
-                  discNote(r.discrimination) === 'baik' ? 'text-emerald-600' : 'text-red-600',
-                ]"
-                data-testid="item-disc-note"
-                >{{ discNote(r.discrimination) }}</span
-              >
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+        </UBadge>
+      </template>
+      <template #discrimination-cell="{ row }">
+        <span class="tabular whitespace-nowrap">
+          <span data-testid="item-disc" :data-question-id="row.original.questionId">{{
+            discLabel(row.original.discrimination)
+          }}</span>
+          <span
+            v-if="discNote(row.original.discrimination)"
+            :class="[
+              'ml-2 text-caption',
+              discNote(row.original.discrimination) === 'baik' ? 'text-success' : 'text-error',
+            ]"
+            data-testid="item-disc-note"
+            :data-question-id="row.original.questionId"
+            >{{ discNote(row.original.discrimination) }}</span
+          >
+        </span>
+      </template>
+    </DsDrillTable>
+  </UCard>
 </template>

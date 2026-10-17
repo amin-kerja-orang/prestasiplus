@@ -10,8 +10,8 @@
 import { computed } from 'vue'
 import { isNavigationFailure, NavigationFailureType, useRoute, useRouter } from 'vue-router'
 
-import { LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { fetchMonitoringExport, fetchMonitoringOverview } from '../api'
@@ -89,7 +89,7 @@ async function doExport(format: 'pdf' | 'csv') {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="monitoring-page">
+  <DsPage data-testid="monitoring-page">
     <MonitoringGuide />
 
     <MonitoringFilters
@@ -102,15 +102,20 @@ async function doExport(format: 'pdf' | 'csv') {
       @toggle="refresh.toggle"
     />
 
-    <p v-if="error" class="rounded-xl bg-red-50 p-3 text-sm text-red-700" data-testid="mon-error">
-      {{ LOAD_ERROR_COPY }}
-    </p>
+    <UAlert
+      v-if="error"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning"
+      :description="LOAD_ERROR_COPY"
+      data-testid="mon-error"
+    />
     <p
       v-else-if="!data && loading"
-      class="flex items-center gap-2 text-sm text-slate-500"
+      class="flex items-center gap-2 text-body text-muted"
       data-testid="mon-loading"
     >
-      <LoadingSpinner class="h-4 w-4" />Memuatkan...
+      <UIcon name="i-ph-circle-notch" class="size-4" />Memuatkan...
     </p>
 
     <template v-if="data">
@@ -120,5 +125,5 @@ async function doExport(format: 'pdf' | 'csv') {
       <MonitoringWeekly :weeks="data.weeks" :rows="data.weekly" :paths="paths" />
       <MonitoringSignals :signals="data.signals" />
     </template>
-  </div>
+  </DsPage>
 </template>

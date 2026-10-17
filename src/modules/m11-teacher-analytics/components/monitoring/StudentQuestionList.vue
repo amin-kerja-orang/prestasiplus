@@ -3,11 +3,13 @@
  * S4 "Senarai Soalan" (FN-M11-4.2.6; FR-M11-67): table newest first, 20 rows at first and "Papar lagi
  * 20" adds 20 until all are shown. A row click asks the page to open the question modal.
  */
-import { ChevronDown, CircleCheck, CircleX, ExternalLink } from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
+import { DsDrillTable } from '@/ds'
+
 import type { StudentAnswerRow, StudentDetail } from '../../api/types'
-import { CARD, dmyHm } from './monitoring-format'
+import { dmyHm } from './monitoring-format'
 
 const props = defineProps<{ answers: StudentDetail['answers'] }>()
 const emit = defineEmits<{ open: [row: StudentAnswerRow] }>()
@@ -16,71 +18,81 @@ const shown = ref(20)
 const visible = computed(() => props.answers.rows.slice(0, shown.value))
 const more = computed(() => shown.value < props.answers.rows.length)
 
+type Row = StudentAnswerRow & Record<string, unknown>
+const data = computed<Row[]>(() => visible.value.map((r) => ({ ...r })))
+const columns: TableColumn<Row>[] = [
+  { id: 'no', header: '#', accessorFn: (r) => r.questionId },
+  { id: 'text', header: 'Soalan', accessorKey: 'textPlain' },
+  { id: 'subject', header: 'Subjek', accessorKey: 'subjectName' },
+  { id: 'selected', header: 'Jawapan', accessorKey: 'selectedLabel' },
+  { id: 'correct', header: 'Betul', accessorKey: 'correctLabel' },
+  { id: 'status', header: 'Status', accessorKey: 'isCorrect' },
+  { id: 'date', header: 'Tarikh', accessorKey: 'answeredAt' },
+]
+
 const excerpt = (text: string) => (text.length > 80 ? `${text.slice(0, 80)}...` : text)
-const TH = 'px-3 py-2 text-left text-xs font-bold text-slate-500'
 </script>
 
 <template>
-  <section :class="[CARD, 'p-3 sm:p-5']" data-testid="mon-panel-list">
-    <h3 class="mb-3 font-heading text-base font-bold text-slate-800" data-testid="mon-list-heading">
-      Senarai Soalan ({{ answers.available }} tersedia daripada {{ answers.total }})
-    </h3>
-    <div class="overflow-x-auto">
-      <table class="w-full min-w-[680px] text-sm">
-        <thead>
-          <tr class="border-b border-slate-100">
-            <th :class="TH">#</th>
-            <th :class="TH">Soalan</th>
-            <th :class="TH">Subjek</th>
-            <th :class="TH">Jawapan</th>
-            <th :class="TH">Betul</th>
-            <th :class="TH">Status</th>
-            <th :class="TH">Tarikh</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(r, i) in visible"
-            :key="`${String(r.questionId)}-${String(i)}`"
-            :class="[
-              'cursor-pointer border-b border-slate-50 hover:bg-slate-50',
-              r.isCorrect ? '' : 'bg-red-50/30',
-            ]"
+  <UCard data-testid="mon-panel-list">
+    <div class="flex flex-col gap-4">
+      <h2 class="text-label text-highlighted" data-testid="mon-list-heading">
+        Senarai Soalan ({{ answers.available }} tersedia daripada {{ answers.total }})
+      </h2>
+      <DsDrillTable
+        :data="data"
+        :columns="columns"
+        caption="Senarai soalan"
+        @drill="(r: Row) => emit('open', r)"
+      >
+        <template #no-cell="{ row }">
+          <span class="tabular text-caption text-muted">{{ row.index + 1 }}</span>
+        </template>
+        <template #text-cell="{ row }">
+          <UButton
+            variant="link"
+            color="primary"
+            class="h-auto min-w-56 p-0 text-start whitespace-normal"
+            trailing-icon="i-ph-arrow-square-out"
+            :label="excerpt(row.original.textPlain)"
+            :title="row.original.textPlain"
+            :data-correct="row.original.isCorrect ? 'true' : 'false'"
             data-testid="mon-list-row"
-            @click="emit('open', r)"
-          >
-            <td class="px-3 py-2 text-xs text-slate-400">{{ i + 1 }}</td>
-            <td class="px-3 py-2 text-indigo-700" :title="r.textPlain">
-              <span class="inline-flex items-start gap-1"
-                >{{ excerpt(r.textPlain) }}<ExternalLink class="mt-0.5 h-3.5 w-3.5 shrink-0"
-              /></span>
-            </td>
-            <td class="px-3 py-2 text-slate-600">{{ r.subjectName }}</td>
-            <td
-              :class="['px-3 py-2 font-semibold', r.isCorrect ? 'text-green-600' : 'text-red-600']"
-            >
-              {{ r.selectedLabel ?? '-' }}
-            </td>
-            <td class="px-3 py-2 font-semibold text-green-600">{{ r.correctLabel ?? '-' }}</td>
-            <td class="px-3 py-2">
-              <CircleCheck v-if="r.isCorrect" class="h-4 w-4 text-green-500" />
-              <CircleX v-else class="h-4 w-4 text-red-500" />
-            </td>
-            <td class="px-3 py-2 whitespace-nowrap text-slate-500">{{ dmyHm(r.answeredAt) }}</td>
-          </tr>
-        </tbody>
-      </table>
+            @click.stop="emit('open', row.original)"
+          />
+        </template>
+        <template #selected-cell="{ row }">
+          <span :class="['text-label', row.original.isCorrect ? 'text-success' : 'text-error']">{{
+            row.original.selectedLabel ?? '-'
+          }}</span>
+        </template>
+        <template #correct-cell="{ row }">
+          <span class="text-label text-success">{{ row.original.correctLabel ?? '-' }}</span>
+        </template>
+        <template #status-cell="{ row }">
+          <UIcon
+            v-if="row.original.isCorrect"
+            name="i-ph-check-circle"
+            class="size-5 text-success"
+          />
+          <UIcon v-else name="i-ph-x-circle" class="size-5 text-error" />
+        </template>
+        <template #date-cell="{ row }">
+          <span class="tabular whitespace-nowrap">{{ dmyHm(row.original.answeredAt) }}</span>
+        </template>
+      </DsDrillTable>
+      <div v-if="more" class="flex justify-center">
+        <UButton
+          type="button"
+          color="neutral"
+          variant="ghost"
+          size="lg"
+          icon="i-ph-caret-down"
+          :label="`Papar lagi 20 (${Math.min(shown, answers.rows.length)}/${answers.total})`"
+          data-testid="mon-list-more"
+          @click="shown += 20"
+        />
+      </div>
     </div>
-    <button
-      v-if="more"
-      type="button"
-      class="mx-auto mt-3 flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 lg:min-h-9"
-      data-testid="mon-list-more"
-      @click="shown += 20"
-    >
-      <ChevronDown class="h-4 w-4" />Papar lagi 20 ({{ Math.min(shown, answers.rows.length) }}/{{
-        answers.total
-      }})
-    </button>
-  </section>
+  </UCard>
 </template>

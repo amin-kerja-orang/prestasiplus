@@ -87,14 +87,10 @@ describe('S6 Analisis Item: admin empty state (E2E-M11-43)', () => {
     expect(has(w, 'item-table')).toBe(false)
   })
 
-  it('the legend dots use emerald-500, amber-400 and red-500', async () => {
+  it('the legend has the mudah, sederhana and sukar bands', async () => {
     const w = await mountAt('/guru/analisis-item')
-    const dots = t(w, 'item-legend').findAll('span.rounded-full')
-    expect(dots.map((d) => d.classes().find((c) => c.startsWith('bg-')))).toEqual([
-      'bg-emerald-500',
-      'bg-amber-400',
-      'bg-red-500',
-    ])
+    const dots = t(w, 'item-legend').findAll('[data-band]')
+    expect(dots.map((d) => d.attributes('data-band'))).toEqual(['mudah', 'sederhana', 'sukar'])
   })
 
   it('choosing a subject keeps the class and submits both fields', async () => {
@@ -157,38 +153,40 @@ describe('S6 Analisis Item: teacher table (E2E-M11-44, provisional)', () => {
     expect(has(w, 'item-empty')).toBe(false)
     const rows = w.findAll('[data-testid="item-row"]')
     expect(rows).toHaveLength(6)
-    const byId = (id: number) => w.get(`[data-question-id="${id}"]`)
+    const byId = (id: number) => ({
+      get: (sel: string) => w.get(`${sel}[data-question-id="${id}"]`),
+      find: (sel: string) => w.find(`${sel}[data-question-id="${id}"]`),
+    })
 
     expect(byId(5).get('[data-testid="item-pct"]').text()).toBe('12.5%')
-    expect(byId(5).get('[data-testid="item-dot"]').classes()).toContain('bg-red-500')
+    expect(byId(5).get('[data-testid="item-dot"]').attributes('data-band')).toBe('sukar')
     expect(byId(5).get('[data-testid="item-disc"]').text()).toBe('-0.50')
     expect(byId(5).get('[data-testid="item-disc-note"]').text()).toBe('semak semula')
 
     expect(byId(1).get('[data-testid="item-pct"]').text()).toBe('75%')
-    expect(byId(1).get('[data-testid="item-dot"]').classes()).toContain('bg-emerald-500')
+    expect(byId(1).get('[data-testid="item-dot"]').attributes('data-band')).toBe('mudah')
     expect(byId(1).get('[data-testid="item-disc"]').text()).toBe('1.00')
     expect(byId(1).get('[data-testid="item-disc-note"]').text()).toBe('baik')
 
-    expect(byId(2).get('[data-testid="item-dot"]').classes()).toContain('bg-amber-400')
+    expect(byId(2).get('[data-testid="item-dot"]').attributes('data-band')).toBe('sederhana')
     expect(byId(2).get('[data-testid="item-disc"]').text()).toBe('0.33')
     expect(byId(2).get('[data-testid="item-disc-note"]').text()).toBe('baik')
 
     // boundaries: 0 and exactly 0.3 carry no label; null reads "-"
     expect(byId(4).find('[data-testid="item-disc-note"]').exists()).toBe(false)
     expect(byId(8).find('[data-testid="item-disc-note"]').exists()).toBe(false)
-    expect(byId(8).get('[data-testid="item-dot"]').classes()).toContain('bg-amber-400')
+    expect(byId(8).get('[data-testid="item-dot"]').attributes('data-band')).toBe('sederhana')
     expect(byId(9).get('[data-testid="item-disc"]').text()).toBe('-')
     // 40 is Sederhana, as is 70 (40 ≤ p ≤ 70)
-    expect(byId(9).get('[data-testid="item-dot"]').classes()).toContain('bg-amber-400')
+    expect(byId(9).get('[data-testid="item-dot"]').attributes('data-band')).toBe('sederhana')
   })
 
   it('keeps the API order (% betul ascending) and shows subject and attempts', async () => {
     const w = await mountAt('/guru/analisis-item?classroom_id=2001')
     const ids = w.findAll('[data-testid="item-row"]').map((r) => r.attributes('data-question-id'))
     expect(ids).toEqual(['5', '4', '2', '1', '9', '8'])
-    const first = w.get('[data-testid="item-row"]')
-    expect(first.get('[data-testid="item-subject"]').text()).toBe('Kimia')
-    expect(first.get('[data-testid="item-attempts"]').text()).toBe('8')
+    expect(w.get('[data-testid="item-subject"][data-question-id="5"]').text()).toBe('Kimia')
+    expect(w.get('[data-testid="item-attempts"][data-question-id="5"]').text()).toBe('8')
   })
 
   it('cuts the question text to 80 characters', async () => {

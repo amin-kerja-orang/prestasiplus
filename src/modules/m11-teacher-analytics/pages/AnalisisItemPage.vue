@@ -4,12 +4,11 @@
  * live: `subject_id`, `classroom_id`. Filter card, legend, then the empty card (always for a viewer with
  * no own class, and for a `classroom_id` that is not an own class) or the provisional item table.
  */
-import { ChartPie } from '@lucide/vue'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsEmptyState, DsPage } from '@/ds'
 
 import { fetchItemAnalysis } from '../api'
 import { ITEM_COPY } from '../components/analisis-item/copy'
@@ -70,15 +69,21 @@ function onChange(field: 'subject_id' | 'classroom_id', value: string): void {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="analisis-item-page">
-    <AlertBox v-if="analysis.error.value" :messages="ITEM_COPY.loadFailed" />
+  <DsPage data-testid="analisis-item-page">
+    <UAlert
+      v-if="analysis.error.value"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning"
+      :description="ITEM_COPY.loadFailed"
+    />
 
     <div
       v-else-if="!d"
-      class="flex justify-center py-10 text-slate-400"
+      class="flex justify-center py-12 text-muted"
       data-testid="analisis-item-loading"
     >
-      <LoadingSpinner :size="28" />
+      <UProgress class="max-w-48" />
     </div>
 
     <template v-else>
@@ -90,16 +95,14 @@ function onChange(field: 'subject_id' | 'classroom_id', value: string): void {
         @change="onChange"
       />
       <ItemLegend />
-      <section
-        v-if="d.rows.length === 0"
-        class="rounded-2xl bg-white px-6 py-14 text-center shadow"
-        data-testid="item-empty"
-      >
-        <ChartPie class="mx-auto h-12 w-12 text-slate-200" />
-        <p class="mt-4 text-base font-semibold text-slate-500">{{ ITEM_COPY.emptyTitle }}</p>
-        <p class="mt-1 text-sm text-slate-400">{{ ITEM_COPY.emptyBody }}</p>
-      </section>
+      <div v-if="d.rows.length === 0" data-testid="item-empty">
+        <DsEmptyState
+          icon="i-ph-chart-pie"
+          :title="ITEM_COPY.emptyTitle"
+          :description="ITEM_COPY.emptyBody"
+        />
+      </div>
       <ItemTable v-else :rows="d.rows" />
     </template>
-  </div>
+  </DsPage>
 </template>

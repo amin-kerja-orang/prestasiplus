@@ -4,21 +4,20 @@
  * client-side pills and search (rows are filtered by their data values, never by interpolated names:
  * DV-M11-18) and the teacher list. The route prefix is a prop (see `MonitoringPage.vue`).
  */
-import { Circle, GraduationCap, Hash, MapPin, Presentation } from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { LoadingSpinner } from '@/components/feedback'
+import { DsDrillTable, DsPage } from '@/ds'
 
 import { fetchSchoolDetail } from '../api'
+import type { SchoolDetailStudent, SchoolDetailTeacher, StudentStatus } from '../api/types'
 import MonitoringCrumbs from '../components/monitoring/MonitoringCrumbs.vue'
 import MonitoringStatCard from '../components/monitoring/MonitoringStatCard.vue'
 import {
-  CARD,
   LOAD_ERROR_COPY,
-  STAT_TONE,
+  STATUS_COLOR,
   STATUS_LABEL,
-  STATUS_PILL,
   TAHAP,
   count,
   dmy,
@@ -28,11 +27,14 @@ import {
 } from '../components/monitoring/monitoring-format'
 import { MONITORING_BASE, monitoringPaths } from '../components/monitoring/monitoring-paths'
 import { useMonitoringPage } from '../components/monitoring/use-monitoring-page'
+import NativeInput from '../components/native/NativeInput.vue'
 
 const props = withDefaults(defineProps<{ schoolId: number; basePath?: string }>(), {
   basePath: MONITORING_BASE,
 })
 const paths = computed(() => monitoringPaths(props.basePath))
+const statusColor = (s: StudentStatus) => STATUS_COLOR[s]
+const statusLabel = (s: StudentStatus) => STATUS_LABEL[s]
 
 const { data, error, blocked } = useMonitoringPage(
   (signal) => fetchSchoolDetail(props.schoolId, { signal }),
@@ -71,397 +73,322 @@ const teachers = computed(() => {
   )
 })
 
-const SUBSCRIPTION_PILL = {
-  active: 'bg-green-100 text-green-700',
-  cancelled: 'bg-slate-100 text-slate-500',
-  expired: 'bg-slate-100 text-slate-500',
+const SUBSCRIPTION_COLOR = {
+  active: 'success',
+  cancelled: 'neutral',
+  expired: 'neutral',
 } as const
 const SUBSCRIPTION_LABEL = { active: 'Active', cancelled: 'Cancelled', expired: 'Expired' } as const
 
-const PILL = 'min-h-11 whitespace-nowrap rounded-full px-3 text-xs font-semibold lg:min-h-9'
-const pillClass = (on: boolean, onCls: string, offCls: string) => [PILL, on ? onCls : offCls]
-const TH = 'px-3 py-2 text-left text-xs font-bold uppercase text-slate-500'
+const STUDENT_PILLS: { key: StudentFilter; testid: string; label: () => string }[] = [
+  {
+    key: 'all',
+    testid: 'mon-pill-all',
+    label: () => `Semua (${count(data.value?.students.length ?? 0)})`,
+  },
+  {
+    key: 'active',
+    testid: 'mon-pill-active',
+    label: () => `● Aktif (${count(data.value?.cards.engaged ?? 0)})`,
+  },
+  { key: 'login', testid: 'mon-pill-login', label: () => 'Login sahaja' },
+  { key: 'never', testid: 'mon-pill-never', label: () => 'Belum login' },
+]
+const TEACHER_PILLS: { key: TeacherFilter; testid: string; label: string }[] = [
+  { key: 'all', testid: 'mon-tpill-all', label: 'Semua' },
+  { key: 'login', testid: 'mon-tpill-login', label: 'Pernah Login' },
+  { key: 'never', testid: 'mon-tpill-never', label: 'Belum Login' },
+]
+
+type StudentRow = SchoolDetailStudent & Record<string, unknown>
+type TeacherRow = SchoolDetailTeacher & Record<string, unknown>
+const studentData = computed<StudentRow[]>(() => students.value.map((s) => ({ ...s })))
+const teacherData = computed<TeacherRow[]>(() => teachers.value.map((t) => ({ ...t })))
+const studentColumns: TableColumn<StudentRow>[] = [
+  { id: 'no', header: '#', accessorFn: (r) => r.id },
+  { id: 'name', header: 'Nama', accessorKey: 'name' },
+  { id: 'level', header: 'Tingkatan', accessorKey: 'level' },
+  { id: 'answers', header: 'Soalan', accessorKey: 'answers' },
+  { id: 'status', header: 'Status', accessorKey: 'status' },
+  { id: 'lastLogin', header: 'Login Terakhir', accessorKey: 'lastLoginAt' },
+  { id: 'lastActivity', header: 'Aktiviti Terakhir', accessorKey: 'lastActivityAt' },
+]
+const teacherColumns: TableColumn<TeacherRow>[] = [
+  { id: 'no', header: '#', accessorFn: (r) => r.id },
+  { id: 'name', header: 'Nama', accessorKey: 'name' },
+  { id: 'status', header: 'Status', accessorKey: 'loggedIn' },
+  { id: 'lastLogin', header: 'Login Terakhir', accessorKey: 'lastLoginAt' },
+  { id: 'createdAt', header: 'Daftar', accessorKey: 'createdAt' },
+]
 const FLAG_REVIEW_TITLE = 'Aktiviti luar biasa (kelajuan menjawab tidak munasabah) — perlu semak.'
 const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus penglibatan.`
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="monitoring-school-page">
+  <DsPage data-testid="monitoring-school-page">
     <template v-if="!blocked">
       <MonitoringCrumbs :paths="paths" :school="data?.school.name ?? ''" />
 
-      <p v-if="error" class="rounded-xl bg-red-50 p-3 text-sm text-red-700" data-testid="mon-error">
-        {{ LOAD_ERROR_COPY }}
-      </p>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning"
+        :description="LOAD_ERROR_COPY"
+        data-testid="mon-error"
+      />
       <p
         v-else-if="!data"
-        class="flex items-center gap-2 text-sm text-slate-500"
+        class="flex items-center gap-2 text-body text-muted"
         data-testid="mon-loading"
       >
-        <LoadingSpinner class="h-4 w-4" />Memuatkan...
+        <UIcon name="i-ph-circle-notch" class="size-4" />Memuatkan...
       </p>
 
       <template v-if="data">
-        <section
-          :class="[CARD, 'flex flex-wrap items-center justify-between gap-3 p-4 sm:p-6']"
-          data-testid="mon-school-header"
-        >
-          <div class="min-w-0">
-            <h2
-              class="font-heading text-xl font-bold break-words text-slate-800"
-              data-testid="mon-school-name"
-            >
-              {{ data.school.name }}
-            </h2>
-            <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
-              <span class="flex items-center gap-1" data-testid="mon-school-code"
-                ><Hash class="h-4 w-4" />{{ data.school.code ?? '-' }}</span
-              >
-              <span class="flex items-center gap-1" data-testid="mon-school-state"
-                ><MapPin class="h-4 w-4" />{{ data.school.state }}</span
-              >
-              <span
-                v-if="data.subscription"
-                :class="[
-                  'flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                  SUBSCRIPTION_PILL[data.subscription.status],
-                ]"
-                data-testid="mon-subscription"
-              >
-                <Circle class="h-2 w-2 fill-current" />{{
-                  SUBSCRIPTION_LABEL[data.subscription.status]
-                }}
-                — sehingga {{ subscriptionDate(data.subscription.endsAt) }}
-              </span>
-              <span v-else class="text-xs text-slate-400" data-testid="mon-subscription"
-                >Tiada langganan</span
-              >
+        <UCard data-testid="mon-school-header">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex min-w-0 flex-col gap-1">
+              <h2 class="text-heading break-words text-highlighted" data-testid="mon-school-name">
+                {{ data.school.name }}
+              </h2>
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-muted">
+                <span class="flex items-center gap-1" data-testid="mon-school-code"
+                  ><UIcon name="i-ph-hash" class="size-4" />{{ data.school.code ?? '-' }}</span
+                >
+                <span class="flex items-center gap-1" data-testid="mon-school-state"
+                  ><UIcon name="i-ph-map-pin" class="size-4" />{{ data.school.state }}</span
+                >
+                <UBadge
+                  v-if="data.subscription"
+                  :color="SUBSCRIPTION_COLOR[data.subscription.status]"
+                  variant="subtle"
+                  icon="i-ph-circle-fill"
+                  :data-status="data.subscription.status"
+                  data-testid="mon-subscription"
+                  :label="`${SUBSCRIPTION_LABEL[data.subscription.status]} — sehingga ${subscriptionDate(data.subscription.endsAt)}`"
+                />
+                <span v-else class="text-caption text-muted" data-testid="mon-subscription"
+                  >Tiada langganan</span
+                >
+              </div>
             </div>
+            <UBadge
+              :color="TAHAP[data.tahap].color"
+              variant="subtle"
+              size="lg"
+              data-testid="mon-school-tahap"
+              :label="`${data.tahap} — ${pct(data.pct)}`"
+            />
           </div>
-          <span
-            :class="['rounded-full px-4 py-2 text-sm font-bold text-white', TAHAP[data.tahap].pill]"
-            data-testid="mon-school-tahap"
-            >{{ data.tahap }} — {{ pct(data.pct) }}</span
-          >
-        </section>
+        </UCard>
 
         <section class="grid grid-cols-2 gap-3 lg:grid-cols-5" data-testid="mon-school-cards">
-          <MonitoringStatCard
-            label="Pelajar T4/T5"
-            :value="count(data.cards.students)"
-            :tone="STAT_TONE.blue"
-          />
-          <MonitoringStatCard
-            label="Pernah Aktif"
-            :value="count(data.cards.engaged)"
-            :tone="STAT_TONE.green"
-          />
-          <MonitoringStatCard
-            label="Soalan Dijawab"
-            :value="count(data.cards.answers)"
-            :tone="STAT_TONE.purple"
-          />
-          <MonitoringStatCard
-            label="Guru Berdaftar"
-            :value="count(data.cards.teachers)"
-            :tone="STAT_TONE.amber"
-          />
+          <MonitoringStatCard label="Pelajar T4/T5" :value="count(data.cards.students)" />
+          <MonitoringStatCard label="Pernah Aktif" :value="count(data.cards.engaged)" />
+          <MonitoringStatCard label="Soalan Dijawab" :value="count(data.cards.answers)" />
+          <MonitoringStatCard label="Guru Berdaftar" :value="count(data.cards.teachers)" />
           <MonitoringStatCard
             label="Guru Pernah Login"
             :value="count(data.cards.teachersLoggedIn)"
-            :tone="STAT_TONE.rose"
           />
         </section>
 
-        <section :class="[CARD, 'p-3 sm:p-5']" data-testid="mon-students">
-          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h3 class="flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-              <GraduationCap class="h-5 w-5 text-indigo-600" />Senarai Pelajar T4/T5
-            </h3>
-            <div class="flex flex-wrap gap-2" data-testid="mon-student-pills">
-              <button
-                type="button"
-                :class="
-                  pillClass(
-                    studentFilter === 'all',
-                    'bg-indigo-600 text-white',
-                    'bg-slate-100 text-slate-600',
-                  )
-                "
-                data-testid="mon-pill-all"
-                @click="studentFilter = 'all'"
-              >
-                Semua ({{ count(data.students.length) }})
-              </button>
-              <button
-                type="button"
-                :class="
-                  pillClass(
-                    studentFilter === 'active',
-                    'bg-green-600 text-white',
-                    'bg-green-100 text-green-700',
-                  )
-                "
-                data-testid="mon-pill-active"
-                @click="studentFilter = 'active'"
-              >
-                ● Aktif ({{ count(data.cards.engaged) }})
-              </button>
-              <button
-                type="button"
-                :class="
-                  pillClass(
-                    studentFilter === 'login',
-                    'bg-amber-600 text-white',
-                    'bg-amber-100 text-amber-700',
-                  )
-                "
-                data-testid="mon-pill-login"
-                @click="studentFilter = 'login'"
-              >
-                Login sahaja
-              </button>
-              <button
-                type="button"
-                :class="
-                  pillClass(
-                    studentFilter === 'never',
-                    'bg-red-600 text-white',
-                    'bg-slate-100 text-slate-500',
-                  )
-                "
-                data-testid="mon-pill-never"
-                @click="studentFilter = 'never'"
-              >
-                Belum login
-              </button>
+        <UCard data-testid="mon-students">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="flex items-center gap-2 text-label text-highlighted">
+                <UIcon name="i-ph-graduation-cap" class="size-5 text-primary" />Senarai Pelajar
+                T4/T5
+              </h2>
+              <div class="flex flex-wrap gap-2" data-testid="mon-student-pills">
+                <UButton
+                  v-for="p in STUDENT_PILLS"
+                  :key="p.key"
+                  type="button"
+                  size="lg"
+                  :color="studentFilter === p.key ? 'primary' : 'neutral'"
+                  :variant="studentFilter === p.key ? 'soft' : 'ghost'"
+                  :label="p.label()"
+                  :data-testid="p.testid"
+                  @click="studentFilter = p.key"
+                />
+              </div>
             </div>
-          </div>
 
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Cari nama pelajar..."
-            class="mb-3 min-h-11 w-full rounded-lg border border-slate-200 px-3 text-sm sm:w-64 lg:min-h-9"
-            data-testid="mon-student-search"
-          />
+            <NativeInput
+              v-model="search"
+              placeholder="Cari nama pelajar..."
+              aria-label="Cari nama pelajar"
+              class="sm:w-64"
+              data-testid="mon-student-search"
+            />
 
-          <p
-            v-if="data.warning"
-            class="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
-            data-testid="mon-warning"
-          >
-            ⚠ <strong>{{ data.warning.review + data.warning.excluded }} akaun</strong> menunjukkan
-            aktiviti luar biasa (kelajuan menjawab tidak munasabah — perlu semak).
-            <template v-if="data.warning.excluded > 0"
-              ><strong>{{ data.warning.excluded }}</strong> daripadanya dikecualikan dari peratus
-              penglibatan kerana corak seperti automasi.</template
-            >
-            Angka penglibatan di atas ialah nilai tulen selepas tapis.
-          </p>
-
-          <div class="overflow-x-auto" data-testid="mon-student-scroller">
-            <table class="w-full min-w-[720px] text-sm">
-              <thead>
-                <tr class="border-b border-slate-100">
-                  <th :class="TH">#</th>
-                  <th :class="TH">Nama</th>
-                  <th :class="TH">Tingkatan</th>
-                  <th :class="TH">Soalan</th>
-                  <th :class="TH">Status</th>
-                  <th :class="TH">Login Terakhir</th>
-                  <th :class="TH">Aktiviti Terakhir</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(s, i) in students"
-                  :key="s.id"
-                  :class="['border-b border-slate-50', s.answers === 0 ? 'opacity-60' : '']"
-                  data-testid="mon-student-row"
-                  :data-student-id="s.id"
+            <UAlert v-if="data.warning" color="warning" variant="subtle" data-testid="mon-warning">
+              <template #description>
+                ⚠
+                <strong>{{ data.warning.review + data.warning.excluded }} akaun</strong> menunjukkan
+                aktiviti luar biasa (kelajuan menjawab tidak munasabah — perlu semak).
+                <template v-if="data.warning.excluded > 0"
+                  ><strong>{{ data.warning.excluded }}</strong> daripadanya dikecualikan dari
+                  peratus penglibatan kerana corak seperti automasi.</template
                 >
-                  <td class="px-3 py-2 text-xs text-slate-400">{{ i + 1 }}</td>
-                  <td class="px-3 py-2">
+                Angka penglibatan di atas ialah nilai tulen selepas tapis.
+              </template>
+            </UAlert>
+
+            <div data-testid="mon-student-scroller">
+              <DsDrillTable :data="studentData" :columns="studentColumns" caption="Senarai pelajar">
+                <template #no-cell="{ row }">
+                  <span class="tabular text-caption text-muted">{{ row.index + 1 }}</span>
+                </template>
+                <template #name-cell="{ row }">
+                  <div
+                    :class="[
+                      'flex min-w-48 flex-col',
+                      row.original.answers === 0 ? 'text-muted' : '',
+                    ]"
+                    :data-faded="row.original.answers === 0 ? 'true' : 'false'"
+                    data-testid="mon-student-row"
+                    :data-student-id="row.original.id"
+                  >
                     <RouterLink
-                      v-if="s.answers > 0 || paths.kirkpatrickStudent(s.id)"
+                      v-if="row.original.answers > 0 || paths.kirkpatrickStudent(row.original.id)"
                       :to="
-                        s.answers > 0
-                          ? paths.student(schoolId, s.id)
-                          : (paths.kirkpatrickStudent(s.id) ?? '')
+                        row.original.answers > 0
+                          ? paths.student(schoolId, row.original.id)
+                          : (paths.kirkpatrickStudent(row.original.id) ?? '')
                       "
                       :class="[
-                        'font-semibold hover:underline',
-                        s.answers > 0 ? 'text-indigo-600' : 'text-slate-500',
+                        'text-label',
+                        row.original.answers > 0 ? 'text-primary' : 'text-muted',
                       ]"
                       data-testid="mon-student-link"
-                      >{{ s.name }}</RouterLink
+                      >{{ row.original.name }}</RouterLink
                     >
-                    <span
-                      v-else
-                      class="font-semibold text-slate-500"
-                      data-testid="mon-student-name"
-                      >{{ s.name }}</span
-                    >
-                    <p class="text-xs text-slate-400">{{ s.email }}</p>
-                    <span
-                      v-if="s.flag === 'review'"
-                      class="mt-0.5 inline-block rounded bg-amber-100 px-1.5 text-xs font-semibold text-amber-700"
+                    <span v-else class="text-label text-muted" data-testid="mon-student-name">{{
+                      row.original.name
+                    }}</span>
+                    <span class="text-caption text-muted">{{ row.original.email }}</span>
+                    <UBadge
+                      v-if="row.original.flag === 'review'"
+                      color="warning"
+                      variant="subtle"
+                      size="sm"
+                      class="self-start"
                       :title="FLAG_REVIEW_TITLE"
                       data-testid="mon-flag"
-                      >⚠ Perlu Semak</span
-                    >
-                    <span
-                      v-else-if="s.flag === 'excluded'"
-                      class="mt-0.5 inline-block rounded bg-rose-100 px-1.5 text-xs font-semibold text-rose-700"
+                      label="⚠ Perlu Semak"
+                    />
+                    <UBadge
+                      v-else-if="row.original.flag === 'excluded'"
+                      color="error"
+                      variant="subtle"
+                      size="sm"
+                      class="self-start"
                       :title="FLAG_EXCLUDED_TITLE"
                       data-testid="mon-flag"
-                      >⚠ Perlu Semak · ditapis</span
-                    >
-                  </td>
-                  <td class="px-3 py-2 text-slate-600">{{ s.level }}</td>
-                  <td
-                    :class="[
-                      'px-3 py-2 font-semibold',
-                      s.answers > 0 ? 'text-indigo-600' : 'text-slate-300',
-                    ]"
-                  >
-                    {{ count(s.answers) }}
-                  </td>
-                  <td class="px-3 py-2">
-                    <span
-                      :class="[
-                        'rounded-full px-2 py-0.5 text-xs font-semibold',
-                        STATUS_PILL[s.status],
-                      ]"
-                      data-testid="mon-student-status"
-                      >{{ STATUS_LABEL[s.status] }}</span
-                    >
-                  </td>
-                  <td class="px-3 py-2 whitespace-nowrap text-slate-500">
-                    {{ dmyHm(s.lastLoginAt) }}
-                  </td>
-                  <td class="px-3 py-2 whitespace-nowrap text-slate-500">
-                    {{ dmyHm(s.lastActivityAt) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section :class="[CARD, 'p-3 sm:p-5']" data-testid="mon-teachers">
-          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h3 class="flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-              <Presentation class="h-5 w-5 text-amber-500" />Senarai Guru ({{
-                count(data.teachers.length)
-              }})
-            </h3>
-            <div
-              v-if="data.teachers.length > 0"
-              class="flex flex-wrap gap-2"
-              data-testid="mon-teacher-pills"
-            >
-              <button
-                type="button"
-                :class="
-                  pillClass(
-                    teacherFilter === 'all',
-                    'bg-indigo-600 text-white',
-                    'bg-slate-100 text-slate-600',
-                  )
-                "
-                data-testid="mon-tpill-all"
-                @click="teacherFilter = 'all'"
-              >
-                Semua
-              </button>
-              <button
-                type="button"
-                :class="
-                  pillClass(
-                    teacherFilter === 'login',
-                    'bg-green-600 text-white',
-                    'bg-green-100 text-green-700',
-                  )
-                "
-                data-testid="mon-tpill-login"
-                @click="teacherFilter = 'login'"
-              >
-                Pernah Login
-              </button>
-              <button
-                type="button"
-                :class="
-                  pillClass(
-                    teacherFilter === 'never',
-                    'bg-red-600 text-white',
-                    'bg-slate-100 text-slate-500',
-                  )
-                "
-                data-testid="mon-tpill-never"
-                @click="teacherFilter = 'never'"
-              >
-                Belum Login
-              </button>
+                      label="⚠ Perlu Semak · ditapis"
+                    />
+                  </div>
+                </template>
+                <template #answers-cell="{ row }">
+                  <span class="tabular text-label">{{ count(row.original.answers) }}</span>
+                </template>
+                <template #status-cell="{ row }">
+                  <UBadge
+                    :color="statusColor(row.original.status)"
+                    variant="subtle"
+                    data-testid="mon-student-status"
+                    :label="statusLabel(row.original.status)"
+                  />
+                </template>
+                <template #lastLogin-cell="{ row }">
+                  <span class="tabular whitespace-nowrap">{{
+                    dmyHm(row.original.lastLoginAt)
+                  }}</span>
+                </template>
+                <template #lastActivity-cell="{ row }">
+                  <span class="tabular whitespace-nowrap">{{
+                    dmyHm(row.original.lastActivityAt)
+                  }}</span>
+                </template>
+              </DsDrillTable>
             </div>
           </div>
+        </UCard>
 
-          <p
-            v-if="data.teachers.length === 0"
-            class="py-4 text-center text-sm text-slate-400"
-            data-testid="mon-teachers-empty"
-          >
-            Tiada guru berdaftar untuk sekolah ini.
-          </p>
-          <div v-else class="overflow-x-auto" data-testid="mon-teacher-scroller">
-            <table class="w-full min-w-[640px] text-sm">
-              <thead>
-                <tr class="border-b border-slate-100">
-                  <th :class="TH">#</th>
-                  <th :class="TH">Nama</th>
-                  <th :class="TH">Status</th>
-                  <th :class="TH">Login Terakhir</th>
-                  <th :class="TH">Daftar</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(t, i) in teachers"
-                  :key="t.id"
-                  class="border-b border-slate-50"
-                  data-testid="mon-teacher-row"
-                >
-                  <td class="px-3 py-2 text-xs text-slate-400">{{ i + 1 }}</td>
-                  <td class="px-3 py-2">
+        <UCard data-testid="mon-teachers">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="flex items-center gap-2 text-label text-highlighted">
+                <UIcon name="i-ph-chalkboard-teacher" class="size-5 text-primary" />Senarai Guru ({{
+                  count(data.teachers.length)
+                }})
+              </h2>
+              <div
+                v-if="data.teachers.length > 0"
+                class="flex flex-wrap gap-2"
+                data-testid="mon-teacher-pills"
+              >
+                <UButton
+                  v-for="p in TEACHER_PILLS"
+                  :key="p.key"
+                  type="button"
+                  size="lg"
+                  :color="teacherFilter === p.key ? 'primary' : 'neutral'"
+                  :variant="teacherFilter === p.key ? 'soft' : 'ghost'"
+                  :label="p.label"
+                  :data-testid="p.testid"
+                  @click="teacherFilter = p.key"
+                />
+              </div>
+            </div>
+
+            <p
+              v-if="data.teachers.length === 0"
+              class="py-4 text-center text-body text-muted"
+              data-testid="mon-teachers-empty"
+            >
+              Tiada guru berdaftar untuk sekolah ini.
+            </p>
+            <div v-else data-testid="mon-teacher-scroller">
+              <DsDrillTable :data="teacherData" :columns="teacherColumns" caption="Senarai guru">
+                <template #no-cell="{ row }">
+                  <span class="tabular text-caption text-muted">{{ row.index + 1 }}</span>
+                </template>
+                <template #name-cell="{ row }">
+                  <div class="flex min-w-48 flex-col" data-testid="mon-teacher-row">
                     <RouterLink
-                      :to="paths.teacher(schoolId, t.id)"
-                      class="font-semibold text-indigo-600 hover:underline"
+                      :to="paths.teacher(schoolId, row.original.id)"
+                      class="text-label text-primary"
                       data-testid="mon-teacher-link"
-                      >{{ t.name }}</RouterLink
+                      >{{ row.original.name }}</RouterLink
                     >
-                    <p class="text-xs text-slate-400">{{ t.email }}</p>
-                  </td>
-                  <td class="px-3 py-2">
-                    <span
-                      :class="[
-                        'rounded-full px-2 py-0.5 text-xs font-semibold',
-                        t.loggedIn ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500',
-                      ]"
-                      data-testid="mon-teacher-status"
-                      >{{ t.loggedIn ? 'Pernah login' : 'Belum login' }}</span
-                    >
-                  </td>
-                  <td class="px-3 py-2 whitespace-nowrap text-slate-500">
-                    {{ dmyHm(t.lastLoginAt) }}
-                  </td>
-                  <td class="px-3 py-2 whitespace-nowrap text-slate-500">{{ dmy(t.createdAt) }}</td>
-                </tr>
-              </tbody>
-            </table>
+                    <span class="text-caption text-muted">{{ row.original.email }}</span>
+                  </div>
+                </template>
+                <template #status-cell="{ row }">
+                  <UBadge
+                    :color="row.original.loggedIn ? 'success' : 'neutral'"
+                    variant="subtle"
+                    data-testid="mon-teacher-status"
+                    :label="row.original.loggedIn ? 'Pernah login' : 'Belum login'"
+                  />
+                </template>
+                <template #lastLogin-cell="{ row }">
+                  <span class="tabular whitespace-nowrap">{{
+                    dmyHm(row.original.lastLoginAt)
+                  }}</span>
+                </template>
+                <template #createdAt-cell="{ row }">
+                  <span class="tabular whitespace-nowrap">{{ dmy(row.original.createdAt) }}</span>
+                </template>
+              </DsDrillTable>
+            </div>
           </div>
-        </section>
+        </UCard>
       </template>
     </template>
-  </div>
+  </DsPage>
 </template>

@@ -1,32 +1,30 @@
 <script setup lang="ts">
-/** FN-M11-2.3.1: "Trend Aktiviti" card with the `h-64` Chart.js line chart. */
-import { ChartLine } from '@lucide/vue'
+/** FN-M11-2.3.1: "Trend Aktiviti" card with the line chart (`DsChart`, no gridlines). */
 import { computed } from 'vue'
 
-import { ChartCanvas } from '@/components/chart'
+import { DsChart } from '@/ds'
 
 import type { TeacherReport } from '../../api/types'
 import { LAPORAN_COPY, rangeAgo } from './copy'
-import { trendData, trendOptions } from './trend-chart'
+import { trendChart } from './trend-chart'
 
 const props = defineProps<{ trend: TeacherReport['trend']; range: number }>()
-const data = computed(() => trendData(props.trend))
+const chart = computed(() => trendChart(props.trend))
 </script>
 
 <template>
-  <section class="min-w-0 rounded-2xl bg-white p-5 shadow" data-testid="trend-card">
-    <div class="mb-3 flex items-center justify-between gap-3">
-      <h3 class="flex items-center gap-2 text-base font-bold text-slate-800">
-        <ChartLine class="h-4 w-4 text-indigo-500" />{{ LAPORAN_COPY.trendTitle }}
-      </h3>
-      <span class="text-xs text-slate-400" data-testid="trend-range">{{ rangeAgo(range) }}</span>
+  <UCard class="min-w-0" data-testid="trend-card">
+    <div class="flex flex-col gap-4">
+      <p class="text-caption text-muted" data-testid="trend-range">{{ rangeAgo(range) }}</p>
+      <DsChart
+        type="line"
+        :title="LAPORAN_COPY.trendTitle"
+        :labels="chart.labels"
+        :series="chart.series"
+        unit=" aktiviti"
+        :table-label="LAPORAN_COPY.trendTitle"
+        data-testid="laporan-trend-chart"
+      />
     </div>
-    <ChartCanvas
-      type="line"
-      :data="data"
-      :options="trendOptions"
-      height="256px"
-      test-id="laporan-trend-chart"
-    />
-  </section>
+  </UCard>
 </template>

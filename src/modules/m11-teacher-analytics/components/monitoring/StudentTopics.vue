@@ -1,66 +1,72 @@
 <script setup lang="ts">
 /** S4 "Mengikut Tajuk" (FN-M11-4.2.5; FR-M11-66): topics grouped by subject with a Kuat / Sederhana / Lemah badge. */
-import { Layers } from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 
-import type { StudentDetail } from '../../api/types'
-import {
-  ACCURACY_TEXT_600,
-  CARD,
-  TOPIC_BADGE,
-  accuracyBand,
-  count,
-  pct1,
-} from './monitoring-format'
+import { DsDrillTable } from '@/ds'
+
+import type { StudentDetail, TopicBadge } from '../../api/types'
+import { ACCURACY_TEXT, TOPIC_COLOR, accuracyBand, count, pct1 } from './monitoring-format'
 
 defineProps<{ topics: StudentDetail['topics'] }>()
+
+type Row = StudentDetail['topics'][number]['rows'][number] & Record<string, unknown>
+const columns: TableColumn<Row>[] = [
+  { id: 'bab', header: 'Bab', accessorKey: 'bab' },
+  { id: 'name', header: 'Tajuk', accessorKey: 'name' },
+  { id: 'pct', header: 'Ketepatan', accessorKey: 'pct' },
+  {
+    id: 'score',
+    header: 'Betul/Jumlah',
+    accessorFn: (r) => `${String(r.correct)}/${String(r.total)}`,
+  },
+  { id: 'badge', header: 'Tahap', accessorKey: 'badge' },
+]
+const topicColor = (b: TopicBadge) => TOPIC_COLOR[b]
+const rowsOf = (g: StudentDetail['topics'][number]): Row[] => g.rows.map((r) => ({ ...r }))
 </script>
 
 <template>
-  <section :class="[CARD, 'p-3 sm:p-5']" data-testid="mon-panel-topic">
-    <h3 class="mb-3 flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-      <Layers class="h-5 w-5 text-indigo-600" />Mengikut Tajuk
-    </h3>
-    <div
-      v-for="g in topics"
-      :key="g.subjectId"
-      class="mb-4 last:mb-0"
-      data-testid="mon-topic-group"
-    >
-      <h4 class="mb-1 text-xs font-bold text-indigo-600 uppercase">{{ g.subjectName }}</h4>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[420px] text-sm">
-          <tbody>
-            <tr
-              v-for="(r, i) in g.rows"
-              :key="i"
-              class="border-b border-slate-50"
-              data-testid="mon-topic-row"
+  <UCard data-testid="mon-panel-topic">
+    <div class="flex flex-col gap-4">
+      <h2 class="flex items-center gap-2 text-label text-highlighted">
+        <UIcon name="i-ph-stack" class="size-5 text-primary" />Mengikut Tajuk
+      </h2>
+      <div
+        v-for="g in topics"
+        :key="g.subjectId"
+        class="flex flex-col gap-1"
+        data-testid="mon-topic-group"
+      >
+        <h3 class="text-overline text-primary">{{ g.subjectName }}</h3>
+        <DsDrillTable :data="rowsOf(g)" :columns="columns" :caption="g.subjectName">
+          <template #bab-cell="{ row }">
+            <span class="text-caption whitespace-nowrap text-muted" data-testid="mon-topic-row">{{
+              row.original.bab === null ? '' : `Bab ${String(row.original.bab)}`
+            }}</span>
+          </template>
+          <template #pct-cell="{ row }">
+            <span
+              :class="[
+                'tabular text-label whitespace-nowrap',
+                ACCURACY_TEXT[accuracyBand(row.original.pct)],
+              ]"
+              >{{ pct1(row.original.pct) }}</span
             >
-              <td class="w-16 px-2 py-1.5 text-xs whitespace-nowrap text-slate-400">
-                {{ r.bab === null ? '' : `Bab ${String(r.bab)}` }}
-              </td>
-              <td class="px-2 py-1.5 text-slate-700">{{ r.name }}</td>
-              <td
-                :class="[
-                  'px-2 py-1.5 font-semibold whitespace-nowrap',
-                  ACCURACY_TEXT_600[accuracyBand(r.pct)],
-                ]"
-              >
-                {{ pct1(r.pct) }}
-              </td>
-              <td class="px-2 py-1.5 text-xs whitespace-nowrap text-slate-500">
-                {{ count(r.correct) }}/{{ count(r.total) }}
-              </td>
-              <td class="px-2 py-1.5">
-                <span
-                  :class="['rounded-full px-2 py-0.5 text-xs font-semibold', TOPIC_BADGE[r.badge]]"
-                  >{{ r.badge }}</span
-                >
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+          <template #score-cell="{ row }">
+            <span class="tabular text-caption whitespace-nowrap text-muted"
+              >{{ count(row.original.correct) }}/{{ count(row.original.total) }}</span
+            >
+          </template>
+          <template #badge-cell="{ row }">
+            <UBadge
+              :color="topicColor(row.original.badge)"
+              variant="subtle"
+              :label="row.original.badge"
+            />
+          </template>
+        </DsDrillTable>
       </div>
     </div>
-  </section>
+  </UCard>
 </template>
