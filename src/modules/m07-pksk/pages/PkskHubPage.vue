@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /**
  * S1 `/pksk` "PKSK" hub (M07-T2; FR-M07-01..05, FN-M07-1.1.*): hero, the "Format Peperiksaan" card
- * and the two level cards. The "AKTIF" badge and green border follow `GET /api/pksk/me/access`; a
- * level without access has no badge and no green border (INFERRED only, L-1).
+ * and the two level cards. The "AKTIF" badge and highlight follow `GET /api/pksk/me/access`; a
+ * level without access has no badge and no highlight (INFERRED only, L-1).
  */
-import { RouterLink } from 'vue-router'
-
-import { AppIcon } from '@/components/icon'
+import { DsIconChip, DsPage } from '@/ds'
 
 import { fetchPkskAccess } from '../api/pksk'
+import AccentBadge from '../components/AccentBadge.vue'
+import PkskBanner from '../components/PkskBanner.vue'
 import { FORMAT_TILES, LEVEL_CARDS } from '../lib/levels'
 import { useApi } from '@/composables'
 
@@ -16,115 +16,78 @@ const { data: access } = useApi((signal) => fetchPkskAccess({ signal }))
 </script>
 
 <template>
-  <div class="min-w-0 space-y-6" data-testid="pksk-hub">
-    <div
-      class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-6 text-center shadow-xl sm:p-10"
-      data-testid="pksk-banner"
-    >
-      <div
-        class="absolute inset-0 opacity-20"
-        style="
-          background-image: radial-gradient(circle, #fff 1.5px, transparent 1.5px);
-          background-size: 24px 24px;
-        "
-      ></div>
-      <div class="relative">
-        <AppIcon name="fa-graduation-cap" class="mx-auto mb-4 h-14 w-14 text-white" />
-        <h1
-          class="text-4xl font-bold text-white md:text-5xl"
-          data-testid="hub-title"
-          style="color: #ffffff"
-        >
-          Persediaan Kemasukan
-        </h1>
-        <p class="mt-1 text-xl font-semibold text-white/90 md:text-2xl">SBP / MRSM / SMKA</p>
-        <p class="mx-auto mt-3 max-w-2xl text-sm text-white/90 sm:text-base">
-          Latih tubi soalan dan peperiksaan penuh untuk persediaan kemasukan sekolah berasrama penuh
-        </p>
-      </div>
-    </div>
+  <DsPage data-testid="pksk-hub">
+    <PkskBanner data-testid="pksk-banner">
+      <UIcon name="i-ph-exam-duotone" class="size-12" aria-hidden="true" />
+      <h1 class="text-title" data-testid="hub-title">Persediaan Kemasukan</h1>
+      <p class="text-heading">SBP / MRSM / SMKA</p>
+      <p class="max-w-prose text-body">
+        Latih tubi soalan dan peperiksaan penuh untuk persediaan kemasukan sekolah berasrama penuh
+      </p>
+    </PkskBanner>
 
-    <section class="rounded-2xl bg-white p-4 shadow-sm sm:p-6" data-testid="format-card">
-      <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800 sm:text-xl">
-        <AppIcon name="fa-clipboard-list" class="h-5 w-5 text-indigo-600" /> Format Peperiksaan
+    <section class="flex min-w-0 flex-col gap-3" data-testid="format-card">
+      <h2 class="flex items-center gap-2 text-heading text-highlighted">
+        <DsIconChip icon="i-ph-clipboard-text-duotone" accent="action" size="sm" /> Format
+        Peperiksaan
       </h2>
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div
-          v-for="t in FORMAT_TILES"
-          :key="t.bahagian"
-          class="flex min-w-0 items-start gap-3 rounded-2xl bg-slate-50 p-4"
-          :data-testid="`format-${t.bahagian}`"
-        >
-          <span
-            :class="[
-              'flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white',
-              t.circle,
-            ]"
-            data-testid="format-circle"
-            >{{ t.bahagian }}</span
-          >
-          <div class="min-w-0">
-            <h3 class="font-bold text-slate-800">{{ t.name }}</h3>
-            <p class="text-sm text-slate-600">
-              <strong class="text-slate-800">{{ t.count }}</strong> {{ t.unit }}
-            </p>
-            <p class="text-sm text-slate-500">Pemberat: {{ t.weight }}%</p>
-            <span
-              class="mt-2 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600"
-            >
-              <AppIcon :name="t.icon" class="h-3.5 w-3.5" /> {{ t.chip }}
-            </span>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <UCard v-for="t in FORMAT_TILES" :key="t.bahagian" :data-testid="`format-${t.bahagian}`">
+          <div class="flex min-w-0 items-start gap-3">
+            <AccentBadge :accent="t.accent" data-testid="format-circle">{{
+              t.bahagian
+            }}</AccentBadge>
+            <div class="flex min-w-0 flex-col gap-1">
+              <h3 class="text-subheading text-highlighted">{{ t.name }}</h3>
+              <p class="text-label text-toned">
+                <strong class="text-highlighted">{{ t.count }}</strong> {{ t.unit }}
+              </p>
+              <p class="text-label text-muted">Pemberat: {{ t.weight }}%</p>
+              <span class="mt-1 inline-flex items-center gap-2 text-caption text-muted">
+                <DsIconChip :icon="t.icon" :accent="t.accent" size="xs" /> {{ t.chip }}
+              </span>
+            </div>
           </div>
-        </div>
+        </UCard>
       </div>
     </section>
 
-    <section data-testid="level-section">
-      <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800 sm:text-xl">
-        <AppIcon name="fa-layer-group" class="h-5 w-5 text-indigo-600" /> Pilih Tingkatan Anda
+    <section class="flex min-w-0 flex-col gap-3" data-testid="level-section">
+      <h2 class="flex items-center gap-2 text-heading text-highlighted">
+        <DsIconChip icon="i-ph-stack-duotone" accent="action" size="sm" /> Pilih Tingkatan Anda
       </h2>
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <UCard
           v-for="c in LEVEL_CARDS"
           :key="c.level"
-          :class="[
-            'relative min-w-0 rounded-2xl bg-white p-5 sm:p-6',
-            access?.[c.level]
-              ? 'border-4 border-green-400 shadow-xl shadow-green-500/30'
-              : 'border border-slate-100 shadow-sm',
-          ]"
           :data-testid="`level-card-${c.level}`"
           :data-active="access?.[c.level] ? 'true' : 'false'"
         >
-          <span
-            v-if="access?.[c.level]"
-            class="absolute top-4 right-4 inline-flex items-center gap-1 rounded-full bg-green-500 px-3 py-1 text-xs font-bold text-white"
-            data-testid="badge-aktif"
-          >
-            <AppIcon name="fa-unlock" class="h-3 w-3" /> AKTIF
-          </span>
-          <span
-            :class="[
-              'flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-xl font-bold text-white',
-              c.tile,
-            ]"
-            >{{ c.level }}</span
-          >
-          <h3 class="mt-4 text-xl font-bold text-slate-800">{{ c.name }}</h3>
-          <p class="mt-1 text-sm text-slate-600">{{ c.text }}</p>
-          <RouterLink
-            :to="`/pksk/level/${c.level}`"
-            :class="[
-              'mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r px-5 py-3 font-bold text-white transition hover:scale-105',
-              c.button,
-            ]"
-            :data-testid="`start-${c.level}`"
-            style="color: #ffffff"
-          >
-            <AppIcon name="fa-play" class="h-4 w-4" /> Mula Latihan
-          </RouterLink>
-        </div>
+          <div class="relative flex min-w-0 flex-col gap-3">
+            <UBadge
+              v-if="access?.[c.level]"
+              color="success"
+              variant="solid"
+              icon="i-ph-lock-open-duotone"
+              class="absolute top-0 right-0"
+              data-testid="badge-aktif"
+              >AKTIF</UBadge
+            >
+            <AccentBadge :accent="c.accent" size="lg">{{ c.level }}</AccentBadge>
+            <h3 class="text-heading text-highlighted">{{ c.name }}</h3>
+            <p class="text-body text-muted">{{ c.text }}</p>
+            <UButton
+              :to="`/pksk/level/${c.level}`"
+              size="xl"
+              block
+              icon="i-ph-play-duotone"
+              class="min-h-12"
+              :data-testid="`start-${c.level}`"
+              >Mula Latihan</UButton
+            >
+          </div>
+        </UCard>
       </div>
     </section>
-  </div>
+  </DsPage>
 </template>

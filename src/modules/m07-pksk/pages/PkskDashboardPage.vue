@@ -5,17 +5,16 @@
  * (403 -> `/pksk`) is in `usePkskData`.
  */
 import { computed, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { usePageMeta } from '@/composables'
-import { AppIcon } from '@/components/icon'
+import { DsIconChip, DsPage, DsStatTile } from '@/ds'
 
 import { fetchPkskDashboard } from '../api/pksk'
 import type { PkskLevel } from '../api/types'
 import BackLink from '../components/BackLink.vue'
 import LoadError from '../components/LoadError.vue'
+import PkskBanner from '../components/PkskBanner.vue'
 import MasteryBar from '../components/MasteryBar.vue'
-import { tint } from '../lib/levels'
 import { isLoadError, usePkskData } from '../lib/load'
 
 const props = defineProps<{ level: PkskLevel }>()
@@ -32,141 +31,145 @@ watch(
   { immediate: true },
 )
 
-const { data, error, reload } = usePkskData((signal) => fetchPkskDashboard(props.level, { signal }), [
-  () => props.level,
-])
+const { data, error, reload } = usePkskData(
+  (signal) => fetchPkskDashboard(props.level, { signal }),
+  [() => props.level],
+)
 const loadFailed = computed(() => isLoadError(error.value))
 
-const shortcuts = computed(() => [
-  {
-    key: 'domains',
-    icon: 'fa-brain',
-    tone: 'bg-blue-100 text-blue-600',
-    title: 'Latih Tubi Domains',
-    text: 'Fokus pada topik tertentu',
-    to: `/pksk/level/${props.level}/domains`,
-  },
-  {
-    key: 'exam',
-    icon: 'fa-file-alt',
-    tone: 'bg-purple-100 text-purple-600',
-    title: 'Peperiksaan Penuh',
-    text: 'Simulasi peperiksaan sebenar',
-    to: `/pksk/level/${props.level}/exam`,
-  },
-  {
-    key: 'history',
-    icon: 'fa-history',
-    tone: 'bg-pink-100 text-pink-600',
-    title: 'Sejarah',
-    text: 'Lihat prestasi lepas',
-    to: `/pksk/level/${props.level}/history`,
-  },
-])
+const shortcuts = computed(
+  () =>
+    [
+      {
+        key: 'domains',
+        icon: 'i-ph-target-duotone',
+        accent: 'action',
+        title: 'Latih Tubi Domains',
+        text: 'Fokus pada topik tertentu',
+        to: `/pksk/level/${props.level}/domains`,
+      },
+      {
+        key: 'exam',
+        icon: 'i-ph-exam-duotone',
+        accent: 'trial',
+        title: 'Peperiksaan Penuh',
+        text: 'Simulasi peperiksaan sebenar',
+        to: `/pksk/level/${props.level}/exam`,
+      },
+      {
+        key: 'history',
+        icon: 'i-ph-clock-counter-clockwise-duotone',
+        accent: 'heat',
+        title: 'Sejarah',
+        text: 'Lihat prestasi lepas',
+        to: `/pksk/level/${props.level}/history`,
+      },
+    ] as const,
+)
 </script>
 
 <template>
-  <div class="min-w-0 space-y-6" data-testid="pksk-dashboard">
+  <DsPage data-testid="pksk-dashboard">
     <BackLink to="/pksk" label="Kembali ke PKSK" />
 
     <LoadError v-if="loadFailed" @retry="reload()" />
 
     <template v-else-if="data">
-      <div
-        class="grid grid-cols-1 gap-6 rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-6 text-white shadow-xl sm:p-8 md:grid-cols-2 md:items-center"
-        data-testid="readiness"
-      >
-        <div class="min-w-0 text-center md:text-left">
-          <p class="text-sm font-medium text-white/90">Skor Kesediaan Anda</p>
-          <p class="text-7xl leading-none font-bold text-white" data-testid="score">
-            {{ data.readiness.scorePct }}%
-          </p>
-          <span
-            class="mt-3 inline-flex rounded-full bg-white/25 px-4 py-1 text-lg font-bold text-white"
-            data-testid="grade"
-            >{{ data.readiness.grade }}</span
-          >
-          <p class="mt-2 text-sm text-white/90">Teruskan usaha anda!</p>
+      <PkskBanner data-testid="readiness">
+        <div class="flex min-w-0 flex-col items-center gap-2 text-center">
+          <p class="text-label">Skor Kesediaan Anda</p>
+          <p class="text-display" data-testid="score">{{ data.readiness.scorePct }}%</p>
+          <UBadge color="neutral" variant="solid" size="xl" data-testid="grade">{{
+            data.readiness.grade
+          }}</UBadge>
+          <p class="text-label">Teruskan usaha anda!</p>
         </div>
-        <div class="grid min-w-0 grid-cols-1 gap-3">
-          <div class="rounded-2xl bg-white/20 p-4 text-center">
-            <p class="text-sm text-white/90">Jumlah Peperiksaan</p>
-            <p class="text-3xl font-bold text-white" data-testid="exam-count">
-              {{ data.examCount }}
-            </p>
-          </div>
-          <div class="rounded-2xl bg-white/20 p-4 text-center">
-            <p class="text-sm text-white/90">Purata Bahagian B</p>
-            <p class="text-3xl font-bold text-white" data-testid="avg-b">
-              {{ data.bahagianBAvgPct.toFixed(1) }}%
-            </p>
-          </div>
+        <div class="grid w-full min-w-0 grid-cols-2 gap-3 text-highlighted">
+          <DsStatTile
+            :value="data.examCount"
+            unit="Jumlah Peperiksaan"
+            icon="i-ph-exam-duotone"
+            accent="action"
+            data-testid="exam-count"
+          />
+          <DsStatTile
+            :value="`${data.bahagianBAvgPct.toFixed(1)}%`"
+            unit="Purata Bahagian B"
+            icon="i-ph-chart-line-up-duotone"
+            accent="win"
+            data-testid="avg-b"
+          />
         </div>
-      </div>
+      </PkskBanner>
 
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <RouterLink
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <ULink
           v-for="s in shortcuts"
           :key="s.key"
           :to="s.to"
-          class="flex min-h-11 min-w-0 items-center gap-4 rounded-2xl bg-white p-5 shadow-sm transition hover:scale-105 hover:shadow-md"
+          raw
+          class="block min-h-11 min-w-0"
           :data-testid="`shortcut-${s.key}`"
         >
-          <span
-            :class="['flex h-12 w-12 shrink-0 items-center justify-center rounded-xl', s.tone]"
-          >
-            <AppIcon :name="s.icon" class="h-6 w-6" />
-          </span>
-          <span class="min-w-0">
-            <span class="block font-bold text-slate-800">{{ s.title }}</span>
-            <span class="block text-sm text-slate-500">{{ s.text }}</span>
-          </span>
-        </RouterLink>
+          <UCard>
+            <div class="flex min-w-0 items-center gap-3">
+              <DsIconChip :icon="s.icon" :accent="s.accent" size="lg" />
+              <span class="flex min-w-0 flex-col">
+                <span class="text-subheading text-highlighted">{{ s.title }}</span>
+                <span class="text-label text-muted">{{ s.text }}</span>
+              </span>
+            </div>
+          </UCard>
+        </ULink>
       </div>
 
-      <section data-testid="mastery-section">
-        <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800 sm:text-xl">
-          <AppIcon name="fa-chart-line" class="h-5 w-5 text-indigo-600" /> Penguasaan Domain
+      <section class="flex min-w-0 flex-col gap-3" data-testid="mastery-section">
+        <h2 class="flex items-center gap-2 text-heading text-highlighted">
+          <DsIconChip icon="i-ph-chart-line-up-duotone" accent="action" size="sm" /> Penguasaan
+          Domain
         </h2>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <UCard
             v-for="d in data.domains"
             :key="d.code"
-            class="flex min-w-0 flex-col rounded-2xl bg-white p-4 shadow-sm"
             data-testid="domain-card"
             :data-code="d.code"
           >
-            <div class="flex items-center gap-3">
-              <span
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-                :style="{ backgroundColor: tint(d.color), color: d.color }"
-                data-testid="domain-icon"
-              >
-                <AppIcon :name="d.icon" class="h-6 w-6" />
-              </span>
-              <div class="min-w-0">
-                <h3 class="font-bold break-words text-slate-800">{{ d.name }}</h3>
-                <p class="text-xs text-slate-500">{{ d.code }}</p>
+            <div class="flex min-w-0 flex-col gap-3">
+              <div class="flex min-w-0 items-center gap-3">
+                <DsIconChip
+                  icon="i-ph-target-duotone"
+                  accent="trial"
+                  size="lg"
+                  data-testid="domain-icon"
+                />
+                <div class="min-w-0">
+                  <h3 class="text-subheading break-words text-highlighted">{{ d.name }}</h3>
+                  <p class="text-caption text-muted">{{ d.code }}</p>
+                </div>
               </div>
-            </div>
-            <div class="mt-3 flex items-center justify-between text-sm">
-              <span class="text-slate-600">Penguasaan</span>
-              <span class="font-bold" :style="{ color: d.color }" data-testid="mastery-pct"
-                >{{ d.masteryPct }}%</span
+              <div class="flex items-center justify-between text-label">
+                <span class="text-muted">Penguasaan</span>
+                <span class="tabular text-highlighted" data-testid="mastery-pct"
+                  >{{ d.masteryPct }}%</span
+                >
+              </div>
+              <MasteryBar :pct="d.masteryPct" accent="trial" />
+              <UButton
+                :to="`/pksk/level/${level}/domain/${d.code}`"
+                color="primary"
+                variant="soft"
+                size="lg"
+                block
+                icon="i-ph-play-duotone"
+                class="min-h-11"
+                data-testid="practice-link"
+                >Latih Sekarang</UButton
               >
             </div>
-            <MasteryBar :pct="d.masteryPct" :color="d.color" />
-            <RouterLink
-              :to="`/pksk/level/${level}/domain/${d.code}`"
-              class="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition hover:opacity-80"
-              :style="{ backgroundColor: tint(d.color), color: d.color }"
-              data-testid="practice-link"
-            >
-              <AppIcon name="fa-play" class="h-4 w-4" /> Latih Sekarang
-            </RouterLink>
-          </div>
+          </UCard>
         </div>
       </section>
     </template>
-  </div>
+  </DsPage>
 </template>

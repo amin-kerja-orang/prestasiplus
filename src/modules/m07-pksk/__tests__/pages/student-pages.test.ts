@@ -106,7 +106,7 @@ describe('PkskHubPage (S1)', () => {
     expect(w.get('[data-testid=format-B]').text()).toContain('Pemberat: 70%')
     expect(w.get('[data-testid=format-C]').text()).toContain('esei')
     expect(w.findAll('[data-testid=badge-aktif]').map((b) => b.text())).toEqual(['AKTIF', 'AKTIF'])
-    expect(w.get('[data-testid=level-card-T1]').classes()).toContain('border-green-400')
+    expect(w.get('[data-testid=level-card-T1]').attributes('data-active')).toBe('true')
     expect(w.get('[data-testid=start-T1]').attributes('href')).toBe('/pksk/level/T1')
     expect(w.get('[data-testid=start-T4]').attributes('href')).toBe('/pksk/level/T4')
     expect(w.get('[data-testid=start-T4]').text()).toBe('Mula Latihan')
@@ -117,7 +117,6 @@ describe('PkskHubPage (S1)', () => {
     const w = await render(PkskHubPage, '/pksk', '/pksk')
     expect(w.findAll('[data-testid=badge-aktif]')).toHaveLength(1)
     const t4 = w.get('[data-testid=level-card-T4]')
-    expect(t4.classes()).not.toContain('border-green-400')
     expect(t4.attributes('data-active')).toBe('false')
     expect(w.find('[data-testid=start-T4]').exists()).toBe(true)
     expect(w.text()).not.toMatch(/RM\s?\d/)
@@ -142,8 +141,8 @@ describe('PkskDashboardPage (S2)', () => {
     expect(w.get('[data-testid=score]').text()).toBe('0%')
     expect(w.get('[data-testid=grade]').text()).toBe('E')
     expect(w.get('[data-testid=readiness]').text()).toContain('Teruskan usaha anda!')
-    expect(w.get('[data-testid=exam-count]').text()).toBe('0')
-    expect(w.get('[data-testid=avg-b]').text()).toBe('0.0%')
+    expect(w.get('[data-testid=exam-count]').text()).toContain('0')
+    expect(w.get('[data-testid=avg-b]').text()).toContain('0.0%')
     expect(w.get('[data-testid=back-link]').attributes('href')).toBe('/pksk')
     expect(w.get('[data-testid=shortcut-domains]').attributes('href')).toBe(
       '/pksk/level/T1/domains',
@@ -155,7 +154,7 @@ describe('PkskDashboardPage (S2)', () => {
     )
     expect(w.get('[data-testid=practice-link]').text()).toBe('Latih Sekarang')
     expect(w.get('[data-testid=mastery-pct]').text()).toBe('70%')
-    expect(w.get('[data-testid=mastery-bar]').attributes('style')).toContain('width: 70%')
+    expect(w.get('[data-testid=mastery-bar]').html()).toContain('70')
   })
 
   it('shows rounded score, one-decimal average and the grade', async () => {
@@ -167,7 +166,7 @@ describe('PkskDashboardPage (S2)', () => {
     })
     expect(w.get('[data-testid=score]').text()).toBe('55%')
     expect(w.get('[data-testid=grade]').text()).toBe('C')
-    expect(w.get('[data-testid=avg-b]').text()).toBe('59.7%')
+    expect(w.get('[data-testid=avg-b]').text()).toContain('59.7%')
   })
 
   it('redirects to /pksk on 403 and shows nothing', async () => {
@@ -217,15 +216,12 @@ describe('PkskDomainsPage (S3)', () => {
     expect(w.get('[data-testid=back-link]').text()).toBe('Kembali ke Dashboard')
     expect(w.get('[data-testid=back-link]').attributes('href')).toBe('/pksk/level/T1')
     expect(w.get('[data-testid=section-B] h2').text()).toBe('Kecerdasan Intelek')
-    expect(w.get('[data-testid=section-B] [data-testid=section-badge]').classes()).toContain(
-      'bg-purple-500',
-    )
+    expect(w.get('[data-testid=section-B] [data-testid=section-badge]').text()).toBe('B')
     const card = w.get('[data-testid=section-B] [data-testid=domain-card]')
     expect(card.attributes('href')).toBe('/pksk/level/T1/domain/PKSK_MATH')
     expect(card.get('[data-testid=question-count]').text()).toBe('27')
     expect(card.text()).toContain('Soalan')
     expect(card.get('[data-testid=mastery-pct]').text()).toBe('70%')
-    expect(card.classes()).toContain('hover:border-purple-300')
   })
 
   it('redirects to /pksk on 403', async () => {
@@ -251,7 +247,7 @@ describe('PkskHistoryPage (S4, DV-M07-01)', () => {
     })
     expect(w.get('[data-testid=pksk-history]').attributes('data-provisional')).toBe('L-4')
     expect(w.findAll('th').map((t) => t.text())).toEqual(['Tarikh', 'Skor', 'Gred'])
-    expect(w.findAll('[data-testid=history-row]').map((r) => r.findAll('td').map((c) => c.text()))).toEqual([
+    expect(w.findAll('tbody tr').map((r) => r.findAll('td').map((c) => c.text()))).toEqual([
       ['20/09/2026', '64%', 'C'],
       ['10/09/2026', '46%', 'D'],
     ])
@@ -286,7 +282,7 @@ describe('PkskPracticePage (S4a, provisional L-2)', () => {
     expect(w.get('h2').text()).toBe('Matematik')
     expect(w.findAll('[data-testid=pksk-item]')).toHaveLength(2)
     expect(w.findAll('[data-testid=pksk-option]')).toHaveLength(4)
-    await w.findAll('[data-testid=pksk-option]')[1]?.setValue(true)
+    await w.findAll('[data-testid=pksk-option]')[1]?.trigger('click')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(api.submitPkskPractice).toHaveBeenCalledWith('T1', 'PKSK_MATH', [

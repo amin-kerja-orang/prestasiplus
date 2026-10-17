@@ -8,8 +8,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { isApiError } from '@/api'
+import { DsPage, DsQuizHeader } from '@/ds'
 
 import { fetchPkskPractice, submitPkskPractice } from '../api/pksk'
 import type { PkskAnswer, PkskLevel } from '../api/types'
@@ -31,6 +31,14 @@ const answers = reactive<Record<number, PkskAnswer>>({})
 const saving = ref(false)
 const submitError = ref<string | null>(null)
 
+const progress = computed(() => {
+  const qs = data.value?.questions ?? []
+  if (qs.length === 0) return 0
+  const done = qs.filter(
+    (q) => answerOf(q.id).optionIndex !== undefined || !!answerOf(q.id).text,
+  ).length
+  return (done / qs.length) * 100
+})
 const answerOf = (id: number): PkskAnswer => answers[id] ?? { questionId: id }
 
 async function submit(): Promise<void> {
@@ -53,16 +61,28 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="pksk-practice" data-provisional="L-2">
+  <DsPage class="max-w-2xl" data-testid="pksk-practice" data-provisional="L-2">
     <BackLink :to="`/pksk/level/${level}/domains`" label="Kembali ke Domain" />
 
     <LoadError v-if="loadFailed" @retry="reload()" />
 
-    <form v-else-if="data" class="space-y-4" novalidate @submit.prevent="submit">
-      <h2 class="text-xl font-bold text-slate-800 sm:text-2xl" data-testid="practice-title">
+    <form v-else-if="data" class="flex flex-col gap-4" novalidate @submit.prevent="submit">
+      <DsQuizHeader
+        close-label="Kembali ke Domain"
+        :progress="progress"
+        progress-label="Kemajuan latihan"
+        @close="router.push(`/pksk/level/${level}/domains`)"
+      />
+      <h2 class="text-heading text-highlighted" data-testid="practice-title">
         {{ data.domain.name }}
       </h2>
-      <AlertBox v-if="submitError" :messages="submitError" />
+      <UAlert
+        v-if="submitError"
+        color="error"
+        variant="soft"
+        icon="i-ph-warning-circle-duotone"
+        :title="submitError"
+      />
       <QuestionItem
         v-for="(q, i) in data.questions"
         :key="q.id"
@@ -71,14 +91,17 @@ async function submit(): Promise<void> {
         :model-value="answerOf(q.id)"
         @update:model-value="answers[q.id] = $event"
       />
-      <button
+      <UButton
         type="submit"
-        class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 disabled:opacity-60 sm:w-auto"
+        size="xl"
+        block
+        icon="i-ph-paper-plane-tilt-duotone"
+        class="min-h-12"
+        :loading="saving"
         :disabled="saving"
         data-testid="practice-submit"
+        >Hantar</UButton
       >
-        Hantar
-      </button>
     </form>
-  </div>
+  </DsPage>
 </template>

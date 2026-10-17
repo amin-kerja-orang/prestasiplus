@@ -1,3 +1,5 @@
+import type { DsAccent } from '@/ds'
+
 import type { Bahagian, PkskLevel } from '../api/types'
 
 export const TAB_TITLE = 'PRESTASIPLUS - Platform Latih Tubi Nasional'
@@ -7,22 +9,19 @@ export const LEVEL_CARDS: {
   level: PkskLevel
   name: string
   text: string
-  tile: string
-  button: string
+  accent: DsAccent
 }[] = [
   {
     level: 'T1',
     name: 'Tingkatan 1',
     text: 'Persediaan untuk kemasukan ke tingkatan 1 di SBP/MRSM/SMKA',
-    tile: 'from-indigo-600 to-purple-600',
-    button: 'from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/40',
+    accent: 'action',
   },
   {
     level: 'T4',
     name: 'Tingkatan 4',
     text: 'Persediaan untuk kemasukan ke tingkatan 4 di SBP/MRSM/SMKA',
-    tile: 'from-purple-600 to-pink-600',
-    button: 'from-purple-600 to-pink-600 hover:shadow-lg hover:shadow-purple-500/40',
+    accent: 'trial',
   },
 ]
 
@@ -35,7 +34,7 @@ export const FORMAT_TILES: {
   weight: number
   chip: string
   icon: string
-  circle: string
+  accent: DsAccent
 }[] = [
   {
     bahagian: 'A',
@@ -44,8 +43,8 @@ export const FORMAT_TILES: {
     unit: 'soalan',
     weight: 20,
     chip: 'Nilai, akhlak & sahsiah',
-    icon: 'fa-heart',
-    circle: 'bg-blue-500',
+    icon: 'i-ph-heart-duotone',
+    accent: 'action',
   },
   {
     bahagian: 'B',
@@ -54,8 +53,8 @@ export const FORMAT_TILES: {
     unit: 'soalan',
     weight: 70,
     chip: 'Kognitif & penaakulan',
-    icon: 'fa-brain',
-    circle: 'bg-purple-500',
+    icon: 'i-ph-brain-duotone',
+    accent: 'trial',
   },
   {
     bahagian: 'C',
@@ -64,17 +63,14 @@ export const FORMAT_TILES: {
     unit: 'esei',
     weight: 10,
     chip: 'Penulisan kreatif',
-    icon: 'fa-pen-fancy',
-    circle: 'bg-pink-500',
+    icon: 'i-ph-pen-nib-duotone',
+    accent: 'heat',
   },
 ]
 
-/** Section badge / hover colours of S3 (URS FN-M07-1.3.3, 1.3.4). */
-export const SECTION_STYLE: Record<Bahagian, { badge: string; hover: string }> = {
-  A: { badge: 'bg-blue-500', hover: 'hover:border-blue-300' },
-  B: { badge: 'bg-purple-500', hover: 'hover:border-purple-300' },
-  C: { badge: 'bg-pink-500', hover: 'hover:border-pink-300' },
+/** Section accent of S3 (URS FN-M07-1.3.3, 1.3.4). */
+export const SECTION_STYLE: Record<Bahagian, { accent: DsAccent }> = {
+  A: { accent: 'action' },
+  B: { accent: 'trial' },
+  C: { accent: 'heat' },
 }
-
-/** `#rrggbb` + 13% alpha (`21` hex) for the icon tile of a domain (FR-M07-09). */
-export const tint = (hex: string): string => `${hex}21`
