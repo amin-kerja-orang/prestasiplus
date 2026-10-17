@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S8 `/profile/edit` "Kemaskini Profil - PRESTASIPLUS" (M01-T6; FR-M01-39..45, BR-13..16).
+ * S8 `/profile/edit` "Kemaskini Profil - PRESTASIPLUS" (M01-T6; FR-M01-39..45, BR-13..16), v2 restyle (B09 / A1).
  * Four cards in the order of live: "Gambar Profil" (own form), "Maklumat Peribadi" + "Maklumat
  * Sekolah" + actions row (one form, `PUT /api/me`), and "Tukar Kata Laluan" (own form).
  * Native validation only (`required` name, `maxlength` bio). The bio counter is static, as live
@@ -8,24 +8,13 @@
  * success texts and server errors are UNVERIFIED COPY (SRS §8). The form is seeded from the cached
  * session user; a background `GET /api/me` refresh re-seeds it only while the user has not typed.
  */
-import { ArrowLeft, Mail, MessageSquare, Phone, Save, School, User } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { FORM_DISABLED_MODIFIER, FORM_TEXTAREA_CLASS } from '@/components/form'
-import { LoadingSpinner } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
 import { useSessionStore } from '@/stores/session'
 
 import { updateProfile, type SchoolSummary, type UserMe } from '../api'
 import ProfileAvatarCard from '../components/profile/ProfileAvatarCard.vue'
-import {
-  PROFILE_BUTTON_CLASS,
-  PROFILE_CARD_CLASS,
-  PROFILE_CARD_TITLE_CLASS,
-  PROFILE_INPUT_CLASS,
-  PROFILE_LABEL_CLASS,
-} from '../components/profile/classes'
 import ProfileGradePicker from '../components/profile/ProfileGradePicker.vue'
 import ProfilePasswordCard from '../components/profile/ProfilePasswordCard.vue'
 import ProfileSchoolPicker from '../components/profile/ProfileSchoolPicker.vue'
@@ -106,7 +95,11 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div v-if="user" class="mx-auto max-w-3xl space-y-4 sm:space-y-6" data-testid="profile-edit-page">
+  <div
+    v-if="user"
+    class="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6"
+    data-testid="profile-edit-page"
+  >
     <ProfileAvatarCard
       :name="user.name"
       :avatar-url="user.avatarUrl"
@@ -115,86 +108,72 @@ async function submit(): Promise<void> {
     />
 
     <form
-      class="space-y-4 sm:space-y-6"
+      class="flex flex-col gap-4 md:gap-6"
       data-testid="profile-form"
       @submit.prevent="submit"
       @input="touched = true"
     >
-      <section :class="PROFILE_CARD_CLASS">
-        <h2 :class="PROFILE_CARD_TITLE_CLASS">
-          <User class="h-5 w-5 text-indigo-500" />
-          Maklumat Peribadi
-        </h2>
+      <UCard>
+        <div class="flex flex-col gap-4">
+          <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+            <UIcon name="i-ph-user-circle" class="size-5" aria-hidden="true" />
+            Maklumat Peribadi
+          </h2>
 
-        <div class="space-y-4">
-          <div>
-            <label for="name" :class="PROFILE_LABEL_CLASS">
-              <User class="h-4 w-4 text-blue-500" />
-              Nama Penuh
-            </label>
-            <input
-              id="name"
+          <UFormField label="Nama Penuh">
+            <UInput
               v-model="name"
               type="text"
               name="name"
               required
-              :class="PROFILE_INPUT_CLASS"
+              icon="i-ph-user"
+              size="lg"
+              class="w-full"
               data-testid="profile-name-input"
             />
-          </div>
+          </UFormField>
 
-          <div>
-            <label for="email_display" :class="PROFILE_LABEL_CLASS">
-              <Mail class="h-4 w-4 text-purple-500" />
-              Email
-            </label>
-            <input
-              id="email_display"
+          <UFormField label="Email" help="Email tidak boleh diubah">
+            <UInput
               type="email"
               disabled
-              :value="user.email"
-              :class="[PROFILE_INPUT_CLASS, FORM_DISABLED_MODIFIER]"
+              :model-value="user.email"
+              icon="i-ph-envelope"
+              size="lg"
+              class="w-full"
               data-testid="profile-email-input"
             />
-            <p class="mt-1 text-xs text-slate-500">Email tidak boleh diubah</p>
-          </div>
+          </UFormField>
 
-          <div>
-            <label for="phone" :class="PROFILE_LABEL_CLASS">
-              <Phone class="h-4 w-4 text-green-500" />
-              No. Telefon
-            </label>
-            <input
-              id="phone"
+          <UFormField label="No. Telefon">
+            <UInput
               v-model="phone"
               type="tel"
               name="phone"
               placeholder="012-3456789"
-              :class="PROFILE_INPUT_CLASS"
+              icon="i-ph-phone"
+              size="lg"
+              class="w-full"
               data-testid="profile-phone-input"
             />
-          </div>
+          </UFormField>
 
-          <div>
-            <label for="bio" :class="PROFILE_LABEL_CLASS">
-              <MessageSquare class="h-4 w-4 text-amber-500" />
-              Bio / Motto
-            </label>
-            <textarea
-              id="bio"
+          <UFormField label="Bio / Motto">
+            <UTextarea
               v-model="bio"
               name="bio"
-              rows="3"
-              maxlength="500"
+              :rows="3"
+              :maxlength="500"
               placeholder="Tulis sesuatu tentang diri anda..."
-              :class="FORM_TEXTAREA_CLASS"
+              size="lg"
+              class="w-full"
               data-testid="profile-bio-input"
-            ></textarea>
-            <!-- Static, as live: the counter never updates (FR-M01-39). -->
-            <p class="mt-1 text-xs text-slate-500" data-testid="profile-bio-counter">
-              Baki: 500 aksara
-            </p>
-          </div>
+            />
+            <template #help>
+              <!-- Static, as live: the counter never updates (FR-M01-39). -->
+              <span data-testid="profile-bio-counter">Baki: 500 aksara</span>
+            </template>
+          </UFormField>
 
           <ProfileGradePicker
             v-model="grade"
@@ -202,38 +181,39 @@ async function submit(): Promise<void> {
             @update:model-value="touched = true"
           />
         </div>
-      </section>
+      </UCard>
 
-      <section :class="PROFILE_CARD_CLASS">
-        <h2 :class="PROFILE_CARD_TITLE_CLASS">
-          <School class="h-5 w-5 text-orange-500" />
-          Maklumat Sekolah
-        </h2>
-        <p class="mb-3 text-sm text-slate-600">
-          Pilih sekolah anda untuk sambung dengan rakan sekelas
-        </p>
-        <ProfileSchoolPicker v-model="school" @update:model-value="touched = true" />
-      </section>
+      <UCard>
+        <div class="flex flex-col gap-4">
+          <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+            <UIcon name="i-ph-buildings" class="size-5" aria-hidden="true" />
+            Maklumat Sekolah
+          </h2>
+          <p class="text-body text-muted">Pilih sekolah anda untuk sambung dengan rakan sekelas</p>
+          <ProfileSchoolPicker v-model="school" @update:model-value="touched = true" />
+        </div>
+      </UCard>
 
       <div class="flex items-center justify-between gap-3" data-testid="profile-actions">
-        <RouterLink
+        <UButton
           to="/profile"
-          class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:outline-none"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          icon="i-ph-arrow-left"
           data-testid="profile-back"
+          >Kembali</UButton
         >
-          <ArrowLeft class="h-4 w-4" />
-          Kembali
-        </RouterLink>
-        <button
+        <UButton
           type="submit"
+          color="primary"
+          size="lg"
+          icon="i-ph-floppy-disk"
+          :loading="saving"
           :disabled="saving"
-          :class="[PROFILE_BUTTON_CLASS, 'bg-save-gradient']"
           data-testid="profile-save"
+          >Simpan Profil</UButton
         >
-          <LoadingSpinner v-if="saving" />
-          <Save v-else class="h-4 w-4" />
-          Simpan Profil
-        </button>
       </div>
     </form>
 

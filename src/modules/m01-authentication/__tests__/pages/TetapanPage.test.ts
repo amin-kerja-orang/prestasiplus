@@ -22,6 +22,9 @@ const DEFAULTS: UserSettings = {
 
 let wrapper: VueWrapper | null = null
 
+/** Reka selects have no native `<select>`: the value is driven through the component. */
+const selectOf = (w: VueWrapper) => w.findComponent({ name: 'Select' })
+
 async function render(): Promise<VueWrapper> {
   wrapper = mount(TetapanPage, { attachTo: document.body })
   await flushPromises()
@@ -52,9 +55,7 @@ describe('TetapanPage', () => {
       'subuh_push_enabled',
       'ramadan_mode_enabled',
     ]) {
-      expect((w.get(`[data-testid="tetapan-${id}"]`).element as HTMLInputElement).checked).toBe(
-        false,
-      )
+      expect(w.get(`[data-testid="tetapan-${id}"]`).attributes('aria-checked')).toBe('false')
     }
     expect(
       (w.get('[data-testid="tetapan-subuh_push_enabled-time"]').element as HTMLInputElement).value,
@@ -64,8 +65,8 @@ describe('TetapanPage', () => {
         .value,
     ).toBe('04:30')
     const faith = w.get('[data-testid="tetapan-faith"]')
-    expect((faith.element as HTMLSelectElement).value).toBe('')
-    expect(faith.findAll('option').map((o) => o.text())).toEqual([
+    expect(faith.text()).toContain('— Tidak nyatakan —')
+    expect(selectOf(w).props('items').map((o: { label: string }) => o.label)).toEqual([
       '— Tidak nyatakan —',
       'Islam',
       'Hindu',
@@ -78,9 +79,7 @@ describe('TetapanPage', () => {
   it('shows a loaded non-null faith as selected', async () => {
     apiMocks.getSettings.mockResolvedValue({ ...DEFAULTS, faith: 'buddhist' })
     const w = await render()
-    expect((w.get('[data-testid="tetapan-faith"]').element as HTMLSelectElement).value).toBe(
-      'buddhist',
-    )
+    expect(w.get('[data-testid="tetapan-faith"]').text()).toContain('Buddha')
   })
 
   it('disables the button while saving and keeps its label', async () => {
@@ -111,9 +110,10 @@ describe('TetapanPage', () => {
     }
     apiMocks.saveSettings.mockResolvedValue({ data: saved, status: 'Tetapan berjaya disimpan.' })
     const w = await render()
-    await w.get('[data-testid="tetapan-spiritual_mode"]').setValue(true)
+    await w.get('[data-testid="tetapan-spiritual_mode"]').trigger('click')
     await w.get('[data-testid="tetapan-subuh_push_enabled-time"]').setValue('05:45')
-    await w.get('[data-testid="tetapan-faith"]').setValue('muslim')
+    selectOf(w).vm.$emit('update:modelValue', 'muslim')
+    await flushPromises()
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(apiMocks.saveSettings).toHaveBeenCalledWith({
@@ -148,13 +148,11 @@ describe('TetapanPage', () => {
       }),
     )
     const w = await render()
-    await w.get('[data-testid="tetapan-spiritual_mode"]').setValue(true)
+    await w.get('[data-testid="tetapan-spiritual_mode"]').trigger('click')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(w.get('[data-testid="tetapan-alert"]').text()).toContain('Waktu tidak sah.')
-    expect(
-      (w.get('[data-testid="tetapan-spiritual_mode"]').element as HTMLInputElement).checked,
-    ).toBe(true)
+    expect(w.get('[data-testid="tetapan-spiritual_mode"]').attributes('aria-checked')).toBe('true')
   })
 
   it('shows the error and a retry when loading fails', async () => {

@@ -1,10 +1,48 @@
 {
   "$comment": "Committed floor of config/ds-strict.json (same shape). Raise it together with the list; never lower it. `exempt` may only shrink.",
   "strict": [
-    { "glob": "src/ds/**", "level": "ds" },
-    { "glob": "src/dev/ds/**", "level": "page" },
-    { "glob": "src/modules/m28-bijak-spm/pages/**", "level": "page" },
-    { "glob": "src/modules/m28-bijak-spm/components/**", "level": "ds" }
+    {
+      "glob": "src/ds/**",
+      "level": "ds"
+    },
+    {
+      "glob": "src/dev/ds/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m28-bijak-spm/pages/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m28-bijak-spm/components/**",
+      "level": "ds"
+    },
+    {
+      "glob": "src/modules/m01-authentication/pages/ProfilePage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m01-authentication/pages/ProfileEditPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m01-authentication/pages/TetapanPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m01-authentication/components/profile/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m01-authentication/components/tetapan/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m22-support-tickets/pages/TicketsPage.vue",
+      "level": "page"
+    }
   ],
-  "exempt": ["src/theme/**"]
+  "exempt": [
+    "src/theme/**"
+  ]
 }

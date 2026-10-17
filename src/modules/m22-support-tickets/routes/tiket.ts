@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tiket Bantuan - PRESTASIPLUS',
       header: { title: 'Tiket Bantuan', subtitle: 'Senarai aduan dan permintaan anda' },
       module: 'M22',
+      v2: true,
     },
   },
   {

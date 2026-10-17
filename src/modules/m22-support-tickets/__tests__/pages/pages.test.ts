@@ -3,7 +3,7 @@
  * M22 S1 and S2 component tests against a mocked client (SRS M22 v1.1 FR-M22-05…23, 28…37, 44…47; AC-M22-01…09,
  * 12): exact BM copy, tabs, empty and error states, the create flow, plain-text rendering, read-only queue.
  */
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
@@ -46,8 +46,15 @@ async function open(path: string, comp: object): Promise<{ w: VueWrapper; router
 }
 
 const tid = (w: VueWrapper, id: string) => w.find(`[data-testid="${id}"]`)
+/** The create dialog is teleported to `body`. */
+const dlg = (id: string) => {
+  const el = document.body.querySelector(`[data-testid="${id}"]`)
+  return new DOMWrapper(el)
+}
+const dlgOpen = () => document.body.querySelector('[data-testid="tk-form"]') !== null
 
 beforeEach(() => {
+  document.body.innerHTML = ''
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-09-25T15:40:00+08:00'))
   for (const f of Object.values(api)) f.mockReset()
@@ -110,8 +117,11 @@ describe('S1 list (AC-M22-01, 02, 03, 05)', () => {
     expect(cards).toHaveLength(2)
     expect(cards[1]?.find('h3').text()).toBe('#1 — Tidak dapat log masuk ke akaun')
     expect(cards[1]?.find('[data-testid="tk-time"]').text()).toBe('1 hari yang lepas')
-    expect(cards[1]?.find('[data-testid="tk-badge"]').classes()).toContain('bg-red-100')
-    expect(cards[0]?.find('[data-testid="tk-badge"]').classes()).toContain('bg-green-100')
+    // Status = tone + icon + word: Dibuka is info, Selesai is success.
+    expect(cards[1]?.find('[data-testid="tk-badge"]').text()).toBe('Dibuka')
+    expect(cards[1]?.find('[data-testid="tk-badge"]').classes().join(' ')).toContain('info')
+    expect(cards[0]?.find('[data-testid="tk-badge"]').text()).toBe('Selesai')
+    expect(cards[0]?.find('[data-testid="tk-badge"]').classes().join(' ')).toContain('success')
     expect(cards[1]?.find('a').exists()).toBe(false)
     expect(cards[1]?.find('[data-testid="tk-reply"]').exists()).toBe(false)
     const reply = cards[0]?.find('[data-testid="tk-reply"]')
@@ -132,16 +142,14 @@ describe('S1 list (AC-M22-01, 02, 03, 05)', () => {
     expect(b.w.findAll('[data-testid="tk-tabs"] a')[0]?.attributes('data-active')).toBe('true')
   })
 
-  it('shows the empty card; "Buat Tiket Pertama" opens the form and scrolls to the top', async () => {
+  it('shows the empty card; "Buat Tiket Pertama" opens the form dialog', async () => {
     api.fetchTickets.mockResolvedValue(list([]))
-    const scroll = vi.fn()
-    window.scrollTo = scroll as never
     const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
     expect(tid(w, 'tk-empty').text()).toContain('Tiada tiket lagi.')
-    expect(tid(w, 'tk-form-card').attributes('style')).toContain('display: none')
+    expect(dlgOpen()).toBe(false)
     await tid(w, 'tk-first').trigger('click')
-    expect(tid(w, 'tk-form-card').attributes('style') ?? '').not.toContain('display: none')
-    expect(scroll).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+    await flushPromises()
+    expect(dlgOpen()).toBe(true)
   })
 
   it('shows the error with a retry that reloads', async () => {
@@ -168,9 +176,13 @@ describe('S1 create form (AC-M22-04)', () => {
   it('has the exact anatomy and toggles with the button', async () => {
     api.fetchTickets.mockResolvedValue(list([]))
     const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
-    const form = tid(w, 'tk-form')
-    expect(form.find('label[for="tk-subject"]').text()).toBe('Subjek')
-    expect(form.find('label[for="tk-body"]').text()).toBe('Butiran')
+    expect(dlgOpen()).toBe(false)
+    await tid(w, 'tk-new').trigger('click')
+    await flushPromises()
+    expect(dlgOpen()).toBe(true)
+    const form = dlg('tk-form')
+    expect(form.findAll('label').map((l) => l.text())).toEqual(['Subjek', 'Butiran'])
+    expect(document.body.textContent).toContain('Tiket Baru')
     const subject = form.get('input')
     expect(subject.attributes('placeholder')).toBe('Ringkasan masalah atau permintaan anda')
     expect(subject.attributes('required')).toBeDefined()
@@ -179,11 +191,11 @@ describe('S1 create form (AC-M22-04)', () => {
     expect(body.attributes('rows')).toBe('5')
     expect(body.attributes('maxlength')).toBe('5000')
     expect(body.attributes('placeholder')).toBe('Terangkan masalah anda dengan terperinci...')
-    expect(tid(w, 'tk-submit').text()).toBe('Hantar Tiket')
-    await tid(w, 'tk-new').trigger('click')
-    expect(tid(w, 'tk-form-card').attributes('style') ?? '').not.toContain('display: none')
-    await tid(w, 'tk-new').trigger('click')
-    expect(tid(w, 'tk-form-card').attributes('style')).toContain('display: none')
+    expect(dlg('tk-submit').text()).toBe('Hantar Tiket')
+    expect(dlg('tk-cancel').text()).toBe('Batal')
+    await dlg('tk-cancel').trigger('click')
+    await flushPromises()
+    expect(dlgOpen()).toBe(false)
   })
 
   it('on success: closes the form, leaves the status filter, shows the banner once', async () => {
@@ -191,16 +203,17 @@ describe('S1 create form (AC-M22-04)', () => {
     api.createTicket.mockResolvedValue(ticket({ id: 3 }))
     const { w, router } = await open('/pusat-tuisyen/tiket?status=selesai', TicketsPage)
     await tid(w, 'tk-new').trigger('click')
-    await w.get('input').setValue('Ujian tiket')
-    await w.get('textarea').setValue('Butiran')
-    await tid(w, 'tk-form').trigger('submit')
+    await flushPromises()
+    await dlg('tk-subject').setValue('Ujian tiket')
+    await dlg('tk-body-input').setValue('Butiran')
+    await dlg('tk-form').trigger('submit')
     await flushPromises()
     expect(api.createTicket).toHaveBeenCalledWith({ subject: 'Ujian tiket', body: 'Butiran' })
     expect(router.currentRoute.value.fullPath).toBe('/pusat-tuisyen/tiket')
     expect(tid(w, 'tk-flash').text()).toContain(
       'Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.',
     )
-    expect(tid(w, 'tk-form-card').attributes('style')).toContain('display: none')
+    expect(dlgOpen()).toBe(false)
     await router.push('/pusat-tuisyen/tiket?status=dibuka')
     await flushPromises()
     expect(tid(w, 'tk-flash').exists()).toBe(false)
@@ -218,11 +231,13 @@ describe('S1 create form (AC-M22-04)', () => {
     )
     const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
     await tid(w, 'tk-new').trigger('click')
-    await w.get('textarea').setValue('Isi')
-    await tid(w, 'tk-form').trigger('submit')
     await flushPromises()
-    expect(tid(w, 'tk-form-error').text()).toBe('Subjek diperlukan.')
-    expect((w.get('textarea').element as HTMLTextAreaElement).value).toBe('Isi')
+    await dlg('tk-body-input').setValue('Isi')
+    await dlg('tk-form').trigger('submit')
+    await flushPromises()
+    expect(dlgOpen()).toBe(true)
+    expect(dlg('tk-form-error').text()).toBe('Subjek diperlukan.')
+    expect((dlg('tk-body-input').element as HTMLTextAreaElement).value).toBe('Isi')
     expect(tid(w, 'tk-flash').exists()).toBe(false)
   })
 })
