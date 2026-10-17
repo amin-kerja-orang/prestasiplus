@@ -41,6 +41,8 @@ import {
   type QuizOptionState,
 } from '@/ds'
 
+import DsGalleryWave0 from './DsGalleryWave0.vue'
+
 const toast = useToast()
 
 const friends: FriendOption[] = [
@@ -455,5 +457,6 @@ const drilled = ref('')
         </template>
       </DsEmptyState>
     </section>
+    <DsGalleryWave0 />
   </div>
 </template>

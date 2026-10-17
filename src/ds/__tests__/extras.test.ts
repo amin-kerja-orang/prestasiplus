@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /* eslint-disable @typescript-eslint/unbound-method -- jsdom polyfill checks */
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 
 import {
@@ -21,6 +21,7 @@ import DsGalleryShowcase from '@/dev/ds/DsGalleryShowcase.vue'
 const wait = (ms = 30) => new Promise((r) => setTimeout(r, ms))
 
 beforeAll(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
   const g = globalThis as Record<string, unknown>
   g.ResizeObserver ??= class {
     observe() {}
