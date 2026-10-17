@@ -51,7 +51,7 @@ const shortcuts = computed(
       {
         key: 'exam',
         icon: 'i-ph-exam-duotone',
-        accent: 'trial',
+        accent: 'friend',
         title: 'Peperiksaan Penuh',
         text: 'Simulasi peperiksaan sebenar',
         to: `/pksk/level/${props.level}/exam`,
@@ -139,7 +139,7 @@ const shortcuts = computed(
               <div class="flex min-w-0 items-center gap-3">
                 <DsIconChip
                   icon="i-ph-target-duotone"
-                  accent="trial"
+                  accent="friend"
                   size="lg"
                   data-testid="domain-icon"
                 />
@@ -154,7 +154,7 @@ const shortcuts = computed(
                   >{{ d.masteryPct }}%</span
                 >
               </div>
-              <MasteryBar :pct="d.masteryPct" accent="trial" />
+              <MasteryBar :pct="d.masteryPct" accent="friend" />
               <UButton
                 :to="`/pksk/level/${level}/domain/${d.code}`"
                 color="primary"

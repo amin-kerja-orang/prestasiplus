@@ -21,7 +21,7 @@ export const LEVEL_CARDS: {
     level: 'T4',
     name: 'Tingkatan 4',
     text: 'Persediaan untuk kemasukan ke tingkatan 4 di SBP/MRSM/SMKA',
-    accent: 'trial',
+    accent: 'friend',
   },
 ]
 
@@ -54,7 +54,7 @@ export const FORMAT_TILES: {
     weight: 70,
     chip: 'Kognitif & penaakulan',
     icon: 'i-ph-brain-duotone',
-    accent: 'trial',
+    accent: 'friend',
   },
   {
     bahagian: 'C',
@@ -71,6 +71,6 @@ export const FORMAT_TILES: {
 /** Section accent of S3 (URS FN-M07-1.3.3, 1.3.4). */
 export const SECTION_STYLE: Record<Bahagian, { accent: DsAccent }> = {
   A: { accent: 'action' },
-  B: { accent: 'trial' },
+  B: { accent: 'friend' },
   C: { accent: 'heat' },
 }
