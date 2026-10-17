@@ -1,14 +1,13 @@
 <script setup lang="ts">
 /**
- * One weak-SP card of S7 (FR-M08-45, FR-M08-47): the accuracy pill, "{code} — {title}" cut at `max`
+ * One weak-SP card of S7 (FR-M08-45, FR-M08-47): the accuracy badge, "{code} — {title}" cut at `max`
  * characters, "{Subjek} · {n} soalan dijawab" and the full-width "Latihan Fokus ({k} soalan)" link
  * (k = min(available, 25) in label and link, DV-M08-14). The top block also shows the trend icon.
  */
-import { ArrowDown, ArrowUp, Dumbbell, Minus } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
-
 import type { Trend, WeakSp } from '../../api/types'
-import { TREND_TEXT, focusHref, weakTitle } from '../../lib/analitik'
+import { TREND_ICON, TREND_TEXT, focusHref, weakTitle } from '../../lib/analitik'
+import { usePhIcon } from '../../lib/icons'
+import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{
   sp: WeakSp
@@ -17,6 +16,8 @@ const props = defineProps<{
   trend?: Trend
 }>()
 
+const icon = usePhIcon()
+
 const href = (): string =>
   focusHref({
     subjectCode: props.sp.subjectCode,
@@ -24,36 +25,40 @@ const href = (): string =>
     count: Math.min(props.sp.available, 25),
     levelId: props.levelId,
   })
+const TREND_LABEL: Record<Trend, string> = {
+  up: 'Naik',
+  down: 'Turun',
+  stable: 'Tetap',
+}
 </script>
 
 <template>
-  <article
-    class="flex min-w-0 flex-col gap-2 rounded-2xl bg-white p-4 shadow"
-    :data-testid="`weak-card-${sp.spId}`"
-  >
-    <div class="flex items-center justify-between gap-2">
-      <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-700"
-        >{{ sp.accuracy }}%</span
-      >
-      <template v-if="trend">
-        <ArrowUp v-if="trend === 'up'" :class="['h-4 w-4', TREND_TEXT.up]" data-testid="trend-up" />
-        <ArrowDown
-          v-else-if="trend === 'down'"
-          :class="['h-4 w-4', TREND_TEXT.down]"
-          data-testid="trend-down"
-        />
-        <Minus v-else :class="['h-4 w-4', TREND_TEXT.stable]" data-testid="trend-stable" />
-      </template>
+  <UCard class="h-full min-w-0" :data-testid="`weak-card-${sp.spId}`">
+    <div class="flex h-full flex-col gap-3">
+      <div class="flex items-center justify-between gap-2">
+        <UBadge color="warning" variant="subtle" size="lg" :label="`${sp.accuracy}%`" />
+        <template v-if="trend">
+          <ToneText :tone="TREND_TEXT[trend]" :data-testid="`trend-${trend}`">
+            <UIcon
+              :name="icon(TREND_ICON[trend])"
+              class="size-5"
+              role="img"
+              :aria-label="TREND_LABEL[trend]"
+            />
+          </ToneText>
+        </template>
+      </div>
+      <p class="text-label break-words text-highlighted">{{ weakTitle(sp, max) }}</p>
+      <p class="text-caption text-muted">{{ sp.subjectName }} · {{ sp.answered }} soalan dijawab</p>
+      <UButton
+        :to="href()"
+        block
+        size="lg"
+        class="mt-auto"
+        :icon="icon('barbell')"
+        :label="`Latihan Fokus (${Math.min(sp.available, 25)} soalan)`"
+        data-testid="focus-link"
+      />
     </div>
-    <p class="text-sm font-semibold break-words text-slate-800">{{ weakTitle(sp, max) }}</p>
-    <p class="text-xs text-slate-400">{{ sp.subjectName }} · {{ sp.answered }} soalan dijawab</p>
-    <RouterLink
-      :to="href()"
-      class="mt-auto flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-blue-700"
-      data-testid="focus-link"
-    >
-      <Dumbbell class="h-4 w-4 shrink-0" />
-      <span>Latihan Fokus ({{ Math.min(sp.available, 25) }} soalan)</span>
-    </RouterLink>
-  </article>
+  </UCard>
 </template>

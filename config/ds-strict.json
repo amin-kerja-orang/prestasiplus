@@ -29,7 +29,23 @@
     { "glob": "src/modules/m01-authentication/pages/TetapanPage.vue", "level": "page" },
     { "glob": "src/modules/m01-authentication/components/profile/**", "level": "page" },
     { "glob": "src/modules/m01-authentication/components/tetapan/**", "level": "page" },
-    { "glob": "src/modules/m22-support-tickets/pages/TicketsPage.vue", "level": "page" }
+    { "glob": "src/modules/m22-support-tickets/pages/TicketsPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/PrestasiSekolahPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/TingkatanPilihPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/TingkatanPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/PrestasiKelasPilihPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/PrestasiKelasDetailPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/Prestasi360Page.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/AnalitikPelajarPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/AnalitikKelasPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/AnalisaItemSekolahPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/AnalisaItemKelasPilihPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/AnalisaItemKelasPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/components/prestasi/**", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/components/prestasi360/**", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/components/analitik/**", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/components/analisa-item/**", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/components/shared/**", "level": "ds" }
   ],
   "exempt": [
     "src/theme/**"

@@ -36,22 +36,24 @@ export function sortRows(rows: readonly DifficultyRow[], sort: SortKey): Difficu
 
 /** "Ketepatan" colour: red < 40, amber 40–74.9, green ≥ 75 (BR-M08-05). */
 export const accuracyClass = (v: number): string =>
-  v < 40 ? 'text-red-600' : v < 75 ? 'text-amber-600' : 'text-green-600'
+  v < 40 ? 'text-error' : v < 75 ? 'text-warning' : 'text-success'
 
 /** Discrimination index colour: green ≥ 0.30, amber 0.20–0.29, red < 0.20 (FR-M08-72). */
 export const indexClass = (v: number): string =>
-  v >= 0.3 ? 'text-green-600' : v >= 0.2 ? 'text-amber-600' : 'text-red-600'
+  v >= 0.3 ? 'text-success' : v >= 0.2 ? 'text-warning' : 'text-error'
 
 /** Indeks Kesukaran to 2 decimals, half up (the API sends it rounded; this keeps "0.50"). */
 export const index2 = (v: number): string => v.toFixed(2)
 
-export const STATUS_PILL: Record<ItemAnalysis['discrimination']['rows'][number]['status'], string> =
-  {
-    'Sangat Baik': 'bg-green-100 text-green-800',
-    Baik: 'bg-emerald-100 text-emerald-800',
-    Sederhana: 'bg-amber-100 text-amber-800',
-    Lemah: 'bg-red-100 text-red-800',
-  }
+export const STATUS_COLOR: Record<
+  ItemAnalysis['discrimination']['rows'][number]['status'],
+  'success' | 'info' | 'warning' | 'error'
+> = {
+  'Sangat Baik': 'success',
+  Baik: 'info',
+  Sederhana: 'warning',
+  Lemah: 'error',
+}
 
 /** "{Subjek} — {Topik} — {Subtopik}" without the empty parts (shown under the question below 640px). */
 export const topicLine = (r: Pick<DifficultyRow, 'subject' | 'topic' | 'subtopic'>): string =>

@@ -62,27 +62,27 @@ describe('ringDash (FR-M08-49)', () => {
 
 describe('colour and format rules', () => {
   it('colours the KPI accuracy red < 50, amber 50–74.9, green ≥ 75', () => {
-    expect(accuracyText(40.5)).toBe('text-red-600')
-    expect(accuracyText(50)).toBe('text-amber-600')
-    expect(accuracyText(74.9)).toBe('text-amber-600')
-    expect(accuracyText(75)).toBe('text-green-600')
+    expect(accuracyText(40.5)).toBe('text-error')
+    expect(accuracyText(50)).toBe('text-warning')
+    expect(accuracyText(74.9)).toBe('text-warning')
+    expect(accuracyText(75)).toBe('text-success')
   })
 
   it('buckets the heatmap by BR-M08-11', () => {
     expect([0, 1, 2, 3, 4, 9].map(heatClass)).toEqual([
-      'bg-slate-100',
-      'bg-green-200',
-      'bg-green-400',
-      'bg-green-600',
-      'bg-green-700',
-      'bg-green-700',
+      'bg-elevated',
+      'bg-primary/15',
+      'bg-primary/35',
+      'bg-primary/60',
+      'bg-primary',
+      'bg-primary',
     ])
   })
 
   it('colours the mastery bar ≥ 80, 60–79.9, < 60', () => {
-    expect(masteryTone(89).bar).toBe('bg-emerald-500')
-    expect(masteryTone(65).bar).toBe('bg-amber-500')
-    expect(masteryTone(53).bar).toBe('bg-red-500')
+    expect(masteryTone(89).color).toBe('success')
+    expect(masteryTone(65).color).toBe('warning')
+    expect(masteryTone(53).color).toBe('error')
   })
 
   it('formats the study time as "{h}j {m}m" from 60 minutes else "{m}m"', () => {

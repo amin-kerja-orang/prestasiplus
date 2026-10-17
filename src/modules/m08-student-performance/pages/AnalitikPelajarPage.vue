@@ -6,19 +6,23 @@
  * the pane of the active one. A viewer without an SP record sees only the block with 0 cards (PROPOSED,
  * OQ-M08-08). `showAllWeakTopics` is kept when the tab changes (FR-M08-46).
  */
-import { ChevronDown, ChevronUp, TriangleAlert } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
-import { AlertBox } from '@/components/feedback'
+import { DsIconChip, DsPage } from '@/ds'
 
 import { fetchAnalytics } from '../api/performance'
 import SubjectPane from '../components/analitik/SubjectPane.vue'
 import WeakTopicCard from '../components/analitik/WeakTopicCard.vue'
+import PageHeader from '../components/shared/PageHeader.vue'
+import PageLoadError from '../components/shared/PageLoadError.vue'
+import PageSkeleton from '../components/shared/PageSkeleton.vue'
+import { usePhIcon } from '../lib/icons'
 import { TOP_WEAK_LIMIT } from '../lib/analitik'
-import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData } from '../lib/prestasi/load'
 
 const { data, error, reload } = useRouteData((signal) => fetchAnalytics({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
+const icon = usePhIcon()
 
 /** The first subject is active on load. */
 const activeId = ref<number | null>(null)
@@ -61,28 +65,20 @@ function collapseLeave(el: Element, done: () => void): void {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="analitik-page">
-    <div v-if="loadFailed" class="space-y-3" data-testid="page-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
-    </div>
+  <DsPage data-testid="analitik-page">
+    <PageHeader
+      title="Analitik Pembelajaran"
+      subtitle="Pantau prestasi dan kenal pasti topik yang perlu diperkukuhkan"
+    />
+    <PageLoadError v-if="loadFailed" @retry="reload()" />
 
     <template v-else-if="data">
-      <section class="min-w-0 space-y-3" data-testid="top-weak">
-        <h2 class="flex items-center gap-3 text-base font-bold text-slate-800">
-          <span
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600"
-            ><TriangleAlert class="h-5 w-5"
-          /></span>
+      <section class="flex min-w-0 flex-col gap-3" data-testid="top-weak">
+        <h2 class="flex items-center gap-3 text-heading text-highlighted">
+          <DsIconChip :icon="icon('warning')" accent="heat" />
           Topik Perlu Perhatian Utama ({{ data.topWeak.length }})
         </h2>
-        <div v-if="data.topWeak.length > 0" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div v-if="data.topWeak.length > 0" class="grid grid-cols-1 gap-3 md:grid-cols-2">
           <WeakTopicCard
             v-for="sp in data.topWeak"
             :key="sp.spId"
@@ -94,30 +90,28 @@ function collapseLeave(el: Element, done: () => void): void {
         </div>
       </section>
 
-      <div
-        v-if="hasExtra"
-        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow"
-        data-testid="more-weak"
-      >
-        <p class="text-sm text-slate-600">
-          Masih ada topik lemah lain untuk subjek ini.
-          <strong data-testid="more-count">{{ extra }}</strong>
-        </p>
-        <button
-          type="button"
-          class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-          data-testid="toggle-weak"
-          @click="showAll = !showAll"
-        >
-          {{
-            showAll
-              ? 'Sembunyi senarai penuh'
-              : `Lihat semua ${String(active?.weak.length ?? 0)} topik lemah`
-          }}
-          <ChevronUp v-if="showAll" class="h-4 w-4" />
-          <ChevronDown v-else class="h-4 w-4" />
-        </button>
-      </div>
+      <UCard v-if="hasExtra" data-testid="more-weak">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <p class="text-body text-default">
+            Masih ada topik lemah lain untuk subjek ini.
+            <strong data-testid="more-count">{{ extra }}</strong>
+          </p>
+          <UButton
+            type="button"
+            color="neutral"
+            variant="soft"
+            size="lg"
+            :trailing-icon="showAll ? icon('caret-up') : icon('caret-down')"
+            :label="
+              showAll
+                ? 'Sembunyi senarai penuh'
+                : `Lihat semua ${String(active?.weak.length ?? 0)} topik lemah`
+            "
+            data-testid="toggle-weak"
+            @click="showAll = !showAll"
+          />
+        </div>
+      </UCard>
 
       <Transition :css="false" @enter="collapseEnter" @leave="collapseLeave">
         <div
@@ -136,26 +130,26 @@ function collapseLeave(el: Element, done: () => void): void {
       </Transition>
 
       <template v-if="active">
-        <div class="flex gap-2 overflow-x-auto pb-1" data-testid="subject-tabs">
-          <button
+        <div class="flex max-w-full gap-2 overflow-x-auto pb-1" data-testid="subject-tabs">
+          <UButton
             v-for="s in data.subjects"
             :key="s.subjectId"
             type="button"
-            :class="[
-              'inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold whitespace-nowrap transition',
-              s.subjectId === active.subjectId
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-50',
-            ]"
+            size="lg"
+            class="shrink-0 whitespace-nowrap"
+            :color="s.subjectId === active.subjectId ? 'primary' : 'neutral'"
+            :variant="s.subjectId === active.subjectId ? 'solid' : 'soft'"
+            :aria-pressed="s.subjectId === active.subjectId"
             :data-testid="`tab-${s.subjectId}`"
             @click="activeId = s.subjectId"
           >
             {{ s.name }}
-            <span class="text-xs opacity-75">{{ Math.round(s.accuracy) }}%</span>
-          </button>
+            <span class="text-caption">{{ Math.round(s.accuracy) }}%</span>
+          </UButton>
         </div>
         <SubjectPane :key="active.subjectId" :subject="active" />
       </template>
     </template>
-  </div>
+    <PageSkeleton v-else-if="!error" />
+  </DsPage>
 </template>

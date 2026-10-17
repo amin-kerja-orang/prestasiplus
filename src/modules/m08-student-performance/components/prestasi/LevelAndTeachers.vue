@@ -7,10 +7,10 @@
 import { RouterLink } from 'vue-router'
 
 import type { SchoolPerformance } from '../../api/types'
+import ToneText from '../shared/ToneText.vue'
 import {
-  LEVEL_BAR,
-  LEVEL_TEXT,
-  TEACHER_TEXT,
+  TONE_COLOR,
+  TONE_TEXT,
   accuracyTone,
   levelNumber,
   pct1,
@@ -27,83 +27,84 @@ const teacherBar = (on: number, below: number): number =>
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
-    <section class="min-w-0 rounded-2xl bg-white p-5 shadow" data-testid="levels-card">
-      <h3 class="mb-4 text-base font-bold text-slate-700">🎓 Perbandingan Tingkatan</h3>
-      <div class="space-y-4">
+  <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
+    <UCard class="min-w-0" data-testid="levels-card">
+      <div class="flex flex-col gap-4">
+        <h2 class="text-subheading text-highlighted">🎓 Perbandingan Tingkatan</h2>
         <RouterLink
           v-for="l in levels"
           :key="l.code"
           :to="`/prestasi/tingkatan/${l.code}`"
-          class="block rounded-xl border border-slate-100 bg-slate-50 p-4 transition hover:shadow-md"
+          class="flex flex-col gap-2 bg-soft p-4"
           :data-testid="`level-card-${l.code}`"
         >
-          <div class="flex items-baseline justify-between gap-3">
-            <span class="font-bold text-slate-800">Tingkatan {{ levelNumber(l.code) }}</span>
-            <span :class="['text-xl font-bold', LEVEL_TEXT[accuracyTone(l.accuracy)]]">{{
+          <span class="flex items-baseline justify-between gap-3">
+            <span class="text-label text-highlighted">Tingkatan {{ levelNumber(l.code) }}</span>
+            <ToneText :tone="TONE_TEXT[accuracyTone(l.accuracy)]" class="tabular text-heading">{{
               pct1(l.accuracy)
-            }}</span>
-          </div>
-          <div class="my-2 h-2 rounded-full bg-slate-200">
-            <div
-              :class="['h-2 rounded-full', LEVEL_BAR[accuracyTone(l.accuracy)]]"
-              :style="{ width: `${Math.floor(l.accuracy)}%` }"
-            ></div>
-          </div>
-          <div class="flex flex-wrap gap-x-4 text-xs text-slate-500">
+            }}</ToneText>
+          </span>
+          <UProgress
+            :model-value="Math.floor(l.accuracy)"
+            :max="100"
+            :color="TONE_COLOR[accuracyTone(l.accuracy)]"
+            :aria-label="`Ketepatan Tingkatan ${levelNumber(l.code)}`"
+          />
+          <span class="flex flex-wrap gap-x-4 text-caption text-muted">
             <span>{{ plain(l.classes) }} kelas</span>
             <span>{{ plain(l.students) }} murid</span>
             <span>{{ plain(l.sessions) }} sesi latihan</span>
-          </div>
+          </span>
         </RouterLink>
       </div>
-    </section>
+    </UCard>
 
-    <section class="min-w-0 rounded-2xl bg-white p-5 shadow" data-testid="teachers-card">
-      <h3 class="mb-4 text-base font-bold text-slate-700">👩‍🏫 Prestasi Guru</h3>
-      <div class="max-h-96 space-y-3 overflow-y-auto" data-testid="teachers-list">
-        <div
-          v-for="t in teachers"
-          :key="t.userId"
-          class="rounded-xl border border-slate-100 bg-slate-50 p-3"
-          :data-testid="`teacher-${t.userId}`"
-        >
-          <div class="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-            <span class="min-w-0 font-semibold break-words text-slate-800">{{ t.name }}</span>
-            <span class="text-xs text-slate-500"
-              >{{ t.classCount }} kelas · {{ t.studentCount }} murid</span
-            >
-          </div>
-          <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-            <span class="text-slate-500"
-              >Ketepatan:
-              <strong :class="TEACHER_TEXT[accuracyTone(t.accuracy)]">{{
-                pct1(t.accuracy)
-              }}</strong></span
-            >
-            <span v-if="t.onTrack === null || t.below === null" class="text-slate-400"
-              >Tiada data headcount</span
-            >
-            <template v-else>
-              <span class="text-emerald-400"
-                >On Track: <strong>{{ t.onTrack }}</strong></span
-              >
-              <span class="text-red-400"
-                >Below: <strong>{{ t.below }}</strong></span
-              >
-            </template>
-          </div>
-          <div
-            v-if="t.onTrack !== null && t.below !== null"
-            class="mt-2 h-1.5 rounded-full bg-slate-200"
+    <UCard class="min-w-0" data-testid="teachers-card">
+      <div class="flex flex-col gap-4">
+        <h2 class="text-subheading text-highlighted">👩‍🏫 Prestasi Guru</h2>
+        <ul class="flex max-h-96 flex-col gap-3 overflow-y-auto" data-testid="teachers-list">
+          <li
+            v-for="t in teachers"
+            :key="t.userId"
+            class="flex flex-col gap-2 bg-soft p-3"
+            :data-testid="`teacher-${t.userId}`"
           >
-            <div
-              class="h-1.5 rounded-full bg-emerald-500"
-              :style="{ width: `${teacherBar(t.onTrack, t.below)}%` }"
-            ></div>
-          </div>
-        </div>
+            <div class="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span class="min-w-0 text-label break-words text-highlighted">{{ t.name }}</span>
+              <span class="text-caption text-muted"
+                >{{ t.classCount }} kelas · {{ t.studentCount }} murid</span
+              >
+            </div>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption">
+              <span class="text-muted"
+                >Ketepatan:
+                <ToneText :tone="TONE_TEXT[accuracyTone(t.accuracy)]"
+                  ><strong>{{ pct1(t.accuracy) }}</strong></ToneText
+                ></span
+              >
+              <span v-if="t.onTrack === null || t.below === null" class="text-dimmed"
+                >Tiada data headcount</span
+              >
+              <template v-else>
+                <span class="text-success"
+                  >On Track: <strong>{{ t.onTrack }}</strong></span
+                >
+                <span class="text-error"
+                  >Below: <strong>{{ t.below }}</strong></span
+                >
+              </template>
+            </div>
+            <UProgress
+              v-if="t.onTrack !== null && t.below !== null"
+              :model-value="teacherBar(t.onTrack, t.below)"
+              :max="100"
+              color="success"
+              size="sm"
+              :aria-label="`On Track ${t.name}`"
+            />
+          </li>
+        </ul>
       </div>
-    </section>
+    </UCard>
   </div>
 </template>

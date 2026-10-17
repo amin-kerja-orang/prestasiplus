@@ -1,17 +1,19 @@
 <script setup lang="ts">
 /**
- * S11 "Indeks Kesukaran" tab (FR-M08-67…70): search, sort, the table with one expandable detail row per
- * question. Row numbers restart at 1 in the shown order; no match shows no rows and no message.
+ * S11 "Indeks Kesukaran" tab (FR-M08-67…70): search, sort, the table with one expandable detail per
+ * question (inline in the "Soalan" cell from `md`, a card list below). Row numbers restart at 1 in the
+ * shown order; no match shows no rows and no message.
  */
-import { ChevronDown, Frown, Meh, Smile, TriangleAlert, User, Users } from '@lucide/vue'
 import { computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import type { TableColumn } from '@nuxt/ui'
 
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
+import { DsDataTable, DsEmptyState, DsFilterBar } from '@/ds'
+import { useMedia } from '@/ds/useMedia'
 import { formatNumber } from '@/lib/number'
 
 import type { ItemAnalysis } from '../../api/types'
-import { LEVEL_PILL } from '../../lib/prestasi/format'
+import { usePhIcon } from '../../lib/icons'
+import { LEVEL_BADGE, LEVEL_ICON } from '../../lib/prestasi/format'
 import {
   SORT_OPTIONS,
   accuracyClass,
@@ -22,176 +24,234 @@ import {
   type SortKey,
 } from '../../lib/prestasi/item-analysis'
 
+import ToneText from '../shared/ToneText.vue'
+
+import DifficultyDetail from './DifficultyDetail.vue'
+
 const props = defineProps<{ analysis: ItemAnalysis }>()
+
+const icon = usePhIcon()
+const wide = useMedia('(min-width: 768px)')
 
 const search = ref('')
 const sort = ref<SortKey>('difficulty_desc')
 const open = ref<ReadonlySet<number>>(new Set())
 
-const rows = computed(() =>
+const found = computed(() =>
   sortRows(filterRows(props.analysis.difficulty, search.value), sort.value),
 )
+
+interface Row extends Record<string, unknown> {
+  questionId: number
+  index: number
+  text: string
+  topic: string
+  attemptsText: string
+  studentsText: string
+  accuracy: number
+  accuracyText: string
+  indexText: string
+  level: ItemAnalysis['difficulty'][number]['level']
+  wrongText: string
+  source: ItemAnalysis['difficulty'][number]
+}
+const rows = computed<Row[]>(() =>
+  found.value.map((r, i) => ({
+    questionId: r.questionId,
+    index: i + 1,
+    text: r.text,
+    topic: topicLine(r),
+    attemptsText: String(r.attempts),
+    studentsText: `${r.students} pelajar`,
+    accuracy: r.accuracy,
+    accuracyText: `${formatNumber(r.accuracy, { decimals: 1 })}%`,
+    indexText: index2(r.index),
+    level: r.level,
+    wrongText: `${r.wrongStudents.length} pelajar salah`,
+    source: r,
+  })),
+)
+
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'index', header: '#' },
+  { accessorKey: 'text', header: 'Soalan' },
+  { accessorKey: 'topic', header: 'Subjek / Topik' },
+  { accessorKey: 'attemptsText', header: 'Percubaan' },
+  { accessorKey: 'accuracyText', header: 'Ketepatan' },
+  { accessorKey: 'indexText', header: 'Indeks' },
+  { accessorKey: 'level', header: 'Tahap' },
+]
+
+type Level = ItemAnalysis['difficulty'][number]['level']
+const levelColor = (l: Level) => LEVEL_BADGE[l]
+const levelIcon = (l: Level): string => icon.value(LEVEL_ICON[l])
 
 function toggle(id: number): void {
   const next = new Set(open.value)
   if (!next.delete(id)) next.add(id)
   open.value = next
 }
-
-const ICON = { Sukar: Frown, Sederhana: Meh, Mudah: Smile } as const
-const FIELD =
-  'min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none sm:w-auto'
+function reset(): void {
+  search.value = ''
+  sort.value = 'difficulty_desc'
+}
 </script>
 
 <template>
-  <div class="space-y-4" data-testid="difficulty-tab">
-    <section
-      v-if="analysis.questionCount === 0"
-      class="rounded-2xl bg-white py-10 text-center shadow"
-      data-testid="difficulty-empty"
-    >
-      <p class="text-4xl">📥</p>
-      <h3 class="mt-3 text-lg font-bold text-slate-800">Tiada Data Lagi</h3>
-      <p class="mx-auto mt-1 max-w-md text-sm text-slate-500">
-        Pelajar dalam kelas ini belum menjawab sebarang soalan lagi.
-      </p>
-    </section>
+  <div class="flex min-w-0 flex-col gap-4" data-testid="difficulty-tab">
+    <div v-if="analysis.questionCount === 0" data-testid="difficulty-empty">
+      <DsEmptyState
+        title="Tiada Data Lagi"
+        description="Pelajar dalam kelas ini belum menjawab sebarang soalan lagi."
+        icon="i-ph-tray"
+      />
+    </div>
 
     <template v-else>
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Cari soalan..."
-          :class="[FIELD, 'sm:flex-1']"
-          data-testid="difficulty-search"
+      <DsFilterBar @apply="() => undefined" @reset="reset">
+        <template #search>
+          <UInput
+            v-model="search"
+            type="text"
+            placeholder="Cari soalan..."
+            aria-label="Cari soalan"
+            size="lg"
+            class="w-full sm:w-72"
+            data-testid="difficulty-search"
+          />
+        </template>
+        <USelect
+          v-model="sort"
+          :items="[...SORT_OPTIONS]"
+          aria-label="Susunan soalan"
+          size="lg"
+          class="w-full sm:w-64"
+          data-testid="difficulty-sort"
         />
-        <select v-model="sort" :class="FIELD" data-testid="difficulty-sort">
-          <option v-for="o in SORT_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </select>
-      </div>
+      </DsFilterBar>
 
-      <DataTableCard :min-width="560">
-        <table :class="T.table" data-testid="difficulty-table">
-          <thead>
-            <tr style="background: linear-gradient(90deg, #eef2ff, #e0e7ff)">
-              <th :class="[T.th, 'text-indigo-800']">#</th>
-              <th :class="[T.th, 'text-indigo-800']">Soalan</th>
-              <th :class="[T.th, 'hidden text-indigo-800 sm:table-cell']">Subjek / Topik</th>
-              <th :class="[T.th, 'text-center text-indigo-800']">Percubaan</th>
-              <th :class="[T.th, 'text-center text-indigo-800']">Ketepatan</th>
-              <th :class="[T.th, 'text-center text-indigo-800']">Indeks</th>
-              <th :class="[T.th, 'text-center text-indigo-800']">Tahap</th>
-            </tr>
-          </thead>
-          <tbody
-            v-for="(r, i) in rows"
-            :key="r.questionId"
-            :data-testid="`difficulty-group-${r.questionId}`"
+      <DsDataTable
+        v-if="wide"
+        :data="rows"
+        :columns="columns"
+        caption="Indeks kesukaran soalan"
+        :page-size="1000"
+        data-testid="difficulty-table"
+      >
+        <template #text-cell="{ row }">
+          <div
+            class="flex max-w-sm min-w-44 flex-col gap-3"
+            :data-testid="`difficulty-group-${row.original.questionId}`"
           >
-            <tr
-              :class="[T.row, 'cursor-pointer hover:bg-slate-50']"
-              :data-testid="`difficulty-row-${r.questionId}`"
-              @click="toggle(r.questionId)"
+            <UButton
+              type="button"
+              color="neutral"
+              variant="ghost"
+              class="h-auto min-h-11 justify-between text-start whitespace-normal"
+              :trailing-icon="
+                open.has(row.original.questionId) ? icon('caret-up') : icon('caret-down')
+              "
+              :aria-expanded="open.has(row.original.questionId)"
+              :data-testid="`difficulty-toggle-${row.original.questionId}`"
+              @click="toggle(row.original.questionId)"
             >
-              <td :class="[T.td, 'text-slate-400']">{{ i + 1 }}</td>
-              <td :class="[T.td, 'max-w-xs min-w-44']">
-                <div class="flex items-start gap-2">
-                  <button
-                    type="button"
-                    class="min-w-0 flex-1 text-left"
-                    :data-testid="`difficulty-toggle-${r.questionId}`"
-                  >
-                    <span class="line-clamp-2 font-medium break-words text-slate-800">{{
-                      r.text
-                    }}</span>
-                    <span class="mt-0.5 block text-xs text-slate-500 sm:hidden">{{
-                      topicLine(r)
-                    }}</span>
-                    <span class="mt-1 flex items-center gap-1 text-xs text-red-500"
-                      ><Users class="h-3 w-3" />{{ r.wrongStudents.length }} pelajar salah</span
-                    >
-                  </button>
-                  <ChevronDown
-                    :class="[
-                      'mt-1 h-4 w-4 shrink-0 text-slate-400 transition',
-                      open.has(r.questionId) ? 'rotate-180' : '',
-                    ]"
-                  />
-                </div>
-              </td>
-              <td :class="[T.td, 'hidden text-xs text-slate-600 sm:table-cell']">
-                <span class="line-clamp-3">{{ topicLine(r) }}</span>
-              </td>
-              <td :class="[T.td, 'text-center']">
-                {{ r.attempts }}
-                <span class="block text-xs text-slate-400">{{ r.students }} pelajar</span>
-              </td>
-              <td :class="[T.td, 'text-center font-semibold', accuracyClass(r.accuracy)]">
-                {{ formatNumber(r.accuracy, { decimals: 1 }) }}%
-              </td>
-              <td :class="[T.td, 'text-center font-mono']">{{ index2(r.index) }}</td>
-              <td :class="[T.td, 'text-center']">
+              <span class="flex min-w-0 flex-col gap-1">
                 <span
-                  :class="[
-                    'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                    LEVEL_PILL[r.level],
-                  ]"
+                  class="line-clamp-2 text-label break-words text-highlighted"
+                  :data-testid="`difficulty-row-${row.original.questionId}`"
+                  >{{ row.original.text }}</span
                 >
-                  <component :is="ICON[r.level]" class="h-3.5 w-3.5" />{{ r.level }}
+                <span class="text-caption text-error">{{ row.original.wrongText }}</span>
+              </span>
+            </UButton>
+            <div
+              v-if="open.has(row.original.questionId)"
+              :data-testid="`difficulty-detail-${row.original.questionId}`"
+            >
+              <DifficultyDetail :row="row.original.source" />
+            </div>
+          </div>
+        </template>
+        <template #topic-cell="{ row }">
+          <span class="line-clamp-3 text-caption text-muted">{{ row.original.topic }}</span>
+        </template>
+        <template #attemptsText-cell="{ row }">
+          <span class="flex flex-col">
+            <span>{{ row.original.attemptsText }}</span>
+            <span class="text-caption text-dimmed">{{ row.original.studentsText }}</span>
+          </span>
+        </template>
+        <template #accuracyText-cell="{ row }">
+          <ToneText :tone="accuracyClass(row.original.accuracy)" class="text-label">{{
+            row.original.accuracyText
+          }}</ToneText>
+        </template>
+        <template #level-cell="{ row }">
+          <UBadge
+            :color="levelColor(row.original.level)"
+            variant="subtle"
+            :icon="levelIcon(row.original.level)"
+            :label="row.original.level"
+          />
+        </template>
+      </DsDataTable>
+
+      <ul v-else class="flex flex-col gap-3" data-testid="difficulty-table">
+        <li v-for="r in rows" :key="r.questionId" :data-testid="`difficulty-group-${r.questionId}`">
+          <UCard>
+            <div class="flex flex-col gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="tabular text-label text-muted">#{{ r.index }}</span>
+                <UBadge
+                  :color="LEVEL_BADGE[r.level]"
+                  variant="subtle"
+                  :icon="icon(LEVEL_ICON[r.level])"
+                  :label="r.level"
+                />
+              </div>
+              <UButton
+                type="button"
+                color="neutral"
+                variant="ghost"
+                class="h-auto min-h-11 justify-between text-start whitespace-normal"
+                :trailing-icon="open.has(r.questionId) ? icon('caret-up') : icon('caret-down')"
+                :aria-expanded="open.has(r.questionId)"
+                :data-testid="`difficulty-toggle-${r.questionId}`"
+                @click="toggle(r.questionId)"
+              >
+                <span class="flex min-w-0 flex-col gap-1">
+                  <span
+                    class="text-label break-words text-highlighted"
+                    :data-testid="`difficulty-row-${r.questionId}`"
+                    >{{ r.text }}</span
+                  >
+                  <span class="text-caption text-muted">{{ r.topic }}</span>
+                  <span class="text-caption text-error">{{ r.wrongText }}</span>
                 </span>
-              </td>
-            </tr>
-            <tr v-if="open.has(r.questionId)" :data-testid="`difficulty-detail-${r.questionId}`">
-              <td colspan="7" class="px-4 py-3" style="background: rgb(255, 245, 245)">
-                <div class="space-y-3 text-sm">
-                  <div class="rounded-lg p-3" style="background: #dcfce7">
-                    <p class="text-xs font-semibold text-green-800">Jawapan Betul</p>
-                    <p class="mt-1 text-slate-800">
-                      <span
-                        class="mr-2 inline-flex h-6 w-6 items-center justify-center rounded text-xs font-bold text-white"
-                        style="background: #16a34a"
-                        >{{ r.correctOption.letter }}</span
-                      >{{ r.correctOption.text }}
-                    </p>
-                  </div>
-                  <div v-if="r.popularWrong" class="rounded-lg p-3" style="background: #fef3c7">
-                    <p class="text-xs font-semibold text-amber-800">
-                      Jawapan Salah Popular ({{ r.popularWrong.times }}x dipilih)
-                    </p>
-                    <p class="mt-1 text-slate-800">
-                      <span
-                        class="mr-2 inline-flex h-6 w-6 items-center justify-center rounded text-xs font-bold text-white"
-                        style="background: #d97706"
-                        >{{ r.popularWrong.letter }}</span
-                      >{{ r.popularWrong.text }}
-                    </p>
-                  </div>
-                  <div v-if="r.wrongStudents.length > 0">
-                    <p class="mb-2 flex items-center gap-1 text-xs font-semibold text-slate-600">
-                      <TriangleAlert class="h-3.5 w-3.5" />Pelajar Yang Salah
-                    </p>
-                    <div class="flex flex-wrap gap-2">
-                      <RouterLink
-                        v-for="s in r.wrongStudents"
-                        :key="s.userId"
-                        :to="`/prestasi/${s.userId}`"
-                        class="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-xs"
-                        style="background: #fee2e2; color: #991b1b"
-                      >
-                        <User class="h-3.5 w-3.5" />{{ s.name }}
-                        <span class="rounded-full px-1.5" style="background: #fecaca"
-                          >{{ s.times }}x salah</span
-                        >
-                      </RouterLink>
-                    </div>
-                  </div>
+              </UButton>
+              <dl class="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <dt class="text-caption text-muted">Percubaan</dt>
+                  <dd class="tabular text-body">{{ r.attemptsText }}</dd>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </DataTableCard>
+                <div>
+                  <dt class="text-caption text-muted">Ketepatan</dt>
+                  <dd class="tabular text-label">
+                    <ToneText :tone="accuracyClass(r.accuracy)">{{ r.accuracyText }}</ToneText>
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-caption text-muted">Indeks</dt>
+                  <dd class="tabular text-body">{{ r.indexText }}</dd>
+                </div>
+              </dl>
+              <div v-if="open.has(r.questionId)" :data-testid="`difficulty-detail-${r.questionId}`">
+                <DifficultyDetail :row="r.source" />
+              </div>
+            </div>
+          </UCard>
+        </li>
+      </ul>
     </template>
   </div>
 </template>

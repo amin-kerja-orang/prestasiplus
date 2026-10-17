@@ -1,66 +1,70 @@
 <script setup lang="ts">
 /**
- * S6 "Penguasaan Subjek" (FR-M08-40): per practised subject a tile (the first two letters of the subject
- * code in the subject colour), the name, a bar (≥ 80 #10b981, 60–79.9 #f59e0b, < 60 #ef4444; INFERRED
- * bands), "{round(x)}%" and "{n} sesi · {m} soalan"; or the empty state with "Mula Berlatih" → `/practice`.
+ * S6 "Penguasaan Subjek" (FR-M08-40): per practised subject a chip (the first two letters of the subject
+ * code), the name, a bar (≥ 80 success, 60–79.9 warning, < 60 error; INFERRED bands), "{round(x)}%" and
+ * "{n} sesi · {m} soalan"; or the empty state with "Mula Berlatih" → `/practice`.
  */
-import { BookText, ChartPie, Play } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
+import { DsEmptyState } from '@/ds'
 
 import type { StudentPerformance } from '../../api/types'
+import { usePhIcon } from '../../lib/icons'
 import { masteryTone } from '../../lib/analitik'
+import ToneText from '../shared/ToneText.vue'
 
 defineProps<{ mastery: StudentPerformance['mastery'] }>()
+
+const icon = usePhIcon()
 </script>
 
 <template>
-  <section class="min-w-0 rounded-2xl bg-white p-5 shadow lg:col-span-2" data-testid="mastery-card">
-    <h2 class="mb-4 flex items-center gap-2 text-base font-bold text-slate-800">
-      <BookText class="h-5 w-5 text-indigo-500" />Penguasaan Subjek
-    </h2>
-    <div
-      v-if="mastery.length === 0"
-      class="flex flex-col items-center gap-3 py-8 text-sm text-slate-500"
-      data-testid="mastery-empty"
-    >
-      <ChartPie class="h-8 w-8 text-slate-300" />
-      <p>Belum ada data latihan.</p>
-      <RouterLink
-        to="/practice"
-        class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-        data-testid="mastery-start"
-      >
-        <Play class="h-4 w-4" />Mula Berlatih
-      </RouterLink>
-    </div>
-    <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="mastery-list">
-      <div
-        v-for="m in mastery"
-        :key="m.subjectCode"
-        class="flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 p-3"
-        :data-testid="`mastery-${m.subjectCode}`"
-      >
-        <span
-          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
-          :style="{ backgroundColor: m.color }"
-          >{{ m.subjectCode.slice(0, 2).toUpperCase() }}</span
-        >
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-semibold text-slate-800">{{ m.subjectName }}</p>
-          <div class="flex items-center gap-2">
-            <div class="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
-              <div
-                :class="['h-full rounded-full', masteryTone(m.accuracy).bar]"
-                :style="{ width: `${String(Math.min(m.accuracy, 100))}%` }"
-              ></div>
-            </div>
-            <span :class="['text-xs font-bold', masteryTone(m.accuracy).text]" data-testid="pct"
-              >{{ Math.round(m.accuracy) }}%</span
-            >
-          </div>
-          <p class="text-xs text-slate-400">{{ m.sessions }} sesi · {{ m.answered }} soalan</p>
-        </div>
+  <UCard class="lg:col-span-2" data-testid="mastery-card">
+    <div class="flex flex-col gap-4">
+      <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+        <UIcon :name="icon('books')" class="size-5 text-primary" />Penguasaan Subjek
+      </h2>
+      <div v-if="mastery.length === 0" data-testid="mastery-empty">
+        <DsEmptyState title="Belum ada data latihan." icon="i-ph-chart-pie">
+          <template #actions>
+            <UButton
+              to="/practice"
+              size="lg"
+              :icon="icon('play')"
+              label="Mula Berlatih"
+              data-testid="mastery-start"
+            />
+          </template>
+        </DsEmptyState>
       </div>
+      <ul v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="mastery-list">
+        <li
+          v-for="m in mastery"
+          :key="m.subjectCode"
+          class="flex min-w-0 items-center gap-3 bg-soft p-3"
+          :data-testid="`mastery-${m.subjectCode}`"
+        >
+          <UAvatar :text="m.subjectCode.slice(0, 2).toUpperCase()" size="lg" aria-hidden="true" />
+          <div class="flex min-w-0 grow flex-col gap-1">
+            <p class="truncate text-label text-highlighted">{{ m.subjectName }}</p>
+            <div class="flex items-center gap-2">
+              <UProgress
+                class="min-w-0 grow"
+                :model-value="Math.min(m.accuracy, 100)"
+                :max="100"
+                :color="masteryTone(m.accuracy).color"
+                size="sm"
+                :aria-label="`Penguasaan ${m.subjectName}`"
+              />
+              <ToneText
+                :tone="masteryTone(m.accuracy).text"
+                class="tabular text-label"
+                data-testid="pct"
+                >{{ Math.round(m.accuracy) }}%</ToneText
+              >
+            </div>
+            <p class="text-caption text-muted">{{ m.sessions }} sesi · {{ m.answered }} soalan</p>
+          </div>
+        </li>
+      </ul>
     </div>
-  </section>
+  </UCard>
 </template>

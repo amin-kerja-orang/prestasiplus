@@ -1,23 +1,30 @@
 <script setup lang="ts">
 /**
- * S8 `/analitik/kelas` "Analitik Kelas" (M08-T7; FR-M08-54…57, BR-M08-15). A GET form whose selects
- * submit on change: the URL keeps the live query names `classroom_id`, `subject_id`, `risk_level`.
+ * S8 `/analitik/kelas` "Analitik Kelas" (M08-T7; FR-M08-54…57, BR-M08-15). The selects submit on change:
+ * the URL keeps the live query names `classroom_id`, `subject_id`, `risk_level`.
  * A class the viewer may not open is the 403 page (§7 #8).
  */
-import { ArrowDown, ArrowUp, ChartLine, Minus, SquareArrowOutUpRight, Users } from '@lucide/vue'
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import type { TableColumn } from '@nuxt/ui'
 
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsPage } from '@/ds'
 
 import { fetchClassAnalytics } from '../api/class'
 import type { RiskLevel } from '../api/types'
+import PageHeader from '../components/shared/PageHeader.vue'
+import ToneText from '../components/shared/ToneText.vue'
+import PageLoadError from '../components/shared/PageLoadError.vue'
+import PageSkeleton from '../components/shared/PageSkeleton.vue'
+import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
+import { TREND_ICON, TREND_TEXT } from '../lib/analitik'
+import { usePhIcon } from '../lib/icons'
 import { pct1 } from '../lib/prestasi/format'
-import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData } from '../lib/prestasi/load'
 
 const route = useRoute()
 const router = useRouter()
+const icon = usePhIcon()
 
 const queryInt = (key: string): number | undefined => {
   const raw = route.query[key]
@@ -48,21 +55,38 @@ const { data, error, reload } = useRouteData(
 )
 const loadFailed = computed(() => isLoadError(error.value))
 
-const RISKS: { value: RiskLevel | ''; label: string }[] = [
-  { value: '', label: 'Semua Risiko' },
+/** The select cannot hold an empty value, so "Semua Risiko" travels as `all` and is query-less. */
+const ALL = 'all'
+const RISKS: { value: string; label: string }[] = [
+  { value: ALL, label: 'Semua Risiko' },
   { value: 'critical', label: 'Kritikal' },
   { value: 'high', label: 'Tinggi' },
   { value: 'medium', label: 'Sederhana' },
   { value: 'low', label: 'Rendah' },
 ]
-const RISK_BADGE: Record<RiskLevel, { label: string; cls: string }> = {
-  critical: { label: 'Kritikal', cls: 'bg-red-100 text-red-700' },
-  high: { label: 'Tinggi', cls: 'bg-orange-100 text-orange-700' },
-  medium: { label: 'Sederhana', cls: 'bg-amber-100 text-amber-700' },
-  low: { label: 'Rendah', cls: 'bg-green-100 text-green-700' },
+const RISK_BADGE: Record<
+  RiskLevel,
+  { label: string; color: 'error' | 'warning' | 'neutral' | 'success' }
+> = {
+  critical: { label: 'Kritikal', color: 'error' },
+  high: { label: 'Tinggi', color: 'warning' },
+  medium: { label: 'Sederhana', color: 'neutral' },
+  low: { label: 'Rendah', color: 'success' },
 }
+const TREND_LABEL = { up: 'Naik', down: 'Turun', stable: 'Tetap' } as const
 
-/** Submit on change (GET form): the three filters of the current selection, empty ones left out. */
+const classItems = computed(() =>
+  (data.value?.options.classes ?? []).map((c) => ({ label: c.name, value: String(c.id) })),
+)
+const subjectItems = computed(() =>
+  (data.value?.options.subjects ?? []).map((s) => ({ label: s.name, value: String(s.id) })),
+)
+const classValue = computed(() => String(data.value?.options.selected.classroomId ?? ''))
+const subjectValue = computed(() => String(data.value?.options.selected.subjectId ?? ''))
+const riskValue = computed(() => data.value?.options.selected.riskLevel || ALL)
+const activeCount = computed(() => (riskLevel.value ? 1 : 0))
+
+/** Submit on change: the three filters of the current selection, empty ones left out. */
 function submit(change: { classroom_id?: string; subject_id?: string; risk_level?: string }): void {
   const sel = data.value?.options.selected
   const next: Record<string, string> = {}
@@ -78,191 +102,215 @@ function submit(change: { classroom_id?: string; subject_id?: string; risk_level
   if (rl) next.risk_level = rl
   void router.push({ path: '/analitik/kelas', query: next })
 }
-const onChange = (key: 'classroom_id' | 'subject_id' | 'risk_level') => (e: Event) =>
-  submit({ [key]: (e.target as HTMLSelectElement).value })
+function onChange(
+  key: 'classroom_id' | 'subject_id' | 'risk_level',
+  value: string | undefined,
+): void {
+  if (value === undefined) return
+  submit({ [key]: key === 'risk_level' && value === ALL ? '' : value })
+}
+
+/** The bar's "Cari" re-submits the current selection; "Set Semula" goes back to the defaults. */
+const apply = (): void => submit({})
+const reset = (): void => {
+  void router.push({ path: '/analitik/kelas' })
+}
+
+type Trend = 'up' | 'down' | 'stable'
+const trendKey = (t: Trend): Trend => t
+const trendTone = (t: Trend): string => TREND_TEXT[t]
+const trendIcon = (t: Trend): string => icon.value(TREND_ICON[t])
+const riskColor = (r: RiskLevel) => RISK_BADGE[r].color
 
 /** Unjuran "{low} – {high}" (DV-16). */
 const range = (p: { low: string; high: string }): string => `${p.low} – ${p.high}`
-/** Ketepatan colour: red < 50 (OBSERVED), the FR-M08-50 bands otherwise (INFERRED). */
+/** Ketepatan colour: error < 50 (OBSERVED), the FR-M08-50 bands otherwise (INFERRED). */
 const accTone = (n: number): string =>
-  n < 50 ? 'text-red-600' : n < 75 ? 'text-amber-600' : 'text-green-600'
+  n < 50 ? 'text-error' : n < 75 ? 'text-warning' : 'text-success'
 
-const SELECT =
-  'min-h-11 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-700'
-const LABEL = 'mb-1 block text-xs font-bold tracking-wide text-slate-500 uppercase'
-const CARD = 'min-w-0 rounded-2xl bg-white p-4 text-center shadow'
+const summary = computed<StatItem[]>(() => {
+  const s = data.value?.summary
+  if (!s) return []
+  return [
+    { id: 'pelajar', label: 'Jumlah Pelajar', value: s.students, icon: 'users' },
+    { id: 'ketepatan', label: 'Purata Ketepatan', value: pct1(s.accuracy), icon: 'target' },
+    {
+      id: 'berisiko',
+      label: 'Pelajar Berisiko',
+      value: s.atRisk,
+      icon: 'warning',
+      accent: s.atRisk === 0 ? 'action' : 'heat',
+    },
+    { id: 'baik', label: 'Prestasi Baik', value: s.good, icon: 'check-circle' },
+  ]
+})
+
+type DataRow = NonNullable<typeof data.value>['rows'][number]
+interface Row extends Record<string, unknown> {
+  userId: number
+  index: number
+  name: string
+  accuracy: number
+  accuracyText: string
+  answered: number
+  trend: DataRow['trend']
+  rangeText: string
+  riskLevel: RiskLevel
+  riskText: string
+}
+const rows = computed<Row[]>(() =>
+  (data.value?.rows ?? []).map((r, i) => ({
+    userId: r.userId,
+    index: i + 1,
+    name: r.name,
+    accuracy: r.accuracy,
+    accuracyText: `${r.accuracy.toFixed(1)}%`,
+    answered: r.answered,
+    trend: r.trend,
+    rangeText: range(r.projection),
+    riskLevel: r.riskLevel,
+    riskText: RISK_BADGE[r.riskLevel].label,
+  })),
+)
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'index', header: '#' },
+  { accessorKey: 'name', header: 'Pelajar' },
+  { accessorKey: 'accuracyText', header: 'Ketepatan' },
+  { accessorKey: 'answered', header: 'Soalan' },
+  { accessorKey: 'trend', header: 'Trend' },
+  { accessorKey: 'rangeText', header: 'Unjuran' },
+  { accessorKey: 'riskText', header: 'Risiko' },
+  { accessorKey: 'userId', header: 'Tindakan' },
+]
+const cardFields = [
+  { key: 'accuracyText', label: 'Ketepatan' },
+  { key: 'answered', label: 'Soalan' },
+  { key: 'rangeText', label: 'Unjuran' },
+  { key: 'riskText', label: 'Risiko' },
+]
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="analitik-kelas-page">
-    <div v-if="loadFailed" class="space-y-3" data-testid="page-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
-    </div>
+  <DsPage data-testid="analitik-kelas-page">
+    <PageHeader
+      title="Analitik Kelas"
+      subtitle="Pantau prestasi pelajar dan kenal pasti yang memerlukan perhatian"
+    />
+    <PageLoadError v-if="loadFailed" @retry="reload()" />
 
     <template v-else-if="data">
-      <form
-        class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-4 shadow md:grid-cols-3"
-        data-testid="filters"
-        @submit.prevent
-      >
-        <div class="min-w-0">
-          <label :class="LABEL" for="f-kelas">Kelas</label>
-          <select
-            id="f-kelas"
-            :class="SELECT"
-            name="classroom_id"
-            :value="data.options.selected.classroomId ?? ''"
-            data-testid="filter-kelas"
-            @change="onChange('classroom_id')($event)"
-          >
-            <option v-for="c in data.options.classes" :key="c.id" :value="String(c.id)">
-              {{ c.name }}
-            </option>
-          </select>
-        </div>
-        <div class="min-w-0">
-          <label :class="LABEL" for="f-subjek">Mata Pelajaran</label>
-          <select
-            id="f-subjek"
-            :class="SELECT"
-            name="subject_id"
-            :value="data.options.selected.subjectId ?? ''"
-            data-testid="filter-subjek"
-            @change="onChange('subject_id')($event)"
-          >
-            <option v-for="s in data.options.subjects" :key="s.id" :value="String(s.id)">
-              {{ s.name }}
-            </option>
-          </select>
-        </div>
-        <div class="min-w-0">
-          <label :class="LABEL" for="f-risiko">Risiko</label>
-          <select
-            id="f-risiko"
-            :class="SELECT"
-            name="risk_level"
-            :value="data.options.selected.riskLevel"
-            data-testid="filter-risiko"
-            @change="onChange('risk_level')($event)"
-          >
-            <option v-for="r in RISKS" :key="r.value" :value="r.value">{{ r.label }}</option>
-          </select>
-        </div>
-      </form>
+      <div data-testid="filters">
+        <DsFilterBar :active-count="activeCount" @apply="apply" @reset="reset">
+          <UFormField label="Kelas" class="min-w-0 sm:w-56" for="f-kelas">
+            <USelect
+              id="f-kelas"
+              name="classroom_id"
+              :items="classItems"
+              :model-value="classValue"
+              class="w-full"
+              size="lg"
+              data-testid="filter-kelas"
+              @update:model-value="onChange('classroom_id', $event)"
+            />
+          </UFormField>
+          <UFormField label="Mata Pelajaran" class="min-w-0 sm:w-56" for="f-subjek">
+            <USelect
+              id="f-subjek"
+              name="subject_id"
+              :items="subjectItems"
+              :model-value="subjectValue"
+              class="w-full"
+              size="lg"
+              data-testid="filter-subjek"
+              @update:model-value="onChange('subject_id', $event)"
+            />
+          </UFormField>
+          <UFormField label="Risiko" class="min-w-0 sm:w-48" for="f-risiko">
+            <USelect
+              id="f-risiko"
+              name="risk_level"
+              :items="RISKS"
+              :model-value="riskValue"
+              class="w-full"
+              size="lg"
+              data-testid="filter-risiko"
+              @update:model-value="onChange('risk_level', $event)"
+            />
+          </UFormField>
+        </DsFilterBar>
+      </div>
 
-      <section
-        v-if="data.summary === null"
-        class="rounded-2xl bg-white p-8 text-center shadow"
-        data-testid="analitik-empty"
-      >
-        <ChartLine class="mx-auto h-10 w-10 text-slate-300" />
-        <p class="mt-3 text-sm text-slate-500">Tiada data analitik untuk kelas dan subjek ini.</p>
-      </section>
+      <div v-if="data.summary === null" data-testid="analitik-empty">
+        <DsEmptyState
+          title="Tiada data analitik untuk kelas dan subjek ini."
+          icon="i-ph-chart-line-up"
+        />
+      </div>
 
       <template v-else>
-        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="summary-cards">
-          <div :class="CARD" data-testid="sum-pelajar">
-            <p class="text-2xl font-bold text-slate-700">{{ data.summary.students }}</p>
-            <p class="text-xs text-slate-400">Jumlah Pelajar</p>
-          </div>
-          <div :class="CARD" data-testid="sum-ketepatan">
-            <p class="text-2xl font-bold text-blue-600">
-              {{ pct1(data.summary.accuracy) }}
-            </p>
-            <p class="text-xs text-slate-400">Purata Ketepatan</p>
-          </div>
-          <div :class="CARD" data-testid="sum-berisiko">
-            <p
-              :class="[
-                'text-2xl font-bold',
-                data.summary.atRisk === 0 ? 'text-green-600' : 'text-red-600',
-              ]"
-            >
-              {{ data.summary.atRisk }}
-            </p>
-            <p class="text-xs text-slate-400">Pelajar Berisiko</p>
-          </div>
-          <div :class="CARD" data-testid="sum-baik">
-            <p class="text-2xl font-bold text-emerald-600">{{ data.summary.good }}</p>
-            <p class="text-xs text-slate-400">Prestasi Baik</p>
-          </div>
-        </div>
+        <StatGrid :items="summary" prefix="sum" />
 
-        <DataTableCard :min-width="760" data-testid="list-card">
-          <template #header>
-            <h3 class="flex items-center gap-2 px-5 py-4 text-sm font-bold text-slate-800">
-              <Users class="h-4 w-4 text-blue-500" />Senarai Pelajar
-            </h3>
-          </template>
-          <table :class="T.table" data-testid="student-table">
-            <thead>
-              <tr>
-                <th :class="T.th">#</th>
-                <th :class="T.th">Pelajar</th>
-                <th :class="[T.th, 'text-center']">Ketepatan</th>
-                <th :class="[T.th, 'text-center']">Soalan</th>
-                <th :class="[T.th, 'text-center']">Trend</th>
-                <th :class="[T.th, 'text-center']">Unjuran</th>
-                <th :class="[T.th, 'text-center']">Risiko</th>
-                <th :class="[T.th, 'text-center']">Tindakan</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(r, i) in data.rows"
-                :key="r.userId"
-                :class="T.row"
-                :data-testid="`student-row-${r.userId}`"
+        <section class="flex min-w-0 flex-col gap-3" data-testid="list-card">
+          <h2 class="text-subheading text-highlighted">Senarai Pelajar</h2>
+          <DsDataTable
+            :data="rows"
+            :columns="columns"
+            caption="Senarai pelajar"
+            card-title="name"
+            :card-fields="cardFields"
+            :page-size="100"
+            data-testid="student-table"
+          >
+            <template #name-cell="{ row }">
+              <RouterLink
+                :to="`/prestasi/${row.original.userId}`"
+                class="inline-flex min-h-11 items-center text-label text-highlighted"
+                :data-testid="`student-row-${row.original.userId}`"
+                >{{ row.original.name }}</RouterLink
               >
-                <td :class="[T.td, 'text-slate-400']">{{ i + 1 }}</td>
-                <td :class="T.td">
-                  <RouterLink
-                    :to="`/prestasi/${r.userId}`"
-                    class="inline-flex min-h-11 items-center gap-1.5 font-semibold text-slate-800 hover:text-blue-700"
-                    >{{ r.name }}<SquareArrowOutUpRight class="h-3.5 w-3.5 text-slate-400"
-                  /></RouterLink>
-                </td>
-                <td :class="[T.td, 'text-center font-bold', accTone(r.accuracy)]">
-                  {{ r.accuracy.toFixed(1) }}%
-                </td>
-                <td :class="[T.td, 'text-center']">{{ r.answered }}</td>
-                <td :class="[T.td, 'text-center']">
-                  <ArrowUp v-if="r.trend === 'up'" class="mx-auto h-4 w-4 text-green-600" />
-                  <ArrowDown v-else-if="r.trend === 'down'" class="mx-auto h-4 w-4 text-red-600" />
-                  <Minus v-else class="mx-auto h-4 w-4 text-slate-400" />
-                </td>
-                <td :class="[T.td, 'text-center font-semibold whitespace-nowrap text-blue-600']">
-                  {{ range(r.projection) }}
-                </td>
-                <td :class="[T.td, 'text-center']">
-                  <span
-                    :class="[
-                      'rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                      RISK_BADGE[r.riskLevel].cls,
-                    ]"
-                    data-testid="risk-badge"
-                    >{{ RISK_BADGE[r.riskLevel].label }}</span
-                  >
-                </td>
-                <td :class="[T.td, 'text-center']">
-                  <RouterLink
-                    :to="`/prestasi/${r.userId}`"
-                    class="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold whitespace-nowrap text-blue-700"
-                    ><ChartLine class="h-3.5 w-3.5" />Lihat Analitik</RouterLink
-                  >
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </DataTableCard>
+            </template>
+            <template #accuracyText-cell="{ row }">
+              <ToneText :tone="accTone(row.original.accuracy)" class="text-label">{{
+                row.original.accuracyText
+              }}</ToneText>
+            </template>
+            <template #trend-cell="{ row }">
+              <ToneText :tone="trendTone(row.original.trend)" class="flex items-center gap-1">
+                <UIcon :name="trendIcon(row.original.trend)" class="size-5" />
+                <span class="text-caption">{{ TREND_LABEL[trendKey(row.original.trend)] }}</span>
+              </ToneText>
+            </template>
+            <template #riskText-cell="{ row }">
+              <UBadge
+                :color="riskColor(row.original.riskLevel)"
+                variant="subtle"
+                :label="row.original.riskText"
+                data-testid="risk-badge"
+              />
+            </template>
+            <template #userId-cell="{ row }">
+              <UButton
+                :to="`/prestasi/${row.original.userId}`"
+                color="neutral"
+                variant="soft"
+                :icon="icon('chart-line-up')"
+                label="Lihat Analitik"
+              />
+            </template>
+            <template #card-actions="{ row }">
+              <UButton
+                :to="`/prestasi/${String(row.userId)}`"
+                color="neutral"
+                variant="soft"
+                size="lg"
+                :icon="icon('chart-line-up')"
+                label="Lihat Analitik"
+              />
+            </template>
+          </DsDataTable>
+        </section>
       </template>
     </template>
-  </div>
+    <PageSkeleton v-else-if="!error" />
+  </DsPage>
 </template>

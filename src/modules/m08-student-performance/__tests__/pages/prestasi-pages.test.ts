@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
+
+import USelect from '@nuxt/ui/components/Select.vue'
 
 import { ApiError } from '@/api'
 import { useRouteOutcome } from '@/app/router'
@@ -140,6 +142,9 @@ async function render(component: object, path: string, route = path.replace(/\?.
 }
 
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid=${id}]`)
+/** The table row (or card) that holds the element with this test id. */
+const tr = (w: VueWrapper, id: string) =>
+  new DOMWrapper(t(w, id).element.closest('tr') ?? t(w, id).element)
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -158,8 +163,18 @@ describe('S1 PrestasiSekolahPage', () => {
     expect(t(w, 'header-summary').text()).toBe(
       'Ringkasan prestasi keseluruhan · 750 kelas · 4533 murid',
     )
-    const values = w.findAll('[data-testid=stat-value]').map((v) => v.text())
-    expect(values).toEqual(['4533', '551', '750', '27', '32122', '478,499', '79.8%'])
+    const expected: [string, string][] = [
+      ['murid', '4533'],
+      ['guru', '551'],
+      ['kelas', '750'],
+      ['subjek', '27'],
+      ['sesi', '32122'],
+      ['soalan', '478,499'],
+      ['ketepatan', '79.8%'],
+    ]
+    for (const [id, value] of expected) {
+      expect(t(w, `stat-${id}`).find('.tabular').text()).toBe(value)
+    }
   })
 
   it('shows "—" and no band pill without headcount GPS, never 0', async () => {
@@ -189,9 +204,9 @@ describe('S1 PrestasiSekolahPage', () => {
     expect(rows[0]?.text()).toContain('Ekonomi')
     expect(rows[1]?.text()).toContain('Perniagaan')
     expect(rows[1]?.text()).toContain('—')
-    expect(t(w, 'trend-row-2023').text()).toContain('▼ 0.40')
-    expect(t(w, 'trend-row-2026').text()).toContain('Semasa')
-    expect(t(w, 'trend-row-2026').text()).toContain('Tiada data')
+    expect(tr(w, 'trend-row-2023').text()).toContain('▼ 0.40')
+    expect(tr(w, 'trend-row-2026').text()).toContain('Semasa')
+    expect(tr(w, 'trend-row-2026').text()).toContain('Tiada data')
   })
 
   it('shows the load-error box with a retry button', async () => {
@@ -267,9 +282,9 @@ describe('S3 TingkatanPage', () => {
     expect(t(w, 'level-summary').text()).toBe('Dashboard Prestasi Tingkatan · 13 kelas · 5 subjek')
     expect(t(w, 'stat-ketepatan').text()).toContain('63.9%')
     expect(t(w, 'headcount-pct').text()).toBe('0% On Track')
-    expect(t(w, 'class-row-5').text()).toContain('Lihat →')
-    expect(t(w, 'class-row-806').text()).not.toContain('Lihat')
-    expect(t(w, 'class-row-806').text()).toContain('—')
+    expect(tr(w, 'class-row-5').text()).toContain('Lihat →')
+    expect(tr(w, 'class-row-806').text()).not.toContain('Lihat')
+    expect(tr(w, 'class-row-806').text()).toContain('—')
     expect(t(w, 'top-82').text()).toContain('4 sesi · 60 soalan')
     expect(t(w, 'top-82').text()).toContain('64%')
     expect(t(w, 'at-risk').text()).toContain('4 Simulasi · OTR3: 56.00% (sasaran 82.00%)')
@@ -544,7 +559,8 @@ describe('S11 AnalisaItemKelasPage', () => {
     await t(w, 'difficulty-search').setValue('zzz')
     expect(w.findAll('[data-testid^=difficulty-row-]')).toHaveLength(0)
     await t(w, 'difficulty-search').setValue('')
-    await t(w, 'difficulty-sort').setValue('difficulty_asc')
+    w.getComponent(USelect).vm.$emit('update:modelValue', 'difficulty_asc')
+    await flushPromises()
     expect(w.findAll('[data-testid^=difficulty-row-]')[0]?.attributes('data-testid')).toBe(
       'difficulty-row-1',
     )
@@ -641,9 +657,8 @@ describe('S10 AnalisaItemKelasPilihPage', () => {
     expect(cards[0]?.text()).toContain('1 pelajar')
     expect(cards[0]?.text()).toContain('JOV330')
     expect(cards[0]?.text()).toContain('Lihat Analisa')
-    expect(cards[0]?.find('[title=Aktif]').exists()).toBe(true)
-    expect(cards[1]?.find('[title=Aktif]').exists()).toBe(false)
-    expect(cards[0]?.attributes('style')).toContain('border-color')
+    expect(cards[0]?.text()).toContain('Aktif')
+    expect(cards[1]?.text()).not.toContain('Aktif')
   })
 })
 

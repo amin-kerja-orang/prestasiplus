@@ -43,15 +43,15 @@ export function ringDash(mahir: number, total: number): string {
 
 /** FR-M08-50 "Ketepatan" colour: red < 50, amber 50–74.9, green ≥ 75 (INFERRED). */
 export function accuracyText(n: number): string {
-  return n < 50 ? 'text-red-600' : n < 75 ? 'text-amber-600' : 'text-green-600'
+  return n < 50 ? 'text-error' : n < 75 ? 'text-warning' : 'text-success'
 }
 
-/** FR-M08-52 tile and legend styles by status. */
-export const TILE_STYLE = {
-  mahir: 'border-green-200 bg-green-100 text-green-700',
-  sederhana: 'border-yellow-200 bg-yellow-100 text-yellow-700',
-  lemah: 'border-red-200 bg-red-100 text-red-700',
-  belum: 'border-slate-200 bg-slate-100 text-slate-400',
+/** FR-M08-52 tile and legend colours by status (a badge colour; the word is always shown beside it). */
+export const TILE_COLOR = {
+  mahir: 'success',
+  sederhana: 'warning',
+  lemah: 'error',
+  belum: 'neutral',
 } as const
 
 export const STATUS_LABEL = {
@@ -61,12 +61,19 @@ export const STATUS_LABEL = {
   belum: 'Belum cuba',
 } as const
 
-/** Trend icon colour (BR-M08-14): stable slate-400; up green, down red (INFERRED). */
+/** Trend icon colour (BR-M08-14): stable dimmed; up success, down error (INFERRED). */
 export const TREND_TEXT: Record<Trend, string> = {
-  stable: 'text-slate-400',
-  up: 'text-green-600',
-  down: 'text-red-600',
+  stable: 'text-dimmed',
+  up: 'text-success',
+  down: 'text-error',
 }
+
+/** Trend icons (icon + colour, never colour alone); names of `lib/icons.ts`. */
+export const TREND_ICON = {
+  stable: 'minus',
+  up: 'trend-up',
+  down: 'trend-down',
+} as const satisfies Record<Trend, string>
 
 /** S6 "Masa Belajar" (FR-M08-38): "{h}j {m}m" from 60 minutes, else "{m}m" (whole minutes; INFERRED floor). */
 export function studyTime(seconds: number): string {
@@ -76,13 +83,16 @@ export function studyTime(seconds: number): string {
     : `${String(minutes)}m`
 }
 
-/** BR-M08-11 heatmap buckets: 0 #f1f5f9, 1 #bbf7d0, 2 #4ade80, 3 #16a34a, ≥ 4 #15803d. */
+/** BR-M08-11 heatmap buckets 0, 1, 2, 3, ≥ 4 sessions: a five-step single-hue ramp (elevated to primary). */
+export const HEAT_RAMP = [
+  'bg-elevated',
+  'bg-primary/15',
+  'bg-primary/35',
+  'bg-primary/60',
+  'bg-primary',
+] as const
 export function heatClass(sessions: number): string {
-  if (sessions <= 0) return 'bg-slate-100'
-  if (sessions === 1) return 'bg-green-200'
-  if (sessions === 2) return 'bg-green-400'
-  if (sessions === 3) return 'bg-green-600'
-  return 'bg-green-700'
+  return HEAT_RAMP[Math.min(Math.max(Math.floor(sessions), 0), 4)] ?? 'bg-elevated'
 }
 
 const WEEKDAYS = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'] as const
@@ -95,9 +105,12 @@ export function dayLabel(date: string, sessions: number): string {
   return `${two(d)}/${two(m)} (${weekday}) — ${sessions === 0 ? 'Tiada aktiviti' : `${String(sessions)} sesi`}`
 }
 
-/** FR-M08-40 bar and text colours: ≥ 80 emerald / green, 60–79.9 amber, < 60 red (INFERRED bands). */
-export function masteryTone(accuracy: number): { bar: string; text: string } {
-  if (accuracy >= 80) return { bar: 'bg-emerald-500', text: 'text-green-600' }
-  if (accuracy >= 60) return { bar: 'bg-amber-500', text: 'text-amber-600' }
-  return { bar: 'bg-red-500', text: 'text-red-600' }
+/** FR-M08-40 bar and text colours: ≥ 80 success, 60–79.9 warning, < 60 error (INFERRED bands). */
+export function masteryTone(accuracy: number): {
+  color: 'success' | 'warning' | 'error'
+  text: string
+} {
+  if (accuracy >= 80) return { color: 'success', text: 'text-success' }
+  if (accuracy >= 60) return { color: 'warning', text: 'text-warning' }
+  return { color: 'error', text: 'text-error' }
 }

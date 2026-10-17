@@ -1,106 +1,145 @@
 <script setup lang="ts">
-/** S1 "📉 Trend GPS (5 Tahun)" (FR-M08-16, FR-M08-17): Chart.js line chart + the yearly table. */
+/** S1 "📉 Trend GPS (5 Tahun)" (FR-M08-16, FR-M08-17): the `DsChart` line chart + the yearly table. */
 import { computed } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
 
-import { ChartCanvas } from '@/components/chart'
-import { TABLE_CLASSES as T } from '@/components/data'
+import { DsChart, DsDataTable } from '@/ds'
 
 import type { SchoolPerformance } from '../../api/types'
 import { BAND_STYLE, dec2, grouped } from '../../lib/prestasi/format'
-import { gpsBands, trendData, trendOptions } from '../../lib/prestasi/gps-chart'
+import { trendSeries } from '../../lib/prestasi/gps-chart'
+import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{ trend: SchoolPerformance['trend'] }>()
 
-const data = computed(() => trendData(props.trend.chart))
-const plugins = [gpsBands]
+type Band = NonNullable<SchoolPerformance['trend']['years'][number]['band']>
+const bandStyle = (b: Band) => BAND_STYLE[b]
+
+const chart = computed(() => trendSeries(props.trend.chart))
+
+type Year = SchoolPerformance['trend']['years'][number]
+interface Row extends Record<string, unknown> {
+  year: number
+  yearLabel: string
+  current: boolean
+  noData: boolean
+  gpsText: string
+  band: Year['band']
+  candidatesText: string
+  sourceText: string
+  change: number | null
+  changeText: string
+}
+
+const rows = computed<Row[]>(() =>
+  props.trend.years.map((y) => {
+    const noData = y.current || y.gps === null
+    return {
+      year: y.year,
+      yearLabel: y.current ? `${y.year} Semasa` : String(y.year),
+      current: y.current,
+      noData,
+      gpsText: noData || y.gps === null ? 'Tiada data' : dec2(y.gps),
+      band: noData ? null : y.band,
+      candidatesText: noData || y.candidates === null ? '—' : grouped(y.candidates),
+      sourceText: noData ? '—' : (y.source ?? '—'),
+      change: noData ? null : y.change,
+      changeText:
+        noData || y.change === null || y.change === 0
+          ? '—'
+          : y.change < 0
+            ? `▼ ${dec2(Math.abs(y.change))}`
+            : `▲ ${dec2(y.change)}`,
+    }
+  }),
+)
+
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'yearLabel', header: 'Tahun' },
+  { accessorKey: 'gpsText', header: 'GPS Keseluruhan' },
+  { accessorKey: 'band', header: 'Tahap' },
+  { accessorKey: 'candidatesText', header: 'Calon' },
+  { accessorKey: 'sourceText', header: 'Sumber' },
+  { accessorKey: 'changeText', header: 'Perubahan' },
+]
+const cardFields = [
+  { key: 'gpsText', label: 'GPS Keseluruhan' },
+  { key: 'candidatesText', label: 'Calon' },
+  { key: 'sourceText', label: 'Sumber' },
+  { key: 'changeText', label: 'Perubahan' },
+]
 </script>
 
 <template>
-  <section class="min-w-0 rounded-2xl bg-white p-5 shadow" data-testid="trend-card">
-    <div class="mb-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-      <h3 class="text-base font-bold text-slate-700">📉 Trend GPS (5 Tahun)</h3>
-      <span class="text-xs text-slate-400">2022–2026 · lebih rendah = lebih baik</span>
-    </div>
-    <p class="mb-3 text-xs text-slate-400">
-      Paksi Y diterbalikkan: 0 (A+) di atas, 9 (G) di bawah.
-    </p>
-    <ChartCanvas
-      type="line"
-      :data="data"
-      :options="trendOptions"
-      :plugins="plugins"
-      height="280px"
-      test-id="gps-trend-chart"
-    />
-    <div class="mt-4 overflow-x-auto">
-      <table :class="[T.table, 'min-w-[34rem]']" data-testid="trend-table">
-        <thead>
-          <tr>
-            <th :class="T.th">Tahun</th>
-            <th :class="[T.th, 'text-center']">GPS Keseluruhan</th>
-            <th :class="[T.th, 'text-center']">Tahap</th>
-            <th :class="[T.th, 'text-center']">Calon</th>
-            <th :class="[T.th, 'text-center']">Sumber</th>
-            <th :class="[T.th, 'text-center']">Perubahan</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="y in trend.years"
-            :key="y.year"
-            :class="T.row"
-            :data-testid="`trend-row-${y.year}`"
+  <UCard data-testid="trend-card">
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-1">
+        <h2 class="text-subheading text-highlighted">📉 Trend GPS (5 Tahun)</h2>
+        <p class="text-caption text-muted">
+          2022–2026 · lebih rendah = lebih baik · Nilai GPS: 0 (A+) paling baik, 9 (G) paling lemah.
+        </p>
+      </div>
+      <DsChart
+        title="Trend GPS"
+        type="line"
+        :labels="chart.labels"
+        :series="chart.series"
+        table-label="Trend GPS mengikut tahun"
+        data-testid="gps-trend-chart"
+      />
+      <DsDataTable
+        :data="rows"
+        :columns="columns"
+        caption="Jadual trend GPS mengikut tahun"
+        card-title="yearLabel"
+        :card-fields="cardFields"
+        :page-size="10"
+        data-testid="trend-table"
+      >
+        <template #yearLabel-cell="{ row }">
+          <span
+            class="text-label whitespace-nowrap text-highlighted"
+            :data-testid="`trend-row-${row.original.year}`"
           >
-            <td :class="[T.td, 'font-bold whitespace-nowrap text-slate-800']">
-              {{ y.year }}
-              <span
-                v-if="y.current"
-                class="ml-1 rounded border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-600"
-                >Semasa</span
-              >
-            </td>
-            <template v-if="y.current || y.gps === null">
-              <td :class="[T.td, 'text-center text-slate-500']">Tiada data</td>
-              <td :class="[T.td, 'text-center text-slate-400']">—</td>
-              <td :class="[T.td, 'text-center text-slate-400']">—</td>
-              <td :class="[T.td, 'text-center text-slate-400']">—</td>
-              <td :class="[T.td, 'text-center text-slate-400']">—</td>
-            </template>
-            <template v-else>
-              <td
-                :class="[
-                  T.td,
-                  'text-center text-lg font-bold',
-                  y.band ? BAND_STYLE[y.band].text : '',
-                ]"
-              >
-                {{ dec2(y.gps) }}
-              </td>
-              <td :class="[T.td, 'text-center']">
-                <span
-                  v-if="y.band"
-                  :class="[
-                    'rounded-full border px-2 py-0.5 text-xs font-semibold',
-                    BAND_STYLE[y.band].pill,
-                  ]"
-                  >{{ y.band }}</span
-                >
-              </td>
-              <td :class="[T.td, 'text-center']">
-                {{ y.candidates === null ? '—' : grouped(y.candidates) }}
-              </td>
-              <td :class="[T.td, 'text-center']">{{ y.source ?? '—' }}</td>
-              <td :class="[T.td, 'text-center']">
-                <span v-if="y.change === null || y.change === 0" class="text-slate-400">—</span>
-                <span v-else-if="y.change < 0" class="text-emerald-600"
-                  >▼ {{ dec2(Math.abs(y.change)) }}</span
-                >
-                <span v-else class="text-red-600">▲ {{ dec2(y.change) }}</span>
-              </td>
-            </template>
-          </tr>
-        </tbody>
-      </table>
+            {{ row.original.year }}
+            <UBadge
+              v-if="row.original.current"
+              color="primary"
+              variant="subtle"
+              size="sm"
+              label="Semasa"
+            />
+          </span>
+        </template>
+        <template #gpsText-cell="{ row }">
+          <ToneText
+            :tone="row.original.band ? bandStyle(row.original.band).text : 'text-muted'"
+            class="text-label"
+            >{{ row.original.gpsText }}</ToneText
+          >
+        </template>
+        <template #band-cell="{ row }">
+          <UBadge
+            v-if="row.original.band"
+            :color="bandStyle(row.original.band).badge"
+            variant="subtle"
+            :label="row.original.band"
+          />
+          <span v-else class="text-dimmed">—</span>
+        </template>
+        <template #changeText-cell="{ row }">
+          <ToneText
+            :tone="
+              row.original.change === null || row.original.change === 0
+                ? 'text-dimmed'
+                : row.original.change < 0
+                  ? 'text-success'
+                  : 'text-error'
+            "
+            >{{ row.original.changeText }}</ToneText
+          >
+        </template>
+      </DsDataTable>
     </div>
-  </section>
+  </UCard>
 </template>
