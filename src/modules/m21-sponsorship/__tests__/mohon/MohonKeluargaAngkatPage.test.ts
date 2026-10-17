@@ -3,6 +3,7 @@
  * M21-T2 S6 `/mohon-keluarga-angkat` (SRS M21 v1.2 FR-M21-46..49; URS FN-M21-4.2.1..4.2.6): static copy,
  * example click, submit payload, PROPOSED success and 422 notices.
  */
+import { formStubs } from '@/test-support/form-stubs'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -43,7 +44,7 @@ async function mountPage() {
   await router.isReady()
   wrapper = mount(MohonKeluargaAngkatPage, {
     attachTo: document.body,
-    global: { plugins: [router] },
+    global: { plugins: [router], components: formStubs },
   })
   await flushPromises()
   return wrapper
@@ -129,7 +130,7 @@ describe('S6 static copy (FR-M21-46, 48)', () => {
     const box = wrapper!.get('[data-testid="mohon-info"]')
     const text = box.text()
     expect(text).toContain('Apa yang berlaku selepas mohon?')
-    expect(box.findAll('ol li').map((li) => li.text())).toEqual([
+    expect(box.findAll('ol li').map((li) => li.text().replace(/^\d+\. /, ''))).toEqual([
       'Admin semak dan luluskan permohonan (1-3 hari bekerja)',
       'Pelajar masuk ke pool — sponsor/keluarga angkat boleh pilih',
       'Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan',
@@ -202,8 +203,8 @@ describe('S6 submit (FR-M21-49)', () => {
     expect(notice().text()).toBe('Email pelajar tidak dijumpai dalam PrestasiPlus.')
     expect(email().element.value).toBe('tiada.pelajar@demo.test')
     expect(reason().element.value).toBe('Sebab ujian')
-    expect(email().classes()).toContain('border-red-400')
-    expect(category().classes()).not.toContain('border-red-400')
+    expect(email().classes()).toContain('ring-error')
+    expect(category().classes()).not.toContain('ring-error')
     expect(wrapper!.find('[aria-invalid], [aria-live], [aria-describedby]').exists()).toBe(false)
     expect(wrapper!.find('[data-variant="success"]').exists()).toBe(false)
   })

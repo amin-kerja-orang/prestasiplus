@@ -20,19 +20,19 @@ export const HEATMAP_COPY = {
 export const CELL_HREF = '/practice/chapter'
 export const EMPTY_HREF = '/practice'
 
-/** Legend pills in order (FR-M25-14); `gray` is legend only, never a cell (FR-M25-17). */
-export const LEGEND: readonly { key: HeatmapBand | 'gray'; label: string; cls: string }[] = [
-  { key: 'red', label: 'Lemah (< 50%)', cls: 'text-red-700 border-red-300' },
-  { key: 'amber', label: 'Sederhana (50-79%)', cls: 'text-amber-800 border-amber-300' },
-  { key: 'green', label: 'Mantap (≥ 80%)', cls: 'text-emerald-700 border-emerald-300' },
-  { key: 'gray', label: 'Belum cuba', cls: 'text-slate-600 border-slate-300' },
+/** Legend pills in order (FR-M25-14); gray is legend only, never a cell (FR-M25-17). Single orange ramp (A3). */
+export const LEGEND: readonly { key: HeatmapBand | 'gray'; label: string; swatch: string }[] = [
+  { key: 'red', label: 'Lemah (< 50%)', swatch: 'bg-heat' },
+  { key: 'amber', label: 'Sederhana (50-79%)', swatch: 'bg-heat/35' },
+  { key: 'green', label: 'Mantap (≥ 80%)', swatch: 'bg-accented' },
+  { key: 'gray', label: 'Belum cuba', swatch: 'bg-muted' },
 ]
 
-/** Cell colours per band (§6.3). */
-export const BAND_CELL_CLASS: Record<HeatmapBand, string> = {
-  red: 'bg-red-100 border-red-300',
-  amber: 'bg-amber-100 border-amber-300',
-  green: 'bg-emerald-100 border-emerald-300',
+/** Cell fills per band: one hue ramp, weak = full A3 orange, strong = the elevated surface. */
+export function bandCellClass(band: HeatmapBand): string {
+  if (band === 'red') return 'bg-heat text-on-highlight'
+  if (band === 'amber') return 'bg-heat/35 text-highlighted'
+  return 'bg-elevated text-highlighted'
 }
 
 /** ms-MY grouping from 1,000 (BR-M25-05). */

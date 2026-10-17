@@ -18,6 +18,7 @@ const routes: RouteRecordRaw[] = [
       title: TOPIC_TAB_TITLE,
       header: { title: 'Topik Pembelajaran', subtitle: 'Terokai semua topik pembelajaran' },
       module: 'M03',
+      v2: true,
     },
   },
   {
@@ -30,6 +31,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       title: TOPIC_TAB_TITLE,
       module: 'M03',
+      v2: true,
     },
   },
   {
@@ -42,6 +44,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Peta Belajar — PRESTASIPLUS',
       header: { title: 'Peta Belajar' },
       module: 'M03',
+      v2: true,
     },
   },
 ]

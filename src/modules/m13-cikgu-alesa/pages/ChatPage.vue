@@ -8,6 +8,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { DsIconChip, DsPage } from '@/ds'
+
 import {
   buildHandoffMessage,
   getVoiceConfig,
@@ -43,7 +45,7 @@ const messages = ref<ChatMessage[]>([{ id: 0, role: 'bot', text: GREETING }])
 
 const historyEl = ref<HTMLElement | null>(null)
 const formEl = ref<HTMLFormElement | null>(null)
-const inputEl = ref<HTMLInputElement | null>(null)
+const inputEl = ref<{ inputRef: HTMLInputElement | null } | null>(null)
 
 const supported = computed(() => getVoiceConfig().supported)
 const poweredBy = POWERED_BY.join(' · ')
@@ -75,7 +77,7 @@ function append(role: ChatMessage['role'], text: string): void {
 }
 
 function focusInput(): void {
-  inputEl.value?.focus()
+  inputEl.value?.inputRef?.focus()
 }
 
 /** FR-M13-18..20. Native validation stops an empty input; whitespace only returns silently. */
@@ -174,7 +176,9 @@ function failVoice(): void {
 // --- entry points (FR-M13-21, 22) ----------------------------------------------------------------
 
 function applyPrefill(): void {
-  const query = route.fullPath.includes('?') ? route.fullPath.slice(route.fullPath.indexOf('?') + 1) : ''
+  const query = route.fullPath.includes('?')
+    ? route.fullPath.slice(route.fullPath.indexOf('?') + 1)
+    : ''
   let stored: string | null = null
   try {
     stored = sessionStorage.getItem(PENDING_ESSAY_KEY)
@@ -193,7 +197,7 @@ function applyPrefill(): void {
   input.value = prefill.text
   void nextTick(() => {
     focusInput()
-    inputEl.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    inputEl.value?.inputRef?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   })
 }
 
@@ -223,205 +227,113 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="cikgu-alesa-shell" data-testid="cikgu-chat">
-    <header class="ca-head">
-      <div class="ca-avatar">CA</div>
-      <div class="ca-head-text">
-        <h1 class="ca-title">Cikgu Alesa</h1>
-        <p class="ca-sub">Guru maya · Powered by {{ poweredBy }} + 50K+ soalan DSKP</p>
-      </div>
-    </header>
-
-    <section id="cikgu-history" ref="historyEl" class="ca-history">
-      <div
-        v-for="m in messages"
-        :key="m.id"
-        class="cikgu-msg"
-        :class="m.role === 'bot' ? 'cikgu-msg-bot' : 'cikgu-msg-user'"
+  <DsPage data-testid="cikgu-chat">
+    <div class="grid min-w-0 grid-cols-1 gap-4 md:gap-6 xl:grid-cols-12">
+      <header
+        class="flex min-w-0 items-center gap-3 self-start rounded-card bg-default p-4 shadow-lift xl:sticky xl:top-4 xl:col-span-4 xl:flex-col xl:items-start"
       >
-        <strong>{{ m.role === 'bot' ? CHAT_COPY.botPrefix : CHAT_COPY.userPrefix }}</strong
-        ><span class="cikgu-msg-body"
-          ><template v-for="(line, i) in messageLines(m.text)" :key="i"
-            ><br v-if="i > 0" />{{ line }}</template
-          ></span
+        <DsIconChip icon="i-ph-sparkle-duotone" accent="friend" size="lg" />
+        <div class="min-w-0">
+          <h1
+            class="flex flex-wrap items-center gap-2 font-display text-title font-extrabold text-highlighted"
+          >
+            Cikgu Alesa
+            <span
+              class="rounded-full bg-friend px-2 py-0.5 text-overline text-primary-on"
+              data-testid="ca-ai-pill"
+              >AI</span
+            >
+          </h1>
+          <p class="mt-1 text-body text-muted" data-testid="ca-sub">
+            Guru maya · Powered by {{ poweredBy }} + 50K+ soalan DSKP
+          </p>
+        </div>
+      </header>
+
+      <div class="flex min-w-0 flex-col gap-3 xl:col-span-8">
+        <section
+          id="cikgu-history"
+          ref="historyEl"
+          class="flex max-h-96 min-h-80 flex-col gap-3 overflow-y-auto rounded-card bg-elevated p-4 break-words"
         >
+          <div
+            v-for="m in messages"
+            :key="m.id"
+            class="max-w-sm min-w-0 rounded-2xl px-3.5 py-2.5 text-body md:max-w-md"
+            :class="
+              m.role === 'bot'
+                ? 'self-start rounded-bl-md bg-default text-highlighted shadow-lift'
+                : 'self-end rounded-br-md bg-primary text-primary-on'
+            "
+            data-msg
+            :data-role="m.role"
+          >
+            <strong>{{ m.role === 'bot' ? CHAT_COPY.botPrefix : CHAT_COPY.userPrefix }}</strong
+            ><span data-msg-body
+              ><template v-for="(line, i) in messageLines(m.text)" :key="i"
+                ><br v-if="i > 0" />{{ line }}</template
+              ></span
+            >
+          </div>
+        </section>
+
+        <div
+          id="cikgu-voice-toolbar"
+          class="flex flex-wrap items-center gap-3 rounded-chip bg-friend/16 px-3 py-2"
+        >
+          <span class="text-label text-highlighted">🎙️ Voice Mode:</span>
+          <UCheckbox
+            id="cikgu-voice-mode"
+            v-model="voiceOn"
+            label="Cikgu jawab dengan suara (auto)"
+            @update:model-value="onVoiceModeChange"
+          />
+          <span id="cikgu-voice-status" class="ms-auto text-caption font-semibold text-friend">{{
+            status
+          }}</span>
+        </div>
+
+        <form id="cikgu-form" ref="formEl" class="flex gap-2" @submit.prevent="onSubmit">
+          <UInput id="cikgu-thread-id" v-model="threadId" type="hidden" />
+          <UButton
+            id="cikgu-mic"
+            type="button"
+            size="xl"
+            :color="listening ? 'error' : 'neutral'"
+            variant="soft"
+            class="min-h-12 min-w-14 shrink-0 justify-center"
+            :data-listening="listening ? 'true' : 'false'"
+            :data-unsupported="supported ? 'false' : 'true'"
+            :disabled="!supported"
+            :title="supported ? CHAT_COPY.micTitle : CHAT_COPY.micUnsupported"
+            @click="onMic"
+          >
+            {{ listening ? '🔴' : '🎤' }}
+          </UButton>
+          <UInput
+            id="cikgu-input"
+            ref="inputEl"
+            v-model="input"
+            type="text"
+            size="xl"
+            class="min-w-0 flex-1"
+            placeholder="Taip atau tekan 🎤 untuk cakap…"
+            required
+            maxlength="4000"
+            autocomplete="off"
+          />
+          <UButton
+            id="cikgu-send"
+            type="submit"
+            size="xl"
+            class="min-h-12 shrink-0 justify-center"
+            :disabled="sending"
+            >Hantar</UButton
+          >
+        </form>
+
+        <div id="cikgu-meta" class="min-h-5 text-caption text-muted">{{ meta }}</div>
       </div>
-    </section>
-
-    <div id="cikgu-voice-toolbar" class="ca-toolbar">
-      <span class="ca-voice-label">🎙️ Voice Mode:</span>
-      <label class="ca-voice-switch">
-        <input
-          id="cikgu-voice-mode"
-          v-model="voiceOn"
-          type="checkbox"
-          @change="onVoiceModeChange"
-        />
-        Cikgu jawab dengan suara (auto)
-      </label>
-      <span id="cikgu-voice-status" class="ca-voice-status">{{ status }}</span>
     </div>
-
-    <form id="cikgu-form" ref="formEl" class="ca-form" @submit.prevent="onSubmit">
-      <input id="cikgu-thread-id" v-model="threadId" type="hidden" />
-      <button
-        id="cikgu-mic"
-        type="button"
-        class="ca-mic"
-        :class="{ 'ca-mic-on': listening, 'ca-mic-off': !supported }"
-        :disabled="!supported"
-        :title="supported ? CHAT_COPY.micTitle : CHAT_COPY.micUnsupported"
-        @click="onMic"
-      >
-        {{ listening ? '🔴' : '🎤' }}
-      </button>
-      <input
-        id="cikgu-input"
-        ref="inputEl"
-        v-model="input"
-        type="text"
-        class="ca-input"
-        placeholder="Taip atau tekan 🎤 untuk cakap…"
-        required
-        maxlength="4000"
-        autocomplete="off"
-      />
-      <button id="cikgu-send" type="submit" class="ca-send" :disabled="sending">Hantar</button>
-    </form>
-
-    <div id="cikgu-meta" class="ca-meta">{{ meta }}</div>
-  </div>
+  </DsPage>
 </template>
-
-<style scoped>
-/* Live inline styles of S1 (URS FN-M13-2.1.1..2.4.6): values replicated as observed. */
-.cikgu-alesa-shell {
-  max-width: 880px;
-  margin: 24px auto;
-  padding: 16px;
-  min-width: 0;
-}
-.ca-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.ca-avatar {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  color: #fff;
-  font-size: 18px;
-  font-weight: 700;
-}
-.ca-head-text {
-  min-width: 0;
-}
-.ca-title {
-  margin: 0;
-  font-size: 20px;
-}
-.ca-sub {
-  margin: 2px 0 0;
-  font-size: 13px;
-  color: #6b7280;
-}
-.ca-history {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
-  min-height: 360px;
-  max-height: 520px;
-  overflow-y: auto;
-  overflow-wrap: anywhere;
-}
-.cikgu-msg + .cikgu-msg {
-  margin-top: 10px;
-}
-.ca-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin: 12px 0;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #ede9fe, #fce7f3);
-}
-.ca-voice-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #6d28d9;
-}
-.ca-voice-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-}
-.ca-voice-status {
-  margin-left: auto;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6d28d9;
-}
-.ca-form {
-  display: flex;
-  gap: 8px;
-}
-.ca-mic {
-  flex: none;
-  width: 54px;
-  height: 48px;
-  border: 1px solid #8b5cf6;
-  border-radius: 10px;
-  background: #fff;
-  color: #6d28d9;
-  font-size: 18px;
-  cursor: pointer;
-}
-.ca-mic-on {
-  background: #fee2e2;
-}
-.ca-mic-off {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.ca-input {
-  flex: 1;
-  min-width: 0;
-  height: 48px;
-  padding: 0 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #fff;
-}
-.ca-send {
-  flex: none;
-  width: 92px;
-  height: 48px;
-  border: 0;
-  border-radius: 10px;
-  background: #3b82f6;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-.ca-send:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.ca-meta {
-  min-height: 18px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #6b7280;
-}
-</style>

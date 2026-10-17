@@ -1,25 +1,32 @@
 <script setup lang="ts">
-/** S1 hero and legend (FR-M25-13, 14): red gradient, white text, four static pills (BR-M25-07). */
+/** S1 hero and legend (FR-M25-13, 14): title, intro and four static pills (BR-M25-07). */
+import { DsIconChip } from '@/ds'
+
 import { HEATMAP_COPY, LEGEND } from './heatmap-copy'
 </script>
 
 <template>
   <section
-    class="rounded-xl bg-linear-to-br from-red-700 to-red-600 p-5 text-white"
+    class="flex min-w-0 flex-col gap-4 rounded-card bg-default p-5 shadow-lift md:p-6"
     data-testid="heatmap-hero"
   >
-    <h1 class="text-[1.4rem] leading-tight font-bold text-white">{{ HEATMAP_COPY.title }}</h1>
-    <p class="mt-1 text-sm text-white">{{ HEATMAP_COPY.intro }}</p>
-    <ul class="mt-3 flex flex-wrap gap-2" data-testid="heatmap-legend">
+    <div class="flex min-w-0 items-start gap-3">
+      <DsIconChip icon="i-ph-fire-duotone" accent="heat" size="lg" />
+      <div class="min-w-0">
+        <h1 class="font-display text-title font-extrabold break-words text-highlighted">
+          {{ HEATMAP_COPY.title }}
+        </h1>
+        <p class="mt-1 text-body text-muted">{{ HEATMAP_COPY.intro }}</p>
+      </div>
+    </div>
+    <ul class="flex flex-wrap gap-2" data-testid="heatmap-legend">
       <li
         v-for="pill in LEGEND"
         :key="pill.key"
-        :class="[
-          'inline-block rounded-full border-2 bg-white px-3 py-[0.3rem] text-[0.8rem] leading-none font-bold',
-          pill.cls,
-        ]"
+        class="inline-flex items-center gap-2 rounded-full bg-elevated px-3 py-1 text-label text-default"
         :data-legend="pill.key"
       >
+        <span class="size-3 rounded-full" :class="pill.swatch" aria-hidden="true" />
         {{ pill.label }}
       </li>
     </ul>

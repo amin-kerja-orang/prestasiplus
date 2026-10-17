@@ -4,12 +4,11 @@
  * keeps the other filter), then every matching topic on one page in a 1 / 2 (`sm`) / 3 (`lg`)
  * column grid. No loading state: the content area stays empty until the data is ready (SRS §8).
  */
-import { BookOpen, CircleCheck, Eye } from '@lucide/vue'
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsEmptyState, DsIconChip, DsPage } from '@/ds'
 
 import { fetchTopics } from '../api/student-curriculum'
 import {
@@ -33,126 +32,131 @@ const { data, error } = useApi(
 )
 const topics = computed(() => data.value?.data ?? [])
 const loaded = computed(() => data.value !== null)
-
-const CHIP =
-  'inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-sm font-semibold transition'
 </script>
 
 <template>
-  <div class="space-y-5" data-testid="topics-page">
-    <section class="space-y-3 rounded-2xl bg-white p-4 shadow sm:p-5">
+  <DsPage data-testid="topics-page">
+    <section class="flex flex-col gap-3 rounded-card bg-default p-4 shadow-lift sm:p-5">
       <nav class="flex flex-wrap gap-2" aria-label="Darjah" data-testid="grade-chips">
-        <RouterLink
+        <UButton
           v-for="chip in GRADE_CHIPS"
           :key="chip.label"
           :to="topicsTo(chip.code, subject)"
-          :class="[
-            CHIP,
-            chip.code === grade
-              ? 'border-green-600 bg-green-600 text-white'
-              : 'border-slate-200 bg-white text-slate-700 hover:border-green-500 hover:bg-green-50',
-          ]"
+          size="lg"
+          :color="chip.code === grade ? 'primary' : 'neutral'"
+          :variant="chip.code === grade ? 'solid' : 'soft'"
+          class="min-h-11 rounded-full"
           :data-active="chip.code === grade ? 'true' : 'false'"
           data-testid="grade-chip"
         >
           {{ chip.label }}
-        </RouterLink>
+        </UButton>
       </nav>
       <nav class="flex flex-wrap gap-2" aria-label="Subjek" data-testid="subject-chips">
-        <RouterLink
+        <UButton
           v-for="chip in SUBJECT_CHIPS"
           :key="chip.label"
           :to="topicsTo(grade, chip.code)"
-          :class="[
-            CHIP,
-            chip.code === subject
-              ? 'border-purple-600 bg-purple-600 text-white'
-              : 'border-slate-200 bg-white text-slate-700 hover:border-purple-500 hover:bg-purple-50',
-          ]"
+          size="lg"
+          :color="chip.code === subject ? 'primary' : 'neutral'"
+          :variant="chip.code === subject ? 'solid' : 'soft'"
+          class="min-h-11 rounded-full"
           :data-active="chip.code === subject ? 'true' : 'false'"
           data-testid="subject-chip"
         >
           {{ chip.label }}
-        </RouterLink>
+        </UButton>
       </nav>
     </section>
 
-    <AlertBox v-if="error" :messages="LOAD_ERROR" data-testid="topics-error" />
+    <UAlert
+      v-if="error"
+      color="error"
+      variant="soft"
+      icon="i-ph-warning-circle-duotone"
+      :title="LOAD_ERROR"
+      data-testid="topics-error"
+    />
 
     <template v-else-if="loaded">
       <div
         v-if="topics.length === 0"
-        class="rounded-2xl bg-white p-10 text-center shadow"
+        class="rounded-card bg-default p-6 shadow-lift"
         data-testid="topics-empty"
       >
-        <BookOpen class="mx-auto h-12 w-12 text-slate-300" aria-hidden="true" />
-        <p class="mt-3 text-slate-500">{{ EMPTY_TOPICS }}</p>
+        <DsEmptyState icon="i-ph-books-duotone" :title="EMPTY_TOPICS" />
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="topic-grid">
+      <div
+        v-else
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        data-testid="topic-grid"
+      >
         <RouterLink
           v-for="t in topics"
           :key="t.id"
           :to="topicPath(t.id)"
-          class="group flex flex-col overflow-hidden rounded-2xl bg-white shadow transition hover:shadow-lg"
+          class="flex min-w-0 flex-col gap-3 rounded-card bg-default p-4 shadow-lift hover:bg-elevated"
           data-testid="topic-card"
           :data-topic-id="t.id"
         >
-          <div class="bg-gradient-to-r from-purple-500 to-pink-500 p-4 text-white">
-            <div class="flex items-start justify-between gap-2">
-              <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white">
-                <BookOpen class="h-6 w-6 text-purple-600" aria-hidden="true" />
-              </span>
-              <span
-                class="rounded-full bg-white/20 px-3 py-1 text-xs font-bold"
-                data-testid="topic-subtopic-count"
-              >
-                {{ t.subtopicCount }} Subtopik
-              </span>
-            </div>
-            <h3 class="mt-3 font-heading text-lg font-bold" data-testid="topic-name">
+          <div class="flex items-start justify-between gap-2">
+            <DsIconChip icon="i-ph-books-duotone" accent="action" size="lg" />
+            <span
+              class="rounded-full bg-elevated px-3 py-1 text-caption font-bold text-default"
+              data-testid="topic-subtopic-count"
+            >
+              {{ t.subtopicCount }} Subtopik
+            </span>
+          </div>
+          <div class="min-w-0">
+            <h3 class="text-subheading break-words text-highlighted" data-testid="topic-name">
               {{ t.name }}
             </h3>
-            <p class="text-xs font-semibold text-white/80" data-testid="topic-subject">
+            <p class="text-caption font-semibold text-muted" data-testid="topic-subject">
               {{ t.subjectLabel }}
             </p>
           </div>
-          <div class="flex flex-1 flex-col p-4">
-            <p
-              v-if="t.description"
-              class="line-clamp-2 text-sm text-slate-600"
-              data-testid="topic-description"
-            >
-              {{ t.description }}
-            </p>
-            <p class="mt-3 text-xs font-bold tracking-wide text-slate-500 uppercase">Subtopik:</p>
-            <ul class="mt-1 space-y-1">
+          <p
+            v-if="t.description"
+            class="line-clamp-2 text-body text-muted"
+            data-testid="topic-description"
+          >
+            {{ t.description }}
+          </p>
+          <div class="flex-1">
+            <p class="text-overline text-muted">Subtopik:</p>
+            <ul class="mt-1 flex flex-col gap-1">
               <li
                 v-for="name in t.subtopicsPreview"
                 :key="name"
-                class="flex items-start gap-2 text-sm text-slate-700"
+                class="flex items-start gap-2 text-body text-default"
                 data-testid="topic-subtopic"
               >
-                <CircleCheck class="mt-0.5 h-4 w-4 shrink-0 text-green-500" aria-hidden="true" />
-                <span>{{ name }}</span>
+                <UIcon
+                  name="i-ph-check-circle-duotone"
+                  class="mt-0.5 size-4 shrink-0 text-success"
+                  aria-hidden="true"
+                />
+                <span class="min-w-0 break-words">{{ name }}</span>
               </li>
               <li
                 v-if="moreSubtopics(t.subtopicCount, 3)"
-                class="text-sm text-slate-500"
+                class="text-body text-muted"
                 data-testid="topic-more"
               >
                 {{ moreSubtopics(t.subtopicCount, 3) }}
               </li>
             </ul>
-            <span
-              class="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-sm font-bold text-white"
-            >
-              <Eye class="h-4 w-4" aria-hidden="true" />
-              Lihat Topik
-            </span>
           </div>
+          <span
+            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-chip bg-primary px-4 py-2 text-label font-bold text-primary-on"
+          >
+            <UIcon name="i-ph-eye-duotone" class="size-4" aria-hidden="true" />
+            Lihat Topik
+          </span>
         </RouterLink>
       </div>
     </template>
-  </div>
+  </DsPage>
 </template>

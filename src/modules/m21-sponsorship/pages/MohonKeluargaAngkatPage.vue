@@ -3,20 +3,13 @@
  * S6 `/mohon-keluarga-angkat` (FR-M21-46..49; URS FT-M21-4.2; M21-T2). The browser checks (`required`,
  * `type=email`) run first; "Hantar Permohonan" then calls #15. On 201 the form is reset and the PROPOSED
  * green notice shows above it; on 422 the PROPOSED messages of the `fields` map show in a red box above
- * the form (the rejected fields get the red border). Examples fill the textarea client side only.
+ * the form (the rejected fields get the error ring). Examples fill the textarea client side only.
  */
-import { Send } from '@lucide/vue'
 import { computed, nextTick, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { AlertBox } from '@/components/feedback'
-import {
-  FORM_ERROR_MODIFIER,
-  FORM_INPUT_CLASS,
-  FORM_SELECT_CLASS,
-  FORM_TEXTAREA_CLASS,
-} from '@/components/form'
+import { DsPage } from '@/ds'
 
 import { submitFosterApplication } from '../api'
 import { FOSTER_APPLICATION_MESSAGES } from '../api/types'
@@ -47,8 +40,17 @@ const errors = ref<string[]>([])
 const failedFields = ref<ReadonlySet<string>>(new Set())
 const noticeEl = ref<HTMLElement | null>(null)
 
+/** A rejected field gets an error ring (no ARIA added, D10). */
 const errorClass = (field: FosterApplicationField): string =>
-  failedFields.value.has(field) ? FORM_ERROR_MODIFIER : ''
+  failedFields.value.has(field) ? 'ring-2 ring-error' : ''
+const categoryItems = [
+  { label: MOHON_COPY.categoryPlaceholder, value: '' },
+  ...CATEGORY_OPTIONS.map((o) => ({ label: o.label, value: o.value })),
+]
+const incomeItems = [
+  { label: MOHON_COPY.incomePlaceholder, value: '' },
+  ...INCOME_OPTIONS.map((o) => ({ label: o.label, value: o.value })),
+]
 const hasNotice = computed(() => success.value !== '' || errors.value.length > 0)
 
 function pickExample(text: string): void {
@@ -99,35 +101,54 @@ async function onSubmit(): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[670px] min-w-0 space-y-4" data-testid="mohon-page">
+  <DsPage class="max-w-2xl" data-testid="mohon-page">
     <MohonHero />
 
-    <div v-show="hasNotice" ref="noticeEl" data-testid="mohon-notice">
-      <AlertBox v-if="success !== ''" variant="success" :messages="success" />
-      <AlertBox v-if="errors.length > 0" variant="error" :messages="errors" />
+    <div v-show="hasNotice" ref="noticeEl" class="flex flex-col gap-2" data-testid="mohon-notice">
+      <UAlert
+        v-if="success !== ''"
+        color="success"
+        variant="soft"
+        icon="i-ph-check-circle-duotone"
+        :title="success"
+        data-variant="success"
+      />
+      <UAlert
+        v-if="errors.length > 0"
+        color="error"
+        variant="soft"
+        icon="i-ph-warning-circle-duotone"
+        data-variant="error"
+      >
+        <template #title>
+          <p v-for="e in errors" :key="e">{{ e }}</p>
+        </template>
+      </UAlert>
     </div>
 
     <form
-      class="space-y-4 rounded-2xl bg-white p-4 shadow-md sm:p-6"
+      class="flex flex-col gap-4 rounded-card bg-default p-4 shadow-lift sm:p-6"
       data-testid="mohon-form"
       @submit.prevent="onSubmit"
     >
       <div>
-        <label for="student_email" class="mb-1 block text-sm font-semibold text-slate-700">{{
+        <label for="student_email" class="mb-1 block text-label text-highlighted">{{
           MOHON_COPY.emailLabel
         }}</label>
-        <input
+        <UInput
           id="student_email"
           v-model="form.studentEmail"
           name="student_email"
           type="email"
           required
+          size="xl"
+          class="w-full"
           :placeholder="MOHON_COPY.emailPlaceholder"
-          :class="[FORM_INPUT_CLASS, errorClass('studentEmail')]"
+          :ui="{ base: errorClass('studentEmail') }"
         />
-        <p id="student_email_hint" class="mt-1 text-xs text-slate-500">
+        <p id="student_email_hint" class="mt-1 text-caption text-muted">
           {{ MOHON_COPY.hintBefore
-          }}<RouterLink to="/register" class="font-semibold text-blue-600 underline">{{
+          }}<RouterLink to="/register" class="font-semibold text-primary underline">{{
             MOHON_COPY.hintLink
           }}</RouterLink
           >{{ MOHON_COPY.hintAfter }}
@@ -135,68 +156,65 @@ async function onSubmit(): Promise<void> {
       </div>
 
       <div>
-        <label for="student_category" class="mb-1 block text-sm font-semibold text-slate-700">{{
+        <label for="student_category" class="mb-1 block text-label text-highlighted">{{
           MOHON_COPY.categoryLabel
         }}</label>
-        <select
+        <UNativeSelect
           id="student_category"
           v-model="form.studentCategory"
           name="student_category"
           required
-          :class="[FORM_SELECT_CLASS, errorClass('studentCategory')]"
-        >
-          <option value="">{{ MOHON_COPY.categoryPlaceholder }}</option>
-          <option v-for="o in CATEGORY_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
+          size="xl"
+          class="w-full"
+          :items="categoryItems"
+          :ui="{ base: errorClass('studentCategory') }"
+        />
       </div>
 
       <div>
-        <label for="family_income_range" class="mb-1 block text-sm font-semibold text-slate-700">{{
+        <label for="family_income_range" class="mb-1 block text-label text-highlighted">{{
           MOHON_COPY.incomeLabel
         }}</label>
-        <select
+        <UNativeSelect
           id="family_income_range"
           v-model="form.familyIncomeRange"
           name="family_income_range"
-          :class="[FORM_SELECT_CLASS, errorClass('familyIncomeRange')]"
-        >
-          <option value="">{{ MOHON_COPY.incomePlaceholder }}</option>
-          <option v-for="o in INCOME_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
+          size="xl"
+          class="w-full"
+          :items="incomeItems"
+          :ui="{ base: errorClass('familyIncomeRange') }"
+        />
       </div>
 
       <div>
-        <label for="reason" class="mb-1 block text-sm font-semibold text-slate-700">{{
+        <label for="reason" class="mb-1 block text-label text-highlighted">{{
           MOHON_COPY.reasonLabel
         }}</label>
-        <textarea
+        <UTextarea
           id="reason"
           v-model="form.reason"
           name="reason"
-          rows="4"
+          :rows="4"
           required
+          class="w-full"
           :placeholder="MOHON_COPY.reasonPlaceholder"
-          :class="[FORM_TEXTAREA_CLASS, errorClass('reason')]"
-        ></textarea>
+          :ui="{ base: errorClass('reason') }"
+        />
       </div>
 
       <ReasonExamples @pick="pickExample" />
 
-      <button
+      <UButton
         type="submit"
-        class="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        size="xl"
+        icon="i-ph-paper-plane-tilt-duotone"
+        class="min-h-12 w-full justify-center"
         :disabled="sending"
         data-testid="mohon-submit"
+        >{{ MOHON_COPY.submit }}</UButton
       >
-        <Send class="h-4 w-4" />
-        {{ MOHON_COPY.submit }}
-      </button>
     </form>
 
     <MohonInfoBox />
-  </div>
+  </DsPage>
 </template>

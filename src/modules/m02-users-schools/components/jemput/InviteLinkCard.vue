@@ -6,7 +6,6 @@
  * write (DV-L45-04). The WhatsApp anchor keeps its `href` but the click does not navigate (D14,
  * DV-L45-03). No ARIA beyond native elements (D10, NFR-L45-02).
  */
-import { Check, Copy, Link, RefreshCw } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 
 import { inviteUrl, whatsAppHref } from '../../lib/jemput'
@@ -16,7 +15,6 @@ const props = defineProps<{ token: string; regenerating: boolean }>()
 const emit = defineEmits<{ regenerate: [] }>()
 
 const COPIED_MS = 2000
-const field = ref<HTMLInputElement | null>(null)
 const copied = ref(false)
 let timer: ReturnType<typeof setTimeout> | null = null
 
@@ -24,7 +22,6 @@ const url = computed(() => inviteUrl(props.token, window.location.origin))
 const waHref = computed(() => whatsAppHref(url.value))
 
 async function copy(): Promise<void> {
-  field.value?.select()
   try {
     await navigator.clipboard.writeText(url.value)
   } catch {
@@ -41,77 +38,69 @@ async function copy(): Promise<void> {
 onBeforeUnmount(() => {
   if (timer) clearTimeout(timer)
 })
-
-const BUTTON =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none'
 </script>
 
 <template>
-  <section
-    class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
-    data-testid="jemput-link-card"
-  >
-    <h2 class="flex items-center gap-2 font-heading text-lg font-bold text-slate-900">
-      <Link class="h-5 w-5 text-indigo-500" />
+  <section class="rounded-card bg-default p-5 shadow-lift sm:p-6" data-testid="jemput-link-card">
+    <h2 class="flex items-center gap-2 text-heading text-highlighted">
+      <UIcon name="i-ph-link-duotone" class="size-5 text-primary" aria-hidden="true" />
       Link Jemputan
     </h2>
-    <p class="mt-2 text-sm text-slate-600">
+    <p class="mt-2 text-body text-muted">
       Salin link ini dan hantar kepada ibu bapa anda melalui WhatsApp atau mesej.
     </p>
 
-    <div class="mt-4 flex items-center gap-2">
-      <input
-        ref="field"
+    <div class="mt-4 flex items-stretch gap-2">
+      <UInput
         type="text"
         readonly
-        :value="url"
-        class="min-h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-300"
+        :model-value="url"
+        size="xl"
+        class="min-w-0 flex-1"
+        :ui="{ base: 'font-mono' }"
         data-testid="jemput-url"
       />
-      <button
+      <UButton
         type="button"
-        :class="[
-          BUTTON,
-          'shrink-0 text-white focus-visible:ring-indigo-400',
-          copied ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700',
-        ]"
+        size="xl"
+        :color="copied ? 'success' : 'primary'"
+        :icon="copied ? 'i-ph-check-bold' : 'i-ph-copy-duotone'"
+        class="shrink-0 justify-center"
         :data-copied="copied ? 'true' : 'false'"
         data-testid="jemput-copy"
         @click="copy"
+        >{{ copied ? 'Disalin!' : 'Salin' }}</UButton
       >
-        <component :is="copied ? Check : Copy" class="h-4 w-4" />
-        {{ copied ? 'Disalin!' : 'Salin' }}
-      </button>
     </div>
 
     <div class="mt-3 flex flex-col gap-3 sm:flex-row">
-      <a
-        :href="waHref"
+      <UButton
+        :to="waHref"
         target="_blank"
         rel="noopener noreferrer"
-        :class="[
-          BUTTON,
-          'bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-400 sm:flex-1',
-        ]"
+        size="xl"
+        color="neutral"
+        variant="soft"
+        class="justify-center sm:flex-1"
         data-testid="jemput-whatsapp"
         @click.prevent
       >
-        <WhatsAppIcon class="h-5 w-5" />
+        <WhatsAppIcon class="size-5" />
         Hantar via WhatsApp
-      </a>
-      <button
+      </UButton>
+      <UButton
         type="button"
+        size="xl"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-arrows-clockwise-duotone"
+        class="justify-center"
         :disabled="regenerating"
-        :class="[
-          BUTTON,
-          'bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-60',
-        ]"
+        :loading="regenerating"
         data-testid="jemput-regenerate"
         @click="emit('regenerate')"
+        >Jana Link Baru</UButton
       >
-        <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': regenerating }" />
-        Jana Link Baru
-      </button>
     </div>
   </section>
 </template>

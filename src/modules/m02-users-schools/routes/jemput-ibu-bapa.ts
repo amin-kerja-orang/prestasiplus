@@ -23,6 +23,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Kongsi link ini dengan ibu bapa untuk pantau perkembangan anda',
       },
       module: 'M02',
+      v2: true,
     },
   },
 ]

@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Heatmap Topik Lemah',
       header: { title: 'Heatmap Topik Lemah', subtitle: 'Selamat datang kembali' },
       module: 'M25',
+      v2: true,
     },
   },
 ]
