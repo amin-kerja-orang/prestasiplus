@@ -17,12 +17,14 @@ export interface CommandCenterDrillRouteOptions {
   /** Roles the scope admits (the guard sends others to `onForbidden`). */
   roles: readonly Role[]
   onForbidden?: ForbiddenOutcome
+  /** Render inside the staff shell (the Guru mount); otherwise the page draws its own staff frame (`bare`). */
+  shell?: boolean
 }
 
 const id = (value: unknown) => Number(value)
 
 /**
- * The four standalone (`bare`) routes S4-S7 under `prefix`: `school/:schoolId`, `school/:schoolId/teacher/:userId`,
+ * The four routes (standalone `bare` pages that draw their own staff frame, or in the staff shell with `shell`) S4-S7 under `prefix`: `school/:schoolId`, `school/:schoolId/teacher/:userId`,
  * `classroom/:classroomId`, `student/:userId`. Ids are digits only, so a non-numeric id falls to the global 404
  * (E2E-M17-07). The page tab title is set from the data ("{name} - Command Center").
  */
@@ -32,7 +34,8 @@ export function commandCenterDrillRoutes(
   const { namePrefix, roles } = options
   const prefix = options.prefix.replace(/\/+$/, '')
   const meta = {
-    layout: 'bare' as const,
+    layout: options.shell ? ('user' as const) : ('bare' as const),
+    ...(options.shell ? { v2: true } : {}),
     access: 'auth' as const,
     roles,
     ...(options.onForbidden ? { onForbidden: options.onForbidden } : {}),

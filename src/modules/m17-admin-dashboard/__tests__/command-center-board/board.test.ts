@@ -67,7 +67,7 @@ describe('S2 admin board', () => {
 
     expect(text(w, 'cc-title')).toBe('PrestasiPlus Command Center')
     expect(text(w, 'cc-live-badge')).toBe('LIVE')
-    expect(text(w, 'cc-s2-back')).toBe('← Dashboard')
+    expect(text(w, 'cc-s2-back')).toBe('Dashboard')
     expect(w.get('[data-testid="cc-s2-back"]').attributes('href')).toBe('/admin')
     expect(w.get('[data-testid="cc-s2-daily"]').attributes('href')).toBe(
       '/admin/command-center/daily-activity',
@@ -104,18 +104,20 @@ describe('S2 admin board', () => {
     expect(text(w, 'cc-today-bar')).toBe('340 soalan')
     expect(text(w, 'cc-week')).toBe('Minggu ini: 2,508')
     expect(text(w, 'cc-change')).toBe('▼ -67% vs minggu lepas')
-    expect(w.get('[data-testid="cc-change"]').classes()).toContain('text-rose-400')
-    expect(texts(w, 'cc-medal')).toEqual(['🥇', '🥈', '🥉', '⚬', '⚬'])
+    expect(w.get('[data-testid="cc-change"]').classes()).toContain('text-error')
+    expect(texts(w, 'cc-medal')).toEqual(['1', '2', '3', '4', '5'])
     expect(texts(w, 'cc-top-pupil-stat')[0]).toBe('452 jwb · 99.6%')
     expect(w.get('[data-testid="cc-top-pupil-link"]').attributes('href')).toBe(
       '/admin/command-center/student/2022',
     )
     expect(texts(w, 'cc-mood-count')).toEqual(['307', '280', '72', '91'])
-    expect(texts(w, 'cc-correction-value')).toEqual(['899', '+0.0%', '0%'])
+    expect([
+      ...texts(w, 'cc-correction-total'),
+      ...texts(w, 'cc-correction-avg'),
+      ...texts(w, 'cc-correction-rate'),
+    ]).toEqual(['899Rekod', '+0.0%Purata Naik', '0%Kadar Baik'])
     expect(w.text()).not.toContain('Top Improvers')
-    expect(texts(w, 'cc-band-bar')).toEqual(['29', '11', '43', '3', '2,229'])
-    const widths = w.findAll('[data-testid="cc-band-bar"]').map((e) => e.attributes('style'))
-    expect(widths[4]).toContain('width: 100%')
+    expect(w.find('[data-testid="cc-engagement-bands"]').exists()).toBe(true)
     expect(text(w, 'cc-footer')).toBe(
       'Powered by ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
     )
@@ -126,7 +128,9 @@ describe('S2 admin board', () => {
     api.fetchCcLiveData.mockResolvedValue(platformLive())
     const w = await mountBoard(false)
     const ids = (col: string) =>
-      w.findAll(`[data-testid="${col}"] > section`).map((e) => e.attributes('data-testid'))
+      w
+        .findAll(`[data-testid="${col}"] > [data-testid^="cc-panel"]`)
+        .map((e) => e.attributes('data-testid'))
     expect(ids('cc-col-1')).toEqual([
       'cc-panel-top-schools',
       'cc-panel-kirkpatrick',
@@ -249,7 +253,7 @@ describe('S2 admin board', () => {
     api.fetchCcLiveData.mockResolvedValue(platformLive({ weekChange: 12 }))
     let w = await mountBoard(false)
     expect(text(w, 'cc-change')).toBe('▲ +12% vs minggu lepas')
-    expect(w.get('[data-testid="cc-change"]').classes()).toContain('text-emerald-400')
+    expect(w.get('[data-testid="cc-change"]').classes()).toContain('text-success')
     expect(text(w, 'cc-alesa')).toContain('peningkatan 12%')
     w.unmount()
 
@@ -282,7 +286,9 @@ describe('S2 Admin Sekolah alias', () => {
   it('reflows without "Top Sekolah": Mood moves under Pembetulan so no column has a hole', async () => {
     const w = await load()
     const ids = (col: string) =>
-      w.findAll(`[data-testid="${col}"] > section`).map((e) => e.attributes('data-testid'))
+      w
+        .findAll(`[data-testid="${col}"] > [data-testid^="cc-panel"]`)
+        .map((e) => e.attributes('data-testid'))
     expect(ids('cc-col-1')).toEqual(['cc-panel-kirkpatrick', 'cc-panel-alesa'])
     expect(ids('cc-col-2')).toEqual(['cc-panel-today', 'cc-panel-feed', 'cc-panel-top-pupils'])
     expect(ids('cc-col-3')).toEqual(['cc-panel-correction', 'cc-panel-mood'])
@@ -319,12 +325,12 @@ describe('S2 Admin Sekolah alias', () => {
 
   it('shows zeros for "Pembetulan" and the school own 7 days under "Engagement"', async () => {
     const w = await load()
-    expect(texts(w, 'cc-correction-value')).toEqual(['0', '+0.0%', '0%'])
-    expect(texts(w, 'cc-day-label')).toEqual(['Sab', 'Ahd', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum'])
-    expect(texts(w, 'cc-day-count')).toEqual(['0', '0', '1', '2', '8', '4', '3'])
-    const heights = w.findAll('[data-testid="cc-day-bar"]').map((e) => e.attributes('style'))
-    expect(heights[4]).toContain('height: 100%')
-    expect(heights[0]).toContain('height: 4%')
+    expect([
+      ...texts(w, 'cc-correction-total'),
+      ...texts(w, 'cc-correction-avg'),
+      ...texts(w, 'cc-correction-rate'),
+    ]).toEqual(['0Rekod', '+0.0%Purata Naik', '0%Kadar Baik'])
+    expect(w.find('[data-testid="cc-engagement-days"]').exists()).toBe(true)
     expect(w.find('[data-testid="cc-engagement-bands"]').exists()).toBe(false)
     w.unmount()
   })

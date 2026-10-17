@@ -1,12 +1,10 @@
 <script setup lang="ts">
-/** "🏆 Top Sekolah" (FR-M17-24, FN-M17-3.3.1): up to 5 rows, rank badge r1-r5, school link to S4, "{n} plj". */
-import { RouterLink } from 'vue-router'
-
+/** "Top Sekolah" (FR-M17-24, FN-M17-3.3.1): up to 5 rows, rank badge, school link to S4, "{n} plj". */
 import { formatCount } from '@/lib/number'
 
 import type { CcTopSchool } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
-import { RANK_BADGE, S2_COPY } from './board-copy'
+import { rankColor, S2_COPY } from './board-copy'
 import BoardPanel from './BoardPanel.vue'
 
 const props = defineProps<{ rows: CcTopSchool[] | null; basePath: string }>()
@@ -14,33 +12,30 @@ const paths = ccPaths(props.basePath)
 </script>
 
 <template>
-  <BoardPanel icon="🏆" title="Top Sekolah" testid="cc-panel-top-schools">
-    <p v-if="rows === null" class="text-sm text-slate-400">{{ S2_COPY.loading }}</p>
-    <p v-else-if="rows.length === 0" class="text-sm text-slate-400" data-testid="cc-empty">
+  <BoardPanel icon="i-ph-trophy" title="Top Sekolah" testid="cc-panel-top-schools">
+    <p v-if="rows === null" class="text-body text-muted">{{ S2_COPY.loading }}</p>
+    <p v-else-if="rows.length === 0" class="text-body text-muted" data-testid="cc-empty">
       {{ S2_COPY.noData }}
     </p>
-    <ul v-else class="space-y-1">
+    <ul v-else class="flex flex-col gap-1">
       <li
         v-for="(s, i) in rows"
         :key="s.schoolId"
         class="flex min-h-11 items-center gap-3"
         data-testid="cc-top-school"
       >
-        <span
-          :class="[
-            'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold',
-            RANK_BADGE[i],
-          ]"
-          data-testid="cc-rank"
-          >{{ i + 1 }}</span
-        >
-        <RouterLink
+        <UBadge :color="rankColor(i)" variant="soft" class="shrink-0" data-testid="cc-rank">{{
+          i + 1
+        }}</UBadge>
+        <UButton
           :to="paths.school(s.schoolId)"
-          class="min-w-0 flex-1 text-base font-medium break-words text-slate-100 hover:text-indigo-300 xl:truncate"
+          variant="link"
+          color="neutral"
+          class="h-auto min-w-0 flex-1 justify-start p-0 text-start"
+          :label="s.schoolName"
           data-testid="cc-top-school-link"
-          >{{ s.schoolName }}</RouterLink
-        >
-        <span class="shrink-0 font-mono text-sm text-slate-400" data-testid="cc-top-school-count"
+        />
+        <span class="tabular shrink-0 text-body text-muted" data-testid="cc-top-school-count"
           >{{ formatCount(s.activeCount) }} plj</span
         >
       </li>

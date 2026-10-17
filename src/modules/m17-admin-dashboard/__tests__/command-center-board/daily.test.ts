@@ -52,13 +52,13 @@ afterEach(() => {
 describe('S3 admin', () => {
   it('renders header, tabs on "Hari Ini" and ignores a ?period= query', async () => {
     const w = await mountDaily(false, '/?period=week')
-    expect(get(w, 'cc-title').text()).toBe('⚡ AKTIVITI PLATFORM')
+    expect(get(w, 'cc-title').text()).toBe('AKTIVITI PLATFORM')
     expect(get(w, 'cc-s3-back').text()).toBe('◀ Command Center')
     expect(get(w, 'cc-s3-back').attributes('href')).toBe('/admin/command-center')
     expect(get(w, 'cc-s3-report').text()).toBe('Laporan Eksekutif')
     expect(get(w, 'cc-s3-report').attributes('href')).toBe('/admin/laporan-eksekutif')
     expect(get(w, 'cc-clock').text()).toBe('15:40:00')
-    expect(texts(w, 'cc-tab')).toEqual(['📅 Hari Ini', '📆 Minggu Ini', '🗓️ Bulan Ini'])
+    expect(texts(w, 'cc-tab')).toEqual(['Hari Ini', 'Minggu Ini', 'Bulan Ini'])
     expect(tab(w, 'today').attributes('data-active')).toBe('true')
     expect(api.fetchCcDailyActivity).toHaveBeenCalledWith('today', expect.anything())
     w.unmount()
@@ -93,21 +93,14 @@ describe('S3 admin', () => {
     expect(rows[0]?.text()).toContain('GURU')
     expect(rows[1]?.text()).toContain('LOGIN')
     expect(texts(w, 'cc-school-accuracy')).toEqual(['95.0%', '-%'])
-    expect(w.findAll('[data-testid="cc-school-accuracy"]')[0]?.classes()).toContain(
-      'text-emerald-400',
-    )
-    expect(rows[0]?.classes()).not.toContain('opacity-50')
-    expect(rows[1]?.classes()).toContain('opacity-50')
+    expect(w.findAll('[data-testid="cc-school-accuracy"]')[0]?.classes()).toContain('text-success')
     w.unmount()
   })
 
   it('renders subjects, heatmap with its tooltip, feed, logins, top pupils, mood and badges', async () => {
     const w = await mountDaily(false)
-    expect(texts(w, 'cc-subject-name')).toEqual(['Matematik', 'BM'])
-    expect(w.findAll('[data-testid="cc-heat-cell"]')).toHaveLength(24)
-    expect(w.get('[data-testid="cc-heat-cell"][data-hour="14"]').attributes('title')).toBe(
-      '14:00 — 60 soalan',
-    )
+    expect(w.find('[data-testid="cc-subjects-chart"]').exists()).toBe(true)
+    expect(w.find('[data-testid="cc-heat-chart"]').exists()).toBe(true)
     expect(texts(w, 'cc-daily-feed-row')[0]).toContain('Pelajar Contoh Satu')
     expect(texts(w, 'cc-login-role')).toEqual(['admin', 'student', 'student', 'teacher'])
     expect(texts(w, 'cc-login-package')).toEqual(['ADMIN', 'SEKOLAH', 'FREE', 'SEKOLAH'])
@@ -220,7 +213,7 @@ describe('S3 admin', () => {
       }),
     )
     const w = await mountDaily(false)
-    expect(get(w, 'cc-schools-empty').text()).toBe('😴 Tiada aktiviti')
+    expect(get(w, 'cc-schools-empty').text()).toBe('Tiada aktiviti')
     expect(texts(w, 'cc-empty')).toEqual([
       '-',
       'Tiada data',
@@ -257,7 +250,7 @@ describe('S3 Admin Sekolah alias', () => {
   it('titles the page "AKTIVITI SEKOLAH", hides the school list and the report link', async () => {
     api.fetchCcDailyActivity.mockResolvedValue(schoolDaily())
     const w = await mountDaily(true)
-    expect(get(w, 'cc-title').text()).toBe('⚡ AKTIVITI SEKOLAH')
+    expect(get(w, 'cc-title').text()).toBe('AKTIVITI SEKOLAH')
     expect(get(w, 'cc-s3-back').attributes('href')).toBe('/admin-sekolah/command-center')
     expect(w.find('[data-testid="cc-s3-report"]').exists()).toBe(false)
     expect(w.find('[data-testid="cc-panel-schools"]').exists()).toBe(false)

@@ -33,10 +33,11 @@ export function useLiveData() {
   const data = shallowRef<CcLiveData | null>(null)
   let controller: AbortController | null = null
   let inFlight = false
+  const paused = ref(false)
 
   async function load(): Promise<void> {
     // a tick while a request is still running is skipped, so a slow response still lands
-    if (inFlight) return
+    if (inFlight || paused.value) return
     inFlight = true
     const current = new AbortController()
     controller = current
@@ -55,7 +56,11 @@ export function useLiveData() {
   onScopeDispose(() => {
     controller?.abort()
   })
-  return { data }
+  const togglePause = (): void => {
+    paused.value = !paused.value
+    if (!paused.value) void load()
+  }
+  return { data, paused, togglePause }
 }
 
 /**

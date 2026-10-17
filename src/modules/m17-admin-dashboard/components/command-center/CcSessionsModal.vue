@@ -5,9 +5,11 @@
  * summary tiles; the table ("Topik" instead of "Subjek" for a subject); empties and the error copy.
  * A row opens the session modal (the parent handles `open-session`).
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
+import { DsDrillTable } from '@/ds'
 import { formatMyt } from '@/lib/time'
 
 import {
@@ -15,17 +17,13 @@ import {
   fetchCcStudentSubject,
   fetchCcStudentWeek,
 } from '../../api/command-center'
-import {
-  accuracyTone,
-  CC_TABLE as T,
-  count,
-  pct1,
-  pct2,
-  TONE_TEXT,
-  type CcSessionsSource,
-} from './cc-format'
+import type { CcSessionRow } from '../../api/command-center-types'
+import { accuracyTone, count, pct1, pct2, TONE_TEXT, type CcSessionsSource } from './cc-format'
 import CcModal from './CcModal.vue'
 import CcModalStats from './CcModalStats.vue'
+
+/** The DS table wants an index signature, which a mapped alias gives an interface. */
+type Row = { [K in keyof CcSessionRow]: CcSessionRow[K] }
 
 const props = defineProps<{ userId: number; source: CcSessionsSource }>()
 const emit = defineEmits<{ close: []; 'open-session': [sessionId: string] }>()
@@ -67,64 +65,77 @@ const rowTitle = computed(() => {
   return undefined
 })
 const secondColumn = computed(() => (props.source.kind === 'subject' ? 'Topik' : 'Subjek'))
-const COLUMNS = ['Tarikh', 'Soalan', 'Betul', 'Ketepatan', 'Masa']
+const columns = computed<TableColumn<Row>[]>(() => [
+  { id: 'date', header: 'Tarikh' },
+  { id: 'second', header: secondColumn.value },
+  { id: 'total', header: 'Soalan' },
+  { id: 'correct', header: 'Betul' },
+  { id: 'acc', header: 'Ketepatan' },
+  { id: 'time', header: 'Masa' },
+])
+const sessions = computed(() => data.value?.sessions ?? [])
 </script>
 
 <template>
   <CcModal :title="title" testid="cc-sessions-modal" @close="emit('close')">
-    <p v-if="error" class="text-sm text-rose-400" data-testid="cc-modal-error">
+    <p v-if="error" class="text-body text-error" data-testid="cc-modal-error">
       Ralat memuatkan data
     </p>
-    <p v-else-if="!data" class="text-sm text-slate-400" data-testid="cc-modal-loading">
+    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Memuatkan...
     </p>
     <template v-else>
       <CcModalStats :stats="stats" />
       <p
         v-if="data.sessions.length === 0"
-        class="mt-4 text-sm text-slate-400"
+        class="text-body text-muted"
         data-testid="cc-modal-empty"
       >
         {{ emptyCopy }}
       </p>
-      <div v-else class="mt-4 overflow-x-auto" data-testid="cc-sessions-scroller">
-        <table :class="[T.table, 'min-w-[520px]']" data-testid="cc-sessions-table">
-          <thead>
-            <tr>
-              <th :class="T.th">{{ COLUMNS[0] }}</th>
-              <th :class="T.th">{{ secondColumn }}</th>
-              <th v-for="c in COLUMNS.slice(1)" :key="c" :class="T.th">{{ c }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="row in data.sessions"
-              :key="row.id"
-              :class="[T.row, T.rowLink]"
+      <div v-else data-testid="cc-sessions-scroller">
+        <DsDrillTable
+          :data="sessions"
+          :columns="columns"
+          :caption="title"
+          data-testid="cc-sessions-table"
+          @drill="(row: Row) => emit('open-session', row.id)"
+        >
+          <template #date-cell="{ row }">
+            <span
               :title="rowTitle"
               data-testid="cc-session-row"
-              :data-session-id="row.id"
-              @click="emit('open-session', row.id)"
+              :data-session-id="row.original.id"
+              >{{ formatMyt(row.original.completedAt, 'dd/MM HH:mm') }}</span
             >
-              <td :class="[T.td, 'whitespace-nowrap']">
-                {{ formatMyt(row.completedAt, 'dd/MM HH:mm') }}
-              </td>
-              <td :class="T.td">
-                {{ source.kind === 'subject' ? (row.topic ?? '-') : row.subjectLabel }}
-              </td>
-              <td :class="[T.td, 'whitespace-nowrap']">
-                <span data-testid="cc-session-open"
-                  >{{ row.total }} <span aria-hidden="true">🔍</span></span
-                >
-              </td>
-              <td :class="[T.td, 'text-emerald-400']">{{ row.correct }}</td>
-              <td :class="[T.td, TONE_TEXT[accuracyTone(row.accuracy)]]">
-                {{ pct2(row.accuracy) }}
-              </td>
-              <td :class="T.td">{{ row.minutes }}m</td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+          <template #second-cell="{ row }">
+            {{
+              source.kind === 'subject' ? (row.original.topic ?? '-') : row.original.subjectLabel
+            }}
+          </template>
+          <template #total-cell="{ row }">
+            <UButton
+              variant="link"
+              color="primary"
+              size="sm"
+              trailing-icon="i-ph-magnifying-glass"
+              class="h-auto p-0"
+              :label="String(row.original.total)"
+              data-testid="cc-session-open"
+              @click.stop="emit('open-session', row.original.id)"
+            />
+          </template>
+          <template #correct-cell="{ row }"
+            ><span class="text-success">{{ row.original.correct }}</span></template
+          >
+          <template #acc-cell="{ row }">
+            <span :class="TONE_TEXT[accuracyTone(row.original.accuracy)]">{{
+              pct2(row.original.accuracy)
+            }}</span>
+          </template>
+          <template #time-cell="{ row }">{{ row.original.minutes }}m</template>
+        </DsDrillTable>
       </div>
     </template>
   </CcModal>

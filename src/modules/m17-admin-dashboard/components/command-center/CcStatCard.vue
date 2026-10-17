@@ -1,57 +1,43 @@
 <script setup lang="ts">
-/** Stat card with a coloured top edge (live S4 / S7); `clickTitle` makes it a button (S7 "Jumlah Jawapan 🔍"). */
-import { computed } from 'vue'
+/** Stat card of S4 / S7; `clickTitle` makes it a button (S7 "Jumlah Jawapan"). */
+import { DsIconChip } from '@/ds'
 
-type Accent = 'indigo' | 'emerald' | 'amber' | 'rose' | 'cyan'
-
-const props = defineProps<{
+defineProps<{
   label: string
   value: string
-  accent: Accent
-  /** Appends the 🔍 and makes the card a button with this `title`. */
+  /** Phosphor icon of the chip (`i-ph-...`). */
+  icon: string
+  /** Makes the card a button with this `title`. */
   clickTitle?: string
 }>()
 defineEmits<{ click: [] }>()
-
-const EDGE: Record<Accent, string> = {
-  indigo: 'border-t-indigo-500',
-  emerald: 'border-t-emerald-500',
-  amber: 'border-t-amber-500',
-  rose: 'border-t-rose-500',
-  cyan: 'border-t-cyan-500',
-}
-const TEXT: Record<Accent, string> = {
-  indigo: 'text-indigo-300',
-  emerald: 'text-emerald-300',
-  amber: 'text-amber-300',
-  rose: 'text-rose-300',
-  cyan: 'text-cyan-300',
-}
-const classes = computed(() => [
-  'min-w-0 rounded-2xl border border-t-4 border-slate-700 bg-slate-800 p-4 text-left',
-  EDGE[props.accent],
-])
 </script>
 
 <template>
-  <div
+  <UButton
     v-if="clickTitle"
+    color="neutral"
+    variant="ghost"
+    class="h-auto min-w-0 flex-col items-start gap-1 bg-default p-4 text-start"
     :title="clickTitle"
-    :class="[classes, 'cursor-pointer transition hover:bg-slate-700/60']"
     data-testid="cc-stat"
     @click="$emit('click')"
   >
-    <div class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-      {{ label }} <span aria-hidden="true">🔍</span>
+    <span class="flex w-full min-w-0 items-center gap-2">
+      <DsIconChip :icon="icon" size="sm" />
+      <span class="min-w-0 text-overline text-muted">{{ label }}</span>
+    </span>
+    <span class="tabular text-title text-highlighted" data-testid="cc-stat-value">{{ value }}</span>
+  </UButton>
+  <UCard v-else class="min-w-0" data-testid="cc-stat">
+    <div class="flex min-w-0 flex-col items-start gap-1">
+      <span class="flex w-full min-w-0 items-center gap-2">
+        <DsIconChip :icon="icon" size="sm" />
+        <span class="min-w-0 text-overline text-muted">{{ label }}</span>
+      </span>
+      <span class="tabular text-title text-highlighted" data-testid="cc-stat-value">{{
+        value
+      }}</span>
     </div>
-    <div :class="['mt-1 font-mono text-3xl font-bold', TEXT[accent]]" data-testid="cc-stat-value">
-      {{ value }}
-    </div>
-  </div>
-  <div v-else :class="classes" data-testid="cc-stat">
-    <div class="text-xs font-semibold tracking-wider text-slate-400 uppercase">{{ label }}</div>
-    <div :class="['mt-1 font-mono text-3xl font-bold', TEXT[accent]]" data-testid="cc-stat-value">
-      {{ value }}
-    </div>
-  </div>
+  </UCard>
 </template>

@@ -1,26 +1,30 @@
 <script setup lang="ts">
 /** Summary tiles of the S2 modals ("Jumlah Pelajar", "Aktif", ...): value over label. */
+import { DsStatTile } from '@/ds'
+
 export interface StatCard {
   label: string
   value: string
-  /** Tailwind text colour of the value. */
-  tone?: string
 }
-defineProps<{ cards: StatCard[]; cols?: string }>()
+withDefaults(defineProps<{ cards: StatCard[]; cols?: 3 | 4 | 5 }>(), { cols: 4 })
 </script>
 
 <template>
-  <div :class="['grid gap-2', cols ?? 'grid-cols-2 sm:grid-cols-4']" data-testid="cc-modal-cards">
-    <div
+  <div
+    class="grid gap-3"
+    :class="{
+      'grid-cols-2 sm:grid-cols-4': cols === 4,
+      'grid-cols-3': cols === 3,
+      'grid-cols-2 sm:grid-cols-5': cols === 5,
+    }"
+    data-testid="cc-modal-cards"
+  >
+    <DsStatTile
       v-for="c in cards"
       :key="c.label"
-      class="min-w-0 rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2"
+      :value="c.value"
+      :unit="c.label"
       data-testid="cc-modal-card"
-    >
-      <div :class="['font-mono text-xl font-bold break-words', c.tone ?? 'text-slate-50']">
-        {{ c.value }}
-      </div>
-      <div class="text-xs tracking-wide text-slate-400 uppercase">{{ c.label }}</div>
-    </div>
+    />
   </div>
 </template>

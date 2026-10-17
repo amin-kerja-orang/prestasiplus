@@ -4,9 +4,6 @@
  * activity in the period; a row click toggles its drill (Guru Aktif, Pelajar, Login, "Lihat penuh →"). Admin
  * only: the page does not render it for the school admin (FR-M17-116).
  */
-import { RouterLink } from 'vue-router'
-
-import { LoadingSpinner } from '@/components/feedback'
 import { formatCount, formatNumber } from '@/lib/number'
 
 import type { CcDailyActivity, CcSchoolActivity } from '../../api/command-center-board'
@@ -30,81 +27,84 @@ const accuracy = (s: CcSchoolActivity) =>
   s.accuracy === null ? '-%' : `${formatNumber(s.accuracy, { decimals: 1 })}%`
 const toneOf = (value: number | null) =>
   value !== null && value >= 70
-    ? 'text-emerald-400'
+    ? 'text-success'
     : value !== null && value >= 50
-      ? 'text-amber-400'
-      : 'text-rose-400'
+      ? 'text-warning'
+      : 'text-error'
 const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
-const ROLE_CHIP = 'rounded bg-slate-800 px-1.5 py-0.5 text-xs font-bold uppercase'
 </script>
 
 <template>
   <DailyPanel
     title="Sekolah"
-    dot="bg-emerald-500"
+    icon="i-ph-buildings"
     testid="cc-panel-schools"
     :state="status"
     class="md:col-span-2 xl:col-span-1"
   >
     <p
       v-if="!data || !data.schools || data.schools.length === 0"
-      class="py-4 text-center text-sm text-slate-400"
+      class="py-4 text-center text-body text-muted"
       data-testid="cc-schools-empty"
     >
       {{ S3_COPY.noSchools }}
     </p>
-    <ul v-else class="divide-y divide-slate-800">
+    <ul v-else class="flex flex-col gap-2">
       <li v-for="(s, i) in data.schools" :key="s.schoolId" data-testid="cc-school-item">
-        <div
-          :class="[
-            'flex min-h-11 cursor-pointer flex-wrap items-center gap-x-4 gap-y-1 py-2 transition hover:bg-slate-800/60',
-            hasAnswers(s) ? '' : 'opacity-50',
-          ]"
+        <UButton
+          color="neutral"
+          :variant="hasAnswers(s) ? 'soft' : 'ghost'"
+          block
+          :trailing-icon="
+            drill && drill.schoolId === s.schoolId ? 'i-ph-caret-up' : 'i-ph-caret-down'
+          "
+          class="h-auto min-h-11 flex-wrap justify-between gap-x-4 gap-y-1 py-2 text-start"
+          :aria-expanded="drill !== null && drill.schoolId === s.schoolId"
           :data-school-id="s.schoolId"
           data-testid="cc-school-row"
           @click="$emit('toggle', s.schoolId)"
         >
           <span
-            class="min-w-0 basis-full text-sm font-bold break-words text-slate-50 sm:flex-1 sm:basis-0"
+            class="min-w-0 basis-full text-label break-words text-highlighted sm:flex-1 sm:basis-0"
             data-testid="cc-school-name"
             >{{ i + 1 }}. {{ s.schoolName }}</span
           >
-          <span class="flex shrink-0 items-center gap-4 text-center font-mono">
+          <span class="tabular flex shrink-0 items-center gap-4 text-center">
             <span data-testid="cc-school-teachers">
-              <b class="block text-sm text-cyan-400">{{
+              <b class="block text-label text-highlighted">{{
                 hasAnswers(s) ? formatCount(s.activeTeachers) : formatCount(s.loginCount)
               }}</b>
-              <span class="block text-xs text-slate-400">{{
+              <span class="block text-caption text-muted">{{
                 hasAnswers(s) ? 'GURU' : 'LOGIN'
               }}</span>
             </span>
             <span data-testid="cc-school-pupils">
-              <b class="block text-sm text-amber-400">{{ formatCount(s.activeStudents) }}</b>
-              <span class="block text-xs text-slate-400">PELAJAR</span>
+              <b class="block text-label text-highlighted">{{ formatCount(s.activeStudents) }}</b>
+              <span class="block text-caption text-muted">PELAJAR</span>
             </span>
             <span data-testid="cc-school-answers">
-              <b class="block text-sm text-indigo-300">{{ formatCount(s.totalAnswers) }}</b>
-              <span class="block text-xs text-slate-400">SOALAN</span>
+              <b class="block text-label text-highlighted">{{ formatCount(s.totalAnswers) }}</b>
+              <span class="block text-caption text-muted">SOALAN</span>
             </span>
             <span
-              :class="['w-16 text-sm font-bold', toneOf(s.accuracy)]"
+              :class="['w-16 text-label', toneOf(s.accuracy)]"
               data-testid="cc-school-accuracy"
               >{{ accuracy(s) }}</span
             >
           </span>
-        </div>
+        </UButton>
 
         <div
           v-if="drill && drill.schoolId === s.schoolId"
-          class="mb-2 rounded-xl bg-slate-950 p-3"
+          class="mt-2 bg-soft p-3"
           data-testid="cc-drill"
         >
-          <p v-if="drill.status === 'loading'" class="flex justify-center py-3 text-slate-400">
-            <LoadingSpinner class="h-5 w-5" />
+          <p v-if="drill.status === 'loading'" class="flex justify-center py-3 text-muted">
+            <UProgress class="w-24" aria-label="Memuatkan" />
           </p>
           <p
             v-else-if="drill.status === 'error' || !drill.data"
-            class="py-3 text-center text-sm text-rose-400"
+            class="py-3 text-center text-body text-error"
             data-testid="cc-drill-error"
           >
             {{ S3_COPY.drillFailed }}
@@ -116,84 +116,90 @@ const ROLE_CHIP = 'rounded bg-slate-800 px-1.5 py-0.5 text-xs font-bold uppercas
                 drill.data.students.length === 0 &&
                 drill.data.logins.length === 0
               "
-              class="py-3 text-center text-sm text-slate-400"
+              class="py-3 text-center text-body text-muted"
               data-testid="cc-drill-empty"
             >
               {{ S3_COPY.noDrill }}
             </p>
-            <div v-else class="space-y-3">
+            <div v-else class="flex flex-col gap-4">
               <section v-if="drill.data.teachers.length > 0" data-testid="cc-drill-teachers">
-                <h3 class="mb-1 text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  <span>👨‍🏫 </span>Guru Aktif ({{ drill.data.teachers.length }})
+                <h3 class="mb-1 text-overline text-muted">
+                  Guru Aktif ({{ drill.data.teachers.length }})
                 </h3>
                 <ul class="max-h-64 overflow-y-auto">
                   <li
                     v-for="t in drill.data.teachers"
                     :key="t.userId"
-                    class="grid min-h-11 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5 text-sm"
+                    class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 text-body"
                     data-testid="cc-drill-teacher"
                   >
-                    <RouterLink
+                    <UButton
                       :to="paths.teacher(s.schoolId, t.userId)"
-                      class="min-w-0 font-semibold break-words text-slate-100 hover:text-indigo-300"
-                      >{{ t.name }}</RouterLink
-                    >
-                    <span class="font-mono text-slate-100">{{ t.students }} pelajar</span>
-                    <span :class="['font-mono', toneOf(t.accuracy)]">{{ pct1(t.accuracy) }}</span>
-                    <span class="col-span-3 text-xs text-slate-400">{{ t.lastActiveHuman }}</span>
+                      variant="link"
+                      color="neutral"
+                      class="h-auto min-w-0 flex-1 justify-start p-0 text-start"
+                      :label="t.name"
+                    />
+                    <span class="tabular text-highlighted">{{ t.students }} pelajar</span>
+                    <span :class="['tabular', toneOf(t.accuracy)]">{{ pct1(t.accuracy) }}</span>
+                    <span class="basis-full text-caption text-muted">{{ t.lastActiveHuman }}</span>
                   </li>
                 </ul>
               </section>
               <section v-if="drill.data.students.length > 0" data-testid="cc-drill-students">
-                <h3 class="mb-1 text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  <span>🎓 </span>Pelajar ({{ drill.data.students.length }})
+                <h3 class="mb-1 text-overline text-muted">
+                  Pelajar ({{ drill.data.students.length }})
                 </h3>
                 <ul class="max-h-64 overflow-y-auto">
                   <li
                     v-for="p in drill.data.students"
                     :key="p.userId"
-                    class="grid min-h-11 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5 text-sm"
+                    class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 text-body"
                     data-testid="cc-drill-student"
                   >
-                    <RouterLink
+                    <UButton
                       :to="paths.student(p.userId)"
-                      class="min-w-0 font-semibold break-words text-slate-100 hover:text-indigo-300"
-                      >{{ p.name }}</RouterLink
-                    >
-                    <span class="font-mono text-slate-100"
+                      variant="link"
+                      color="neutral"
+                      class="h-auto min-w-0 flex-1 justify-start p-0 text-start"
+                      :label="p.name"
+                    />
+                    <span class="tabular text-highlighted"
                       >{{ formatCount(p.answers) }} soalan</span
                     >
-                    <span :class="['font-mono', toneOf(p.accuracy)]">{{ pct1(p.accuracy) }}</span>
-                    <span class="col-span-3 text-xs text-slate-400">{{ p.lastActiveHuman }}</span>
+                    <span :class="['tabular', toneOf(p.accuracy)]">{{ pct1(p.accuracy) }}</span>
+                    <span class="basis-full text-caption text-muted">{{ p.lastActiveHuman }}</span>
                   </li>
                 </ul>
               </section>
               <section v-if="drill.data.logins.length > 0" data-testid="cc-drill-logins">
-                <h3 class="mb-1 text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  <span>👤 </span>Login ({{ drill.data.logins.length }})
+                <h3 class="mb-1 text-overline text-muted">
+                  Login ({{ drill.data.logins.length }})
                 </h3>
                 <ul class="max-h-64 overflow-y-auto">
                   <li
                     v-for="l in drill.data.logins"
                     :key="l.userId"
-                    class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-0.5 text-sm"
+                    class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 text-body"
                     data-testid="cc-drill-login"
                   >
-                    <span class="min-w-0 flex-1 font-semibold break-words text-slate-100">{{
+                    <span class="min-w-0 flex-1 text-label break-words text-highlighted">{{
                       l.name
                     }}</span>
-                    <span :class="[ROLE_CHIP, 'text-indigo-300']">{{ l.role }}</span>
-                    <span class="text-xs text-slate-400">{{ l.timeAgo }}</span>
+                    <UBadge color="primary" variant="soft" size="sm">{{ l.role }}</UBadge>
+                    <span class="text-caption text-muted">{{ l.timeAgo }}</span>
                   </li>
                 </ul>
               </section>
             </div>
-            <RouterLink
+            <UButton
               :to="paths.school(s.schoolId)"
-              class="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-indigo-300 hover:text-indigo-200"
+              variant="link"
+              color="primary"
+              class="mt-2"
+              :label="S3_COPY.seeAll"
               data-testid="cc-drill-full"
-              >{{ S3_COPY.seeAll }}</RouterLink
-            >
+            />
           </template>
         </div>
       </li>

@@ -6,10 +6,11 @@
  */
 import { computed } from 'vue'
 
+import { DsIconChip } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 
 import type { CcLiveData } from '../../api/command-center-board'
-import { ACCENT_EDGE, ACCENT_TEXT, S2_COPY, type BoardAccent } from './board-copy'
+import { S2_COPY } from './board-copy'
 import { useCountUp } from './composables'
 
 const props = defineProps<{ data: CcLiveData | null; school: boolean }>()
@@ -23,64 +24,53 @@ const accuracy = computed(() =>
 )
 const active = computed(() => (props.data ? formatCount(props.data.activeStudents) : '--'))
 
-const tiles = computed<
-  { id: string; label: string; value: string; sub: string; accent: BoardAccent }[]
->(() => [
-  {
-    id: 'schools',
-    label: 'Sekolah Berdaftar',
-    value: schools.value,
-    sub: 'langganan aktif',
-    accent: 'indigo',
-  },
-  {
-    id: 'students',
-    label: 'Pelajar Berdaftar',
-    value: students.value,
-    sub: `${active.value} aktif menjawab`,
-    accent: 'emerald',
-  },
-  {
-    id: 'answered',
-    label: 'Soalan Dijawab',
-    value: answered.value,
-    sub: 'sepanjang masa',
-    accent: 'amber',
-  },
-  {
-    id: 'accuracy',
-    label: 'Ketepatan Purata',
-    value: accuracy.value,
-    sub: props.school ? 'sekolah anda' : 'keseluruhan platform',
-    accent: 'rose',
-  },
-])
+const tiles = computed<{ id: string; label: string; value: string; sub: string; icon: string }[]>(
+  () => [
+    {
+      id: 'schools',
+      label: 'Sekolah Berdaftar',
+      value: schools.value,
+      sub: 'langganan aktif',
+      icon: 'i-ph-buildings',
+    },
+    {
+      id: 'students',
+      label: 'Pelajar Berdaftar',
+      value: students.value,
+      sub: `${active.value} aktif menjawab`,
+      icon: 'i-ph-student',
+    },
+    {
+      id: 'answered',
+      label: 'Soalan Dijawab',
+      value: answered.value,
+      sub: 'sepanjang masa',
+      icon: 'i-ph-clipboard-text',
+    },
+    {
+      id: 'accuracy',
+      label: 'Ketepatan Purata',
+      value: accuracy.value,
+      sub: props.school ? 'sekolah anda' : 'keseluruhan platform',
+      icon: 'i-ph-target',
+    },
+  ],
+)
 </script>
 
 <template>
-  <div
-    class="grid grid-cols-2 gap-3 md:grid-cols-4 xl:shrink-0 xl:grid-cols-[1.9fr_1fr_1fr_1.2fr]"
-    data-testid="cc-kpis"
-  >
-    <div
-      v-for="t in tiles"
-      :key="t.id"
-      :class="[
-        'min-w-0 rounded-2xl border border-t-4 border-slate-700 bg-slate-800 p-4 xl:p-2.5',
-        ACCENT_EDGE[t.accent],
-      ]"
-      :data-testid="`cc-kpi-${t.id}`"
-    >
-      <div class="text-xs font-semibold tracking-widest text-slate-400 uppercase">
-        {{ t.label }}
+  <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="cc-kpis" aria-live="off">
+    <UCard v-for="t in tiles" :key="t.id" class="min-w-0" :data-testid="`cc-kpi-${t.id}`">
+      <div class="flex min-w-0 flex-col items-start gap-1">
+        <span class="flex w-full min-w-0 items-center gap-2">
+          <DsIconChip :icon="t.icon" size="sm" />
+          <span class="min-w-0 text-overline text-muted">{{ t.label }}</span>
+        </span>
+        <span class="tabular text-title break-words text-highlighted" data-testid="cc-kpi-value">{{
+          t.value
+        }}</span>
+        <span class="text-caption text-muted" data-testid="cc-kpi-sub">{{ t.sub }}</span>
       </div>
-      <div
-        :class="['mt-1 font-mono text-3xl font-bold break-words', ACCENT_TEXT[t.accent]]"
-        data-testid="cc-kpi-value"
-      >
-        {{ t.value }}
-      </div>
-      <div class="mt-1 text-sm text-slate-400" data-testid="cc-kpi-sub">{{ t.sub }}</div>
-    </div>
+    </UCard>
   </div>
 </template>

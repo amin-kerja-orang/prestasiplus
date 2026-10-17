@@ -4,18 +4,23 @@
  * "← Kembali ke Overview", breadcrumb, the four cards and "Senarai Guru ({n})" (a row opens S5).
  * The route prefix is a prop so M10 (`/guru/command-center`) and the school-admin alias mount it.
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { LoadingSpinner } from '@/components/feedback'
+import { DsDrillTable } from '@/ds'
 
 import { fetchCcSchool } from '../api/command-center'
-import { CC_TABLE as T, count, LOAD_ERROR_COPY, pct1 } from '../components/command-center/cc-format'
+import type { CcSchoolTeacher } from '../api/command-center-types'
+import { count, LOAD_ERROR_COPY, pct1 } from '../components/command-center/cc-format'
 import { ccPaths } from '../components/command-center/cc-paths'
 import CcFrame from '../components/command-center/CcFrame.vue'
 import CcPanel from '../components/command-center/CcPanel.vue'
 import CcStatCard from '../components/command-center/CcStatCard.vue'
 import { useCcPage } from '../components/command-center/use-cc-page'
+
+/** The DS table wants an index signature, which a mapped alias gives an interface. */
+type Row = { [K in keyof CcSchoolTeacher]: CcSchoolTeacher[K] }
 
 const props = withDefaults(defineProps<{ schoolId: number; basePath?: string }>(), {
   basePath: '/admin/command-center',
@@ -34,7 +39,14 @@ const crumbs = computed(() => [
   { label: 'Command Center', to: paths.value.overview },
   { label: data.value?.school.name ?? '' },
 ])
-const COLUMNS = ['#', 'Nama Guru', 'Subjek', 'Kelas', 'Pelajar', 'Aktif (30h)']
+const columns: TableColumn<Row>[] = [
+  { id: 'no', header: '#' },
+  { id: 'name', header: 'Nama Guru' },
+  { id: 'subject', header: 'Subjek' },
+  { id: 'classes', header: 'Kelas' },
+  { id: 'students', header: 'Pelajar' },
+  { id: 'active', header: 'Aktif (30h)' },
+]
 
 function open(userId: number) {
   void router.push(paths.value.teacher(props.schoolId, userId))
@@ -48,50 +60,69 @@ function open(userId: number) {
     back-label="← Kembali ke Overview"
     :crumbs="data ? crumbs : [{ label: 'Command Center', to: paths.overview }]"
   >
-    <p v-if="error" class="text-sm text-rose-400" data-testid="cc-error">{{ LOAD_ERROR_COPY }}</p>
+    <p v-if="error" class="text-body text-error" data-testid="cc-error">{{ LOAD_ERROR_COPY }}</p>
     <p
       v-else-if="!data"
-      class="flex items-center gap-2 text-sm text-slate-400"
+      class="flex items-center gap-2 text-body text-muted"
       data-testid="cc-loading"
     >
-      <LoadingSpinner class="h-4 w-4" aria-hidden="true" />Memuatkan...
+      <UProgress class="w-16" aria-hidden="true" />Memuatkan...
     </p>
     <template v-else>
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="cc-school-cards">
-        <CcStatCard label="Jumlah Pelajar" :value="count(data.cards.students)" accent="indigo" />
-        <CcStatCard label="Pelajar Aktif" :value="count(data.cards.active)" accent="emerald" />
-        <CcStatCard label="Jumlah Jawapan" :value="count(data.cards.answers)" accent="amber" />
-        <CcStatCard label="Ketepatan" :value="pct1(data.cards.accuracy)" accent="rose" />
+        <CcStatCard
+          label="Jumlah Pelajar"
+          :value="count(data.cards.students)"
+          icon="i-ph-student"
+        />
+        <CcStatCard
+          label="Pelajar Aktif"
+          :value="count(data.cards.active)"
+          icon="i-ph-users-three"
+        />
+        <CcStatCard
+          label="Jumlah Jawapan"
+          :value="count(data.cards.answers)"
+          icon="i-ph-clipboard-text"
+        />
+        <CcStatCard label="Ketepatan" :value="pct1(data.cards.accuracy)" icon="i-ph-target" />
       </div>
 
-      <CcPanel icon="👤" :title="`Senarai Guru (${data.teachers.length})`">
-        <div class="overflow-x-auto" data-testid="cc-table-scroller">
-          <table :class="[T.table, 'min-w-[560px]']" data-testid="cc-teachers-table">
-            <thead>
-              <tr>
-                <th v-for="c in COLUMNS" :key="c" :class="T.th">{{ c }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(t, i) in data.teachers"
-                :key="t.userId"
-                :class="[T.row, T.rowLink]"
+      <CcPanel icon="i-ph-chalkboard-teacher" :title="`Senarai Guru (${data.teachers.length})`">
+        <div data-testid="cc-table-scroller">
+          <DsDrillTable
+            :data="data.teachers"
+            :columns="columns"
+            caption="Senarai Guru"
+            data-testid="cc-teachers-table"
+            @drill="(t: Row) => open(t.userId)"
+          >
+            <template #no-cell="{ row }"
+              ><span class="tabular text-caption text-muted">{{ row.index + 1 }}</span></template
+            >
+            <template #name-cell="{ row }">
+              <UButton
+                variant="link"
+                color="neutral"
+                class="h-auto p-0 text-start"
+                trailing-icon="i-ph-caret-right"
+                :label="row.original.name"
                 data-testid="cc-teacher-row"
-                :data-user-id="t.userId"
-                @click="open(t.userId)"
-              >
-                <td :class="[T.td, 'font-mono text-xs text-slate-500']">{{ i + 1 }}</td>
-                <td :class="[T.td, 'font-semibold text-slate-50']">
-                  {{ t.name }}
-                </td>
-                <td :class="T.td">{{ t.subjectText ?? '-' }}</td>
-                <td :class="[T.td, 'font-mono text-slate-50']">{{ t.classes }}</td>
-                <td :class="[T.td, 'font-mono text-slate-50']">{{ t.students }}</td>
-                <td :class="[T.td, 'font-mono text-emerald-400']">{{ t.active30d }}</td>
-              </tr>
-            </tbody>
-          </table>
+                :data-user-id="row.original.userId"
+                @click.stop="open(row.original.userId)"
+              />
+            </template>
+            <template #subject-cell="{ row }">{{ row.original.subjectText ?? '-' }}</template>
+            <template #classes-cell="{ row }"
+              ><span class="tabular">{{ row.original.classes }}</span></template
+            >
+            <template #students-cell="{ row }"
+              ><span class="tabular">{{ row.original.students }}</span></template
+            >
+            <template #active-cell="{ row }"
+              ><span class="tabular text-success">{{ row.original.active30d }}</span></template
+            >
+          </DsDrillTable>
         </div>
       </CcPanel>
     </template>
