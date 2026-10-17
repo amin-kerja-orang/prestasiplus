@@ -103,6 +103,7 @@ onMounted(() => {
       <template #actions>
         <UButton
           v-if="!hideRetry"
+          variant="solid"
           size="lg"
           block
           icon="i-ph-arrow-counter-clockwise-bold"

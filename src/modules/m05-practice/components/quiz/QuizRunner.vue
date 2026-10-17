@@ -410,6 +410,7 @@ const feedbackExplanation = computed(() =>
 
               <UButton
                 v-if="!result && selected !== null"
+                variant="solid"
                 size="lg"
                 block
                 class="min-h-14"
