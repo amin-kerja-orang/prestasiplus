@@ -6,11 +6,10 @@
  * {name}!"; a network failure alerts "Ralat menghantar cabaran."; any other answer does nothing.
  * An overlay click closes the modal.
  */
-import { Send, Users, X } from '@lucide/vue'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import { BaseModal } from '@/components/overlay'
 import { alertNative, useDebounce } from '@/composables'
+import { DsDialog } from '@/ds'
 
 import {
   searchOpponent,
@@ -93,56 +92,61 @@ async function pick(user: OpponentSearchUser): Promise<void> {
 </script>
 
 <template>
-  <BaseModal :open="open" :close-on-esc="false" @update:open="emit('update:open', false)">
-    <div data-testid="battle-challenge-modal">
-      <div class="mb-4 flex items-center justify-between">
-        <h3 class="flex items-center gap-2 text-lg font-bold text-slate-800">
-          <Users class="h-5 w-5 text-blue-500" /> Cabar Kawan
-        </h3>
-        <button
-          type="button"
-          class="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
-          data-testid="battle-challenge-close"
-          @click="emit('update:open', false)"
-        >
-          <X class="h-5 w-5" />
-        </button>
-      </div>
-      <input
+  <DsDialog
+    :open="open"
+    title="Cabar Kawan"
+    :dismissible="false"
+    @update:open="emit('update:open', false)"
+  >
+    <div class="flex flex-col gap-3" data-testid="battle-challenge-modal">
+      <UInput
         v-model="query"
         type="text"
         placeholder="Cari nama pelajar..."
-        class="w-full rounded-xl border-2 border-slate-200 px-3.5 py-2.5 text-sm transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-300"
+        icon="i-ph-magnifying-glass-duotone"
+        size="xl"
+        class="w-full"
         data-testid="battle-challenge-input"
         @input="onInput"
       />
-      <div class="mt-3 max-h-64 space-y-2 overflow-y-auto">
-        <button
+      <div class="flex max-h-64 flex-col gap-2 overflow-y-auto">
+        <UButton
           v-for="u in results"
           :key="u.id"
-          type="button"
-          class="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-slate-50"
+          color="neutral"
+          variant="soft"
+          block
+          class="min-h-14 justify-start gap-3 text-start"
           data-testid="battle-challenge-result"
           @click="pick(u)"
         >
-          <span
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600"
-            >{{ u.name.charAt(0).toUpperCase() }}</span
-          >
+          <UAvatar :text="u.name.charAt(0).toUpperCase()" size="md" />
           <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm font-semibold text-slate-800">{{ u.name }}</span>
-            <span class="block truncate text-xs text-slate-500">{{ u.school }}</span>
+            <span class="block truncate text-label text-highlighted">{{ u.name }}</span>
+            <span class="block truncate text-caption text-muted">{{ u.school }}</span>
           </span>
-          <Send class="h-4 w-4 shrink-0 text-slate-400" />
-        </button>
+          <UIcon name="i-ph-paper-plane-tilt-duotone" class="size-5 shrink-0" aria-hidden="true" />
+        </UButton>
         <p
           v-if="searched && results.length === 0"
-          class="py-3 text-center text-sm text-slate-500"
+          class="py-3 text-center text-body text-muted"
           data-testid="battle-challenge-empty"
         >
           Tiada pelajar dijumpai
         </p>
       </div>
     </div>
-  </BaseModal>
+    <template #footer>
+      <UButton
+        color="neutral"
+        variant="soft"
+        size="xl"
+        class="min-h-12 justify-center"
+        data-testid="battle-challenge-close"
+        @click="emit('update:open', false)"
+      >
+        Tutup
+      </UButton>
+    </template>
+  </DsDialog>
 </template>

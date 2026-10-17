@@ -28,6 +28,7 @@ function battleRoute(
       title,
       header: { title, subtitle },
       module: 'M16',
+      v2: true,
     },
   }
 }

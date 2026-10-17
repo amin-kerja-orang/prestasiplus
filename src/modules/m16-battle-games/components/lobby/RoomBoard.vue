@@ -44,18 +44,18 @@ const tiles = computed<Tile[]>(() => {
     <div
       v-for="t in tiles"
       :key="t.n"
-      class="flex min-h-11 flex-col items-center justify-between rounded-md p-0.5 text-xs leading-none"
+      class="flex min-h-11 flex-col items-center justify-between rounded-chip p-0.5 text-caption leading-none"
       :class="t.className"
       :data-tile="t.n"
       data-testid="room-tile"
     >
-      <span class="font-semibold text-slate-600">{{ t.n }}</span>
+      <span class="tabular text-muted">{{ t.n }}</span>
       <span v-if="t.emoji">{{ t.emoji }}</span>
       <span class="flex flex-wrap justify-center gap-0.5">
         <span
           v-for="idx in t.players"
           :key="idx"
-          class="h-2.5 w-2.5 rounded-full"
+          class="size-2.5 rounded-full"
           :class="markerClass(idx)"
           data-testid="room-token"
         ></span>

@@ -11,12 +11,11 @@
  */
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { alertNative, confirmNative, useApi } from '@/composables'
+import { DsArt3D, DsPage, DsQuizOption } from '@/ds'
 import { clock } from '@/lib/time/clock'
-import { Flag } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import {
   answerArena,
@@ -163,138 +162,152 @@ async function forfeit(): Promise<void> {
   }
 }
 
-function optionClass(id: number): string {
+/** Option state: the verdict after the answer, the picked one while it is sent, else idle. */
+function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'dimmed' {
   const f = feedback.value
   if (f) {
-    if (id === f.correctOptionId) return 'border-green-500 bg-green-50 text-green-800'
-    if (id === picked.value) return 'border-red-500 bg-red-50 text-red-800'
-    return 'border-slate-200 bg-white text-slate-400'
+    if (id === f.correctOptionId) return 'correct'
+    if (id === picked.value) return 'wrong'
+    return 'dimmed'
   }
-  return 'border-slate-200 bg-white text-slate-700 hover:border-orange-300 hover:bg-orange-50'
+  if (locked.value) return id === picked.value ? 'selected' : 'dimmed'
+  return 'idle'
 }
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-2xl space-y-4" data-testid="battle-arena">
-    <div v-if="!view && !error" class="flex justify-center py-10 text-slate-400">
-      <LoadingSpinner :size="28" />
+  <DsPage data-testid="battle-arena">
+    <div v-if="!view && !error" class="flex flex-col gap-4" aria-busy="true">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-48 w-full" />
     </div>
-    <AlertBox v-else-if="error && !notFound" messages="Maaf, berlaku ralat. Sila cuba semula." />
+    <UAlert
+      v-else-if="error && !notFound"
+      color="error"
+      variant="subtle"
+      title="Maaf, berlaku ralat. Sila cuba semula."
+    />
 
     <template v-else-if="view">
-      <AlertBox v-if="failed" messages="Maaf, berlaku ralat. Sila cuba semula." />
+      <UAlert
+        v-if="failed"
+        color="error"
+        variant="subtle"
+        title="Maaf, berlaku ralat. Sila cuba semula."
+      />
       <!-- Players and scores -->
       <div class="grid grid-cols-2 gap-3" data-testid="battle-arena-players">
-        <div
+        <UCard
           v-for="side in ['A', 'B'] as const"
           :key="side"
-          class="rounded-2xl border-2 bg-white p-3 text-center shadow-sm"
-          :class="side === you ? 'border-orange-300' : 'border-slate-200'"
+          :ui="{ body: 'p-3 sm:p-3' }"
           :data-testid="`battle-arena-player-${side}`"
         >
-          <p class="truncate text-sm font-bold text-slate-800">{{ view.players[side].name }}</p>
-          <p class="truncate text-xs text-slate-500">{{ view.players[side].school }}</p>
-          <p class="mt-2 text-xs font-semibold text-slate-400 uppercase">Skor</p>
-          <p class="text-2xl font-bold text-orange-600" :data-testid="`battle-arena-score-${side}`">
-            {{ scores[side] }}
-          </p>
-        </div>
+          <div class="flex flex-col items-center gap-1 text-center">
+            <UBadge v-if="side === you" color="primary" variant="soft" size="sm">Anda</UBadge>
+            <p class="max-w-full truncate text-label text-highlighted">{{ view.players[side].name }}</p>
+            <p class="max-w-full truncate text-caption text-muted">{{ view.players[side].school }}</p>
+            <p class="mt-2 text-overline text-muted">Skor</p>
+            <p
+              class="tabular text-title text-primary"
+              :data-testid="`battle-arena-score-${side}`"
+            >
+              {{ scores[side] }}
+            </p>
+          </div>
+        </UCard>
       </div>
 
       <!-- Playing -->
-      <div
-        v-if="active && question"
-        class="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-        data-testid="battle-arena-question"
-      >
-        <div class="flex items-center justify-between text-sm font-semibold text-slate-600">
-          <span data-testid="battle-arena-progress">Soalan {{ index }}/{{ view.total }}</span>
-          <span data-testid="battle-arena-seconds">{{ remaining }}s</span>
-        </div>
-        <div class="h-2 overflow-hidden rounded-full bg-slate-100">
-          <div
-            class="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-500"
-            :style="{ width: `${barPct}%` }"
+      <UCard v-if="active && question" data-testid="battle-arena-question">
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between text-label text-toned">
+            <span data-testid="battle-arena-progress">Soalan {{ index }}/{{ view.total }}</span>
+            <span class="tabular" data-testid="battle-arena-seconds">{{ remaining }}s</span>
+          </div>
+          <UProgress
+            :model-value="barPct"
+            color="primary"
+            size="md"
+            :aria-label="`Masa ${remaining} saat`"
             data-testid="battle-arena-bar"
           />
-        </div>
-        <p class="text-base font-semibold text-slate-800" data-testid="battle-arena-text">
-          {{ question.text }}
-        </p>
-        <div class="grid grid-cols-1 gap-2">
-          <button
-            v-for="(o, i) in question.options"
-            :key="o.id"
-            type="button"
-            class="min-h-11 rounded-xl border-2 px-4 py-2.5 text-left text-sm font-medium transition disabled:cursor-default"
-            :class="optionClass(o.id)"
-            :disabled="locked"
-            data-testid="battle-arena-option"
-            @click="submit(o.id)"
+          <p class="text-heading break-words text-highlighted" data-testid="battle-arena-text">
+            {{ question.text }}
+          </p>
+          <div class="grid grid-cols-1 gap-2">
+            <DsQuizOption
+              v-for="(o, i) in question.options"
+              :key="o.id"
+              :letter="optionLetter(i)"
+              :state="optionState(o.id)"
+              data-testid="battle-arena-option"
+              @select="submit(o.id)"
+              >{{ o.text }}</DsQuizOption
+            >
+          </div>
+          <p
+            v-if="feedback"
+            class="text-center text-label"
+            :class="feedback.correct ? 'text-success' : 'text-error'"
+            data-testid="battle-arena-feedback"
           >
-            {{ optionLetter(i) }}. {{ o.text }}
-          </button>
+            {{ feedback.correct ? `+${feedback.points}` : '+0' }}
+            <span class="ms-2 text-muted" data-testid="battle-arena-opponent">
+              Lawan: {{ feedback.opponent.correct ? 'betul' : 'salah' }}
+            </span>
+          </p>
+          <div class="flex justify-end">
+            <UButton
+              color="neutral"
+              variant="soft"
+              size="xl"
+              icon="i-ph-flag-duotone"
+              class="min-h-12"
+              data-testid="battle-arena-forfeit"
+              @click="forfeit"
+            >
+              Tamatkan
+            </UButton>
+          </div>
         </div>
-        <p
-          v-if="feedback"
-          class="text-center text-sm font-semibold"
-          :class="feedback.correct ? 'text-green-600' : 'text-red-600'"
-          data-testid="battle-arena-feedback"
-        >
-          {{ feedback.correct ? `+${feedback.points}` : '+0' }}
-          <span class="ml-2 text-slate-500" data-testid="battle-arena-opponent">
-            Lawan: {{ feedback.opponent.correct ? 'betul' : 'salah' }}
-          </span>
-        </p>
-        <div class="flex justify-end">
-          <button
-            type="button"
-            class="inline-flex min-h-11 items-center gap-2 rounded-xl border-2 border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-            data-testid="battle-arena-forfeit"
-            @click="forfeit"
-          >
-            <Flag class="h-4 w-4" /> Tamatkan
-          </button>
-        </div>
-      </div>
+      </UCard>
 
       <!-- Result -->
-      <div
-        v-else-if="result"
-        class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm"
-        data-testid="battle-arena-result"
-      >
-        <h2
-          class="text-3xl font-bold"
-          :class="
-            title === 'Menang'
-              ? 'text-green-600'
-              : title === 'Kalah'
-                ? 'text-red-600'
-                : 'text-slate-700'
-          "
-          data-testid="battle-arena-title"
-        >
-          {{ title }}
-        </h2>
-        <p class="mt-2 text-lg font-semibold text-slate-700" data-testid="battle-arena-final">
-          {{ result.scoreA }} vs {{ result.scoreB }}
-        </p>
-        <div class="mt-5 flex flex-wrap justify-center gap-3">
-          <RouterLink
-            to="/battle"
-            class="inline-flex min-h-11 items-center rounded-xl bg-gradient-to-r from-red-500 to-orange-500 px-5 text-sm font-bold text-white"
-            data-testid="battle-arena-again"
-            >Mula Battle</RouterLink
+      <UCard v-else-if="result" data-testid="battle-arena-result">
+        <div class="flex flex-col items-center gap-3 text-center">
+          <DsArt3D :name="title === 'Menang' ? 'trophy' : 'fire'" size="hero" float />
+          <h2
+            class="text-display"
+            :class="title === 'Menang' ? 'text-success' : title === 'Kalah' ? 'text-error' : 'text-toned'"
+            data-testid="battle-arena-title"
           >
-          <RouterLink
-            to="/battle/history"
-            class="inline-flex min-h-11 items-center rounded-xl border-2 border-slate-200 px-5 text-sm font-bold text-slate-700"
-            data-testid="battle-arena-history"
-            >Sejarah Battle</RouterLink
-          >
+            {{ title }}
+          </h2>
+          <p class="tabular text-heading text-highlighted" data-testid="battle-arena-final">
+            {{ result.scoreA }} vs {{ result.scoreB }}
+          </p>
+          <div class="flex flex-wrap justify-center gap-3">
+            <UButton
+              to="/battle"
+              size="xl"
+              color="primary"
+              class="min-h-12"
+              data-testid="battle-arena-again"
+              >Mula Battle</UButton
+            >
+            <UButton
+              to="/battle/history"
+              size="xl"
+              color="neutral"
+              variant="soft"
+              class="min-h-12"
+              data-testid="battle-arena-history"
+              >Sejarah Battle</UButton
+            >
+          </div>
         </div>
-      </div>
+      </UCard>
     </template>
-  </div>
+  </DsPage>
 </template>

@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Liga & Tournament',
       header: { title: 'Liga & Tournament', subtitle: 'Senarai tournament antara sekolah' },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -32,6 +33,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tournament',
       header: { title: 'Tournament', subtitle: 'Selamat datang kembali' },
       module: 'M16',
+      v2: true,
     },
   },
 ]

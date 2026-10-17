@@ -14,17 +14,18 @@
  * Clocks: Perang Fakta (10 s a round) and Teka Silang Kata (5 minutes) run on the server; see `setRoom`.
  */
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useFlash, useSession } from '@/composables'
+import { DsArt3D, DsLeaderRow, DsPage } from '@/ds'
 
 import { fetchRoom, joinRoom, roomAction, startRoom, type RoomGame, type RoomView } from '../api'
 import {
   LOAD_ERROR,
   ROOM_GAME_META,
   ROOM_NOT_FOUND,
+  ROOM_THEME,
   lobbyPath,
 } from '../components/lobby/lobby-config'
 import { clock, errorLines, isNotFoundError, teamLabel } from '../components/lobby/lobby-lib'
@@ -48,6 +49,7 @@ import { useRoomPolling } from '../composables/useRoomPolling'
 const props = defineProps<{ game: RoomGame; code: string }>()
 
 const meta = computed(() => ROOM_GAME_META[props.game])
+const theme = computed(() => ROOM_THEME[props.game])
 const code = computed(() => props.code.trim().toUpperCase())
 
 const router = useRouter()
@@ -257,75 +259,93 @@ const meters = computed(() => {
         r.game === 'benteng-ilmu'
           ? `HP ${String(Math.max(0, value))}`
           : `${String(value)}/20 langkah`,
-      barClass: r.game === 'benteng-ilmu' ? 'bg-emerald-500' : 'bg-indigo-500',
+      color: r.game === 'benteng-ilmu' ? ('success' as const) : ('primary' as const),
     }
   })
 })
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl space-y-4 sm:space-y-6" data-testid="room-page">
-    <div
-      v-if="phase === 'loading'"
-      class="flex justify-center py-16 text-indigo-500"
-      data-testid="room-loading"
-    >
-      <LoadingSpinner :size="32" />
+  <DsPage data-testid="room-page">
+    <div v-if="phase === 'loading'" class="flex flex-col gap-4" aria-busy="true" data-testid="room-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-40 w-full" />
     </div>
-    <AlertBox v-else-if="phase === 'error'" :messages="LOAD_ERROR" data-testid="room-error" />
+    <UAlert
+      v-else-if="phase === 'error'"
+      color="error"
+      variant="subtle"
+      :title="LOAD_ERROR"
+      data-testid="room-error"
+    />
     <template v-else-if="room">
-      <header class="rounded-2xl bg-white p-5 shadow sm:p-6">
-        <h1
-          class="font-heading text-2xl font-bold text-slate-800 sm:text-3xl"
-          data-testid="room-h1"
-        >
-          {{ meta.emoji }} {{ meta.title }}
-        </h1>
-        <p class="mt-1 text-sm text-slate-500" data-testid="room-code">
-          Kod Bilik: <span class="font-mono font-bold text-indigo-600">{{ room.code }}</span>
-        </p>
-      </header>
+      <UCard>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h1 class="text-title text-highlighted" data-testid="room-h1">
+              {{ meta.emoji }} {{ meta.title }}
+            </h1>
+            <p class="text-body text-muted" data-testid="room-code">
+              Kod Bilik: <span class="tabular text-heading text-primary">{{ room.code }}</span>
+            </p>
+          </div>
+          <DsArt3D :name="theme.art" size="hero" float class="hidden sm:block" />
+        </div>
+      </UCard>
 
-      <AlertBox :messages="actionErrors" data-testid="room-action-errors" />
+      <UAlert
+        v-if="actionErrors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle-duotone"
+        data-testid="room-action-errors"
+      >
+        <template #description>
+          <ul class="flex flex-col gap-1">
+            <li v-for="line in actionErrors" :key="line">{{ line }}</li>
+          </ul>
+        </template>
+      </UAlert>
 
-      <div class="grid gap-4 sm:gap-6 md:grid-cols-3">
+      <div class="grid gap-4 md:grid-cols-3 md:gap-6">
         <RoomPlayers
           class="md:order-2"
           :room="room"
           :show-metric="room.status === 'playing' || room.status === 'finished'"
         />
 
-        <section class="space-y-4 rounded-2xl bg-white p-5 shadow sm:p-6 md:order-1 md:col-span-2">
+        <UCard class="md:order-1 md:col-span-2">
           <!-- waiting -->
-          <div v-if="room.status === 'waiting'" class="space-y-3" data-testid="room-waiting">
-            <p class="text-sm text-slate-600" data-testid="room-waiting-count">
+          <div v-if="room.status === 'waiting'" class="flex flex-col gap-3" data-testid="room-waiting">
+            <p class="text-body text-muted" data-testid="room-waiting-count">
               Menunggu pemain... {{ room.players.length }}/{{ room.settings.maxPlayers }} (minimum
               {{ room.settings.minPlayers }})
             </p>
-            <button
+            <UButton
               v-if="isHost"
-              type="button"
+              size="xl"
+              color="primary"
               :disabled="!startable || acting"
-              class="inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white transition bg-save-gradient disabled:cursor-not-allowed disabled:opacity-50"
+              class="min-h-12 justify-center sm:self-start"
               data-testid="room-start"
               @click="start"
             >
               Mula
-            </button>
-            <p v-else class="text-sm font-semibold text-slate-500" data-testid="room-wait-host">
+            </UButton>
+            <p v-else class="text-label text-muted" data-testid="room-wait-host">
               Menunggu hos memulakan permainan
             </p>
           </div>
 
           <!-- playing -->
-          <div v-else-if="room.status === 'playing'" class="space-y-4" data-testid="room-playing">
+          <div v-else-if="room.status === 'playing'" class="flex flex-col gap-4" data-testid="room-playing">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <p v-if="round" class="text-sm font-bold text-indigo-600" data-testid="room-round">
+              <p v-if="round" class="text-label text-primary" data-testid="room-round">
                 {{ round }}
               </p>
               <p
                 v-if="crosswordLeft !== null"
-                class="text-sm font-bold text-slate-600"
+                class="tabular text-label text-toned"
                 data-testid="room-clock"
               >
                 ⏱️ {{ clock(crosswordLeft) }}
@@ -338,44 +358,39 @@ const meters = computed(() => {
               :room="room"
             />
 
-            <div v-if="meters.length > 0" class="space-y-2" data-testid="room-meters">
+            <div v-if="meters.length > 0" class="flex flex-col gap-3" data-testid="room-meters">
               <div v-for="m in meters" :key="m.id" data-testid="room-meter">
-                <div class="flex justify-between text-xs font-semibold text-slate-600">
+                <div class="flex justify-between gap-2 text-caption text-toned">
                   <span class="min-w-0 break-words">{{ m.name }}</span>
-                  <span>{{ m.label }}</span>
+                  <span class="tabular">{{ m.label }}</span>
                 </div>
-                <div class="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    class="h-full rounded-full"
-                    :class="m.barClass"
-                    :style="{ width: `${String(m.percent)}%` }"
-                  ></div>
-                </div>
+                <UProgress :model-value="m.percent" :color="m.color" size="md" class="mt-1" />
               </div>
             </div>
 
             <p
               v-if="game === 'kuiz-relay' && room.state?.teamScores"
-              class="text-sm font-semibold text-slate-700"
+              class="text-label text-toned"
               data-testid="room-team-scores"
             >
-              <span v-for="(score, team) in room.state.teamScores" :key="team" class="mr-4"
+              <span v-for="(score, team) in room.state.teamScores" :key="team" class="me-4"
                 >Pasukan {{ teamLabel(Number(team)) }}: {{ score }}</span
               >
             </p>
 
             <template v-if="acts">
-              <div v-if="awaiting === 'roll'" class="space-y-2">
-                <button
-                  type="button"
+              <div v-if="awaiting === 'roll'" class="flex flex-col gap-2">
+                <UButton
+                  size="xl"
+                  color="primary"
                   :disabled="acting"
-                  class="inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white bg-primary-gradient disabled:cursor-wait disabled:opacity-60"
+                  class="min-h-12 justify-center sm:self-start"
                   data-testid="room-roll"
                   @click="roll"
                 >
                   🎲 Gulung Dadu
-                </button>
-                <p v-if="dice !== null" class="text-sm text-slate-600" data-testid="room-dice">
+                </UButton>
+                <p v-if="dice !== null" class="text-body text-muted" data-testid="room-dice">
                   🎲 Dadu: {{ dice }}
                 </p>
               </div>
@@ -389,56 +404,53 @@ const meters = computed(() => {
                 @answer="onAnswer"
               />
             </template>
-            <p v-else class="text-sm font-semibold text-slate-500" data-testid="room-watching">
+            <p v-else class="text-label text-muted" data-testid="room-watching">
               Menunggu pemain lain
             </p>
           </div>
 
           <!-- finished -->
-          <div v-else-if="room.status === 'finished'" class="space-y-4" data-testid="room-result">
-            <p
-              class="font-heading text-xl font-bold text-slate-800"
-              data-testid="room-result-title"
-            >
-              {{ headline?.title }}
-            </p>
-            <p
-              v-if="headline?.mvp"
-              class="text-sm font-semibold text-indigo-600"
-              data-testid="room-mvp"
-            >
+          <div v-else-if="room.status === 'finished'" class="flex flex-col gap-4" data-testid="room-result">
+            <div class="flex items-center gap-3">
+              <DsArt3D name="trophy" size="xl" float />
+              <p class="text-title text-highlighted" data-testid="room-result-title">
+                {{ headline?.title }}
+              </p>
+            </div>
+            <p v-if="headline?.mvp" class="text-label text-primary" data-testid="room-mvp">
               {{ headline.mvp }}
             </p>
-            <ul v-if="room.result" class="divide-y divide-slate-100" data-testid="room-scores">
-              <li
-                v-for="s in room.result.scores"
+            <ul v-if="room.result" class="flex flex-col gap-2" data-testid="room-scores">
+              <DsLeaderRow
+                v-for="(s, i) in room.result.scores"
                 :key="s.userId"
-                class="flex justify-between gap-3 py-2 text-sm"
-              >
-                <span class="min-w-0 break-words text-slate-700">{{ s.name }}</span>
-                <span class="shrink-0 font-bold text-slate-800">{{ s.points }} mata</span>
-              </li>
+                :rank="i + 1"
+                :name="s.name"
+                :points="s.points"
+                unit="mata"
+                medal="trophy"
+              />
             </ul>
-            <RouterLink
+            <UButton
               to="/permainan"
-              class="inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white bg-primary-gradient"
+              size="xl"
+              color="primary"
+              class="min-h-12 justify-center sm:self-start"
               data-testid="room-hub"
             >
               🎮 Hub
-            </RouterLink>
+            </UButton>
           </div>
 
           <!-- closed (seed rooms) -->
-          <div v-else class="space-y-3" data-testid="room-closed">
-            <p class="text-sm font-semibold text-slate-600">Bilik ini telah ditutup.</p>
-            <RouterLink
-              to="/permainan"
-              class="inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold text-white bg-primary-gradient"
-              >🎮 Hub</RouterLink
+          <div v-else class="flex flex-col gap-3" data-testid="room-closed">
+            <p class="text-label text-toned">Bilik ini telah ditutup.</p>
+            <UButton to="/permainan" size="xl" color="primary" class="min-h-12 justify-center sm:self-start"
+              >🎮 Hub</UButton
             >
           </div>
-        </section>
+        </UCard>
       </div>
     </template>
-  </div>
+  </DsPage>
 </template>

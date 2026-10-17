@@ -1,38 +1,33 @@
 <script setup lang="ts">
 /**
- * "🏆 Pendahulu" of the S8–S12 lobbies (SRS M16 v1.6 FR-M16-65; URS FN-M16-5.4.4): up to 10 rows
- * "🥇 / 🥈 / 🥉 / {n}. {name}" and the value ("{n} menang", "{n} kali MVP") in the game colour. The server
- * orders them (value desc, stable ties, DV-M16-08).
+ * "🏆 Pendahulu" of the S8–S12 lobbies (SRS M16 v1.6 FR-M16-65; URS FN-M16-5.4.4): up to 10 rows with the
+ * rank and the value ("{n} menang", "{n} kali MVP"). The server orders them (value desc, stable ties,
+ * DV-M16-08). v2: `DsLeaderRow` with a 3D medal for ranks 1-3.
  */
+import { DsLeaderRow } from '@/ds'
+
 import type { GameLobby } from '../../api'
-import { MEDALS } from './lobby-config'
 
 defineProps<{
   leaders: NonNullable<GameLobby['leaders']>
   unit: string
-  /** Text colour class of the value (the game colour). */
-  valueClass: string
 }>()
 </script>
 
 <template>
-  <section
-    class="rounded-2xl border border-slate-700 bg-white p-5 shadow-sm sm:p-6"
-    data-testid="leaders-card"
-  >
-    <h2 class="font-heading text-base font-bold text-slate-800 sm:text-lg">🏆 Pendahulu</h2>
-    <div class="mt-3 space-y-1.5" data-testid="leaders-list">
-      <div
+  <UCard data-testid="leaders-card">
+    <h2 class="text-subheading text-highlighted">🏆 Pendahulu</h2>
+    <ul class="mt-3 flex flex-col gap-2" data-testid="leaders-list">
+      <DsLeaderRow
         v-for="row in leaders"
         :key="row.userId"
-        class="flex items-center justify-between gap-3 text-sm"
+        :rank="row.rank"
+        :name="row.name"
+        :points="row.value"
+        :unit="unit"
+        medal="trophy"
         data-testid="leaders-row"
-      >
-        <span class="min-w-0 break-words text-slate-700"
-          >{{ MEDALS[row.rank - 1] ?? `${String(row.rank)}.` }} {{ row.name }}</span
-        >
-        <span class="shrink-0 font-bold" :class="valueClass">{{ row.value }} {{ unit }}</span>
-      </div>
-    </div>
-  </section>
+      />
+    </ul>
+  </UCard>
 </template>

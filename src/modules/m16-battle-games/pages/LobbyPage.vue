@@ -9,8 +9,8 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi, useFlash } from '@/composables'
+import { DsArt3D, DsPage } from '@/ds'
 
 import { fetchGameLobby, joinRoom, type RoomGame } from '../api'
 import JoinCodeForm from '../components/lobby/JoinCodeForm.vue'
@@ -59,56 +59,58 @@ async function join(code: string): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl space-y-4 sm:space-y-6" data-testid="lobby-page">
-    <div
-      v-if="loading"
-      class="flex justify-center py-16 text-indigo-500"
-      data-testid="lobby-loading"
-    >
-      <LoadingSpinner :size="32" />
+  <DsPage data-testid="lobby-page">
+    <div v-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="lobby-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-40 w-full" />
     </div>
-    <AlertBox v-else-if="error" :messages="LOAD_ERROR" data-testid="lobby-error" />
+    <UAlert
+      v-else-if="error"
+      color="error"
+      variant="subtle"
+      :title="LOAD_ERROR"
+      data-testid="lobby-error"
+    />
     <template v-else-if="lobby">
-      <header
-        class="relative overflow-hidden rounded-3xl bg-linear-to-br p-5 text-white shadow-lg sm:p-6"
-        :class="theme.hero"
-      >
-        <h1 class="font-heading text-2xl font-bold text-white sm:text-3xl" data-testid="lobby-h1">
-          {{ meta.emoji }} {{ meta.title }}
-        </h1>
-        <p class="mt-1 max-w-xl text-sm sm:text-base" data-testid="lobby-subtitle">
-          {{ meta.subtitle }}
-        </p>
-        <p class="mt-2 text-xs" data-testid="lobby-rule">{{ meta.rule }}</p>
-        <span
-          class="pointer-events-none absolute top-1/2 right-6 hidden -translate-y-1/2 text-7xl opacity-20 select-none sm:block sm:text-8xl"
-          >{{ meta.emoji }}</span
-        >
-      </header>
+      <UCard>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h1 class="text-title text-highlighted" data-testid="lobby-h1">
+              {{ meta.emoji }} {{ meta.title }}
+            </h1>
+            <p class="max-w-prose text-body text-muted" data-testid="lobby-subtitle">
+              {{ meta.subtitle }}
+            </p>
+            <p class="text-caption text-muted" data-testid="lobby-rule">{{ meta.rule }}</p>
+          </div>
+          <DsArt3D :name="theme.art" size="hero" float class="hidden sm:block" />
+        </div>
+      </UCard>
 
-      <RoomCreateForm
-        :game="game"
-        :auto-grade="lobby.autoGrade"
-        :auto-grade-name="lobby.autoGradeName"
-        @created="openRoom"
-      />
-      <JoinCodeForm
-        heading="🔑 Masuk Dengan Kod"
-        placeholder="Contoh: ABC123"
-        :required="false"
-        button="Masuk"
-        :busy="joining"
-        variant="lobby"
-        :button-class="theme.button"
-        @submit="join"
-      />
+      <div class="grid gap-4 md:grid-cols-2 md:gap-6">
+        <RoomCreateForm
+          :game="game"
+          :auto-grade="lobby.autoGrade"
+          :auto-grade-name="lobby.autoGradeName"
+          @created="openRoom"
+        />
+        <JoinCodeForm
+          heading="🔑 Masuk Dengan Kod"
+          placeholder="Contoh: ABC123"
+          :required="false"
+          button="Masuk"
+          :busy="joining"
+          variant="lobby"
+          :color="theme.color"
+          @submit="join"
+        />
+      </div>
 
       <LeadersCard
         v-if="lobby.leaders && lobby.leaders.length > 0"
         :leaders="lobby.leaders"
         :unit="meta.unit"
-        :value-class="theme.value"
       />
     </template>
-  </div>
+  </DsPage>
 </template>

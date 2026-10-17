@@ -5,11 +5,10 @@
  * answer, alert "Ralat." on a network failure); "Tolak" posts #11 and the row leaves the list only
  * after the request completes, failures silent.
  */
-import { Mail, X } from '@lucide/vue'
 import { ref } from 'vue'
 
-import { BaseModal } from '@/components/overlay'
 import { alertNative } from '@/composables'
+import { DsDialog } from '@/ds'
 
 import { acceptInvitation, declineInvitation, type BattleInvitation } from '../../api'
 import { BATTLE_MSG } from './battle-lib'
@@ -52,57 +51,60 @@ async function decline(inv: BattleInvitation): Promise<void> {
 </script>
 
 <template>
-  <BaseModal :open="open" :close-on-esc="false" @update:open="emit('update:open', false)">
+  <DsDialog
+    :open="open"
+    title="Cabaran Masuk"
+    :dismissible="false"
+    @update:open="emit('update:open', false)"
+  >
     <div data-testid="battle-invitations-modal">
-      <div class="mb-4 flex items-center justify-between">
-        <h3 class="flex items-center gap-2 text-lg font-bold text-slate-800">
-          <Mail class="h-5 w-5 text-orange-500" /> Cabaran Masuk
-        </h3>
-        <button
-          type="button"
-          class="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
-          data-testid="battle-invitations-close"
-          @click="emit('update:open', false)"
-        >
-          <X class="h-5 w-5" />
-        </button>
-      </div>
-      <ul v-if="invitations.length > 0" class="space-y-2">
+      <ul v-if="invitations.length > 0" class="flex flex-col gap-2">
         <li
           v-for="inv in invitations"
           :key="inv.uuid"
-          class="flex flex-wrap items-center gap-3 rounded-xl bg-slate-50 p-3"
+          class="flex flex-wrap items-center gap-3 rounded-card bg-elevated p-3"
           data-testid="battle-invitation-row"
         >
           <span class="min-w-0 flex-1">
-            <span class="block text-sm font-semibold text-slate-800">{{ inv.sender_name }}</span>
-            <span class="block text-xs text-slate-500">{{ inv.sender_school }}</span>
+            <span class="block text-label text-highlighted">{{ inv.sender_name }}</span>
+            <span class="block text-caption text-muted">{{ inv.sender_school }}</span>
           </span>
-          <button
-            type="button"
-            class="min-h-11 rounded-xl bg-green-500 px-4 text-sm font-bold text-white hover:bg-green-600"
+          <UButton
+            color="success"
+            size="lg"
+            class="min-h-11"
             data-testid="battle-invitation-accept"
             @click="accept(inv)"
           >
             Terima
-          </button>
-          <button
-            type="button"
-            class="min-h-11 rounded-xl bg-slate-200 px-4 text-sm font-bold text-slate-700 hover:bg-slate-300"
+          </UButton>
+          <UButton
+            color="neutral"
+            variant="soft"
+            size="lg"
+            class="min-h-11"
             data-testid="battle-invitation-decline"
             @click="decline(inv)"
           >
             Tolak
-          </button>
+          </UButton>
         </li>
       </ul>
-      <p
-        v-else
-        class="py-3 text-center text-sm text-slate-500"
-        data-testid="battle-invitations-empty"
-      >
+      <p v-else class="py-3 text-center text-body text-muted" data-testid="battle-invitations-empty">
         Tiada cabaran buat masa ini
       </p>
     </div>
-  </BaseModal>
+    <template #footer>
+      <UButton
+        color="neutral"
+        variant="soft"
+        size="xl"
+        class="min-h-12 justify-center"
+        data-testid="battle-invitations-close"
+        @click="emit('update:open', false)"
+      >
+        Tutup
+      </UButton>
+    </template>
+  </DsDialog>
 </template>

@@ -3,11 +3,9 @@
  * The "Cipta Bilik Baru" form shared by S7 (Papan Bijak) and S8–S12 (SRS M16 v1.6 FR-M16-54, 55, 57, 63;
  * URS FN-M16-5.1.2/5.1.3/5.4.2). Posts #24 and emits the new room code. S7 adds the emoji subjects, the
  * custom range and "Maks Pemain"; S8–S12 send three fields. Native validation only; server errors render
- * as the red box above the form.
+ * as the red box above the form. v2 look: one card, Nuxt UI fields, the submit in the game colour.
  */
-import { computed, reactive, ref, useId } from 'vue'
-
-import { AlertBox } from '@/components/feedback'
+import { computed, reactive, ref } from 'vue'
 
 import { createRoom, type RoomGame } from '../../api'
 import GradeField from './GradeField.vue'
@@ -32,32 +30,7 @@ const emit = defineEmits<{ created: [code: string] }>()
 
 const isPb = computed(() => props.game === 'papan-bijak')
 const meta = computed(() => ROOM_GAME_META[props.game])
-
-/**
- * Live look (screenshots): S7 is a violet-tinted panel with uppercase violet labels and white fields;
- * S8–S12 are white cards with a thin dark border, small labels, bordered fields and a solid button in the
- * game colour.
- */
-const cardClass = computed(() =>
-  isPb.value
-    ? 'rounded-3xl border border-violet-200 bg-linear-to-br from-violet-50 to-indigo-100 p-5 shadow-sm sm:p-6'
-    : 'rounded-2xl border border-slate-700 bg-white p-5 shadow-sm sm:p-6',
-)
-const labelClass = computed(() =>
-  isPb.value
-    ? 'mb-1 block text-xs font-bold tracking-wide text-violet-600 uppercase'
-    : 'mb-1 block text-xs font-semibold text-slate-600',
-)
-const selectClass = computed(() =>
-  isPb.value
-    ? 'min-h-11 w-full rounded-xl border-0 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none focus:ring-2 focus:ring-violet-300'
-    : 'min-h-11 w-full rounded-xl border border-slate-700 bg-white px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-300',
-)
-const submitClass = computed(() =>
-  isPb.value
-    ? 'bg-linear-to-r from-violet-600 to-purple-600 uppercase tracking-wide'
-    : ROOM_THEME[props.game].button,
-)
+const color = computed(() => ROOM_THEME[props.game].color)
 
 const form: CreateFormValues = reactive({
   subject: 'MATEMATIK',
@@ -70,15 +43,22 @@ const form: CreateFormValues = reactive({
 
 const busy = ref(false)
 const errors = ref<string[]>([])
-const subjectId = useId()
-const modeId = useId()
-const minId = useId()
-const maxId = useId()
-const playersId = useId()
 
+const subjectItems = computed(() =>
+  isPb.value
+    ? PB_SUBJECTS.map((s) => ({ value: s.value, label: `${s.emoji} ${s.label}` }))
+    : LOBBY_SUBJECTS.map((s) => ({ value: s.value, label: s.label })),
+)
 const sameLevelText = computed(() =>
   isPb.value ? sameLevelLabel(form.gradeLevel) : 'Semua Darjah / Semua Tingkatan',
 )
+const modeItems = computed(() => [
+  { value: 'same_grade', label: 'Tahap sama sahaja' },
+  { value: 'same_level', label: sameLevelText.value },
+  ...(isPb.value ? [{ value: 'custom', label: 'Pilih julat khas' }] : []),
+])
+const rangeItems = CUSTOM_GRADE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))
+const playerItems = MAX_PLAYER_OPTIONS.map((n) => ({ value: n, label: `${n} Pemain` }))
 
 async function submit(): Promise<void> {
   if (busy.value) return
@@ -96,34 +76,33 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <section :class="cardClass" data-testid="create-card">
-    <h2 class="font-heading text-base font-bold text-slate-800 sm:text-lg">
-      {{ isPb ? '🆕' : '🏠' }} Cipta Bilik Baru
-    </h2>
-    <form class="mt-4 space-y-4" data-testid="create-form" @submit.prevent="submit">
-      <AlertBox :messages="errors" data-testid="create-errors" />
+  <UCard data-testid="create-card">
+    <h2 class="text-subheading text-highlighted">{{ isPb ? '🆕' : '🏠' }} Cipta Bilik Baru</h2>
+    <form class="mt-4 flex flex-col gap-4" data-testid="create-form" @submit.prevent="submit">
+      <UAlert
+        v-if="errors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle-duotone"
+        data-testid="create-errors"
+      >
+        <template #description>
+          <ul class="flex flex-col gap-1">
+            <li v-for="line in errors" :key="line">{{ line }}</li>
+          </ul>
+        </template>
+      </UAlert>
 
-      <div :class="isPb ? 'space-y-4' : 'grid items-start gap-4 sm:grid-cols-2'">
-        <div>
-          <label :for="subjectId" :class="labelClass">Subjek</label>
-          <select
-            :id="subjectId"
+      <div class="grid items-start gap-4" :class="isPb ? '' : 'sm:grid-cols-2'">
+        <UFormField label="Subjek">
+          <USelect
             v-model="form.subject"
-            :class="selectClass"
+            :items="subjectItems"
+            size="xl"
+            class="w-full"
             data-testid="create-subject"
-          >
-            <template v-if="isPb">
-              <option v-for="s in PB_SUBJECTS" :key="s.value" :value="s.value">
-                {{ s.emoji }} {{ s.label }}
-              </option>
-            </template>
-            <template v-else>
-              <option v-for="s in LOBBY_SUBJECTS" :key="s.value" :value="s.value">
-                {{ s.label }}
-              </option>
-            </template>
-          </select>
-        </div>
+          />
+        </UFormField>
 
         <GradeField
           v-model="form.gradeLevel"
@@ -132,80 +111,65 @@ async function submit(): Promise<void> {
           :auto-grade-name="autoGradeName"
           :auto-hint="isPb ? '(auto dari profil anda)' : '(auto)'"
           :allow-back="isPb"
-          :variant="isPb ? 'pb' : 'lobby'"
         />
       </div>
 
-      <div>
-        <label :for="modeId" :class="labelClass">{{
-          isPb ? 'Siapa Boleh Join?' : 'Siapa boleh join?'
-        }}</label>
-        <select
-          :id="modeId"
+      <UFormField :label="isPb ? 'Siapa Boleh Join?' : 'Siapa boleh join?'">
+        <USelect
           v-model="form.matchMode"
-          :class="selectClass"
+          :items="modeItems"
+          size="xl"
+          class="w-full"
           data-testid="create-mode"
-        >
-          <option value="same_grade">Tahap sama sahaja</option>
-          <option value="same_level">{{ sameLevelText }}</option>
-          <option v-if="isPb" value="custom">Pilih julat khas</option>
-        </select>
-      </div>
+        />
+      </UFormField>
 
       <div
         v-if="isPb && form.matchMode === 'custom'"
         class="grid grid-cols-2 gap-3"
         data-testid="create-range"
       >
-        <div>
-          <label :for="minId" :class="labelClass">Dari</label>
-          <select
-            :id="minId"
-            v-model.number="form.gradeMin"
-            :class="selectClass"
+        <UFormField label="Dari">
+          <USelect
+            v-model="form.gradeMin"
+            :items="rangeItems"
+            size="xl"
+            class="w-full"
             data-testid="create-grade-min"
-          >
-            <option v-for="o in CUSTOM_GRADE_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.label }}
-            </option>
-          </select>
-        </div>
-        <div>
-          <label :for="maxId" :class="labelClass">Hingga</label>
-          <select
-            :id="maxId"
-            v-model.number="form.gradeMax"
-            :class="selectClass"
+          />
+        </UFormField>
+        <UFormField label="Hingga">
+          <USelect
+            v-model="form.gradeMax"
+            :items="rangeItems"
+            size="xl"
+            class="w-full"
             data-testid="create-grade-max"
-          >
-            <option v-for="o in CUSTOM_GRADE_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.label }}
-            </option>
-          </select>
-        </div>
+          />
+        </UFormField>
       </div>
 
-      <div v-if="isPb">
-        <label :for="playersId" :class="labelClass">Maks Pemain</label>
-        <select
-          :id="playersId"
-          v-model.number="form.maxPlayers"
-          :class="selectClass"
+      <UFormField v-if="isPb" label="Maks Pemain">
+        <USelect
+          v-model="form.maxPlayers"
+          :items="playerItems"
+          size="xl"
+          class="w-full"
           data-testid="create-max-players"
-        >
-          <option v-for="n in MAX_PLAYER_OPTIONS" :key="n" :value="n">{{ n }} Pemain</option>
-        </select>
-      </div>
+        />
+      </UFormField>
 
-      <button
+      <UButton
         type="submit"
+        size="xl"
+        :color="color"
+        :loading="busy"
         :disabled="busy"
-        :class="submitClass"
-        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
+        class="min-h-12 w-full justify-center"
         data-testid="create-submit"
       >
         {{ isPb ? '🎲' : meta.emoji }} Cipta Bilik
-      </button>
+      </UButton>
     </form>
-  </section>
+  </UCard>
 </template>

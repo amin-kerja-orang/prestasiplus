@@ -3,11 +3,11 @@
  * The question of a room round (PROVISIONAL, URS FN-M16-5.5.3: the Betul atau Salah / Cabaran Kilat cards
  * are reused). `mcq` shows the options as buttons (Perang Fakta's "Betul" / "Salah" are options 0 / 1 of the
  * same shape); `word` (Teka Silang Kata) shows a text box for the typed word. Emits the chosen option or the
- * typed word; the page posts #28.
+ * typed word; the page posts #28. v2: `DsQuizOption` for the options.
  */
-import { ref, useId, watch } from 'vue'
+import { ref, watch } from 'vue'
 
-import { FORM_INPUT_CLASS } from '@/components/form/classes'
+import { DsQuizOption } from '@/ds'
 
 import type { RoomQuestion } from '../../api'
 
@@ -24,7 +24,6 @@ const props = defineProps<{
 const emit = defineEmits<{ answer: [answer: { optionId?: number; value?: string }] }>()
 
 const word = ref('')
-const inputId = useId()
 
 watch(
   () => props.question.id,
@@ -45,59 +44,56 @@ function submitWord(): void {
 </script>
 
 <template>
-  <div class="space-y-4" data-testid="room-question">
+  <div class="flex flex-col gap-4" data-testid="room-question">
     <div class="flex items-start justify-between gap-3">
-      <p
-        class="text-base font-semibold break-words text-slate-800"
-        data-testid="room-question-text"
-      >
+      <p class="text-heading break-words text-highlighted" data-testid="room-question-text">
         {{ question.text }}
       </p>
-      <span
+      <UBadge
         v-if="countdown"
-        class="shrink-0 rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-700"
+        color="primary"
+        variant="soft"
+        size="lg"
+        class="tabular shrink-0"
         data-testid="room-countdown"
-        >{{ countdown }}</span
+        >{{ countdown }}</UBadge
       >
     </div>
 
     <div v-if="mode === 'mcq'" class="grid gap-2 sm:grid-cols-2">
-      <button
+      <DsQuizOption
         v-for="o in question.options"
         :key="o.id"
-        type="button"
-        :disabled="busy || disabled"
-        class="flex min-h-11 items-center gap-3 rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+        :letter="o.label"
+        :state="busy || disabled ? 'dimmed' : 'idle'"
         data-testid="room-option"
-        @click="pick(o.id)"
+        @select="pick(o.id)"
+        >{{ o.text }}</DsQuizOption
       >
-        <span
-          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700"
-          >{{ o.label }}</span
-        >
-        <span class="min-w-0 break-words">{{ o.text }}</span>
-      </button>
     </div>
 
-    <form v-else class="space-y-3" data-testid="room-word-form" @submit.prevent="submitWord">
-      <label :for="inputId" class="block text-sm font-semibold text-slate-600">Jawapan</label>
-      <input
-        :id="inputId"
-        v-model="word"
-        type="text"
-        autocomplete="off"
-        :disabled="busy || disabled"
-        :class="[FORM_INPUT_CLASS, 'min-h-11']"
-        data-testid="room-word-input"
-      />
-      <button
+    <form v-else class="flex flex-col gap-3" data-testid="room-word-form" @submit.prevent="submitWord">
+      <UFormField label="Jawapan">
+        <UInput
+          v-model="word"
+          type="text"
+          autocomplete="off"
+          size="xl"
+          class="w-full"
+          :disabled="busy || disabled"
+          data-testid="room-word-input"
+        />
+      </UFormField>
+      <UButton
         type="submit"
+        size="xl"
+        color="primary"
         :disabled="busy || disabled"
-        class="inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold text-white bg-primary-gradient disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        class="min-h-12 justify-center sm:self-start"
         data-testid="room-word-submit"
       >
         Hantar
-      </button>
+      </UButton>
     </form>
   </div>
 </template>

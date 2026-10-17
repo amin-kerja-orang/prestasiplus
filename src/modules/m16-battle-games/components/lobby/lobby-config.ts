@@ -3,6 +3,8 @@
  * §2.7 / §2.8). Pure data: the lobby pages, the hub and the routes read it.
  */
 
+import type { Art3DName } from '@/ds'
+
 import type { RoomGame, RoomSubject } from '../../api'
 
 export interface RoomGameMeta {
@@ -71,43 +73,18 @@ export const ROOM_GAME_META: Readonly<Record<RoomGame, RoomGameMeta>> = {
 }
 
 /**
- * Per-game colours of the S8–S12 lobbies (live screenshots perang-fakta / benteng-ilmu /
- * perlumbaan-matematik / kuiz-relay / teka-silang-kata): the hero gradient, the solid button and the
- * leaderboard value colour (live values; the Teka Silang Kata button is an orange gradient as live).
+ * Per-game look of the S8–S12 lobbies (v2 learner theme): the semantic colour of the game's button and
+ * its 3D art. No palette classes; colour only at the focus point.
  */
-export const ROOM_THEME: Readonly<
-  Record<RoomGame, { hero: string; button: string; value: string }>
-> = {
-  'papan-bijak': {
-    hero: 'from-violet-600 to-purple-900',
-    button: 'bg-linear-to-r from-violet-600 to-violet-700 hover:brightness-95',
-    value: 'text-violet-700',
-  },
-  'perang-fakta': {
-    hero: 'from-red-700 to-red-900',
-    button: 'bg-linear-to-r from-red-600 to-red-700 hover:brightness-95',
-    value: 'text-red-600',
-  },
-  'benteng-ilmu': {
-    hero: 'from-emerald-600 to-emerald-900',
-    button: 'bg-linear-to-r from-emerald-600 to-emerald-700 hover:brightness-95',
-    value: 'text-emerald-600',
-  },
-  'perlumbaan-matematik': {
-    hero: 'from-blue-600 to-blue-900',
-    button: 'bg-linear-to-r from-blue-600 to-blue-700 hover:brightness-95',
-    value: 'text-blue-600',
-  },
-  'kuiz-relay': {
-    hero: 'from-violet-600 to-purple-900',
-    button: 'bg-linear-to-r from-purple-600 to-purple-700 hover:brightness-95',
-    value: 'text-purple-600',
-  },
-  'teka-silang-kata': {
-    hero: 'from-amber-700 to-orange-900',
-    button: 'bg-linear-to-r from-orange-600 to-amber-700 hover:brightness-95',
-    value: 'text-amber-600',
-  },
+export type RoomColor = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error'
+
+export const ROOM_THEME: Readonly<Record<RoomGame, { color: RoomColor; art: Art3DName }>> = {
+  'papan-bijak': { color: 'secondary', art: 'party' },
+  'perang-fakta': { color: 'error', art: 'bolt' },
+  'benteng-ilmu': { color: 'success', art: 'cap' },
+  'perlumbaan-matematik': { color: 'info', art: 'rocket' },
+  'kuiz-relay': { color: 'secondary', art: 'party' },
+  'teka-silang-kata': { color: 'warning', art: 'books' },
 }
 
 /** The five lobbies S8–S12 (Papan Bijak S7 has its own page), in live order. */
@@ -210,6 +187,15 @@ export const PB_HOW_TO = [
   '🐍 4. Elak ular yang menarik turun',
   '🏆 5. Sampai petak 50 dulu = MENANG!',
 ] as const
+
+/** `USelect` items of the grade select: a label row per group, then its options. */
+export const GRADE_ITEMS: readonly (
+  | { type: 'label'; label: string }
+  | { value: string; label: string }
+)[] = GRADE_GROUPS.flatMap((g) => [
+  { type: 'label' as const, label: g.label },
+  ...g.options.map((o) => ({ value: o.value, label: o.label })),
+])
 
 /** Medals of the first three ranks. */
 export const MEDALS = ['🥇', '🥈', '🥉'] as const

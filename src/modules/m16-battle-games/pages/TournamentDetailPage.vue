@@ -5,14 +5,12 @@
  * live matches are not built. An unknown uuid (or a draft of another user) renders the standalone
  * 404 page in place.
  */
-import { ArrowLeft, Trophy } from '@lucide/vue'
 import { computed, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
-import { LoadingSpinner } from '@/components/feedback'
 import { useApi, usePageMeta } from '@/composables'
+import { DsArt3D, DsPage } from '@/ds'
 import { formatDateTime } from '@/lib/time'
 
 import { fetchBattleLobby, fetchTournament } from '../api'
@@ -120,50 +118,52 @@ const rows = computed<Row[]>(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl min-w-0 space-y-4" data-testid="m16-tournament-detail-page">
-    <RouterLink
+  <DsPage data-testid="m16-tournament-detail-page">
+    <UButton
       to="/tournament"
-      class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
+      color="neutral"
+      variant="link"
+      icon="i-ph-arrow-left-bold"
+      class="min-h-11 self-start"
       data-testid="tournament-back"
     >
-      <ArrowLeft class="h-4 w-4" />
       {{ LIST_COPY.heading }}
-    </RouterLink>
+    </UButton>
 
     <template v-if="notFound" />
     <PageLoadError v-else-if="view.error.value" @retry="view.reload()" />
     <div
       v-else-if="!t"
-      class="flex justify-center py-10 text-slate-400"
+      class="flex flex-col gap-3"
+      aria-busy="true"
       data-testid="tournament-detail-loading"
     >
-      <LoadingSpinner :size="28" />
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-40 w-full" />
     </div>
     <template v-else>
-      <section
-        class="flex items-center gap-3 rounded-2xl bg-linear-to-r from-indigo-600 to-purple-600 p-4 text-white shadow-lg sm:p-6"
-        data-testid="tournament-detail-hero"
-      >
-        <Trophy class="h-8 w-8 shrink-0 text-yellow-300" />
-        <div class="min-w-0">
-          <h1
-            class="text-xl font-bold break-words text-white sm:text-2xl"
-            data-testid="tournament-detail-title"
-          >
-            {{ t.title }}
-          </h1>
-          <p class="mt-1 text-sm text-white" data-testid="tournament-detail-line">{{ line }}</p>
+      <UCard data-testid="tournament-detail-hero">
+        <div class="flex items-center justify-between gap-4">
+          <div class="min-w-0">
+            <h1 class="text-title break-words text-highlighted" data-testid="tournament-detail-title">
+              {{ t.title }}
+            </h1>
+            <UBadge color="primary" variant="soft" size="lg" class="mt-2" data-testid="tournament-detail-line">{{
+              line
+            }}</UBadge>
+          </div>
+          <DsArt3D name="trophy" size="hero" float class="hidden sm:block" />
         </div>
-      </section>
+      </UCard>
 
-      <section class="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-        <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2" data-testid="tournament-detail-fields">
+      <UCard>
+        <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2" data-testid="tournament-detail-fields">
           <div v-for="row in rows" :key="row.key" class="min-w-0" :data-field="row.key">
-            <dt class="text-xs font-semibold text-slate-600">{{ row.label }}</dt>
-            <dd class="text-sm break-words text-slate-800">{{ row.value }}</dd>
+            <dt class="text-caption text-muted">{{ row.label }}</dt>
+            <dd class="text-body break-words text-highlighted">{{ row.value }}</dd>
           </div>
         </dl>
-      </section>
+      </UCard>
     </template>
-  </div>
+  </DsPage>
 </template>
