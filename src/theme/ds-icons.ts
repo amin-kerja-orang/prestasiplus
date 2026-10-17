@@ -7,6 +7,15 @@
  */
 export const dsIconBaseNames = [
   'arrow-right',
+  'book-open',
+  'caret-down',
+  'gear',
+  'list',
+  'pulse',
+  'squares-four',
+  'student',
+  'user-circle',
+  'wallet',
   'books',
   'book-open-text',
   'calculator',
