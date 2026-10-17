@@ -747,8 +747,13 @@ export function navFor(
   options: { includeOutOfScope?: boolean } = {},
 ): NavEntry[] {
   // Release 1.0 scope: items listed in out-of-scope.ts stay in the data but are not rendered.
+  // With the v2 prototype scope on (D43), role-access-matrix.md governs the menu instead, so the
+  // Release 1.0 list is skipped there (it would hide matrix screens such as Laporan Mingguan).
   const inScope = (entry: NavEntry): boolean =>
-    options.includeOutOfScope === true || entry.kind !== 'item' || !isOutOfScope(entry.to)
+    options.includeOutOfScope === true ||
+    isPrototypeScopeOn() ||
+    entry.kind !== 'item' ||
+    !isOutOfScope(entry.to)
   const visible = scopeEntries(
     entries
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))

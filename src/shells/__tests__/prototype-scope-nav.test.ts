@@ -189,7 +189,7 @@ describe('navFor with the prototype scope on', () => {
   it('does nothing when the scope is off (full live menu)', () => {
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'off')
     expect(labels('student')).toContain('Target SPM')
-    expect(navFor('student', 'sidebar', USER_NAV).length).toBeGreaterThan(80)
+    expect(navFor('student', 'sidebar', USER_NAV, { includeOutOfScope: true }).length).toBeGreaterThan(80)
   })
 })
 
