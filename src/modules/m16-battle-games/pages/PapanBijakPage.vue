@@ -8,8 +8,8 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi, useFlash } from '@/composables'
+import { DsArt3D, DsPage } from '@/ds'
 
 import { fetchGameLobby, joinRoom } from '../api'
 import JoinCodeForm from '../components/lobby/JoinCodeForm.vue'
@@ -57,28 +57,34 @@ async function join(code: string): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl space-y-4 sm:space-y-6" data-testid="pb-page">
-    <div v-if="loading" class="flex justify-center py-16 text-indigo-500" data-testid="pb-loading">
-      <LoadingSpinner :size="32" />
+  <DsPage data-testid="pb-page">
+    <div v-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="pb-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-40 w-full" />
     </div>
-    <AlertBox v-else-if="error" :messages="LOAD_ERROR" data-testid="pb-error" />
+    <UAlert
+      v-else-if="error"
+      color="error"
+      variant="subtle"
+      :title="LOAD_ERROR"
+      data-testid="pb-error"
+    />
     <template v-else-if="lobby">
-      <header
-        class="relative overflow-hidden rounded-3xl bg-linear-to-br from-violet-600 to-purple-900 p-5 text-white shadow-lg sm:p-6"
-      >
-        <h1 class="font-heading text-2xl font-bold text-white sm:text-3xl" data-testid="pb-h1">
-          {{ meta.emoji }} {{ meta.title }}
-        </h1>
-        <p class="mt-1 max-w-2xl text-sm font-semibold sm:text-base" data-testid="pb-subtitle">
-          {{ meta.subtitle }}
-        </p>
-        <span
-          class="pointer-events-none absolute top-1/2 right-6 hidden -translate-y-1/2 text-8xl opacity-20 select-none sm:block"
-          >🎲</span
-        >
-      </header>
+      <UCard>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h1 class="text-title text-highlighted" data-testid="pb-h1">
+              {{ meta.emoji }} {{ meta.title }}
+            </h1>
+            <p class="max-w-prose text-body text-muted" data-testid="pb-subtitle">
+              {{ meta.subtitle }}
+            </p>
+          </div>
+          <DsArt3D name="party" size="hero" float class="hidden sm:block" />
+        </div>
+      </UCard>
 
-      <div class="grid gap-4 sm:gap-6 md:grid-cols-2">
+      <div class="grid gap-4 md:grid-cols-2 md:gap-6">
         <RoomCreateForm
           :game="GAME"
           :auto-grade="lobby.autoGrade"
@@ -95,9 +101,9 @@ async function join(code: string): Promise<void> {
           variant="pb"
           @submit="join"
         >
-          <div class="mt-5" data-testid="pb-how-to">
-            <h2 class="text-sm font-bold text-slate-800">Cara Bermain:</h2>
-            <ul class="mt-2 space-y-1.5 text-xs font-semibold text-emerald-600 sm:text-sm">
+          <div class="mt-4" data-testid="pb-how-to">
+            <h2 class="text-label text-highlighted">Cara Bermain:</h2>
+            <ul class="mt-2 flex flex-col gap-2 text-caption text-success">
               <li v-for="line in PB_HOW_TO" :key="line">{{ line }}</li>
             </ul>
           </div>
@@ -108,5 +114,5 @@ async function join(code: string): Promise<void> {
 
       <TopTenTable v-if="lobby.top10 && lobby.top10.length > 0" :rows="lobby.top10" />
     </template>
-  </div>
+  </DsPage>
 </template>

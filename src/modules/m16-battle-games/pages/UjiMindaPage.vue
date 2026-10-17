@@ -6,8 +6,8 @@
  * populated student view and the parent side belong to the parent-portal owner (out of scope,
  * OQ-M16-12).
  */
-import { LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsArt3D, DsPage } from '@/ds'
 
 import { fetchUjiMinda } from '../api'
 import BackLink from '../components/competition/BackLink.vue'
@@ -18,44 +18,41 @@ const view = useApi((signal) => fetchUjiMinda({ signal }))
 </script>
 
 <template>
-  <div
-    class="mx-auto max-w-xl min-w-0 space-y-4 px-4 text-center sm:px-0 lg:pt-[37px]"
-    data-testid="m16-uji-minda-page"
-  >
-    <BackLink tone="pink" />
+  <DsPage data-testid="m16-uji-minda-page">
+    <BackLink />
 
     <PageLoadError v-if="view.error.value" @retry="view.reload()" />
     <div
       v-else-if="!view.data.value"
-      class="flex justify-center py-10 text-slate-400"
+      class="flex flex-col gap-3"
+      aria-busy="true"
       data-testid="uji-minda-loading"
     >
-      <LoadingSpinner :size="28" />
+      <USkeleton class="h-16 w-full" />
+      <USkeleton class="h-16 w-full" />
     </div>
-    <template v-else>
-      <header data-testid="uji-minda-hero">
-        <div class="text-6xl">{{ COPY.emoji }}</div>
-        <h1 class="mt-2 font-heading text-2xl font-bold text-slate-900">{{ COPY.heading }}</h1>
-        <p class="mx-auto mt-2 max-w-md text-gray-500">{{ COPY.sub }}</p>
+    <div v-else class="mx-auto flex w-full max-w-xl flex-col gap-4 text-center">
+      <header class="flex flex-col items-center gap-2" data-testid="uji-minda-hero">
+        <DsArt3D name="books" size="hero" float />
+        <div class="text-title" aria-hidden="true">{{ COPY.emoji }}</div>
+        <h1 class="text-title text-highlighted">{{ COPY.heading }}</h1>
+        <p class="mx-auto max-w-md text-body text-muted">{{ COPY.sub }}</p>
       </header>
 
-      <section
-        class="mx-auto max-w-sm rounded-2xl bg-white p-6 text-sm text-gray-600 shadow-sm"
-        data-testid="uji-minda-how"
-      >
-        <p>
-          <strong class="text-slate-800">{{ COPY.howTitle }}</strong
+      <UCard class="mx-auto w-full max-w-sm text-start" data-testid="uji-minda-how">
+        <p class="text-body text-muted">
+          <strong class="text-highlighted">{{ COPY.howTitle }}</strong
           ><br />
-          {{ COPY.howBefore }} <strong class="text-slate-800">{{ COPY.howLink }}</strong>
+          {{ COPY.howBefore }} <strong class="text-highlighted">{{ COPY.howLink }}</strong>
           {{ COPY.howAfter }}
         </p>
-        <div class="mt-4 rounded-xl bg-pink-50 p-4 text-left text-pink-600">
-          <p class="text-xs font-bold text-pink-700">{{ COPY.setHeading }}</p>
-          <ul class="mt-2 space-y-1 text-xs" data-testid="uji-minda-list">
+        <div class="mt-4 bg-elevated p-4">
+          <p class="text-caption text-highlighted">{{ COPY.setHeading }}</p>
+          <ul class="mt-2 flex flex-col gap-1 text-caption text-muted" data-testid="uji-minda-list">
             <li v-for="item in COPY.setItems" :key="item">{{ item }}</li>
           </ul>
         </div>
-      </section>
-    </template>
-  </div>
+      </UCard>
+    </div>
+  </DsPage>
 </template>

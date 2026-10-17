@@ -73,7 +73,7 @@ describe('S13 Betul atau Salah (FR-M16-71..75)', () => {
     expect(wrapper.get('[data-testid="solo-score"]').text()).toBe('102')
     const badge = wrapper.get('[data-testid="solo-combo"]')
     expect(badge.text()).toBe('🔥 6 KOMBO')
-    expect(badge.classes()).toContain('hot')
+    expect(badge.attributes('data-hot')).toBe('true')
 
     await vi.advanceTimersByTimeAsync(45_000)
     expect(submitSoloGame).toHaveBeenCalledTimes(1)

@@ -5,8 +5,6 @@
  * places it, clicking a placed tile (or the drop area, which removes the last one) returns it.
  */
 import { computed, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
-import { ArrowLeft } from '@lucide/vue'
 
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
@@ -141,16 +139,16 @@ async function finish(): Promise<void> {
 }
 
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-teal-300' },
+  { label: 'Skor Total', value: String(score.value), tone: 'text-primary' },
   {
     label: 'Selesai',
     value: `${String(solved.value)}/${String(puzzles.value.length)}`,
-    tone: 'text-emerald-400',
+    tone: 'text-success',
   },
   {
     label: 'Syiling Diperolehi',
     value: `${String(result.value.credited)} 🪙`,
-    tone: 'text-yellow-300',
+    tone: 'text-warning',
     wide: true,
   },
 ])
@@ -160,175 +158,169 @@ watch(darjah, () => void start(), { immediate: true })
 
 <template>
   <div data-testid="solo-susun-jawapan">
-    <DarjahPicker
-      v-if="darjah === null"
-      emoji="🧩"
-      title="Susun Jawapan"
-      color="var(--color-teal-500)"
-    />
-    <GamePanel theme="teal">
+    <DarjahPicker v-if="darjah === null" title="Susun Jawapan" art="books" />
+    <GamePanel>
       <LoadState :loading="loading" :error="error" />
 
-      <div v-if="phase === 'playing' && current" class="mx-auto max-w-lg space-y-4">
+      <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
         <div class="flex items-center justify-between gap-2">
-          <RouterLink
+          <UButton
             to="/permainan"
-            class="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-teal-300 hover:text-teal-100"
+            color="neutral"
+            variant="ghost"
+            icon="i-ph-arrow-left"
+            class="min-h-11"
           >
-            <ArrowLeft :size="16" /> Kembali
-          </RouterLink>
+            Kembali
+          </UButton>
           <div class="flex gap-2">
-            <span
-              class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-slate-300"
-              data-testid="solo-score"
-              >Skor <b class="ml-1 text-teal-300">{{ score }}</b></span
+            <UBadge color="primary" variant="soft" size="xl" data-testid="solo-score"
+              >Skor <b class="ms-1">{{ score }}</b></UBadge
             >
-            <span
-              class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-yellow-300"
-              data-testid="solo-coins"
-              >🪙 {{ coinsShown }}</span
+            <UBadge color="warning" variant="soft" size="xl" data-testid="solo-coins"
+              >🪙 {{ coinsShown }}</UBadge
             >
           </div>
         </div>
 
-        <!-- Live paints this heading dark on the dark panel (≈ 1.3:1); DV-M16-46 paints it white. -->
-        <h2 class="text-center font-heading text-xl font-extrabold text-white">🧩 Susun Jawapan</h2>
-        <div class="flex flex-wrap justify-center gap-1.5" data-testid="solo-dots">
-          <span
+        <h1 class="text-center text-title text-highlighted">🧩 Susun Jawapan</h1>
+        <div class="flex flex-wrap justify-center gap-2" data-testid="solo-dots">
+          <UBadge
             v-for="(dot, i) in dots"
             :key="i"
-            class="h-3 w-3 rounded-full"
-            :class="[
-              i === index ? 'active bg-teal-400 ring-2 ring-teal-300/50' : '',
-              dot === 'done'
-                ? 'done bg-emerald-400'
-                : dot === 'wrong'
-                  ? 'wrong bg-red-400'
-                  : i === index
-                    ? ''
-                    : 'bg-white/20',
-            ]"
+            :color="dot === 'done' ? 'success' : dot === 'wrong' ? 'error' : i === index ? 'primary' : 'neutral'"
+            variant="solid"
+            size="sm"
+            class="size-3 p-0"
+            :data-state="dot"
+            :data-active="i === index"
             data-testid="solo-dot"
           />
         </div>
 
-        <div
-          class="rounded-3xl border border-white/10 bg-white/5 p-5 text-center"
-          data-testid="solo-card"
-        >
-          <p class="text-xs font-bold tracking-wider text-teal-300 uppercase">
+        <UCard class="text-center" data-testid="solo-card">
+          <p class="text-overline text-primary">
             Soalan {{ index + 1 }} daripada {{ puzzles.length }}
           </p>
-          <p class="mt-2 font-heading text-lg font-bold break-words text-white">
+          <p class="mt-2 text-subheading break-words text-highlighted">
             {{ current.question }}
           </p>
+        </UCard>
+
+        <div class="flex flex-col gap-2 text-center">
+          <p class="text-caption text-muted">📥 Jawapan Kamu:</p>
+          <UCard :ui="{ body: 'p-3 sm:p-3' }" data-testid="solo-drop" @click="removeLast">
+            <div class="flex min-h-16 flex-wrap items-center justify-center gap-2">
+              <span v-if="placedTiles.length === 0" class="text-body text-muted"
+                >Klik huruf/perkataan di bawah untuk susun</span
+              >
+              <UButton
+                v-for="tile in placedTiles"
+                :key="tile.i"
+                type="button"
+                size="lg"
+                :color="check === 'wrong' ? 'error' : 'primary'"
+                variant="soft"
+                class="min-h-11 min-w-11 justify-center"
+                data-testid="solo-placed"
+                @click.stop="remove(tile.i)"
+              >
+                {{ tile.text }}
+              </UButton>
+            </div>
+          </UCard>
         </div>
 
-        <div class="text-center">
-          <!-- Live: ≈ 1.9:1; DV-M16-47 lightens "Jawapan Kamu:" and "Pilihan:". -->
-          <p class="mb-2 text-xs text-slate-300">📥 Jawapan Kamu:</p>
-          <div
-            class="flex min-h-20 flex-wrap items-center justify-center gap-2 rounded-2xl border border-teal-500/30 bg-white/5 p-3"
-            data-testid="solo-drop"
-            @click="removeLast"
-          >
-            <span v-if="placedTiles.length === 0" class="text-sm text-slate-400"
-              >Klik huruf/perkataan di bawah untuk susun</span
-            >
-            <button
-              v-for="tile in placedTiles"
-              :key="tile.i"
-              type="button"
-              class="min-h-11 min-w-11 rounded-xl border-2 px-3 py-2 text-base font-bold"
-              :class="
-                check === 'wrong'
-                  ? 'border-red-400 bg-red-500/10 text-red-300'
-                  : 'border-teal-400 bg-teal-500/20 text-teal-100'
-              "
-              data-testid="solo-placed"
-              @click.stop="remove(tile.i)"
-            >
-              {{ tile.text }}
-            </button>
-          </div>
+        <div class="flex flex-col gap-2 text-center">
+          <p class="text-caption text-muted">🔤 Pilihan:</p>
+          <UCard :ui="{ body: 'p-3 sm:p-3' }" data-testid="solo-source">
+            <div class="flex min-h-16 flex-wrap items-center justify-center gap-2">
+              <UButton
+                v-for="tile in sourceTiles"
+                :key="tile.i"
+                type="button"
+                size="lg"
+                color="neutral"
+                variant="soft"
+                class="min-h-11 min-w-11 justify-center"
+                :disabled="check !== 'idle'"
+                data-testid="solo-tile"
+                @click="place(tile.i)"
+              >
+                {{ tile.text }}
+              </UButton>
+            </div>
+          </UCard>
         </div>
 
-        <div class="text-center">
-          <p class="mb-2 text-xs text-slate-300">🔤 Pilihan:</p>
-          <div
-            class="flex min-h-20 flex-wrap items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 bg-white/5 p-3"
-            data-testid="solo-source"
-          >
-            <button
-              v-for="tile in sourceTiles"
-              :key="tile.i"
-              type="button"
-              class="min-h-11 min-w-11 rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-base font-bold text-white hover:border-teal-300 disabled:opacity-50"
-              :disabled="check !== 'idle'"
-              data-testid="solo-tile"
-              @click="place(tile.i)"
-            >
-              {{ tile.text }}
-            </button>
-          </div>
-        </div>
-
-        <div v-if="check === 'idle'" class="space-y-3">
-          <button
+        <div v-if="check === 'idle'" class="flex flex-col gap-3">
+          <UButton
             type="button"
-            class="min-h-14 w-full rounded-2xl bg-gradient-to-r from-teal-400 to-teal-500 px-3 py-3 text-lg font-bold text-teal-950 shadow-lg hover:brightness-105 disabled:opacity-40"
+            size="xl"
+            color="primary"
+            variant="solid"
+            class="min-h-14 w-full justify-center"
             :disabled="placed.length === 0"
             data-testid="solo-check"
             @click="verify"
           >
             ✅ Semak Jawapan
-          </button>
-          <!-- Live: dim grey (≈ 3.2:1), kept as live (G4 minor 4). -->
-          <button
+          </UButton>
+          <UButton
             type="button"
-            class="min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-slate-500 hover:bg-white/10"
+            size="lg"
+            color="neutral"
+            variant="soft"
+            class="min-h-12 w-full justify-center"
             data-testid="solo-skip-question"
             @click="skip"
           >
             ⏭️ Langkau Soalan Ini
-          </button>
+          </UButton>
         </div>
 
-        <div v-else-if="check === 'correct'" class="space-y-3 text-center">
-          <p class="text-lg font-extrabold text-emerald-300" data-testid="solo-feedback">
+        <div v-else-if="check === 'correct'" class="flex flex-col gap-3 text-center">
+          <p class="text-subheading text-success" data-testid="solo-feedback">
             🎉 BETUL! +{{ lastPoints }} mata
           </p>
-          <button
+          <UButton
             type="button"
-            class="min-h-14 w-full rounded-2xl bg-gradient-to-r from-teal-400 to-teal-500 px-3 py-3 text-lg font-bold text-teal-950 shadow-lg hover:brightness-105"
+            size="xl"
+            color="primary"
+            variant="solid"
+            class="min-h-14 w-full justify-center"
             data-testid="solo-next"
             @click="next"
           >
             Seterusnya →
-          </button>
+          </UButton>
         </div>
 
-        <div v-else class="space-y-3 text-center">
-          <p class="text-base font-bold text-red-300" data-testid="solo-feedback">
-            ❌ Cuba lagi atau langkau
-          </p>
+        <div v-else class="flex flex-col gap-3 text-center">
+          <p class="text-label text-error" data-testid="solo-feedback">❌ Cuba lagi atau langkau</p>
           <div class="grid gap-3 sm:grid-cols-2">
-            <button
+            <UButton
               type="button"
-              class="min-h-12 rounded-2xl bg-gradient-to-r from-teal-400 to-teal-500 px-3 py-3 text-base font-bold text-teal-950 shadow-lg hover:brightness-105"
+              size="xl"
+              color="primary"
+              variant="solid"
+              class="min-h-12 justify-center"
               data-testid="solo-retry"
               @click="retry"
             >
               🔄 Cuba Lagi
-            </button>
-            <button
+            </UButton>
+            <UButton
               type="button"
-              class="min-h-12 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-base font-bold text-slate-200 hover:bg-white/10"
+              size="xl"
+              color="neutral"
+              variant="soft"
+              class="min-h-12 justify-center"
               data-testid="solo-skip"
               @click="skip"
             >
               ⏭️ Langkau
-            </button>
+            </UButton>
           </div>
         </div>
       </div>

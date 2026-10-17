@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Betul atau Salah ✅ — PRESTASIPLUS',
       header: { title: 'Betul atau Salah', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -31,6 +32,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Cabaran Kilat ⚡ — PRESTASIPLUS',
       header: { title: 'Cabaran Kilat', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -43,6 +45,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tembak Jawapan 🎯 — PRESTASIPLUS',
       header: { title: 'Tembak Jawapan', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -55,6 +58,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Susun Jawapan 🧩 — PRESTASIPLUS',
       header: { title: 'Susun Jawapan', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -67,6 +71,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kad Memori — PRESTASIPLUS',
       header: { title: 'Kad Memori', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -79,6 +84,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Roda Nasib — PRESTASIPLUS',
       header: { title: 'Roda Nasib', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -91,6 +97,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Jutawan Ilmu 💰 — PRESTASIPLUS',
       header: { title: 'Jutawan Ilmu', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
   {
@@ -103,6 +110,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Jutawan Ilmu 💰 — PRESTASIPLUS',
       header: { title: 'Jutawan Ilmu', subtitle: SUBTITLE },
       module: 'M16',
+      v2: true,
     },
   },
 ]

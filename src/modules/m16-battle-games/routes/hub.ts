@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Permainan — PRESTASIPLUS',
       header: { title: 'Zona Permainan', subtitle: 'Selamat datang kembali' },
       module: 'M16',
+      v2: true,
     },
   },
 ]

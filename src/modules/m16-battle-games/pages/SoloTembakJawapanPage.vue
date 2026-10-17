@@ -12,8 +12,8 @@
 import { computed, ref, watch } from 'vue'
 
 import CountdownView from '../components/solo/CountdownView.vue'
-import GamePanel from '../components/solo/GamePanel.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
+import GamePanel from '../components/solo/GamePanel.vue'
 import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
 import {
@@ -26,11 +26,27 @@ import {
   tembakLevel,
   tembakTitle,
   tileFallSeconds,
-  tileJitter,
 } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
 
+/** The fall zone is a 4-lane grid of 14 rows; a tile's row follows its fall progress (no inline style). */
+const COL = ['col-start-1', 'col-start-2', 'col-start-3', 'col-start-4'] as const
+const ROW = [
+  'row-start-1',
+  'row-start-2',
+  'row-start-3',
+  'row-start-4',
+  'row-start-5',
+  'row-start-6',
+  'row-start-7',
+  'row-start-8',
+  'row-start-9',
+  'row-start-10',
+  'row-start-11',
+  'row-start-12',
+  'row-start-13',
+] as const
 const STEP_MS = 800
 const TICK_MS = 100
 const LIVES = 3
@@ -70,9 +86,9 @@ const tiles = computed(() => {
       i,
       text: option.text,
       lane: laneOf(q.id, i, LANES),
-      nudge: tileJitter(q.id, i) * 2,
       visible: elapsed.value >= startMs,
-      progress: fallProgress(elapsed.value, startMs, fall),
+      col: COL[Math.min(laneOf(q.id, i, LANES), LANES - 1)] ?? COL[0],
+      row: ROW[Math.min(ROW.length - 1, Math.max(0, Math.round(fallProgress(elapsed.value, startMs, fall) * (ROW.length - 1))))] ?? ROW[0],
     }
   })
 })
@@ -190,10 +206,10 @@ async function finish(): Promise<void> {
 }
 
 const resultTiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-orange-400' },
-  { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-emerald-400' },
-  { label: 'Tertinggi', value: `Level ${String(maxLevel.value)}`, tone: 'text-red-400' },
-  { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-yellow-300' },
+  { label: 'Skor Total', value: String(score.value), tone: 'text-warning' },
+  { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-success' },
+  { label: 'Tertinggi', value: `Level ${String(maxLevel.value)}`, tone: 'text-error' },
+  { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])
 
 watch(darjah, () => void start(), { immediate: true })
@@ -201,13 +217,8 @@ watch(darjah, () => void start(), { immediate: true })
 
 <template>
   <div data-testid="solo-tembak-jawapan">
-    <DarjahPicker
-      v-if="darjah === null"
-      emoji="🎯"
-      title="Tembak Jawapan"
-      color="var(--color-orange-500)"
-    />
-    <GamePanel theme="ember">
+    <DarjahPicker v-if="darjah === null" title="Tembak Jawapan" art="rocket" />
+    <GamePanel>
       <LoadState :loading="loading" :error="error" />
 
       <CountdownView
@@ -215,98 +226,71 @@ watch(darjah, () => void start(), { immediate: true })
         title="🎯 TEMBAK JAWAPAN"
         :count="count"
         hint="Tap jawapan yang betul sebelum jatuh!"
-        tone="text-orange-500"
       />
 
-      <div v-if="phase === 'playing' && current" class="mx-auto max-w-5xl space-y-3">
-        <div class="flex items-center justify-between gap-2" data-testid="solo-hud">
-          <div
-            class="min-w-14 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-center"
-          >
-            <div class="text-xs text-slate-300">Skor</div>
-            <div class="text-lg font-extrabold text-orange-400" data-testid="solo-score">
-              {{ score }}
+      <div v-if="phase === 'playing' && current" class="flex flex-col gap-3">
+        <div class="grid grid-cols-4 gap-2" data-testid="solo-hud">
+          <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
+            <p class="text-caption text-muted">Skor</p>
+            <p class="tabular text-heading text-primary" data-testid="solo-score">{{ score }}</p>
+          </UCard>
+          <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
+            <p class="text-caption text-muted">Level</p>
+            <p class="tabular text-heading text-primary" data-testid="solo-level">{{ level }}</p>
+          </UCard>
+          <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
+            <p class="sr-only">Nyawa</p>
+            <div class="flex items-center justify-center gap-1" data-testid="solo-lives">
+              <UIcon
+                v-for="n in LIVES"
+                :key="n"
+                :name="n > lives ? 'i-ph-heart-duotone' : 'i-ph-heart-fill'"
+                class="size-6"
+                :class="n > lives ? 'text-dimmed' : 'text-error'"
+                :data-lost="n > lives"
+                data-testid="solo-heart"
+              />
             </div>
-          </div>
-          <div
-            class="min-w-14 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-center"
-          >
-            <div class="text-xs text-slate-300">Level</div>
-            <div class="text-lg font-extrabold text-orange-400" data-testid="solo-level">
-              {{ level }}
-            </div>
-          </div>
-          <div class="text-xl" data-testid="solo-lives">
-            <span
-              v-for="n in LIVES"
-              :key="n"
-              class="mx-0.5"
-              :class="n > lives ? 'opacity-25' : ''"
-              data-testid="solo-heart"
-              >❤️</span
-            >
-          </div>
-          <div
-            class="min-w-14 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 text-center text-lg font-extrabold text-yellow-300"
-            data-testid="solo-coins"
-          >
-            🪙 {{ coinsShown }}
-          </div>
+          </UCard>
+          <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center" data-testid="solo-coins">
+            <p class="tabular text-heading text-warning">🪙 {{ coinsShown }}</p>
+          </UCard>
         </div>
 
-        <div class="rounded-3xl border border-orange-500/30 bg-orange-500/10 p-4 text-center">
-          <!-- Live: dim orange (≈ 3.5:1), kept as live (G4 minor 4). -->
-          <p class="text-xs font-semibold tracking-wider text-orange-700 uppercase">
-            Soalan {{ index + 1 }}
-          </p>
-          <p class="mt-1 font-heading text-base font-bold break-words text-white">
+        <UCard class="text-center">
+          <p class="text-overline text-muted">Soalan {{ index + 1 }}</p>
+          <p class="mt-1 text-subheading break-words text-highlighted">
             {{ current.question }}
           </p>
-        </div>
+        </UCard>
 
         <div
           id="fallZone"
-          class="relative h-[500px] w-full overflow-hidden rounded-3xl border border-white/5 bg-black/30"
+          class="relative mx-auto grid aspect-4/5 w-full max-w-lg grid-cols-4 grid-rows-14 gap-1 overflow-hidden bg-muted p-2"
           data-testid="solo-fall-zone"
         >
           <template v-for="tile in tiles" :key="`${index}-${tile.i}`">
-            <button
+            <UButton
               v-if="tile.visible"
               type="button"
+              :color="wrongTiles.includes(tile.i) ? 'error' : 'primary'"
+              variant="soft"
+              size="sm"
+              class="h-auto min-h-11 max-w-full self-start text-wrap break-words"
+              :class="`${tile.col} ${tile.row}`"
               :disabled="wrongTiles.includes(tile.i)"
-              class="absolute flex min-h-11 max-w-[22%] items-center justify-center"
-              :style="{
-                left: `${String(tile.lane * 24 + tile.nudge)}%`,
-                top: `calc((100% - 3.5rem - 1.5rem) * ${String(tile.progress)})`,
-                transition: 'top 100ms linear',
-              }"
+              :data-wrong="wrongTiles.includes(tile.i)"
               data-testid="solo-tile"
               @click="tap(tile.i)"
             >
-              <span
-                class="line-clamp-3 block rounded-xl border px-3 py-2 text-xs font-bold break-words text-white shadow-lg sm:text-sm"
-                :class="
-                  wrongTiles.includes(tile.i)
-                    ? 'border-red-400 bg-red-600/80'
-                    : 'border-white/25 bg-white/10'
-                "
-                >{{ tile.text }}</span
-              >
-            </button>
+              <span class="line-clamp-3 break-words">{{ tile.text }}</span>
+            </UButton>
           </template>
-          <div
-            v-if="banner"
-            class="absolute inset-x-0 top-1/3 text-center text-3xl font-extrabold text-amber-300"
-            data-testid="solo-level-banner"
-          >
-            {{ banner }}
+          <div v-if="banner" class="col-span-4 row-start-6 text-center" data-testid="solo-level-banner">
+            <UBadge color="warning" variant="solid" size="xl">{{ banner }}</UBadge>
           </div>
-          <div
-            class="absolute inset-x-4 bottom-2 h-px bg-gradient-to-r from-transparent via-red-500 to-transparent"
-          />
-          <!-- Live: a dark red on near-black (≈ 2:1); DV-M16-47 lightens it. -->
-          <div class="absolute right-4 bottom-3 text-xs font-bold tracking-wider text-red-400">
-            ⚠ GARIS MAUT
+          <div class="col-span-4 row-start-14 flex items-end justify-end">
+            <UBadge color="error" variant="soft" size="lg">⚠ GARIS MAUT</UBadge>
           </div>
         </div>
       </div>

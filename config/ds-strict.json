@@ -101,7 +101,12 @@
     { "glob": "src/modules/m02-users-schools/pages/JemputIbuBapaPage.vue", "level": "ds" },
     { "glob": "src/modules/m02-users-schools/components/jemput/**", "level": "ds" },
     { "glob": "src/modules/m08-student-performance/pages/Headcount*.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/components/headcount/**", "level": "page" }
+    { "glob": "src/modules/m08-student-performance/components/headcount/**", "level": "page" },
+    { "glob": "src/modules/m16-battle-games/pages/{Permainan,Solo*,RodaNasib,Jutawan*,PapanBijak,Pertandingan,UjiMinda,SambungKata}Page.vue", "level": "page" },
+    { "glob": "src/modules/m16-battle-games/components/{hub,jutawan,competition}/*.vue", "level": "page" },
+    { "glob": "src/modules/m16-battle-games/components/solo/{GamePanel,LoadState,StatBar,RingTimer}.vue", "level": "page" },
+    { "glob": "src/modules/m16-battle-games/components/solo/{CountdownView,DarjahPicker,ResultCard,CoinFly,PrizeModal}.vue", "level": "ds" },
+    { "glob": "src/modules/m16-battle-games/components/wheel/*.vue", "level": "ds" }
   ],
   "exempt": [
     "src/theme/**"

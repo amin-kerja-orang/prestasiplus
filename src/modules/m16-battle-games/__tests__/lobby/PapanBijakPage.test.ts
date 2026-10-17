@@ -179,7 +179,8 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
 describe('S7 live look: tinted panels', () => {
   it('has the violet create, green join, amber quick match and pink Top 10 panels and a violet hero', async () => {
     await mountPage()
-    expect(wrapper!.get('header').classes()).toContain('from-violet-600')
+    // v2: the hero is a DS card with the page h1 (the old violet gradient header is gone).
+    expect(wrapper!.get('[data-testid="pb-h1"]').text()).toContain('Papan Bijak')
     expect(wrapper!.get('[data-testid="create-card"]').classes()).toContain('from-violet-50')
     expect(wrapper!.get('[data-testid="join-card"]').classes()).toContain('from-emerald-50')
     expect(wrapper!.get('[data-testid="quick-match"]').classes()).toContain('from-amber-50')

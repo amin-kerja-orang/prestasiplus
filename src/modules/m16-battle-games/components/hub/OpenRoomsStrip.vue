@@ -4,8 +4,6 @@
  * terbuka buat masa ini.", "Cipta bilik permainan dan jemput rakan-rakan!"); with waiting rooms one chip
  * per room (PROPOSED layout): game emoji + game name + code + "{players}/{max}", linking to the room.
  */
-import { RouterLink } from 'vue-router'
-
 import type { GamesHub } from '../../api'
 import { ROOM_GAME_META, roomPath } from '../lobby/lobby-config'
 import { HUB_NO_ROOMS } from './hub-cards'
@@ -14,25 +12,28 @@ defineProps<{ rooms: GamesHub['openRooms'] }>()
 </script>
 
 <template>
-  <section class="rounded-2xl bg-white p-5 shadow" data-testid="hub-open-rooms">
+  <UCard data-testid="hub-open-rooms">
     <div v-if="rooms.length === 0" class="py-2 text-center" data-testid="hub-open-rooms-empty">
-      <div class="text-3xl">{{ HUB_NO_ROOMS.emoji }}</div>
-      <p class="mt-1 text-sm font-semibold text-slate-600">{{ HUB_NO_ROOMS.title }}</p>
-      <p class="text-sm text-slate-500">{{ HUB_NO_ROOMS.hint }}</p>
+      <div class="text-title">{{ HUB_NO_ROOMS.emoji }}</div>
+      <p class="mt-1 text-label text-toned">{{ HUB_NO_ROOMS.title }}</p>
+      <p class="text-body text-muted">{{ HUB_NO_ROOMS.hint }}</p>
     </div>
     <ul v-else class="flex flex-wrap gap-2">
       <li v-for="room in rooms" :key="room.code">
-        <RouterLink
+        <UButton
           :to="roomPath(room.game, room.code)"
-          class="inline-flex min-h-11 items-center gap-2 rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+          color="primary"
+          variant="soft"
+          size="lg"
+          class="min-h-11 gap-2"
           data-testid="hub-open-room"
         >
           <span>{{ ROOM_GAME_META[room.game].emoji }}</span>
           <span>{{ ROOM_GAME_META[room.game].title }}</span>
-          <span class="font-mono">{{ room.code }}</span>
-          <span>{{ room.players }}/{{ room.max }}</span>
-        </RouterLink>
+          <span class="tabular">{{ room.code }}</span>
+          <span class="tabular">{{ room.players }}/{{ room.max }}</span>
+        </UButton>
       </li>
     </ul>
-  </section>
+  </UCard>
 </template>
