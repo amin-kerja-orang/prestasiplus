@@ -5,8 +5,7 @@
  * inventory): "500", "⚙️", "Ralat Pelayan", the message, "Halaman Utama" and "Cuba Semula" (reloads).
  * No game is built (content not observable, Q-M16-8).
  */
-import { RouterLink } from 'vue-router'
-
+import { DsErrorPage } from '@/ds'
 import { SERVER_ERROR_COPY as COPY } from '../components/competition/copy'
 
 function reload(): void {
@@ -16,37 +15,35 @@ function reload(): void {
 
 <template>
   <main
-    class="flex min-h-screen items-center justify-center px-4 py-8 font-sans bg-error-page"
+    class="flex min-h-screen flex-col items-center justify-center px-4"
     data-page="server-error"
     data-testid="m16-server-error"
   >
-    <div class="text-center">
-      <div class="text-9xl leading-none font-black text-white/30">{{ COPY.code }}</div>
-      <div class="-mt-1 mb-6 text-[4rem] leading-none">{{ COPY.emoji }}</div>
-      <h1 class="mb-2 font-sans text-2xl font-bold text-white">{{ COPY.heading }}</h1>
-      <p class="mx-auto mb-9 max-w-md text-[15px] leading-[1.65] text-white/80">
-        {{ COPY.message }}
-      </p>
-      <div class="flex flex-wrap justify-center gap-3">
-        <RouterLink
+    <DsErrorPage :code="500" :title="COPY.heading" :description="COPY.message">
+      <template #actions>
+        <UButton
           to="/"
-          class="inline-flex min-h-11 items-center justify-center rounded-full border border-white bg-white px-8 py-3 leading-[normal] font-semibold text-violet-600"
+          size="xl"
+          color="primary"
+          variant="solid"
+          class="min-h-12 justify-center"
           data-testid="m16-error-home"
         >
           {{ COPY.home }}
-        </RouterLink>
-        <button
+        </UButton>
+        <UButton
           type="button"
-          class="inline-flex min-h-11 items-center justify-center rounded-full border border-white/30 bg-white/20 px-8 py-3 leading-[normal] font-semibold text-white"
+          size="xl"
+          color="neutral"
+          variant="soft"
+          class="min-h-12 justify-center"
           data-testid="m16-error-retry"
           @click="reload"
         >
           {{ COPY.retry }}
-        </button>
-      </div>
-      <div class="mt-12 text-xs font-semibold tracking-[0.2em] text-white/60">
-        {{ COPY.caption }}
-      </div>
-    </div>
+        </UButton>
+      </template>
+    </DsErrorPage>
+    <p class="text-center text-overline text-muted">{{ COPY.emoji }} {{ COPY.caption }}</p>
   </main>
 </template>

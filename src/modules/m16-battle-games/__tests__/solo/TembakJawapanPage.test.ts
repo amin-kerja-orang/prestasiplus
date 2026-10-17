@@ -55,7 +55,7 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
     expect(text('solo-coins')).toBe('🪙 0')
     expect(wrapper.text()).toContain('Soalan 1')
     expect(wrapper.text()).toContain('⚠ GARIS MAUT')
-    expect(wrapper.get('[data-testid="solo-fall-zone"]').classes()).toContain('h-[500px]')
+    expect(wrapper.get('[data-testid="solo-fall-zone"]').classes()).toContain('aspect-4/5')
     // Tiles fall 1.8 s apart: one at the start, two after 1.8 s.
     expect(tiles()).toHaveLength(1)
     await vi.advanceTimersByTimeAsync(1800)
@@ -79,12 +79,12 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
     expect(wrapper!.text()).toContain('Soalan 2')
     await vi.advanceTimersByTimeAsync(1800)
     await tiles()[1]!.trigger('click') // wrong option
-    expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(1)
+    expect(hearts().filter((h) => h.attributes('data-lost') === 'true')).toHaveLength(1)
     expect(wrapper!.text()).toContain('Soalan 2')
     expect(tiles()[1]!.attributes('disabled')).toBeDefined()
-    expect(tiles()[1]!.find('span').classes()).toContain('border-red-400')
+    expect(tiles()[1]!.attributes('data-wrong')).toBe('true')
     await tiles()[1]!.trigger('click') // disabled: no second life lost
-    expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(1)
+    expect(hearts().filter((h) => h.attributes('data-lost') === 'true')).toHaveLength(1)
     // the question goes on: the correct tile (option 0) is still there and still scores
     await tiles()[0]!.trigger('click')
     expect(wrapper!.text()).toContain('Soalan 3')
@@ -98,7 +98,7 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
       await vi.advanceTimersByTimeAsync(1800)
       await tiles()[lost]!.trigger('click') // wrong options 1, 2, 3 of question 2
       if (lost < 3)
-        expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(lost)
+        expect(hearts().filter((h) => h.attributes('data-lost') === 'true')).toHaveLength(lost)
     }
     await vi.advanceTimersByTimeAsync(0)
     expect(submitSoloGame).toHaveBeenCalledTimes(1)
@@ -121,9 +121,9 @@ describe('S15 Tembak Jawapan (FR-M16-79..81)', () => {
   it('a question nobody taps costs a life at its deadline', async () => {
     await startPlaying()
     await vi.advanceTimersByTimeAsync(28_900)
-    expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(0)
+    expect(hearts().filter((h) => h.attributes('data-lost') === 'true')).toHaveLength(0)
     await vi.advanceTimersByTimeAsync(200)
-    expect(hearts().filter((h) => h.classes().includes('opacity-25'))).toHaveLength(1)
+    expect(hearts().filter((h) => h.attributes('data-lost') === 'true')).toHaveLength(1)
     expect(wrapper!.text()).toContain('Soalan 2')
   })
 })

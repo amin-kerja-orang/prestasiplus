@@ -45,18 +45,18 @@ describe('S14 Cabaran Kilat (FR-M16-76..78)', () => {
     expect(wrapper.text()).toContain('Soalan 1')
     expect(wrapper.get('[data-testid="solo-difficulty"]').text()).toBe('Mudah')
     expect(options().map((o) => o.text())).toEqual([
-      'A. Pilihan 0',
-      'B. Pilihan 1',
-      'C. Pilihan 2',
-      'D. Pilihan 3',
+      'APilihan 0',
+      'BPilihan 1',
+      'CPilihan 2',
+      'DPilihan 3',
     ])
     expect(wrapper.get('[data-testid="solo-clock"]').text()).toBe('60')
 
     // 3 correct in a row (option B): +10, +20, +30 and 1 + 2 + 3 syiling.
     for (let i = 0; i < 3; i++) {
       await options()[1]!.trigger('click')
-      expect(options()[1]!.classes()).toContain('correct')
-      expect(options().every((o) => o.attributes('disabled') !== undefined)).toBe(true)
+      expect(options()[1]!.attributes('data-state')).toBe('correct')
+      expect(options().every((o) => o.attributes('aria-disabled') === 'true')).toBe(true)
       await vi.advanceTimersByTimeAsync(400)
     }
     expect(wrapper.get('[data-testid="solo-score"]').text()).toBe('60')
@@ -65,7 +65,7 @@ describe('S14 Cabaran Kilat (FR-M16-76..78)', () => {
     expect(wrapper.get('[data-testid="solo-difficulty"]').text()).toBe('Sukar')
 
     await options()[0]!.trigger('click')
-    expect(options()[0]!.classes()).toContain('wrong')
+    expect(options()[0]!.attributes('data-state')).toBe('wrong')
     await vi.advanceTimersByTimeAsync(400)
     expect(wrapper.find('[data-testid="solo-combo"]').exists()).toBe(false)
 

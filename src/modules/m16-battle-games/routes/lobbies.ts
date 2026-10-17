@@ -30,7 +30,7 @@ const routes: RouteRecordRaw[] = [
     path: '/papan-bijak',
     name: 'm16.lobby.papan-bijak',
     component: () => import('../pages/PapanBijakPage.vue'),
-    meta: meta('papan-bijak'),
+    meta: { ...meta('papan-bijak'), v2: true },
   },
   room('papan-bijak'),
   ...LOBBY_GAMES.flatMap((game): RouteRecordRaw[] => [

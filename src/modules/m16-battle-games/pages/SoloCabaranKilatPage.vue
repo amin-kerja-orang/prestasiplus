@@ -5,6 +5,9 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import { DsQuizOption } from '@/ds'
+import type { QuizOptionState } from '@/ds'
+
 import CountdownView from '../components/solo/CountdownView.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
@@ -25,11 +28,7 @@ const GAME_SECONDS = 60
 const NEXT_MS = 400
 const STEP_MS = 800
 
-const CHIP_TONE = {
-  green: 'bg-emerald-500/20 text-emerald-300',
-  amber: 'bg-amber-500/20 text-amber-300',
-  red: 'bg-red-500/20 text-red-300',
-} as const
+const CHIP_COLOR = { green: 'success', amber: 'warning', red: 'error' } as const
 
 const timers = useGameTimers()
 const { darjah, payload, loading, error, load } = useSoloGame('cabaran-kilat')
@@ -113,14 +112,10 @@ function pick(optionId: number): void {
   }, NEXT_MS)
 }
 
-function optionClass(id: number, isCorrect: boolean): string {
-  if (picked.value === null) return 'border-white/15 bg-white/5 hover:border-cyan-400/60'
-  if (id === picked.value) {
-    return isCorrect
-      ? 'correct border-emerald-400 bg-emerald-500/20'
-      : 'wrong border-red-400 bg-red-500/20'
-  }
-  return 'border-white/10 bg-white/5 opacity-70'
+function optionState(id: number, isCorrect: boolean): QuizOptionState {
+  if (picked.value === null) return 'idle'
+  if (id === picked.value) return isCorrect ? 'correct' : 'wrong'
+  return 'dimmed'
 }
 
 async function finish(): Promise<void> {
@@ -140,10 +135,10 @@ async function finish(): Promise<void> {
 }
 
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-cyan-300' },
-  { label: 'Betul / Jawab', value: ratio(correct.value, answered.value), tone: 'text-emerald-400' },
-  { label: 'Combo Max 🔥', value: `${String(maxCombo.value)}x`, tone: 'text-amber-400' },
-  { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-violet-300' },
+  { label: 'Skor Total', value: String(score.value), tone: 'text-primary' },
+  { label: 'Betul / Jawab', value: ratio(correct.value, answered.value), tone: 'text-success' },
+  { label: 'Combo Max 🔥', value: `${String(maxCombo.value)}x`, tone: 'text-warning' },
+  { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])
 
 watch(darjah, () => void start(), { immediate: true })
@@ -151,69 +146,51 @@ watch(darjah, () => void start(), { immediate: true })
 
 <template>
   <div data-testid="solo-cabaran-kilat">
-    <DarjahPicker
-      v-if="darjah === null"
-      emoji="⚡"
-      title="Cabaran Kilat"
-      color="var(--color-amber-500)"
-    />
-    <GamePanel theme="violet">
+    <DarjahPicker v-if="darjah === null" title="Cabaran Kilat" art="bolt" />
+    <GamePanel>
       <LoadState :loading="loading" :error="error" />
 
-      <CountdownView
-        v-if="phase === 'countdown'"
-        title="⚡ CABARAN KILAT"
-        :count="count"
-        tone="text-cyan-400"
-      />
+      <CountdownView v-if="phase === 'countdown'" title="⚡ CABARAN KILAT" :count="count" />
 
-      <div v-if="phase === 'playing' && current" class="mx-auto max-w-xl space-y-4">
-        <!-- As live: a fixed pill at top-4 right-4, covering the bell and avatar of the shell header. -->
-        <span
-          v-if="combo >= 2"
-          class="fixed top-4 right-4 z-[160] rounded-full bg-gradient-to-r from-red-500 to-orange-500 px-4 py-1.5 text-sm font-extrabold whitespace-nowrap text-white shadow-lg"
-          :class="{ fire: combo >= 5 }"
-          data-testid="solo-combo"
-          >🔥 {{ combo }}x COMBO</span
-        >
-        <StatBar
-          :score="score"
-          :time-left="timeLeft"
-          :max="GAME_SECONDS"
-          :correct="correct"
-          caps
-          ring="stroke-cyan-400"
-          score-tone="text-cyan-300"
-          correct-tone="text-emerald-400"
-        />
-        <div class="flex items-center justify-between gap-2 pt-2">
-          <p class="text-xs text-slate-300">Soalan {{ index + 1 }}</p>
-          <span
-            v-if="chip"
-            class="rounded-full px-3 py-0.5 text-xs font-bold"
-            :class="CHIP_TONE[chip.tone]"
-            data-testid="solo-difficulty"
-            >{{ chip.label }}</span
+      <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
+        <div v-if="combo >= 2" class="flex justify-center">
+          <UBadge
+            color="warning"
+            variant="solid"
+            size="xl"
+            :data-fire="combo >= 5"
+            data-testid="solo-combo"
+            >🔥 {{ combo }}x COMBO</UBadge
           >
         </div>
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-5" data-testid="solo-card">
-          <p class="font-heading text-lg font-bold break-words text-white">
+        <StatBar :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" caps />
+        <div class="flex items-center justify-between gap-2 pt-2">
+          <p class="text-caption text-muted">Soalan {{ index + 1 }}</p>
+          <UBadge
+            v-if="chip"
+            :color="CHIP_COLOR[chip.tone]"
+            variant="soft"
+            size="lg"
+            data-testid="solo-difficulty"
+            >{{ chip.label }}</UBadge
+          >
+        </div>
+        <UCard data-testid="solo-card">
+          <p class="text-subheading break-words text-highlighted">
             {{ current.question_text }}
           </p>
-        </div>
+        </UCard>
         <div class="grid gap-3">
-          <button
+          <DsQuizOption
             v-for="(option, i) in current.options"
             :key="option.id"
-            type="button"
-            class="min-h-12 rounded-2xl border-2 px-4 py-3 text-left text-base font-bold break-words text-white transition"
-            :class="optionClass(option.id, option.correct)"
-            :disabled="picked !== null"
+            :letter="OPTION_LETTERS[i] ?? ''"
+            :state="optionState(option.id, option.correct)"
             data-testid="solo-option"
-            @click="pick(option.id)"
+            @select="pick(option.id)"
           >
-            {{ OPTION_LETTERS[i] }}. {{ option.text }}
-          </button>
+            {{ option.text }}
+          </DsQuizOption>
         </div>
       </div>
 

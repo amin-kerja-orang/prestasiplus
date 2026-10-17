@@ -1,14 +1,19 @@
 <script setup lang="ts">
 /**
- * The Roda Nasib wheel (URS FN-M16-7.1.2; live roda-nasib-desktop): a 380 × 380 `<canvas>` (320 px at 375)
- * with a thick violet rim and a white inner ring, the 8 segments of discovery A.5 (colour, icon and label
- * from the server, the text running along the radius, the icon next to it), a violet triangle pointer at
- * 12 o'clock and a round "🎯" hub that does not turn. As live, segment 0 starts at 3 o'clock and runs
- * clockwise (the boundaries rest at 12 and 3), so the landing rotation is the SRS `360 − (index × 45 + 22.5)`
- * minus 90° (`wheelLandingDeg`), which brings the centre of segment `index` under the pointer. Shapes and
- * text only: no image (D22). The rotating square is clipped to its circle (DV-M16-42).
+ * The Roda Nasib wheel (URS FN-M16-7.1.2): a 380 x 380 `<canvas>` (full width, at most 380 px) with an
+ * A1 rim and an elevated inner ring, the 8 segments of discovery A.5 (colour, icon and label from the
+ * server, the text running along the radius, the icon next to it), a pointer at 12 o'clock and a round
+ * hub that does not turn. As live, segment 0 starts at 3 o'clock and runs clockwise, so the landing
+ * rotation is the SRS `360 - (index * 45 + 22.5)` minus 90 degrees (`wheelLandingDeg`), which brings
+ * the centre of segment `index` under the pointer.
+ *
+ * The turn is a requestAnimationFrame tween drawn into the canvas (no inline style needed): an
+ * ease-out over `WHEEL_SPIN_MS`. With `prefers-reduced-motion` the wheel jumps straight to the landing
+ * angle (the result then shows at the same moment the page reveals it). Shapes and text only (D22).
  */
-import { onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+
+import { useMedia } from '@/ds/useMedia'
 
 import type { SpinPage } from '../../api'
 import { WHEEL_SPIN_MS } from '../solo/solo-lib'
@@ -16,10 +21,19 @@ import { WHEEL_SPIN_MS } from '../solo/solo-lib'
 const props = defineProps<{ segments: SpinPage['segments']; rotation: number }>()
 
 const SIZE = 380
-const RIM = '#7c3aed'
 const canvas = ref<HTMLCanvasElement | null>(null)
+const reduced = useMedia('(prefers-reduced-motion: reduce)', false)
+const shown = ref(props.rotation)
+let frame = 0
 
-function draw(): void {
+/** A theme colour from the CSS custom properties, so the rim follows light and dark mode. */
+function themeColour(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return v === '' ? fallback : v
+}
+
+function draw(angleDeg: number): void {
   const el = canvas.value
   if (!el || props.segments.length === 0) return
   let ctx: CanvasRenderingContext2D | null = null
@@ -32,14 +46,18 @@ function draw(): void {
   const c = SIZE / 2
   const arc = (Math.PI * 2) / props.segments.length
   ctx.clearRect(0, 0, SIZE, SIZE)
-  // rim and inner white ring
+  ctx.save()
+  ctx.translate(c, c)
+  ctx.rotate((angleDeg * Math.PI) / 180)
+  ctx.translate(-c, -c)
+  // rim and inner ring
   ctx.beginPath()
   ctx.arc(c, c, c - 2, 0, Math.PI * 2)
-  ctx.fillStyle = RIM
+  ctx.fillStyle = themeColour('--ds-c1', 'currentColor')
   ctx.fill()
   ctx.beginPath()
   ctx.arc(c, c, c - 14, 0, Math.PI * 2)
-  ctx.fillStyle = '#e5e7eb'
+  ctx.fillStyle = themeColour('--ui-bg-elevated', 'currentColor')
   ctx.fill()
   const radius = c - 18
   props.segments.forEach((seg, i) => {
@@ -51,14 +69,14 @@ function draw(): void {
     ctx.fillStyle = seg.color
     ctx.fill()
     ctx.lineWidth = 2
-    ctx.strokeStyle = 'rgba(255,255,255,0.75)'
+    ctx.strokeStyle = themeColour('--ui-bg', 'transparent')
     ctx.stroke()
     ctx.save()
     ctx.translate(c, c)
     ctx.rotate(start + arc / 2)
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
-    ctx.fillStyle = '#ffffff'
+    ctx.fillStyle = 'white'
     ctx.font = 'bold 13px Inter, sans-serif'
     const labelEdge = radius - 14
     ctx.fillText(seg.label, labelEdge, 0)
@@ -67,42 +85,65 @@ function draw(): void {
     ctx.fillText(seg.icon, labelEdge - width - 6, 0)
     ctx.restore()
   })
+  ctx.restore()
 }
 
-onMounted(draw)
-watch(() => props.segments, draw, { deep: true })
+function stop(): void {
+  if (frame !== 0 && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame)
+  frame = 0
+}
+
+function turnTo(target: number): void {
+  stop()
+  const from = shown.value
+  if (reduced.value || typeof requestAnimationFrame !== 'function' || from === target) {
+    shown.value = target
+    draw(target)
+    return
+  }
+  const t0 = performance.now()
+  const step = (now: number): void => {
+    const t = Math.min(1, (now - t0) / WHEEL_SPIN_MS)
+    const eased = 1 - Math.pow(1 - t, 4)
+    shown.value = from + (target - from) * eased
+    draw(shown.value)
+    frame = t < 1 ? requestAnimationFrame(step) : 0
+  }
+  frame = requestAnimationFrame(step)
+}
+
+onMounted(() => draw(shown.value))
+onBeforeUnmount(stop)
+watch(() => props.segments, () => draw(shown.value), { deep: true })
+watch(
+  () => props.rotation,
+  (to) => turnTo(to),
+)
 </script>
 
 <template>
-  <div class="relative mx-auto w-[320px] max-w-full sm:w-[380px]" data-testid="wheel">
+  <div class="relative mx-auto w-full max-w-sm" data-testid="wheel">
     <div
-      class="absolute top-0 left-1/2 z-10 h-0 w-0 -translate-x-1/2 border-x-[14px] border-t-[24px] border-x-transparent border-t-violet-600 drop-shadow-md"
+      class="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center text-primary-t"
       data-testid="wheel-pointer"
-    />
-    <!-- The clip keeps the rotating square's box from widening the page while the wheel turns. -->
-    <div class="overflow-hidden rounded-full shadow-[0_0_30px_rgba(124,58,237,0.35)]">
-      <div
-        class="rounded-full"
-        :style="{
-          transform: `rotate(${String(rotation)}deg)`,
-          transition: `transform ${String(WHEEL_SPIN_MS)}ms cubic-bezier(0.17, 0.67, 0.12, 0.99)`,
-        }"
-        data-testid="wheel-disc"
-        :data-rotation="rotation"
-      >
-        <canvas
-          ref="canvas"
-          :width="SIZE"
-          :height="SIZE"
-          class="block h-auto w-full rounded-full"
-          data-testid="wheel-canvas"
-        />
-      </div>
+    >
+      <UIcon name="i-ph-caret-down-fill" class="size-10" aria-hidden="true" />
+    </div>
+    <div class="overflow-hidden rounded-full shadow-card" data-testid="wheel-disc" :data-rotation="rotation">
+      <canvas
+        ref="canvas"
+        :width="SIZE"
+        :height="SIZE"
+        class="block h-auto w-full rounded-full"
+        role="img"
+        aria-label="Roda Nasib"
+        data-testid="wheel-canvas"
+      />
     </div>
     <div
-      class="absolute top-1/2 left-1/2 flex h-[52px] w-[52px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-violet-800 text-xl shadow-lg ring-4 ring-white/70"
+      class="pointer-events-none absolute inset-0 grid place-items-center"
     >
-      🎯
+      <UIcon name="i-ph-target-duotone" class="size-8 text-primary-t" aria-hidden="true" />
     </div>
   </div>
 </template>

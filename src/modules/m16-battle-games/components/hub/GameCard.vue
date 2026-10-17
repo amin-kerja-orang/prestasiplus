@@ -3,28 +3,28 @@
  * One S6 hub card (SRS M16 v1.6 FR-M16-52, FR-M16-53; URS FN-M16-4.1.3): the whole card is clickable
  * (live `onclick`), its button is a real link to the same route. A click on the button link is left to
  * the link (no double navigation). The "Belum ..." chips show only while the #22 chip flag is false
- * (DV-M16-14). Visual: a gradient banner with the banner emoji and the corner badge, then the title, text,
- * chips and a solid button in the card colour (live screenshots; colours in `HUB_THEME`).
+ * (DV-M16-14). v2 learner look: 3D art, the corner badge, title, text, chips and an A1 button.
  */
 import { computed } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
-import { AppIcon } from '@/components/icon'
+import { DsArt3D } from '@/ds'
 
 import type { GamesHub } from '../../api'
-import { HUB_THEME, type HubCard } from './hub-cards'
+import type { HubCard } from './hub-cards'
+import { HUB_ART } from './hub-art'
 
 const props = defineProps<{ card: HubCard; chips: GamesHub['chips'] }>()
 
 const router = useRouter()
 
-const theme = computed(
-  () =>
-    HUB_THEME[props.card.id] ?? {
-      banner: 'from-violet-600 to-violet-300',
-      button: 'bg-violet-600 hover:bg-violet-700',
-    },
-)
+const art = computed(() => HUB_ART[props.card.id] ?? 'rocket')
+const badgeColor = computed(() => {
+  const b = props.card.badge ?? ''
+  if (b.includes('HOT')) return 'error' as const
+  if (b.includes('MULTIPLAYER')) return 'primary' as const
+  return 'warning' as const
+})
 
 const visibleChips = computed(() =>
   props.card.chips.filter((c) => c.unlessFlag === undefined || !props.chips[c.unlessFlag]),
@@ -37,48 +37,48 @@ function go(e: MouseEvent): void {
 </script>
 
 <template>
-  <div
-    class="relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+  <UCard
+    class="h-full cursor-pointer"
+    :ui="{ root: 'h-full', body: 'flex h-full flex-col gap-3 p-4 sm:p-4' }"
     :data-testid="`hub-card-${card.id}`"
     @click="go"
   >
-    <div
-      class="relative flex h-28 items-center justify-center bg-linear-to-br sm:h-24"
-      :class="theme.banner"
-      data-testid="hub-card-banner"
-    >
-      <span
+    <div class="flex items-start justify-between gap-3" data-testid="hub-card-banner">
+      <DsArt3D :name="art" size="xl" float data-testid="hub-card-emoji" />
+      <UBadge
         v-if="card.badge"
-        class="absolute top-3 right-3 rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm"
-        :class="card.badgeClass"
+        :color="badgeColor"
+        variant="soft"
+        size="md"
         data-testid="hub-card-badge"
-        >{{ card.badge }}</span
+        >{{ card.badge }}</UBadge
       >
-      <span class="text-5xl drop-shadow-md" data-testid="hub-card-emoji">{{ card.emoji }}</span>
     </div>
-    <div class="flex flex-1 flex-col p-5">
-      <h3 class="font-heading text-lg font-bold text-slate-800">{{ card.title }}</h3>
-      <p class="mt-1 text-sm text-slate-500">{{ card.text }}</p>
-      <div v-if="visibleChips.length > 0" class="mt-3 flex flex-wrap gap-2">
-        <span
-          v-for="chip in visibleChips"
-          :key="chip.text"
-          class="rounded-lg bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500"
-          data-testid="hub-card-chip"
-          >{{ chip.text }}</span
-        >
-      </div>
-      <div class="mt-auto pt-4">
-        <RouterLink
-          :to="card.to"
-          class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow transition hover:-translate-y-0.5"
-          :class="theme.button"
-          data-testid="hub-card-button"
-        >
-          <AppIcon :name="card.icon" class="h-4 w-4" :class="{ 'fill-current': theme.solid }" />
-          {{ card.button }}
-        </RouterLink>
-      </div>
+    <h3 class="text-subheading text-highlighted">{{ card.title }}</h3>
+    <p class="text-body text-muted">{{ card.text }}</p>
+    <div v-if="visibleChips.length > 0" class="flex flex-wrap gap-2">
+      <UBadge
+        v-for="chip in visibleChips"
+        :key="chip.text"
+        color="neutral"
+        variant="soft"
+        size="md"
+        data-testid="hub-card-chip"
+        >{{ chip.text }}</UBadge
+      >
     </div>
-  </div>
+    <div class="mt-auto pt-2">
+      <UButton
+        :to="card.to"
+        size="xl"
+        color="primary"
+        variant="solid"
+        trailing-icon="i-ph-arrow-right-bold"
+        class="min-h-12 w-full justify-center"
+        data-testid="hub-card-button"
+      >
+        {{ card.button }}
+      </UButton>
+    </div>
+  </UCard>
 </template>

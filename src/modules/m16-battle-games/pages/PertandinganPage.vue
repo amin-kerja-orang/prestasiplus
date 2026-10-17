@@ -5,15 +5,13 @@
  * cards (3 columns at every width), the own-status card and the top 20 of the weekly ranking (M05
  * Q-WEEK-RANK through #40). `?week=` is ignored, as live.
  *
- * Visual treatment follows the live capture (`pertandingan-desktop.png` / `-mobile.png`): a green
- * back link and plain heading (no hero), a green week card, gold / silver / bronze prize borders, a
- * green start button and light-grey rank numbers from 4.
+ * v2 learner look: back link and plain heading (no hero), raised cards for the week, the prizes (medal
+ * emoji) and the board; the start button is the A1 CTA; ranks from 4 are muted.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 import { clock } from '@/lib/time'
 
 import { fetchWeeklyCompetition } from '../api'
@@ -23,9 +21,6 @@ import { formatCountdown, formatPct, formatWeekRange } from '../components/compe
 import PageLoadError from '../components/competition/PageLoadError.vue'
 
 const REFRESH_MS = 60_000
-
-/** Prize-card borders: gold, silver, bronze (live capture). */
-const PRIZE_BORDER = ['border-amber-300', 'border-slate-300', 'border-orange-400'] as const
 
 const view = useApi((signal) => fetchWeeklyCompetition({ signal }))
 
@@ -61,115 +56,109 @@ function medalOf(rank: number): string | null {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4 px-4 sm:px-0" data-testid="m16-pertandingan-page">
-    <div>
+  <DsPage data-testid="m16-pertandingan-page">
+    <div class="flex flex-col items-start gap-1">
       <BackLink />
       <header data-testid="pertandingan-hero">
-        <h1 class="font-heading text-lg font-bold text-slate-900 sm:text-2xl">
-          {{ COPY.heading }}
-        </h1>
-        <p class="mt-1 text-sm text-slate-600">{{ COPY.sub }}</p>
+        <h1 class="text-title text-highlighted">{{ COPY.heading }}</h1>
+        <p class="mt-1 text-body text-muted">{{ COPY.sub }}</p>
       </header>
     </div>
 
     <PageLoadError v-if="view.error.value" @retry="view.reload()" />
     <div
       v-else-if="!data"
-      class="flex justify-center py-10 text-slate-400"
+      class="flex flex-col gap-3"
+      aria-busy="true"
       data-testid="pertandingan-loading"
     >
-      <LoadingSpinner :size="28" />
+      <USkeleton class="h-16 w-full" />
+      <USkeleton class="h-16 w-full" />
     </div>
 
     <template v-else>
-      <section
-        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-300 bg-linear-to-r from-emerald-100 to-green-100 p-4 shadow-sm"
-        data-testid="pertandingan-week"
-      >
-        <div class="min-w-0">
-          <p class="text-xs font-semibold text-emerald-700">{{ COPY.weekLabel }}</p>
-          <p class="font-bold text-slate-900" data-testid="pertandingan-range">{{ weekRange }}</p>
+      <UCard data-testid="pertandingan-week">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-caption text-muted">{{ COPY.weekLabel }}</p>
+            <p class="text-label text-highlighted" data-testid="pertandingan-range">{{ weekRange }}</p>
+          </div>
+          <div class="text-end">
+            <p class="text-caption text-muted">{{ COPY.countdownLabel }}</p>
+            <p class="tabular text-label text-primary" data-testid="pertandingan-countdown">
+              {{ countdown }}
+            </p>
+          </div>
         </div>
-        <div class="text-right">
-          <p class="text-xs font-semibold text-emerald-700">{{ COPY.countdownLabel }}</p>
-          <p class="font-bold text-slate-900" data-testid="pertandingan-countdown">
-            {{ countdown }}
-          </p>
-        </div>
-      </section>
+      </UCard>
 
       <section class="grid grid-cols-3 gap-2 sm:gap-4" data-testid="pertandingan-prizes">
-        <div
+        <UCard
           v-for="(prize, i) in COPY.prizes"
           :key="prize.label"
-          class="rounded-2xl border-2 bg-white p-3 text-center shadow-sm"
-          :class="PRIZE_BORDER[i]"
+          :ui="{ body: 'p-3 sm:p-3' }"
+          class="text-center"
           data-testid="pertandingan-prize"
         >
-          <div class="text-3xl">{{ prize.medal }}</div>
-          <p class="mt-1 text-xs font-semibold text-slate-900 sm:text-sm">{{ prize.label }}</p>
-          <p class="text-base font-bold text-amber-600">+{{ data.prizes[i] }} 🪙</p>
-        </div>
+          <div class="text-title">{{ prize.medal }}</div>
+          <p class="mt-1 text-caption text-highlighted">{{ prize.label }}</p>
+          <p class="tabular text-label text-warning">+{{ data.prizes[i] }} 🪙</p>
+        </UCard>
       </section>
 
-      <section
-        class="rounded-2xl bg-white p-6 text-center shadow-sm sm:p-8"
-        data-testid="pertandingan-status"
-      >
+      <UCard class="text-center" data-testid="pertandingan-status">
         <template v-if="data.me">
-          <p class="font-bold text-slate-900" data-testid="pertandingan-my-rank">
+          <p class="text-label text-highlighted" data-testid="pertandingan-my-rank">
             {{ COPY.myRank(data.me.rank, data.me.betul) }}
           </p>
         </template>
-        <template v-else>
-          <div class="text-3xl">📝</div>
-          <p class="mt-1 font-bold text-slate-900">{{ COPY.notStarted }}</p>
-          <p class="text-sm text-slate-600">{{ COPY.notStartedHint }}</p>
-          <RouterLink
+        <div v-else class="flex flex-col items-center gap-1">
+          <div class="text-title">📝</div>
+          <p class="text-label text-highlighted">{{ COPY.notStarted }}</p>
+          <p class="text-body text-muted">{{ COPY.notStartedHint }}</p>
+          <UButton
             :to="COPY.startPracticeTo"
-            class="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow hover:bg-emerald-700"
+            size="xl"
+            color="primary"
+            variant="solid"
+            class="mt-3 min-h-12"
             data-testid="pertandingan-start"
           >
             {{ COPY.startPractice }}
-          </RouterLink>
-        </template>
-      </section>
+          </UButton>
+        </div>
+      </UCard>
 
-      <section class="rounded-2xl bg-white py-4 shadow-sm" data-testid="pertandingan-board">
-        <h2 class="mb-3 px-4 font-heading text-base font-bold text-slate-900 sm:px-5">
-          {{ COPY.boardHeading }}
-        </h2>
-        <ol class="divide-y divide-slate-100">
+      <UCard :ui="{ body: 'p-3 sm:p-4' }" data-testid="pertandingan-board">
+        <h2 class="mb-3 px-1 text-subheading text-highlighted">{{ COPY.boardHeading }}</h2>
+        <ol class="flex flex-col gap-2">
           <li
             v-for="row in data.rows"
             :key="row.userId"
-            class="flex items-center gap-3 px-4 py-3 sm:px-5"
-            :class="medalOf(row.rank) ? 'bg-linear-to-r from-amber-50 to-white' : ''"
+            class="flex items-center gap-3 bg-elevated p-3"
             data-testid="pertandingan-row"
           >
             <span
-              class="w-8 shrink-0 text-center text-lg font-bold"
-              :class="medalOf(row.rank) ? '' : 'text-slate-400'"
+              class="w-8 shrink-0 text-center text-label"
+              :class="medalOf(row.rank) ? 'text-highlighted' : 'text-muted'"
             >
               {{ medalOf(row.rank) ?? row.rank }}
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-semibold text-slate-900">{{
-                row.name
-              }}</span>
-              <span class="block text-xs text-slate-500">{{ row.sesi }} {{ COPY.sessions }}</span>
+              <span class="block truncate text-label text-highlighted">{{ row.name }}</span>
+              <span class="block text-caption text-muted">{{ row.sesi }} {{ COPY.sessions }}</span>
             </span>
-            <span class="shrink-0 text-right">
-              <span class="block text-sm font-bold text-green-600">{{ row.betul }}</span>
-              <span class="block text-xs text-slate-500">{{ COPY.correct }}</span>
+            <span class="shrink-0 text-end">
+              <span class="tabular block text-label text-success">{{ row.betul }}</span>
+              <span class="block text-caption text-muted">{{ COPY.correct }}</span>
             </span>
-            <span class="w-16 shrink-0 text-right">
-              <span class="block text-sm font-bold text-slate-900">{{ formatPct(row.tepat) }}</span>
-              <span class="block text-xs text-slate-500">{{ COPY.accuracy }}</span>
+            <span class="w-16 shrink-0 text-end">
+              <span class="tabular block text-label text-highlighted">{{ formatPct(row.tepat) }}</span>
+              <span class="block text-caption text-muted">{{ COPY.accuracy }}</span>
             </span>
           </li>
         </ol>
-      </section>
+      </UCard>
     </template>
-  </div>
+  </DsPage>
 </template>

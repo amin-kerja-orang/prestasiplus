@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
  * The coin reward animation of a result (live `JBCoinFly.play({syiling, mata: 0})`, DV-M16-23): "🪙 +n"
- * rises and fades. It exists only for a credited amount above 0, so with the M14 seed it never renders.
- * Decorative; removes itself after the animation.
+ * rises and fades (DS float-score, no motion for reduced motion). It exists only for a credited
+ * amount above 0, so with the M14 seed it never renders. Decorative; removes itself after 1.4 s.
  */
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+
+import { DsFloatScore } from '@/ds'
 
 const props = defineProps<{ coins: number }>()
 const visible = ref(true)
@@ -23,26 +25,9 @@ onBeforeUnmount(() => {
 <template>
   <div
     v-if="visible && props.coins > 0"
-    class="m16-coin-fly pointer-events-none absolute top-2 left-1/2 z-10 text-xl font-extrabold text-amber-500"
+    class="pointer-events-none absolute inset-x-0 top-2 flex justify-center"
     data-testid="coin-fly"
   >
-    🪙 +{{ props.coins }}
+    <DsFloatScore :text="`🪙 +${String(props.coins)}`" />
   </div>
 </template>
-
-<style scoped>
-.m16-coin-fly {
-  animation: m16-coin-fly 1.4s ease-out forwards;
-}
-
-@keyframes m16-coin-fly {
-  from {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, -3.5rem);
-  }
-}
-</style>

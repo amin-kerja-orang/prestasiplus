@@ -1,27 +1,29 @@
 <script setup lang="ts">
 /**
  * The 3 → 2 → 1 countdown of S13-S15 (800 ms per step, URS FN-M16-6.2.1, 6.3.1, 6.4.1): the shell is
- * dimmed by a dark overlay with the game title and a big glowing number (live betul-salah-countdown).
+ * covered by a scrim with the game title and a big number on an A1 gradient disc (pop-in, switched
+ * off for reduced motion).
  */
-defineProps<{ title: string; count: number; hint?: string; tone?: string }>()
+defineProps<{ title: string; count: number; hint?: string }>()
 </script>
 
 <template>
   <Teleport to="body">
     <section
-      class="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-black/85 px-4 text-center"
+      class="fixed inset-0 z-150 flex flex-col items-center justify-center gap-4 bg-default/95 px-4 text-center"
+      role="status"
+      aria-live="polite"
       data-testid="solo-countdown"
     >
-      <h2 class="font-heading text-xl font-extrabold text-white sm:text-2xl">{{ title }}</h2>
+      <h2 class="font-display text-subheading font-extrabold text-highlighted">{{ title }}</h2>
       <div
         :key="count"
-        class="mt-4 animate-pop-in text-8xl font-extrabold drop-shadow-[0_0_24px_currentColor]"
-        :class="tone ?? 'text-violet-500'"
+        class="tabular grid size-32 animate-ds-hop place-items-center rounded-full bg-gradient-primary font-display text-display font-extrabold text-primary-on shadow-hero motion-reduce:animate-none"
         data-testid="solo-countdown-number"
       >
         {{ count }}
       </div>
-      <p v-if="hint" class="mt-4 text-sm text-slate-300">{{ hint }}</p>
+      <p v-if="hint" class="text-body text-muted">{{ hint }}</p>
     </section>
   </Teleport>
 </template>

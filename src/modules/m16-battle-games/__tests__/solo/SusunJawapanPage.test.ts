@@ -83,7 +83,7 @@ describe('S16 Susun Jawapan (FR-M16-82..85)', () => {
     expect(byTestId('solo-feedback').text()).toBe('🎉 BETUL! +6 mata')
     expect(byTestId('solo-score').text()).toBe('Skor 6')
     expect(byTestId('solo-coins').text()).toBe('🪙 2')
-    expect(wrapper.findAll('[data-testid="solo-dot"]')[0]!.classes()).toContain('done')
+    expect(wrapper.findAll('[data-testid="solo-dot"]')[0]!.attributes('data-state')).toBe('done')
     await byTestId('solo-next').trigger('click')
     expect(wrapper.text()).toContain('Soalan 2 daripada 20')
   })
