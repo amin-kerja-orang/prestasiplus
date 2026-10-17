@@ -136,6 +136,14 @@
     {
       "glob": "src/modules/m09-content/components/video/**",
       "level": "ds"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/Headcount*.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/components/headcount/**",
+      "level": "page"
     }
   ],
   "exempt": [

@@ -5,14 +5,14 @@
  * specified (provisional). The config is read through #24 so an unknown id is the 404 page and a config
  * the viewer may not open the 403 page; `results/{n}` outside 1…OTR Aktif is the 404 page (INFERRED).
  */
-import { ArrowLeft } from '@lucide/vue'
 import { computed, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router'
+import { DsPage } from '@/ds'
 
 import { fetchHeadcountSummary } from '../api/headcount'
-import LoadError from '../components/headcount/LoadError.vue'
+import PageLoadError from '../components/shared/PageLoadError.vue'
 import { isLoadError, useRouteData } from '../lib/prestasi/load'
 
 const route = useRoute()
@@ -35,16 +35,19 @@ watch(
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="headcount-shell-page">
-    <LoadError v-if="isLoadError(error)" @retry="reload()" />
+  <DsPage data-testid="headcount-shell-page">
+    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
 
     <div v-else-if="data" class="flex items-center gap-3">
-      <RouterLink
-        :to="`/headcount/${id}`"
-        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 shadow transition hover:text-slate-800"
+      <UButton
+        :to="`/headcount/${String(id)}`"
+        color="neutral"
+        variant="soft"
+        size="lg"
+        icon="i-ph-arrow-left"
+        aria-label="Kembali"
         data-testid="back-link"
-        ><ArrowLeft class="h-5 w-5"
-      /></RouterLink>
+      />
     </div>
-  </div>
+  </DsPage>
 </template>

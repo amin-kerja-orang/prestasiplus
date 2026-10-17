@@ -1,15 +1,13 @@
 <script setup lang="ts">
 /**
- * S12 Auto-Setup modal (FR-M08-77…80, BR-M08-21). Opening resets the selection; "Batal", the backdrop and
+ * S12 Auto-Setup dialog (FR-M08-77…80, BR-M08-21). Opening resets the selection; "Batal", the scrim and
  * Esc only hide it (the ticks stay until the next opening). The submit is disabled until a level is ticked;
- * on success the modal closes and the page reloads its list without a message (PROPOSED, UNVERIFIED L-4).
+ * on success the dialog closes and the page reloads its list without a message (PROPOSED, UNVERIFIED L-4).
  */
-import { WandSparkles } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
 import { isApiError } from '@/api'
-import { AlertBox } from '@/components/feedback'
-import { BaseModal } from '@/components/overlay'
+import { DsDialog } from '@/ds'
 
 import { autoSetupHeadcounts } from '../../api/headcount'
 import { DARJAH_LEVELS, TINGKATAN_LEVELS } from '../../lib/headcount/format'
@@ -31,6 +29,11 @@ watch(open, (isOpen) => {
 
 const count = computed(() => selected.value.length)
 
+function toggle(value: number | string, on: boolean | 'indeterminate'): void {
+  const rest = selected.value.filter((v) => v !== value)
+  selected.value = on === true ? [...rest, value] : rest
+}
+
 async function submit() {
   if (count.value === 0 || submitting.value) return
   submitting.value = true
@@ -46,98 +49,60 @@ async function submit() {
   }
 }
 
-const OFF = 'border-slate-200 bg-white text-slate-600'
-const LABEL =
-  'flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-3 text-sm font-semibold transition'
+const groups = [
+  { title: 'Darjah', levels: DARJAH_LEVELS },
+  { title: 'Tingkatan', levels: TINGKATAN_LEVELS },
+] as const
 </script>
 
 <template>
-  <BaseModal
+  <DsDialog
     v-model:open="open"
-    container-class="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
-    backdrop-class="absolute inset-0 bg-black/50"
-    panel-class="relative bg-white rounded-2xl shadow-2xl w-full sm:max-w-md p-6 max-h-[90vh] overflow-y-auto"
-    data-testid="auto-setup-modal"
+    title="Auto-Setup Headcount"
+    description="Pilih tingkatan untuk auto-cipta headcount"
   >
-    <template #default="{ close }">
-      <div class="flex items-center gap-3">
-        <span
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600"
-        >
-          <WandSparkles class="h-6 w-6" />
-        </span>
-        <div class="min-w-0">
-          <h3 class="font-heading text-lg font-bold text-slate-800">Auto-Setup Headcount</h3>
-          <p class="text-sm text-slate-500">Pilih tingkatan untuk auto-cipta headcount</p>
+    <form class="flex flex-col gap-4" data-testid="auto-setup-modal" @submit.prevent="submit">
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        :title="error"
+      />
+      <fieldset v-for="g in groups" :key="g.title" class="flex min-w-0 flex-col gap-2">
+        <legend class="mb-2 text-label text-highlighted">{{ g.title }}</legend>
+        <div class="grid grid-cols-3 gap-2">
+          <UCheckbox
+            v-for="l in g.levels"
+            :key="l.label"
+            variant="card"
+            :label="l.label"
+            :model-value="selected.includes(l.value)"
+            :data-testid="`level-${l.label}`"
+            @update:model-value="toggle(l.value, $event)"
+          />
         </div>
-      </div>
-
-      <form class="mt-5 space-y-5" @submit.prevent="submit">
-        <AlertBox :messages="error" />
-
-        <fieldset class="min-w-0">
-          <legend class="mb-2 text-sm font-bold text-slate-700">Darjah</legend>
-          <div class="grid grid-cols-3 gap-2">
-            <label
-              v-for="l in DARJAH_LEVELS"
-              :key="l.label"
-              :class="[
-                LABEL,
-                selected.includes(l.value) ? 'border-amber-300 bg-amber-50 text-amber-800' : OFF,
-              ]"
-              :data-testid="`level-${l.label}`"
-            >
-              <input v-model="selected" type="checkbox" :value="l.value" class="h-4 w-4" />
-              {{ l.label }}
-            </label>
-          </div>
-        </fieldset>
-
-        <fieldset class="min-w-0">
-          <legend class="mb-2 text-sm font-bold text-slate-700">Tingkatan</legend>
-          <div class="grid grid-cols-3 gap-2">
-            <label
-              v-for="l in TINGKATAN_LEVELS"
-              :key="l.label"
-              :class="[
-                LABEL,
-                selected.includes(l.value) ? 'border-blue-300 bg-blue-50 text-blue-800' : OFF,
-              ]"
-              :data-testid="`level-${l.label}`"
-            >
-              <input v-model="selected" type="checkbox" :value="l.value" class="h-4 w-4" />
-              {{ l.label }}
-            </label>
-          </div>
-        </fieldset>
-
-        <div class="flex gap-3">
-          <button
-            type="button"
-            class="min-h-11 flex-1 rounded-xl border-2 border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
-            data-testid="auto-setup-cancel"
-            @click="close()"
-          >
-            Batal
-          </button>
-          <button
-            type="submit"
-            :disabled="count === 0 || submitting"
-            :class="[
-              'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-white transition',
-              count === 0
-                ? 'cursor-not-allowed bg-slate-300'
-                : 'bg-emerald-600 hover:bg-emerald-700',
-            ]"
-            data-testid="auto-setup-submit"
-          >
-            <WandSparkles class="h-4 w-4" />
-            <span
-              >Auto-Setup<template v-if="count > 0"> ({{ count }})</template></span
-            >
-          </button>
-        </div>
-      </form>
+      </fieldset>
+    </form>
+    <template #footer>
+      <UButton
+        type="button"
+        color="neutral"
+        variant="ghost"
+        label="Batal"
+        data-testid="auto-setup-cancel"
+        @click="open = false"
+      />
+      <UButton
+        type="button"
+        icon="i-ph-magic-wand"
+        :disabled="count === 0"
+        :loading="submitting"
+        data-testid="auto-setup-submit"
+        @click="submit"
+      >
+        Auto-Setup<template v-if="count > 0"> ({{ count }})</template>
+      </UButton>
     </template>
-  </BaseModal>
+  </DsDialog>
 </template>

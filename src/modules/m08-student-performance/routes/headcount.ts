@@ -17,6 +17,7 @@ const base = (title: string, header: string): RouteMeta => ({
   title,
   header: { title: header, subtitle: HOME },
   module: 'M08',
+  v2: true,
 })
 
 /** L-12 shells: the shell header names the action (INFERRED from the S23 button label). */
