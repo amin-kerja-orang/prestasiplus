@@ -34,7 +34,9 @@ async function startPaper(
   await page.getByTestId(`open-${paperId}`).click()
   await expect(page.getByTestId('bijak-cover')).toBeVisible()
   await expect(page.locator('[data-ds=hero-cta]')).toBeVisible()
-  await shot(page, 'cover')
+  // the section rules ("Jawab 1 daripada 2 soalan.") are part of the cover screenshot
+  await page.getByTestId('cover-sections').evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await shot(page, `cover-${paperId}`)
   if (mode === 'latihan') await page.getByText('Mod Latihan', { exact: true }).click()
   await page.locator('[data-ds=hero-cta]').click()
   await expect(page.getByTestId('attempt-shell')).toBeVisible()
@@ -172,5 +174,35 @@ test.describe('Bijak SPM', () => {
     )
     await page.getByTestId('shortage-line').evaluate((el) => el.scrollIntoView({ block: 'center' }))
     await shot(page, 'jana-shortage')
+  })
+
+  test('Sejarah K2: F and C mark codes, letter bank and the essay waiting for a teacher', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs('pelajar@demo.test')
+    await gotoApp('/spm/bijak')
+    await startPaper(page, 'sej-k2-2025-a')
+    await page.getByTestId('short-text-input').first().fill('Rundingan dan pilihan raya.')
+    await page.getByTestId('next').click()
+    await expect(page.getByTestId('match-bank').first()).toBeVisible()
+    await page.getByTestId('match-B').first().click()
+    await page.getByTestId('next').click()
+    await page.getByTestId('short-text-input').fill('Perlembagaan melindungi hak rakyat.')
+    await expect(page.getByTestId('word-count')).toContainText('4 patah perkataan')
+    while (await page.getByTestId('next').isVisible()) await page.getByTestId('next').click()
+    await page.getByTestId('submit').click()
+    await page.getByTestId('confirm-submit').click()
+    await expect(page.getByTestId('win-screen')).toBeVisible()
+    await page.getByTestId('result-q-1').locator('summary').click()
+    await expect(page.getByTestId('point-sej2-q1-a-p1')).toContainText('F1')
+    await expect(page.getByTestId('point-sej2-q1-a-p1')).toHaveAttribute('data-hit', 'true')
+    await expect(page.getByTestId('provisional')).toBeVisible()
+    await page
+      .getByTestId('point-sej2-q1-a-p1')
+      .evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    await shot(page, 'result-codes')
+    await expectNoHorizontalScroll(page)
   })
 })

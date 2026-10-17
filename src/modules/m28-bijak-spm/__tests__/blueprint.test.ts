@@ -73,11 +73,13 @@ describe('composeFromBlueprint', () => {
     const b = composeFromBlueprint(BLUEPRINTS[k1]!, unitsFor(k1), { seed: 2 })
     expect(a.ok && b.ok && JSON.stringify(a) !== JSON.stringify(b)).toBe(true)
   })
-  it('keeps the section structure of K2 (Bahagian A, 3 questions, groups whole)', () => {
+  it('keeps the section structure of K2 (A all, B all, C choose 1 of 2; groups whole)', () => {
     const r = composeFromBlueprint(BLUEPRINTS[k2]!, unitsFor(k2), { seed: 5 })
     if (!r.ok) throw new Error('expected a paper')
     expect(r.sections.map((s) => [s.label, s.rule.type, s.questionIds.length])).toEqual([
       ['Bahagian A', 'all', 3],
+      ['Bahagian B', 'all', 1],
+      ['Bahagian C', 'choose', 2],
     ])
     const a = r.sections[0]!.questionIds
     // a group in section A is complete

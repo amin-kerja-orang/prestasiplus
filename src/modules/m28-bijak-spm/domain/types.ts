@@ -3,7 +3,8 @@
  * never reads or writes the M04 / M05 / M06 stores. Fictitious data only.
  */
 
-export type SubjectCode = 'MAT' | 'SN'
+/** Open dictionary (exam schema D9): MAT, SN, SEJ, ... */
+export type SubjectCode = string
 
 export interface Subject {
   code: SubjectCode
@@ -31,7 +32,12 @@ export interface McqOption {
   text: string
 }
 
-export type LeafKind = 'working' | 'numeric' | 'short_text'
+/**
+ * Leaf answer modes (exam schema D2). MCQ stays a question-level leaf in this prototype.
+ * `table_fill` is a typed stub (no widget yet); `drawing` is a photo plus a teacher checklist.
+ */
+export type LeafKind =
+  'working' | 'numeric' | 'short_text' | 'match_letter' | 'essay' | 'drawing' | 'table_fill'
 
 export interface PartDef {
   id: string
@@ -40,13 +46,14 @@ export interface PartDef {
   prompt: string
   /** Marks of a leaf part; 0 on a part that only holds children. */
   marks: number
-  answer?: { kind: LeafKind; unit?: string }
+  answer?: { kind: LeafKind; unit?: string; wordRange?: { min: number; max: number } }
   children?: PartDef[]
 }
 
 export interface QuestionDef {
   id: string
-  topic: string
+  /** Curriculum tag (exam schema D9); the free-text topic is gone. */
+  curriculum: CurriculumTag
   /** Stimulus group this question belongs to. */
   groupId?: string
   stem: string
@@ -56,9 +63,24 @@ export interface QuestionDef {
   parts?: PartDef[]
 }
 
+/** Curriculum tag (exam schema D9). T1-T3 Matematik content: `formOrigin: 'T1-T3'`, `unit: null` (Q-S2). */
+export interface CurriculumTag {
+  subject: SubjectCode
+  level: 'T4' | 'T5' | 'T4+T5'
+  /** Unit code from the loaded DSKP, or null when the content lies outside it. */
+  unit: string | null
+  /** Display name of the unit (stands in for the DSKP lookup in this prototype). */
+  unitLabel: string
+  sp: string[]
+  tp: number
+  formOrigin: 'T1-T3' | 'T4' | 'T5'
+}
+
 export interface GroupDef {
   id: string
   stimulusId: string
+  /** Shared lettered bank for `match_letter` items (exam schema D6). */
+  optionBank?: McqOption[]
   /** Question ids in the published order. */
   questionIds: string[]
 }
@@ -81,32 +103,89 @@ export interface FinalDef {
 
 export type PointMatch =
   | { type: 'step'; accept: string[] }
+  /** "&": every item must appear in the working or the final answer. */
+  | { type: 'all_of'; items: string[] }
   | { type: 'final' }
   | { type: 'unit' }
   | { type: 'keywords'; anyOf: string[] }
+  /** Checked by a teacher (drawing checklist, rubric content point): never auto-awarded. */
+  | { type: 'manual' }
+
+/** Own figure carried forward, as data (exam schema D4.2): expected = f(previous final). */
+export type EcfRule =
+  | { op: 'same' }
+  | { op: 'sub_from'; k: number }
+  | { op: 'add'; k: number }
+  | { op: 'mul'; k: number }
+
+/** Mark-point letters follow the subject (Q-S3): K/N/P maths, M sciences, F/C Sejarah and BI, B independent. */
+export type PointCode = 'K' | 'N' | 'P' | 'B' | 'M' | 'F' | 'C'
 
 export interface PointDef {
   id: string
-  /** K1 method, N1 accuracy, P1 reasoning / presentation, B1 independent mark. */
-  code: 'K1' | 'N1' | 'P1' | 'B1'
+  /** Letter of the mark point; the shown tag is the letter plus its sequence in the part (K1, K2, M1, F3). */
+  code: PointCode
+  /** Explicit marks: the digit of a tag is a sequence number, never the marks. */
   marks: number
   label: string
   match: PointMatch
-  /** Only awarded when this other point was hit. */
-  requires?: string
+  /** Only awarded when every one of these other points was hit. */
+  requires?: string[]
   /** Own figure carried forward from an earlier part. */
-  ecf?: { fromPart: string; expected: (previous: number) => number; note: string }
+  ecf?: { fromPart: string; rule: EcfRule; note: string }
 }
 
+/** "[mana-mana n x k m]": at most `anyN` of these points count. */
+export interface PointGroup {
+  id: string
+  anyN: number
+  pointIds: string[]
+}
+
+export interface RubricBand {
+  name: string
+  range: [number, number]
+  descriptor: string
+}
+
+/** Answer-key kinds (exam schema D3): option, mapping, accepted, points, rubric. */
 export type SchemeDef =
-  | { kind: 'mcq'; marks: number; correct: string; reason: string }
-  | { kind: 'points'; marks: number; points: PointDef[]; final?: FinalDef; model?: string }
+  | { kind: 'option'; marks: number; correct: string; reason: string }
+  | { kind: 'mapping'; marks: number; map: Record<string, string> }
+  | {
+      kind: 'accepted'
+      marks: number
+      values: { v: string; tol?: number; unit?: string }[]
+      caseSensitive?: boolean
+    }
+  | {
+      kind: 'points'
+      marks: number
+      points: PointDef[]
+      groups?: PointGroup[]
+      final?: FinalDef
+      model?: string
+    }
+  | {
+      kind: 'rubric'
+      marks: number
+      criteria: { id: string; name: string }[]
+      bands: RubricBand[]
+      notes?: string[]
+    }
 
 /* ------------------------------------------------------------------------------- papers */
 
 export interface SectionDef {
   id: string
   label: string
+  title?: string
+  /** Marks the section is worth after choose-N (printed budget). */
+  markBudget: number
+  /** Questions on the paper in this section (not the number to answer). */
+  questionCount: number
+  /** "Soalan ini mesti dijawab". */
+  compulsory?: boolean
   /** Authored instruction line, else derived from the rule. */
   instruction?: string
   rule: { type: 'all' } | { type: 'choose'; n: number }
@@ -130,6 +209,8 @@ export interface PaperDef {
 /** Blueprint (Kontrak Blueprint): the contract a generated paper follows. */
 export interface BlueprintSection {
   label: string
+  markBudget?: number
+  compulsory?: boolean
   instruction?: string
   rule: { type: 'all' } | { type: 'choose'; n: number }
   /** Pool tag the section draws from. */
@@ -189,6 +270,7 @@ export type PaperKind = 'pilihan' | 'jana'
 export interface SectionSnapshot {
   id: string
   label: string
+  compulsory?: boolean
   instruction?: string
   rule: SectionDef['rule']
   questionIds: string[]
@@ -231,6 +313,10 @@ export type PartStatus = 'betul' | 'separa' | 'salah' | 'kosong' | 'belum_dimark
 export interface PointResult {
   id: string
   code: PointDef['code']
+  /** Shown tag: letter plus sequence, e.g. K1, M2, F3. */
+  tag: string
+  /** A teacher still has to check this point. */
+  manual?: boolean
   label: string
   marks: number
   awarded: number
@@ -242,6 +328,12 @@ export interface SchemeReveal {
   marks: number
   /** MCQ: the correct option id. */
   correctOption?: string
+  /** match_letter: the correct letter. */
+  correctLetter?: string
+  /** accepted: the accepted answers as text. */
+  acceptedText?: string[]
+  /** rubric: bands and criteria. */
+  rubric?: { criteria: string[]; bands: RubricBand[]; notes?: string[] }
   explanation?: string
   /** LaTeX of the model final answer. */
   finalDisplay?: string
@@ -313,7 +405,11 @@ export interface QuestionView {
   id: string
   number: number
   sectionId: string
+  /** Display name of the unit (from the curriculum tag). */
   topic: string
+  formOrigin: CurriculumTag['formOrigin']
+  /** Shared lettered bank of this question's group (match_letter items). */
+  optionBank?: McqOption[]
   groupId?: string
   stem: string
   marks: number
@@ -381,7 +477,14 @@ export interface PaperSummary {
 export interface PaperCover extends PaperSummary {
   instructions: string[]
   reference: NonNullable<PaperDef['reference']>
-  sections: { label: string; marks: number; instruction: string }[]
+  sections: {
+    label: string
+    marks: number
+    instruction: string
+    questionCount: number
+    compulsory: boolean
+    chooseN?: number
+  }[]
 }
 
 export interface Shortage {

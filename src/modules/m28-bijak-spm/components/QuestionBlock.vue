@@ -123,6 +123,7 @@ function pick(id: string): void {
         :answers="answers"
         :attempt-id="attemptId"
         :disabled="locked"
+        :option-bank="question.optionBank"
         @answer="(id, a) => emit('answer', id, a)"
       />
     </template>

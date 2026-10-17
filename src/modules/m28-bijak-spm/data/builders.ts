@@ -1,6 +1,8 @@
 /** Authoring helpers for the seed bank. All content is fictitious (no real papers or people). */
 import type {
+  CurriculumTag,
   GroupDef,
+  LeafKind,
   McqOption,
   PartDef,
   PoolEntry,
@@ -8,6 +10,42 @@ import type {
   SchemeDef,
   StimulusDef,
 } from '../domain/types'
+
+/** Matematik topics whose content belongs to Tingkatan 1-3 (Q-S2: formOrigin T1-T3, unit null). */
+const MAT_T1_T3 = new Set([
+  'Pecahan',
+  'Peratusan',
+  'Bentuk piawai',
+  'Persamaan linear',
+  'Ungkapan algebra',
+  'Pemfaktoran',
+  'Indeks',
+  'Statistik',
+  'Laju, jarak dan masa',
+  'Poligon',
+  'Teorem Pythagoras',
+  'Bulatan',
+  'Perimeter',
+  'Luas',
+])
+const T5_TOPICS = new Set(['Kebarangkalian'])
+
+/**
+ * Curriculum tag for a seed question (exam schema D9). The DSKP unit codes are not loaded in this
+ * prototype, so `unit` stays null (always for T1-T3 content) and `unitLabel` names the topic.
+ */
+export function curr(subject: string, unitLabel: string, tp = 2): CurriculumTag {
+  const t13 = subject === 'MAT' && MAT_T1_T3.has(unitLabel)
+  return {
+    subject,
+    level: 'T4+T5',
+    unit: null,
+    unitLabel,
+    sp: [],
+    tp,
+    formOrigin: t13 ? 'T1-T3' : T5_TOPICS.has(unitLabel) ? 'T5' : 'T4',
+  }
+}
 
 export class Bank {
   readonly questions = new Map<string, QuestionDef>()
@@ -68,6 +106,7 @@ export function mcqQuestion(
   args: {
     id: string
     topic: string
+    subject?: string
     stem: string
     correct: string
     wrong: string[]
@@ -84,10 +123,15 @@ export function mcqQuestion(
     const id = `${args.id}-o${i + 1}`
     options.push({ id, text: i === at ? args.correct : (wrong[w++] ?? '') })
   }
-  const q: QuestionDef = { id: args.id, topic: args.topic, stem: args.stem, mcq: { options } }
+  const q: QuestionDef = {
+    id: args.id,
+    curriculum: curr(args.subject ?? 'MAT', args.topic),
+    stem: args.stem,
+    mcq: { options },
+  }
   bank.addQuestion(q, args.pool)
   bank.schemes.set(args.id, {
-    kind: 'mcq',
+    kind: 'option',
     marks: args.marks ?? 1,
     correct: options[at]!.id,
     reason: args.reason,
@@ -100,7 +144,7 @@ export const leaf = (
   label: string,
   prompt: string,
   marks: number,
-  kind: 'working' | 'numeric' | 'short_text',
+  kind: LeafKind,
   unit?: string,
 ): PartDef => ({ id, label, prompt, marks, answer: { kind, ...(unit ? { unit } : {}) } })
 

@@ -13,7 +13,7 @@ function make(now = { t: 1_800_000_000_000 }, storage = new MemoryStorage()) {
 
 const correctChoice = (qid: string): string => {
   const s = BANK.schemes.get(qid)!
-  if (s.kind !== 'mcq') throw new Error('mcq')
+  if (s.kind !== 'option') throw new Error('mcq')
   return s.correct
 }
 
@@ -249,8 +249,8 @@ describe('result: choose-N, marks and rewards', () => {
       ],
     })
     const { result } = await server.getResult(USER, attemptId)
-    expect(result.questions.map((q) => q.awarded)).toEqual([2, 0, 2])
-    expect(result.max).toBe(2 + 4 + 6)
+    expect(result.questions.map((q) => q.awarded)).toEqual([2, 0, 0, 2, 0, 0])
+    expect(result.max).toBe(9 + 6 + 6)
   })
   it('marks a part as awaiting review and flags the total as provisional', async () => {
     const { server } = make()

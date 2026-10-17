@@ -8,7 +8,7 @@ const USER = 3
 
 const correct = (qid: string): string => {
   const s = BANK.schemes.get(qid)!
-  if (s.kind !== 'mcq') throw new Error('mcq')
+  if (s.kind !== 'option') throw new Error('mcq')
   return s.correct
 }
 

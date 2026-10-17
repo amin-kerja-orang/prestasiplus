@@ -2,12 +2,13 @@
  * Matematik Kertas 2 (structured) seed. Question families with parts, marks, K1 / N1 / P1 mark
  * schemes (accepted equivalents, tolerance, ECF) and shared Rajah groups. Fictitious practice items.
  */
-import { Bank, branch, leaf } from './builders'
+import { Bank, branch, curr, leaf } from './builders'
 import { triangleSvg } from './diagrams'
 import type { PointDef, QuestionDef } from '../domain/types'
 
 const POOL_A = 'MAT2-A'
 const POOL_B = 'MAT2-B'
+const POOL_C = 'MAT2-C'
 
 const pts = (id: string, list: Omit<PointDef, 'id'>[]): PointDef[] =>
   list.map((p, i) => ({ ...p, id: `${id}-p${i + 1}` }))
@@ -22,7 +23,7 @@ function algebra(bank: Bank, v: number): string {
   const id = `mat2-algebra-v${v + 1}`
   const q: QuestionDef = {
     id,
-    topic: 'Algebra',
+    curriculum: curr('MAT', 'Algebra'),
     stem: 'Jawab semua soalan.',
     parts: [
       leaf(`${id}-a`, '(a)', `Faktorkan sepenuhnya $${d.k}x^2 - ${d.c}$.`, 2, 'working'),
@@ -35,12 +36,12 @@ function algebra(bank: Bank, v: number): string {
     marks: 2,
     points: pts(`${id}-a`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Mengeluarkan faktor sepunya',
         match: { type: 'step', accept: [`${d.k}(x^2-${d.c / d.k})`] },
       },
-      { code: 'N1', marks: 1, label: 'Faktor lengkap', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Faktor lengkap', match: { type: 'final' } },
     ]),
     final: {
       accept: [`${d.k}(x-${d.r})(x+${d.r})`],
@@ -54,7 +55,7 @@ function algebra(bank: Bank, v: number): string {
     marks: 2,
     points: pts(`${id}-b`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Kembangkan atau bahagi kedua-dua belah',
         match: {
@@ -66,7 +67,7 @@ function algebra(bank: Bank, v: number): string {
           ],
         },
       },
-      { code: 'N1', marks: 1, label: 'Nilai x betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Nilai x betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(d.x)], display: `x = ${d.x}` },
   })
@@ -86,7 +87,7 @@ function triangleGroup(bank: Bank, v: number): string[] {
   bank.addQuestion(
     {
       id: q1,
-      topic: 'Teorem Pythagoras',
+      curriculum: curr('MAT', 'Teorem Pythagoras'),
       stem: `Rajah menunjukkan segi tiga ABC bersudut tegak di B. AB = ${d.ab} cm dan BC = ${d.bc} cm.`,
       parts: [leaf(`${q1}-a`, '(a)', 'Hitung panjang, dalam cm, AC.', 2, 'working', 'cm')],
     },
@@ -97,7 +98,7 @@ function triangleGroup(bank: Bank, v: number): string[] {
     marks: 2,
     points: pts(`${q1}-a`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Menggunakan teorem Pythagoras',
         match: {
@@ -109,14 +110,14 @@ function triangleGroup(bank: Bank, v: number): string[] {
           ],
         },
       },
-      { code: 'N1', marks: 1, label: 'Panjang AC betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Panjang AC betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(d.ac)], unit: 'cm', display: `${d.ac}\\text{ cm}` },
   })
   bank.addQuestion(
     {
       id: q2,
-      topic: 'Luas dan trigonometri',
+      curriculum: curr('MAT', 'Luas dan trigonometri'),
       stem: 'Berdasarkan Rajah itu,',
       parts: [
         leaf(`${q2}-a`, '(a)', 'hitung luas, dalam cm², segi tiga ABC.', 2, 'working', 'cm²'),
@@ -130,7 +131,7 @@ function triangleGroup(bank: Bank, v: number): string[] {
     marks: 2,
     points: pts(`${q2}-a`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Menggunakan luas = 1/2 x tapak x tinggi',
         match: {
@@ -138,7 +139,7 @@ function triangleGroup(bank: Bank, v: number): string[] {
           accept: [`1/2*${d.ab}*${d.bc}`, `(${d.ab}*${d.bc})/2`, `${d.ab * d.bc}/2`],
         },
       },
-      { code: 'N1', marks: 1, label: 'Luas betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Luas betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(area)], unit: 'cm²', display: `${area}\\text{ cm}^{2}` },
   })
@@ -147,12 +148,12 @@ function triangleGroup(bank: Bank, v: number): string[] {
     marks: 2,
     points: pts(`${q2}-b`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Sisi bertentangan / hipotenus',
         match: { type: 'step', accept: [`${d.ab}/${d.ac}`, 'AB/AC'] },
       },
-      { code: 'N1', marks: 1, label: 'Nilai sin betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Nilai sin betul', match: { type: 'final' } },
     ]),
     final: { accept: [`${d.ab}/${d.ac}`], tolerance: 0.001, display: `\\frac{${d.ab}}{${d.ac}}` },
   })
@@ -188,7 +189,7 @@ function diskaun(bank: Bank, v: number): string {
   bank.addQuestion(
     {
       id,
-      topic: 'Peratusan',
+      curriculum: curr('MAT', 'Peratusan'),
       stem: `Harga asal sehelai baju ialah RM${d.price}. Kedai itu memberi diskaun ${d.pct}%.`,
       parts: [
         leaf(`${id}-a`, '(a)', 'Hitung jumlah diskaun, dalam RM.', 2, 'working', 'RM'),
@@ -209,7 +210,7 @@ function diskaun(bank: Bank, v: number): string {
     marks: 2,
     points: pts(`${id}-a`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Peratus x harga asal',
         match: {
@@ -217,7 +218,7 @@ function diskaun(bank: Bank, v: number): string {
           accept: [`${d.pct}/100*${d.price}`, `${d.pct / 100}*${d.price}`, `${d.pct}%*${d.price}`],
         },
       },
-      { code: 'N1', marks: 1, label: 'Diskaun betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Diskaun betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(disc)], unit: 'RM', display: `\\text{RM}${disc}` },
   })
@@ -226,13 +227,13 @@ function diskaun(bank: Bank, v: number): string {
     marks: 1,
     points: pts(`${id}-b`, [
       {
-        code: 'N1',
+        code: 'N',
         marks: 1,
         label: 'Harga jualan betul',
         match: { type: 'final' },
         ecf: {
           fromPart: `${id}-a`,
-          expected: (prev) => d.price - prev,
+          rule: { op: 'sub_from', k: d.price },
           note: 'Diterima mengikut ECF: jawapan (a) dibawa ke hadapan.',
         },
       },
@@ -255,7 +256,7 @@ function garisLurus(bank: Bank, v: number): string {
   bank.addQuestion(
     {
       id,
-      topic: 'Garis lurus',
+      curriculum: curr('MAT', 'Garis lurus'),
       stem: `Persamaan satu garis lurus ialah $y = ${d.m}x + ${d.c}$.`,
       parts: [
         leaf(`${id}-a`, '(a)', 'Nyatakan kecerunan garis lurus itu.', 1, 'numeric'),
@@ -269,12 +270,8 @@ function garisLurus(bank: Bank, v: number): string {
     POOL_B,
   )
   const single = (pid: string, ans: number, label: string): void => {
-    bank.schemes.set(pid, {
-      kind: 'points',
-      marks: 1,
-      points: pts(pid, [{ code: 'N1', marks: 1, label, match: { type: 'final' } }]),
-      final: { accept: [String(ans)], display: String(ans) },
-    })
+    void label
+    bank.schemes.set(pid, { kind: 'accepted', marks: 1, values: [{ v: String(ans) }] })
   }
   single(`${id}-a`, d.m, 'Kecerunan betul')
   single(`${id}-b`, d.c, 'Pintasan-y betul')
@@ -283,12 +280,12 @@ function garisLurus(bank: Bank, v: number): string {
     marks: 2,
     points: pts(`${id}-c1`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Gantikan nilai x',
         match: { type: 'step', accept: [`${d.m}*${d.x1}+${d.c}`, `${d.m * d.x1}+${d.c}`] },
       },
-      { code: 'N1', marks: 1, label: 'Nilai y betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Nilai y betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(y1)], display: `y = ${y1}` },
   })
@@ -297,7 +294,7 @@ function garisLurus(bank: Bank, v: number): string {
     marks: 2,
     points: pts(`${id}-c2`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Gantikan nilai y',
         match: {
@@ -305,7 +302,7 @@ function garisLurus(bank: Bank, v: number): string {
           accept: [`${d.m}x+${d.c}=${d.y2}`, `${d.m}x=${d.y2 - d.c}`, `${d.y2}=${d.m}x+${d.c}`],
         },
       },
-      { code: 'N1', marks: 1, label: 'Nilai x betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Nilai x betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(x2)], display: `x = ${x2}` },
   })
@@ -324,7 +321,7 @@ function statistik(bank: Bank, v: number): string {
   bank.addQuestion(
     {
       id,
-      topic: 'Statistik',
+      curriculum: curr('MAT', 'Statistik'),
       stem: `Data berikut menunjukkan bilangan buku yang dibaca oleh sekumpulan murid: ${d.xs.join(', ')}.`,
       parts: [
         leaf(`${id}-a`, '(a)', 'Hitung min data itu.', 2, 'working'),
@@ -333,31 +330,24 @@ function statistik(bank: Bank, v: number): string {
         leaf(`${id}-d`, '(d)', 'Cari julat data itu.', 1, 'numeric'),
       ],
     },
-    POOL_B,
+    POOL_C,
   )
   bank.schemes.set(`${id}-a`, {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-a`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Jumlah dibahagi bilangan nilai',
         match: { type: 'step', accept: [`${sum}/${d.xs.length}`] },
       },
-      { code: 'N1', marks: 1, label: 'Min betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Min betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(d.mean)], display: String(d.mean) },
   })
   const one = (pid: string, ans: number): void => {
-    bank.schemes.set(pid, {
-      kind: 'points',
-      marks: 1,
-      points: pts(pid, [
-        { code: 'N1', marks: 1, label: 'Jawapan betul', match: { type: 'final' } },
-      ]),
-      final: { accept: [String(ans)], display: String(ans) },
-    })
+    bank.schemes.set(pid, { kind: 'accepted', marks: 1, values: [{ v: String(ans) }] })
   }
   one(`${id}-b`, d.mode)
   one(`${id}-d`, d.range)
@@ -366,7 +356,7 @@ function statistik(bank: Bank, v: number): string {
     marks: 2,
     points: pts(`${id}-c`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Menyusun data dan mengenal pasti nilai tengah',
         match: {
@@ -378,7 +368,7 @@ function statistik(bank: Bank, v: number): string {
           ],
         },
       },
-      { code: 'N1', marks: 1, label: 'Median betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Median betul', match: { type: 'final' } },
     ]),
     final: { accept: [String(d.median)], display: String(d.median) },
   })
@@ -396,7 +386,7 @@ function kuadratik(bank: Bank, v: number): string {
   bank.addQuestion(
     {
       id,
-      topic: 'Persamaan kuadratik',
+      curriculum: curr('MAT', 'Persamaan kuadratik'),
       stem: `Diberi persamaan kuadratik $x^2 - ${d.p + d.q}x + ${d.p * d.q} = 0$.`,
       parts: [
         leaf(`${id}-a`, '(a)', `Faktorkan $x^2 - ${d.p + d.q}x + ${d.p * d.q}$.`, 2, 'working'),
@@ -406,19 +396,19 @@ function kuadratik(bank: Bank, v: number): string {
         ]),
       ],
     },
-    POOL_B,
+    POOL_C,
   )
   bank.schemes.set(`${id}-a`, {
     kind: 'points',
     marks: 2,
     points: pts(`${id}-a`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Dua faktor dengan satu sebutan betul',
         match: { type: 'step', accept: [`(x-${d.p})(x-${d.q})`] },
       },
-      { code: 'N1', marks: 1, label: 'Faktor betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Faktor betul', match: { type: 'final' } },
     ]),
     final: {
       accept: [`(x-${d.p})(x-${d.q})`],
@@ -432,12 +422,12 @@ function kuadratik(bank: Bank, v: number): string {
     marks: 2,
     points: pts(`${id}-b1`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Menyamakan setiap faktor dengan sifar',
         match: { type: 'step', accept: [`x-${d.p}=0`, `x-${d.q}=0`] },
       },
-      { code: 'N1', marks: 1, label: 'Kedua-dua punca betul', match: { type: 'final' } },
+      { code: 'N', marks: 1, label: 'Kedua-dua punca betul', match: { type: 'final' } },
     ]),
     final: { accept: [`${d.p}, ${d.q}`], display: `x = ${d.p},\\ x = ${d.q}` },
   })
@@ -446,17 +436,16 @@ function kuadratik(bank: Bank, v: number): string {
     marks: 2,
     points: pts(`${id}-b2`, [
       {
-        code: 'K1',
+        code: 'K',
         marks: 1,
         label: 'Menambah kedua-dua punca',
         match: { type: 'step', accept: [`${d.p}+${d.q}`] },
       },
       {
-        code: 'N1',
+        code: 'N',
         marks: 1,
         label: 'Hasil tambah betul',
         match: { type: 'final' },
-        ecf: { fromPart: `${id}-b1`, expected: () => d.p + d.q, note: 'Diterima mengikut ECF.' },
       },
     ]),
     final: { accept: [String(d.p + d.q)], display: String(d.p + d.q) },

@@ -6,7 +6,7 @@ interface PartLike {
   label: string
   prompt: string
   marks: number
-  answer?: { kind: LeafKind; unit?: string }
+  answer?: { kind: LeafKind; unit?: string; wordRange?: { min: number; max: number } }
   children?: PartLike[]
 }
 
@@ -18,6 +18,7 @@ export interface Leaf {
   marks: number
   kind: LeafKind
   unit?: string
+  wordRange?: { min: number; max: number }
   depth: number
 }
 
@@ -35,6 +36,7 @@ export function leavesOf(parts: readonly PartLike[], prefix = '', depth = 0): Le
         marks: p.marks,
         kind: p.answer?.kind ?? 'short_text',
         unit: p.answer?.unit,
+        wordRange: p.answer?.wordRange,
         depth,
       })
   }

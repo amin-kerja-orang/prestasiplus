@@ -133,7 +133,8 @@ async function begin(restart: boolean): Promise<void> {
         </ol>
         <ul class="flex flex-col gap-1 text-body text-default" data-testid="cover-sections">
           <li v-for="s in cover.sections" :key="s.label">
-            <strong>{{ s.label }}</strong> · [{{ s.marks }} markah] · {{ s.instruction }}
+            <strong>{{ s.label }}</strong> · [{{ s.marks }} markah] · {{ s.questionCount }} soalan ·
+            {{ s.instruction }}<template v-if="s.compulsory"> (wajib)</template>
           </li>
         </ul>
       </section>

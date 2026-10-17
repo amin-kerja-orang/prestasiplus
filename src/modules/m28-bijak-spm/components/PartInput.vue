@@ -10,7 +10,7 @@ import { computed, ref } from 'vue'
 
 import { latexToPlain } from '../domain/math-expr'
 import type { Leaf } from '../domain/paper-model'
-import type { PartAnswer } from '../domain/types'
+import type { McqOption, PartAnswer } from '../domain/types'
 import { checkPhoto, photoUrl, putPhoto, removePhoto } from '../lib/photo-store'
 import MathField from './MathField.vue'
 
@@ -19,11 +19,16 @@ const props = defineProps<{
   modelValue: PartAnswer | undefined
   attemptId: string
   disabled?: boolean
+  /** Shared lettered bank of the question's group (match_letter). */
+  optionBank?: McqOption[]
 }>()
 const emit = defineEmits<{ 'update:modelValue': [PartAnswer] }>()
 
 const answer = computed<PartAnswer>(() => props.modelValue ?? {})
 const steps = computed(() => (answer.value.steps?.length ? answer.value.steps : ['']))
+const words = computed(() =>
+  (answer.value.text ?? '').trim() ? (answer.value.text ?? '').trim().split(/\s+/).length : 0,
+)
 const photoError = ref('')
 const urls = ref<Record<string, string>>({})
 const fileInput = ref<{ $el: HTMLElement } | null>(null)
@@ -79,19 +84,67 @@ async function dropPhoto(key: string): Promise<void> {
 
 <template>
   <div class="flex flex-col gap-4" :data-testid="`part-input-${leaf.id}`">
-    <template v-if="leaf.kind === 'short_text'">
+    <template v-if="leaf.kind === 'short_text' || leaf.kind === 'essay'">
       <UFormField :label="`Jawapan ${leaf.label}`.trim()" class="w-full">
         <UTextarea
           :model-value="answer.text ?? ''"
           :disabled="disabled"
-          :rows="4"
+          :rows="leaf.kind === 'essay' ? 10 : 4"
           autoresize
-          placeholder="Tulis jawapan…"
+          :placeholder="leaf.kind === 'essay' ? 'Tulis jawapan anda di sini…' : 'Tulis jawapan…'"
           class="w-full"
           data-testid="short-text-input"
           @update:model-value="update({ text: String($event ?? '') })"
         />
       </UFormField>
+      <p
+        v-if="leaf.kind === 'essay'"
+        class="text-caption text-muted"
+        role="status"
+        data-testid="word-count"
+      >
+        {{ words }} patah perkataan<template v-if="leaf.wordRange">
+          · sasaran {{ leaf.wordRange.min }}–{{ leaf.wordRange.max }}</template
+        >. Guru akan menilai esei ini mengikut band.
+      </p>
+    </template>
+
+    <template v-else-if="leaf.kind === 'match_letter'">
+      <div
+        class="flex flex-col gap-2"
+        role="group"
+        aria-label="Pilih huruf"
+        data-testid="match-bank"
+      >
+        <UButton
+          v-for="o in optionBank ?? []"
+          :key="o.id"
+          type="button"
+          color="neutral"
+          :variant="answer.choice === o.id ? 'solid' : 'soft'"
+          :aria-pressed="answer.choice === o.id"
+          :disabled="disabled"
+          class="min-h-11 justify-start"
+          :data-testid="`match-${o.id}`"
+          @click="update({ choice: answer.choice === o.id ? undefined : o.id })"
+          >{{ o.id }} — {{ o.text }}</UButton
+        >
+      </div>
+    </template>
+
+    <template v-else-if="leaf.kind === 'drawing'">
+      <p class="text-body text-toned">
+        Lukis jawapan anda pada kertas, kemudian ambil gambarnya. Guru menyemak senarai semak (garis
+        lurus, titik betul, bentuk lengkung).
+      </p>
+    </template>
+
+    <template v-else-if="leaf.kind === 'table_fill'">
+      <UAlert
+        color="info"
+        variant="soft"
+        title="Jenis jawapan ini akan tersedia tidak lama lagi."
+      />
     </template>
 
     <template v-else>
@@ -140,62 +193,60 @@ async function dropPhoto(key: string): Promise<void> {
           @update:model-value="update({ unit: String($event ?? '') })"
         />
       </UFormField>
-
-      <div v-if="leaf.kind === 'working'" class="flex flex-col gap-2">
-        <UInput
-          ref="fileInput"
-          type="file"
-          accept="image/jpeg,image/png"
-          capture="environment"
-          multiple
-          class="sr-only"
-          tabindex="-1"
-          aria-hidden="true"
-          data-testid="photo-file"
-          @change="onFiles"
-        />
-        <UButton
-          type="button"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-camera"
-          class="min-h-11 self-start rounded-2xl"
-          :disabled="disabled"
-          data-testid="photo-button"
-          @click="pickPhoto"
-          >Ambil gambar jalan kerja</UButton
-        >
-        <p v-if="photoError" class="text-caption text-error" role="alert">{{ photoError }}</p>
-        <ul
-          v-if="answer.photos?.length"
-          class="flex flex-wrap gap-2"
-          aria-label="Gambar jalan kerja"
-        >
-          <li
-            v-for="p in answer.photos"
-            :key="p.key"
-            class="flex items-center gap-2 rounded-xl bg-muted p-2"
-          >
-            <img
-              v-if="urls[p.key]"
-              :src="urls[p.key]"
-              :alt="`Gambar ${p.name}`"
-              class="size-12 rounded-lg object-cover"
-            />
-            <span class="text-caption text-toned">{{ p.name }}</span>
-            <UButton
-              type="button"
-              color="neutral"
-              variant="ghost"
-              icon="i-ph-trash"
-              class="size-11 justify-center rounded-2xl"
-              :aria-label="`Buang gambar ${p.name}`"
-              :disabled="disabled"
-              @click="dropPhoto(p.key)"
-            />
-          </li>
-        </ul>
-      </div>
     </template>
+
+    <div v-if="leaf.kind === 'working' || leaf.kind === 'drawing'" class="flex flex-col gap-2">
+      <UInput
+        ref="fileInput"
+        type="file"
+        accept="image/jpeg,image/png"
+        capture="environment"
+        multiple
+        class="sr-only"
+        tabindex="-1"
+        aria-hidden="true"
+        data-testid="photo-file"
+        @change="onFiles"
+      />
+      <UButton
+        type="button"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-camera"
+        class="min-h-11 self-start rounded-2xl"
+        :disabled="disabled"
+        data-testid="photo-button"
+        @click="pickPhoto"
+        >{{
+          leaf.kind === 'drawing' ? 'Ambil gambar jawapan lukisan' : 'Ambil gambar jalan kerja'
+        }}</UButton
+      >
+      <p v-if="photoError" class="text-caption text-error" role="alert">{{ photoError }}</p>
+      <ul v-if="answer.photos?.length" class="flex flex-wrap gap-2" aria-label="Gambar jalan kerja">
+        <li
+          v-for="p in answer.photos"
+          :key="p.key"
+          class="flex items-center gap-2 rounded-xl bg-muted p-2"
+        >
+          <img
+            v-if="urls[p.key]"
+            :src="urls[p.key]"
+            :alt="`Gambar ${p.name}`"
+            class="size-12 rounded-lg object-cover"
+          />
+          <span class="text-caption text-toned">{{ p.name }}</span>
+          <UButton
+            type="button"
+            color="neutral"
+            variant="ghost"
+            icon="i-ph-trash"
+            class="size-11 justify-center rounded-2xl"
+            :aria-label="`Buang gambar ${p.name}`"
+            :disabled="disabled"
+            @click="dropPhoto(p.key)"
+          />
+        </li>
+      </ul>
+    </div>
   </div>
 </template>

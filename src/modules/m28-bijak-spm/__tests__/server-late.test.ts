@@ -21,7 +21,7 @@ function make() {
 
 const correct = (qid: string): string => {
   const s = BANK.schemes.get(qid)!
-  if (s.kind !== 'mcq') throw new Error('mcq')
+  if (s.kind !== 'option') throw new Error('mcq')
   return s.correct
 }
 
@@ -177,9 +177,11 @@ describe('no answer key leaves the server before submit', () => {
         for (const id of ids) {
           const scheme = BANK.schemes.get(id)!
           const texts =
-            scheme.kind === 'mcq'
+            scheme.kind === 'option'
               ? [scheme.reason]
-              : [scheme.model, scheme.final?.display, ...scheme.points.map((p) => p.label)]
+              : scheme.kind === 'points'
+                ? [scheme.model, scheme.final?.display, ...scheme.points.map((p) => p.label)]
+                : []
           for (const t of texts)
             if (t && t.length >= 15) expect(json).not.toContain(JSON.stringify(t).slice(1, -1))
         }

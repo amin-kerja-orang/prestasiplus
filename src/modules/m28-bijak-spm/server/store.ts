@@ -246,6 +246,9 @@ export class BijakServer {
           (s.rule.type === 'all'
             ? 'Jawab semua soalan.'
             : `Jawab ${s.rule.n} daripada ${s.questionIds.length} soalan.`),
+        questionCount: s.questionIds.length,
+        compulsory: !!s.compulsory,
+        ...(s.rule.type === 'choose' ? { chooseN: s.rule.n } : {}),
       })),
     }
   }
@@ -318,7 +321,15 @@ export class BijakServer {
       durationMin: bp.durationMin,
       instructions: bp.instructions,
       reference: bp.reference,
-      sections: outcome.sections.map((s, i) => ({ ...s, id: `${id}-s${i + 1}` })),
+      sections: outcome.sections.map((s, i) => ({
+        ...s,
+        id: `${id}-s${i + 1}`,
+        questionCount: s.questionIds.length,
+        markBudget: effectiveMarks(
+          s.rule,
+          s.questionIds.map((qid) => this.questionMarks(BANK.questions.get(qid)!)),
+        ),
+      })),
     }
     this.state.generated[id] = gen
     this.persist()
@@ -389,6 +400,7 @@ export class BijakServer {
         id: s.id,
         label: s.label,
         ...(s.instruction ? { instruction: s.instruction } : {}),
+        ...(s.compulsory ? { compulsory: true } : {}),
         rule: s.rule,
         questionIds: [...s.questionIds],
       })),
@@ -416,8 +428,12 @@ export class BijakServer {
           id: q.id,
           number: numberOf.get(q.id)!,
           sectionId: s.id,
-          topic: q.topic,
+          topic: q.curriculum.unitLabel,
+          formOrigin: q.curriculum.formOrigin,
           ...(q.groupId ? { groupId: q.groupId } : {}),
+          ...(q.groupId && BANK.groups.get(q.groupId)?.optionBank
+            ? { optionBank: BANK.groups.get(q.groupId)!.optionBank }
+            : {}),
           stem: q.stem,
           marks: this.questionMarks(q),
           ...(q.mcq ? { mcq: q.mcq } : {}),

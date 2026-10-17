@@ -36,7 +36,7 @@ const {
 const { data: contracts } = useApi(() => server.listContracts())
 
 /* ----------------------------------------------------------------- Kertas Pilihan */
-const subjectFilter = ref<'semua' | SubjectCode>('semua')
+const subjectFilter = ref<string>('semua')
 const kertasFilter = ref<'semua' | '1' | '2'>('semua')
 const subjectItems = [
   { label: 'Semua subjek', value: 'semua' },

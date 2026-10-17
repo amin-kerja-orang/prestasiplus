@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** One node of a structured question: label + prompt, then either the answer controls (leaf) or its children. */
-import type { PartAnswer, PartView } from '../domain/types'
+import type { McqOption, PartAnswer, PartView } from '../domain/types'
 import PartInput from './PartInput.vue'
 import RichText from './RichText.vue'
 
@@ -12,6 +12,7 @@ defineProps<{
   attemptId: string
   disabled?: boolean
   depth?: number
+  optionBank?: McqOption[]
 }>()
 const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
 </script>
@@ -38,6 +39,7 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
         :attempt-id="attemptId"
         :disabled="disabled"
         :depth="(depth ?? 0) + 1"
+        :option-bank="optionBank"
         @answer="(id, a) => emit('answer', id, a)"
       />
     </template>
@@ -50,11 +52,13 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
         marks: part.marks,
         kind: part.answer?.kind ?? 'short_text',
         unit: part.answer?.unit,
+        wordRange: part.answer?.wordRange,
         depth: depth ?? 0,
       }"
       :model-value="answers[part.id]"
       :attempt-id="attemptId"
       :disabled="disabled"
+      :option-bank="optionBank"
       @update:model-value="emit('answer', part.id, $event)"
     />
   </div>

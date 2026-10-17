@@ -12,7 +12,7 @@ function grade(
   const scheme = BANK.schemes.get(partId)!
   const marks = scheme.marks
   const kind =
-    scheme.kind === 'mcq'
+    scheme.kind === 'option'
       ? 'mcq'
       : partId.startsWith('sn2') && !partId.includes('laju')
         ? 'short_text'
@@ -28,7 +28,7 @@ function grade(
 describe('MCQ', () => {
   it('awards the mark by option identity', () => {
     const scheme = BANK.schemes.get('mat1-pecahan-v1')!
-    if (scheme.kind !== 'mcq') throw new Error('mcq expected')
+    if (scheme.kind !== 'option') throw new Error('mcq expected')
     expect(grade('mat1-pecahan-v1', { choice: scheme.correct }).awarded).toBe(1)
     const wrong = grade('mat1-pecahan-v1', { choice: 'mat1-pecahan-v1-oX' })
     expect(wrong.awarded).toBe(0)
@@ -45,8 +45,8 @@ describe('structured working: K1 / N1 / P1 per point', () => {
       unit: 'cm',
     })
     expect(r.points.map((p) => [p.code, p.hit])).toEqual([
-      ['K1', true],
-      ['N1', true],
+      ['K', true],
+      ['N', true],
     ])
     expect(r.awarded).toBe(2)
     expect(r.status).toBe('betul')
@@ -75,14 +75,14 @@ describe('structured working: K1 / N1 / P1 per point', () => {
     expect(grade('mat2-segitiga-v1-q2-b', { final: '0.923' }).points[1]!.hit).toBe(true)
     expect(grade('mat2-segitiga-v1-q2-b', { final: '\\frac{12}{13}' }).points[1]!.hit).toBe(true)
   })
-  it('checks the unit as its own point (P1)', () => {
+  it('checks the unit as its own point (M3 in the Sains calculation)', () => {
     const ok = grade('sn2-laju-v1-a', { steps: ['600/40'], final: '15', unit: 'm/s' })
     expect(ok.awarded).toBe(3)
     const noUnit = grade('sn2-laju-v1-a', { steps: ['600/40'], final: '15' })
     expect(noUnit.awarded).toBe(2)
-    expect(noUnit.points.find((p) => p.code === 'P1')!.reason).toBe('Unit tidak ditulis.')
+    expect(noUnit.points.find((p) => p.tag === 'M3')!.reason).toBe('Unit tidak ditulis.')
     const wrongUnit = grade('sn2-laju-v1-a', { final: '15', unit: 'km/j' })
-    expect(wrongUnit.points.find((p) => p.code === 'P1')!.reason).toBe('Unit tidak betul.')
+    expect(wrongUnit.points.find((p) => p.tag === 'M3')!.reason).toBe('Unit tidak betul.')
   })
   it('carries the own figure forward (ECF) from an earlier part', () => {
     // (a) gave 10 instead of 12, so the sale price 80 - 10 = 70 is accepted for (b)

@@ -1,5 +1,5 @@
 /** Sains Kertas 2 short sample: keyword-marked structured questions, a shared Rajah, a speed part. */
-import { Bank, leaf } from './builders'
+import { Bank, curr, leaf } from './builders'
 import { plantCellSvg } from './diagrams'
 import type { PointDef } from '../domain/types'
 
@@ -9,7 +9,7 @@ const POOL_B = 'SN2-B'
 const kw = (id: string, items: { label: string; anyOf: string[] }[]): PointDef[] =>
   items.map((it, i) => ({
     id: `${id}-p${i + 1}`,
-    code: 'B1',
+    code: 'M',
     marks: 1,
     label: it.label,
     match: { type: 'keywords', anyOf: it.anyOf },
@@ -20,7 +20,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
   bank.addQuestion(
     {
       id: 'sn2-sel-q1',
-      topic: 'Sel',
+      curriculum: curr('SN', 'Sel'),
       stem: 'Rajah 1 menunjukkan struktur sebuah sel tumbuhan.',
       parts: [
         leaf('sn2-sel-q1-a', '(a)', 'Namakan organel P.', 1, 'short_text'),
@@ -39,7 +39,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
   bank.addQuestion(
     {
       id: 'sn2-sel-q2',
-      topic: 'Sel',
+      curriculum: curr('SN', 'Sel'),
       stem: 'Berdasarkan Rajah 1,',
       parts: [
         leaf('sn2-sel-q2-a', '(a)', 'namakan organel R.', 1, 'short_text'),
@@ -106,7 +106,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
     bank.addQuestion(
       {
         id,
-        topic: 'Daya dan gerakan',
+        curriculum: curr('SN', 'Daya dan gerakan'),
         stem: `Sebuah kereta mainan bergerak sejauh ${s.d} m dalam masa ${s.t} s.`,
         parts: [leaf(`${id}-a`, '(a)', 'Hitung laju kereta mainan itu.', 3, 'working', 'm/s')],
       },
@@ -118,21 +118,21 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
       points: [
         {
           id: `${id}-a-p1`,
-          code: 'K1',
+          code: 'M',
           marks: 1,
           label: 'Jarak / masa',
           match: { type: 'step', accept: [`${s.d}/${s.t}`] },
         },
         {
           id: `${id}-a-p2`,
-          code: 'N1',
+          code: 'M',
           marks: 1,
           label: 'Nilai laju betul',
           match: { type: 'final' },
         },
         {
           id: `${id}-a-p3`,
-          code: 'P1',
+          code: 'M',
           marks: 1,
           label: 'Unit betul (m/s)',
           match: { type: 'unit' },
@@ -146,7 +146,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
   bank.addQuestion(
     {
       id: 'sn2-osmosis',
-      topic: 'Pergerakan bahan merentasi membran',
+      curriculum: curr('SN', 'Pergerakan bahan merentasi membran'),
       stem: 'Terangkan bagaimana air meresap masuk ke dalam sel akar tumbuhan melalui osmosis.',
       parts: [leaf('sn2-osmosis-a', '', 'Jawapan anda.', 4, 'short_text')],
     },
@@ -173,7 +173,7 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
   bank.addQuestion(
     {
       id: 'sn2-fotosintesis',
-      topic: 'Fotosintesis',
+      curriculum: curr('SN', 'Fotosintesis'),
       stem: 'Nyatakan empat faktor yang mempengaruhi kadar fotosintesis.',
       parts: [leaf('sn2-fotosintesis-a', '', 'Jawapan anda.', 4, 'short_text')],
     },
@@ -186,9 +186,19 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
       { label: 'Keamatan cahaya', anyOf: ['cahaya'] },
       { label: 'Kepekatan karbon dioksida', anyOf: ['karbon dioksida', 'co2'] },
       { label: 'Suhu', anyOf: ['suhu'] },
-      { label: 'Bekalan air / klorofil', anyOf: ['air', 'klorofil'] },
+      { label: 'Bekalan air', anyOf: ['air'] },
+      { label: 'Kandungan klorofil', anyOf: ['klorofil'] },
+      { label: 'Bilangan stoma', anyOf: ['stoma'] },
     ]),
-    model: 'Keamatan cahaya, karbon dioksida, suhu dan bekalan air.',
+    // "[mana-mana 4 x 1 m]": six factors are accepted, four count.
+    groups: [
+      {
+        id: 'g1',
+        anyN: 4,
+        pointIds: [1, 2, 3, 4, 5, 6].map((n) => `sn2-fotosintesis-a-p${n}`),
+      },
+    ],
+    model: 'Mana-mana empat: cahaya, karbon dioksida, suhu, air, klorofil, bilangan stoma.',
   })
   return {
     setA: ['sn2-sel-q1', 'sn2-sel-q2', 'sn2-laju-v1'],

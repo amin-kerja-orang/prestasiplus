@@ -81,6 +81,9 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
         <strong><RichText :text="result.answer.final" math-only /></strong>
         <span v-if="result.answer.unit"> {{ result.answer.unit }}</span>
       </p>
+      <p v-if="result.answer.choice">
+        Pilihan anda: <strong>{{ result.answer.choice }}</strong>
+      </p>
       <p v-if="result.answer.text?.trim()">{{ result.answer.text }}</p>
       <p v-if="result.answer.photos?.length" class="text-caption text-muted">
         {{ result.answer.photos.length }} gambar jalan kerja dilampirkan (disimpan pada peranti
@@ -119,7 +122,7 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
         />
         <span class="min-w-0 flex-1 text-body text-default">
           <span class="sr-only">{{ p.hit ? 'Diperoleh: ' : 'Tidak diperoleh: ' }}</span>
-          <UBadge color="neutral" variant="subtle" size="sm" class="me-2">{{ p.code }}</UBadge>
+          <UBadge color="neutral" variant="subtle" size="sm" class="me-2">{{ p.tag }}</UBadge>
           {{ p.label }}
           <span class="tabular text-muted"> [{{ p.awarded }}/{{ p.marks }}]</span>
           <span class="block text-caption text-muted">{{ p.reason }}</span>
@@ -141,6 +144,23 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
         <span v-if="result.scheme.unit"> ({{ result.scheme.unit }})</span>
       </p>
       <p v-if="result.scheme.model" class="mt-1">{{ result.scheme.model }}</p>
+      <p v-if="result.scheme.correctLetter" class="mt-1" data-testid="scheme-letter">
+        Huruf betul: <strong>{{ result.scheme.correctLetter }}</strong>
+      </p>
+      <p v-if="result.scheme.acceptedText" class="mt-1" data-testid="scheme-accepted">
+        Jawapan diterima: <strong>{{ result.scheme.acceptedText.join(' / ') }}</strong>
+      </p>
+      <div v-if="result.scheme.rubric" class="mt-1 flex flex-col gap-1" data-testid="scheme-rubric">
+        <p>Kriteria: {{ result.scheme.rubric.criteria.join(', ') }}</p>
+        <ul class="flex flex-col gap-1">
+          <li v-for="b in result.scheme.rubric.bands" :key="b.name">
+            <strong>{{ b.name }}</strong> ({{ b.range[0] }}–{{ b.range[1] }}): {{ b.descriptor }}
+          </li>
+        </ul>
+        <p v-for="n in result.scheme.rubric.notes ?? []" :key="n" class="text-caption text-muted">
+          {{ n }}
+        </p>
+      </div>
     </div>
   </section>
 </template>

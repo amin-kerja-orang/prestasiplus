@@ -7,10 +7,12 @@ import { Bank } from './builders'
 import { seedMatK1 } from './mat-k1'
 import { seedMatK2 } from './mat-k2'
 import { seedSainsK2 } from './sains-k2'
+import { seedSejarahK2 } from './sejarah-k2'
 
 export const SUBJECTS: Subject[] = [
   { code: 'MAT', name: 'Matematik' },
   { code: 'SN', name: 'Sains' },
+  { code: 'SEJ', name: 'Sejarah' },
 ]
 
 export const subjectName = (code: SubjectCode): string =>
@@ -33,6 +35,7 @@ const bank = new Bank()
 const k1 = seedMatK1(bank)
 seedMatK2(bank)
 const sn = seedSainsK2(bank)
+const sej = seedSejarahK2(bank)
 
 const matK1Instructions = [
   'Kertas ini mengandungi 40 soalan objektif.',
@@ -40,8 +43,8 @@ const matK1Instructions = [
   'Rajah tidak dilukis mengikut skala kecuali dinyatakan.',
 ]
 const matK2Instructions = [
-  'Kertas ini mengandungi dua bahagian: Bahagian A dan Bahagian B.',
-  'Jawab semua soalan dalam Bahagian A dan dua soalan dalam Bahagian B.',
+  'Kertas ini mengandungi tiga bahagian: Bahagian A, Bahagian B dan Bahagian C.',
+  'Jawab semua soalan dalam Bahagian A dan Bahagian B, dan satu soalan dalam Bahagian C.',
   'Tunjukkan langkah kerja anda. Markah boleh diberi untuk kaedah yang betul.',
 ]
 const snInstructions = [
@@ -60,8 +63,16 @@ export const PAPERS: PaperDef[] = [
     durationMin: 75,
     instructions: matK1Instructions,
     reference: MAT_REFERENCE,
+    // Real blueprint: one section "Objektif", all questions, 1 mark each (PoC: 10 of 40 questions).
     sections: [
-      { id: 'mat-k1-2025-a-s1', label: 'Bahagian A', rule: { type: 'all' }, questionIds: k1.setA },
+      {
+        id: 'mat-k1-2025-a-s1',
+        label: 'Objektif',
+        rule: { type: 'all' },
+        markBudget: 10,
+        questionCount: 10,
+        questionIds: k1.setA,
+      },
     ],
   },
   {
@@ -74,13 +85,33 @@ export const PAPERS: PaperDef[] = [
     durationMin: 150,
     instructions: matK2Instructions,
     reference: MAT_REFERENCE,
-    // Proof of concept: 3 structured questions; Q1-Q2 share Rajah 1, Q3 has parts (a)(b)(c)(i)(ii).
+    // Real blueprint structure (A all, B all, C choose 1 of 2) at PoC scale: Q1-Q2 share Rajah 1,
+    // Q4 has parts (a)(b)(c)(i)(ii), Bahagian C offers two questions of equal marks.
     sections: [
       {
         id: 'mat-k2-2025-a-s1',
         label: 'Bahagian A',
         rule: { type: 'all' },
-        questionIds: ['mat2-segitiga-v1-q1', 'mat2-segitiga-v1-q2', 'mat2-garis-v1'],
+        markBudget: 9,
+        questionCount: 3,
+        questionIds: ['mat2-segitiga-v1-q1', 'mat2-segitiga-v1-q2', 'mat2-diskaun-v1'],
+      },
+      {
+        id: 'mat-k2-2025-a-s2',
+        label: 'Bahagian B',
+        rule: { type: 'all' },
+        markBudget: 6,
+        questionCount: 1,
+        questionIds: ['mat2-garis-v1'],
+      },
+      {
+        id: 'mat-k2-2025-a-s3',
+        label: 'Bahagian C',
+        instruction: 'Jawab 1 daripada 2 soalan.',
+        rule: { type: 'choose', n: 1 },
+        markBudget: 6,
+        questionCount: 2,
+        questionIds: ['mat2-statistik-v1', 'mat2-kuadratik-v1'],
       },
     ],
   },
@@ -94,13 +125,55 @@ export const PAPERS: PaperDef[] = [
     durationMin: 60,
     instructions: snInstructions,
     sections: [
-      { id: 'sn-k2-2025-a-s1', label: 'Bahagian A', rule: { type: 'all' }, questionIds: sn.setA },
+      {
+        id: 'sn-k2-2025-a-s1',
+        label: 'Bahagian A',
+        rule: { type: 'all' },
+        markBudget: 9,
+        questionCount: 3,
+        questionIds: sn.setA,
+      },
       {
         id: 'sn-k2-2025-a-s2',
         label: 'Bahagian B',
         instruction: 'Jawab 1 daripada 2 soalan.',
         rule: { type: 'choose', n: 1 },
+        markBudget: 4,
+        questionCount: 2,
         questionIds: sn.setB,
+      },
+    ],
+  },
+  {
+    id: 'sej-k2-2025-a',
+    title: 'Percubaan SPM Sejarah Kertas 2 (Contoh Pendek)',
+    subject: 'SEJ',
+    kertas: 2,
+    year: 2025,
+    code: '1249/2',
+    durationMin: 90,
+    instructions: [
+      'Kertas ini mengandungi dua bahagian: Bahagian A dan Bahagian B.',
+      'Jawab semua soalan dalam Bahagian A dan satu soalan dalam Bahagian B.',
+      'Esei dinilai oleh guru mengikut band; markah tidak diberi secara automatik.',
+    ],
+    sections: [
+      {
+        id: 'sej-k2-2025-a-s1',
+        label: 'Bahagian A',
+        rule: { type: 'all' },
+        markBudget: 9,
+        questionCount: 2,
+        questionIds: sej.setA,
+      },
+      {
+        id: 'sej-k2-2025-a-s2',
+        label: 'Bahagian B',
+        instruction: 'Jawab 1 daripada 2 soalan.',
+        rule: { type: 'choose', n: 1 },
+        markBudget: 10,
+        questionCount: 2,
+        questionIds: sej.setB,
       },
     ],
   },
@@ -115,7 +188,9 @@ export const BLUEPRINTS: Blueprint[] = [
     durationMin: 75,
     instructions: matK1Instructions,
     reference: MAT_REFERENCE,
-    sections: [{ label: 'Bahagian A', rule: { type: 'all' }, pool: 'MAT1-A', take: 10 }],
+    sections: [
+      { label: 'Objektif', rule: { type: 'all' }, pool: 'MAT1-A', take: 10, markBudget: 10 },
+    ],
   },
   {
     subject: 'MAT',
@@ -125,7 +200,17 @@ export const BLUEPRINTS: Blueprint[] = [
     durationMin: 150,
     instructions: matK2Instructions,
     reference: MAT_REFERENCE,
-    sections: [{ label: 'Bahagian A', rule: { type: 'all' }, pool: 'MAT2-A', take: 3 }],
+    sections: [
+      { label: 'Bahagian A', rule: { type: 'all' }, pool: 'MAT2-A', take: 3 },
+      { label: 'Bahagian B', rule: { type: 'all' }, pool: 'MAT2-B', take: 1 },
+      {
+        label: 'Bahagian C',
+        instruction: 'Jawab 1 daripada 2 soalan.',
+        rule: { type: 'choose', n: 1 },
+        pool: 'MAT2-C',
+        take: 2,
+      },
+    ],
   },
   {
     subject: 'SN',
