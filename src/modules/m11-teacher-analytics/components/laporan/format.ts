@@ -28,14 +28,14 @@ export type Band = 'green' | 'amber' | 'red'
 export const bandOf = (p: number): Band => (p >= 70 ? 'green' : p >= 50 ? 'amber' : 'red')
 
 export const SCORE_TEXT: Record<Band, string> = {
-  green: 'text-green-600',
-  amber: 'text-amber-600',
-  red: 'text-red-600',
+  green: 'text-success',
+  amber: 'text-warning',
+  red: 'text-error',
 }
-export const SCORE_BAR: Record<Band, string> = {
-  green: 'bg-green-500',
-  amber: 'bg-amber-500',
-  red: 'bg-red-500',
+export const SCORE_COLOR: Record<Band, 'success' | 'warning' | 'error'> = {
+  green: 'success',
+  amber: 'warning',
+  red: 'error',
 }
 
 export type ScoreKey = keyof TeacherReport['score']['byType']

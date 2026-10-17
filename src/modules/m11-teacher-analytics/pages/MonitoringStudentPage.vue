@@ -4,24 +4,22 @@
  * panel visible at a time, default "Mengikut Subjek"), the "Pemerhatian" card under every tab and the
  * question modal. The breadcrumb uses the school of the URL (BR-M11-29). The route prefix is a prop.
  */
-import { Book, CircleX, Crosshair, GraduationCap, Layers, Lightbulb, List } from '@lucide/vue'
-import { computed, ref, type Component } from 'vue'
+import { computed, ref } from 'vue'
 
-import { LoadingSpinner } from '@/components/feedback'
+import { DsPage } from '@/ds'
 
 import { fetchStudentDetail } from '../api'
 import type { StudentAnswerRow } from '../api/types'
 import MonitoringCrumbs from '../components/monitoring/MonitoringCrumbs.vue'
 import MonitoringStatCard from '../components/monitoring/MonitoringStatCard.vue'
 import {
-  ACCURACY_TEXT_700,
-  CARD,
+  ACCURACY_TEXT,
   LOAD_ERROR_COPY,
-  STAT_TONE,
   accuracyBand,
   count,
   dmyHm,
   pct1,
+  type UiColor,
 } from '../components/monitoring/monitoring-format'
 import { MONITORING_BASE, monitoringPaths } from '../components/monitoring/monitoring-paths'
 import StudentGaps from '../components/monitoring/StudentGaps.vue'
@@ -48,22 +46,22 @@ const tab = ref<Tab>('subject')
 const modalRow = ref<StudentAnswerRow | null>(null)
 
 const tabs = computed<
-  { key: Tab; label: string; icon: Component; chip?: { n: number; cls: string } }[]
+  { key: Tab; label: string; icon: string; chip?: { n: number; color: UiColor } }[]
 >(() => [
-  { key: 'subject', label: 'Mengikut Subjek', icon: Book },
-  { key: 'topic', label: 'Mengikut Tajuk', icon: Layers },
-  { key: 'list', label: 'Senarai Soalan', icon: List },
+  { key: 'subject', label: 'Mengikut Subjek', icon: 'i-ph-book' },
+  { key: 'topic', label: 'Mengikut Tajuk', icon: 'i-ph-stack' },
+  { key: 'list', label: 'Senarai Soalan', icon: 'i-ph-list-bullets' },
   {
     key: 'wrong',
     label: 'Jawapan Salah',
-    icon: CircleX,
-    chip: { n: data.value?.wrong.count ?? 0, cls: 'bg-red-100 text-red-600' },
+    icon: 'i-ph-x-circle',
+    chip: { n: data.value?.wrong.count ?? 0, color: 'error' },
   },
   {
     key: 'gaps',
     label: 'Gap Analysis',
-    icon: Crosshair,
-    chip: { n: data.value?.gaps.count ?? 0, cls: 'bg-amber-100 text-amber-700' },
+    icon: 'i-ph-crosshair',
+    chip: { n: data.value?.gaps.count ?? 0, color: 'warning' },
   },
 ])
 
@@ -73,7 +71,7 @@ const accuracy = computed(() => {
   return c.answered === 0 ? '0%' : pct1(c.accuracy)
 })
 const accuracyColour = computed(() =>
-  data.value ? ACCURACY_TEXT_700[accuracyBand(data.value.cards.accuracy)] : '',
+  data.value ? ACCURACY_TEXT[accuracyBand(data.value.cards.accuracy)] : '',
 )
 
 const observations = computed(() =>
@@ -86,7 +84,7 @@ const observations = computed(() =>
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="monitoring-student-page">
+  <DsPage data-testid="monitoring-student-page">
     <template v-if="!blocked">
       <MonitoringCrumbs
         :paths="paths"
@@ -95,87 +93,70 @@ const observations = computed(() =>
         :person="data?.student.name ?? ''"
       />
 
-      <p v-if="error" class="rounded-xl bg-red-50 p-3 text-sm text-red-700" data-testid="mon-error">
-        {{ LOAD_ERROR_COPY }}
-      </p>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning"
+        :description="LOAD_ERROR_COPY"
+        data-testid="mon-error"
+      />
       <p
         v-else-if="!data"
-        class="flex items-center gap-2 text-sm text-slate-500"
+        class="flex items-center gap-2 text-body text-muted"
         data-testid="mon-loading"
       >
-        <LoadingSpinner class="h-4 w-4" />Memuatkan...
+        <UIcon name="i-ph-circle-notch" class="size-4" />Memuatkan...
       </p>
 
       <template v-if="data">
-        <section
-          :class="[CARD, 'flex items-center gap-4 p-4 sm:p-6']"
-          data-testid="mon-student-header"
-        >
-          <span
-            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600"
-          >
-            <GraduationCap class="h-6 w-6" />
-          </span>
-          <div class="min-w-0">
-            <h2
-              class="font-heading text-lg font-bold break-words text-slate-800"
-              data-testid="mon-student-name"
-            >
-              {{ data.student.name }}
-            </h2>
-            <p class="text-sm break-all text-slate-500" data-testid="mon-student-meta">
-              {{ data.student.email }} · {{ data.student.level }}
-            </p>
-            <p class="text-xs text-slate-400" data-testid="mon-student-last">
-              Aktiviti Terakhir: {{ dmyHm(data.student.lastActivityAt) }}
-            </p>
+        <UCard data-testid="mon-student-header">
+          <div class="flex items-center gap-4">
+            <UIcon name="i-ph-graduation-cap" class="size-8 shrink-0 text-primary" />
+            <div class="flex min-w-0 flex-col gap-1">
+              <h2 class="text-heading break-words text-highlighted" data-testid="mon-student-name">
+                {{ data.student.name }}
+              </h2>
+              <p class="text-body break-all text-muted" data-testid="mon-student-meta">
+                {{ data.student.email }} · {{ data.student.level }}
+              </p>
+              <p class="text-caption text-muted" data-testid="mon-student-last">
+                Aktiviti Terakhir: {{ dmyHm(data.student.lastActivityAt) }}
+              </p>
+            </div>
           </div>
-        </section>
+        </UCard>
 
         <section class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="mon-student-cards">
-          <MonitoringStatCard
-            label="Soalan Dijawab"
-            :value="count(data.cards.answered)"
-            :tone="STAT_TONE.blue"
-          />
-          <MonitoringStatCard
-            label="Betul"
-            :value="count(data.cards.correct)"
-            :tone="STAT_TONE.green"
-          />
-          <MonitoringStatCard
-            label="Salah"
-            :value="count(data.cards.wrong)"
-            :tone="STAT_TONE.red"
-          />
-          <MonitoringStatCard label="Ketepatan" :value="accuracy" :tone="STAT_TONE.amber">
-            <span :class="accuracyColour">{{ accuracy }}</span>
-          </MonitoringStatCard>
+          <MonitoringStatCard label="Soalan Dijawab" :value="count(data.cards.answered)" />
+          <MonitoringStatCard label="Betul" :value="count(data.cards.correct)" />
+          <MonitoringStatCard label="Salah" :value="count(data.cards.wrong)" />
+          <MonitoringStatCard label="Ketepatan" :value="accuracy" :value-class="accuracyColour" />
         </section>
 
         <div class="flex flex-wrap gap-2" data-testid="mon-tabs">
-          <button
+          <UButton
             v-for="t in tabs"
             :key="t.key"
             type="button"
-            :class="[
-              'flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium lg:min-h-9',
-              tab === t.key
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'border border-slate-200 bg-white text-slate-700',
-            ]"
+            size="lg"
+            :color="tab === t.key ? 'primary' : 'neutral'"
+            :variant="tab === t.key ? 'soft' : 'ghost'"
+            :icon="t.icon"
             :data-testid="`mon-tab-${t.key}`"
             :data-active="tab === t.key ? 'true' : 'false'"
             @click="tab = t.key"
           >
-            <component :is="t.icon" class="h-4 w-4" />{{ t.label }}
-            <span
+            {{ t.label }}
+            <UBadge
               v-if="t.chip"
-              :class="['rounded-full px-1.5 text-xs font-semibold', t.chip.cls]"
+              :color="t.chip.color"
+              variant="subtle"
+              size="sm"
               data-testid="mon-tab-chip"
-              >{{ t.chip.n }}</span
-            >
-          </button>
+              :label="String(t.chip.n)"
+            />
+          </UButton>
         </div>
 
         <StudentSubjects v-if="tab === 'subject'" :subjects="data.subjects" />
@@ -188,25 +169,24 @@ const observations = computed(() =>
         <StudentWrongAnswers v-else-if="tab === 'wrong'" :wrong="data.wrong" />
         <StudentGaps v-else :gaps="data.gaps" />
 
-        <section
-          :class="[CARD, 'border-l-4 border-l-blue-500 p-3 sm:p-5']"
-          data-testid="mon-observations"
-        >
-          <h3 class="mb-2 flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-            <Lightbulb class="h-5 w-5 text-blue-500" />Pemerhatian
-          </h3>
-          <p
-            v-for="(o, i) in observations"
-            :key="i"
-            class="mb-2 rounded-lg bg-slate-50 p-2.5 text-sm text-slate-600 last:mb-0"
-            data-testid="mon-observation"
-          >
-            {{ o }}
-          </p>
-        </section>
+        <UCard data-testid="mon-observations">
+          <div class="flex flex-col gap-3">
+            <h2 class="flex items-center gap-2 text-label text-highlighted">
+              <UIcon name="i-ph-lightbulb" class="size-5 text-info" />Pemerhatian
+            </h2>
+            <p
+              v-for="(o, i) in observations"
+              :key="i"
+              class="bg-soft p-3 text-body text-default"
+              data-testid="mon-observation"
+            >
+              {{ o }}
+            </p>
+          </div>
+        </UCard>
 
         <StudentQuestionModal :row="modalRow" @close="modalRow = null" />
       </template>
     </template>
-  </div>
+  </DsPage>
 </template>

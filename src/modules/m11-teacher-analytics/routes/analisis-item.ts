@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Kenal pasti soalan yang sukar dan indeks diskriminasi',
       },
       module: 'M11',
+      v2: true,
     },
   },
 ]

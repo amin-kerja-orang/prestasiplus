@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { bandOf, grouped, parseId, parseRange, pctInt } from '../../components/laporan/format'
-import { trendData, trendOptions } from '../../components/laporan/trend-chart'
+import { trendChart } from '../../components/laporan/trend-chart'
 import { clip80, discLabel, discNote, pctLabel } from '../../components/analisis-item/bands'
 
 describe('S1 query helpers', () => {
@@ -46,23 +46,13 @@ describe('S1 query helpers', () => {
 })
 
 describe('S1 trend chart config', () => {
-  it('maps the trend to labels and counts', () => {
-    const d = trendData([
+  it('maps the trend to labels and one Aktiviti series of counts', () => {
+    const d = trendChart([
       { date: '15/09', count: 4 },
       { date: '16/09', count: 0 },
     ])
     expect(d.labels).toEqual(['15/09', '16/09'])
-    expect(d.datasets[0]!.data).toEqual([4, 0])
-  })
-
-  it('raises the tick fonts to 12 (DV-M11-23) and starts y at 0 with step 1', () => {
-    expect(trendOptions.scales!.x).toMatchObject({
-      ticks: { font: { size: 12 }, maxTicksLimit: 15 },
-    })
-    expect(trendOptions.scales!.y).toMatchObject({
-      beginAtZero: true,
-      ticks: { stepSize: 1, font: { size: 12 } },
-    })
+    expect(d.series).toEqual([{ label: 'Aktiviti', data: [4, 0] }])
   })
 })
 

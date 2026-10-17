@@ -1,10 +1,10 @@
 import type { ItemAnalysisRow } from '../../api/types'
 
-/** FN-M11-5.1.3 legend dots / BR-M11-28 bands. */
-export const BAND_DOT: Record<ItemAnalysisRow['band'], string> = {
-  mudah: 'bg-emerald-500',
-  sederhana: 'bg-amber-400',
-  sukar: 'bg-red-500',
+/** FN-M11-5.1.3 legend dots / BR-M11-28 bands: token colours. */
+export const BAND_COLOR: Record<ItemAnalysisRow['band'], 'success' | 'warning' | 'error'> = {
+  mudah: 'success',
+  sederhana: 'warning',
+  sukar: 'error',
 }
 
 /** The question text cut to 80 characters (FN-M11-5.1.5). */

@@ -24,7 +24,7 @@ async function mountAt(url: string) {
   await router.push(url)
   await router.isReady()
   wrapper = mount(LaporanPage, {
-    global: { plugins: [router], stubs: { ChartCanvas: true } },
+    global: { plugins: [router], stubs: { DsChart: true } },
   })
   await flushPromises()
   return wrapper
@@ -189,17 +189,15 @@ describe('S1 Laporan: expandable cards (FR-M11-17, E2E-M11-11/12)', () => {
 
     await t(w, 'card-login').trigger('click')
     expect(has(w, 'panel-login')).toBe(true)
-    expect(t(w, 'card-login').classes()).toContain('ring-blue-400')
     expect(t(w, 'card-login').attributes('data-open')).toBe('true')
 
     await t(w, 'card-skor').trigger('click')
     expect(has(w, 'panel-login')).toBe(false)
     expect(has(w, 'panel-skor')).toBe(true)
-    expect(t(w, 'card-skor').classes()).toContain('ring-amber-400')
 
     await t(w, 'card-skor').trigger('click')
     expect(has(w, 'panel-skor')).toBe(false)
-    expect(t(w, 'card-skor').classes().join(' ')).not.toContain('ring-2')
+    expect(t(w, 'card-skor').attributes('data-open')).toBe('false')
   })
 
   it('login and latihan panels show the zero copy', async () => {
@@ -254,7 +252,7 @@ describe('S1 Laporan: expandable cards (FR-M11-17, E2E-M11-11/12)', () => {
     ])
   })
 
-  it('the score panel has 5 bars (no Permainan); "-%" is red over an empty red-400 bar', async () => {
+  it('the score panel has 5 bars (no Permainan); "-%" is error text over an empty error bar', async () => {
     respond(teacherReport())
     const w = await mountAt('/guru/laporan')
     await t(w, 'card-skor').trigger('click')
@@ -268,13 +266,13 @@ describe('S1 Laporan: expandable cards (FR-M11-17, E2E-M11-11/12)', () => {
     ).toHaveLength(5)
     const kuiz = t(w, 'bar-kuiz')
     expect(kuiz.get('[data-testid="bar-value"]').text()).toBe('46%')
-    expect(kuiz.get('[data-testid="bar-value"]').classes()).toContain('text-red-600')
-    expect(kuiz.get('[data-testid="bar-fill"]').attributes('style')).toContain('width: 46%')
+    expect(kuiz.get('[data-testid="bar-value"]').classes()).toContain('text-error')
+    expect(kuiz.get('[data-testid="bar-fill"]').attributes('data-value')).toBe('46')
     const struktur = t(w, 'bar-struktur')
     expect(struktur.get('[data-testid="bar-value"]').text()).toBe('-%')
-    expect(struktur.get('[data-testid="bar-value"]').classes()).toContain('text-red-500')
-    expect(struktur.get('[data-testid="bar-fill"]').classes()).toContain('bg-red-400')
-    expect(struktur.get('[data-testid="bar-fill"]').attributes('style')).toContain('width: 0%')
+    expect(struktur.get('[data-testid="bar-value"]').classes()).toContain('text-error')
+    expect(struktur.get('[data-testid="bar-fill"]').attributes('data-color')).toBe('error')
+    expect(struktur.get('[data-testid="bar-fill"]').attributes('data-value')).toBe('0')
   })
 
   it('uses the green / amber bands for higher scores (BR-M11-22)', async () => {
@@ -288,9 +286,9 @@ describe('S1 Laporan: expandable cards (FR-M11-17, E2E-M11-11/12)', () => {
     )
     const w = await mountAt('/guru/laporan')
     await t(w, 'card-skor').trigger('click')
-    expect(t(w, 'bar-kuiz').get('[data-testid="bar-value"]').classes()).toContain('text-green-600')
+    expect(t(w, 'bar-kuiz').get('[data-testid="bar-value"]').classes()).toContain('text-success')
     expect(t(w, 'bar-latihTubi').get('[data-testid="bar-value"]').classes()).toContain(
-      'text-amber-600',
+      'text-warning',
     )
   })
 
@@ -305,53 +303,24 @@ describe('S1 Laporan: expandable cards (FR-M11-17, E2E-M11-11/12)', () => {
 })
 
 describe('S1 Laporan: trend chart (FR-M11-22)', () => {
-  it('passes one label and count per day and the live dataset style', async () => {
+  it('passes one label and one Aktiviti count per day to the DS chart', async () => {
     const trend = [
       { date: '15/09', count: 4 },
       { date: '16/09', count: 0 },
     ]
     respond(teacherReport({ trend }))
     const w = await mountAt('/guru/laporan')
-    const chart = w.findComponent({ name: 'ChartCanvas' })
+    const chart = w.findComponent({ name: 'DsChart' })
     expect(chart.exists()).toBe(true)
     const props = chart.props() as {
       type: string
-      data: { labels: string[]; datasets: Record<string, unknown>[] }
-      options: {
-        plugins: {
-          legend: { display: boolean }
-          tooltip: {
-            backgroundColor: string
-            callbacks: { label: (c: { parsed: { y: number } }) => string }
-          }
-        }
-        scales: { x: { ticks: unknown }; y: unknown }
-      }
-      testId: string
+      labels: string[]
+      series: { label: string; data: number[] }[]
     }
     expect(props.type).toBe('line')
-    expect(props.testId).toBe('laporan-trend-chart')
-    expect(props.data.labels).toEqual(['15/09', '16/09'])
-    expect(props.data.datasets[0]).toMatchObject({
-      label: 'Aktiviti',
-      data: [4, 0],
-      borderColor: '#6366f1',
-      backgroundColor: 'rgba(99, 102, 241, 0.1)',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 2,
-      pointHoverRadius: 5,
-      borderWidth: 2,
-    })
-    expect(props.options.plugins.legend.display).toBe(false)
-    expect(props.options.plugins.tooltip.backgroundColor).toBe('#1e293b')
-    expect(props.options.plugins.tooltip.callbacks.label({ parsed: { y: 3 } })).toBe('3 aktiviti')
-    expect(props.options.scales.x.ticks).toEqual({ font: { size: 12 }, maxTicksLimit: 15 })
-    expect(props.options.scales.y).toMatchObject({
-      beginAtZero: true,
-      ticks: { stepSize: 1, font: { size: 12 } },
-    })
-    expect(text(w, 'trend-card')).toContain(LAPORAN_COPY.trendTitle)
+    expect(props.labels).toEqual(['15/09', '16/09'])
+    expect(props.series).toEqual([{ label: 'Aktiviti', data: [4, 0] }])
+    expect(chart.props('title')).toBe(LAPORAN_COPY.trendTitle)
   })
 })
 

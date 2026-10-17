@@ -1,6 +1,6 @@
 /**
  * Formats, tahap styles and accuracy colours of the monitoring screens (SRS M11 BR-M11-11, 12, 22, 23).
- * Class strings are full literals so Tailwind sees them.
+ * Colours are Nuxt UI semantic names (token colours).
  */
 
 import { formatCount, formatNumber, formatPercent } from '@/lib/number'
@@ -24,88 +24,50 @@ export const rawTime = (iso: string) => formatMyt(iso, 'yyyy-MM-dd HH:mm:ss')
 /** Subscription date with the live English month ("12 May 2027"). */
 export const subscriptionDate = formatDateEnUnpadded
 
+/** Nuxt UI colour names used by the staff badges, progress bars and text (token colours only). */
+export type UiColor = 'success' | 'warning' | 'error' | 'info' | 'neutral'
+
 export interface TahapStyle {
-  /** White text on the tahap colour (pill). */
-  pill: string
+  /** Badge / progress colour. */
+  color: UiColor
   /** Text colour of the % value. */
   text: string
-  /** Fill of the bar. */
-  fill: string
   /** Variant of the table bar: label inside the fill, outside it, or an empty track. */
   bar: 'inside' | 'outside' | 'empty'
 }
 
 export const TAHAP: Record<TahapKey, TahapStyle> = {
-  Cemerlang: { pill: 'bg-green-700', text: 'text-green-700', fill: 'bg-green-700', bar: 'inside' },
-  Sederhana: {
-    pill: 'bg-orange-600',
-    text: 'text-orange-600',
-    fill: 'bg-orange-600',
-    bar: 'inside',
-  },
-  Rendah: { pill: 'bg-red-600', text: 'text-red-600', fill: 'bg-red-600', bar: 'outside' },
-  Kritikal: { pill: 'bg-red-800', text: 'text-red-800', fill: 'bg-red-800', bar: 'outside' },
-  'Tiada Langsung': {
-    pill: 'bg-gray-500',
-    text: 'text-gray-500',
-    fill: 'bg-gray-500',
-    bar: 'empty',
-  },
+  Cemerlang: { color: 'success', text: 'text-success', bar: 'inside' },
+  Sederhana: { color: 'warning', text: 'text-warning', bar: 'inside' },
+  Rendah: { color: 'error', text: 'text-error', bar: 'outside' },
+  Kritikal: { color: 'error', text: 'text-error', bar: 'outside' },
+  'Tiada Langsung': { color: 'neutral', text: 'text-muted', bar: 'empty' },
 }
 
-/** BR-M11-22: ≥ 70 green; 50-69.9 amber; < 50 red. */
+/** BR-M11-22: >= 70 good; 50-69.9 mid; < 50 low. */
 export type AccuracyBand = 'good' | 'mid' | 'low'
 export const accuracyBand = (p: number): AccuracyBand =>
   p >= 70 ? 'good' : p >= 50 ? 'mid' : 'low'
 
-export const ACCURACY_TEXT_700: Record<AccuracyBand, string> = {
-  good: 'text-green-700',
-  mid: 'text-amber-700',
-  low: 'text-red-700',
+export const ACCURACY_TEXT: Record<AccuracyBand, string> = {
+  good: 'text-success',
+  mid: 'text-warning',
+  low: 'text-error',
 }
-export const ACCURACY_TEXT_600: Record<AccuracyBand, string> = {
-  good: 'text-green-600',
-  mid: 'text-amber-600',
-  low: 'text-red-600',
-}
-export const ACCURACY_BAR_500: Record<AccuracyBand, string> = {
-  good: 'bg-green-500',
-  mid: 'bg-amber-500',
-  low: 'bg-red-500',
+export const ACCURACY_COLOR: Record<AccuracyBand, UiColor> = {
+  good: 'success',
+  mid: 'warning',
+  low: 'error',
 }
 
-export const TOPIC_BADGE: Record<TopicBadge, string> = {
-  Kuat: 'bg-green-100 text-green-700',
-  Sederhana: 'bg-amber-100 text-amber-700',
-  Lemah: 'bg-red-100 text-red-700',
+export const TOPIC_COLOR: Record<TopicBadge, UiColor> = {
+  Kuat: 'success',
+  Sederhana: 'warning',
+  Lemah: 'error',
 }
 
 export const STATUS_LABEL = { aktif: 'Aktif', login: 'Login sahaja', never: 'Belum login' } as const
-export const STATUS_PILL = {
-  aktif: 'bg-green-100 text-green-700',
-  login: 'bg-amber-100 text-amber-700',
-  never: 'bg-slate-100 text-slate-500',
-} as const
+export const STATUS_COLOR = { aktif: 'success', login: 'warning', never: 'neutral' } as const
 
-/** Shared copy: a failed fetch (no M11-specific copy on live, SRS §8.3). */
+/** Shared copy: a failed fetch (no M11-specific copy on live, SRS 8.3). */
 export const LOAD_ERROR_COPY = 'Gagal memuatkan data. Sila cuba lagi.'
-
-export const CARD = 'rounded-2xl bg-white shadow-sm border border-indigo-500/10'
-
-export interface StatTone {
-  box: string
-  label: string
-  value: string
-}
-export const STAT_TONE = {
-  blue: { box: 'bg-blue-50 border-blue-100', label: 'text-blue-600', value: 'text-blue-900' },
-  green: { box: 'bg-green-50 border-green-100', label: 'text-green-600', value: 'text-green-900' },
-  purple: {
-    box: 'bg-purple-50 border-purple-100',
-    label: 'text-purple-600',
-    value: 'text-purple-900',
-  },
-  amber: { box: 'bg-amber-50 border-amber-100', label: 'text-amber-600', value: 'text-amber-900' },
-  rose: { box: 'bg-rose-50 border-rose-100', label: 'text-rose-600', value: 'text-rose-900' },
-  red: { box: 'bg-red-50 border-red-100', label: 'text-red-600', value: 'text-red-900' },
-} as const satisfies Record<string, StatTone>

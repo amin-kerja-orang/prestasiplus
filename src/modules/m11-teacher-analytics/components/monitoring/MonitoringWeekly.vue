@@ -1,130 +1,140 @@
 <script setup lang="ts">
 /**
  * S2 "Tracking Mingguan", `#section-mingguan` (FN-M11-3.6.1 / 3.6.2; FR-M11-43, 44). The Sekolah column
- * is sticky (as live; SRS FR-M11-43); the table scrolls inside its card. Cell classes come from the
- * handler (`cls`): zero slate, blue (first week or equal to the previous), green up, red down; the best
- * week gets an amber ring.
+ * is the sticky first column of the drill table (as live; SRS FR-M11-43); the table scrolls inside its
+ * card. Cell classes come from the handler (`cls`): zero muted, info (first week or equal to the
+ * previous), success up, error down; the best week gets the solid badge variant and a star.
  */
-import { CalendarRange, ArrowDown, ArrowUp, Minus } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
+import type { TableColumn } from '@nuxt/ui'
+import { computed, h } from 'vue'
+
+import { DsDrillTable } from '@/ds'
 
 import type { WeeklyCellClass, WeeklyRow } from '../../api/types'
-import { CARD, count } from './monitoring-format'
+import { count, type UiColor } from './monitoring-format'
 import type { MonitoringPaths } from './monitoring-paths'
 
-defineProps<{
+const props = defineProps<{
   weeks: readonly { k: number; from: string; to: string }[]
   rows: readonly WeeklyRow[]
   paths: MonitoringPaths
 }>()
 
-const CELL: Record<WeeklyCellClass, string> = {
-  zero: 'bg-slate-50 text-slate-300',
-  first: 'bg-blue-50 text-blue-700',
-  up: 'bg-green-50 text-green-700',
-  down: 'bg-red-50 text-red-600',
+const CELL: Record<WeeklyCellClass, UiColor> = {
+  zero: 'neutral',
+  first: 'info',
+  up: 'success',
+  down: 'error',
 }
 const TREND_TITLE = { up: 'Meningkat', down: 'Menurun', same: 'Sama' } as const
-const TH = 'px-2 py-2 text-center text-xs font-bold text-slate-500'
+const trendTitle = (t: WeeklyRow['trend']) => TREND_TITLE[t]
+
+const cellOf = (r: WeeklyRow, k: number) => r.cells.find((c) => c.k === k)
+
+type Row = WeeklyRow & Record<string, unknown>
+const data = computed<Row[]>(() => props.rows.map((r) => ({ ...r })))
+const columns = computed<TableColumn<Row>[]>(() => [
+  { id: 'school', header: 'Sekolah', accessorKey: 'name' },
+  ...props.weeks.map((w): TableColumn<Row> => ({
+    id: `w${String(w.k)}`,
+    header: () =>
+      h(
+        'span',
+        { title: `${w.from} - ${w.to}`, 'data-testid': 'mon-week-head' },
+        `M${String(w.k)}`,
+      ),
+    accessorFn: (r) => cellOf(r, w.k)?.count ?? 0,
+  })),
+  { id: 'trend', header: 'Trend', accessorKey: 'trend' },
+  { id: 'best', header: 'Best', accessorFn: (r) => r.best?.k ?? 0 },
+])
 </script>
 
 <template>
-  <section
-    id="section-mingguan"
-    :class="[CARD, 'scroll-mt-20 p-3 sm:p-5']"
-    data-testid="mon-weekly"
-  >
-    <h3 class="flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-      <CalendarRange class="h-5 w-5 text-indigo-600" />Tracking Mingguan
-    </h3>
-    <p class="mb-3 text-xs text-slate-500">
-      Jumlah soalan dijawab mengikut minggu — warna menunjukkan trend naik/turun
-    </p>
+  <UCard id="section-mingguan" data-testid="mon-weekly">
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-1">
+        <h2 class="flex items-center gap-2 text-label text-highlighted">
+          <UIcon name="i-ph-calendar-dots" class="size-5 text-primary" />Tracking Mingguan
+        </h2>
+        <p class="text-caption text-muted">
+          Jumlah soalan dijawab mengikut minggu — warna menunjukkan trend naik/turun
+        </p>
+      </div>
 
-    <div class="overflow-x-auto" data-testid="mon-weekly-scroller">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-slate-100">
-            <th
-              class="sticky left-0 z-10 bg-white px-2 py-2 text-left text-xs font-bold text-slate-500 uppercase"
-            >
-              Sekolah
-            </th>
-            <th
-              v-for="w in weeks"
-              :key="w.k"
-              :class="TH"
-              :title="`${w.from} - ${w.to}`"
-              data-testid="mon-week-head"
-            >
-              M{{ w.k }}
-            </th>
-            <th :class="TH">Trend</th>
-            <th :class="TH">Best</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="r in rows"
-            :key="r.schoolId"
-            class="border-b border-slate-50"
-            data-testid="mon-weekly-row"
-          >
-            <td class="sticky left-0 z-10 bg-white px-2 py-1.5">
+      <div data-testid="mon-weekly-scroller">
+        <DsDrillTable :data="data" :columns="columns" caption="Tracking mingguan">
+          <template #school-cell="{ row }">
+            <div class="flex max-w-48 min-w-32 flex-col" data-testid="mon-weekly-row">
               <RouterLink
-                :to="paths.school(r.schoolId)"
-                :title="r.name"
-                class="block max-w-[200px] truncate text-sm font-semibold text-slate-700 hover:text-indigo-600"
-                >{{ r.name }}</RouterLink
+                :to="paths.school(row.original.schoolId)"
+                :title="row.original.name"
+                class="truncate text-label text-primary"
+                >{{ row.original.name }}</RouterLink
               >
-              <p class="text-xs text-slate-400">{{ r.code ?? '-' }}</p>
-            </td>
-            <td v-for="c in r.cells" :key="c.k" class="px-0.5 py-1">
-              <div
-                :class="[
-                  'min-w-[44px] rounded px-1.5 py-1 text-center font-mono text-xs font-semibold',
-                  CELL[c.cls],
-                  c.best ? 'ring-2 ring-amber-400 ring-inset' : '',
-                ]"
-                :data-cls="c.cls"
-                :data-best="c.best ? 'true' : 'false'"
-                data-testid="mon-weekly-cell"
-              >
-                {{ c.count === 0 ? '-' : count(c.count) }}
-              </div>
-            </td>
-            <td class="px-2 py-1.5 text-center text-lg" data-testid="mon-weekly-trend">
-              <span
-                :title="TREND_TITLE[r.trend]"
-                class="inline-flex"
-                data-testid="mon-weekly-trend-icon"
-              >
-                <ArrowUp v-if="r.trend === 'up'" class="h-5 w-5 text-green-500" />
-                <ArrowDown v-else-if="r.trend === 'down'" class="h-5 w-5 text-red-500" />
-                <Minus v-else class="h-5 w-5 text-slate-400" />
-              </span>
-            </td>
-            <td class="px-2 py-1.5 text-center whitespace-nowrap" data-testid="mon-weekly-best">
-              <template v-if="r.best">
-                <span class="font-semibold text-amber-600">M{{ r.best.k }}</span
+              <span class="text-caption text-muted">{{ row.original.code ?? '-' }}</span>
+            </div>
+          </template>
+          <template v-for="w in weeks" :key="w.k" #[`w${String(w.k)}-cell`]="{ row }">
+            <UBadge
+              v-if="cellOf(row.original, w.k)"
+              :color="CELL[cellOf(row.original, w.k)!.cls]"
+              :variant="cellOf(row.original, w.k)!.best ? 'solid' : 'subtle'"
+              :icon="cellOf(row.original, w.k)!.best ? 'i-ph-star-fill' : undefined"
+              class="tabular min-w-11 justify-center"
+              :data-cls="cellOf(row.original, w.k)!.cls"
+              :data-best="cellOf(row.original, w.k)!.best ? 'true' : 'false'"
+              data-testid="mon-weekly-cell"
+              :label="
+                cellOf(row.original, w.k)!.count === 0
+                  ? '-'
+                  : count(cellOf(row.original, w.k)!.count)
+              "
+            />
+          </template>
+          <template #trend-cell="{ row }">
+            <span
+              :title="trendTitle(row.original.trend)"
+              class="inline-flex"
+              data-testid="mon-weekly-trend-icon"
+            >
+              <UIcon
+                v-if="row.original.trend === 'up'"
+                name="i-ph-arrow-up"
+                class="size-5 text-success"
+              />
+              <UIcon
+                v-else-if="row.original.trend === 'down'"
+                name="i-ph-arrow-down"
+                class="size-5 text-error"
+              />
+              <UIcon v-else name="i-ph-minus" class="size-5 text-muted" />
+            </span>
+          </template>
+          <template #best-cell="{ row }">
+            <span class="whitespace-nowrap" data-testid="mon-weekly-best">
+              <template v-if="row.original.best">
+                <span class="text-label text-highlighted">M{{ row.original.best.k }}</span
                 >{{ ' ' }}
-                <span class="ml-1 text-xs text-slate-400">{{ count(r.best.count) }}</span>
+                <span class="tabular ml-1 text-caption text-muted">{{
+                  count(row.original.best.count)
+                }}</span>
               </template>
-              <span v-else class="text-slate-300">-</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              <span v-else class="text-dimmed">-</span>
+            </span>
+          </template>
+        </DsDrillTable>
+      </div>
 
-    <p
-      class="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500"
-      data-testid="mon-week-footer"
-    >
-      <span v-for="w in weeks" :key="w.k"
-        ><strong>M{{ w.k }}</strong
-        >: {{ w.from }} - {{ w.to }}</span
+      <p
+        class="flex flex-wrap gap-x-3 gap-y-1 text-caption text-muted"
+        data-testid="mon-week-footer"
       >
-    </p>
-  </section>
+        <span v-for="w in weeks" :key="w.k"
+          ><strong class="text-default">M{{ w.k }}</strong
+          >: {{ w.from }} - {{ w.to }}</span
+        >
+      </p>
+    </div>
+  </UCard>
 </template>

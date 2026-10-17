@@ -6,22 +6,11 @@
  * trend chart and the two student lists. Changing the class keeps the range; the range pills drop the
  * class (live behaviour).
  */
-import {
-  ChartBar,
-  CircleAlert,
-  CircleCheck,
-  LogIn,
-  Moon,
-  Pencil,
-  Star,
-  Trophy,
-  UserX,
-} from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchTeacherReport } from '../api'
 import ActivityPanel from '../components/laporan/ActivityPanel.vue'
@@ -79,15 +68,17 @@ const n = computed(() => d.value?.population.total ?? 0)
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="laporan-page">
-    <AlertBox v-if="report.error.value" :messages="LAPORAN_COPY.loadFailed" />
+  <DsPage data-testid="laporan-page">
+    <UAlert
+      v-if="report.error.value"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning"
+      :description="LAPORAN_COPY.loadFailed"
+    />
 
-    <div
-      v-else-if="!d"
-      class="flex justify-center py-10 text-slate-400"
-      data-testid="laporan-loading"
-    >
-      <LoadingSpinner :size="28" />
+    <div v-else-if="!d" class="flex justify-center py-12 text-muted" data-testid="laporan-loading">
+      <UProgress class="max-w-48" />
     </div>
 
     <template v-else>
@@ -98,10 +89,9 @@ const n = computed(() => d.value?.population.total ?? 0)
         @update:classroom="onClassChange"
       />
 
-      <div class="grid grid-cols-2 gap-4 lg:grid-cols-5" data-testid="summary-cards">
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-testid="summary-cards">
         <SummaryCard
-          tone="blue"
-          :icon="LogIn"
+          icon="i-ph-sign-in"
           :value="pctInt(d.population.loggedIn, n)"
           :title="LAPORAN_COPY.loginTitle"
           :hint="LAPORAN_COPY.clickList"
@@ -109,23 +99,22 @@ const n = computed(() => d.value?.population.total ?? 0)
           test-id="card-login"
           @toggle="toggle('login')"
         >
-          <p class="mt-0.5 text-sm text-blue-600">
-            <span class="font-bold">{{ d.population.loggedIn }}</span> / {{ n }} pelajar
+          <p class="text-body text-default">
+            <span class="tabular text-label">{{ d.population.loggedIn }}</span> / {{ n }} pelajar
           </p>
           <p
             v-if="n - d.population.loggedIn > 0"
-            class="mt-0.5 flex items-start gap-1 text-xs text-red-500"
+            class="flex items-start gap-1 text-caption text-error"
             data-testid="card-login-missing"
           >
-            <CircleAlert class="mt-0.5 h-3 w-3 shrink-0" />{{
+            <UIcon name="i-ph-warning-circle" class="mt-1 size-3 shrink-0" />{{
               neverLoggedCount(n - d.population.loggedIn)
             }}
           </p>
         </SummaryCard>
 
         <SummaryCard
-          tone="emerald"
-          :icon="Pencil"
+          icon="i-ph-pencil-simple"
           :value="pctInt(d.population.practised, n)"
           :title="LAPORAN_COPY.practiseTitle"
           :hint="LAPORAN_COPY.clickList"
@@ -133,14 +122,13 @@ const n = computed(() => d.value?.population.total ?? 0)
           test-id="card-latihan"
           @toggle="toggle('latihan')"
         >
-          <p class="mt-0.5 text-sm text-emerald-700">
-            <span class="font-bold">{{ d.population.practised }}</span> / {{ n }} pelajar
+          <p class="text-body text-default">
+            <span class="tabular text-label">{{ d.population.practised }}</span> / {{ n }} pelajar
           </p>
         </SummaryCard>
 
         <SummaryCard
-          tone="purple"
-          :icon="ChartBar"
+          icon="i-ph-chart-bar"
           :value="grouped(d.activity.total)"
           :title="LAPORAN_COPY.activityTitle"
           :hint="LAPORAN_COPY.clickBreakdown"
@@ -148,14 +136,13 @@ const n = computed(() => d.value?.population.total ?? 0)
           test-id="card-aktiviti"
           @toggle="toggle('aktiviti')"
         >
-          <p class="mt-0.5 text-sm text-purple-600" data-testid="card-range">
+          <p class="text-body text-default" data-testid="card-range">
             {{ rangeAgo(d.range) }}
           </p>
         </SummaryCard>
 
         <SummaryCard
-          tone="amber"
-          :icon="Star"
+          icon="i-ph-star"
           :value="d.score.overall === null ? LAPORAN_COPY.noScore : `${d.score.overall}%`"
           :title="LAPORAN_COPY.scoreTitle"
           :hint="LAPORAN_COPY.clickBreakdown"
@@ -165,76 +152,82 @@ const n = computed(() => d.value?.population.total ?? 0)
         />
       </div>
 
-      <section
-        v-if="expanded === 'login'"
-        class="rounded-2xl bg-white p-5 shadow"
-        data-testid="panel-login"
-      >
-        <h4 class="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
-          <UserX class="h-4 w-4 text-blue-500" />{{ loginPanelTitle(d.notLoggedIn.length) }}
-        </h4>
-        <p
-          v-if="d.notLoggedIn.length === 0"
-          class="flex items-center gap-2 text-sm font-semibold text-emerald-600"
-        >
-          <CircleCheck class="h-4 w-4" />{{ LAPORAN_COPY.allLoggedIn }}
-        </p>
-        <StudentRows v-else :rows="d.notLoggedIn" test-id="panel-login-list" />
-      </section>
+      <UCard v-if="expanded === 'login'" data-testid="panel-login">
+        <div class="flex flex-col gap-3">
+          <h2 class="flex items-center gap-2 text-label text-highlighted">
+            <UIcon name="i-ph-user-minus" class="size-4 text-primary" />{{
+              loginPanelTitle(d.notLoggedIn.length)
+            }}
+          </h2>
+          <p
+            v-if="d.notLoggedIn.length === 0"
+            class="flex items-center gap-2 text-label text-success"
+          >
+            <UIcon name="i-ph-check-circle" class="size-4" />{{ LAPORAN_COPY.allLoggedIn }}
+          </p>
+          <StudentRows v-else :rows="d.notLoggedIn" test-id="panel-login-list" />
+        </div>
+      </UCard>
 
-      <section
-        v-if="expanded === 'latihan'"
-        class="rounded-2xl bg-white p-5 shadow"
-        data-testid="panel-latihan"
-      >
-        <h4 class="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
-          <Moon class="h-4 w-4 text-emerald-500" />{{
-            practisePanelTitle(d.notPractisedAll.length)
-          }}
-        </h4>
-        <p
-          v-if="d.notPractisedAll.length === 0"
-          class="flex items-center gap-2 text-sm font-semibold text-emerald-600"
-        >
-          <CircleCheck class="h-4 w-4" />{{ LAPORAN_COPY.allPractised }}
-        </p>
-        <StudentRows v-else :rows="d.notPractisedAll" test-id="panel-latihan-list" />
-      </section>
+      <UCard v-if="expanded === 'latihan'" data-testid="panel-latihan">
+        <div class="flex flex-col gap-3">
+          <h2 class="flex items-center gap-2 text-label text-highlighted">
+            <UIcon name="i-ph-moon" class="size-4 text-primary" />{{
+              practisePanelTitle(d.notPractisedAll.length)
+            }}
+          </h2>
+          <p
+            v-if="d.notPractisedAll.length === 0"
+            class="flex items-center gap-2 text-label text-success"
+          >
+            <UIcon name="i-ph-check-circle" class="size-4" />{{ LAPORAN_COPY.allPractised }}
+          </p>
+          <StudentRows v-else :rows="d.notPractisedAll" test-id="panel-latihan-list" />
+        </div>
+      </UCard>
 
       <ActivityPanel v-if="expanded === 'aktiviti'" :activity="d.activity" :range="d.range" />
       <ScorePanel v-if="expanded === 'skor'" :score="d.score" />
 
       <TrendCard :trend="d.trend" :range="d.range" />
 
-      <div class="grid gap-5 md:grid-cols-2">
-        <section class="min-w-0 rounded-2xl bg-white p-5 shadow" data-testid="list-active">
-          <h3 class="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
-            <Trophy class="h-4 w-4 text-amber-500" />{{ LAPORAN_COPY.mostActiveTitle }}
-          </h3>
-          <p
-            v-if="d.mostActive.length === 0"
-            class="py-6 text-center text-sm text-slate-400"
-            data-testid="list-active-empty"
-          >
-            {{ LAPORAN_COPY.noActivity }}
-          </p>
-          <StudentRows v-else :rows="d.mostActive" test-id="list-active-rows" />
-        </section>
+      <div class="grid gap-4 md:grid-cols-2">
+        <UCard class="min-w-0" data-testid="list-active">
+          <div class="flex flex-col gap-3">
+            <h2 class="flex items-center gap-2 text-label text-highlighted">
+              <UIcon name="i-ph-trophy" class="size-4 text-primary" />{{
+                LAPORAN_COPY.mostActiveTitle
+              }}
+            </h2>
+            <p
+              v-if="d.mostActive.length === 0"
+              class="py-6 text-center text-body text-muted"
+              data-testid="list-active-empty"
+            >
+              {{ LAPORAN_COPY.noActivity }}
+            </p>
+            <StudentRows v-else :rows="d.mostActive" test-id="list-active-rows" />
+          </div>
+        </UCard>
 
-        <section class="min-w-0 rounded-2xl bg-white p-5 shadow" data-testid="list-idle">
-          <h3 class="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
-            <Moon class="h-4 w-4 text-slate-400" />{{ LAPORAN_COPY.notPractisedTitle }}
-          </h3>
-          <p
-            v-if="d.notPractised.length === 0"
-            class="py-6 text-center text-sm text-slate-400"
-            data-testid="list-idle-empty"
-          >
-            {{ LAPORAN_COPY.allPractised }}
-          </p>
-          <StudentRows v-else :rows="d.notPractised" test-id="list-idle-rows" />
-        </section>
+        <UCard class="min-w-0" data-testid="list-idle">
+          <div class="flex flex-col gap-3">
+            <h2 class="flex items-center gap-2 text-label text-highlighted">
+              <UIcon name="i-ph-moon" class="size-4 text-muted" />{{
+                LAPORAN_COPY.notPractisedTitle
+              }}
+            </h2>
+            <p
+              v-if="d.notPractised.length === 0"
+              class="py-6 text-center text-body text-muted"
+              data-testid="list-idle-empty"
+            >
+              {{ LAPORAN_COPY.allPractised }}
+            </p>
+            <StudentRows v-else :rows="d.notPractised" test-id="list-idle-rows" />
+          </div>
+        </UCard>
       </div>
     </template>
-  </div>
+  </DsPage>
 </template>

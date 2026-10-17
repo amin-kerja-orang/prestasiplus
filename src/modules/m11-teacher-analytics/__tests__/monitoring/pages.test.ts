@@ -348,13 +348,15 @@ async function mountAt(component: Component, path: string, props: Record<string,
   await router.isReady()
   wrapper = mount(component, {
     props,
-    global: { plugins: [router], stubs: { teleport: true } },
+    global: { plugins: [router] },
     attachTo: document.body,
   })
   await flushPromises()
   return wrapper
 }
 
+/** Dialog content mounts after a timer (reka presence). */
+const settle = () => new Promise((r) => setTimeout(r, 80)).then(() => flushPromises())
 const tid = (id: string) => wrapper?.find(`[data-testid="${id}"]`)
 const all = (id: string) => wrapper?.findAll(`[data-testid="${id}"]`) ?? []
 
@@ -400,7 +402,7 @@ describe('S2 Monitoring Penglibatan', () => {
     expect(first?.attributes('href')).toBe('/guru/monitoring/sekolah/940')
     const rows = tid('mon-table-student')?.findAll('[data-testid="mon-table-row"]') ?? []
     expect(rows[1]?.text()).toContain('- · Johor')
-    expect(rows[2]?.text()).toContain('0%')
+    expect(tid('mon-table-student')?.text()).toContain('0%')
   })
 
   it('uses the prefix prop for every link (school-admin alias)', async () => {
@@ -419,8 +421,8 @@ describe('S2 Monitoring Penglibatan', () => {
     const cells = all('mon-weekly-cell')
     expect(cells[0]?.text()).toBe('-')
     expect(cells[1]?.text()).toBe('1,234')
-    expect(cells[1]?.classes()).toContain('bg-green-50')
-    expect(cells[1]?.classes()).toContain('ring-amber-400')
+    expect(cells[1]?.attributes('data-cls')).toBe('up')
+    expect(cells[1]?.attributes('data-best')).toBe('true')
     expect(tid('mon-weekly-trend-icon')?.attributes('title')).toBe('Meningkat')
     expect(tid('mon-weekly-best')?.text().replace(/ {2,}/g, ' ')).toBe('M2 1,234')
     expect(tid('mon-week-footer')?.text()).toContain('M2: 23/02 - 01/03')
@@ -564,13 +566,13 @@ describe('S3 Detail Sekolah', () => {
     expect(tid('mon-subscription')?.text()).toBe('Tiada langganan')
   })
 
-  it('cancelled and expired pills are slate', async () => {
+  it('cancelled and expired pills are neutral', async () => {
     api.fetchSchoolDetail.mockResolvedValue(
       school({ subscription: { status: 'expired', endsAt: '2026-05-22T00:00:00+08:00' } }),
     )
     await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8107', { schoolId: 8107 })
     expect(tid('mon-subscription')?.text()).toContain('Expired — sehingga 22 May 2026')
-    expect(tid('mon-subscription')?.classes()).toContain('text-slate-500')
+    expect(tid('mon-subscription')?.attributes('data-status')).toBe('expired')
   })
 
   it('school-admin alias: a pupil without answers is plain text (no Kirkpatrick link)', async () => {
@@ -592,10 +594,11 @@ describe('S3 Detail Sekolah', () => {
     expect(rows).toHaveLength(4)
     expect(rows[0]?.find('a').attributes('href')).toBe('/guru/monitoring/sekolah/8080/pelajar/1')
     expect(rows[3]?.find('a').attributes('href')).toBe('/guru/kirkpatrick/pelajar/4')
-    expect(rows[3]?.classes()).toContain('opacity-60')
+    expect(rows[3]?.attributes('data-faded')).toBe('true')
+    expect(rows[0]?.attributes('data-faded')).toBe('false')
     expect(rows[1]?.find('[data-testid="mon-flag"]').text()).toBe('⚠ Perlu Semak · ditapis')
     expect(rows[2]?.find('[data-testid="mon-flag"]').text()).toBe('⚠ Perlu Semak')
-    expect(rows[0]?.text()).toContain('T4')
+    expect(tid('mon-student-scroller')?.text()).toContain('T4')
     expect(all('mon-student-status').map((n) => n.text())).toEqual([
       'Aktif',
       'Aktif',
@@ -703,9 +706,9 @@ describe('S4 Detail Pelajar', () => {
     expect(tid('mon-panel-subject')?.exists()).toBe(false)
     const topicRows = all('mon-topic-row')
     expect(topicRows[0]?.text()).toContain('Bab 3')
-    expect(topicRows[0]?.text()).toContain('Kuat')
     expect(topicRows[1]?.text()).not.toContain('Bab')
-    expect(topicRows[1]?.text()).toContain('Lemah')
+    expect(tid('mon-panel-topic')?.text()).toContain('Kuat')
+    expect(tid('mon-panel-topic')?.text()).toContain('Lemah')
     expect(tid('mon-observations')?.exists()).toBe(true)
     await tid('mon-tab-gaps')?.trigger('click')
     expect(tid('mon-panel-topic')?.exists()).toBe(false)
@@ -732,6 +735,7 @@ describe('S4 Detail Pelajar', () => {
     await open()
     await tid('mon-tab-list')?.trigger('click')
     await all('mon-list-row')[0]?.trigger('click')
+    await settle()
     const modal = () => document.body.querySelector('[data-testid="mon-modal"]')
     expect(modal()).not.toBeNull()
     expect(document.body.querySelector('[data-testid="mon-modal-result"]')?.textContent).toBe(
@@ -748,7 +752,7 @@ describe('S4 Detail Pelajar', () => {
       document.body.querySelector('[data-testid="mon-modal-explanation"]')?.textContent,
     ).toContain('Penjelasan')
     ;(document.body.querySelector('[data-testid="mon-modal-close"]') as HTMLElement).click()
-    await flushPromises()
+    await settle()
     expect(modal()).toBeNull()
   })
 
@@ -760,6 +764,7 @@ describe('S4 Detail Pelajar', () => {
     await open()
     await tid('mon-tab-list')?.trigger('click')
     await all('mon-list-row')[0]?.trigger('click')
+    await settle()
     expect(
       document.body.querySelector('[data-testid="mon-modal-no-options"]')?.textContent?.trim(),
     ).toBe('Pilihan jawapan telah dipadam dari sistem.')
@@ -848,7 +853,7 @@ describe('S5 Detail Guru', () => {
     expect(rows).toHaveLength(3)
     expect(rows[0]?.find('a').attributes('href')).toBe('/guru/monitoring/sekolah/8080/pelajar/1')
     expect(rows[2]?.find('a').exists()).toBe(false)
-    expect(rows[2]?.classes()).toContain('opacity-50')
+    expect(rows[2]?.attributes('data-faded')).toBe('true')
     expect(all('mon-teacher-accuracy').map((n) => n.text())).toEqual(['80%', '45%', '-'])
     expect(tid('mon-suggestion-never')?.exists()).toBe(false)
     expect(tid('mon-suggestion-low')?.text()).toBe(

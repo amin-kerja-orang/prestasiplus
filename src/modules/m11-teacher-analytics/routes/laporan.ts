@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Laporan Statistik - Portal Guru',
       header: { title: 'Laporan Statistik', subtitle: 'Pantau penglibatan dan prestasi pelajar' },
       module: 'M11',
+      v2: true,
     },
   },
 ]
