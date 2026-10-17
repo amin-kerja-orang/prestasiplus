@@ -68,10 +68,10 @@ Log masuk sebagai `admin@demo.test`. Portal ini menggabungkan tiga panel admin l
 | Peranan | Sudah dalam tema baharu | Masih rupa lama |
 |---|---|---|
 | Semua | Log Masuk, Daftar, Lupa/Reset Kata Laluan; Profil, Tetapan, Tiket Bantuan | — |
-| Murid | Dashboard, Bijak SPM, Latih Tubi, Soalan by Chapter, Ulangkaji, Remedial, Soalan Berstruktur, Set Soalan, PKSK, Kelas Saya, Syiling & Token, Cabaran Harian, Pencapaian, Papan Pendahulu, Prestasi, Analitik Adaptif, Analisa Item, Video, Artikel, Audio KBAT, Panduan | Topik, Peta Belajar, Heatmap, Cikgu Alesa, Kedai Hadiah, Marketplace, Permainan, Kedudukan, Timeline |
-| Guru | Dashboard Guru, Kelas Saya, Pelajar Saya, Sumbang Soalan, Prestasi, Analitik Adaptif, Analisa Item, Video | Command Center, Monitoring, Kirkpatrick, Headcount, Laporan |
-| Admin Sekolah | Prestasi, Analitik Adaptif, Analisa Item, Video | Command Center, Monitoring, Kirkpatrick, Headcount, laporan sekolah, senarai pengguna |
-| Admin | Bingkai Portal Pentadbiran | Isi Command Center dan skrin admin lain |
+| Murid | Dashboard, Bijak SPM, Latih Tubi, Soalan by Chapter, Ulangkaji, Remedial, Soalan Berstruktur, Set Soalan, PKSK, Kelas Saya, Syiling & Token, Cabaran Harian, Pencapaian, Papan Pendahulu, Prestasi, Analitik Adaptif, Analisa Item, Video, Artikel, Audio KBAT, Panduan, Topik, Peta Belajar, Heatmap Topik Lemah, Cikgu Alesa, Mohon Keluarga Angkat, Jemput Ibu Bapa, Kedai Hadiah, Kotak Misteri, Cabutan Bertuah, Kedai Hadiah Digital, Marketplace | Permainan, Kedudukan, Timeline |
+| Guru | Command Center, Dashboard Guru, Kelas Saya, Pelajar Saya, Sumbang Soalan, Prestasi, Analitik Adaptif, Analisa Item, Video | Monitoring, Kirkpatrick, Headcount, Laporan |
+| Admin Sekolah | Command Center, Prestasi, Analitik Adaptif, Analisa Item, Video | Monitoring, Kirkpatrick, Headcount, laporan sekolah, senarai pengguna |
+| Admin | Bingkai Portal Pentadbiran, Command Center (Pemantauan › Langsung) dan Aktiviti Harian | Skrin admin lain (pengguna, sekolah, bank soalan, dll.) |
 
 ## Bijak SPM (murid)
 
