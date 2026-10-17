@@ -26,6 +26,7 @@ const routes: RouteRecordRaw[] = [
       guestTitle: PUBLIC_SECTIONS.video.guestTitle,
       header: { title: COPY.listTitle, subtitle: COPY.listSubtitle },
       module: 'M09',
+      v2: true,
     },
   },
   {
@@ -39,6 +40,7 @@ const routes: RouteRecordRaw[] = [
       title: VIDEO_TITLES.add,
       header: { title: VIDEO_TITLES.add, subtitle: COPY.addHeaderSubtitle },
       module: 'M09',
+      v2: true,
     },
   },
   {
@@ -52,6 +54,7 @@ const routes: RouteRecordRaw[] = [
       title: VIDEO_TITLES.detailFallback,
       header: { title: COPY.detailHeader },
       module: 'M09',
+      v2: true,
     },
   },
   {
@@ -65,6 +68,7 @@ const routes: RouteRecordRaw[] = [
       title: VIDEO_TITLES.editFallback,
       header: { title: COPY.editHeader },
       module: 'M09',
+      v2: true,
     },
   },
 ]

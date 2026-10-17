@@ -1,17 +1,15 @@
 <script setup lang="ts">
 /**
  * Provisional player `/audio-kbat/:id` (M09; FR-M09-75, BR-M09-16; route INFERRED, L-3). Set title,
- * instructions and the 4 sections, each an `<audio controls>` and its questions shown together
+ * instructions and the 4 sections, each a `DsAudioPlayer` and its questions shown together
  * (radio A–D); one "Hantar" (PROPOSED COPY) posts #26 and shows the stored score. No timer, no
  * review, no result layout is asserted. An unknown or not approved set shows the 404 message.
  */
-import { ArrowLeft, Send } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchAudioSet, submitAudioAttempt } from '../api'
 import type { AudioAttemptResult } from '../api'
@@ -61,40 +59,49 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="audio-player-page">
-    <RouterLink
+  <DsPage data-testid="audio-player-page">
+    <UButton
       :to="{ name: AUDIO_KBAT_ROUTES.list }"
-      class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+      color="neutral"
+      variant="ghost"
+      icon="i-ph-arrow-left"
+      class="self-start"
       data-testid="player-back"
+      >{{ PLAYER_COPY.back }}</UButton
     >
-      <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-      {{ PLAYER_COPY.back }}
-    </RouterLink>
 
-    <AlertBox v-if="error" :messages="loadErrors" data-testid="player-error" />
+    <UAlert
+      v-if="error"
+      color="error"
+      variant="soft"
+      icon="i-ph-warning-duotone"
+      :description="loadErrors.join(' ')"
+      data-testid="player-error"
+    />
 
     <div
       v-else-if="loading && !set"
-      class="flex justify-center rounded-2xl bg-white px-4 py-14 text-slate-400 shadow-sm"
+      class="flex flex-col gap-3"
       role="status"
+      aria-busy="true"
       data-testid="player-loading"
     >
-      <LoadingSpinner :size="24" />
+      <USkeleton v-for="n in 3" :key="n" class="h-24 w-full" />
     </div>
 
     <form
       v-else-if="set"
-      class="min-w-0 space-y-5"
+      class="flex min-w-0 flex-col gap-4 md:gap-6"
       data-testid="player-form"
       @submit.prevent="submit"
     >
-      <header class="rounded-2xl bg-white p-5 shadow-sm">
-        <h1 class="font-heading text-2xl font-bold break-words" data-testid="player-title">
+      <header class="flex flex-col gap-2">
+        <h1 class="text-title break-words text-highlighted" data-testid="player-title">
           {{ set.title }}
         </h1>
         <p
           v-if="set.instructions"
-          class="mt-2 text-sm break-words text-slate-600"
+          class="max-w-prose text-body break-words text-muted"
           data-testid="player-instructions"
         >
           {{ set.instructions }}
@@ -110,37 +117,34 @@ async function submit(): Promise<void> {
         @choose="(no, choice) => (answers[no] = choice)"
       />
 
-      <AlertBox
+      <UAlert
         v-if="submitErrors.length > 0"
-        :messages="submitErrors"
+        color="error"
+        variant="soft"
+        icon="i-ph-warning-duotone"
+        :description="submitErrors.join(' ')"
         data-testid="submit-error"
       />
 
-      <div
-        v-if="result"
-        class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800"
-        role="status"
-        data-testid="player-result"
-      >
-        <p class="text-sm font-semibold">{{ PLAYER_COPY.resultTitle }}</p>
-        <p class="font-heading text-2xl font-bold">
+      <UCard v-if="result" role="status" data-testid="player-result">
+        <p class="text-label text-muted">{{ PLAYER_COPY.resultTitle }}</p>
+        <p class="tabular text-heading text-highlighted">
           <span data-testid="result-score">{{ result.score }}</span> /
           <span data-testid="result-total">{{ result.totalMarks }}</span>
         </p>
-      </div>
+      </UCard>
 
       <div v-else class="flex justify-end">
-        <button
+        <UButton
           type="submit"
-          class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-60 sm:w-auto"
-          :disabled="submitting"
+          size="xl"
+          icon="i-ph-paper-plane-tilt-fill"
+          :loading="submitting"
+          class="w-full justify-center sm:w-auto"
           data-testid="player-submit"
+          >{{ PLAYER_COPY.submit }}</UButton
         >
-          <LoadingSpinner v-if="submitting" />
-          <Send v-else class="h-4 w-4" aria-hidden="true" />
-          {{ PLAYER_COPY.submit }}
-        </button>
       </div>
     </form>
-  </div>
+  </DsPage>
 </template>

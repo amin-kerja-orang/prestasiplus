@@ -4,7 +4,15 @@
     { "glob": "src/ds/**", "level": "ds" },
     { "glob": "src/dev/ds/**", "level": "page" },
     { "glob": "src/modules/m28-bijak-spm/pages/**", "level": "page" },
-    { "glob": "src/modules/m28-bijak-spm/components/**", "level": "ds" }
+    { "glob": "src/modules/m28-bijak-spm/components/**", "level": "ds" },
+    { "glob": "src/modules/m09-content/pages/Artikel*.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/pages/AudioKbat*.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/pages/Video*.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/pages/PanduanPage.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/components/artikel/**", "level": "ds" },
+    { "glob": "src/modules/m09-content/components/audio-kbat/**", "level": "ds" },
+    { "glob": "src/modules/m09-content/components/panduan/**", "level": "ds" },
+    { "glob": "src/modules/m09-content/components/video/**", "level": "ds" }
   ],
   "exempt": ["src/theme/**"]
 }

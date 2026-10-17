@@ -8,19 +8,19 @@
  *
  * L-7 (decided here): guests may open a video (the API is public, BR-M09-31); the page then renders
  * in the public layout (no CTA: that section is only for `/video`).
+ *
+ * v2 restyle (B04): player card, title block on a card, related strip of `DsMediaCard`s.
  */
-import { ArrowLeft, BookOpen, Pencil, Trash2, CirclePlay } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox } from '@/components/feedback'
 import { confirmNative, useApi, useFlash, usePageMeta } from '@/composables'
+import { DsMediaCard, DsPage } from '@/ds'
 import { formatDateEn } from '@/lib/time'
 
 import { deleteVideo, fetchVideo } from '../api/content'
 import VideoPlayerFrame from '../components/video/VideoPlayerFrame.vue'
-import VideoThumb from '../components/video/VideoThumb.vue'
 import {
   COPY,
   VIDEO_PATH,
@@ -79,35 +79,36 @@ async function remove(): Promise<void> {
     busy.value = false
   }
 }
-
-const ACTION =
-  'inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2'
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5 sm:space-y-6" data-testid="video-detail-page">
-    <AlertBox
+  <DsPage data-testid="video-detail-page">
+    <UAlert
       v-if="error && !notFound"
-      :messages="errorLines(error)"
+      color="error"
+      variant="soft"
+      icon="i-ph-warning-duotone"
+      :description="errorLines(error).join(' ')"
       data-testid="video-detail-error"
     />
 
     <template v-else-if="video">
       <nav
-        class="flex min-w-0 items-center gap-2 text-sm text-slate-500"
+        class="flex min-w-0 items-center gap-2 text-label text-muted"
         aria-label="Breadcrumb"
         data-testid="video-breadcrumb"
       >
-        <RouterLink
+        <UButton
           :to="VIDEO_PATH"
-          class="inline-flex min-h-11 shrink-0 items-center gap-2 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+          color="neutral"
+          variant="ghost"
+          icon="i-ph-arrow-left"
+          class="shrink-0"
           data-testid="video-back"
+          >{{ COPY.allVideos }}</UButton
         >
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          {{ COPY.allVideos }}
-        </RouterLink>
         <span aria-hidden="true">/</span>
-        <span class="min-w-0 truncate font-medium text-slate-700">{{ video.title }}</span>
+        <span class="min-w-0 truncate text-default">{{ video.title }}</span>
       </nav>
 
       <VideoPlayerFrame
@@ -116,124 +117,117 @@ const ACTION =
         :title="video.title"
       />
 
-      <article class="min-w-0 rounded-2xl bg-white p-4 shadow sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div class="min-w-0 flex-1">
-            <h1
-              class="font-heading text-xl font-bold break-words text-slate-900 sm:text-2xl"
-              data-testid="video-title"
-            >
-              {{ video.title }}
-            </h1>
-            <p class="mt-2 text-sm text-slate-500" data-testid="video-meta">
-              <span data-testid="video-views">{{ COPY.views(video.views) }}</span>
-              <span class="mx-2" aria-hidden="true">·</span>
-              <span data-testid="video-date">{{ formatDateEn(video.createdAt) }}</span>
-            </p>
+      <UCard as="article" class="min-w-0">
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <h1 class="text-heading break-words text-highlighted" data-testid="video-title">
+                {{ video.title }}
+              </h1>
+              <p class="mt-2 text-label text-muted" data-testid="video-meta">
+                <span class="tabular" data-testid="video-views">{{ COPY.views(video.views) }}</span>
+                <span class="mx-2" aria-hidden="true">·</span>
+                <span class="tabular" data-testid="video-date">{{
+                  formatDateEn(video.createdAt)
+                }}</span>
+              </p>
+            </div>
+            <div v-if="video.canManage" class="flex shrink-0 gap-2" data-testid="video-actions">
+              <UButton
+                :to="videoEditPath(video.id)"
+                color="neutral"
+                variant="soft"
+                icon="i-ph-pencil-simple-duotone"
+                data-testid="video-edit"
+                >{{ COPY.edit }}</UButton
+              >
+              <UButton
+                color="error"
+                variant="soft"
+                icon="i-ph-trash-duotone"
+                :disabled="busy"
+                data-testid="video-delete"
+                @click="remove"
+                >{{ COPY.remove }}</UButton
+              >
+            </div>
           </div>
-          <div v-if="video.canManage" class="flex shrink-0 gap-2" data-testid="video-actions">
-            <RouterLink
-              :to="videoEditPath(video.id)"
-              :class="[
-                ACTION,
-                'border-blue-200 bg-blue-50 text-blue-600 focus-visible:ring-blue-300',
-              ]"
-              data-testid="video-edit"
-            >
-              <Pencil class="h-4 w-4" aria-hidden="true" />
-              {{ COPY.edit }}
-            </RouterLink>
-            <button
-              type="button"
-              :disabled="busy"
-              :class="[ACTION, 'border-red-200 bg-red-50 text-red-600 focus-visible:ring-red-300']"
-              data-testid="video-delete"
-              @click="remove"
-            >
-              <Trash2 class="h-4 w-4" aria-hidden="true" />
-              {{ COPY.remove }}
-            </button>
+
+          <UAlert
+            v-if="failure.length"
+            color="error"
+            variant="soft"
+            :description="failure.join(' ')"
+          />
+
+          <div class="flex flex-wrap gap-2" data-testid="video-chips">
+            <UBadge
+              color="neutral"
+              variant="soft"
+              icon="i-ph-play-circle-duotone"
+              :label="video.platformLabel"
+              data-testid="video-chip-platform"
+            />
+            <UBadge
+              color="neutral"
+              variant="soft"
+              :label="video.categoryLabel"
+              data-testid="video-chip-category"
+            />
+            <UBadge
+              v-if="video.subject"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-book-open-duotone"
+              :label="video.subject.name"
+              data-testid="video-chip-subject"
+            />
           </div>
-        </div>
 
-        <AlertBox v-if="failure.length" :messages="failure" class="mt-4" />
-
-        <div class="mt-3 flex flex-wrap gap-2" data-testid="video-chips">
-          <span
-            class="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700"
-            data-testid="video-chip-platform"
-          >
-            <CirclePlay class="h-3.5 w-3.5" aria-hidden="true" />
-            {{ video.platformLabel }}
-          </span>
-          <span
-            class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-orange-700"
-            data-testid="video-chip-category"
-            >{{ video.categoryLabel }}</span
-          >
-          <span
-            v-if="video.subject"
-            class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700"
-            data-testid="video-chip-subject"
-          >
-            <BookOpen class="h-3.5 w-3.5" aria-hidden="true" />
-            {{ video.subject.name }}
-          </span>
-        </div>
-
-        <div
-          class="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3"
-          data-testid="video-uploader"
-        >
-          <span
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-red-500 to-orange-500 font-bold text-white"
-            >{{ video.uploader.initial }}</span
-          >
-          <div class="min-w-0 leading-tight">
-            <p
-              class="truncate text-sm font-semibold text-slate-800"
-              data-testid="video-uploader-name"
-            >
-              {{ video.uploader.name }}
-            </p>
-            <p class="text-xs text-slate-500 capitalize" data-testid="video-uploader-role">
-              {{ video.uploader.roleLabel }}
-            </p>
-          </div>
-        </div>
-
-        <p
-          v-if="video.description"
-          class="mt-4 text-sm leading-6 break-words whitespace-pre-line text-slate-700"
-          data-testid="video-description"
-        >
-          {{ video.description }}
-        </p>
-      </article>
-
-      <section v-if="video.related.length > 0" data-testid="video-related">
-        <h2 class="mb-3 font-heading text-lg font-bold text-slate-800">{{ COPY.related }}</h2>
-        <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <li v-for="r in video.related" :key="r.id" class="min-w-0">
-            <RouterLink
-              :to="videoPath(r.id)"
-              class="block overflow-hidden rounded-2xl bg-white shadow transition hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-              data-testid="video-related-card"
-              :data-video-id="r.id"
-            >
-              <div class="aspect-video overflow-hidden bg-slate-200">
-                <VideoThumb :thumbnail-url="r.thumbnailUrl" />
-              </div>
-              <div class="p-3">
-                <h3 class="line-clamp-2 text-sm font-semibold text-slate-800">{{ r.title }}</h3>
-                <p class="mt-1 truncate text-xs text-slate-500">
-                  {{ r.uploader.name }} · {{ COPY.views(r.views) }}
+          <UCard variant="soft" data-testid="video-uploader">
+            <div class="flex items-center gap-3">
+              <UAvatar :text="video.uploader.initial" size="lg" />
+              <div class="min-w-0">
+                <p class="truncate text-label text-highlighted" data-testid="video-uploader-name">
+                  {{ video.uploader.name }}
+                </p>
+                <p class="text-caption text-muted" data-testid="video-uploader-role">
+                  {{ video.uploader.roleLabel }}
                 </p>
               </div>
-            </RouterLink>
+            </div>
+          </UCard>
+
+          <p
+            v-if="video.description"
+            class="max-w-prose text-body break-words whitespace-pre-line text-default"
+            data-testid="video-description"
+          >
+            {{ video.description }}
+          </p>
+        </div>
+      </UCard>
+
+      <section
+        v-if="video.related.length > 0"
+        class="flex flex-col gap-3"
+        data-testid="video-related"
+      >
+        <h2 class="text-heading text-highlighted">{{ COPY.related }}</h2>
+        <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
+          <li v-for="r in video.related" :key="r.id" class="min-w-0">
+            <DsMediaCard
+              kind="video"
+              :title="r.title"
+              :thumb="r.thumbnailUrl ?? undefined"
+              :meta="`${r.uploader.name} · ${COPY.views(r.views)}`"
+              :to="videoPath(r.id)"
+              data-testid="video-related-card"
+              :data-video-id="r.id"
+            />
           </li>
         </ul>
       </section>
     </template>
-  </div>
+  </DsPage>
 </template>

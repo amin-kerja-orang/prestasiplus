@@ -4,20 +4,20 @@
  *
  * Logged in: the user shell shows the header (route meta). Guest: the F-20 public layout wraps this
  * page, which adds the hero. Both share the GET search form, the category and subject pills (from
- * `meta.facets`), the 24-card grid and the pager. The query string is the state.
+ * `meta.facets`), the card grid and the pager. The query string is the state.
  *
  * Pills (OBSERVED): a category pill is `?subject=&category=` with an active subject, a subject pill
  * is `?category=&subject=` with an active category; subject pills ignore the active subject (no
  * active style, full counts) and "Reset Subjek" clears it. A zero-count pill is not a link (DV-M09-10).
+ *
+ * v2 restyle (B04): `DsPage` + `DsMediaCard` grid, token colours only; the personality (learner
+ * Elektrik / staff kobalt) comes from the shell.
  */
-import { ArrowLeft, Plus, Search, X } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { LaravelPager } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
 import { useApi } from '@/composables'
+import { DsArt3D, DsEmptyState, DsPage } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { fetchVideos } from '../api/content'
@@ -80,13 +80,6 @@ const videos = computed(() => data.value?.data ?? [])
 const facets = computed(() => data.value?.meta.facets ?? null)
 const total = computed(() => data.value?.meta.totalItems ?? 0)
 
-const PILL =
-  'inline-flex min-h-11 items-center gap-1 rounded-full px-4 py-1.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300'
-const PILL_IDLE = 'bg-white text-slate-600 shadow-sm hover:bg-slate-50'
-const PILL_ACTIVE = 'bg-linear-to-br from-red-500 to-orange-500 text-white shadow'
-const SUBJECT_PILL =
-  'inline-flex min-h-11 items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300'
-
 /** "Semua ({n})": `/video` or `/video?subject={id}` (the search is kept). */
 const allHref = computed(() =>
   toSearchString(
@@ -131,156 +124,147 @@ function submitSearch(): void {
   void router.push({ path: VIDEO_PATH, query })
 }
 
+function pageTo(page: number) {
+  return { path: VIDEO_PATH, query: { ...pagerQuery.value, page: String(page) } }
+}
+
 function goToPage(page: number): void {
-  void router.push({ path: VIDEO_PATH, query: { ...pagerQuery.value, page: String(page) } })
+  void router.push(pageTo(page))
 }
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5 sm:space-y-6" data-testid="video-list-page">
+  <DsPage
+    :title="session.isLoggedIn ? COPY.listTitle : undefined"
+    :subtitle="session.isLoggedIn ? COPY.listSubtitle : undefined"
+    data-testid="video-list-page"
+  >
     <!-- Guest hero (URS FN-M09-6.2.2). -->
     <header
       v-if="!session.isLoggedIn"
-      class="py-4 text-center sm:py-6"
+      class="flex flex-col items-center gap-3 py-4 text-center"
       data-testid="video-guest-hero"
     >
-      <div class="text-4xl" aria-hidden="true">🎬 🎯</div>
-      <span
-        class="mt-3 inline-block rounded-full bg-red-100 px-4 py-1 text-xs font-bold tracking-wide text-red-700"
-        >{{ COPY.guestChip }}</span
-      >
-      <h1 class="mt-3 font-heading text-3xl font-extrabold text-slate-900 sm:text-5xl">
+      <DsArt3D name="rocket" size="xl" float />
+      <UBadge color="primary" variant="solid" :label="COPY.guestChip" />
+      <h1 class="text-title text-highlighted">
         {{ COPY.guestHeading }}
       </h1>
-      <p class="mx-auto mt-3 max-w-2xl text-sm text-slate-600 sm:text-lg">{{ COPY.guestBody }}</p>
+      <p class="max-w-prose text-body text-muted">{{ COPY.guestBody }}</p>
     </header>
 
     <form
       method="get"
       :action="VIDEO_PATH"
-      class="mx-auto flex w-full max-w-2xl items-center gap-3 rounded-2xl bg-white px-4 py-1 shadow"
+      class="w-full max-w-2xl self-center"
+      role="search"
       data-testid="video-search-form"
       @submit.prevent="submitSearch"
     >
-      <Search class="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
-      <input
+      <UInput
         v-model="search"
         type="text"
         name="search"
+        size="xl"
+        icon="i-ph-magnifying-glass-duotone"
         :placeholder="COPY.searchPlaceholder"
         aria-label="Cari video"
-        :class="[FORM_INPUT_CLASS, 'min-h-11 border-0 shadow-none focus:ring-0']"
+        class="w-full"
         data-testid="video-search"
       />
     </form>
 
-    <AlertBox v-if="error" :messages="errorLines(error)" data-testid="video-list-error" />
+    <UAlert
+      v-if="error"
+      color="error"
+      variant="soft"
+      icon="i-ph-warning-duotone"
+      :description="errorLines(error).join(' ')"
+      data-testid="video-list-error"
+    />
 
     <template v-else-if="data && facets">
       <!-- Category pills (BR-M09-18). -->
       <nav
-        class="flex flex-wrap justify-center gap-2"
+        class="flex flex-wrap gap-2"
         aria-label="Kategori video"
         data-testid="video-category-pills"
       >
-        <RouterLink
-          v-if="facets.total > 0"
-          :to="allHref"
-          :class="[PILL, applied.category === '' ? PILL_ACTIVE : PILL_IDLE]"
+        <UButton
+          :to="facets.total > 0 ? allHref : undefined"
+          :disabled="facets.total === 0"
+          :color="applied.category === '' ? 'primary' : 'neutral'"
+          :variant="applied.category === '' ? 'solid' : 'soft'"
           data-testid="video-category-pill"
           data-code="all"
+          >{{ COPY.all }} <span class="tabular">({{ facets.total }})</span></UButton
         >
-          {{ COPY.all }} <span class="font-normal opacity-70">({{ facets.total }})</span>
-        </RouterLink>
-        <span
-          v-else
-          :class="[PILL, PILL_IDLE, 'cursor-default opacity-50']"
+        <UButton
+          v-for="c in facets.categories"
+          :key="c.code"
+          :to="c.count > 0 ? categoryHref(c.code) : undefined"
+          :disabled="c.count === 0"
+          :color="applied.category === c.code ? 'primary' : 'neutral'"
+          :variant="applied.category === c.code ? 'solid' : 'soft'"
           data-testid="video-category-pill"
-          data-code="all"
+          :data-code="c.code"
+          >{{ c.label }} <span class="tabular">({{ c.count }})</span></UButton
         >
-          {{ COPY.all }} <span class="font-normal opacity-70">({{ facets.total }})</span>
-        </span>
-        <template v-for="c in facets.categories" :key="c.code">
-          <RouterLink
-            v-if="c.count > 0"
-            :to="categoryHref(c.code)"
-            :class="[PILL, applied.category === c.code ? PILL_ACTIVE : PILL_IDLE]"
-            data-testid="video-category-pill"
-            :data-code="c.code"
-          >
-            {{ c.label }} <span class="font-normal opacity-70">({{ c.count }})</span>
-          </RouterLink>
-          <span
-            v-else
-            :class="[PILL, PILL_IDLE, 'cursor-default opacity-50']"
-            data-testid="video-category-pill"
-            :data-code="c.code"
-          >
-            {{ c.label }} <span class="font-normal opacity-70">({{ c.count }})</span>
-          </span>
-        </template>
       </nav>
 
       <!-- Subject pills: counts ignore the active subject (OBSERVED). -->
       <nav
         v-if="facets.subjects.length > 0 || applied.subject !== undefined"
-        class="flex flex-wrap justify-center gap-2"
+        class="flex flex-wrap gap-2"
         aria-label="Subjek video"
         data-testid="video-subject-pills"
       >
-        <RouterLink
+        <UButton
           v-for="s in facets.subjects"
           :key="s.id"
           :to="subjectHref(s.id)"
-          :class="SUBJECT_PILL"
+          color="neutral"
+          variant="outline"
+          size="sm"
           data-testid="video-subject-pill"
           :data-subject-id="s.id"
+          >{{ s.name }} <span class="tabular">({{ s.count }})</span></UButton
         >
-          {{ s.name }} <span class="font-normal opacity-60">({{ s.count }})</span>
-        </RouterLink>
-        <RouterLink
+        <UButton
           v-if="applied.subject !== undefined"
           :to="VIDEO_PATH"
-          :class="[SUBJECT_PILL, 'text-red-600']"
+          color="error"
+          variant="ghost"
+          size="sm"
+          icon="i-ph-x"
           data-testid="video-reset-subject"
+          >{{ COPY.resetSubject }}</UButton
         >
-          <X class="h-3.5 w-3.5" aria-hidden="true" />
-          {{ COPY.resetSubject }}
-        </RouterLink>
       </nav>
 
       <div v-if="session.isLoggedIn" class="flex justify-end">
-        <RouterLink
-          :to="VIDEO_ADD_PATH"
-          class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-linear-to-br from-red-500 to-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow transition hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
-          data-testid="video-add"
-        >
-          <Plus class="h-4 w-4" aria-hidden="true" />
-          {{ COPY.add }}
-        </RouterLink>
+        <UButton :to="VIDEO_ADD_PATH" icon="i-ph-plus-bold" data-testid="video-add">{{
+          COPY.add
+        }}</UButton>
       </div>
 
-      <div
+      <DsEmptyState
         v-if="videos.length === 0"
-        class="rounded-2xl bg-white px-4 py-12 text-center shadow"
+        :title="COPY.emptyTitle"
+        :description="COPY.emptyBody"
+        icon="i-ph-film-slate-duotone"
         data-testid="video-empty"
       >
-        <div class="text-5xl" aria-hidden="true">🎬</div>
-        <h2 class="mt-3 font-heading text-lg font-bold text-slate-800">{{ COPY.emptyTitle }}</h2>
-        <p class="mt-1 text-sm text-slate-500">{{ COPY.emptyBody }}</p>
-        <RouterLink
-          :to="VIDEO_PATH"
-          class="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-linear-to-br from-red-500 to-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
-          data-testid="video-empty-action"
-        >
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          {{ COPY.emptyAction }}
-        </RouterLink>
-      </div>
+        <template #actions>
+          <UButton :to="VIDEO_PATH" icon="i-ph-arrow-left" data-testid="video-empty-action">{{
+            COPY.emptyAction
+          }}</UButton>
+        </template>
+      </DsEmptyState>
 
       <ul
         v-else
-        class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-6"
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4"
         data-testid="video-grid"
       >
         <li v-for="video in videos" :key="video.id" class="min-w-0">
@@ -288,14 +272,22 @@ function goToPage(page: number): void {
         </li>
       </ul>
 
-      <LaravelPager
-        :page="applied.page"
-        :total="total"
-        :per-page="data.meta.pageSize"
-        :path="VIDEO_PATH"
-        :query="pagerQuery"
-        @change="goToPage"
-      />
+      <div
+        v-if="total > data.meta.pageSize"
+        class="flex max-w-full justify-center overflow-x-auto"
+        data-testid="video-pager"
+      >
+        <UPagination
+          :sibling-count="0"
+          :page="applied.page"
+          :total="total"
+          :items-per-page="data.meta.pageSize"
+          :to="pageTo"
+          :prev="{ 'aria-label': 'Sebelum' }"
+          :next="{ 'aria-label': 'Seterusnya' }"
+          @update:page="goToPage"
+        />
+      </div>
     </template>
-  </div>
+  </DsPage>
 </template>

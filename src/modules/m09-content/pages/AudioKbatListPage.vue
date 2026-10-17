@@ -1,17 +1,17 @@
 <script setup lang="ts">
 /**
  * S21 `/audio-kbat` "Audio KBAT" (M09; FR-M09-72..74, student, user shell). Header title only, no
- * subtitle (DV-M09-08). Dark gradient hero with readable text (DV-M09-09), GET filter (level, subject
- * A–Z, "Tapis" slate-900 with white text; values kept from the URL), approved sets only. Empty:
- * `fa-headphones` "Belum ada set Audio KBAT yang approved.". Each set links to the provisional player
- * (L-3: title, level, subject).
+ * subtitle (DV-M09-08). Intro, GET filter (level, subject A–Z, "Tapis"; values kept from the URL),
+ * approved sets only. Empty: "Belum ada set Audio KBAT yang approved.". Each set links to the
+ * provisional player (L-3: title, level, subject).
+ *
+ * v2 restyle (B04): `DsPage`, `DsFilterBar` with `USelect`s, compact rows with `DsIconChip`.
  */
-import { Headphones, Search } from '@lucide/vue'
 import { computed, reactive, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsEmptyState, DsFilterBar, DsIconChip, DsPage } from '@/ds'
 
 import { fetchAudioSets } from '../api'
 import type { AudioSetListQuery } from '../api'
@@ -33,6 +33,17 @@ const { data: levels } = useApi((signal) => fetchLevelOptions({ signal }))
 const { data: subjects } = useApi((signal) => fetchSubjectOptions({ signal }))
 const subjectOptions = computed(() => sortByName(subjects.value?.data ?? []))
 
+/** Reka selects cannot hold an empty value: `all` stands for "Semua". */
+const ALL = 'all'
+const levelItems = computed(() => [
+  { label: 'Semua Tahap', value: ALL },
+  ...(levels.value?.data ?? []).map((l) => ({ label: l.name, value: String(l.id) })),
+])
+const subjectItems = computed(() => [
+  { label: 'Semua Subjek', value: ALL },
+  ...subjectOptions.value.map((s) => ({ label: s.name, value: String(s.id) })),
+])
+
 /** The URL filter (live names `education_level_id`, `subject_id`). */
 const applied = computed(() => ({
   education_level_id: queryString(route.query.education_level_id),
@@ -41,6 +52,22 @@ const applied = computed(() => ({
 
 const filter = reactive({ ...applied.value })
 watch(applied, (next) => Object.assign(filter, next))
+
+const levelModel = computed({
+  get: () => (filter.education_level_id === '' ? ALL : filter.education_level_id),
+  set: (v: string) => {
+    filter.education_level_id = v === ALL ? '' : v
+  },
+})
+const subjectModel = computed({
+  get: () => (filter.subject_id === '' ? ALL : filter.subject_id),
+  set: (v: string) => {
+    filter.subject_id = v === ALL ? '' : v
+  },
+})
+const activeCount = computed(
+  () => Object.values(applied.value).filter((value) => value !== '').length,
+)
 
 function apiQuery(): AudioSetListQuery {
   const q: AudioSetListQuery = {}
@@ -63,110 +90,101 @@ function apply(): void {
   void router.push({ path: AUDIO_KBAT_PATH, query })
 }
 
-const CONTROL =
-  'min-h-11 w-full min-w-0 rounded-xl border-0 bg-transparent px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-amber-400'
+function reset(): void {
+  filter.education_level_id = ''
+  filter.subject_id = ''
+  void router.push({ path: AUDIO_KBAT_PATH })
+}
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="audio-kbat-page">
-    <section
-      class="rounded-3xl bg-gradient-to-br from-slate-950 via-amber-900 to-orange-700 p-6 text-white shadow-xl sm:p-8"
+  <DsPage :title="LIST_COPY.title" :subtitle="LIST_COPY.intro" data-testid="audio-kbat-page">
+    <UBadge
+      color="neutral"
+      variant="soft"
+      icon="i-ph-headphones-duotone"
+      :label="LIST_COPY.pill"
+      class="self-start"
       data-testid="audio-intro"
-    >
-      <span
-        class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold"
-      >
-        <Headphones class="h-3.5 w-3.5" aria-hidden="true" />
-        {{ LIST_COPY.pill }}
-      </span>
-      <h1 class="mt-3 font-heading text-3xl font-extrabold text-inherit sm:text-4xl">
-        {{ LIST_COPY.title }}
-      </h1>
-      <p class="mt-2 max-w-3xl text-sm text-amber-100 sm:text-base">{{ LIST_COPY.intro }}</p>
-    </section>
+    />
 
-    <form
-      method="get"
-      class="grid grid-cols-1 gap-2 rounded-2xl bg-white p-3 shadow-sm sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]"
+    <DsFilterBar
+      :active-count="activeCount"
+      apply-label="Tapis"
       data-testid="audio-filter"
-      @submit.prevent="apply"
+      @apply="apply"
+      @reset="reset"
     >
-      <select
-        v-model="filter.education_level_id"
+      <USelect
+        v-model="levelModel"
+        :items="levelItems"
         name="education_level_id"
-        :class="CONTROL"
+        class="w-full md:w-56"
+        aria-label="Tahap"
         data-testid="filter-level"
-      >
-        <option value="">Semua Tahap</option>
-        <option v-for="level in levels?.data ?? []" :key="level.id" :value="String(level.id)">
-          {{ level.name }}
-        </option>
-      </select>
-      <select
-        v-model="filter.subject_id"
+      />
+      <USelect
+        v-model="subjectModel"
+        :items="subjectItems"
         name="subject_id"
-        :class="CONTROL"
+        class="w-full md:w-56"
+        aria-label="Subjek"
         data-testid="filter-subject"
-      >
-        <option value="">Semua Subjek</option>
-        <option v-for="subject in subjectOptions" :key="subject.id" :value="String(subject.id)">
-          {{ subject.name }}
-        </option>
-      </select>
-      <button
-        type="submit"
-        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 sm:col-span-2 lg:col-span-1 lg:w-auto"
-        data-testid="filter-submit"
-      >
-        <Search class="h-4 w-4" aria-hidden="true" />
-        Tapis
-      </button>
-    </form>
+      />
+    </DsFilterBar>
 
-    <AlertBox v-if="error" :messages="COPY.loadFailed" data-testid="audio-error" />
+    <UAlert
+      v-if="error"
+      color="error"
+      variant="soft"
+      icon="i-ph-warning-duotone"
+      :description="COPY.loadFailed"
+      data-testid="audio-error"
+    />
 
     <div
       v-else-if="loading && !data"
-      class="flex justify-center rounded-2xl bg-white px-4 py-14 text-slate-400 shadow-sm"
+      class="grid grid-cols-1 gap-3 sm:grid-cols-2"
       role="status"
+      aria-busy="true"
       data-testid="audio-loading"
     >
-      <LoadingSpinner :size="24" />
+      <USkeleton v-for="n in 4" :key="n" class="h-20 w-full" />
     </div>
 
-    <div
+    <DsEmptyState
       v-else-if="data && data.data.length === 0"
-      class="flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-14 text-slate-400 shadow-sm"
+      :title="LIST_COPY.empty"
+      icon="i-ph-headphones-duotone"
       data-testid="audio-empty"
-    >
-      <Headphones class="h-8 w-8 shrink-0" aria-hidden="true" />
-      <span>{{ LIST_COPY.empty }}</span>
-    </div>
+    />
 
     <ul v-else-if="data" class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="audio-sets">
       <li v-for="set in data.data" :key="set.id" class="min-w-0" data-testid="audio-set">
-        <RouterLink
-          :to="{ name: AUDIO_KBAT_ROUTES.player, params: { id: set.id } }"
-          class="flex min-h-11 items-start gap-3 rounded-2xl bg-white p-4 shadow-sm transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-          data-testid="set-link"
-        >
-          <span
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"
-          >
-            <Headphones class="h-5 w-5" aria-hidden="true" />
-          </span>
-          <span class="min-w-0">
-            <span class="block font-semibold break-words text-slate-800" data-testid="set-title">
-              {{ set.title }}
-            </span>
-            <span class="mt-0.5 block text-xs text-slate-500">
-              <span data-testid="set-level">{{ set.educationLevel.name }}</span>
-              ·
-              <span data-testid="set-subject">{{ set.subject.name }}</span>
-            </span>
-          </span>
-        </RouterLink>
+        <UCard>
+          <div class="flex items-center gap-3">
+            <DsIconChip icon="i-ph-headphones-duotone" size="lg" />
+            <div class="min-w-0 grow">
+              <p class="text-label break-words text-highlighted" data-testid="set-title">
+                {{ set.title }}
+              </p>
+              <p class="text-caption text-muted">
+                <span data-testid="set-level">{{ set.educationLevel.name }}</span>
+                ·
+                <span data-testid="set-subject">{{ set.subject.name }}</span>
+              </p>
+            </div>
+            <UButton
+              :to="{ name: AUDIO_KBAT_ROUTES.player, params: { id: set.id } }"
+              icon="i-ph-play-fill"
+              size="xl"
+              class="shrink-0"
+              :aria-label="`Main ${set.title}`"
+              data-testid="set-link"
+            />
+          </div>
+        </UCard>
       </li>
     </ul>
-  </div>
+  </DsPage>
 </template>

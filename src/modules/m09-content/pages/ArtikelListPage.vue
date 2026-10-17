@@ -3,19 +3,19 @@
  * S15 `/artikel` (FR-M09-22..30; URS FN-M09-2.1.x for a logged-in user, 2.2.x for a guest).
  *
  * One page, two presentations: the user shell (every role) and the guest public layout (hero,
- * "🔥" hot heading, "Cari artikel menarik...", "Pilih Kategori:", clock before the date). The
+ * hot heading, "Cari artikel menarik...", "Pilih Kategori:", clock before the date). The
  * router picks the layout; this page only reads `isLoggedIn` for the guest-only copy. The query
  * string (`search`, `category`, `page`) is the state; the hot section (6 random cards) is shown
  * only when neither `search` nor `category` is set (FR-M09-28). Page size 18; the pager keeps
  * `search` and `category`.
+ *
+ * v2 restyle (B04): `DsPage`, `DsMediaCard` grid 1/2/3, `DsEmptyState`, `UPagination`.
  */
-import { ArrowLeft } from '@lucide/vue'
 import { computed } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { LaravelPager } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
 import { useApi, useSession } from '@/composables'
+import { DsArt3D, DsEmptyState, DsPage } from '@/ds'
 
 import {
   fetchArticles,
@@ -79,10 +79,6 @@ const hot = computed<HotCard[]>(() => (filtered.value ? [] : (hotData.value ?? [
 const total = computed(() => data.value?.meta.totalItems ?? 0)
 const loaded = computed(() => data.value !== null)
 
-const pagerQuery = computed(() =>
-  listQuery({ search: applied.value.search, category: applied.value.category }),
-)
-
 function onSearch(search: string): void {
   void router.push({
     path: ARTIKEL_PATH,
@@ -90,50 +86,54 @@ function onSearch(search: string): void {
   })
 }
 
-function goToPage(page: number): void {
-  void router.push({
-    path: ARTIKEL_PATH,
-    query: listQuery({ ...applied.value, page }),
-  })
+function pageTo(page: number) {
+  return { path: ARTIKEL_PATH, query: listQuery({ ...applied.value, page }) }
 }
 
-const GRID = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
+function goToPage(page: number): void {
+  void router.push(pageTo(page))
+}
 </script>
 
 <template>
-  <div class="min-w-0 space-y-6 sm:space-y-8" data-testid="artikel-list-page">
+  <DsPage
+    :title="guest ? undefined : ARTIKEL_COPY.headerTitle"
+    :subtitle="guest ? undefined : ARTIKEL_COPY.headerSubtitle"
+    data-testid="artikel-list-page"
+  >
     <!-- Guest hero (FN-M09-2.2.2). -->
-    <header v-if="guest" class="relative space-y-3 text-center" data-testid="artikel-hero">
-      <div class="flex justify-center gap-3 text-2xl" aria-hidden="true">
-        <span>📚</span><span>✨</span><span>🔥</span><span>⭐</span>
-      </div>
-      <p>
-        <span
-          class="inline-block rounded-full bg-white px-4 py-1 text-sm font-semibold text-purple-600 shadow"
-          >{{ ARTIKEL_COPY.heroChip }}</span
-        >
-      </p>
-      <h1
-        class="bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-3xl font-extrabold text-transparent sm:text-4xl"
-      >
+    <header
+      v-if="guest"
+      class="flex flex-col items-center gap-3 text-center"
+      data-testid="artikel-hero"
+    >
+      <DsArt3D name="books" size="xl" float />
+      <UBadge color="primary" variant="solid" :label="ARTIKEL_COPY.heroChip" />
+      <h1 class="text-title text-highlighted">
         {{ ARTIKEL_COPY.heroTitle }}
       </h1>
-      <p class="mx-auto max-w-2xl text-base text-gray-600" data-testid="artikel-hero-line">
-        <span class="font-bold">{{ HERO_TOPICS[0] }}</span
-        >, <span class="font-bold">{{ HERO_TOPICS[1] }}</span
-        >, <span class="font-bold">{{ HERO_TOPICS[2] }}</span> dan
-        <span class="font-bold">{{ HERO_TOPICS[3] }}</span> untuk pelajar Malaysia!
+      <p class="max-w-prose text-body text-muted" data-testid="artikel-hero-line">
+        <strong class="text-highlighted">{{ HERO_TOPICS[0] }}</strong
+        >, <strong class="text-highlighted">{{ HERO_TOPICS[1] }}</strong
+        >, <strong class="text-highlighted">{{ HERO_TOPICS[2] }}</strong> dan
+        <strong class="text-highlighted">{{ HERO_TOPICS[3] }}</strong> untuk pelajar Malaysia!
       </p>
     </header>
 
-    <AlertBox v-if="error" :messages="ARTIKEL_COPY.loadFailed" />
+    <UAlert
+      v-if="error"
+      color="error"
+      variant="soft"
+      icon="i-ph-warning-duotone"
+      :description="ARTIKEL_COPY.loadFailed"
+    />
 
     <!-- Hot section (FR-M09-28): only without search or category. -->
-    <section v-if="hot.length > 0" class="space-y-4" data-testid="artikel-hot">
-      <h2 class="text-2xl font-extrabold text-gray-800" data-testid="artikel-hot-heading">
-        <span v-if="guest" aria-hidden="true">🔥 </span>{{ ARTIKEL_COPY.hotHeading }}
+    <section v-if="hot.length > 0" class="flex flex-col gap-4" data-testid="artikel-hot">
+      <h2 class="text-heading text-highlighted" data-testid="artikel-hot-heading">
+        {{ ARTIKEL_COPY.hotHeading }}
       </h2>
-      <div :class="GRID">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
         <ArtikelHotCardView v-for="item in hot" :key="item.id" :article="item" />
       </div>
     </section>
@@ -147,36 +147,44 @@ const GRID = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-
 
     <template v-if="loaded">
       <!-- Empty (FR-M09-26). -->
-      <section
+      <DsEmptyState
         v-if="rows.length === 0"
-        class="mx-auto max-w-md rounded-2xl bg-white p-8 text-center shadow-md"
+        :title="ARTIKEL_COPY.emptyTitle"
+        :description="ARTIKEL_COPY.emptyBody"
+        icon="i-ph-newspaper-duotone"
         data-testid="artikel-empty"
       >
-        <p class="text-5xl" aria-hidden="true">🔍</p>
-        <h2 class="mt-3 text-xl font-bold text-gray-800">{{ ARTIKEL_COPY.emptyTitle }}</h2>
-        <p class="mt-1 text-gray-600">{{ ARTIKEL_COPY.emptyBody }}</p>
-        <RouterLink
-          :to="ARTIKEL_PATH"
-          class="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-linear-to-r from-blue-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow"
-          data-testid="artikel-empty-action"
-        >
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />{{ ARTIKEL_COPY.emptyAction }}
-        </RouterLink>
-      </section>
+        <template #actions>
+          <UButton :to="ARTIKEL_PATH" icon="i-ph-arrow-left" data-testid="artikel-empty-action">{{
+            ARTIKEL_COPY.emptyAction
+          }}</UButton>
+        </template>
+      </DsEmptyState>
 
       <template v-else>
-        <div :class="GRID" data-testid="artikel-grid">
+        <div
+          class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3"
+          data-testid="artikel-grid"
+        >
           <ArtikelCardView v-for="item in rows" :key="item.id" :article="item" :guest="guest" />
         </div>
-        <LaravelPager
-          :page="applied.page"
-          :total="total"
-          :per-page="ARTIKEL_PAGE_SIZE"
-          :path="ARTIKEL_PATH"
-          :query="pagerQuery"
-          @change="goToPage"
-        />
+        <div
+          v-if="total > ARTIKEL_PAGE_SIZE"
+          class="flex justify-center"
+          data-testid="artikel-pager"
+        >
+          <UPagination
+            :sibling-count="0"
+            :page="applied.page"
+            :total="total"
+            :items-per-page="ARTIKEL_PAGE_SIZE"
+            :to="pageTo"
+            :prev="{ 'aria-label': 'Sebelum' }"
+            :next="{ 'aria-label': 'Seterusnya' }"
+            @update:page="goToPage"
+          />
+        </div>
       </template>
     </template>
-  </div>
+  </DsPage>
 </template>

@@ -7,16 +7,17 @@
  *
  * Opening the page counts a view (the API increments before replying, BR-M09-07), so the page
  * fetches once per slug. The body HTML is passed through the allow-list sanitiser (SEC-M09-01)
- * before `v-html`.
+ * and rendered by `DsProse`.
+ *
+ * v2 restyle (B04): title `text-title`, chips, body in a `max-w-prose` `DsProse`, related strip of
+ * `DsMediaCard`s.
  */
-import { ArrowRight, Calendar, Clock, LayoutGrid, Newspaper, Star } from '@lucide/vue'
 import { computed, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
-import { AlertBox } from '@/components/feedback'
 import { useApi, usePageMeta, useSession } from '@/composables'
+import { DsMediaCard, DsPage, DsProse } from '@/ds'
 import { diffForHumans, formatDateEn } from '@/lib/time'
 
 import { fetchArticle, fetchLatestArticles, type ArticleCard } from '../api'
@@ -68,290 +69,202 @@ const published = computed(() =>
 const age = computed(() =>
   article.value?.publishedAt ? diffForHumans(article.value.publishedAt) : '',
 )
-
-const CHIP =
-  'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold text-white shadow'
 </script>
 
 <template>
   <div v-if="notFound" />
-  <div v-else class="min-w-0" data-testid="artikel-detail-page">
-    <AlertBox v-if="error" :messages="ARTIKEL_COPY.loadFailed" />
+  <DsPage v-else data-testid="artikel-detail-page">
+    <UAlert
+      v-if="error"
+      color="error"
+      variant="soft"
+      icon="i-ph-warning-duotone"
+      :description="ARTIKEL_COPY.loadFailed"
+    />
 
-    <div v-if="article" class="gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem]">
-      <article class="min-w-0 space-y-5">
+    <div v-if="article" class="flex flex-col gap-6 lg:grid lg:grid-cols-12">
+      <article class="flex min-w-0 flex-col gap-4 md:gap-6 lg:col-span-9">
         <nav
           v-if="isLoggedIn"
-          class="flex flex-wrap items-center gap-2 text-sm text-gray-700"
+          class="flex flex-wrap items-center gap-2 text-label text-muted"
           data-testid="artikel-breadcrumb"
         >
-          <RouterLink
+          <UButton
             to="/dashboard"
-            class="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white px-3 py-1 shadow-sm"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-squares-four-duotone"
+            >{{ ARTIKEL_COPY.breadcrumbDashboard }}</UButton
           >
-            <LayoutGrid class="h-4 w-4" aria-hidden="true" />{{ ARTIKEL_COPY.breadcrumbDashboard }}
-          </RouterLink>
-          <span class="text-pink-400" aria-hidden="true">→</span>
-          <RouterLink
+          <UIcon name="i-ph-caret-right" class="size-4" aria-hidden="true" />
+          <UButton
             :to="ARTIKEL_PATH"
-            class="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white px-3 py-1 shadow-sm"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-newspaper-duotone"
+            >{{ ARTIKEL_COPY.breadcrumbArtikel }}</UButton
           >
-            <Newspaper class="h-4 w-4" aria-hidden="true" />{{ ARTIKEL_COPY.breadcrumbArtikel }}
-          </RouterLink>
-          <span class="text-pink-400" aria-hidden="true">→</span>
+          <UIcon name="i-ph-caret-right" class="size-4" aria-hidden="true" />
           <span
-            class="max-w-full rounded-full bg-linear-to-r from-purple-500 to-pink-500 px-3 py-1.5 text-xs font-bold break-words text-white"
+            class="max-w-full break-words text-highlighted"
             data-testid="artikel-breadcrumb-current"
             >{{ breadcrumbTitle(article.title) }}</span
           >
         </nav>
 
         <div class="flex flex-wrap items-center gap-2">
-          <span
-            :class="[CHIP, 'bg-linear-to-r from-blue-500 via-violet-500 to-pink-500']"
+          <UBadge
+            color="primary"
+            variant="solid"
+            :label="article.categoryLabel"
             data-testid="artikel-chip-category"
-            >{{ article.categoryLabel }}</span
-          >
-          <span
-            :class="[CHIP, 'bg-linear-to-r from-lime-500 to-green-500']"
+          />
+          <UBadge
+            color="neutral"
+            variant="soft"
+            :label="article.gradeLabel"
             data-testid="artikel-chip-level"
-            >{{ article.gradeLabel }}</span
-          >
-          <span
+          />
+          <UBadge
             v-if="article.isFeatured"
-            :class="[CHIP, 'bg-linear-to-r from-amber-400 to-orange-500']"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-star-duotone"
+            :label="ARTIKEL_COPY.featuredChip"
             data-testid="artikel-chip-featured"
-          >
-            <Star class="h-3 w-3 fill-current" aria-hidden="true" />{{ ARTIKEL_COPY.featuredChip }}
-          </span>
+          />
         </div>
 
-        <h1
-          class="bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-3xl leading-tight font-extrabold break-words text-transparent sm:text-4xl"
-          data-testid="artikel-title"
-        >
+        <h1 class="text-title break-words text-highlighted" data-testid="artikel-title">
           {{ article.title }}
         </h1>
 
-        <p
+        <UCard
           v-if="article.excerpt"
-          class="rounded-r-xl border-l-4 border-purple-500 bg-linear-to-r from-blue-50 to-pink-50 px-4 py-3 text-lg break-words text-gray-700"
+          variant="soft"
+          class="max-w-prose"
           data-testid="artikel-excerpt"
         >
-          {{ article.excerpt }}
-        </p>
+          <p class="text-body break-words text-default">{{ article.excerpt }}</p>
+        </UCard>
 
-        <div
-          class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border-2 border-purple-400 bg-white p-4 shadow-md"
-          data-testid="artikel-author-card"
-        >
-          <div class="flex min-w-0 items-center gap-3">
-            <span
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-purple-500 to-pink-500 text-xl font-bold text-white"
-              aria-hidden="true"
-              data-testid="artikel-author-initial"
-              >{{ article.author.initial }}</span
-            >
-            <div class="min-w-0">
-              <p class="font-bold break-words text-gray-800" data-testid="artikel-author-name">
-                {{ article.author.name }}
+        <UCard data-testid="artikel-author-card">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex min-w-0 items-center gap-3">
+              <UAvatar
+                :text="article.author.initial"
+                size="xl"
+                data-testid="artikel-author-initial"
+              />
+              <div class="min-w-0">
+                <p
+                  class="text-label break-words text-highlighted"
+                  data-testid="artikel-author-name"
+                >
+                  {{ article.author.name }}
+                </p>
+                <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
+                  <span
+                    class="inline-flex items-center gap-1 whitespace-nowrap"
+                    data-testid="artikel-published"
+                  >
+                    <UIcon name="i-ph-calendar-blank-duotone" class="size-4" aria-hidden="true" />{{
+                      published
+                    }}
+                  </span>
+                  <span aria-hidden="true">•</span>
+                  <span
+                    class="inline-flex items-center gap-1 whitespace-nowrap"
+                    data-testid="artikel-age"
+                  >
+                    <UIcon name="i-ph-clock-duotone" class="size-4" aria-hidden="true" />{{ age }}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 text-center">
+              <p>
+                <span class="tabular text-subheading text-highlighted"
+                  ><UIcon name="i-ph-eye-duotone" class="size-5" aria-hidden="true" />
+                  <span data-testid="artikel-views">{{ article.views }}</span></span
+                ><br /><span class="text-caption text-muted">{{ ARTIKEL_COPY.readers }}</span>
               </p>
-              <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
-                <span
-                  class="inline-flex items-center gap-1 whitespace-nowrap"
-                  data-testid="artikel-published"
-                >
-                  <Calendar class="h-3 w-3" aria-hidden="true" />{{ published }}
-                </span>
-                <span aria-hidden="true">•</span>
-                <span
-                  class="inline-flex items-center gap-1 whitespace-nowrap"
-                  data-testid="artikel-age"
-                >
-                  <Clock class="h-3 w-3" aria-hidden="true" />{{ age }}
-                </span>
+              <p>
+                <span class="tabular text-subheading text-highlighted"
+                  ><UIcon name="i-ph-heart-duotone" class="size-5" aria-hidden="true" />
+                  <span data-testid="artikel-likes">{{ article.likes }}</span></span
+                ><br /><span class="text-caption text-muted">{{ ARTIKEL_COPY.likes }}</span>
               </p>
             </div>
           </div>
-          <div class="flex items-center gap-5 text-center">
-            <p>
-              <span class="text-lg font-bold text-purple-600"
-                ><span aria-hidden="true">👁️</span>
-                <span data-testid="artikel-views">{{ article.views }}</span></span
-              ><br /><span class="text-xs text-gray-500">{{ ARTIKEL_COPY.readers }}</span>
-            </p>
-            <p>
-              <span class="text-lg font-bold text-pink-600"
-                ><span aria-hidden="true">❤️</span>
-                <span data-testid="artikel-likes">{{ article.likes }}</span></span
-              ><br /><span class="text-xs text-gray-500">{{ ARTIKEL_COPY.likes }}</span>
-            </p>
-          </div>
-        </div>
+        </UCard>
 
         <!-- Sanitised by `sanitizeHtml` (allow-list; SEC-M09-01). -->
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div class="artikel-body" data-testid="artikel-body" v-html="body" />
+        <UCard>
+          <DsProse :html="body" data-testid="artikel-body" />
+        </UCard>
 
         <ArtikelShareCard :title="article.title" />
 
-        <section v-if="article.related.length > 0" class="space-y-4" data-testid="artikel-related">
-          <h2 class="text-xl font-extrabold text-gray-800">
-            <span aria-hidden="true">📚</span> {{ ARTIKEL_COPY.related }}
-          </h2>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <RouterLink
+        <section
+          v-if="article.related.length > 0"
+          class="flex flex-col gap-4"
+          data-testid="artikel-related"
+        >
+          <h2 class="text-heading text-highlighted">{{ ARTIKEL_COPY.related }}</h2>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-6">
+            <DsMediaCard
               v-for="item in article.related"
               :key="item.id"
+              kind="article"
+              :title="item.title"
+              :meta="`${item.publishedAt ? diffForHumans(item.publishedAt) : ''} · ${String(item.views)} ${ARTIKEL_COPY.readers}`"
               :to="`/artikel/${item.slug}`"
-              class="flex min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-md transition hover:-translate-y-1"
               data-testid="artikel-related-card"
-            >
-              <div
-                class="flex h-24 items-center justify-center bg-linear-to-br from-purple-400 via-pink-400 to-orange-400 text-4xl"
-                aria-hidden="true"
-              >
-                📰
-              </div>
-              <div class="flex flex-1 flex-col gap-2 p-3">
-                <h3 class="text-sm font-bold break-words text-gray-800">{{ item.title }}</h3>
-                <p
-                  class="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500"
-                >
-                  <span class="inline-flex items-center gap-1 whitespace-nowrap">
-                    <Clock class="h-3 w-3" aria-hidden="true" />{{
-                      item.publishedAt ? diffForHumans(item.publishedAt) : ''
-                    }}
-                  </span>
-                  <span class="whitespace-nowrap">👁️ {{ item.views }}</span>
-                </p>
-              </div>
-            </RouterLink>
+            />
           </div>
         </section>
       </article>
 
-      <aside v-if="isLoggedIn" class="mt-6 hidden lg:mt-0 lg:block" data-testid="artikel-aside">
-        <div class="rounded-2xl bg-white p-4 shadow-md lg:sticky lg:top-4">
-          <h2 class="mb-3 flex items-center gap-2 text-lg font-bold text-gray-800">
-            <span
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-purple-500 to-pink-500 text-white"
-              ><Newspaper class="h-4 w-4" aria-hidden="true"
-            /></span>
-            {{ ARTIKEL_COPY.latest }}
-          </h2>
-          <ul class="space-y-3">
-            <li v-for="item in latest" :key="item.id">
-              <RouterLink
-                :to="`/artikel/${item.slug}`"
-                class="flex min-h-11 items-start gap-3"
-                data-testid="artikel-aside-item"
-              >
-                <span
-                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-purple-400 to-orange-400 text-white"
-                  ><Newspaper class="h-4 w-4" aria-hidden="true"
-                /></span>
-                <span class="min-w-0">
-                  <span class="block text-sm font-semibold break-words text-gray-800">{{
-                    item.title
-                  }}</span>
-                  <span class="block text-xs text-gray-500">{{
-                    item.publishedAt ? diffForHumans(item.publishedAt) : ''
-                  }}</span>
-                </span>
-              </RouterLink>
-            </li>
-          </ul>
-          <RouterLink
-            :to="ARTIKEL_PATH"
-            class="mt-4 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-purple-600"
-            data-testid="artikel-aside-all"
-          >
-            {{ ARTIKEL_COPY.seeAll }}<ArrowRight class="h-4 w-4" aria-hidden="true" />
-          </RouterLink>
-        </div>
+      <aside v-if="isLoggedIn" class="hidden lg:col-span-3 lg:block" data-testid="artikel-aside">
+        <UCard class="lg:sticky lg:top-4">
+          <div class="flex flex-col gap-3">
+            <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+              <UIcon name="i-ph-newspaper-duotone" class="size-6" aria-hidden="true" />
+              {{ ARTIKEL_COPY.latest }}
+            </h2>
+            <ul class="flex flex-col gap-1">
+              <li v-for="item in latest" :key="item.id">
+                <UButton
+                  :to="`/artikel/${item.slug}`"
+                  color="neutral"
+                  variant="ghost"
+                  block
+                  class="h-auto justify-start py-2 text-start"
+                  data-testid="artikel-aside-item"
+                >
+                  <span class="min-w-0">
+                    <span class="block text-label break-words text-highlighted">{{
+                      item.title
+                    }}</span>
+                    <span class="block text-caption text-muted">{{
+                      item.publishedAt ? diffForHumans(item.publishedAt) : ''
+                    }}</span>
+                  </span>
+                </UButton>
+              </li>
+            </ul>
+            <UButton
+              :to="ARTIKEL_PATH"
+              variant="link"
+              trailing-icon="i-ph-arrow-right"
+              class="self-start"
+              data-testid="artikel-aside-all"
+              >{{ ARTIKEL_COPY.seeAll }}</UButton
+            >
+          </div>
+        </UCard>
       </aside>
     </div>
-  </div>
+  </DsPage>
 </template>
-
-<style scoped>
-/* Article body: h2 / p / ol / ul ... as live; wraps at any width (no horizontal page scroll). */
-.artikel-body {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  border-radius: 1rem;
-  background: #fff;
-  padding: 1.25rem;
-  color: var(--color-gray-700);
-  line-height: 1.8;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-}
-@media (min-width: 640px) {
-  .artikel-body {
-    padding: 1.75rem;
-  }
-}
-.artikel-body :deep(h1),
-.artikel-body :deep(h2),
-.artikel-body :deep(h3),
-.artikel-body :deep(h4) {
-  margin: 1.25em 0 0.5em;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--color-gray-800);
-}
-.artikel-body :deep(h2) {
-  font-size: 1.25rem;
-}
-.artikel-body :deep(h3) {
-  font-size: 1.1rem;
-}
-.artikel-body :deep(:first-child) {
-  margin-top: 0;
-}
-.artikel-body :deep(p) {
-  margin: 0 0 1em;
-}
-.artikel-body :deep(ul),
-.artikel-body :deep(ol) {
-  margin: 0 0 1em;
-  padding-left: 1.5rem;
-}
-.artikel-body :deep(ul) {
-  list-style: disc;
-}
-.artikel-body :deep(ol) {
-  list-style: decimal;
-}
-.artikel-body :deep(li) {
-  margin-bottom: 0.4em;
-}
-.artikel-body :deep(li)::marker {
-  color: var(--color-orange-500);
-}
-.artikel-body :deep(a) {
-  color: var(--color-purple-600);
-  text-decoration: underline;
-}
-.artikel-body :deep(img) {
-  max-width: 100%;
-  height: auto;
-}
-.artikel-body :deep(blockquote) {
-  margin: 0 0 1em;
-  border-left: 4px solid var(--color-purple-400);
-  padding-left: 1rem;
-  color: var(--color-gray-600);
-}
-.artikel-body :deep(pre) {
-  max-width: 100%;
-  overflow-x: auto;
-  white-space: pre-wrap;
-}
-.artikel-body :deep(table) {
-  display: block;
-  max-width: 100%;
-  overflow-x: auto;
-}
-</style>
