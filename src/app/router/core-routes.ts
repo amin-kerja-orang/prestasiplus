@@ -67,8 +67,13 @@ export function devRoutes(): RouteRecordRaw[] {
   // Prototype scope (D43): neither the hub ("pautan semua skrin") nor the `/__dev/*` pages exist in
   // any mode; only the design-system sandbox `/__ds` stays. `VITE_PROTOTYPE_SCOPE=off` restores them.
   const scoped = isPrototypeScopeOn()
-  const hub =
-    !scoped && (import.meta.env.DEV || import.meta.env.MODE === 'demo') ? previewHubRoutes() : []
+  // In scope, the admin landing `/admin` (D48) has no M17 dashboard page yet, so it opens the admin
+  // Command Center instead of a 404.
+  const hub: RouteRecordRaw[] = scoped
+    ? [{ path: '/admin', redirect: '/admin/command-center' }]
+    : import.meta.env.DEV || import.meta.env.MODE === 'demo'
+      ? previewHubRoutes()
+      : []
   // Design-system gallery (V2-T05): dev and demo, never the e2e build.
   const ds: RouteRecordRaw[] =
     import.meta.env.DEV || import.meta.env.MODE === 'demo'
