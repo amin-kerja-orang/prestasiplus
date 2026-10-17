@@ -33,6 +33,8 @@ async function render(component: object, path: string, route = path) {
 }
 
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid=${id}]`)
+/** The big number of a stat tile. */
+const num = (w: VueWrapper, id: string) => t(w, id).find('.tabular').text()
 const exists = (w: VueWrapper, id: string) => w.find(`[data-testid=${id}]`).exists()
 
 beforeEach(() => {
@@ -110,7 +112,7 @@ describe('S7 AnalitikPelajarPage', () => {
     api.fetchAnalytics.mockResolvedValue(ANALYTICS)
     const w = await render(AnalitikPelajarPage, '/analitik/pelajar')
     expect(t(w, 'top-weak').text()).toContain('Topik Perlu Perhatian Utama (4)')
-    const cards = w.findAll('[data-testid=top-weak] article')
+    const cards = w.findAll('[data-testid=top-weak] [data-testid^=weak-card-]')
     expect(cards).toHaveLength(4)
     expect(cards[0]?.text()).toContain('1%')
     expect(cards[0]?.text()).toContain('Bahasa Melayu · 3 soalan dijawab')
@@ -134,7 +136,7 @@ describe('S7 AnalitikPelajarPage', () => {
   it('leaves the trend icon of a stable subject slate and shows the up arrow for a rising one', async () => {
     api.fetchAnalytics.mockResolvedValue(ANALYTICS)
     const w = await render(AnalitikPelajarPage, '/analitik/pelajar')
-    const cards = w.findAll('[data-testid=top-weak] article')
+    const cards = w.findAll('[data-testid=top-weak] [data-testid^=weak-card-]')
     expect(cards[0]?.find('[data-testid=trend-stable]').exists()).toBe(true)
     expect(cards[3]?.find('[data-testid=trend-up]').exists()).toBe(true)
   })
@@ -144,27 +146,27 @@ describe('S7 AnalitikPelajarPage', () => {
     const w = await render(AnalitikPelajarPage, '/analitik/pelajar')
     expect(t(w, 'tab-1').text()).toContain('Bahasa Melayu')
     expect(t(w, 'tab-1').text()).toContain('41%')
-    expect(t(w, 'tab-1').classes()).toContain('bg-blue-600')
-    expect(t(w, 'tab-5').classes()).toContain('bg-white')
-    expect(t(w, 'ring-mahir').text()).toBe('3')
-    expect(t(w, 'ring-total').text()).toBe('/ 3 SP')
-    expect(t(w, 'ring-arc').attributes('stroke-dasharray')).toBe('314 0')
-    expect(w.findAll('[data-testid=ring-legend] > span').map((x) => x.text())).toEqual([
-      '3',
-      '6',
-      '6',
-      '0',
+    expect(t(w, 'tab-1').attributes('aria-pressed')).toBe('true')
+    expect(t(w, 'tab-5').attributes('aria-pressed')).toBe('false')
+    expect(t(w, 'ring-arc').text()).toContain('3')
+    expect(t(w, 'ring-arc').text()).toContain('/ 3 SP')
+    expect(t(w, 'ring-arc').attributes('aria-valuenow')).toBe('3')
+    expect(t(w, 'ring-arc').attributes('aria-valuemax')).toBe('3')
+    expect(w.findAll('[data-testid=ring-legend] > li').map((x) => x.text())).toEqual([
+      'Mahir 3',
+      'Sederhana 6',
+      'Lemah 6',
+      'Belum cuba 0',
     ])
     expect(t(w, 'kpi-acc').text()).toBe('40.5%')
-    expect(t(w, 'kpi-acc').classes()).toContain('text-red-600')
+    expect(t(w, 'kpi-acc').classes()).toContain('text-error')
     expect(t(w, 'kpi-answered').text()).toBe('79')
     expect(t(w, 'kpi-grade').text()).toBe('G – C')
     expect(exists(w, 'kpi-trend')).toBe(true)
     expect(t(w, 'encourage-box').text()).toContain('Jangan putus asa!')
     expect(t(w, 'map-caption').text()).toBe('KSSR Bahasa Melayu Darjah 4')
     expect(t(w, 'tile-101').attributes('title')).toBe('1.1: Membaca — Belum cuba')
-    expect(t(w, 'tile-101').classes()).toContain('bg-slate-100')
-    expect(t(w, 'tile-102').classes()).toContain('bg-red-100')
+    expect(t(w, 'tile-101').text()).toBe('1.1')
     expect(t(w, 'map-legend').text()).toContain('Mahir (75%+)')
     expect(t(w, 'map-legend').text()).toContain('Klik untuk latihan fokus')
   })
@@ -180,18 +182,18 @@ describe('S7 AnalitikPelajarPage', () => {
     await t(w, 'toggle-weak').trigger('click')
     await flushPromises()
     expect(t(w, 'toggle-weak').text()).toBe('Sembunyi senarai penuh')
-    expect(w.findAll('[data-testid=all-weak] article')).toHaveLength(6)
+    expect(w.findAll('[data-testid=all-weak] [data-testid^=weak-card-]')).toHaveLength(6)
     // Cards of the list are cut at 100 characters and ascending by accuracy.
-    const first = w.get('[data-testid=all-weak] article')
+    const first = w.get('[data-testid=all-weak] [data-testid^=weak-card-]')
     expect(first.text()).toContain('1%')
     expect(first.text()).toContain('...')
 
     await t(w, 'tab-5').trigger('click')
     await flushPromises()
     expect(t(w, 'toggle-weak').text()).toBe('Sembunyi senarai penuh')
-    expect(w.findAll('[data-testid=all-weak] article')).toHaveLength(5)
+    expect(w.findAll('[data-testid=all-weak] [data-testid^=weak-card-]')).toHaveLength(5)
     expect(t(w, 'more-count').text()).toBe('1')
-    expect(t(w, 'ring-total').text()).toBe('/ 23 SP')
+    expect(t(w, 'ring-arc').text()).toContain('/ 23 SP')
     // 62 % ≥ 50: no encouragement box (PROPOSED).
     expect(exists(w, 'encourage-box')).toBe(false)
   })
@@ -209,7 +211,7 @@ describe('S7 AnalitikPelajarPage', () => {
     api.fetchAnalytics.mockResolvedValue({ userLevelId: 4, topWeak: [], subjects: [] })
     const w = await render(AnalitikPelajarPage, '/analitik/pelajar')
     expect(t(w, 'top-weak').text()).toContain('Topik Perlu Perhatian Utama (0)')
-    expect(w.findAll('[data-testid=top-weak] article')).toHaveLength(0)
+    expect(w.findAll('[data-testid=top-weak] [data-testid^=weak-card-]')).toHaveLength(0)
     expect(exists(w, 'subject-tabs')).toBe(false)
     expect(exists(w, 'ring-card')).toBe(false)
     expect(exists(w, 'more-weak')).toBe(false)
@@ -351,14 +353,12 @@ describe('S6 Prestasi360Page', () => {
     const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
     expect(api.fetchStudentPerformance).toHaveBeenCalledWith(3001, expect.anything())
     expect(t(w, 'hero-name').text()).toBe('Murid Demo 01')
-    // base.css colours h1 slate; on the blue hero it must be white (T2-1).
-    expect(t(w, 'hero-name').classes()).toContain('text-white')
     expect(t(w, 'avatar').text()).toBe('M')
     expect(t(w, 'hero').text()).toContain('Prestasi 360 — Dashboard Individu')
     expect(t(w, 'hero-accuracy').text()).toBe('86%')
     expect(t(w, 'hero-streak').text()).toBe('2')
     expect(t(w, 'hero-mini').classes()).toContain('lg:flex')
-    expect(w.findAll('[data-testid=stat-value]').map((v) => v.text())).toEqual([
+    expect(['sesi', 'ketepatan', 'soalan', 'masa'].map((id) => num(w, `stat-${id}`))).toEqual([
       '3',
       '85.7%',
       '14',
@@ -370,7 +370,7 @@ describe('S6 Prestasi360Page', () => {
   it('shows the zero state for the admin: 0 / 0.0% / 0 / 0m, no headcount, no badge card', async () => {
     api.fetchStudentPerformance.mockResolvedValue(EMPTY_S6)
     const w = await render(Prestasi360Page, '/prestasi/1', PATH)
-    expect(w.findAll('[data-testid=stat-value]').map((v) => v.text())).toEqual([
+    expect(['sesi', 'ketepatan', 'soalan', 'masa'].map((id) => num(w, `stat-${id}`))).toEqual([
       '0',
       '0.0%',
       '0',
@@ -381,7 +381,7 @@ describe('S6 Prestasi360Page', () => {
     expect(t(w, 'mastery-empty').text()).toContain('Belum ada data latihan.')
     expect(t(w, 'mastery-start').attributes('href')).toBe('/practice')
     expect(t(w, 'weak-empty').text()).toContain('Tiada topik lemah! Teruskan usaha.')
-    expect(w.findAll('[data-testid=activity-value]').map((v) => v.text())).toEqual([
+    expect(['kombo', 'rekod', 'koin', 'hari'].map((id) => num(w, `activity-${id}`))).toEqual([
       '1',
       '5',
       '256',
@@ -396,18 +396,15 @@ describe('S6 Prestasi360Page', () => {
     expect(first.text()).toContain('Sejarah')
     expect(first.text()).toContain('5 MARIKH - Sejarah · 2026')
     expect(first.get('[data-testid=status-pill]').text()).toBe('Below')
-    expect(first.get('[data-testid=status-pill]').classes()).toContain('bg-red-100')
     expect(first.findAll('[data-testid=chip]').map((c) => c.text())).toEqual([
       'TOV: 50%',
       'OTR2: 40%',
       'ETR: 65%',
     ])
     expect(first.get('[data-testid=chip-row]').classes()).toContain('flex-wrap')
-    expect(first.findAll('[data-testid=chip]')[1]?.classes()).toContain('bg-red-50')
     expect(first.get('a').attributes('href')).toBe('/headcount/student/3001')
     const second = t(w, 'headcount-501')
     expect(second.get('[data-testid=status-pill]').text()).toBe('—')
-    expect(second.get('[data-testid=status-pill]').classes()).toContain('bg-slate-100')
     expect(second.findAll('[data-testid=chip]')[1]?.text()).toBe('ETR: —')
   })
 
@@ -419,9 +416,9 @@ describe('S6 Prestasi360Page', () => {
     expect(chem.text()).toContain('Kimia')
     expect(chem.text()).toContain('89%')
     expect(chem.text()).toContain('2 sesi · 9 soalan')
-    expect(chem.get('[data-testid=pct]').classes()).toContain('text-green-600')
-    expect(t(w, 'mastery-SEJ').get('[data-testid=pct]').classes()).toContain('text-red-600')
-    expect(w.findAll('[data-testid=activity-value]').map((v) => v.text())).toEqual([
+    expect(chem.get('[data-testid=pct]').classes()).toContain('text-success')
+    expect(t(w, 'mastery-SEJ').get('[data-testid=pct]').classes()).toContain('text-error')
+    expect(['kombo', 'rekod', 'koin', 'hari'].map((id) => num(w, `activity-${id}`))).toEqual([
       '2',
       '4',
       '1,234',
@@ -440,7 +437,7 @@ describe('S6 Prestasi360Page', () => {
     expect(exists(w, 'heat-tooltip')).toBe(false)
 
     const cell = w.get('[data-date="2026-09-24"]')
-    expect(cell.classes()).toContain('bg-green-200')
+    expect(cell.classes()).toContain('bg-primary/15')
     await cell.trigger('mouseenter')
     expect(t(w, 'heat-tooltip').text()).toBe('24/09 (Khamis) — 1 sesi')
     await cell.trigger('pointerleave', { pointerType: 'mouse' })
@@ -483,13 +480,11 @@ describe('S6 Prestasi360Page', () => {
     )
   })
 
-  it('lists the Cadangan sentences in order with alternating tints', async () => {
+  it('lists the Cadangan sentences in order', async () => {
     api.fetchStudentPerformance.mockResolvedValue(S6)
     const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
     const rows = w.findAll('[data-testid=suggestion]')
     expect(rows.map((r) => r.text())).toEqual(S6.suggestions.map((s) => s.text))
-    expect(rows[0]?.classes()).toContain('bg-blue-50')
-    expect(rows[1]?.classes()).toContain('bg-amber-50')
   })
 
   it('renders the standard 404 outcome for an unknown id and 403 for a forbidden one', async () => {

@@ -5,24 +5,38 @@
  * 403 page; an unknown school is the 404 page). Header figures that the data does not supply (`null`,
  * DV-M08-32) show "—", never 0. GPS and the other headcount figures come from M08-T1b.
  */
-import { ArrowLeft, ChartPie, GraduationCap, School, UserX } from '@lucide/vue'
 import { computed, watchEffect } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
+import type { TableColumn } from '@nuxt/ui'
 
-import { ChartCanvas } from '@/components/chart'
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
+import { DsChart, DsDataTable, DsEmptyState, DsPage } from '@/ds'
 import { usePrototypeScope } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchSchoolItemAnalysis } from '../api/performance'
 import SchoolQuestionList from '../components/analisa-item/SchoolQuestionList.vue'
-import { BAND_STYLE, DASH, dec2, grouped, pct1 } from '../lib/prestasi/format'
-import { sparklineConfig } from '../lib/prestasi/gps-chart'
-import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
+import PageHeader from '../components/shared/PageHeader.vue'
+import ToneText from '../components/shared/ToneText.vue'
+import PageLoadError from '../components/shared/PageLoadError.vue'
+import PageSkeleton from '../components/shared/PageSkeleton.vue'
+import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
+import { usePhIcon } from '../lib/icons'
+import {
+  BAND_STYLE,
+  DASH,
+  LEVEL_BADGE,
+  LEVEL_ICON,
+  dec2,
+  grouped,
+  pct1,
+  ratioPct,
+} from '../lib/prestasi/format'
+import { sparklineSeries } from '../lib/prestasi/gps-chart'
+import { isLoadError, useRouteData } from '../lib/prestasi/load'
 
 const route = useRoute()
 const pageMeta = usePageMeta()
+const icon = usePhIcon()
 const { home, allows } = usePrototypeScope()
 
 const schoolId = computed(() => {
@@ -51,15 +65,16 @@ const { data, error, reload } = useRouteData(
 )
 const loadFailed = computed(() => isLoadError(error.value))
 
-watchEffect(() => {
+const subtitle = computed(() => {
   const d = data.value
-  if (!d || d.school.name === '') return
-  pageMeta.setHeader({
-    title: 'Analisa Item — Sekolah',
-    subtitle: tingkatan.value
-      ? `${d.school.name} — Tingkatan ${tingkatan.value.slice(1)}`
-      : d.school.name,
-  })
+  if (!d || d.school.name === '') return undefined
+  return tingkatan.value
+    ? `${d.school.name} — Tingkatan ${tingkatan.value.slice(1)}`
+    : d.school.name
+})
+watchEffect(() => {
+  if (subtitle.value === undefined) return
+  pageMeta.setHeader({ title: 'Analisa Item — Sekolah', subtitle: subtitle.value })
 })
 
 const base = computed(() =>
@@ -79,247 +94,258 @@ const emptyCopy = computed(() =>
     : 'Tiada data pelajar untuk sekolah ini. Pastikan pelajar telah berdaftar dan menjawab soalan latihan.',
 )
 
+const stats = computed<StatItem[]>(() => {
+  const d = data.value
+  if (!d) return []
+  return [
+    { id: 'pelajar', label: 'Jumlah Pelajar', value: grouped(d.students), icon: 'users' },
+    {
+      id: 'soalan',
+      label: 'Soalan Dijawab',
+      value: d.answers === null ? DASH : grouped(d.answers),
+      icon: 'question',
+    },
+    {
+      id: 'ketepatan',
+      label: 'Ketepatan Keseluruhan',
+      value: d.accuracy === null ? DASH : pct1(d.accuracy),
+      icon: 'target',
+    },
+  ]
+})
+
 const difficulty = computed(() => {
   const d = data.value?.difficulty
   if (!d) return null
   const total = d.mudah + d.sederhana + d.sukar
-  return { ...d, total }
+  return {
+    total,
+    parts: [
+      { id: 'mudah', label: 'Mudah', level: 'Mudah', count: d.mudah },
+      { id: 'sederhana', label: 'Sederhana', level: 'Sederhana', count: d.sederhana },
+      { id: 'sukar', label: 'Sukar', level: 'Sukar', count: d.sukar },
+    ] as const,
+  }
 })
-const spark = computed(() => (data.value ? sparklineConfig(data.value.gps.years) : null))
+const spark = computed(() => (data.value ? sparklineSeries(data.value.gps.years) : null))
 
-const CARD = 'min-w-0 rounded-2xl bg-white p-5 shadow'
-const STAT_LABEL = 'text-xs text-slate-500'
+type Subject = NonNullable<typeof data.value>['subjects'][number]
+interface Row extends Record<string, unknown> {
+  subjectId: number
+  name: string
+  pupilsText: string
+  questionsText: string
+  accuracyText: string
+  wrongText: string
+}
+const rows = computed<Row[]>(() =>
+  (data.value?.subjects ?? []).map((s: Subject) => ({
+    subjectId: s.subjectId,
+    name: s.name,
+    pupilsText: grouped(s.pupils),
+    questionsText: grouped(s.questions),
+    accuracyText: pct1(s.accuracy),
+    wrongText: grouped(s.wrong),
+  })),
+)
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'name', header: 'Subjek' },
+  { accessorKey: 'pupilsText', header: 'Pelajar' },
+  { accessorKey: 'questionsText', header: 'Soalan' },
+  { accessorKey: 'accuracyText', header: 'Ketepatan' },
+  { accessorKey: 'wrongText', header: 'Salah' },
+]
+const cardFields = [
+  { key: 'pupilsText', label: 'Pelajar' },
+  { key: 'questionsText', label: 'Soalan' },
+  { key: 'accuracyText', label: 'Ketepatan' },
+  { key: 'wrongText', label: 'Salah' },
+]
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="analisa-item-sekolah-page">
-    <div v-if="loadFailed" class="space-y-3" data-testid="page-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
-    </div>
+  <DsPage data-testid="analisa-item-sekolah-page">
+    <PageLoadError v-if="loadFailed" @retry="reload()" />
 
     <template v-else-if="data">
       <nav
-        class="flex flex-wrap items-center gap-2 text-sm text-slate-500"
+        class="flex flex-wrap items-center gap-1 text-caption text-muted"
+        aria-label="Breadcrumb"
         data-testid="breadcrumb"
       >
-        <RouterLink
+        <UButton
           :to="home"
-          class="inline-flex min-h-11 items-center gap-1 hover:text-slate-700"
-          ><ArrowLeft class="h-4 w-4" />Papan Pemuka</RouterLink
-        >
-        <span>/</span>
-        <span class="font-semibold text-slate-700">Analisa Item Sekolah</span>
+          color="neutral"
+          variant="ghost"
+          size="lg"
+          :icon="icon('arrow-left')"
+          label="Papan Pemuka"
+        />
+        <span aria-hidden="true">/</span>
+        <span class="text-label text-highlighted" aria-current="page">Analisa Item Sekolah</span>
       </nav>
 
-      <section
-        v-if="data.school.name"
-        class="flex flex-wrap items-center gap-4 rounded-2xl border p-4"
-        style="background: linear-gradient(135deg, #eff6ff, #eef2ff); border-color: #c7d2fe"
-        data-testid="school-card"
-      >
-        <span
-          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white"
-          style="background: linear-gradient(135deg, #4f46e5, #3730a3)"
-        >
-          <School class="h-6 w-6" />
-        </span>
-        <div class="min-w-0 flex-1">
-          <h2 class="text-lg font-bold break-words text-slate-800" data-testid="school-name">
-            {{ data.school.name }}
-          </h2>
-          <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-            <span class="rounded px-2 py-0.5 text-xs font-semibold" style="background: #e2e8f0">{{
-              data.school.type
-            }}</span>
-            <span v-if="data.school.code" class="font-mono text-xs">{{ data.school.code }}</span>
-            <span v-if="data.school.district"
-              >{{ data.school.district }} • {{ data.school.state }}</span
-            >
-            <span v-else>{{ data.school.state }}</span>
-          </div>
-        </div>
-        <div class="flex gap-6 text-center">
-          <div>
-            <p class="text-xl font-bold text-indigo-700" data-testid="school-students">
-              {{ grouped(data.students) }}
-            </p>
-            <p class="text-xs text-slate-500">Pelajar</p>
-          </div>
-          <div>
-            <p class="text-xl font-bold text-indigo-700" data-testid="school-answers">
-              {{ data.answers === null ? DASH : grouped(data.answers) }}
-            </p>
-            <p class="text-xs text-slate-500">Jawapan</p>
-          </div>
-        </div>
-      </section>
+      <PageHeader title="Analisa Item — Sekolah" :subtitle="subtitle" />
 
-      <div class="flex flex-wrap items-center gap-2" data-testid="tingkatan-chips">
-        <span class="flex items-center gap-1 text-sm text-slate-500"
-          ><GraduationCap class="h-4 w-4" />Tingkatan:</span
+      <UCard v-if="data.school.name" data-testid="school-card">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex min-w-0 grow flex-col gap-2">
+            <h2 class="text-heading break-words text-highlighted" data-testid="school-name">
+              {{ data.school.name }}
+            </h2>
+            <div class="flex flex-wrap items-center gap-2 text-caption text-muted">
+              <UBadge color="neutral" variant="subtle" :label="data.school.type" />
+              <span v-if="data.school.code" class="tabular">{{ data.school.code }}</span>
+              <span v-if="data.school.district"
+                >{{ data.school.district }} • {{ data.school.state }}</span
+              >
+              <span v-else>{{ data.school.state }}</span>
+            </div>
+          </div>
+          <dl class="flex gap-6 text-center">
+            <div class="flex flex-col-reverse gap-1">
+              <dt class="text-caption text-muted">Pelajar</dt>
+              <dd class="tabular text-title text-highlighted" data-testid="school-students">
+                {{ grouped(data.students) }}
+              </dd>
+            </div>
+            <div class="flex flex-col-reverse gap-1">
+              <dt class="text-caption text-muted">Jawapan</dt>
+              <dd class="tabular text-title text-highlighted" data-testid="school-answers">
+                {{ data.answers === null ? DASH : grouped(data.answers) }}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </UCard>
+
+      <div
+        class="flex max-w-full items-center gap-2 overflow-x-auto pb-1"
+        role="group"
+        aria-label="Tingkatan"
+        data-testid="tingkatan-chips"
+      >
+        <span class="flex shrink-0 items-center gap-1 text-label text-muted"
+          ><UIcon :name="icon('graduation-cap')" class="size-4" />Tingkatan:</span
         >
-        <RouterLink
+        <UButton
           v-for="c in chips"
           :key="c.label"
           :to="c.to"
-          :class="[
-            'flex min-h-11 items-center rounded-full px-4 text-sm font-semibold',
-            c.active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600',
-          ]"
-          >{{ c.label }}</RouterLink
-        >
+          size="lg"
+          class="shrink-0 whitespace-nowrap"
+          :color="c.active ? 'primary' : 'neutral'"
+          :variant="c.active ? 'solid' : 'soft'"
+          :label="c.label"
+        />
       </div>
 
-      <section
-        v-if="data.students === 0"
-        :class="[CARD, 'py-10 text-center']"
-        data-testid="school-empty"
-      >
-        <UserX class="mx-auto h-12 w-12 text-slate-300" />
-        <h3 class="mt-3 text-lg font-bold text-slate-800">Tiada Data Pelajar</h3>
-        <p class="mx-auto mt-1 max-w-md text-sm text-slate-500">{{ emptyCopy }}</p>
-      </section>
+      <div v-if="data.students === 0" data-testid="school-empty">
+        <DsEmptyState title="Tiada Data Pelajar" :description="emptyCopy" icon="i-ph-user-minus" />
+      </div>
 
       <template v-else>
-        <div class="grid grid-cols-2 gap-3 md:grid-cols-3" data-testid="school-stats">
-          <div :class="[CARD, 'text-center']" data-testid="stat-pelajar">
-            <p class="text-2xl font-bold text-slate-800">{{ grouped(data.students) }}</p>
-            <p :class="STAT_LABEL">Jumlah Pelajar</p>
-          </div>
-          <div :class="[CARD, 'text-center']" data-testid="stat-soalan">
-            <p class="text-2xl font-bold text-amber-500">
-              {{ data.answers === null ? DASH : grouped(data.answers) }}
-            </p>
-            <p :class="STAT_LABEL">Soalan Dijawab</p>
-          </div>
-          <div :class="[CARD, 'col-span-2 text-center md:col-span-1']" data-testid="stat-ketepatan">
-            <p class="text-2xl font-bold text-cyan-500">
-              {{ data.accuracy === null ? DASH : pct1(data.accuracy) }}
-            </p>
-            <p :class="STAT_LABEL">Ketepatan Keseluruhan</p>
-          </div>
+        <div data-testid="school-stats">
+          <StatGrid :items="stats" />
         </div>
 
-        <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <section :class="CARD" data-testid="difficulty-card">
-            <h3 class="mb-3 text-base font-bold text-slate-800">Profil Kesukaran</h3>
-            <p v-if="!difficulty || difficulty.total === 0" class="text-sm text-slate-400">
-              Tiada data
-            </p>
-            <template v-else>
-              <div class="flex h-4 overflow-hidden rounded-full bg-slate-100">
-                <div
-                  class="bg-green-500"
-                  :style="{ width: `${(difficulty.mudah / difficulty.total) * 100}%` }"
-                  :title="`Mudah: ${difficulty.mudah}`"
-                ></div>
-                <div
-                  class="bg-amber-400"
-                  :style="{ width: `${(difficulty.sederhana / difficulty.total) * 100}%` }"
-                  :title="`Sederhana: ${difficulty.sederhana}`"
-                ></div>
-                <div
-                  class="bg-red-500"
-                  :style="{ width: `${(difficulty.sukar / difficulty.total) * 100}%` }"
-                  :title="`Sukar: ${difficulty.sukar}`"
-                ></div>
-              </div>
-              <div class="mt-3 grid grid-cols-3 text-center text-sm">
-                <div data-testid="diff-mudah">
-                  <p class="font-bold text-green-600">{{ difficulty.mudah }}</p>
-                  <p class="text-xs text-slate-500">Mudah</p>
-                </div>
-                <div data-testid="diff-sederhana">
-                  <p class="font-bold text-amber-500">{{ difficulty.sederhana }}</p>
-                  <p class="text-xs text-slate-500">Sederhana</p>
-                </div>
-                <div data-testid="diff-sukar">
-                  <p class="font-bold text-red-600">{{ difficulty.sukar }}</p>
-                  <p class="text-xs text-slate-500">Sukar</p>
-                </div>
-              </div>
-            </template>
-          </section>
-
-          <section :class="CARD" data-testid="school-gps-card">
-            <h3 class="mb-3 text-base font-bold text-slate-800">GPS Anggaran Sekolah</h3>
-            <div class="flex flex-wrap items-center gap-3">
-              <span
-                :class="[
-                  'text-3xl font-bold',
-                  data.gps.band ? BAND_STYLE[data.gps.band].text : 'text-slate-400',
-                ]"
-                data-testid="school-gps-value"
-                >{{ data.gps.value === null ? DASH : dec2(data.gps.value) }}</span
-              >
-              <span
-                v-if="data.gps.band"
-                :class="[
-                  'rounded-full border px-3 py-0.5 text-xs font-semibold',
-                  BAND_STYLE[data.gps.band].pill,
-                ]"
-                >{{ data.gps.band }}</span
-              >
+        <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
+          <UCard class="min-w-0" data-testid="difficulty-card">
+            <div class="flex flex-col gap-4">
+              <h2 class="text-subheading text-highlighted">Profil Kesukaran</h2>
+              <p v-if="!difficulty || difficulty.total === 0" class="text-body text-muted">
+                Tiada data
+              </p>
+              <ul v-else class="grid grid-cols-3 gap-3">
+                <li
+                  v-for="p in difficulty.parts"
+                  :key="p.id"
+                  class="flex min-w-0 flex-col items-start gap-2"
+                  :data-testid="`diff-${p.id}`"
+                >
+                  <UBadge
+                    :color="LEVEL_BADGE[p.level]"
+                    variant="subtle"
+                    :icon="icon(LEVEL_ICON[p.level])"
+                    :label="p.label"
+                  />
+                  <span class="tabular text-title text-highlighted">{{ p.count }}</span>
+                  <UProgress
+                    class="w-full"
+                    :model-value="ratioPct(p.count, difficulty.total)"
+                    :max="100"
+                    :color="LEVEL_BADGE[p.level]"
+                    size="sm"
+                    :aria-label="`${p.label}: ${p.count}`"
+                  />
+                </li>
+              </ul>
             </div>
-            <p class="mt-1 text-xs text-slate-500">
-              Berdasarkan {{ data.gps.entries }} entri headcount • Lebih rendah = lebih baik
-            </p>
-            <ChartCanvas
-              v-if="spark"
-              type="line"
-              :data="spark.data"
-              :options="spark.options"
-              height="80px"
-              class="mt-3"
-              test-id="school-gps-spark"
-            />
-            <RouterLink
-              v-if="allows(`/sekolah/${data.school.id}/prestasi`)"
-              :to="`/sekolah/${data.school.id}/prestasi`"
-              class="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-indigo-600"
-              ><ChartPie class="h-4 w-4" />Prestasi 360</RouterLink
-            >
-          </section>
+          </UCard>
+
+          <UCard class="min-w-0" data-testid="school-gps-card">
+            <div class="flex flex-col gap-3">
+              <h2 class="text-subheading text-highlighted">GPS Anggaran Sekolah</h2>
+              <div class="flex flex-wrap items-center gap-3">
+                <ToneText
+                  :tone="data.gps.band ? BAND_STYLE[data.gps.band].text : 'text-dimmed'"
+                  class="tabular text-display"
+                  data-testid="school-gps-value"
+                  >{{ data.gps.value === null ? DASH : dec2(data.gps.value) }}</ToneText
+                >
+                <UBadge
+                  v-if="data.gps.band"
+                  :color="BAND_STYLE[data.gps.band].badge"
+                  variant="subtle"
+                  size="lg"
+                  :label="data.gps.band"
+                />
+              </div>
+              <p class="text-caption text-muted">
+                Berdasarkan {{ data.gps.entries }} entri headcount • Lebih rendah = lebih baik
+              </p>
+              <DsChart
+                v-if="spark"
+                title="Trend GPS"
+                type="line"
+                :labels="spark.labels"
+                :series="spark.series"
+                data-testid="school-gps-spark"
+              />
+              <UButton
+                v-if="allows(`/sekolah/${data.school.id}/prestasi`)"
+                :to="`/sekolah/${data.school.id}/prestasi`"
+                color="neutral"
+                variant="link"
+                class="min-h-11 self-start"
+                :icon="icon('chart-pie')"
+                label="Prestasi 360"
+              />
+            </div>
+          </UCard>
         </div>
 
-        <section :class="CARD" data-testid="school-subjects">
-          <h3 class="text-base font-bold text-slate-800">Prestasi Mengikut Subjek</h3>
-          <p class="mb-3 text-sm text-slate-500">
-            Ringkasan ketepatan dan jawapan salah bagi setiap subjek
-          </p>
-          <DataTableCard :min-width="520">
-            <table :class="T.table" data-testid="subject-table">
-              <thead>
-                <tr>
-                  <th :class="T.th">Subjek</th>
-                  <th :class="[T.th, 'text-center']">Pelajar</th>
-                  <th :class="[T.th, 'text-center']">Soalan</th>
-                  <th :class="[T.th, 'text-center']">Ketepatan</th>
-                  <th :class="[T.th, 'text-center']">Salah</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="s in data.subjects" :key="s.subjectId" :class="T.row">
-                  <td :class="[T.td, 'font-semibold text-slate-800']">{{ s.name }}</td>
-                  <td :class="[T.td, 'text-center']">{{ grouped(s.pupils) }}</td>
-                  <td :class="[T.td, 'text-center']">{{ grouped(s.questions) }}</td>
-                  <td :class="[T.td, 'text-center']">{{ pct1(s.accuracy) }}</td>
-                  <td :class="[T.td, 'text-center']">{{ grouped(s.wrong) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </DataTableCard>
+        <section class="flex min-w-0 flex-col gap-3" data-testid="school-subjects">
+          <div class="flex flex-col gap-1">
+            <h2 class="text-subheading text-highlighted">Prestasi Mengikut Subjek</h2>
+            <p class="text-body text-muted">
+              Ringkasan ketepatan dan jawapan salah bagi setiap subjek
+            </p>
+          </div>
+          <DsDataTable
+            :data="rows"
+            :columns="columns"
+            caption="Prestasi mengikut subjek"
+            card-title="name"
+            :card-fields="cardFields"
+            :page-size="100"
+            data-testid="subject-table"
+          />
         </section>
 
         <SchoolQuestionList v-if="data.questions.length > 0" :questions="data.questions" />
       </template>
     </template>
-  </div>
+    <PageSkeleton v-else-if="!error" />
+  </DsPage>
 </template>

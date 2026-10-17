@@ -31,6 +31,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Analisa Item Sekolah | PRESTASIPLUS',
       header: { title: 'Analisa Item — Sekolah' },
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -43,6 +44,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Analisa Item Sekolah | PRESTASIPLUS',
       header: { title: 'Analisa Item — Sekolah' },
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -60,6 +62,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Analisis tahap kesukaran dan diskriminasi soalan mengikut kelas',
       },
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -77,6 +80,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Analisis tahap kesukaran dan diskriminasi soalan mengikut kelas',
       },
       module: 'M08',
+      v2: true,
     },
   },
 ]

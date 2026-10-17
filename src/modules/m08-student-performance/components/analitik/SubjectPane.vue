@@ -4,13 +4,16 @@
  * for an accuracy below 50 (PROPOSED, OQ-M08-08) and "Peta DSKP — Standard Pembelajaran".
  * Text is 12px and up (D-26, D9: the live 11px / 10px text is unreadable).
  */
-import { ArrowDown, ArrowUp, HeartHandshake, Map, Minus } from '@lucide/vue'
-import { computed } from 'vue'
+import { DsScoreRing } from '@/ds'
 
 import type { AnalyticsSubject } from '../../api/types'
-import { STATUS_LABEL, TILE_STYLE, TREND_TEXT, accuracyText, ringDash } from '../../lib/analitik'
+import { STATUS_LABEL, TILE_COLOR, TREND_ICON, TREND_TEXT, accuracyText } from '../../lib/analitik'
+import { usePhIcon } from '../../lib/icons'
+import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{ subject: AnalyticsSubject }>()
+
+const icon = usePhIcon()
 
 const LEGEND = [
   { status: 'mahir', label: 'Mahir (75%+)' },
@@ -19,142 +22,121 @@ const LEGEND = [
   { status: 'belum', label: 'Belum Cuba' },
 ] as const
 
-const dots = computed(() => [
-  { id: 'mahir', color: 'bg-green-500', count: props.subject.counts.mahir },
-  { id: 'sederhana', color: 'bg-yellow-400', count: props.subject.counts.sederhana },
-  { id: 'lemah', color: 'bg-red-500', count: props.subject.counts.lemah },
-  { id: 'belum', color: 'bg-slate-200', count: props.subject.counts.belum },
-])
+const TREND_LABEL = { up: 'Naik', down: 'Turun', stable: 'Tetap' } as const
+
+const dots = () =>
+  [
+    { id: 'mahir', count: props.subject.counts.mahir },
+    { id: 'sederhana', count: props.subject.counts.sederhana },
+    { id: 'lemah', count: props.subject.counts.lemah },
+    { id: 'belum', count: props.subject.counts.belum },
+  ] as const
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" :data-testid="`pane-${subject.subjectId}`">
-    <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
-      <div
-        class="flex min-w-0 flex-col items-center justify-center rounded-2xl bg-white p-5 shadow"
-        data-testid="ring-card"
-      >
-        <div class="relative h-32 w-32">
-          <svg viewBox="0 0 120 120" class="h-32 w-32 -rotate-90">
-            <circle cx="60" cy="60" r="50" fill="none" stroke-width="12" class="stroke-slate-100" />
-            <circle
-              cx="60"
-              cy="60"
-              r="50"
-              fill="none"
-              stroke-width="12"
-              stroke-linecap="round"
-              class="stroke-green-500"
-              :stroke-dasharray="ringDash(subject.counts.mahir, subject.ringTotal)"
-              data-testid="ring-arc"
-            />
-          </svg>
-          <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span class="text-2xl font-bold text-slate-800" data-testid="ring-mahir">{{
-              subject.counts.mahir
-            }}</span>
-            <span class="text-xs text-slate-400" data-testid="ring-total"
-              >/ {{ subject.ringTotal }} SP</span
-            >
-          </div>
-        </div>
-        <p class="mt-3 text-sm font-semibold text-slate-700">Standard Dikuasai</p>
-        <div class="mt-2 flex items-center gap-3 text-xs text-slate-500" data-testid="ring-legend">
-          <span v-for="d in dots" :key="d.id" class="flex items-center gap-1">
-            <span :class="['h-2.5 w-2.5 rounded-full', d.color]"></span>{{ d.count }}
-          </span>
-        </div>
-      </div>
-
-      <div class="min-w-0 rounded-2xl bg-white p-5 shadow lg:col-span-2">
-        <div class="grid grid-cols-2 gap-4 text-center sm:grid-cols-4" data-testid="kpis">
-          <div>
-            <p
-              :class="['text-2xl font-bold', accuracyText(subject.accuracy)]"
-              data-testid="kpi-acc"
-            >
-              {{ subject.accuracy.toFixed(1) }}%
-            </p>
-            <p class="text-xs text-slate-400">Ketepatan</p>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-slate-700" data-testid="kpi-answered">
-              {{ subject.answered }}
-            </p>
-            <p class="text-xs text-slate-400">Soalan Dijawab</p>
-          </div>
-          <div>
-            <p
-              class="flex h-8 items-center justify-center text-2xl font-bold"
-              data-testid="kpi-trend"
-            >
-              <ArrowUp v-if="subject.trend === 'up'" :class="['h-6 w-6', TREND_TEXT.up]" />
-              <ArrowDown
-                v-else-if="subject.trend === 'down'"
-                :class="['h-6 w-6', TREND_TEXT.down]"
+  <div class="flex min-w-0 flex-col gap-4 md:gap-6" :data-testid="`pane-${subject.subjectId}`">
+    <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
+      <UCard class="min-w-0" data-testid="ring-card">
+        <div class="flex flex-col items-center gap-3">
+          <DsScoreRing
+            :value="subject.counts.mahir"
+            :max="subject.ringTotal"
+            size="md"
+            label="Standard Dikuasai"
+            :display="String(subject.counts.mahir)"
+            :unit="`/ ${subject.ringTotal} SP`"
+            data-testid="ring-arc"
+          />
+          <p class="text-label text-highlighted">Standard Dikuasai</p>
+          <ul class="flex flex-wrap justify-center gap-2" data-testid="ring-legend">
+            <li v-for="d in dots()" :key="d.id">
+              <UBadge
+                :color="TILE_COLOR[d.id]"
+                variant="subtle"
+                :label="`${STATUS_LABEL[d.id]} ${d.count}`"
               />
-              <Minus v-else :class="['h-6 w-6', TREND_TEXT.stable]" />
-            </p>
-            <p class="text-xs text-slate-400">Trend 30 Hari</p>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-blue-600" data-testid="kpi-grade">
-              {{ subject.projection.low }} – {{ subject.projection.high }}
-            </p>
-            <p class="text-xs text-slate-400">Unjuran Gred</p>
-          </div>
+            </li>
+          </ul>
         </div>
-        <div
-          v-if="subject.accuracy < 50"
-          class="mt-4 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700"
-          data-testid="encourage-box"
-        >
-          <HeartHandshake class="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            Jangan putus asa! Latihan konsisten akan membantu. Mulakan dengan topik yang paling
-            lemah di bawah.
-          </p>
+      </UCard>
+
+      <UCard class="min-w-0 lg:col-span-2">
+        <div class="flex flex-col gap-4">
+          <ul class="grid grid-cols-2 gap-4 text-center sm:grid-cols-4" data-testid="kpis">
+            <li class="flex flex-col gap-1">
+              <ToneText
+                :tone="accuracyText(subject.accuracy)"
+                class="tabular text-title"
+                data-testid="kpi-acc"
+                >{{ subject.accuracy.toFixed(1) }}%</ToneText
+              >
+              <span class="text-caption text-muted">Ketepatan</span>
+            </li>
+            <li class="flex flex-col gap-1">
+              <span class="tabular text-title text-highlighted" data-testid="kpi-answered">{{
+                subject.answered
+              }}</span>
+              <span class="text-caption text-muted">Soalan Dijawab</span>
+            </li>
+            <li class="flex flex-col items-center gap-1">
+              <span class="flex items-center gap-1" data-testid="kpi-trend">
+                <ToneText :tone="TREND_TEXT[subject.trend]" class="flex items-center gap-1">
+                  <UIcon :name="icon(TREND_ICON[subject.trend])" class="size-8" />
+                  <span class="text-label">{{ TREND_LABEL[subject.trend] }}</span>
+                </ToneText>
+              </span>
+              <span class="text-caption text-muted">Trend 30 Hari</span>
+            </li>
+            <li class="flex flex-col gap-1">
+              <span class="tabular text-title text-primary" data-testid="kpi-grade"
+                >{{ subject.projection.low }} – {{ subject.projection.high }}</span
+              >
+              <span class="text-caption text-muted">Unjuran Gred</span>
+            </li>
+          </ul>
+          <UAlert
+            v-if="subject.accuracy < 50"
+            color="error"
+            variant="subtle"
+            :icon="icon('hand-heart')"
+            title="Jangan putus asa! Latihan konsisten akan membantu. Mulakan dengan topik yang paling lemah di bawah."
+            data-testid="encourage-box"
+          />
         </div>
-      </div>
+      </UCard>
     </div>
 
-    <section class="min-w-0 rounded-2xl bg-white p-5 shadow" data-testid="dskp-map">
-      <h3 class="flex items-center gap-2 text-sm font-bold text-slate-700">
-        <Map class="h-4 w-4 text-blue-500" />Peta DSKP — Standard Pembelajaran
-      </h3>
-      <p
-        class="mt-3 text-xs font-semibold tracking-wide text-slate-500 uppercase"
-        data-testid="map-caption"
-      >
-        {{ subject.map.caption }}
-      </p>
-      <div class="mt-2 flex flex-wrap gap-2" data-testid="map-tiles">
-        <div
-          v-for="t in subject.map.tiles"
-          :key="t.spId"
-          :class="[
-            'flex h-11 min-w-11 items-center justify-center rounded-lg border px-1 text-xs font-semibold',
-            TILE_STYLE[t.status],
-          ]"
-          :title="`${t.code}: ${t.title} — ${STATUS_LABEL[t.status]}`"
-          :data-testid="`tile-${t.spId}`"
-        >
-          {{ t.code }}
-        </div>
+    <UCard data-testid="dskp-map">
+      <div class="flex flex-col gap-4">
+        <h3 class="flex items-center gap-2 text-subheading text-highlighted">
+          <UIcon :name="icon('map-trifold')" class="size-5 text-primary" />Peta DSKP — Standard
+          Pembelajaran
+        </h3>
+        <p class="text-overline text-muted" data-testid="map-caption">
+          {{ subject.map.caption }}
+        </p>
+        <ul class="flex flex-wrap gap-2" data-testid="map-tiles">
+          <li v-for="t in subject.map.tiles" :key="t.spId">
+            <UBadge
+              :color="TILE_COLOR[t.status]"
+              variant="subtle"
+              size="lg"
+              class="min-h-11 min-w-11 justify-center"
+              :label="t.code"
+              :title="`${t.code}: ${t.title} — ${STATUS_LABEL[t.status]}`"
+              :data-testid="`tile-${t.spId}`"
+            />
+          </li>
+        </ul>
+        <ul class="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="map-legend">
+          <li v-for="l in LEGEND" :key="l.status">
+            <UBadge :color="TILE_COLOR[l.status]" variant="subtle" :label="l.label" />
+          </li>
+          <li class="flex items-center gap-2 text-caption text-muted">
+            <UBadge color="primary" variant="subtle" label="Fokus" />Klik untuk latihan fokus
+          </li>
+        </ul>
       </div>
-      <div
-        class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500"
-        data-testid="map-legend"
-      >
-        <span v-for="l in LEGEND" :key="l.status" class="flex items-center gap-1.5">
-          <span :class="['h-3 w-3 rounded border', TILE_STYLE[l.status]]"></span>{{ l.label }}
-        </span>
-        <span class="flex items-center gap-1.5">
-          <span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700"
-            >Fokus</span
-          >Klik untuk latihan fokus
-        </span>
-      </div>
-    </section>
+    </UCard>
   </div>
 </template>

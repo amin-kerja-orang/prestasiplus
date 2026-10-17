@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       onForbidden: '404',
       title: 'Dashboard Kelas',
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -36,6 +37,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Pantau prestasi pelajar dan kenal pasti yang memerlukan perhatian',
       },
       module: 'M08',
+      v2: true,
     },
   },
 ]

@@ -1,98 +1,134 @@
 <script setup lang="ts">
 /** S11 "Indeks Diskriminasi" tab (FR-M08-71…73): the guide, then the table or "Data Tidak Mencukupi". */
-import { ChartLine, Info } from '@lucide/vue'
+import { computed } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
 
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
+import { DsDataTable, DsEmptyState } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { ItemAnalysis } from '../../api/types'
-import { STATUS_PILL, indexClass } from '../../lib/prestasi/item-analysis'
+import { usePhIcon } from '../../lib/icons'
+import { STATUS_COLOR, indexClass } from '../../lib/prestasi/item-analysis'
+import ToneText from '../shared/ToneText.vue'
 
-defineProps<{ discrimination: ItemAnalysis['discrimination'] }>()
+const props = defineProps<{ discrimination: ItemAnalysis['discrimination'] }>()
+
+const icon = usePhIcon()
+
+type Status = ItemAnalysis['discrimination']['rows'][number]['status']
+const statusColor = (s: Status) => STATUS_COLOR[s]
 
 const GUIDE = [
-  { range: '≥ 0.40', label: '= Sangat Baik', style: 'background: #dcfce7; color: #166534' },
-  { range: '0.30 – 0.39', label: '= Baik', style: 'background: #d1fae5; color: #065f46' },
-  { range: '0.20 – 0.29', label: '= Sederhana', style: 'background: #fef3c7; color: #92400e' },
-  { range: '< 0.20', label: '= Lemah', style: 'background: #fee2e2; color: #991b1b' },
+  { range: '≥ 0.40', label: '= Sangat Baik', color: 'success' },
+  { range: '0.30 – 0.39', label: '= Baik', color: 'info' },
+  { range: '0.20 – 0.29', label: '= Sederhana', color: 'warning' },
+  { range: '< 0.20', label: '= Lemah', color: 'error' },
+] as const
+
+type Source = ItemAnalysis['discrimination']['rows'][number]
+interface Row extends Record<string, unknown> {
+  questionId: number
+  index: number
+  text: string
+  upperText: string
+  lowerText: string
+  indexValue: number
+  indexText: string
+  status: Source['status']
+}
+const rows = computed<Row[]>(() =>
+  props.discrimination.rows.map((r, i) => ({
+    questionId: r.questionId,
+    index: i + 1,
+    text: r.text,
+    upperText: `${formatNumber(r.upperPct, { decimals: 1 })}% betul`,
+    lowerText: `${formatNumber(r.lowerPct, { decimals: 1 })}% betul`,
+    indexValue: r.index,
+    indexText: r.index.toFixed(3),
+    status: r.status,
+  })),
+)
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'index', header: '#' },
+  { accessorKey: 'text', header: 'Soalan' },
+  { accessorKey: 'upperText', header: 'Kumpulan Atas' },
+  { accessorKey: 'lowerText', header: 'Kumpulan Bawah' },
+  { accessorKey: 'indexText', header: 'Indeks' },
+  { accessorKey: 'status', header: 'Status' },
+]
+const cardFields = [
+  { key: 'upperText', label: 'Kumpulan Atas' },
+  { key: 'lowerText', label: 'Kumpulan Bawah' },
+  { key: 'indexText', label: 'Indeks' },
+  { key: 'status', label: 'Status' },
 ]
 </script>
 
 <template>
-  <div class="space-y-4" data-testid="discrimination-tab">
-    <section class="rounded-2xl bg-white p-4 shadow" data-testid="discrimination-guide">
-      <h3 class="mb-2 flex items-center gap-2 text-sm font-bold text-slate-800">
-        <Info class="h-4 w-4 text-indigo-500" />Panduan Indeks Diskriminasi
-      </h3>
-      <div class="flex flex-wrap gap-2">
-        <span
-          v-for="g in GUIDE"
-          :key="g.range"
-          class="rounded-full px-3 py-1 text-xs"
-          :style="g.style"
-          ><strong>{{ g.range }}</strong> {{ g.label }}</span
-        >
+  <div class="flex min-w-0 flex-col gap-4" data-testid="discrimination-tab">
+    <UCard data-testid="discrimination-guide">
+      <div class="flex flex-col gap-3">
+        <h3 class="flex items-center gap-2 text-subheading text-highlighted">
+          <UIcon :name="icon('info')" class="size-5 text-primary" />Panduan Indeks Diskriminasi
+        </h3>
+        <ul class="flex flex-wrap gap-2">
+          <li v-for="g in GUIDE" :key="g.range">
+            <UBadge :color="g.color" variant="subtle" size="lg">
+              <strong>{{ g.range }}</strong> {{ g.label }}
+            </UBadge>
+          </li>
+        </ul>
+        <p class="text-caption text-muted">
+          Indeks dikira berdasarkan perbezaan prestasi antara
+          <strong>27% pelajar terbaik</strong> dan <strong>27% pelajar bawah</strong> dengan
+          menggunakan semua sesi latihan.
+        </p>
       </div>
-      <p class="mt-3 text-xs text-slate-500">
-        Indeks dikira berdasarkan perbezaan prestasi antara <strong>27% pelajar terbaik</strong> dan
-        <strong>27% pelajar bawah</strong> dengan menggunakan semua sesi latihan.
-      </p>
-    </section>
+    </UCard>
 
-    <DataTableCard v-if="discrimination.sufficient" :min-width="560">
-      <table :class="T.table" data-testid="discrimination-table">
-        <thead>
-          <tr>
-            <th :class="T.th">#</th>
-            <th :class="T.th">Soalan</th>
-            <th :class="[T.th, 'text-center']">Kumpulan Atas</th>
-            <th :class="[T.th, 'text-center']">Kumpulan Bawah</th>
-            <th :class="[T.th, 'text-center']">Indeks</th>
-            <th :class="[T.th, 'text-center']">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(r, i) in discrimination.rows"
-            :key="r.questionId"
-            :class="T.row"
-            :data-testid="`discrimination-row-${r.questionId}`"
-          >
-            <td :class="[T.td, 'text-slate-400']">{{ i + 1 }}</td>
-            <td :class="[T.td, 'max-w-xs min-w-44']">
-              <span class="line-clamp-2 break-words">{{ r.text }}</span>
-            </td>
-            <td :class="[T.td, 'text-center text-green-700']">
-              {{ formatNumber(r.upperPct, { decimals: 1 }) }}% betul
-            </td>
-            <td :class="[T.td, 'text-center text-red-700']">
-              {{ formatNumber(r.lowerPct, { decimals: 1 }) }}% betul
-            </td>
-            <td :class="[T.td, 'text-center font-mono font-semibold', indexClass(r.index)]">
-              {{ r.index.toFixed(3) }}
-            </td>
-            <td :class="[T.td, 'text-center']">
-              <span
-                :class="['rounded-full px-2.5 py-0.5 text-xs font-semibold', STATUS_PILL[r.status]]"
-                >{{ r.status }}</span
-              >
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </DataTableCard>
-
-    <section
-      v-else
-      class="rounded-2xl bg-white py-10 text-center shadow"
-      data-testid="discrimination-insufficient"
+    <DsDataTable
+      v-if="discrimination.sufficient"
+      :data="rows"
+      :columns="columns"
+      caption="Indeks diskriminasi soalan"
+      card-title="text"
+      :card-fields="cardFields"
+      :page-size="1000"
+      data-testid="discrimination-table"
     >
-      <ChartLine class="mx-auto h-12 w-12 text-slate-300" />
-      <h3 class="mt-3 text-lg font-bold text-slate-800">Data Tidak Mencukupi</h3>
-      <p class="mx-auto mt-1 max-w-md text-sm text-slate-500">
-        Perlu sekurang-kurangnya 4 pelajar dengan sesi latihan selesai untuk mengira indeks
-        diskriminasi.
-      </p>
-    </section>
+      <template #text-cell="{ row }">
+        <span
+          class="line-clamp-2 max-w-sm min-w-44 break-words"
+          :data-testid="`discrimination-row-${row.original.questionId}`"
+          >{{ row.original.text }}</span
+        >
+      </template>
+      <template #upperText-cell="{ row }">
+        <span class="text-success">{{ row.original.upperText }}</span>
+      </template>
+      <template #lowerText-cell="{ row }">
+        <span class="text-error">{{ row.original.lowerText }}</span>
+      </template>
+      <template #indexText-cell="{ row }">
+        <ToneText :tone="indexClass(row.original.indexValue)" class="text-label">{{
+          row.original.indexText
+        }}</ToneText>
+      </template>
+      <template #status-cell="{ row }">
+        <UBadge
+          :color="statusColor(row.original.status)"
+          variant="subtle"
+          :label="row.original.status"
+        />
+      </template>
+    </DsDataTable>
+
+    <div v-else data-testid="discrimination-insufficient">
+      <DsEmptyState
+        title="Data Tidak Mencukupi"
+        description="Perlu sekurang-kurangnya 4 pelajar dengan sesi latihan selesai untuk mengira indeks diskriminasi."
+        icon="i-ph-chart-line-up"
+      />
+    </div>
   </div>
 </template>

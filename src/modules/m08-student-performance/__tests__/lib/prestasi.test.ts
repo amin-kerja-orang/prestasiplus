@@ -12,9 +12,8 @@ import {
   pctTrim,
   plain,
   ratioPct,
-  withAlpha,
 } from '../../lib/prestasi/format'
-import { pointColor, tooltipLabel, trendData } from '../../lib/prestasi/gps-chart'
+import { sparklineSeries, trendSeries } from '../../lib/prestasi/gps-chart'
 import {
   filterRows,
   indexClass,
@@ -51,37 +50,32 @@ describe('format', () => {
   it('never divides by zero for a bar', () => {
     expect(ratioPct(0, 0)).toBe(0)
     expect(ratioPct(5, 10)).toBe(50)
-    expect(withAlpha('#10B981', '30')).toBe('#10B98130')
   })
 })
 
 describe('gps chart', () => {
-  it('colours a point by band and a missing value transparent', () => {
-    expect(pointColor(1.5)).toBe('#10b981')
-    expect(pointColor(5.2)).toBe('#f59e0b')
-    expect(pointColor(null)).toBe('transparent')
+  it('plots the overall line and the subjects that have a value for every plotted year', () => {
+    const input = trendSeries({
+      labels: [2022, 2023, 2024],
+      overall: [5.2, 4.1, null],
+      subjects: [
+        { name: 'Sains', color: '#fbbf24', data: [5.8, 2.9, null] },
+        { name: 'Kimia', color: '#10b981', data: [null, 3.3, null] },
+      ],
+    })
+    expect(input.labels).toEqual(['2022', '2023'])
+    expect(input.series.map((x) => x.label)).toEqual(['GPS Keseluruhan', 'Sains'])
+    expect(input.series[0]?.data).toEqual([5.2, 4.1])
+    expect(input.series[1]?.data).toEqual([5.8, 2.9])
   })
 
-  it('builds the overall line plus one dashed line per subject', () => {
-    const data = trendData({
-      labels: [2022, 2023],
-      overall: [5.2, null],
-      subjects: [{ name: 'Sains', color: '#fbbf24', data: [5.8, 2.9] }],
-    })
-    expect(data.datasets).toHaveLength(2)
-    expect(data.datasets[0]).toMatchObject({
-      label: 'GPS Keseluruhan',
-      borderWidth: 3,
-      pointRadius: 6,
-    })
-    expect(data.datasets[1]).toMatchObject({ label: 'Sains', borderDash: [4, 3] })
-  })
-
-  it('words the tooltip as the live chart does', () => {
-    const item = (y: number | null) =>
-      ({ dataset: { label: 'Sains' }, parsed: { y } }) as Parameters<typeof tooltipLabel>[0]
-    expect(tooltipLabel(item(4.3))).toBe('Sains: 4.30 (Sederhana)')
-    expect(tooltipLabel(item(null))).toBe('Sains: Tiada data')
+  it('builds the one-line sparkline of S9', () => {
+    const input = sparklineSeries([
+      { year: 2024, gps: 3.2 },
+      { year: 2025, gps: 2.9 },
+    ])
+    expect(input.labels).toEqual(['2024', '2025'])
+    expect(input.series[0]?.data).toEqual([3.2, 2.9])
   })
 })
 
@@ -126,9 +120,9 @@ describe('item analysis helpers', () => {
   })
 
   it('colours the discrimination index and joins the topic line without empty parts', () => {
-    expect(indexClass(0.4)).toBe('text-green-600')
-    expect(indexClass(0.25)).toBe('text-amber-600')
-    expect(indexClass(-0.5)).toBe('text-red-600')
+    expect(indexClass(0.4)).toBe('text-success')
+    expect(indexClass(0.25)).toBe('text-warning')
+    expect(indexClass(-0.5)).toBe('text-error')
     expect(topicLine({ subject: 'Kimia', topic: 'Sel', subtopic: null })).toBe('Kimia — Sel')
   })
 })

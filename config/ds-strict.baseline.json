@@ -1,10 +1,88 @@
 {
   "$comment": "Committed floor of config/ds-strict.json (same shape). Raise it together with the list; never lower it. `exempt` may only shrink.",
   "strict": [
-    { "glob": "src/ds/**", "level": "ds" },
-    { "glob": "src/dev/ds/**", "level": "page" },
-    { "glob": "src/modules/m28-bijak-spm/pages/**", "level": "page" },
-    { "glob": "src/modules/m28-bijak-spm/components/**", "level": "ds" }
+    {
+      "glob": "src/ds/**",
+      "level": "ds"
+    },
+    {
+      "glob": "src/dev/ds/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m28-bijak-spm/pages/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m28-bijak-spm/components/**",
+      "level": "ds"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/PrestasiSekolahPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/TingkatanPilihPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/TingkatanPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/PrestasiKelasPilihPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/PrestasiKelasDetailPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/Prestasi360Page.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/AnalitikPelajarPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/AnalitikKelasPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/AnalisaItemSekolahPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/AnalisaItemKelasPilihPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/AnalisaItemKelasPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/components/prestasi/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/components/prestasi360/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/components/analitik/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/components/analisa-item/**",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/components/shared/**",
+      "level": "ds"
+    }
   ],
-  "exempt": ["src/theme/**"]
+  "exempt": [
+    "src/theme/**"
+  ]
 }

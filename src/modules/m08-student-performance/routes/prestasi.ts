@@ -18,6 +18,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Dashboard Sekolah — Prestasi',
       header: { title: 'Dashboard Sekolah', subtitle: 'Selamat datang kembali' },
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -33,6 +34,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Pilih tingkatan untuk lihat prestasi keseluruhan',
       },
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -45,6 +47,7 @@ const routes: RouteRecordRaw[] = [
       title: (route) =>
         `Tingkatan ${route.params.code === 't4' ? '4' : '5'} — Dashboard Tingkatan | PRESTASIPLUS`,
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -57,6 +60,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Pilih Kelas — Prestasi',
       header: { title: 'Prestasi Kelas', subtitle: 'Pilih kelas untuk lihat prestasi keseluruhan' },
       module: 'M08',
+      v2: true,
     },
   },
   {

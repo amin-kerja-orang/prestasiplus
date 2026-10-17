@@ -23,6 +23,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Pantau prestasi dan kenal pasti topik yang perlu diperkukuhkan',
       },
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -34,6 +35,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       header: { title: 'Prestasi 360', subtitle: 'Selamat datang kembali' },
       module: 'M08',
+      v2: true,
     },
   },
 ]

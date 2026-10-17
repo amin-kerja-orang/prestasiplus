@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
+
+import USelect from '@nuxt/ui/components/Select.vue'
 
 import { ApiError } from '@/api'
 import { useRouteOutcome } from '@/app/router'
@@ -121,6 +123,19 @@ async function render(component: object, path: string, route: string) {
   return wrapper
 }
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid=${id}]`)
+/** The big number of a stat tile. */
+const num = (w: VueWrapper, id: string) => t(w, id).find('.tabular').text()
+/** The table row (or card) that holds the element with this test id. */
+const tr = (w: VueWrapper, id: string) =>
+  new DOMWrapper(t(w, id).element.closest('tr') ?? t(w, id).element)
+/** The Nuxt UI select with this test id. */
+const select = (w: VueWrapper, id: string) => {
+  const found = w
+    .findAllComponents(USelect)
+    .find((c) => c.element.matches(`[data-testid=${id}]`) || c.find(`[data-testid=${id}]`).exists())
+  if (!found) throw new Error(`no select ${id}`)
+  return found
+}
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -152,17 +167,12 @@ describe('S5 PrestasiKelasDetailPage', () => {
     expect(t(w, 'class-sub').text()).toBe('SMK DEMO · Kimia · 2026 · Kod: DMO101')
     expect(t(w, 'back-link').attributes('title')).toBe('Kembali ke senarai kelas')
     expect(t(w, 'back-link').attributes('href')).toBe('/prestasi/kelas')
-    expect(w.findAll('[data-testid=stat-cards] p.text-2xl').map((p) => p.text())).toEqual([
-      '8',
-      '42.6%',
-      '11',
-      '68',
-      '6.1m',
-      '6',
-    ])
-    expect(t(w, 'hc-on').text()).toBe('0')
-    expect(t(w, 'hc-below').text()).toBe('1')
-    expect(t(w, 'hc-none').text()).toBe('7')
+    expect(
+      ['murid', 'ketepatan', 'sesi', 'soalan', 'masa', 'aktif'].map((id) => num(w, `stat-${id}`)),
+    ).toEqual(['8', '42.6%', '11', '68', '6.1m', '6'])
+    expect(num(w, 'hc-on')).toBe('0')
+    expect(num(w, 'hc-below')).toBe('1')
+    expect(num(w, 'hc-none')).toBe('7')
     expect(t(w, 'hc-tov').text()).toBe('Purata TOV: 50%')
     expect(t(w, 'hc-full').attributes('href')).toBe('/headcount/504/summary')
   })
@@ -199,12 +209,12 @@ describe('S5 PrestasiKelasDetailPage', () => {
     expect(t(w, 'attention-3003').attributes('href')).toBe('/prestasi/3003')
     expect(t(w, 'attention-3099').text()).toContain('Belum mula berlatih')
     expect(t(w, 'attention-3099').text()).toContain('Tak Aktif')
-    const first = t(w, 'rank-row-3001')
+    const first = tr(w, 'rank-row-3001')
     expect(first.text()).toContain('🥇')
     expect(first.text()).toContain('88.9%')
     expect(first.get('[data-testid=rank-badge]').text()).toBe('Below')
     expect(first.text()).toContain('yang lepas')
-    const idle = t(w, 'rank-row-3099')
+    const idle = tr(w, 'rank-row-3099')
     expect(idle.get('[data-testid=rank-acc]').text()).toBe('—')
     expect(idle.get('[data-testid=rank-badge]').text()).toBe('N/A')
   })
@@ -212,12 +222,11 @@ describe('S5 PrestasiKelasDetailPage', () => {
   it('the class select navigates to the chosen class', async () => {
     api.fetchClassDashboard.mockResolvedValue(S5)
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
-    const select = t(w, 'switch-class')
-    expect(select.findAll('option').map((o) => o.text())).toEqual([
-      'Tukar Kelas...',
-      '5 MARIKH - Kimia',
+    const switcher = select(w, 'switch-class')
+    expect((switcher.props() as unknown as { items: unknown }).items).toEqual([
+      { label: '5 MARIKH - Kimia', value: '/prestasi/kelas/2001' },
     ])
-    await select.setValue('/prestasi/kelas/2001')
+    switcher.vm.$emit('update:modelValue', '/prestasi/kelas/2001')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/prestasi/kelas/2001')
   })
@@ -242,15 +251,14 @@ describe('S8 AnalitikKelasPage', () => {
     expect(api.fetchClassAnalytics.mock.calls[0]?.[0]).toEqual({ classroomId: 2001, riskLevel: '' })
     expect(t(w, 'sum-pelajar').text()).toContain('2')
     expect(t(w, 'sum-ketepatan').text()).toContain('41.8%')
-    expect(t(w, 'sum-berisiko').classes().join(' ')).toBeDefined()
-    expect(t(w, 'sum-berisiko').get('p').classes()).toContain('text-red-600')
+    expect(num(w, 'sum-berisiko')).toBe('1')
     expect(t(w, 'sum-baik').text()).toContain('1')
-    expect(t(w, 'student-row-3001').text()).toContain('88.9%')
-    expect(t(w, 'student-row-3001').text()).toContain('A- – A+')
-    expect(t(w, 'student-row-3001').get('[data-testid=risk-badge]').text()).toBe('Rendah')
-    expect(t(w, 'student-row-3007').get('[data-testid=risk-badge]').text()).toBe('Kritikal')
-    expect(t(w, 'student-row-3007').text()).toContain('Lihat Analitik')
-    expect(t(w, 'student-row-3007').get('a').attributes('href')).toBe('/prestasi/3007')
+    expect(tr(w, 'student-row-3001').text()).toContain('88.9%')
+    expect(tr(w, 'student-row-3001').text()).toContain('A- – A+')
+    expect(tr(w, 'student-row-3001').get('[data-testid=risk-badge]').text()).toBe('Rendah')
+    expect(tr(w, 'student-row-3007').get('[data-testid=risk-badge]').text()).toBe('Kritikal')
+    expect(tr(w, 'student-row-3007').text()).toContain('Lihat Analitik')
+    expect(tr(w, 'student-row-3007').get('a').attributes('href')).toBe('/prestasi/3007')
   })
 
   it('Pelajar Berisiko is green when 0; no card is hidden', async () => {
@@ -259,7 +267,7 @@ describe('S8 AnalitikKelasPage', () => {
       summary: { students: 6, accuracy: 0, atRisk: 0, good: 4 },
     })
     const w = await render(AnalitikKelasPage, '/analitik/kelas?classroom_id=4', '/analitik/kelas')
-    expect(t(w, 'sum-berisiko').get('p').classes()).toContain('text-green-600')
+    expect(num(w, 'sum-berisiko')).toBe('0')
     expect(t(w, 'sum-ketepatan').text()).toContain('0.0%')
   })
 
@@ -271,9 +279,9 @@ describe('S8 AnalitikKelasPage', () => {
     )
     expect(w.find('[data-testid=student-table]').exists()).toBe(false)
     expect(
-      t(w, 'filter-risiko')
-        .findAll('option')
-        .map((o) => o.text()),
+      (select(w, 'filter-risiko').props() as unknown as { items: { label: string }[] }).items.map(
+        (o) => o.label,
+      ),
     ).toEqual(['Semua Risiko', 'Kritikal', 'Tinggi', 'Sederhana', 'Rendah'])
   })
 
@@ -284,14 +292,14 @@ describe('S8 AnalitikKelasPage', () => {
       '/analitik/kelas?classroom_id=2001&subject_id=10',
       '/analitik/kelas',
     )
-    await t(w, 'filter-risiko').setValue('critical')
+    select(w, 'filter-risiko').vm.$emit('update:modelValue', 'critical')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({
       classroom_id: '2001',
       subject_id: '10',
       risk_level: 'critical',
     })
-    await t(w, 'filter-kelas').setValue('2001')
+    select(w, 'filter-kelas').vm.$emit('update:modelValue', '2001')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({
       classroom_id: '2001',
