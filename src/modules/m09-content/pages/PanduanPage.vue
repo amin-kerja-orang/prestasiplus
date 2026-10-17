@@ -14,6 +14,7 @@ import { useRoute } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useSession } from '@/composables/useSession'
 import { DsArt3D, DsIconChip } from '@/ds'
+import { useThemeMode } from '@/theme/color-mode'
 
 import { fetchSupportConfig } from '../api/content'
 import WhatsAppIcon from '../components/icons/WhatsAppIcon.vue'
@@ -34,7 +35,9 @@ const ROLE_ICONS: Record<RoleId, string> = {
 }
 
 const route = useRoute()
-const { isLoggedIn } = useSession()
+const { isLoggedIn, role: sessionRole } = useSession()
+// Standalone page: follow the stored theme (dark by default for a student, calm staff otherwise).
+useThemeMode(computed(() => (sessionRole?.value === 'student' ? 'learner' : 'staff')))
 
 const activeRole = ref<string>(roleFromHash(route.hash))
 const activePanel = computed(() => GUIDE_ROLES.find((r) => r.id === activeRole.value) ?? null)

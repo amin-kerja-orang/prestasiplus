@@ -13,7 +13,10 @@ describe('Pembelajaran shell selection', () => {
   it('student and teacher get the Pembelajaran layout while the scope is on', () => {
     expect(userShellFor('student')).toBe('pembelajaran')
     expect(userShellFor('teacher')).toBe('pembelajaran')
-    expect(userShellFor('school_admin')).toBe('user')
+    expect(userShellFor('school_admin')).toBe('pembelajaran') // staff v2 shell (S-01)
+    expect(userShellFor('admin')).toBe('pentadbiran') // Profil, Tetapan, Tiket (S-10)
+    expect(resolveShell('admin', { isLoggedIn: true, role: 'teacher' })).toBe('pembelajaran') // S-12
+    expect(resolveShell('role', { isLoggedIn: true, role: 'admin' })).toBe('pentadbiran')
     expect(resolveShell('user', { isLoggedIn: true, role: 'student' })).toBe('pembelajaran')
     expect(resolveShell('public-or-user', { isLoggedIn: false, role: null })).toBe('public')
   })
