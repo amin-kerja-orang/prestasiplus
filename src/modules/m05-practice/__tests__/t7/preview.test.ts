@@ -21,7 +21,7 @@ const mountIt = async () => {
     routes: [{ path: '/:r(.*)*', component: { template: '<div />' } }],
   })
   await router.push('/remedial/7601')
-  const w = mount(RemedialPreview, { props: { id: 7601 }, global: { plugins: [router] } })
+  const w = mount(RemedialPreview, { props: { id: 7601 }, global: { plugins: [router], stubs: { teleport: true } } })
   await flushPromises()
   return w
 }

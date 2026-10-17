@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
       // DV-M05-01 / DV-SH-03: no subtitle.
       header: { title: 'Ujian Remedial Saya' },
       module: 'M05',
+      v2: true,
     },
   },
   {
@@ -28,6 +29,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Ujian Remedial Saya',
       header: { title: 'Ujian Remedial Saya' },
       module: 'M05',
+      v2: true,
     },
   },
   {
@@ -64,6 +66,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Set Soalan Guru — PrestasiPlus',
       header: { title: 'Set Soalan Guru' },
       module: 'M05',
+      v2: true,
     },
   },
   {

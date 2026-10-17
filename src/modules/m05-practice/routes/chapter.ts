@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Latihan tersusun ikut bab buku teks dan DSKP',
       },
       module: 'M05',
+      v2: true,
     },
   },
   {
@@ -33,6 +34,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Soalan by Chapter - PRESTASIPLUS',
       header: { title: 'Soalan by Chapter' },
       module: 'M05',
+      v2: true,
     },
   },
   {
@@ -46,6 +48,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Soalan by Chapter - PRESTASIPLUS',
       header: { title: 'Soalan by Chapter' },
       module: 'M05',
+      v2: true,
     },
   },
   {
@@ -59,6 +62,7 @@ const routes: RouteRecordRaw[] = [
       // DV-M05-01 / DV-SH-03: no subtitle (live shows the Dashboard header here).
       header: { title: 'Soalan Aku Salah' },
       module: 'M05',
+      v2: true,
     },
   },
   {
@@ -72,6 +76,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Soalan Aku Salah — PRESTASIPLUS',
       header: { title: 'Soalan Aku Salah' },
       module: 'M05',
+      v2: true,
     },
   },
 ]

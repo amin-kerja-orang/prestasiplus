@@ -128,7 +128,7 @@ async function render(component: unknown, url: string): Promise<VueWrapper> {
     ],
   })
   await router.push(url)
-  wrapper = mount(component as never, { global: { plugins: [router] } })
+  wrapper = mount(component as never, { global: { plugins: [router], stubs: { teleport: true } } })
   await flushPromises()
   return wrapper
 }
@@ -277,12 +277,12 @@ describe('S5 ChapterSubjectPage', () => {
     expect(w.text()).toContain(
       'Lengkapkan semua soalan bab semasa dan capai 70% untuk buka bab seterusnya.',
     )
-    const options = t(w, 'chapter-level-select').findAll('option')
-    expect(options.map((o) => o.text())).toEqual([
+    const select = w.findComponent({ name: 'Select' })
+    expect((select.props('items') as { label: string }[]).map((o) => o.label)).toEqual([
       'Darjah 1 — 2,734 soalan',
       'Darjah 2 — 2,129 soalan',
     ])
-    expect((t(w, 'chapter-level-select').element as HTMLSelectElement).value).toBe('1')
+    expect(select.props('modelValue')).toBe(1)
 
     const open = t(w, 'chapter-card-1')
     expect(open.attributes('data-state')).toBe('open')
@@ -294,12 +294,11 @@ describe('S5 ChapterSubjectPage', () => {
       ['15 soalan', '/practice/chapter/MATH/1/quiz?count=15'],
       ['20 soalan', '/practice/chapter/MATH/1/quiz?count=20'],
     ])
-    expect(t(w, 'chapter-bar-1').attributes('style')).toContain('width: 3.879')
+    expect(Number(t(w, 'chapter-bar-1').get('[role=progressbar]').attributes('aria-valuenow'))).toBeCloseTo(3.879, 2)
 
     const locked = t(w, 'chapter-card-2')
     expect(locked.attributes('data-state')).toBe('locked')
-    expect(locked.classes()).toContain('opacity-75')
-    expect(locked.find('svg').exists()).toBe(true)
+        expect(locked.find('svg').exists()).toBe(true)
     expect(t(w, 'chapter-locked-2').text()).toBe('Kunci bab sebelumnya')
     expect(locked.findAll('a')).toHaveLength(0)
     // Locked chapters still show their stats (D-7).
@@ -317,8 +316,8 @@ describe('S5 ChapterSubjectPage', () => {
 
   it('navigates to ?level= when the select changes and passes ?level= to the API', async () => {
     const w = await render(ChapterSubjectPage, '/practice/chapter/MATH')
-    const select = t(w, 'chapter-level-select')
-    await select.setValue('2')
+    w.findComponent({ name: 'Select' }).vm.$emit('update:modelValue', 2)
+    await flushPromises()
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/practice/chapter/MATH?level=2')
     expect(api.fetchChapterSubject).toHaveBeenLastCalledWith(

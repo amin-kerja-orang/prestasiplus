@@ -44,6 +44,7 @@ import type {
   QuizReportConfig,
   QuizStartErrorEvent,
 } from './quiz-types'
+import QuizLoading from './QuizLoading.vue'
 import QuizResults from './QuizResults.vue'
 import { useQuizRun } from './useQuizRun'
 
@@ -273,17 +274,12 @@ const feedbackExplanation = computed(() =>
     >
       <div class="mx-auto flex min-h-full w-full max-w-xl flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6">
         <!-- Loading -->
-        <UCard v-if="phase === 'loading'" class="mt-12" data-testid="quiz-loading">
-          <div class="flex flex-col items-center gap-3 py-8 text-center" role="status">
-            <UIcon
-              name="i-ph-circle-notch-bold"
-              class="size-12 animate-spin text-primary-t motion-reduce:animate-none"
-              aria-hidden="true"
-            />
-            <h1 class="text-heading text-highlighted">{{ labels.loadingTitle }}</h1>
-            <p class="text-body text-muted">{{ labels.loadingText }}</p>
-          </div>
-        </UCard>
+        <QuizLoading
+          v-if="phase === 'loading'"
+          :title="labels.loadingTitle"
+          :text="labels.loadingText"
+          data-testid="quiz-loading"
+        />
 
         <!-- Quiz -->
         <template v-else-if="phase === 'quiz'">

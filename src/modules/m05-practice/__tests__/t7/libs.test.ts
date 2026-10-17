@@ -19,11 +19,11 @@ import {
 
 describe('structured-lib', () => {
   it('maps KBAT levels to the observed badges (BR-23)', () => {
-    expect(kbatBadge(1)).toEqual({ label: 'LOTS 1', cls: 'bg-green-100 text-green-700' })
+    expect(kbatBadge(1)).toEqual({ label: 'LOTS 1', color: 'success' })
     expect(kbatBadge(2).label).toBe('LOTS 2')
-    expect(kbatBadge(3)).toEqual({ label: 'MOTS 3', cls: 'bg-amber-100 text-amber-700' })
+    expect(kbatBadge(3)).toEqual({ label: 'MOTS 3', color: 'warning' })
     for (const n of [4, 5, 6]) {
-      expect(kbatBadge(n)).toEqual({ label: `HOTS ${String(n)}`, cls: 'bg-red-100 text-red-700' })
+      expect(kbatBadge(n)).toEqual({ label: `HOTS ${String(n)}`, color: 'error' })
     }
   })
 

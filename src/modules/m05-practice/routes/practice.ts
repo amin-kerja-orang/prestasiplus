@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Latih Tubi - PRESTASIPLUS',
       header: { title: 'Latih Tubi', subtitle: 'Pilih subjek dan mula berlatih' },
       module: 'M05',
+      v2: true,
     },
   },
   {
@@ -31,6 +32,7 @@ const routes: RouteRecordRaw[] = [
       // DV-M05-01 / DV-SH-03: no subtitle.
       header: { title: 'Latih Tubi' },
       module: 'M05',
+      v2: true,
     },
   },
   {
@@ -44,6 +46,7 @@ const routes: RouteRecordRaw[] = [
       // INFERRED (FR-M05-52 table: Q1 "Latih Tubi", no subtitle).
       header: { title: 'Latih Tubi' },
       module: 'M05',
+      v2: true,
     },
   },
 ]

@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
       // DV-M05-01 / DV-SH-03: no subtitle.
       header: { title: 'Soalan Berstruktur' },
       module: 'M05',
+      v2: true,
     },
   },
   {
@@ -30,6 +31,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Soalan Berstruktur - PRESTASIPLUS',
       header: { title: 'Soalan Berstruktur' },
       module: 'M05',
+      v2: true,
     },
   },
 ]
