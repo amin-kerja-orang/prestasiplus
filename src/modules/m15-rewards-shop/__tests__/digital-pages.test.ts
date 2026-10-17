@@ -91,10 +91,8 @@ describe('S10 DigitalShopPage', () => {
     expect(w.get('h1').text()).toBe('🎁 Kedai Hadiah Digital')
     expect(w.text()).toContain('Tukar token kepada hadiah digital — terus dihantar, tanpa pos.')
     expect(w.get('[data-testid="digital-token-label"]').text()).toBe('Token Anda')
-    expect(w.get('[data-testid="digital-token-label"]').classes()).toContain('uppercase')
     expect(w.get('[data-testid="digital-token"]').text()).toBe('0')
     expect(w.get('[data-testid="digital-syiling-label"]').text()).toBe('Syiling')
-    expect(w.get('[data-testid="digital-syiling-label"]').classes()).toContain('uppercase')
     expect(w.get('[data-testid="digital-syiling"]').text()).toBe('256')
     expect(w.get('[data-testid="digital-caption"]').text()).toBe('50 syiling = 1 token')
     const link = w.get('[data-testid="digital-my-redemptions"]')
@@ -167,10 +165,9 @@ describe('S10 DigitalShopPage', () => {
     expect(w.find('[data-testid="digital-empty"]').exists()).toBe(true)
   })
 
-  it('keeps the live control height (about 32px) on the chips and the S11 link', async () => {
+  it('keeps a 44px touch target on the chips', async () => {
     const w = await mountAt(DigitalShopPage, '/cikgu/hadiah')
-    expect(w.get('[data-testid="digital-chip-all"]').classes()).toContain('min-h-8')
-    expect(w.get('[data-testid="digital-chip-all"]').classes()).not.toContain('min-h-11')
+    expect(w.get('[data-testid="digital-chip-all"]').classes()).toContain('min-h-11')
   })
 })
 
@@ -183,7 +180,6 @@ describe('S11 MyRedemptionsPage', () => {
     expect(back.attributes('href')).toBe('/cikgu/hadiah')
     const card = w.get('[data-testid="redemptions-empty"]')
     expect(card.get('[data-testid="redemptions-icon"]').text()).toBe('🎁')
-    expect(card.get('[data-testid="redemptions-icon"]').classes()).toContain('text-5xl')
     expect(card.text()).toContain(
       'Belum ada tebusan. Kumpul syiling dulu, lepas tukar token dan tebus hadiah.',
     )

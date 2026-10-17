@@ -11,8 +11,8 @@ import { computed, watch } from 'vue'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
-import { LoadingSpinner } from '@/components/feedback'
 import { useApi, usePageMeta } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchMarketplaceProduct } from '../api'
 import { DETAIL_COPY } from '../components/detail/copy'
@@ -60,20 +60,17 @@ watch(
 
 <template>
   <div v-if="notFound" />
-  <div v-else class="min-w-0 space-y-5" data-testid="product-page">
+  <DsPage v-else data-testid="product-page">
     <BackLink />
     <LoadError v-if="failed" @retry="product.reload" />
-    <div
-      v-else-if="!product.data.value"
-      class="flex justify-center py-10 text-slate-400"
-      data-testid="product-loading"
-    >
-      <LoadingSpinner :size="28" />
+    <div v-else-if="!product.data.value" class="flex flex-col gap-3" aria-busy="true" data-testid="product-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-40 w-full" />
     </div>
     <template v-else>
-      <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <ProductGallery :images="product.data.value.images" :name="product.data.value.name" />
-        <div class="min-w-0 space-y-5">
+        <div class="flex min-w-0 flex-col gap-4">
           <ProductInfo :product="product.data.value" />
           <SellerPanel :seller="product.data.value.seller" />
         </div>
@@ -81,5 +78,5 @@ watch(
       <ReviewsCard :reviews="product.data.value.reviews" :count="product.data.value.reviewCount" />
       <RelatedProducts :products="product.data.value.related" />
     </template>
-  </div>
+  </DsPage>
 </template>

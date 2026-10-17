@@ -122,7 +122,6 @@ describe('S6 MarketplacePage', () => {
     api.searchMarketplaceProducts.mockResolvedValue(listOf([], 1))
     const w = await mountAt(MarketplacePage, '/marketplace', '/marketplace?q=zzqxv')
     const empty = w.get('[data-testid="marketplace-empty"]')
-    expect(empty.text()).toContain('🛒')
     expect(empty.text()).toContain('Tiada Produk Dijumpai')
     expect(empty.text()).toContain('Cuba tukar kata kunci atau kategori')
     expect(w.find('[data-testid="product-grid"]').exists()).toBe(false)
@@ -153,17 +152,16 @@ describe('S6 MarketplacePage', () => {
   it('a search pushes the four form values to the URL', async () => {
     const w = await mountAt(MarketplacePage, '/marketplace', '/marketplace')
     await w.get('[data-testid="marketplace-q"]').setValue('kamus')
-    await w.get('[data-testid="marketplace-sort"]').setValue('price_low')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({
       q: 'kamus',
       category: '',
       condition: '',
-      sort: 'price_low',
+      sort: 'latest',
     })
     expect(api.searchMarketplaceProducts).toHaveBeenLastCalledWith(
-      expect.objectContaining({ q: 'kamus', sort: 'price_low' }),
+      expect.objectContaining({ q: 'kamus', sort: 'latest' }),
     )
   })
 

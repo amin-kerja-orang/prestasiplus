@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Marketplace - PRESTASIPLUS',
       header: { title: 'Marketplace', subtitle: 'Peralatan sekolah untuk pelajar 🛒' },
       module: 'M20',
+      v2: true,
     },
   },
   {
@@ -30,6 +31,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kedai Penjual - Marketplace PRESTASIPLUS',
       header: { title: 'Kedai Penjual' },
       module: 'M20',
+      v2: true,
     },
   },
 ]

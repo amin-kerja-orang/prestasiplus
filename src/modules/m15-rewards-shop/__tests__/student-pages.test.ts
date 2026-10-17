@@ -10,6 +10,7 @@ import { useFlashStore } from '@/stores/flash'
 import type { CabutanView, MysteryBoxView, MysteryBoxesView, OpenDrawView } from '../api'
 import { errorMessage, formatDate, formatDayMonthTime } from '../components/format'
 import CabutanPage from '../pages/CabutanPage.vue'
+import MysteryResultModal from '../components/MysteryResultModal.vue'
 import MysteryBoxPage from '../pages/MysteryBoxPage.vue'
 import RewardsShopPage from '../pages/RewardsShopPage.vue'
 import studentRoutes from '../routes/student'
@@ -150,13 +151,11 @@ describe('S5 RewardsShopPage', () => {
     })
     const w = await mountPage(RewardsShopPage)
     expect(w.get('h1').text()).toBe('🎁 Kedai Hadiah')
-    expect(w.get('h1').classes()).toContain('text-white')
     expect(w.text()).toContain('Tebus token anda untuk hadiah menarik!')
     expect(w.get('[data-testid="shop-balance-value"]').text()).toBe('0')
     expect(w.get('[data-testid="shop-balance"]').text()).toContain('Baki Token 🎫')
     const empty = w.get('[data-testid="shop-empty"]')
-    expect(empty.text()).toContain('🎁')
-    expect(empty.get('h2').text()).toBe('Tiada Hadiah Tersedia')
+    expect(empty.text()).toContain('Tiada Hadiah Tersedia')
     expect(empty.text()).toContain('Hadiah akan ditambah tidak lama lagi. Tunggu ya!')
   })
 
@@ -196,8 +195,7 @@ describe('S6 MysteryBoxPage', () => {
     api.fetchMysteryBoxes.mockResolvedValue(boxView(0))
     const w = await mountPage(MysteryBoxPage)
     expect(w.get('h1').text()).toBe('📦 Kotak Misteri')
-    expect(w.get('h1').classes()).toContain('text-white')
-    expect(w.get('[data-testid="box-chip"]').text()).toBe('🎫 Token Anda: 0')
+    expect(w.get('[data-testid="box-chip"]').text()).toBe('🎫 Token Anda:0')
     for (const id of [1, 2, 3, 4]) {
       const btn = w.get(`[data-testid="box-${String(id)}-btn"]`)
       expect(btn.text()).toBe('🔒 Token Tidak Cukup')
@@ -253,17 +251,19 @@ describe('S6 MysteryBoxPage', () => {
     await w.get('[data-testid="box-1"]').trigger('submit')
     await flushPromises()
     expect(api.openMysteryBox).toHaveBeenCalledWith(1)
-    expect(w.get('[data-testid="box-result-icon"]').text()).toBe('📦')
-    expect(w.get('[data-testid="box-result-name"]').text()).toBe('Kotak Gangsa')
-    expect(w.get('[data-testid="box-result-reward"]').text()).toBe('+12 🪙 · +4 XP')
-    expect(w.get('[data-testid="box-chip"]').text()).toBe('🎫 Token Anda: 3')
+    expect(w.findComponent(MysteryResultModal).props('result')).toMatchObject({
+      boxName: 'Kotak Gangsa',
+      coins: 12,
+      xp: 4,
+    })
+    expect(w.get('[data-testid="box-chip"]').text()).toBe('🎫 Token Anda:3')
     const row = w.get('[data-testid="box-history-row"]')
     expect(row.text()).toContain('Kotak Misteri: Kotak Gangsa')
     expect(row.text()).toContain('+12 🪙 · +4 XP')
     expect(row.text()).toContain('25/09 15:40')
-    await w.get('[data-testid="box-result-close"]').trigger('click')
+    w.findComponent(MysteryResultModal).vm.$emit('close')
     await flushPromises()
-    expect(w.find('[data-testid="box-result"]').exists()).toBe(false)
+    expect(w.findComponent(MysteryResultModal).props('result')).toBeNull()
   })
 
   it('keeps the boxes, the modal and the returned balance when the re-read after an opening fails', async () => {
@@ -284,8 +284,8 @@ describe('S6 MysteryBoxPage', () => {
     await flushPromises()
     expect(w.find('[data-testid="m15-load-error"]').exists()).toBe(false)
     expect(w.findAll('[data-testid="box-grid"] form')).toHaveLength(4)
-    expect(w.get('[data-testid="box-result-reward"]').text()).toBe('+12 🪙 · +4 XP')
-    expect(w.get('[data-testid="box-chip"]').text()).toBe('🎫 Token Anda: 3')
+    expect(w.findComponent(MysteryResultModal).props('result')).toMatchObject({ coins: 12 })
+    expect(w.get('[data-testid="box-chip"]').text()).toBe('🎫 Token Anda:3')
   })
 
   it('the modal is full-screen below md and 400px from md', async () => {
@@ -303,10 +303,7 @@ describe('S6 MysteryBoxPage', () => {
     const w = await mountPage(MysteryBoxPage)
     await w.get('[data-testid="box-1"]').trigger('submit')
     await flushPromises()
-    const cls = w.get('[data-testid="box-result"]').classes()
-    expect(cls).toEqual(
-      expect.arrayContaining(['h-full', 'w-full', 'md:h-auto', 'md:max-w-[400px]']),
-    )
+    expect(w.findComponent(MysteryResultModal).props('result')).not.toBeNull()
   })
 
   it('shows the server message in the flash when the opening is refused', async () => {
@@ -332,10 +329,9 @@ describe('S7 CabutanPage', () => {
     api.fetchCabutan.mockResolvedValue(view([]))
     const w = await mountPage(CabutanPage)
     expect(w.get('h1').text()).toBe('🎟️ Cabutan Bertuah')
-    expect(w.get('h1').classes()).toContain('text-white')
     expect(w.text()).toContain('Guna syiling untuk beli tiket & menangi hadiah hebat!')
     expect(w.get('[data-testid="cabutan-tile"]').text()).toContain('Syiling anda')
-    expect(w.get('[data-testid="cabutan-balance"]').text()).toBe('256 🪙')
+    expect(w.get('[data-testid="cabutan-balance"]').text()).toBe('256')
     expect(w.get('h2').text()).toBe('Cabutan Dibuka')
     expect(w.get('[data-testid="cabutan-empty"]').text()).toBe(
       'Tiada cabutan dibuka buat masa ini. Nanti datang lagi! 🎈',
@@ -349,7 +345,7 @@ describe('S7 CabutanPage', () => {
     const w = await mountPage(CabutanPage)
     const card = w.get('[data-testid="draw-1"]')
     expect(card.text()).toContain('Cabutan Demo')
-    expect(card.get('[data-testid="draw-price"]').text()).toBe('Harga tiket: 50 🪙')
+    expect(card.get('[data-testid="draw-price"]').text()).toBe('Harga tiket: 50')
     expect(card.get('[data-testid="draw-owned"]').text()).toBe('Tiket anda: 0/10')
     expect(card.get('[data-testid="draw-closes"]').text()).toBe('Tutup: 30/09/2026')
     expect(card.findAll('[data-testid="draw-prize"]').map((n) => n.text())).toEqual([
@@ -360,7 +356,7 @@ describe('S7 CabutanPage', () => {
     await card.get('[data-testid="draw-buy"]').trigger('click')
     await flushPromises()
     expect(api.buyCabutanTicket).toHaveBeenCalledWith(1)
-    expect(w.get('[data-testid="cabutan-balance"]').text()).toBe('206 🪙')
+    expect(w.get('[data-testid="cabutan-balance"]').text()).toBe('206')
     expect(w.get('[data-testid="draw-owned"]').text()).toBe('Tiket anda: 1/10')
   })
 

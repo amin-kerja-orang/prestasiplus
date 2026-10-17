@@ -8,8 +8,8 @@ import { computed, watch } from 'vue'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
-import { LoadingSpinner } from '@/components/feedback'
 import { useApi, usePageMeta } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchMarketplaceShop } from '../api'
 import BackLink from '../components/product/BackLink.vue'
@@ -59,19 +59,16 @@ watch(
 
 <template>
   <div v-if="notFound" />
-  <div v-else class="min-w-0 space-y-5" data-testid="shop-page">
+  <DsPage v-else data-testid="shop-page">
     <BackLink />
     <LoadError v-if="failed" @retry="shop.reload" />
-    <div
-      v-else-if="!shop.data.value"
-      class="flex justify-center py-10 text-slate-400"
-      data-testid="shop-loading"
-    >
-      <LoadingSpinner :size="28" />
+    <div v-else-if="!shop.data.value" class="flex flex-col gap-3" aria-busy="true" data-testid="shop-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-40 w-full" />
     </div>
     <template v-else>
       <ShopCard :shop="shop.data.value.shop" />
       <ProductGrid :products="shop.data.value.products" variant="simple" />
     </template>
-  </div>
+  </DsPage>
 </template>

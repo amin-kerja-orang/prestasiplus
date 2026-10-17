@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Marketplace - PRESTASIPLUS',
       header: { title: 'Marketplace' },
       module: 'M20',
+      v2: true,
     },
   },
   {
@@ -32,6 +33,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       title: 'Marketplace - PRESTASIPLUS',
       module: 'M20',
+      v2: true,
     },
   },
 ]
