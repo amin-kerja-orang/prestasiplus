@@ -34,8 +34,12 @@ export function isPrototypeScopeOn(): boolean {
   return import.meta.env.VITE_PROTOTYPE_SCOPE !== 'off'
 }
 
-/** The three roles that exist in the prototype (the demo accounts of these roles can log in). */
-export const PROTOTYPE_ROLES = ['student', 'teacher', 'school_admin'] as const
+/**
+ * The roles that exist in the prototype (the demo accounts of these roles can log in). `admin`
+ * (Admin Pusat, Portal Pentadbiran) is in scope since the 2026-10-17 decision (TRACKER D48) so the
+ * system can be monitored: it gets every `/admin/**` route. Parent, sponsor, PPD and JPN stay out.
+ */
+export const PROTOTYPE_ROLES = ['student', 'teacher', 'school_admin', 'admin'] as const
 export type PrototypeRole = (typeof PROTOTYPE_ROLES)[number]
 
 export function isPrototypeRole(role: Role | null): role is PrototypeRole {
@@ -198,10 +202,14 @@ export const SCHOOL_ADMIN_ITEMS: readonly MatrixItem[] = [
   item(53, 'Kelas Sekolah', p('/admin-sekolah/kelas')),
 ]
 
+/** Admin Pusat (Portal Pentadbiran, D48): every admin route, including Bijak SPM admin (all under `/admin`). */
+export const ADMIN_ITEMS: readonly MatrixItem[] = [item(1, 'Portal Pentadbiran', p('/admin'))]
+
 const ITEMS: Readonly<Record<PrototypeRole, readonly MatrixItem[]>> = {
   student: STUDENT_ITEMS,
   teacher: TEACHER_ITEMS,
   school_admin: SCHOOL_ADMIN_ITEMS,
+  admin: ADMIN_ITEMS,
 }
 
 /** The module items (section B) of a prototype role. */
@@ -245,6 +253,9 @@ export function isPathInScope(role: Role | null, path: string): boolean {
   if (role === null) return anyRule(GUEST_RULES, target) || anyRule(ACCOUNT_RULES, target)
   if (anyRule(ACCOUNT_RULES, target)) return true
   if (!isPrototypeRole(role)) return anyRule(GUEST_RULES, target)
+  // Admin Pusat (D48) monitors the whole system: every route its Portal Pentadbiran shell links to
+  // (`/admin/**` plus the cross-module admin screens) is allowed; the route's own `roles` still apply.
+  if (role === 'admin') return true
   return ITEMS[role].some((entry) => anyRule(entry.rules, target))
 }
 
@@ -265,6 +276,7 @@ export function shellHomePath(role: Role | null): string {
 export function scopeHomePath(role: Role | null): string {
   if (role === 'teacher') return '/guru'
   if (role === 'school_admin') return '/admin-sekolah'
+  if (role === 'admin') return '/admin'
   if (role === null) return '/login'
   // A role outside the prototype (e.g. restored from storage) has no dashboard: sign out. `/logout`
   // clears the session and ends on `/login`, so there is no redirect loop.

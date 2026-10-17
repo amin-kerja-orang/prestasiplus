@@ -5,11 +5,10 @@
  * (`/password/reset/{token}?email={email}`), otherwise the red alert shows the mismatch text and the
  * entered values stay. `maxlength=14` (DV-04; live 20).
  */
-import { ArrowLeft, IdCard, LockOpen, Mail } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
+import AuthAlert from '../components/auth/AuthAlert.vue'
 
 import { resetByIc } from '../api'
 import {
@@ -52,15 +51,15 @@ async function submit(): Promise<void> {
     intro="Masukkan email dan No Kad Pengenalan yang didaftarkan dalam profil anda."
   >
     <template #icon
-      ><IdCard class="h-[60px] w-[60px] text-indigo-400" :stroke-width="1.5"
+      ><UIcon name="i-ph-identification-card-duotone" class="size-10"
     /></template>
 
     <form data-testid="ic-form" class="space-y-5" @submit.prevent="submit">
-      <AlertBox :messages="errors" data-testid="ic-alert" />
+      <AuthAlert :messages="errors" data-testid="ic-alert" />
 
       <div>
         <label for="email" :class="AUTH_LABEL_CLASS">
-          <Mail class="h-4 w-4 text-blue-500" />
+          <UIcon name="i-ph-envelope-simple-duotone" class="size-4 text-primary" />
           Alamat Email
         </label>
         <input
@@ -80,7 +79,7 @@ async function submit(): Promise<void> {
 
       <div>
         <label for="ic_number" :class="AUTH_LABEL_CLASS">
-          <IdCard class="h-4 w-4 text-indigo-500" />
+          <UIcon name="i-ph-identification-card-duotone" class="size-4 text-primary" />
           No Kad Pengenalan
         </label>
         <input
@@ -94,23 +93,23 @@ async function submit(): Promise<void> {
           :class="AUTH_INPUT_CLASS"
           data-testid="ic-number"
         />
-        <p class="mt-2 text-xs text-slate-500">Tanpa tanda sempang (-). Contoh: 000101010000</p>
+        <p class="mt-2 text-caption text-muted">Tanpa tanda sempang (-). Contoh: 000101010000</p>
       </div>
 
       <button type="submit" :disabled="loading" :class="AUTH_SUBMIT_CLASS" data-testid="ic-submit">
         <template v-if="loading">
-          <LoadingSpinner />
+          <UIcon name="i-ph-circle-notch" class="size-5 motion-safe:animate-spin" />
           Memproses...
         </template>
         <template v-else>
-          <LockOpen class="h-5 w-5" />
+          <UIcon name="i-ph-lock-open-duotone" class="size-5" />
           Reset Kata Laluan
         </template>
       </button>
 
       <p class="text-center">
-        <RouterLink to="/login" :class="[AUTH_LINK_CLASS, 'text-slate-500 hover:text-slate-700']">
-          <ArrowLeft class="h-4 w-4" />
+        <RouterLink to="/login" :class="[AUTH_LINK_CLASS, 'text-muted hover:text-default']">
+          <UIcon name="i-ph-arrow-left" class="size-4" />
           Kembali ke Log Masuk
         </RouterLink>
       </p>

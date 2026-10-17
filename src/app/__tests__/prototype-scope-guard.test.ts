@@ -230,7 +230,7 @@ describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
   })
 
   it('a role outside the prototype restored from storage gets a "Log Keluar" button, not /login', async () => {
-    logIn(ADMIN)
+    logIn({ ...ADMIN, role: 'parent' })
     const w = await open('/misi-harian')
     const home = w.find('[data-testid="prototype-unavailable-home"]')
     expect(home.attributes('href')).toBe('/logout')

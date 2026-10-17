@@ -64,7 +64,8 @@ describe('matrix counts (role-access-matrix.md)', () => {
     expect(scopeItemsFor('student')).toHaveLength(37 + 5)
     expect(scopeItemsFor('teacher')).toHaveLength(15 + 5)
     expect(scopeItemsFor('school_admin')).toHaveLength(18 + 5)
-    expect(scopeItemsFor('admin')).toHaveLength(0)
+    expect(scopeItemsFor('admin')).toHaveLength(1 + 5)
+    expect(scopeItemsFor('parent')).toHaveLength(0)
   })
 })
 
@@ -187,7 +188,7 @@ describe('isPathInScope', () => {
   })
 
   it('roles outside the prototype only keep section A and the public pages', () => {
-    for (const role of ['admin', 'ppd_officer', 'jpn_officer', 'parent', 'sponsor'] as const) {
+    for (const role of ['ppd_officer', 'jpn_officer', 'parent', 'sponsor'] as const) {
       expect(isPrototypeRole(role)).toBe(false)
       expect(isPathInScope(role, '/profile')).toBe(true)
       expect(isPathInScope(role, '/pusat-tuisyen/tiket')).toBe(true)
@@ -243,7 +244,7 @@ describe('home paths', () => {
     expect(scopeHomePath('school_admin')).toBe('/admin-sekolah')
     expect(scopeHomePath(null)).toBe('/login')
     // A role outside the prototype signs out (no dashboard to return to, no /login loop).
-    expect(scopeHomePath('admin')).toBe('/logout')
+    expect(scopeHomePath('admin')).toBe('/admin')
     expect(scopeHomePath('parent')).toBe('/logout')
   })
 
@@ -253,5 +254,17 @@ describe('home paths', () => {
     expect(shellHomePath('school_admin')).toBe('/admin-sekolah')
     expect(shellHomePath('teacher')).toBe('/guru')
     expect(shellHomePath('student')).toBe('/dashboard')
+  })
+})
+
+describe('Admin Pusat in the prototype (D48)', () => {
+  it('allows every admin route', () => {
+    expect(isPrototypeRole('admin')).toBe(true)
+    for (const path of ['/admin', '/admin/users', '/admin/schools/3/edit', '/admin/bijak-spm']) {
+      expect(isPathInScope('admin', path), path).toBe(true)
+    }
+    for (const path of ['/spm/tahun-lepas', '/ppd/dashboard']) {
+      expect(isPathInScope('admin', path), path).toBe(true)
+    }
   })
 })

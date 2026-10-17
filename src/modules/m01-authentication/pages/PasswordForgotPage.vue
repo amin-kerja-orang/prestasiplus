@@ -5,11 +5,10 @@
  * status box above the form, a failure the red alert; the email is kept either way (FR-M01-29).
  * There is no link to the IC reset here (FR-M01-27).
  */
-import { ArrowLeft, Mail, Send } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
+import AuthAlert from '../components/auth/AuthAlert.vue'
 
 import { sendPasswordResetLink } from '../api'
 import {
@@ -52,12 +51,12 @@ async function submit(): Promise<void> {
     <template #icon>🔑</template>
 
     <form data-testid="forgot-form" class="space-y-5" @submit.prevent="submit">
-      <AlertBox variant="success" :messages="status" data-testid="forgot-status" />
-      <AlertBox :messages="errors" data-testid="forgot-alert" />
+      <AuthAlert variant="success" :messages="status" data-testid="forgot-status" />
+      <AuthAlert :messages="errors" data-testid="forgot-alert" />
 
       <div>
         <label for="email" :class="AUTH_LABEL_CLASS">
-          <Mail class="h-4 w-4 text-blue-500" />
+          <UIcon name="i-ph-envelope-simple-duotone" class="size-4 text-primary" />
           Alamat Email
         </label>
         <div class="relative">
@@ -76,7 +75,7 @@ async function submit(): Promise<void> {
           />
           <span
             aria-hidden="true"
-            class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 select-none"
+            class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-dimmed select-none"
             data-testid="forgot-email-at"
             >@</span
           >
@@ -90,18 +89,18 @@ async function submit(): Promise<void> {
         data-testid="forgot-submit"
       >
         <template v-if="loading">
-          <LoadingSpinner />
+          <UIcon name="i-ph-circle-notch" class="size-5 motion-safe:animate-spin" />
           Menghantar...
         </template>
         <template v-else>
-          <Send class="h-5 w-5" />
+          <UIcon name="i-ph-paper-plane-tilt-duotone" class="size-5" />
           Hantar Pautan Reset
         </template>
       </button>
 
       <p class="text-center">
-        <RouterLink to="/login" :class="[AUTH_LINK_CLASS, 'text-slate-500 hover:text-slate-700']">
-          <ArrowLeft class="h-4 w-4" />
+        <RouterLink to="/login" :class="[AUTH_LINK_CLASS, 'text-muted hover:text-default']">
+          <UIcon name="i-ph-arrow-left" class="size-4" />
           Kembali ke Log Masuk
         </RouterLink>
       </p>

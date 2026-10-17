@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * Layout of S3/S4/S5 (M01-T4; discovery M01 §2.3-2.5): the same animated gradient as S1/S2 but a
- * single centred card (448px on desktop, full width minus the margins on mobile) with no logo,
- * no floating emoji, no wave and no welcome column. The page fills the card through the slots.
+ * Layout of S3/S4/S5 (M01-T4), v2 theme: the learner "Elektrik" gradient strip on top and a
+ * single centred raised card (28rem). The page fills the card through the slots.
  */
+import { useThemeMode } from '@/theme/color-mode'
+
 import AuthFooter from './AuthFooter.vue'
 
 defineProps<{
@@ -13,27 +14,32 @@ defineProps<{
 }>()
 
 defineSlots<{ icon: () => unknown; default: () => unknown }>()
+
+useThemeMode('learner')
 </script>
 
 <template>
-  <main
-    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-auth p-3 motion-safe:animate-cool-gradient sm:p-4"
-    data-testid="password-layout"
-  >
-    <div class="relative z-10 w-full max-w-md">
-      <div class="rounded-2xl bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-8">
-        <div class="mb-6 text-center">
-          <div class="mb-3 flex justify-center text-[60px] leading-none" aria-hidden="true">
-            <slot name="icon" />
+  <main class="flex min-h-dvh flex-col bg-muted" data-testid="password-layout">
+    <div class="h-2 bg-gradient-primary" aria-hidden="true" />
+    <div class="flex flex-1 items-center justify-center p-4 sm:p-8">
+      <div class="w-full max-w-md">
+        <UCard>
+          <div class="mb-6 flex flex-col items-center gap-2 text-center">
+            <div
+              class="flex size-16 items-center justify-center rounded-card bg-primary/10 text-4xl leading-none text-primary"
+              aria-hidden="true"
+            >
+              <slot name="icon" />
+            </div>
+            <h1 class="text-heading text-highlighted" data-testid="password-heading">
+              {{ heading }}
+            </h1>
+            <p class="text-label font-medium text-muted">{{ intro }}</p>
           </div>
-          <h1 class="text-2xl font-bold text-slate-800" data-testid="password-heading">
-            {{ heading }}
-          </h1>
-          <p class="mt-2 text-sm text-slate-500">{{ intro }}</p>
-        </div>
-        <slot />
+          <slot />
+        </UCard>
+        <AuthFooter />
       </div>
-      <AuthFooter />
     </div>
   </main>
 </template>

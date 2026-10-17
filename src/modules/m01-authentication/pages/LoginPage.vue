@@ -6,11 +6,10 @@
  * page with no message (FR-M01-12); on failure the red alert shows the server text, the email is
  * kept and the password cleared (FR-M01-09/10/68). Renders for a logged-in user too (FR-M01-13).
  */
-import { ArrowLeft, IdCard, Lock, LogIn, Mail } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
+import AuthAlert from '../components/auth/AuthAlert.vue'
 import { useApi } from '@/composables'
 import { formatNumber } from '@/lib/number'
 import { useSessionStore } from '@/stores/session'
@@ -76,11 +75,11 @@ async function submit(): Promise<void> {
     </template>
 
     <form data-testid="login-form" class="space-y-5" @submit.prevent="submit">
-      <AlertBox :messages="errors" data-testid="login-alert" />
+      <AuthAlert :messages="errors" data-testid="login-alert" />
 
       <div>
         <label for="email" :class="AUTH_LABEL_CLASS">
-          <Mail class="h-4 w-4 text-blue-500" />
+          <UIcon name="i-ph-envelope-simple-duotone" class="size-4 text-primary" />
           Alamat Email
         </label>
         <div class="relative">
@@ -97,7 +96,7 @@ async function submit(): Promise<void> {
           />
           <span
             aria-hidden="true"
-            class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 select-none"
+            class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-dimmed select-none"
             >@</span
           >
         </div>
@@ -105,7 +104,7 @@ async function submit(): Promise<void> {
 
       <div>
         <label for="password" :class="AUTH_LABEL_CLASS">
-          <Lock class="h-4 w-4 text-green-500" />
+          <UIcon name="i-ph-lock-duotone" class="size-4 text-primary" />
           Kata Laluan
         </label>
         <PasswordInput
@@ -119,12 +118,12 @@ async function submit(): Promise<void> {
       </div>
 
       <div class="flex flex-wrap items-center justify-between gap-x-4">
-        <label class="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm text-gray-600">
+        <label class="inline-flex min-h-11 cursor-pointer items-center gap-2 text-label text-default">
           <input
             v-model="remember"
             type="checkbox"
             name="remember"
-            class="h-5 w-5 rounded border-gray-300 accent-indigo-600"
+            class="size-5 accent-primary"
             data-testid="login-remember"
           />
           Ingat saya
@@ -132,15 +131,15 @@ async function submit(): Promise<void> {
         <div class="ml-auto flex flex-col items-end">
           <RouterLink
             to="/password/reset"
-            :class="[AUTH_LINK_CLASS, 'text-blue-600 hover:text-blue-800']"
+            :class="[AUTH_LINK_CLASS, 'text-primary hover:underline']"
           >
             Lupa kata laluan?
           </RouterLink>
           <RouterLink
             to="/password/reset-ic"
-            :class="[AUTH_LINK_CLASS, 'text-indigo-600 hover:text-indigo-800']"
+            :class="[AUTH_LINK_CLASS, 'text-primary hover:underline']"
           >
-            <IdCard class="h-4 w-4" />
+            <UIcon name="i-ph-identification-card-duotone" class="size-4" />
             Reset melalui No IC
           </RouterLink>
         </div>
@@ -153,30 +152,30 @@ async function submit(): Promise<void> {
         data-testid="login-submit"
       >
         <template v-if="loading">
-          <LoadingSpinner />
+          <UIcon name="i-ph-circle-notch" class="size-5 motion-safe:animate-spin" />
           Sedang Memasuki...
         </template>
         <template v-else>
-          <LogIn class="h-5 w-5" />
+          <UIcon name="i-ph-sign-in-duotone" class="size-5" />
           Log Masuk
         </template>
       </button>
 
-      <p class="text-center text-sm text-gray-600">
+      <p class="text-center text-label text-muted">
         <RouterLink
           to="/register"
-          class="inline-flex min-h-11 items-center gap-1 text-gray-600 hover:text-gray-800"
+          class="inline-flex min-h-11 items-center gap-1 text-muted hover:text-default"
         >
           Belum ada akaun?
-          <strong class="text-indigo-600 underline decoration-wavy underline-offset-4"
+          <strong class="text-primary underline underline-offset-4"
             >Daftar Sekarang 🚀</strong
           >
         </RouterLink>
       </p>
 
       <p class="text-center">
-        <RouterLink to="/" :class="[AUTH_LINK_CLASS, 'text-slate-500 hover:text-slate-700']">
-          <ArrowLeft class="h-4 w-4" />
+        <RouterLink to="/" :class="[AUTH_LINK_CLASS, 'text-muted hover:text-default']">
+          <UIcon name="i-ph-arrow-left" class="size-4" />
           Kembali ke Laman Utama
         </RouterLink>
       </p>
@@ -185,7 +184,7 @@ async function submit(): Promise<void> {
     <template #below>
       <p
         v-if="stats"
-        class="mt-4 rounded-2xl bg-white/70 px-4 py-3 text-center text-sm font-medium text-slate-700 shadow"
+        class="mt-4 rounded-card bg-default px-4 py-3 text-center text-label text-default shadow-card"
         data-testid="login-stats"
       >
         ❓ {{ formatNumber(stats.questionCount) }}+ Soalan • 📚

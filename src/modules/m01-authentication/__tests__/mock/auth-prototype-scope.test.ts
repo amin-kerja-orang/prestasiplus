@@ -1,6 +1,6 @@
 /**
- * Prototype scope (TRACKER D43) on `POST /api/auth/login`: only the Murid, Guru and Admin Sekolah
- * demo accounts can log in; Admin Pusat, PPD, JPN, Ibu Bapa and Penaja are refused with a clear BM
+ * Prototype scope (TRACKER D43) on `POST /api/auth/login`: only the Murid, Guru, Admin Sekolah and Admin (D48)
+ * demo accounts can log in; PPD, JPN, Ibu Bapa and Penaja are refused with a clear BM
  * message. The scope is turned on for these tests (it is off in the unit-test environment).
  */
 
@@ -52,13 +52,13 @@ describe('POST /api/auth/login with the prototype scope on', () => {
     },
   )
 
-  it('lets the Guru and Admin Sekolah accounts in', async () => {
+  it('lets the Guru, Admin Sekolah and Admin accounts in', async () => {
     expect((await login('guru@demo.test')).status).toBe(200)
     expect((await login('adminsekolah@demo.test')).status).toBe(200)
+    expect((await login('admin@demo.test')).status).toBe(200)
   })
 
   it.each([
-    'admin@demo.test',
     'ppd@demo.test',
     'jpn@demo.test',
     'ibubapa@demo.test',

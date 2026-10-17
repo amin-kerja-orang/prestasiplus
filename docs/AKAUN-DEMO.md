@@ -30,15 +30,15 @@ Buka **https://claude.ai/artifact/5My2fSJfDXivvSUBmcVtbT** di telefon atau deskt
 | Murid (kosong) | `pelajar2@demo.test` | Keadaan kosong (tiada data) |
 | Guru | `guru@demo.test` | Portal guru |
 | Admin Sekolah | `adminsekolah@demo.test` | Skrin Admin Sekolah |
+| Admin | `admin@demo.test` | Portal Pentadbiran: pantau sistem |
 | Akaun tidak aktif | `tidakaktif@demo.test` | Untuk melihat mesej "akaun tidak aktif" |
 
 ## Akaun di luar skop
 
-Akaun berikut wujud, tetapi dalam skop prototaip (TRACKER D43) log masuknya memaparkan "Peranan ini tidak termasuk dalam prototaip.":
+Akaun berikut wujud, tetapi dalam skop prototaip (TRACKER D43, D48) log masuknya memaparkan "Peranan ini tidak termasuk dalam prototaip.":
 
 | Peranan | E-mel |
 |---|---|
-| Admin | `admin@demo.test` |
 | Ibu Bapa | `ibubapa@demo.test` |
 | Penaja | `penaja@demo.test` |
 | Pegawai PPD | `ppd@demo.test` |

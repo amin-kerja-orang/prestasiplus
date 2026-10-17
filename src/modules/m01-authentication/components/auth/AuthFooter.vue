@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <p class="mt-4 text-center text-sm text-slate-600" data-testid="auth-footer">
+  <p class="mt-4 text-center text-caption text-muted" data-testid="auth-footer">
     © 2026 PRESTASIPLUS. Platform Pendidikan Malaysia.
   </p>
 </template>

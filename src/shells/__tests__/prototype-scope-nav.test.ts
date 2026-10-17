@@ -13,7 +13,7 @@ import {
   type NavItem,
 } from '../nav/user-nav'
 
-const PROTOTYPE = ['student', 'teacher', 'school_admin'] as const
+const PROTOTYPE = ['student', 'teacher', 'school_admin', 'admin'] as const
 
 beforeEach(() => {
   vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
@@ -177,7 +177,7 @@ describe('navFor with the prototype scope on', () => {
   })
 
   it('shows nothing app-specific for roles outside the prototype but section A', () => {
-    for (const role of ['admin', 'parent', 'sponsor', 'ppd_officer', 'jpn_officer'] as const) {
+    for (const role of ['parent', 'sponsor', 'ppd_officer', 'jpn_officer'] as const) {
       const shown = labels(role)
       expect(shown).not.toContain('Latih Tubi')
       for (const item of items(navFor(role, 'sidebar'))) {

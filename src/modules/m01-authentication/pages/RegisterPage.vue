@@ -8,31 +8,14 @@
  * app goes to the role landing page (FR-M01-25, INFERRED); on failure the red alert lists the
  * server messages and every value is kept except the two passwords (FR-M01-26, INFERRED).
  */
-import {
-  Building,
-  GraduationCap,
-  Handshake,
-  House,
-  IdCard,
-  Info,
-  Lock,
-  Mail,
-  Phone,
-  School,
-  Search,
-  Shield,
-  User,
-  UserPlus,
-  X,
-} from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { isPrototypeRole, isPrototypeScopeOn } from '@/app/prototype-scope'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useSessionStore } from '@/stores/session'
 
 import { register, type RegisterRequest, type SchoolSummary } from '../api'
+import AuthAlert from '../components/auth/AuthAlert.vue'
 import AuthLayout from '../components/auth/AuthLayout.vue'
 import AuthWelcomePanel from '../components/auth/AuthWelcomePanel.vue'
 import {
@@ -102,10 +85,10 @@ function schoolDetail(school: SchoolSummary, withDistrict: boolean): string {
 }
 
 /** State select and school search sit side by side at every width (SRS §10); tighter padding keeps them unclipped down to 320px. */
-const PAIR_INPUT_CLASS = `${AUTH_INPUT_CLASS} min-w-0 px-3! text-sm! placeholder:text-xs`
+const PAIR_INPUT_CLASS = `${AUTH_INPUT_CLASS} min-w-0 px-3! text-label! placeholder:text-caption`
 
-const selectedButton = 'bg-linear-to-r from-indigo-500 to-violet-500 text-white shadow-lg'
-const idleButton = 'bg-gray-100 text-gray-700'
+const selectedButton = 'bg-gradient-primary text-primary-on shadow-cta'
+const idleButton = 'bg-elevated text-default'
 
 async function submit(): Promise<void> {
   loading.value = true
@@ -149,34 +132,34 @@ async function submit(): Promise<void> {
 
     <!-- Static, decorative step indicator (FR-M01-15): never interactive, never changes. -->
     <div
-      class="mb-6 flex items-center justify-center gap-2 text-sm font-bold"
+      class="mb-6 flex items-center justify-center gap-2 text-label"
       data-testid="register-steps"
     >
       <span
-        class="flex h-8 w-8 items-center justify-center rounded-full text-white bg-cta-gradient"
+        class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-primary-on"
         data-active="true"
         >1</span
       >
-      <span class="h-0.5 w-8 bg-gray-200"></span>
+      <span class="h-0.5 w-8 bg-accented"></span>
       <span
-        class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-gray-500"
+        class="flex h-8 w-8 items-center justify-center rounded-full bg-elevated text-muted"
         data-active="false"
         >2</span
       >
-      <span class="h-0.5 w-8 bg-gray-200"></span>
+      <span class="h-0.5 w-8 bg-accented"></span>
       <span
-        class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-gray-500"
+        class="flex h-8 w-8 items-center justify-center rounded-full bg-elevated text-muted"
         data-active="false"
         >3</span
       >
     </div>
 
     <form data-testid="register-form" class="space-y-5" @submit.prevent="submit">
-      <AlertBox :messages="errors" data-testid="register-alert" />
+      <AuthAlert :messages="errors" data-testid="register-alert" />
 
       <div>
         <label for="name" :class="AUTH_LABEL_CLASS">
-          <User class="h-4 w-4 text-blue-500" />
+          <UIcon name="i-ph-user-duotone" class="size-4 text-primary" />
           Nama Penuh
         </label>
         <input
@@ -193,7 +176,7 @@ async function submit(): Promise<void> {
 
       <div>
         <label for="email" :class="AUTH_LABEL_CLASS">
-          <Mail class="h-4 w-4 text-blue-500" />
+          <UIcon name="i-ph-envelope-simple-duotone" class="size-4 text-primary" />
           Alamat Email
         </label>
         <input
@@ -210,7 +193,7 @@ async function submit(): Promise<void> {
 
       <div>
         <label for="phone" :class="AUTH_LABEL_CLASS">
-          <Phone class="h-4 w-4 text-green-500" />
+          <UIcon name="i-ph-phone-duotone" class="size-4 text-primary" />
           No. Telefon (Pilihan)
         </label>
         <input
@@ -233,69 +216,69 @@ async function submit(): Promise<void> {
           <div
             v-for="card in roleCards"
             :key="card.value"
-            class="min-h-11 cursor-pointer rounded-2xl border-2 p-2 text-center transition hover:-translate-y-1 sm:p-3"
+            class="min-h-11 cursor-pointer rounded-card p-2 text-center transition sm:p-3"
             :class="
               role === card.value
-                ? 'border-indigo-500 bg-linear-to-br from-indigo-50 to-indigo-100 ring-[3px] ring-indigo-500/20'
-                : 'border-gray-200 bg-white'
+                ? 'bg-primary/10 ring-2 ring-primary'
+                : 'bg-elevated'
             "
             :data-selected="role === card.value"
             :data-testid="`role-${card.value}`"
             @click="role = card.value"
           >
             <div class="text-2xl sm:text-3xl">{{ card.emoji }}</div>
-            <div class="text-sm font-bold text-gray-800">{{ card.title }}</div>
-            <div class="text-xs text-gray-500">{{ card.text }}</div>
+            <div class="text-label text-highlighted">{{ card.title }}</div>
+            <div class="text-caption text-muted">{{ card.text }}</div>
           </div>
         </div>
       </div>
 
       <div v-if="role === 'student'" data-testid="register-levels">
         <div :class="AUTH_LABEL_CLASS">
-          <GraduationCap class="h-4 w-4 text-indigo-500" />
+          <UIcon name="i-ph-graduation-cap-duotone" class="size-4 text-primary" />
           Pilih Tahap Anda
         </div>
         <div class="mb-3">
           <div
-            class="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-500 uppercase"
+            class="mb-2 flex items-center gap-2 text-overline text-muted uppercase"
           >
-            <School class="h-4 w-4" />
+            <UIcon name="i-ph-student-duotone" class="size-4" />
             Sekolah Rendah
           </div>
           <div class="grid grid-cols-3 gap-2">
             <div
               v-for="n in DARJAH_GRADES"
               :key="n"
-              class="flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-xl py-2 transition hover:scale-105"
+              class="flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-chip py-2 transition"
               :class="grade === n ? selectedButton : idleButton"
               :data-selected="grade === n"
               :data-testid="`grade-${String(n)}`"
               @click="grade = n"
             >
-              <span class="text-xs">Darjah</span>
-              <span class="text-lg font-bold">{{ n }}</span>
+              <span class="text-caption">Darjah</span>
+              <span class="text-subheading">{{ n }}</span>
             </div>
           </div>
         </div>
         <div>
           <div
-            class="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-500 uppercase"
+            class="mb-2 flex items-center gap-2 text-overline text-muted uppercase"
           >
-            <Building class="h-4 w-4" />
+            <UIcon name="i-ph-buildings-duotone" class="size-4" />
             Sekolah Menengah
           </div>
           <div class="grid grid-cols-5 gap-2">
             <div
               v-for="n in TINGKATAN_GRADES"
               :key="n"
-              class="flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-xl py-2 transition hover:scale-105"
+              class="flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-chip py-2 transition"
               :class="grade === n + 6 ? selectedButton : idleButton"
               :data-selected="grade === n + 6"
               :data-testid="`grade-${String(n + 6)}`"
               @click="grade = n + 6"
             >
-              <span class="text-xs">Ting.</span>
-              <span class="text-lg font-bold">{{ n }}</span>
+              <span class="text-caption">Ting.</span>
+              <span class="text-subheading">{{ n }}</span>
             </div>
           </div>
         </div>
@@ -303,7 +286,7 @@ async function submit(): Promise<void> {
 
       <div v-if="role === 'student'">
         <label for="ic_number" :class="AUTH_LABEL_CLASS">
-          <IdCard class="h-4 w-4 text-purple-500" />
+          <UIcon name="i-ph-identification-card-duotone" class="size-4 text-primary" />
           No. Kad Pengenalan (Pilihan)
         </label>
         <input
@@ -317,38 +300,38 @@ async function submit(): Promise<void> {
           :class="AUTH_INPUT_CLASS"
           data-testid="register-ic"
         />
-        <p class="mt-2 flex items-center gap-2 text-xs text-green-700">
-          <Shield class="h-4 w-4 shrink-0" />
+        <p class="mt-2 flex items-center gap-2 text-caption text-muted">
+          <UIcon name="i-ph-shield-check-duotone" class="size-4 shrink-0" />
           Dilindungi PDPA. Hanya 2 digit terakhir akan dipaparkan.
         </p>
       </div>
 
       <div ref="pickerRoot" class="relative" data-testid="register-school">
         <label for="school_search" :class="AUTH_LABEL_CLASS">
-          <School class="h-4 w-4 text-orange-500" />
+          <UIcon name="i-ph-student-duotone" class="size-4 text-primary" />
           Sekolah (Pilihan)
         </label>
 
         <div
           v-if="picker.selected.value"
-          class="flex items-center gap-3 rounded-2xl border-2 border-green-200 bg-green-50 p-3"
+          class="flex items-center gap-3 rounded-card bg-success/10 p-3"
           data-testid="school-chip"
         >
           <div class="min-w-0 flex-1">
-            <div class="font-semibold break-words text-gray-800">
+            <div class="text-label break-words text-highlighted">
               {{ picker.selected.value.name }}
             </div>
-            <div class="text-xs text-gray-600">
+            <div class="text-caption text-muted">
               {{ schoolDetail(picker.selected.value, false) }}
             </div>
           </div>
           <button
             type="button"
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-green-100"
+            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted hover:bg-success/10"
             data-testid="school-clear"
             @click="clearSchool"
           >
-            <X class="h-4 w-4" />
+            <UIcon name="i-ph-x-duotone" class="size-4" />
           </button>
         </div>
 
@@ -387,18 +370,18 @@ async function submit(): Promise<void> {
               picker.open.value &&
               (picker.results.value.length > 0 || picker.term.value.length >= SCHOOL_MIN_QUERY)
             "
-            class="absolute right-0 left-0 z-20 mt-2 max-h-64 overflow-y-auto rounded-2xl border-2 border-gray-200 bg-white shadow-xl"
+            class="absolute right-0 left-0 z-20 mt-2 max-h-64 overflow-y-auto rounded-card bg-default shadow-modal"
             data-testid="school-dropdown"
           >
             <div
               v-for="school in picker.results.value"
               :key="school.id"
-              class="cursor-pointer border-b border-gray-100 px-4 py-3 last:border-b-0 hover:bg-indigo-50"
+              class="cursor-pointer px-4 py-3 hover:bg-elevated"
               data-testid="school-option"
               @click="picker.select(school)"
             >
-              <div class="text-sm font-bold break-words text-gray-800">{{ school.name }}</div>
-              <div class="text-xs text-gray-500">{{ schoolDetail(school, true) }}</div>
+              <div class="text-label break-words text-highlighted">{{ school.name }}</div>
+              <div class="text-caption text-muted">{{ schoolDetail(school, true) }}</div>
             </div>
             <div
               v-if="
@@ -406,10 +389,10 @@ async function submit(): Promise<void> {
                 picker.term.value.length >= SCHOOL_MIN_QUERY &&
                 !picker.searching.value
               "
-              class="flex flex-col items-center gap-1 px-4 py-6 text-sm text-gray-500"
+              class="flex flex-col items-center gap-1 px-4 py-6 text-label text-muted"
               data-testid="school-empty"
             >
-              <Search class="h-5 w-5" />
+              <UIcon name="i-ph-magnifying-glass-duotone" class="size-5" />
               Tiada sekolah dijumpai
             </div>
           </div>
@@ -418,7 +401,7 @@ async function submit(): Promise<void> {
 
       <div>
         <label for="password" :class="AUTH_LABEL_CLASS">
-          <Lock class="h-4 w-4 text-green-500" />
+          <UIcon name="i-ph-lock-duotone" class="size-4 text-primary" />
           Kata Laluan
         </label>
         <PasswordInput
@@ -429,15 +412,15 @@ async function submit(): Promise<void> {
           autocomplete="new-password"
           testid="register-password"
         />
-        <p class="mt-2 flex items-center gap-2 text-xs text-gray-500">
-          <Info class="h-4 w-4 shrink-0" />
+        <p class="mt-2 flex items-center gap-2 text-caption text-muted">
+          <UIcon name="i-ph-info-duotone" class="size-4 shrink-0" />
           Minimum 6 aksara
         </p>
       </div>
 
       <div>
         <label for="password_confirmation" :class="AUTH_LABEL_CLASS">
-          <Lock class="h-4 w-4 text-green-500" />
+          <UIcon name="i-ph-lock-duotone" class="size-4 text-primary" />
           Sahkan Kata Laluan
         </label>
         <PasswordInput
@@ -457,40 +440,40 @@ async function submit(): Promise<void> {
         data-testid="register-submit"
       >
         <template v-if="loading">
-          <LoadingSpinner />
+          <UIcon name="i-ph-circle-notch" class="size-5 motion-safe:animate-spin" />
           Sedang Mendaftar...
         </template>
         <template v-else>
-          <UserPlus class="h-5 w-5" />
+          <UIcon name="i-ph-user-plus-duotone" class="size-5" />
           Daftar Sekarang
         </template>
       </button>
 
-      <p class="text-center text-sm text-gray-600">
+      <p class="text-center text-label text-muted">
         <RouterLink
           to="/login"
-          class="inline-flex min-h-11 items-center gap-1 text-gray-600 hover:text-gray-800"
+          class="inline-flex min-h-11 items-center gap-1 text-muted hover:text-default"
         >
           Sudah ada akaun?
-          <strong class="text-indigo-600 underline decoration-wavy underline-offset-4"
+          <strong class="text-primary underline underline-offset-4"
             >Log Masuk 🔑</strong
           >
         </RouterLink>
       </p>
 
-      <p v-if="!scoped" class="text-center text-sm text-gray-600">
+      <p v-if="!scoped" class="text-center text-label text-muted">
         <RouterLink
           to="/sponsor/register"
-          class="inline-flex min-h-11 items-center gap-2 text-gray-600 hover:text-gray-800"
+          class="inline-flex min-h-11 items-center gap-2 text-muted hover:text-default"
         >
-          <Handshake class="h-4 w-4" />
+          <UIcon name="i-ph-handshake-duotone" class="size-4" />
           <span>Mewakili organisasi? <strong>Daftar sebagai Penaja</strong></span>
         </RouterLink>
       </p>
 
       <p class="text-center">
-        <RouterLink to="/" :class="[AUTH_LINK_CLASS, 'text-slate-500 hover:text-slate-700']">
-          <House class="h-4 w-4" />
+        <RouterLink to="/" :class="[AUTH_LINK_CLASS, 'text-muted hover:text-default']">
+          <UIcon name="i-ph-house-duotone" class="size-4" />
           Kembali ke Laman Utama
         </RouterLink>
       </p>

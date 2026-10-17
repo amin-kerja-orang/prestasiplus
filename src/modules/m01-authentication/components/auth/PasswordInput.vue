@@ -1,10 +1,9 @@
 <script setup lang="ts">
 /**
  * Password field with the eye toggle (FR-M01-04): switches the input between `password` and `text`
- * and the icon between `Eye` and `EyeOff`. The toggle is `type="button"`, so it never submits.
+ * and the icon between eye and eye-slash. The toggle is `type="button"`, so it never submits.
  * Live gives the toggle no accessible name (D10: accessibility replicates live).
  */
-import { Eye, EyeOff } from '@lucide/vue'
 import { ref } from 'vue'
 
 import { AUTH_INPUT_CLASS } from './classes'
@@ -37,13 +36,13 @@ const visible = ref(false)
     />
     <button
       type="button"
-      class="absolute top-1/2 right-1 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-gray-400 transition hover:text-gray-600"
+      class="absolute top-1/2 right-1 flex size-11 -translate-y-1/2 items-center justify-center rounded-chip text-muted transition hover:text-default"
       :data-testid="`${testid}-toggle`"
       :data-visible="visible"
       @click="visible = !visible"
     >
-      <EyeOff v-if="visible" class="h-5 w-5" />
-      <Eye v-else class="h-5 w-5" />
+      <UIcon v-if="visible" name="i-ph-eye-slash-duotone" class="size-5" />
+      <UIcon v-else name="i-ph-eye-duotone" class="size-5" />
     </button>
   </div>
 </template>

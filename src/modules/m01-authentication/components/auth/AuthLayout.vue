@@ -1,14 +1,15 @@
 <script setup lang="ts">
 /**
- * Standalone auth layout of S1/S2 (FR-M01-01, FR-M01-02/15, shells.md §4). Rendered by the page
- * (route `layout: 'bare'`), so no shell wraps it:
- * - animated pastel gradient (`bg-auth`, `coolGradient` 15s), floating emoji and an SVG wave, all
- *   decorative (`aria-hidden`); the animations run under `motion-safe:` only (NFR-05);
- * - two columns from `lg` (DV-07; live `md`): the `welcome` slot on the left, hidden below `lg`;
- *   the card column holds the white card (logo + tagline + default slot), an optional `below`
- *   slot (the S1 stats strip) and the footer line.
+ * Standalone auth layout of S1/S2 (FR-M01-01, FR-M01-02/15, v2 shells §6). Rendered by the page
+ * (route `layout: 'bare'`), so no shell wraps it. Learner "Elektrik" look for every role:
+ * - from `xl` a split screen: the `welcome` slot on the gradient A1 brand panel (rocket art),
+ *   the form on `bg-muted`; below `xl` a slim gradient strip and a single raised card;
+ * - the card column holds the logo + tagline + default slot, an optional `below` slot (the S1
+ *   stats strip) and the footer line.
  */
+import { DsArt3D } from '@/ds'
 import { LOGO_URL } from '@/shells/shared/brand'
+import { useThemeMode } from '@/theme/color-mode'
 
 import AuthFooter from './AuthFooter.vue'
 
@@ -19,62 +20,33 @@ defineProps<{
 
 defineSlots<{ welcome?: () => unknown; default: () => unknown; below?: () => unknown }>()
 
-/** 📚 ✏️ ⭐ 🎨 🚀 💡 with their positions; visible at every width (FR-M01-01). */
-const FLOATS = [
-  { emoji: '📚', position: 'top-4 left-3 sm:top-10 sm:left-10' },
-  { emoji: '✏️', position: 'top-16 right-3 sm:top-24 sm:right-14' },
-  { emoji: '⭐', position: 'bottom-24 left-3 sm:bottom-32 sm:left-16' },
-  { emoji: '🎨', position: 'bottom-16 right-3 sm:bottom-20 sm:right-10' },
-  { emoji: '🚀', position: 'top-1/2 left-1 sm:left-6' },
-  { emoji: '💡', position: 'top-1/3 right-1 sm:right-6' },
-] as const
+useThemeMode('learner')
 </script>
 
 <template>
-  <main
-    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-auth p-3 motion-safe:animate-cool-gradient sm:p-4"
-    data-testid="auth-layout"
-  >
-    <span
-      v-for="(float, i) in FLOATS"
-      :key="float.emoji"
-      aria-hidden="true"
-      class="pointer-events-none absolute text-2xl opacity-60 select-none motion-safe:animate-float-bounce sm:text-4xl"
-      :class="float.position"
-      :style="{ animationDelay: `${String(i)}s` }"
-      data-testid="auth-float"
+  <main class="flex min-h-dvh flex-col bg-muted xl:grid xl:grid-cols-2" data-testid="auth-layout">
+    <div class="h-2 bg-gradient-primary xl:hidden" aria-hidden="true" />
+
+    <aside
+      v-if="$slots.welcome"
+      class="relative hidden flex-col justify-center gap-6 overflow-hidden bg-gradient-primary p-12 text-primary-on xl:flex"
+      data-testid="auth-welcome"
     >
-      {{ float.emoji }}
-    </span>
+      <DsArt3D name="rocket" size="hero" float class="absolute top-8 right-8" />
+      <slot name="welcome" />
+    </aside>
 
-    <svg
-      aria-hidden="true"
-      class="pointer-events-none absolute bottom-0 left-0 h-24 w-full"
-      viewBox="0 0 1440 120"
-      preserveAspectRatio="none"
-      data-testid="auth-wave"
-    >
-      <path
-        fill="rgba(255,255,255,0.35)"
-        d="M0,64 C240,120 480,0 720,40 C960,80 1200,120 1440,48 L1440,120 L0,120 Z"
-      />
-    </svg>
-
-    <div class="relative z-10 w-full max-w-6xl lg:grid lg:grid-cols-2 lg:items-center lg:gap-8">
-      <div v-if="$slots.welcome" class="hidden space-y-6 lg:block" data-testid="auth-welcome">
-        <slot name="welcome" />
-      </div>
-
-      <div class="mx-auto w-full max-w-[560px] lg:max-w-none">
-        <div class="rounded-2xl bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-8 md:p-10">
-          <div class="mb-6 text-center">
-            <img :src="LOGO_URL" alt="PRESTASIPLUS" class="mx-auto mb-3 h-16 w-auto max-w-full" />
-            <p class="text-sm font-medium text-slate-500" data-testid="auth-tagline">
+    <div class="flex flex-1 items-center justify-center p-4 sm:p-8">
+      <div class="w-full max-w-md">
+        <UCard>
+          <div class="mb-6 flex flex-col items-center gap-2 text-center">
+            <img :src="LOGO_URL" alt="PRESTASIPLUS" class="h-12 w-auto max-w-full sm:h-14" />
+            <p class="text-label font-medium text-muted" data-testid="auth-tagline">
               {{ tagline }}
             </p>
           </div>
           <slot />
-        </div>
+        </UCard>
 
         <slot name="below" />
 

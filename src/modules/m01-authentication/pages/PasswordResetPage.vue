@@ -6,11 +6,10 @@
  * landing page with the status text as flash; a bad or expired token shows the red alert, keeps the
  * email and clears the two password fields (INFERRED, Laravel "withInput except password").
  */
-import { ArrowLeft, CircleCheck, Lock, Mail } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
+import AuthAlert from '../components/auth/AuthAlert.vue'
 import { useFlash } from '@/composables'
 import { useSessionStore } from '@/stores/session'
 
@@ -24,12 +23,6 @@ import {
 import PasswordCard from '../components/auth/PasswordCard.vue'
 import PasswordInput from '../components/auth/PasswordInput.vue'
 import { errorLines } from '../lib/error-lines'
-
-/** Live S4 submit is a green gradient (discovery screenshot), not the blue `cta-gradient`. */
-const RESET_SUBMIT_CLASS = AUTH_SUBMIT_CLASS.replace(
-  'bg-cta-gradient',
-  'bg-linear-to-r from-green-500 to-green-700',
-)
 
 const route = useRoute()
 const router = useRouter()
@@ -73,12 +66,12 @@ async function submit(): Promise<void> {
     <template #icon>🔒</template>
 
     <form data-testid="reset-form" class="space-y-5" @submit.prevent="submit">
-      <AlertBox :messages="errors" data-testid="reset-alert" />
+      <AuthAlert :messages="errors" data-testid="reset-alert" />
       <input type="hidden" name="token" :value="token" />
 
       <div>
         <label for="email" :class="AUTH_LABEL_CLASS">
-          <Mail class="h-4 w-4 text-blue-500" />
+          <UIcon name="i-ph-envelope-simple-duotone" class="size-4 text-primary" />
           Alamat Email
         </label>
         <input
@@ -96,7 +89,7 @@ async function submit(): Promise<void> {
 
       <div>
         <label for="password" :class="AUTH_LABEL_CLASS">
-          <Lock class="h-4 w-4 text-green-500" />
+          <UIcon name="i-ph-lock-duotone" class="size-4 text-primary" />
           Kata Laluan Baru
         </label>
         <PasswordInput
@@ -111,7 +104,7 @@ async function submit(): Promise<void> {
 
       <div>
         <label for="password_confirmation" :class="AUTH_LABEL_CLASS">
-          <Lock class="h-4 w-4 text-green-500" />
+          <UIcon name="i-ph-lock-duotone" class="size-4 text-primary" />
           Sahkan Kata Laluan
         </label>
         <PasswordInput
@@ -127,22 +120,22 @@ async function submit(): Promise<void> {
       <button
         type="submit"
         :disabled="loading"
-        :class="RESET_SUBMIT_CLASS"
+        :class="AUTH_SUBMIT_CLASS"
         data-testid="reset-submit"
       >
         <template v-if="loading">
-          <LoadingSpinner />
+          <UIcon name="i-ph-circle-notch" class="size-5 motion-safe:animate-spin" />
           Menukar...
         </template>
         <template v-else>
-          <CircleCheck class="h-5 w-5" />
+          <UIcon name="i-ph-check-circle-duotone" class="size-5" />
           Tukar Kata Laluan
         </template>
       </button>
 
       <p class="text-center">
-        <RouterLink to="/login" :class="[AUTH_LINK_CLASS, 'text-slate-500 hover:text-slate-700']">
-          <ArrowLeft class="h-4 w-4" />
+        <RouterLink to="/login" :class="[AUTH_LINK_CLASS, 'text-muted hover:text-default']">
+          <UIcon name="i-ph-arrow-left" class="size-4" />
           Kembali ke Log Masuk
         </RouterLink>
       </p>
