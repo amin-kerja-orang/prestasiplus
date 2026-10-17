@@ -345,7 +345,7 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(label('/guru/kirkpatrick/results')).toBe('T4: Hasil')
     expect(label('/guru/kirkpatrick/pelajar/8')).toBeNull()
     expect(label('/guru/laporan')).toBe('Laporan')
-    expect(label('/guru/laporan-mingguan-kelas')).toBe('Laporan Mingguan')
+    expect(label('/laporan-mingguan')).toBe('Laporan Mingguan')
     expect(label('/guru/kelas/4')).toBe('Kelas Saya')
     expect(activeGroupKey(teacherEntries, '/guru/kirkpatrick/pelajar/8')).toBe('kirkpatrick')
     expect(activeGroupKey(teacherEntries, '/guru/monitoring')).toBeNull()

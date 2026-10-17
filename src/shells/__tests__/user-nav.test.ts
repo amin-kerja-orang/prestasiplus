@@ -18,7 +18,11 @@ import {
   type NavEntry,
   type NavItem,
 } from '../nav/user-nav'
+import { OUT_OF_SCOPE_ROUTES, isOutOfScope } from '../nav/out-of-scope'
 import { SHELL_ICON_FALLBACKS, shellIcon } from '../shared/shell-icons'
+
+/** Full menu data (fidelity checks); the rendered menu hides out-of-scope items. */
+const FULL = { includeOutOfScope: true } as const
 
 const ROLES: readonly Role[] = [
   'student',
@@ -74,6 +78,7 @@ const liveMenuLinks = inventory.elements
 /** Live links the rebuild deliberately changes (approved DVs). */
 const REPLACED_LIVE_HREFS: Record<string, string> = {
   '/settings': '/tetapan', // M01 DV-01 (drawer "Tetapan")
+  '/guru/laporan-mingguan-kelas': '/laporan-mingguan', // L48: the built screen is M08 S21 (M11-T5 S8 not built)
 }
 /** Rebuild hrefs that differ from live on purpose. */
 const CHANGED_HREFS = new Set([
@@ -142,7 +147,7 @@ describe('USER_NAV data', () => {
 
   it('every admin-visible item comes from the capture (student-only items are separate)', () => {
     const liveHrefs = new Set(liveMenuLinks.map((l) => REPLACED_LIVE_HREFS[l.href] ?? l.href))
-    const notLive = items(navFor('admin', 'sidebar'))
+    const notLive = items(navFor('admin', 'sidebar', USER_NAV, FULL))
       .concat(items(navFor('admin', 'drawer')))
       .filter((i) => !liveHrefs.has(i.to) && !CHANGED_HREFS.has(i.to))
       .map((i) => i.to)
@@ -179,7 +184,7 @@ describe('USER_NAV data', () => {
 
 describe('navFor (role filter: hidden, not disabled)', () => {
   it('student: the live murid menu order at the top, no admin/teacher entries', () => {
-    const menu = labels(navFor('student', 'sidebar'))
+    const menu = labels(navFor('student', 'sidebar', USER_NAV, FULL))
     expect(menu.slice(0, 13)).toEqual([
       'Dashboard',
       'Target SPM',
@@ -222,7 +227,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
   })
 
   it('admin sees every captured entry, including the admin-only ones', () => {
-    const menu = labels(navFor('admin', 'sidebar'))
+    const menu = labels(navFor('admin', 'sidebar', USER_NAV, FULL))
     for (const label of ['Ke Admin Panel', 'Portal Guru', 'Amaran Awal', 'Pakej', 'Urus Tiket']) {
       expect(menu).toContain(label)
     }
@@ -230,7 +235,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
   })
 
   it('teacher: the full live guru sidebar, in order (roles-matrix/guru)', () => {
-    expect(labels(navFor('teacher', 'sidebar'))).toEqual([
+    expect(labels(navFor('teacher', 'sidebar', USER_NAV, FULL))).toEqual([
       'Command Center',
       'HARIAN',
       'Dashboard Guru',
@@ -299,7 +304,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Tiket Bantuan',
       'Gambar Rajah',
     ])
-    const kirk = navFor('teacher', 'sidebar').find((e) => e.id === 't-kirkpatrick')
+    const kirk = navFor('teacher', 'sidebar', USER_NAV, FULL).find((e) => e.id === 't-kirkpatrick')
     expect(kirk?.kind === 'group' && kirk.children.map((c) => c.label)).toEqual([
       'Ringkasan',
       'T1: Reaksi',
@@ -312,7 +317,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
   })
 
   it('school_admin: the full live admin-sekolah sidebar, in order (roles-matrix/admin sekolah)', () => {
-    expect(labels(navFor('school_admin', 'sidebar'))).toEqual([
+    expect(labels(navFor('school_admin', 'sidebar', USER_NAV, FULL))).toEqual([
       'Command Center',
       'Pusat AI',
       '🤖 Cikgu Alesa AI',
@@ -405,6 +410,48 @@ describe('navFor (role filter: hidden, not disabled)', () => {
         expect(next, `${role}: ${entry.id}`).toBeDefined()
         if (entry.kind === 'subheading') expect(['item', 'group']).toContain(next!.kind)
       })
+    }
+  })
+
+  it('hides out-of-scope items from every rendered menu but keeps them as data', () => {
+    expect(OUT_OF_SCOPE_ROUTES.length).toBeGreaterThan(40)
+    const dataHrefs = new Set(ALL_ITEMS.map((i) => i.to))
+    for (const r of OUT_OF_SCOPE_ROUTES) expect(dataHrefs.has(r.to), r.to).toBe(true)
+    for (const role of ROLES.concat('admin')) {
+      for (const surface of ['sidebar', 'drawer'] as const) {
+        const rendered = items(navFor(role, surface))
+        expect(rendered.filter((i) => isOutOfScope(i.to)).map((i) => i.to)).toEqual([])
+      }
+    }
+    // The opt-out still returns them.
+    expect(
+      items(navFor('student', 'sidebar', USER_NAV, FULL)).some((i) => i.to === '/kombo'),
+    ).toBe(true)
+  })
+
+  it('Release 1.0 items stay visible and none points at an out-of-scope path', () => {
+    const teacher = items(navFor('teacher', 'sidebar')).map((i) => i.to)
+    for (const to of [
+      '/guru',
+      '/guru/kelas',
+      '/guru/pelajar',
+      '/guru/laporan',
+      '/laporan-mingguan',
+      '/guru/soalan',
+      '/guru/monitoring',
+      '/guru/kirkpatrick',
+    ]) {
+      expect(teacher, to).toContain(to)
+    }
+    const school = items(navFor('school_admin', 'sidebar')).map((i) => i.to)
+    for (const to of [
+      '/admin-sekolah/pelajar',
+      '/admin-sekolah/guru',
+      '/admin-sekolah/kelas',
+      '/amaran/sekolah',
+      '/sekolah-bersaing',
+    ]) {
+      expect(school, to).toContain(to)
     }
   })
 

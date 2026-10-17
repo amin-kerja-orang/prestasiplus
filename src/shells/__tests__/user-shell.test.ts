@@ -144,7 +144,7 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
   it('teacher: teacher block and Command Center card, no student menu', async () => {
     const w = await open('/dashboard', TEACHER)
     const labels = navLabels(sidebar(w))
-    expect(labels).toContain('Kehadiran Digital')
+    expect(labels).toContain('Laporan Mingguan')
     expect(labels).not.toContain('Target SPM')
     const cc = sidebar(w).get('[data-nav-id="t-command-center"]')
     expect(cc.attributes('target')).toBe('_blank')

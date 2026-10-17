@@ -434,7 +434,7 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('SRS §12 #52 variants: 8102 Cancelled, 8107 Expired, 8765 cards 16 / 1 / 209 @m11', async ({
+  test('SRS §12 #52 variants: 8102 Cancelled, 8107 Expired, 8765 cards 16 / 6 / 222 and "Sederhana — 37.5%" (D9) @m11', async ({
     page,
     gotoApp,
     loginAs,
@@ -446,7 +446,20 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     await expect(tid(page, 'mon-subscription')).toContainText('Expired — sehingga 22 May 2026')
     await gotoApp('/guru/monitoring/sekolah/8765')
     await expect(tid(page, 'mon-school-header')).toBeVisible()
-    await expect(tid(page, 'mon-stat-value').nth(0)).toHaveText('16')
+    // AC-M11-18.3 / 18.4 (D9): the S3 cards equal the S2 row of 8765 (6 active, 37.5%), no contradiction.
+    const values = tid(page, 'mon-stat-value')
+    await expect(values.nth(0)).toHaveText('16')
+    await expect(values.nth(1)).toHaveText('6')
+    await expect(values.nth(2)).toHaveText('222')
+    await expect(tid(page, 'mon-school-tahap')).toHaveText('Sederhana — 37.5%')
+    // The teacher cards equal the teacher rows of the same page.
+    const rows = await tid(page, 'mon-teacher-row').count()
+    const loggedIn = await tid(page, 'mon-teacher-status')
+      .filter({ hasText: 'Pernah login' })
+      .count()
+    await expect(values.nth(3)).toHaveText(String(rows))
+    await expect(values.nth(4)).toHaveText(String(loggedIn))
+    await expect(tid(page, 'mon-warning')).toHaveCount(0)
   })
 
   test('SRS §12 #53 the fixture school 900001 renders its detail page (not 404) @m11', async ({

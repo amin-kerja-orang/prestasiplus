@@ -115,7 +115,7 @@ describe('PublicLayout: guest on /artikel (FR-M09-29, FR-M09-31)', () => {
     expect(logo.element.tagName).toBe('A')
     expect(logo.attributes('href')).toBe('/')
     expect(logo.get('img').attributes('alt')).toBe('PRESTASIPLUS')
-    expect(logo.get('img').attributes('src')).toMatch(/images\/logo-custom\.png$/)
+    expect(logo.get('img').attributes('src')).toMatch(/images\/prestasiplus-logo\.svg$/)
     const spans = nav.findAll('span').map((s) => s.text())
     expect(spans).toContain('|')
     expect(spans).toContain('📰')

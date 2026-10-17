@@ -34,6 +34,8 @@
 
 import type { Role } from '@/stores/session-types'
 
+import { isOutOfScope } from './out-of-scope'
+
 /** Where an entry is rendered. */
 export type NavSurface = 'sidebar' | 'drawer'
 
@@ -274,7 +276,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 't-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/pelajar', fa: 'fa-brain', color: 'text-violet-500', roles: T },
   { kind: 'item', id: 't-analisa-item', label: 'Analisa Item', to: '/analisa-item', fa: 'fa-magnifying-glass-chart', color: 'text-rose-500', roles: T },
   { kind: 'item', id: 't-perbandingan-kelas', label: 'Perbandingan Kelas', to: '/guru/perbandingan-kelas', fa: 'fa-balance-scale', color: 'text-purple-500', roles: T },
-  { kind: 'item', id: 't-laporan-mingguan', label: 'Laporan Mingguan', to: '/guru/laporan-mingguan-kelas', fa: 'fa-calendar-week', color: 'text-emerald-500', roles: T },
+  { kind: 'item', id: 't-laporan-mingguan', label: 'Laporan Mingguan', to: '/laporan-mingguan', fa: 'fa-calendar-week', color: 'text-emerald-500', roles: T },
 
   // ── Pusat AI (one live partial, same markup in sidebar and drawer) ──
   { kind: 'section', id: 'sec-pusat-ai', label: 'Pusat AI', text: '', rule: 'from-purple-300', variant: 'gradient', badge: { text: 'NEW', cls: B_NEW_SECTION }, roles: AI_ALL },
@@ -519,7 +521,7 @@ export const USER_NAV: readonly NavEntry[] = [
   },
   { kind: 'item', id: 'guru-analisis-item', label: 'Analisis Item', to: '/guru/analisis-item', fa: 'fa-chart-pie', color: 'text-indigo-500', roles: A },
   { kind: 'item', id: 'guru-perbandingan-kelas', label: 'Perbandingan Kelas', to: '/guru/perbandingan-kelas', fa: 'fa-balance-scale', color: 'text-purple-500', roles: A },
-  { kind: 'item', id: 'guru-laporan-mingguan', label: 'Laporan Mingguan', to: '/guru/laporan-mingguan-kelas', fa: 'fa-calendar-week', color: 'text-emerald-500', roles: A },
+  { kind: 'item', id: 'guru-laporan-mingguan', label: 'Laporan Mingguan', to: '/laporan-mingguan', fa: 'fa-calendar-week', color: 'text-emerald-500', roles: A },
   { kind: 'section', id: 'sec-bank-soalan', label: 'BANK SOALAN', text: 'text-emerald-700', rule: 'from-emerald-300', roles: A },
   { kind: 'item', id: 'guru-sumbang-soalan', label: 'Sumbang Soalan', to: '/guru/soalan', fa: 'fa-pen-fancy', color: 'text-emerald-500', roles: A },
   { kind: 'item', id: 'guru-soalan-rujukan', label: 'Soalan & Rujukan', to: '/guru/soalan-guru', fa: 'fa-book-open', color: 'text-teal-500', roles: A },
@@ -697,8 +699,17 @@ export function navFor(
   role: Role | null,
   surface: NavSurface,
   entries: readonly NavEntry[] = USER_NAV,
+  options: { includeOutOfScope?: boolean } = {},
 ): NavEntry[] {
-  const visible = entries.filter((entry) => visibleTo(entry, role, surface))
+  // Release 1.0 scope: items listed in out-of-scope.ts stay in the data but are not rendered.
+  const inScope = (entry: NavEntry): boolean =>
+    options.includeOutOfScope === true || entry.kind !== 'item' || !isOutOfScope(entry.to)
+  const visible = entries
+    .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
+    .map((entry) =>
+      entry.kind === 'group' ? { ...entry, children: entry.children.filter(inScope) } : entry,
+    )
+    .filter((entry) => entry.kind !== 'group' || entry.children.length > 0)
   return visible.filter((entry, index) => {
     if (entry.kind !== 'section' && entry.kind !== 'subheading') return true
     for (const next of visible.slice(index + 1)) {
