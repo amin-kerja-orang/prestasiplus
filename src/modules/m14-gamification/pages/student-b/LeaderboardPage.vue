@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchGamificationLeaderboard } from '../../api'
 import LeaderboardPodium from '../../components/student-b/LeaderboardPodium.vue'
@@ -21,14 +22,15 @@ const loaded = computed(() => data.value !== null)
 </script>
 
 <template>
-  <div class="space-y-5" data-testid="leaderboard-page">
-    <section
-      class="rounded-2xl bg-linear-to-br from-violet-600 to-purple-400 px-5 py-5 text-white shadow-lg"
-      data-testid="leaderboard-hero"
-    >
-      <h1 class="font-heading text-2xl font-bold text-white">{{ LEADERBOARD_COPY.title }}</h1>
-      <p class="mt-1 text-sm text-white/90">{{ LEADERBOARD_COPY.subtitle }}</p>
-    </section>
+  <DsPage data-testid="leaderboard-page">
+    <UCard data-testid="leaderboard-hero">
+      <div class="flex flex-col gap-1">
+        <h1 class="text-title text-highlighted">
+          {{ LEADERBOARD_COPY.title }}
+        </h1>
+        <p class="text-body text-muted">{{ LEADERBOARD_COPY.subtitle }}</p>
+      </div>
+    </UCard>
 
     <template v-if="loaded && data">
       <LeaderboardPodium v-if="data.podium.length > 0" :podium="data.podium" />
@@ -42,5 +44,5 @@ const loaded = computed(() => data.value !== null)
       test-key="leaderboard"
       @retry="reload()"
     />
-  </div>
+  </DsPage>
 </template>

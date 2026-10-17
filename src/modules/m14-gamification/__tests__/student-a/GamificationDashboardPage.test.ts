@@ -48,12 +48,7 @@ describe('S11 dashboard (AC-M14-04, 05)', () => {
     expect(t('s11-next-tier').text()).toContain('Naik ke Perak')
     expect(t('s11-next-pct').text()).toBe('51.2%')
     expect(t('s11-next-need').text()).toBe('Perlu 244 syiling lagi')
-    expect(t('s11-next-bar').attributes('style')).toContain('51.2%')
-  })
-
-  it('h1 carries explicit white text (global h1 colour rule)', async () => {
-    await mountPage()
-    expect(t('s11-tier-name').classes()).toContain('text-white')
+    expect(t('s11-next-bar').attributes('data-value')).toContain('51.2')
   })
 
   it('hero buttons target S12, S13 and M15 rewards (AC-04.3)', async () => {
@@ -70,7 +65,7 @@ describe('S11 dashboard (AC-M14-04, 05)', () => {
     expect(t('s11-stat-rate').text()).toBe('50 syiling = 1 token')
     expect(t('s11-stat-level').text()).toBe('2')
     expect(t('s11-stat-xp').text()).toBe('8/110 XP')
-    expect(t('s11-xp-bar').attributes('style')).toContain('7%')
+    expect(t('s11-xp-bar').attributes('data-value')).toContain('7')
     expect(t('s11-stat-total').text()).toBe('256')
     expect(t('s11-stat-week').text()).toBe('+0 minggu ini')
   })
@@ -89,7 +84,7 @@ describe('S11 dashboard (AC-M14-04, 05)', () => {
     expect(all('s11-challenge-difficulty')[0]!.text()).toBe('Mudah')
     expect(all('s11-challenge-difficulty')[0]!.classes()).toContain('uppercase')
     expect(all('s11-challenge-progress')[0]!.text()).toBe('0/3')
-    expect(all('s11-challenge-reward')[0]!.text()).toBe('+15 💰')
+    expect(all('s11-challenge-reward')[0]!.text()).toBe('+15')
     expect(t('s11-challenges-all').attributes('href')).toBe('/gamification/challenges')
     expect(all('s11-recent-row')).toHaveLength(6)
     expect(all('s11-recent-row')[0]!.text()).toContain('Cabaran selesai: Penjelajah Topik')

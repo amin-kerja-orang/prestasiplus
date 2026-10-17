@@ -6,10 +6,10 @@
  * "Kongsi" open `wa.me` with the card text + "\n\n" + the viewer's profile URL (DV-M14-02, DV-M14-03).
  * The PNG is captured on screen with html2canvas (D25): `lib/student/studentb-capture.ts`.
  */
-import { Brain, Flame, IdCard, Trophy } from '@lucide/vue'
-import { computed, ref, type Component } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchShareCards } from '../../api'
 import KadCardFrame from '../../components/student-b/KadCardFrame.vue'
@@ -35,7 +35,12 @@ const { data, error, reload } = useApi((signal) => fetchShareCards({ signal }))
 const tab = ref<KadTab>('profil')
 const downloading = ref(false)
 
-const TAB_ICONS: Record<string, Component> = { IdCard, Flame, Brain, Trophy }
+const TAB_ICONS: Record<string, string> = {
+  IdCard: 'i-ph-identification-card-duotone',
+  Flame: 'i-ph-fire-duotone',
+  Brain: 'i-ph-brain-duotone',
+  Trophy: 'i-ph-trophy-duotone',
+}
 const profileUrl = computed(() => data.value?.profileUrl ?? '')
 
 async function download(el: HTMLElement | null, card: string): Promise<void> {
@@ -56,34 +61,31 @@ function whatsapp(text: string): void {
 </script>
 
 <template>
-  <div class="space-y-5" data-testid="kad-page">
+  <DsPage data-testid="kad-page">
     <template v-if="data">
-      <div class="flex flex-wrap gap-2" data-testid="kad-tabs">
-        <button
+      <div class="flex gap-2 overflow-x-auto" data-testid="kad-tabs">
+        <UButton
           v-for="t in KAD_TABS"
           :key="t.id"
           type="button"
-          :class="[
-            'inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition',
-            tab === t.id ? [t.active, 'text-white'] : 'border-slate-800 bg-white text-slate-700',
-          ]"
+          size="lg"
+          class="shrink-0"
+          :icon="TAB_ICONS[t.icon]"
+          :color="tab === t.id ? 'primary' : 'neutral'"
+          :variant="tab === t.id ? 'solid' : 'soft'"
           :data-active="tab === t.id ? 'true' : 'false'"
           :data-testid="`kad-tab-${t.id}`"
           @click="tab = t.id"
         >
-          <component :is="TAB_ICONS[t.icon]" class="h-4 w-4" aria-hidden="true" />
           {{ t.label }}
-        </button>
+        </UButton>
       </div>
 
-      <section
-        class="rounded-2xl border border-slate-800 bg-white p-5 shadow-sm sm:p-6"
-        data-testid="kad-panel"
-      >
+      <UCard data-testid="kad-panel">
         <KadCardFrame
           v-if="tab === 'profil'"
           :title="KAD_COPY.profilTitle"
-          download-class="bg-violet-600"
+          download-color="secondary"
           test-key="profil"
           @download="(el) => download(el, 'profil')"
           @share="whatsapp(profilText(data.profile.accuracy, data.profile.answered))"
@@ -94,7 +96,7 @@ function whatsapp(text: string): void {
         <KadCardFrame
           v-else-if="tab === 'kombo'"
           :title="KAD_COPY.komboTitle"
-          download-class="bg-orange-600"
+          download-color="warning"
           test-key="kombo"
           @download="(el) => download(el, 'kombo')"
           @share="whatsapp(komboText(data.kombo.current, data.kombo.best))"
@@ -102,13 +104,15 @@ function whatsapp(text: string): void {
           <KadKomboCard :data="data" />
         </KadCardFrame>
 
-        <div v-else-if="tab === 'penguasaan'" data-testid="kad-penguasaan">
-          <h3 class="mb-4 text-base font-bold text-slate-800">{{ KAD_COPY.penguasaanTitle }}</h3>
+        <div v-else-if="tab === 'penguasaan'" class="flex flex-col gap-4" data-testid="kad-penguasaan">
+          <h3 class="text-subheading text-highlighted">
+            {{ KAD_COPY.penguasaanTitle }}
+          </h3>
           <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
             <KadCardFrame
               v-for="(m, i) in data.mastery"
               :key="m.subjectName"
-              download-class="bg-emerald-600"
+              download-color="success"
               :share-label="KAD_COPY.kongsi"
               compact
               :test-key="`penguasaan-${String(i)}`"
@@ -123,14 +127,14 @@ function whatsapp(text: string): void {
         <KadCardFrame
           v-else
           :title="KAD_COPY.rankingTitle"
-          download-class="bg-blue-600"
+          download-color="primary"
           test-key="kedudukan"
           @download="(el) => download(el, 'kedudukan')"
           @share="whatsapp(rankingText(data.ranking.accuracy))"
         >
           <KadRankingCard :data="data" />
         </KadCardFrame>
-      </section>
+      </UCard>
     </template>
     <StudentBLoadState
       v-else
@@ -140,5 +144,5 @@ function whatsapp(text: string): void {
       test-key="kad"
       @retry="reload()"
     />
-  </div>
+  </DsPage>
 </template>

@@ -3,12 +3,11 @@
  * S12 `/gamification/convert` "Tukar Syiling → Token" (M14-T2a; FR-M14-27…33, BR-M14-10, 11). Reads #5,
  * posts #6; the PROPOSED success and error messages are SRS §8.2.
  */
-import { RefreshCw } from '@lucide/vue'
 import { ref } from 'vue'
 
 import { ApiError } from '@/api'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsPage, DsRewardChip } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchConvertView, convertSyiling } from '../api'
@@ -46,52 +45,50 @@ async function onConvert(amount: number): Promise<void> {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="gamification-convert-page">
-    <AlertBox v-if="info.error.value" messages="Ralat berlaku. Sila cuba lagi." />
+  <DsPage data-testid="gamification-convert-page">
+    <UAlert
+      v-if="info.error.value"
+      color="error"
+      variant="subtle"
+      title="Ralat berlaku. Sila cuba lagi."
+    />
 
     <div
       v-else-if="!info.data.value"
-      class="flex justify-center py-10 text-slate-400"
+      class="flex flex-col gap-4"
+      aria-busy="true"
       data-testid="s12-loading"
     >
-      <LoadingSpinner :size="28" />
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
     </div>
 
     <template v-else>
-      <section
-        class="gam-hero min-w-0 rounded-3xl bg-linear-to-r from-blue-800 to-blue-400 p-4 text-white shadow-lg sm:p-6"
-        data-testid="s12-hero"
-      >
+      <UCard data-testid="s12-hero">
         <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="min-w-0">
-            <h1 class="flex items-center gap-2 font-heading text-2xl font-bold text-white">
-              <RefreshCw class="h-6 w-6" />Tukar Syiling → Token
+          <div class="flex min-w-0 flex-col gap-1">
+            <h1 class="text-title text-highlighted">
+              Tukar Syiling → Token
             </h1>
-            <p class="mt-1 text-sm text-white">
-              Tukar syiling anda kepada token untuk tebus hadiah
-            </p>
+            <p class="text-body text-muted">Tukar syiling anda kepada token untuk tebus hadiah</p>
           </div>
-          <div class="flex shrink-0 gap-6 text-center">
-            <div>
-              <p class="text-2xl font-bold text-white" data-testid="s12-balance-syiling">
-                {{ formatCount(syiling()) }}
-              </p>
-              <p class="text-xs text-white">Baki Syiling</p>
+          <div class="flex shrink-0 gap-4 text-center">
+            <div class="flex flex-col items-center gap-1">
+              <DsRewardChip art="coin" :value="formatCount(syiling())" data-testid="s12-balance-syiling" />
+              <span class="text-caption text-muted">Baki Syiling</span>
             </div>
-            <div>
-              <p class="text-2xl font-bold text-white" data-testid="s12-balance-token">
-                {{ formatCount(token()) }}
-              </p>
-              <p class="text-xs text-white">Baki Token</p>
+            <div class="flex flex-col items-center gap-1">
+              <DsRewardChip art="bolt" :value="formatCount(token())" data-testid="s12-balance-token" />
+              <span class="text-caption text-muted">Baki Token</span>
             </div>
           </div>
         </div>
-      </section>
+      </UCard>
 
-      <AlertBox v-if="success" variant="success" :messages="success" />
-      <AlertBox v-if="failure" :messages="failure" />
+      <UAlert v-if="success" color="success" variant="subtle" :title="success" />
+      <UAlert v-if="failure" color="error" variant="subtle" :title="failure" />
 
-      <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <S12ConvertForm
           :balance="syiling()"
           :rate="info.data.value.rate"
@@ -102,5 +99,5 @@ async function onConvert(amount: number): Promise<void> {
         <S12TierRates :tiers="info.data.value.tiers" />
       </div>
     </template>
-  </div>
+  </DsPage>
 </template>

@@ -1,11 +1,9 @@
 <script setup lang="ts">
 /**
  * S11 `/gamification` "Gamifikasi Dashboard" (M14-T2a; FR-M14-14…22, BR-M14-05…09). Reads #3 once;
- * shell header and tab title come from the route meta (DV-M14-01).
+ * shell header and tab title come from the route meta (DV-M14-01). v2 look: DS composites only.
  */
-import { Medal, Share2 } from '@lucide/vue'
-
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
+import { DsCharacterCard, DsPage } from '@/ds'
 import { useApi } from '@/composables'
 import { formatCount } from '@/lib/number'
 
@@ -21,22 +19,30 @@ const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="gamification-dashboard-page">
-    <AlertBox v-if="dashboard.error.value" messages="Ralat berlaku. Sila cuba lagi." />
+  <DsPage data-testid="gamification-dashboard-page">
+    <UAlert
+      v-if="dashboard.error.value"
+      color="error"
+      variant="subtle"
+      title="Ralat berlaku. Sila cuba lagi."
+    />
 
     <div
       v-else-if="!dashboard.data.value"
-      class="flex justify-center py-10 text-slate-400"
+      class="flex flex-col gap-4"
+      aria-busy="true"
       data-testid="s11-loading"
     >
-      <LoadingSpinner :size="28" />
+      <USkeleton class="h-40 w-full" />
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-40 w-full" />
     </div>
 
     <template v-else>
       <S11Hero :wallet="dashboard.data.value.wallet" />
       <S11StatCards :wallet="dashboard.data.value.wallet" />
 
-      <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
         <S11ChallengesCard :challenges="dashboard.data.value.challenges.slice(0, 4)" />
         <S11RecentCard :rows="dashboard.data.value.recent.slice(0, 6)" />
       </div>
@@ -50,43 +56,37 @@ const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
         :current-key="dashboard.data.value.wallet.tier.key"
       />
 
-      <section
+      <DsCharacterCard
         v-if="dashboard.data.value.wallet.nextTitle"
-        class="min-w-0 rounded-2xl bg-white p-4 shadow sm:p-5"
+        variant="win"
+        icon="i-ph-medal-duotone"
+        title="Gelaran Seterusnya"
         data-testid="s11-next-title"
       >
-        <h2 class="flex items-center gap-2 font-heading text-lg font-semibold">
-          <Medal class="h-5 w-5 text-purple-500" />Gelaran Seterusnya
-        </h2>
-        <div class="mt-3 flex items-center gap-3 rounded-xl bg-green-50 p-3">
-          <span class="text-3xl">{{ dashboard.data.value.wallet.nextTitle.emoji }}</span>
-          <div class="min-w-0">
-            <p class="font-semibold text-green-700">
+        <div class="flex items-center gap-3">
+          <span class="text-title" aria-hidden="true">{{
+            dashboard.data.value.wallet.nextTitle.emoji
+          }}</span>
+          <div class="flex min-w-0 flex-col">
+            <p class="text-label text-highlighted">
               {{ dashboard.data.value.wallet.nextTitle.name }}
             </p>
-            <p class="text-sm text-slate-600" data-testid="s11-next-title-need">
+            <p class="text-caption text-muted" data-testid="s11-next-title-need">
               Perlu {{ formatCount(dashboard.data.value.wallet.nextTitle.need) }} syiling lagi untuk
               gelaran ini
             </p>
           </div>
         </div>
-      </section>
+      </DsCharacterCard>
 
-      <RouterLink
-        to="/gamification/kad-kongsi"
-        class="flex min-h-11 items-center gap-3 rounded-2xl border border-indigo-200 bg-linear-to-r from-indigo-50 to-purple-100 p-4 shadow-sm"
-        data-testid="s11-share-link"
-      >
-        <span
-          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500 text-white"
-          ><Share2 class="h-5 w-5"
-        /></span>
-        <span class="min-w-0 flex-1">
-          <span class="block font-semibold text-purple-800">Kad Kongsi</span>
-          <span class="block text-sm text-purple-700">Kongsi pencapaian anda di WhatsApp!</span>
-        </span>
-        <span class="text-indigo-400">→</span>
+      <RouterLink to="/gamification/kad-kongsi" class="block min-h-11" data-testid="s11-share-link">
+        <DsCharacterCard
+          variant="info"
+          icon="i-ph-share-network-duotone"
+          title="Kad Kongsi"
+          description="Kongsi pencapaian anda di WhatsApp!"
+        />
       </RouterLink>
     </template>
-  </div>
+  </DsPage>
 </template>

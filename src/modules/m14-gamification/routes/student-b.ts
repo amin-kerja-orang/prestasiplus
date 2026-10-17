@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Papan Pendahulu',
       header: { title: 'Papan Pendahulu', subtitle: SUBTITLE },
       module: 'M14',
+      v2: true,
     },
   },
   {
@@ -31,6 +32,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Pencapaian — PRESTASIPLUS',
       header: { title: 'Pencapaian Anda', subtitle: SUBTITLE },
       module: 'M14',
+      v2: true,
     },
   },
   {
@@ -43,6 +45,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Rujuk Kawan — PRESTASIPLUS',
       header: { title: 'Rujuk Kawan, Dapat Syiling!', subtitle: SUBTITLE },
       module: 'M14',
+      v2: true,
     },
   },
   {
@@ -55,6 +58,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kad Kongsi — PRESTASIPLUS',
       header: { title: 'Kad Kongsi', subtitle: 'Kongsi pencapaian anda' },
       module: 'M14',
+      v2: true,
     },
   },
 ]
