@@ -11,7 +11,7 @@ export const AUTH_LABEL_CLASS = 'mb-2 flex items-center gap-2 text-label text-de
 
 /** Full-width gradient submit (52px mobile, 56px from sm). */
 export const AUTH_SUBMIT_CLASS =
-  'flex min-h-13 w-full items-center justify-center gap-2 rounded-chip bg-gradient-primary px-6 py-3 text-body font-bold text-primary-on shadow-cta transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-14'
+  'flex min-h-13 w-full items-center justify-center gap-2 rounded-chip bg-gradient-primary px-6 py-3 text-body font-bold text-primary-on shadow-cta transition hover:-translate-y-0.5 hover:brightness-110 motion-reduce:transform-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-14'
 
 /** Small text links of the auth cards; 44px tall touch targets. */
 export const AUTH_LINK_CLASS = 'inline-flex min-h-11 items-center gap-2 text-label'

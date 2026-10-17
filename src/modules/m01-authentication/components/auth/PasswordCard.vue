@@ -5,6 +5,7 @@
  */
 import { useThemeMode } from '@/theme/color-mode'
 
+import AuthBrandStrip from './AuthBrandStrip.vue'
 import AuthFooter from './AuthFooter.vue'
 
 defineProps<{
@@ -20,7 +21,7 @@ useThemeMode('learner')
 
 <template>
   <main class="flex min-h-dvh flex-col bg-muted" data-testid="password-layout">
-    <div class="h-2 bg-gradient-primary" aria-hidden="true" />
+    <AuthBrandStrip class="!flex" />
     <div class="flex flex-1 items-center justify-center p-4 sm:p-8">
       <div class="w-full max-w-md">
         <UCard>

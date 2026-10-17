@@ -115,9 +115,12 @@ describe('LoginPage (M01 S1)', () => {
   it('shows the derived stats in the welcome text and the strip (FR-M01-11)', async () => {
     const w = await render()
     expect(w.get('[data-testid=welcome-question-count]').text()).toBe('128,989')
-    expect(w.get('[data-testid=login-stats]').text().replace(/\s+/g, ' ')).toBe(
-      '❓ 128,989+ Soalan • 📚 31 Subjek • 🎓 11 Tahap',
-    )
+    expect(
+      w
+        .findAll('[data-testid=login-stats] li')
+        .map((li) => li.text())
+        .join(' '),
+    ).toBe('128,989+ Soalan 31 Subjek 11 Tahap')
     expect(w.text()).toContain('soalan latihan dalam 31 subjek berbeza!')
   })
 

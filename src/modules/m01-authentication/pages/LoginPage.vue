@@ -11,6 +11,7 @@ import { RouterLink, useRouter } from 'vue-router'
 
 import AuthAlert from '../components/auth/AuthAlert.vue'
 import { useApi } from '@/composables'
+import { DsSticker } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { useSessionStore } from '@/stores/session'
 
@@ -182,15 +183,21 @@ async function submit(): Promise<void> {
     </form>
 
     <template #below>
-      <p
+      <ul
         v-if="stats"
-        class="mt-4 rounded-card bg-default px-4 py-3 text-center text-label text-default shadow-card"
+        class="mt-4 flex flex-wrap items-center justify-center gap-2"
         data-testid="login-stats"
       >
-        ❓ {{ formatNumber(stats.questionCount) }}+ Soalan • 📚
-        {{ formatNumber(stats.subjectCount) }} Subjek • 🎓
-        {{ formatNumber(stats.levelCount) }} Tahap
-      </p>
+        <li>
+          <DsSticker art="books">{{ formatNumber(stats.questionCount) }}+ Soalan</DsSticker>
+        </li>
+        <li>
+          <DsSticker art="cap">{{ formatNumber(stats.subjectCount) }} Subjek</DsSticker>
+        </li>
+        <li>
+          <DsSticker art="trophy">{{ formatNumber(stats.levelCount) }} Tahap</DsSticker>
+        </li>
+      </ul>
     </template>
   </AuthLayout>
 </template>
