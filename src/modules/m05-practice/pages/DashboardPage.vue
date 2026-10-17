@@ -1,87 +1,113 @@
 <script setup lang="ts">
 /**
- * S1 `/dashboard` "Dashboard" — the user-portal home (M05-T3; SRS M05 v1.20 FR-M05-01…28, §6.10).
+ * S1 `/dashboard` "Dashboard" — the Murid Home in v2 (M05-T3; SRS M05 v1.20 FR-M05-01…28, §6.10;
+ * design `docs/design/v2-learner-prototype.html`, decisions D35–D38).
  *
- * One call, `GET /api/dashboard` (#1), feeds every block, in the live DOM order: hero, free-trial
- * card, announcement carousel, Kombo reminder, five stat cards, "Misi Harian" widget, badge shelf,
- * quick actions, articles strip, "Subjek Tersedia", "Statistik Platform", "Tahap Pendidikan",
- * "Soalan Terkini" + "Tahap Kesukaran", "Statistik Subjek", and (≥ 1024 px) the right aside
- * "Artikel Terkini". The unobserved conditional sections are not rendered (FR-M05-20).
- * Live pages are server-rendered: no skeleton, the content area stays empty until the data is ready.
+ * One call, `GET /api/dashboard` (#1), feeds every block, in the order of the approved prototype:
+ * greeting card (friend avatar + speech bubble), reward tiles, "Sambung latihan" hero, free-trial
+ * card, announcement carousel, Kombo warning, five stat cards, "Misi Harian", badges, quick
+ * actions, articles, "Subjek Tersedia", "Statistik Platform", "Tahap Pendidikan", "Soalan
+ * Terkini", "Tahap Kesukaran" and "Statistik Subjek". The unobserved conditional sections are not
+ * rendered (FR-M05-20). A strict design-system page: layout utilities and `@/ds` composites only.
  */
-import { computed } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { useFriend } from '@/composables/useFriend'
 
 import { fetchDashboard } from '../api/practice'
-import ArticleBlocks from '../components/dashboard/ArticleBlocks.vue'
-import BadgeShelf from '../components/dashboard/BadgeShelf.vue'
-import BannerCarousel from '../components/dashboard/BannerCarousel.vue'
 import { showKombo } from '../components/dashboard/dashboard-lib'
-import DifficultyChart from '../components/dashboard/DifficultyChart.vue'
-import HeroGreeting from '../components/dashboard/HeroGreeting.vue'
-import KomboBanner from '../components/dashboard/KomboBanner.vue'
-import LevelGroups from '../components/dashboard/LevelGroups.vue'
-import PlatformStats from '../components/dashboard/PlatformStats.vue'
-import QuestWidget from '../components/dashboard/QuestWidget.vue'
-import QuickActions from '../components/dashboard/QuickActions.vue'
-import RecentQuestions from '../components/dashboard/RecentQuestions.vue'
-import StatCards from '../components/dashboard/StatCards.vue'
-import SubjectCards from '../components/dashboard/SubjectCards.vue'
-import SubjectStats from '../components/dashboard/SubjectStats.vue'
-import TrialCard from '../components/dashboard/TrialCard.vue'
-import '../components/dashboard/dashboard.css'
+import HomeArticles from '../components/dashboard-v2/HomeArticles.vue'
+import HomeBadges from '../components/dashboard-v2/HomeBadges.vue'
+import HomeCarousel from '../components/dashboard-v2/HomeCarousel.vue'
+import HomeDifficulty from '../components/dashboard-v2/HomeDifficulty.vue'
+import HomeGreeting from '../components/dashboard-v2/HomeGreeting.vue'
+import HomeKombo from '../components/dashboard-v2/HomeKombo.vue'
+import HomeLevels from '../components/dashboard-v2/HomeLevels.vue'
+import HomePlatform from '../components/dashboard-v2/HomePlatform.vue'
+import HomeQuests from '../components/dashboard-v2/HomeQuests.vue'
+import HomeQuickActions from '../components/dashboard-v2/HomeQuickActions.vue'
+import HomeRecent from '../components/dashboard-v2/HomeRecent.vue'
+import HomeRewards from '../components/dashboard-v2/HomeRewards.vue'
+import HomeStats from '../components/dashboard-v2/HomeStats.vue'
+import HomeSubjects from '../components/dashboard-v2/HomeSubjects.vue'
+import HomeSubjectStats from '../components/dashboard-v2/HomeSubjectStats.vue'
+import HomeTrial from '../components/dashboard-v2/HomeTrial.vue'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
 const { data, error, reload } = useApi((signal) => fetchDashboard({ signal }))
+const { offerFirstRun } = useFriend()
 
 const kombo = computed(() => (data.value ? showKombo(data.value.streak) : false))
+
+// First visit: the friend picker opens over Home after the first paint (design v2-shells 5.4).
+watch(
+  () => data.value?.user.role,
+  (role) => {
+    if (role === 'student') void nextTick(offerFirstRun)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <div class="m05-dashboard lg:grid lg:grid-cols-[1fr_300px] lg:gap-3" data-testid="dashboard-page">
-    <div v-if="data" class="min-w-0 space-y-4 sm:space-y-8" data-testid="dashboard-main">
-      <HeroGreeting :period="data.greetingPeriod" :name="data.user.name" />
-      <TrialCard v-if="data.trial.active" :trial="data.trial" />
-      <BannerCarousel v-if="data.banners.length > 0" :banners="data.banners" />
-      <KomboBanner v-if="kombo" :count="data.streak.count" />
-      <StatCards :wallet="data.wallet" :streak="data.streak" :week="data.week" />
-      <QuestWidget :quests="data.quests" :completed="data.questsCompleted" />
-      <BadgeShelf :badges="data.badges" />
-      <QuickActions :revision-total="data.revisionTotal" :is-admin="data.user.role === 'admin'" />
-      <ArticleBlocks variant="strip" :articles="data.articles" />
-      <SubjectCards :subjects="data.subjects" />
-      <PlatformStats :stats="data.stats" />
-      <LevelGroups :pills="data.levelPills" />
-      <div class="grid grid-cols-1 gap-3 sm:gap-7 lg:grid-cols-2">
-        <RecentQuestions :questions="data.recentQuestions" :subjects="data.subjects" />
-        <DifficultyChart :chart="data.difficultyChart" />
-      </div>
-      <SubjectStats :stats="data.subjectStats" />
-    </div>
+  <div class="flex min-w-0 flex-col gap-6" data-testid="dashboard-page">
+    <h1 class="sr-only">Dashboard</h1>
 
-    <aside v-if="data" class="hidden lg:block" data-testid="dashboard-aside">
-      <div class="sticky top-24 space-y-3 sm:space-y-6">
-        <ArticleBlocks variant="aside" :articles="data.articles" />
+    <div v-if="data" class="flex min-w-0 flex-col gap-6" data-testid="dashboard-main">
+      <HomeGreeting
+        :period="data.greetingPeriod"
+        :name="data.user.name"
+        :streak-at-risk="kombo"
+        :streak-count="data.streak.count"
+      />
+      <HomeRewards :data="data" />
+      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+        <HomeTrial v-if="data.trial.active" :trial="data.trial" />
+        <HomeCarousel v-if="data.banners.length > 0" :banners="data.banners" />
+        <HomeKombo v-if="kombo" :count="data.streak.count" />
       </div>
-    </aside>
+      <HomeStats :wallet="data.wallet" :streak="data.streak" :week="data.week" />
+      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+        <HomeQuests :quests="data.quests" :completed="data.questsCompleted" />
+        <HomeBadges :badges="data.badges" />
+      </div>
+      <HomeQuickActions
+        :revision-total="data.revisionTotal"
+        :is-admin="data.user.role === 'admin'"
+      />
+      <HomeArticles :articles="data.articles" />
+      <HomeSubjects :subjects="data.subjects" />
+      <HomePlatform :stats="data.stats" />
+      <HomeLevels :pills="data.levelPills" />
+      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <HomeRecent :questions="data.recentQuestions" />
+        <HomeDifficulty :chart="data.difficultyChart" />
+      </div>
+      <HomeSubjectStats :stats="data.subjectStats" />
+    </div>
 
     <div
       v-else-if="error"
-      class="mx-auto max-w-xl space-y-3 lg:col-span-2"
+      class="mx-auto flex max-w-xl flex-col gap-3"
       data-testid="dashboard-error"
     >
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
-        data-testid="dashboard-retry"
-        @click="reload()"
+      <UAlert
+        color="error"
+        variant="subtle"
+        :title="LOAD_ERROR"
+        data-testid="dashboard-error-alert"
+      />
+      <UButton size="lg" class="min-h-11 self-start" data-testid="dashboard-retry" @click="reload()"
+        >Cuba Semula</UButton
       >
-        Cuba Semula
-      </button>
+    </div>
+
+    <div v-else class="flex flex-col gap-4" aria-busy="true" data-testid="dashboard-loading">
+      <USkeleton class="h-32 w-full" />
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-40 w-full" />
     </div>
   </div>
 </template>

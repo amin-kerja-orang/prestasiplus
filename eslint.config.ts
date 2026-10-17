@@ -3,6 +3,9 @@ import skipFormatting from 'eslint-config-prettier/flat'
 import type { Linter } from 'eslint'
 import pluginVue from 'eslint-plugin-vue'
 
+import { globsOf, readDsStrict } from './eslint/ds-strict.mjs'
+import ppPlugin from './eslint/pp-plugin.mjs'
+
 /**
  * ESLint flat config (overview §13, ADR-0009).
  *
@@ -161,6 +164,56 @@ function boundaryRules(
   }
 }
 
+/**
+ * Design-system strict files (V2-T04, design system v2.0 guard rules G-1..G-13). The set comes from
+ * `config/ds-strict.json` (ratchet: only grows). Legacy files are not strict.
+ */
+const DS = readDsStrict()
+const DS_IGNORES = [...DS.exempt, '**/__tests__/**', '**/*.test.ts']
+
+const DS_IMPORT_PATTERNS = [
+  ...uiBoundaryPatterns,
+  DATASET_TESTING_TEST_ONLY,
+  {
+    group: ['@lucide/*', 'lucide-*', '@iconify-json/*', '@iconify/*', '@phosphor-icons/*'],
+    message:
+      'Icons come from the `i-ph-*` collection via Nuxt UI icon props (G-6, D38). No icon packages in strict files.',
+  },
+  {
+    regex: String.raw`^(?:@|/src)/(?:components|shells)(?:/|$)`,
+    message:
+      'Legacy `@/components/*` and `@/shells/*` are frozen; use `@nuxt/ui` and `@/ds` (G-6).',
+  },
+]
+/** Pages only: fonts and charts are owned by the theme and the ds composites. */
+const DS_PAGE_ONLY_IMPORTS = [
+  {
+    group: ['@fontsource/*', '@fontsource-variable/*', 'chart.js', 'chart.js/*'],
+    message: 'Fonts and charts are owned by the theme / ds composites, not by pages (G-6).',
+  },
+]
+
+const RAW_ELEMENT_NAMES = [
+  'button',
+  'input',
+  'select',
+  'textarea',
+  'a',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
+  'dialog',
+  'img',
+]
+const dsRawElements = (names: string[]) =>
+  names.map((element) => ({
+    element,
+    message: `Raw <${element}> is forbidden in design-system files (G-5). Use the Nuxt UI / Ds* component (UButton, UInput, USelect, UTextarea, ULink, UTable, UModal, UAvatar, DsArt3D, ...).`,
+  }))
+
 export default defineConfigWithVueTs(
   {
     name: 'app/ignores',
@@ -253,6 +306,46 @@ export default defineConfigWithVueTs(
     name: 'app/boundaries-tests',
     files: ['src/**/__tests__/**/*.ts'],
     rules: boundaryRules(testBoundaryPatterns),
+  },
+
+  // Design-system strict files (config/ds-strict.json), one block per level.
+  {
+    name: 'app/ds-strict-page',
+    files: globsOf(DS.strict, 'page'),
+    ignores: DS_IGNORES,
+    plugins: { pp: ppPlugin },
+    rules: {
+      'pp/ds-class-allowlist': ['error', { level: 'page' }],
+      'pp/ds-no-dynamic-class': 'warn',
+      'pp/ds-no-inline-style': 'error',
+      'pp/ds-no-style-block': 'error',
+      'pp/ds-no-remote-assets': 'error',
+      'pp/ds-icon-names': 'error',
+      'vue/no-restricted-html-elements': ['error', ...dsRawElements(RAW_ELEMENT_NAMES)],
+      'no-restricted-imports': [
+        'error',
+        { patterns: [...DS_IMPORT_PATTERNS, ...DS_PAGE_ONLY_IMPORTS] },
+      ],
+    },
+  },
+  // Composites may own radius, shadow, gradient tokens, motion, <img> and <a>.
+  {
+    name: 'app/ds-strict-ds',
+    files: globsOf(DS.strict, 'ds'),
+    ignores: DS_IGNORES,
+    plugins: { pp: ppPlugin },
+    rules: {
+      'pp/ds-class-allowlist': ['error', { level: 'ds' }],
+      'pp/ds-no-inline-style': 'error',
+      'pp/ds-no-style-block': 'error',
+      'pp/ds-no-remote-assets': 'error',
+      'pp/ds-icon-names': 'error',
+      'vue/no-restricted-html-elements': [
+        'error',
+        ...dsRawElements(RAW_ELEMENT_NAMES.filter((n) => n !== 'a' && n !== 'img')),
+      ],
+      'no-restricted-imports': ['error', { patterns: DS_IMPORT_PATTERNS }],
+    },
   },
 
   skipFormatting,

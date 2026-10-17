@@ -7,6 +7,7 @@
  * - `assertFeasible` / `checkFeasibility` — the build-time spec check.
  * - `defineDisplayConstant` / `listDisplayConstants` — the documented D11 exception (XL-34).
  */
+export * from './data-profile'
 export * from './dataset'
 export * from './display-constants'
 export * from './errors'

@@ -309,7 +309,6 @@ test.describe('QA G5 S13 and access', { tag: [moduleTag(4), '@qa'] }, () => {
 
   test('E2E-M04-44 seeded user 5001 (Pelajar Demo 01) sees reports 10, 6, 2: counters 3 / 1 / 1 / 1 / 0 (AC-21.1, 21.3)', async ({
     page,
-    loginAs,
     gotoApp,
     mock,
   }) => {
@@ -337,7 +336,6 @@ test.describe('QA G5 S13 and access', { tag: [moduleTag(4), '@qa'] }, () => {
 
   test('E2E-M04-44 another user does not see a report sent by the pelajar (AC-21.3)', async ({
     page,
-    loginAs,
     gotoApp,
     mock,
   }) => {

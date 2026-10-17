@@ -5,7 +5,10 @@
     "vitest.config.*",
     "playwright.config.*",
     "eslint.config.*",
-    "scripts/**/*.ts"
+    "eslint/**/*.d.mts",
+    "scripts/**/*.ts",
+    "packages/*/src/**/*.ts",
+    "packages/*/scripts/**/*.ts"
   ],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",

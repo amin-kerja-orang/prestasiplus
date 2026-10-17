@@ -4,6 +4,9 @@
  * menu, and the user card (avatar, name, email, logout icon; FR-M01-52, FR-M01-36). Collapsed by
  * the header hamburger (`sidebarOpen`, `localStorage["sidebarOpen"]`): it slides out of view.
  */
+import { computed } from 'vue'
+
+import { shellHomePath } from '@/app/prototype-scope'
 import type { UserMe } from '@/stores/session-types'
 import type { NavEntry } from '@/shells/nav/user-nav'
 import { avatarSrc } from '@/shells/shared/avatar'
@@ -13,12 +16,14 @@ import ShellLink from '@/shells/shared/ShellLink.vue'
 
 import UserNavList from './UserNavList.vue'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
   entries: readonly NavEntry[]
   currentPath: string
   user: UserMe | null
 }>()
+
+const home = computed(() => shellHomePath(props.user?.role ?? null))
 </script>
 
 <template>
@@ -30,7 +35,7 @@ defineProps<{
     <div class="flex h-full flex-col p-6">
       <!-- Logo -->
       <div class="mb-8 animate-bounce-in">
-        <ShellLink to="/dashboard" class="flex items-center space-x-0.5">
+        <ShellLink :to="home" class="flex items-center space-x-0.5">
           <img :src="LOGO_URL" alt="PRESTASIPLUS" class="h-8 w-auto sm:h-10" />
         </ShellLink>
         <p class="mt-1 ml-1 text-xs font-medium text-slate-500">Platform Latih Tubi Nasional</p>

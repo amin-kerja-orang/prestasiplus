@@ -8,21 +8,27 @@
 import { Building2, Map, MapPin } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 
+import { usePrototypeScope } from '@/composables'
+
 import type { SchoolDashboard } from '../../api/dashboard'
 import { PATHS } from './dashboard-format'
 
 defineProps<{ school: SchoolDashboard['school']; roleLabel: string }>()
+const { allows } = usePrototypeScope()
 </script>
 
 <template>
   <nav class="flex min-w-0 flex-wrap items-center gap-x-2 text-sm" data-testid="sd-breadcrumb">
-    <RouterLink
-      :to="PATHS.home"
-      class="inline-flex min-h-11 items-center text-slate-500 hover:text-slate-700"
-      data-testid="sd-crumb-back"
-      >← Papan Pemuka</RouterLink
-    >
-    <span class="text-slate-300">/</span>
+    <!-- Prototype scope (D43): the school admin has no "Papan Pemuka" (`/dashboard`) in the matrix. -->
+    <template v-if="allows(PATHS.home)">
+      <RouterLink
+        :to="PATHS.home"
+        class="inline-flex min-h-11 items-center text-slate-500 hover:text-slate-700"
+        data-testid="sd-crumb-back"
+        >← Papan Pemuka</RouterLink
+      >
+      <span class="text-slate-300">/</span>
+    </template>
     <span class="font-bold text-slate-700" data-testid="sd-crumb-current">Dashboard Sekolah</span>
   </nav>
 

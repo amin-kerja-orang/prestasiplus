@@ -10,11 +10,25 @@ const PERF_TESTS = 'src/**/__tests__/**/*.perf.test.ts'
 export default mergeConfig(
   viteConfig,
   defineConfig({
+    resolve: {
+      alias: {
+        // Virtual module of the Nuxt UI Vite plugin; not loadable under Vitest (see the stub).
+        '@nuxt/ui/vue-plugin': fileURLToPath(
+          new URL('./src/test-support/nuxt-ui-plugin-stub.ts', import.meta.url),
+        ),
+      },
+    },
     test: {
       // Node by default (mock handlers, datasets, libs); component tests opt in
       // to jsdom with a `// @vitest-environment jsdom` docblock (ADR-0011).
       environment: 'node',
+      // The prototype scope (D43) is ON by default; the existing admin/PPD/parent unit tests run
+      // with it off. Scope tests turn it on with `vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')`.
+      env: { VITE_PROTOTYPE_SCOPE: 'off', VITE_DATA_PROFILE: 'full' },
       root: fileURLToPath(new URL('./', import.meta.url)),
+      // Nuxt UI components import virtual modules (`#build/*`, `#imports`) that only the Vite
+      // plugin resolves; inline the package so Vitest runs it through that pipeline (V2-T05).
+      server: { deps: { inline: [/@nuxt\/ui/] } },
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,vue}'],
@@ -27,7 +41,12 @@ export default mergeConfig(
           test: {
             name: 'unit',
             // Script libraries (e.g. the E2E trace parser) keep their tests as .mjs next to them.
-            include: ['src/**/__tests__/**/*.test.ts', 'scripts/**/__tests__/**/*.test.mjs'],
+            include: [
+              'src/**/__tests__/**/*.test.ts',
+              'packages/**/__tests__/**/*.test.ts',
+              'scripts/**/__tests__/**/*.test.mjs',
+              'eslint/**/__tests__/**/*.test.mjs',
+            ],
             exclude: [...configDefaults.exclude, 'e2e/**', PERF_TESTS],
             // Tests that boot the real registry compile the 466k-question dataset (~2 s per boot,
             // more under load); give them room so load never turns into a timeout failure.

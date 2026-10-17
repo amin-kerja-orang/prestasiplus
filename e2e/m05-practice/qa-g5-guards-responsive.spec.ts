@@ -187,7 +187,6 @@ test.describe('QA-G5 heading legibility on dark heroes', { tag: [moduleTag(5)] }
     test('AC-M05-19.1 / 11.2 / 18.1 ' + name + ' is light text on the dark gradient (not slate-800)', async ({
       page,
       loginAs,
-      gotoApp,
     }) => {
       await loginAs('pelajar2@demo.test')
       // /practice takes > 15 s to boot on a saturated machine: own 90 s boot budget here.

@@ -99,7 +99,7 @@ Recommendation: option 1. If an organisational split is needed later, the portal
 packages/
   contract/                     # @pp/contract: zod schemas, openapi.json, access matrix
     src/{common,session,identity,curriculum,practice,content,gamification,billing,system}/
-    openapi/openapi.json
+    openapi.json
 src/
   app/
     bootstrap.ts  modules.ts  portals.ts      # portals.ts = registry per build mode
@@ -107,7 +107,7 @@ src/
   api/                          # ApiClient, Transport, HttpTransport, HybridTransport
   stores/                       # session (v2), shell, flash, ...
   theme/                        # tokens.css, ui.config.ts, locale-ms.ts
-  ds/                           # Pp* composites (page header, stat card, data table, scope chip ...)
+  ds/                           # Ds* composites (see docs/design/v2-design-system.md 12.3)
   portals/
     pentadbiran/{PentadbiranLayout.vue, menu.ts, components/, pages/}
     pembelajaran/{PembelajaranLayout.vue, menus/{student,teacher,parent,sponsor}.ts, components/, pages/}
@@ -338,7 +338,7 @@ Sizes: **S** up to 0.5 day, **M** 1 to 2 days, **L** 3 to 5 days, for one develo
 | V2-T02 | Nuxt UI spike on `/__ds`: install, Vite plugin vs Tailwind registration, vue-router 5, `ms` locale, Iconify offline, `data-testid` forwarding of 15 components, token collisions, bundle budget in `check-demo-bundle.mjs`; write findings to `docs/architecture/v2-nuxtui-spike.md` | frontend-developer | M | ADR-0015 | 0 |
 | V2-T03 | Theme: `src/theme/{tokens.css,ui.config.ts,locale-ms.ts}`, light and dark, `UApp` root, colour mode with storage key `pp.theme`, fonts | frontend-developer | M | T02, `docs/design/v2-design-system.md` | 0 |
 | V2-T04 | Strict tooling: ESLint rule `pp/ds-class-allowlist` (+ tests), restricted raw elements and `<style>`, import restrictions, Stylelint, `config/ds-strict.json` reader, report script for class-based E2E selectors per module | frontend-developer | M | T02 | 0 |
-| V2-T05 | Composite layer `src/ds/` (the `Pp*` list from the design spec) and the `/__ds` gallery in light and dark | frontend-developer | L | T03, T04 | 0 |
+| V2-T05 | Composite layer `src/ds/` (the `Ds*` list in `v2-design-system.md` 12.3; shipped names are the source of truth, the rest is listed there with owner tasks) and the `/__ds` gallery in staff and learner, light and dark | frontend-developer | L | T03, T04 | 0 |
 | V2-T06 | `packages/contract` scaffold: npm workspace, zod, envelope, error codes, list meta, ids, enums, OpenAPI emit script and committed `openapi.json`, CI diff step | backend-developer | M | ADR-0018, T01 | 0 |
 | V2-T07 | Contract: session and auth schemas and OpenAPI for the six endpoints of 4.3, error codes, BM messages table | backend-developer | M | T06 | 0 |
 | V2-T08 | Contract: access matrix as data (94 items x 4 role modes from `v2-portals.md` section 6, group visibility, feature keys) + test that counts and per-role sets match the requirements | backend-developer | M | T06 | 0 |

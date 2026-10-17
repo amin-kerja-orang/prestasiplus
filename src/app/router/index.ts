@@ -5,6 +5,7 @@
 
 import {
   createRouter,
+  createWebHashHistory,
   createWebHistory,
   type RouteRecordRaw,
   type Router,
@@ -42,7 +43,12 @@ export interface CreateAppRouterOptions {
 
 export function createAppRouter(options: CreateAppRouterOptions = {}): Router {
   const router = createRouter({
-    history: options.history ?? createWebHistory(import.meta.env.BASE_URL),
+    history:
+      options.history ??
+      // Static-hosting artifact build (`npm run build:artifact`): hash routing, no server rewrites.
+      (import.meta.env.VITE_HASH_HISTORY === 'true'
+        ? createWebHashHistory()
+        : createWebHistory(import.meta.env.BASE_URL)),
     routes: buildRoutes(options.registry),
     scrollBehavior,
   })

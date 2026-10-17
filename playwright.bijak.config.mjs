@@ -1,18 +1,26 @@
 import { defineConfig } from '@playwright/test'
 
-/** Dedicated E2E config for M05-T3 S1 dashboard smoke (port 5023; never the shared 4173 / 5173). */
-const PORT = 5023
+/**
+ * E2E config for the prototype-scope smoke (TRACKER D43; port 5190, never the shared 4173 / 5173).
+ * The e2e build turns the scope off (`.env.e2e`), so this build switches it back on with the
+ * process env, which wins over the `.env` files.
+ *
+ *   npx playwright test -c playwright.scope.config.mjs
+ */
+process.env.E2E_PROTOTYPE_SCOPE = 'on' // read by the spec (it skips itself otherwise)
+
+const PORT = 5191
 const baseURL = `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: 'e2e',
-  testMatch: '**/*.spec.ts',
+  testMatch: '**/bijak-spm.spec.ts',
   fullyParallel: true,
   workers: 2,
   timeout: 120_000,
   retries: 0,
   reporter: 'list',
-  outputDir: 'test-results-5023',
+  outputDir: 'test-results-bijak',
   use: { baseURL, locale: 'ms-MY', timezoneId: 'Asia/Kuala_Lumpur', trace: 'retain-on-failure' },
   projects: [
     {
@@ -41,9 +49,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npx vite build --mode e2e --outDir dist-e2e-5023 && npx vite preview --mode e2e --outDir dist-e2e-5023 --port ${PORT} --strictPort`,
+    command: process.env.BIJAK_DEV
+      ? `npx vite --mode e2e --port ${PORT} --strictPort`
+      : `npx vite build --mode e2e --outDir dist-e2e-bijak && npx vite preview --mode e2e --outDir dist-e2e-bijak --port ${PORT} --strictPort`,
+    env: { VITE_PROTOTYPE_SCOPE: 'on' },
     url: baseURL,
-    reuseExistingServer: true,
-    timeout: 600_000,
+    reuseExistingServer: !!process.env.BIJAK_REUSE,
+    timeout: 900_000,
   },
 })

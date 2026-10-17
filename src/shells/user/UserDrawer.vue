@@ -7,8 +7,15 @@
  * the bottom-nav "Lagi"; closed by ✕, the overlay, Escape (live `@keydown.escape.window`) and
  * any navigation (router `closeOverlays`). Always in the DOM below lg, as live.
  */
+import { computed } from 'vue'
+
 import type { UserMe } from '@/stores/session-types'
-import { USER_DRAWER_ACCOUNT, isActivePath, type NavEntry } from '@/shells/nav/user-nav'
+import {
+  USER_DRAWER_ACCOUNT,
+  isActivePath,
+  userDrawerAccountFor,
+  type NavEntry,
+} from '@/shells/nav/user-nav'
 import { avatarSrc } from '@/shells/shared/avatar'
 import { LOGO_URL } from '@/shells/shared/brand'
 import NavIcon from '@/shells/shared/NavIcon.vue'
@@ -16,7 +23,7 @@ import ShellLink from '@/shells/shared/ShellLink.vue'
 
 import UserNavList from './UserNavList.vue'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
   entries: readonly NavEntry[]
   currentPath: string
@@ -26,7 +33,10 @@ defineProps<{
 const emit = defineEmits<{ close: [] }>()
 
 const logout = USER_DRAWER_ACCOUNT.find((item) => item.to === '/logout')!
-const accountLinks = USER_DRAWER_ACCOUNT.filter((item) => item !== logout)
+// Prototype scope (D43): only the account links whose route is in the role's allowed set.
+const accountLinks = computed(() =>
+  userDrawerAccountFor(props.user?.role ?? null).filter((item) => item !== logout),
+)
 </script>
 
 <template>

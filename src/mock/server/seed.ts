@@ -25,6 +25,7 @@
 import type { Clock } from '@/lib/time'
 
 import type { Db } from '../db/transaction'
+import { buildChecksEnabled } from '../dataset/data-profile'
 import { fnv1a32 } from '../determinism/hash'
 import type { PrngRegistry } from '../determinism/prng'
 import type { MockConfig } from './config'
@@ -126,6 +127,11 @@ export interface ComposeResult {
   steps: string[]
 }
 
+/** The build checks of the modules throw `Mxx ... build check failed: ...`. */
+function isBuildCheckError(err: unknown): boolean {
+  return err instanceof Error && /build check/i.test(err.message)
+}
+
 export async function composeSeeds(options: ComposeOptions): Promise<ComposeResult> {
   const { db, plugins, seedPrng, clock, config } = options
   if (db.phase !== 'seed') throw new Error('composeSeeds: the db must be in the seed phase')
@@ -160,7 +166,14 @@ export async function composeSeeds(options: ComposeOptions): Promise<ComposeResu
   for (const p of plugins) {
     if (!p.finalise) continue
     steps.push(`finalise:${p.id}`)
-    await p.finalise(ctxFor(p))
+    try {
+      await p.finalise(ctxFor(p))
+    } catch (err) {
+      // PoC data profile (D45): the build checks compare computed figures with the observed live
+      // totals, which a scaled dataset cannot meet. The finalise work itself has run by then.
+      if (buildChecksEnabled() || !isBuildCheckError(err)) throw err
+      steps.push(`finalise-check-skipped:${p.id}`)
+    }
   }
   db.baseline()
   steps.push('baseline')

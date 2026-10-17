@@ -32,7 +32,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { AlertBox } from '@/components/feedback'
-import { useApi, usePageMeta } from '@/composables'
+import { useApi, usePageMeta, usePrototypeScope } from '@/composables'
 import { formatCount } from '@/lib/number'
 
 import { fetchSubjectConfig } from '../api/practice'
@@ -53,6 +53,8 @@ const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
 const route = useRoute()
 const router = useRouter()
+// Prototype scope (D43): "Langgan" (/pricing) is outside the matrix.
+const { allows } = usePrototypeScope()
 const pageMeta = usePageMeta()
 
 const code = computed(() => String(route.params.code ?? ''))
@@ -156,7 +158,10 @@ const CARD_TITLE =
             >Baki percubaan percuma: <strong>{{ config.trial.remaining }}</strong> soalan
             lagi.</span
           >
-          <RouterLink to="/pricing" class="font-semibold underline hover:text-blue-900"
+          <RouterLink
+            v-if="allows('/pricing')"
+            to="/pricing"
+            class="font-semibold underline hover:text-blue-900"
             >Langgan untuk akses tanpa had</RouterLink
           >
         </div>

@@ -55,6 +55,7 @@ import {
   type PreparedSpec,
   type SlotGeometry,
 } from './compile'
+import { dataProfile, POC_SCALE_BY_DATASET, scaleCellsForPoc } from './data-profile'
 import { DatasetSpecError, type DatasetIssue } from './errors'
 import { Lru } from './lru'
 import { cellKey, isFacetValue, type CellSpec, type FacetRecord } from './spec'
@@ -440,6 +441,12 @@ export function defineVirtualDataset<
     return [...own, ...contributed]
   }
 
+  function facetsOf(row: Row): Record<string, unknown> {
+    const out: Record<string, unknown> = {}
+    for (const f of facetNames) out[f] = (row as Record<string, unknown>)[f] ?? null
+    return out
+  }
+
   function resolveCells(): CellSpec<F>[] {
     const base = typeof def.distribution === 'function' ? def.distribution() : def.distribution
     let cellsSpec = base.map((c) => ({ facets: { ...c.facets }, count: c.count }))
@@ -459,16 +466,28 @@ export function defineVirtualDataset<
       if (err instanceof DatasetSpecError) return { issues: [...err.issues] }
       throw err
     }
+    const pocScale = dataProfile() === 'poc' ? (POC_SCALE_BY_DATASET[name] ?? 1) : 1
+    const poc = pocScale < 1
+    const anchorInputs = allAnchors()
+    if (poc) {
+      cellsSpec = scaleCellsForPoc(
+        cellsSpec,
+        facetNames,
+        anchorInputs.map((a) => facetsOf(a.row)),
+        pocScale,
+      )
+    }
     const { spec, issues } = prepareSpec<Row>({
       name,
       facetNames,
       cells: cellsSpec,
-      total: def.total,
+      // The declared live total no longer applies once the profile scales the cells.
+      total: poc ? undefined : def.total,
       idRange: def.idRange,
       reservedAnchorRanges: reserved,
       runtimeIds: def.runtimeIds,
       codec,
-      anchors: allAnchors(),
+      anchors: anchorInputs,
       absentIds: def.absentIds,
     })
     if (issues.length > 0) return { issues, spec }
@@ -2243,6 +2262,7 @@ export function defineVirtualDataset<
       }))
       const parts = [
         'specHash:v1',
+        `profile:${dataProfile()}`,
         name,
         stableStringify(def.idRange),
         stableStringify(reserved),

@@ -15,12 +15,9 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  /* `:where(:not(...))` keeps specificity at (0,0,1) and skips v2 portals (`data-personality`,
+     tokens.css), whose headings use the display font and `--ui-text-highlighted` (V2-T03). */
+  :where(h1, h2, h3, h4, h5, h6):where(:not([data-personality] *)) {
     font-family: var(--font-heading);
     color: var(--color-text-strong);
   }

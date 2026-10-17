@@ -21,7 +21,7 @@ import { ApiError } from '@/api'
 import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { FORM_INPUT_CLASS, FORM_SELECT_CLASS } from '@/components/form'
 import { confirmNative } from '@/components/overlay'
-import { useApi, useDebouncedRef, useFlash } from '@/composables'
+import { useApi, useDebouncedRef, useFlash, usePrototypeScope } from '@/composables'
 
 import {
   addStudentToClass,
@@ -34,6 +34,8 @@ import { PELAJAR_COPY } from '../components/pelajar/copy'
 import StudentRow from '../components/pelajar/StudentRow.vue'
 
 const flash = useFlash()
+// Prototype scope (D43): the teacher profile editor is outside the matrix.
+const { allows } = usePrototypeScope()
 const tab = ref<StudentTab>('mine')
 const search = ref('')
 const searchApplied = useDebouncedRef(search, 300)
@@ -242,6 +244,7 @@ const CTA =
         </h2>
         <p class="mx-auto mt-1 max-w-md text-sm text-slate-400">{{ PELAJAR_COPY.noSchoolBody }}</p>
         <RouterLink
+          v-if="allows('/guru/profil/edit')"
           to="/guru/profil/edit"
           :class="[CTA, 'mt-5']"
           data-testid="pelajar-profile-link"

@@ -16,6 +16,9 @@ const stylesDir = dirname(fileURLToPath(new URL('../main.css', import.meta.url))
 const requireFromHere = createRequire(import.meta.url)
 
 function loadStylesheet(id: string, base: string) {
+  // `@nuxt/ui` css imports the Vite-plugin-generated `#build/ui.css`, which only exists inside the
+  // Vite pipeline. This test covers the legacy tokens, so Nuxt UI is replaced by an empty sheet.
+  if (id === '@nuxt/ui') return Promise.resolve({ path: id, base, content: '' })
   const path = id.startsWith('.')
     ? resolve(base, id)
     : requireFromHere.resolve(id === 'tailwindcss' ? 'tailwindcss/index.css' : id)
@@ -62,6 +65,33 @@ function ruleFor(className: string): string {
   return match?.[0] ?? ''
 }
 
+describe('v2 theme isolation (V2-T03)', () => {
+  const v2 = readFileSync(resolve(stylesDir, '../theme/tokens.css'), 'utf8')
+  const tailwindTheme = readFileSync(requireFromHere.resolve('tailwindcss/theme.css'), 'utf8')
+  const names = (source: string): Set<string> =>
+    new Set([...source.matchAll(/^\s*(--[\w-]+)\s*:/gm)].map((m) => m[1] as string))
+
+  it('declares no Tailwind default theme variable (it would change legacy utilities on :root)', () => {
+    const defaults = names(tailwindTheme)
+    // Only the theme blocks are emitted on :root; the personality scopes start at section 3.
+    const themeBlocks = v2.slice(0, v2.indexOf('3. personality scopes'))
+    const clashes = [...names(themeBlocks)].filter((n) => defaults.has(n))
+    expect(clashes).toEqual([])
+  })
+
+  it('keeps every colour override inside a [data-personality] scope', () => {
+    const scoped = v2.slice(v2.indexOf('3. personality scopes'))
+    expect(scoped).not.toMatch(/^:root\b/m)
+    expect(scoped).toContain('--ui-radius: 0.5rem')
+  })
+
+  it('has no arbitrary personality variants left in the Nuxt UI config', () => {
+    const config = readFileSync(resolve(stylesDir, '../theme/ui.config.ts'), 'utf8')
+    expect(config).not.toContain('[[data-personality')
+    expect(v2).toContain('@custom-variant learner')
+  })
+})
+
 describe('design tokens (F-02)', () => {
   it('keeps the src-only source() on the tailwind import', () => {
     expect(mainCss).toContain("@import 'tailwindcss' source('../');")
@@ -85,7 +115,7 @@ describe('design tokens (F-02)', () => {
   })
 
   it('has the observed semantic colours', () => {
-    expect(css).toContain('--color-primary: #6366f1')
+    expect(css).toContain('--color-live-primary: #6366f1')
     expect(css).toContain('--color-text: #334155')
     expect(css).toContain('--color-text-strong: #1e293b')
     expect(css).toContain('--color-muted: #64748b')
@@ -169,6 +199,6 @@ describe('design tokens (F-02)', () => {
 
   it('applies the base body and heading styles', () => {
     expect(css).toMatch(/body\s*\{[^}]*font-family: var\(--font-body\)/)
-    expect(css).toMatch(/h6\s*\{[^}]*font-family: var\(--font-heading\)/)
+    expect(css).toMatch(/h6[^{]*\{[^}]*font-family: var\(--font-heading\)/)
   })
 })

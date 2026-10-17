@@ -19,6 +19,7 @@
  * (`isActivePath`), which can mark several items.
  */
 
+import { shellHomePath } from '@/app/prototype-scope'
 import type { Role } from '@/stores/session-types'
 
 import {
@@ -658,7 +659,8 @@ export function chromeFor(role: Role | null): AdminChrome {
   // INFERRED (§1.4): another role on an admin-layout route keeps its own portal wording.
   return {
     caption: 'Platform Latih Tubi Nasional',
-    home: '/dashboard',
+    // Prototype scope (D43): the school admin's home is `/admin-sekolah` (no `/dashboard`).
+    home: shellHomePath(role),
     roleLabel: role ?? '',
     serverStatus: false,
   }
