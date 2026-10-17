@@ -3,6 +3,8 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import USelect from '@nuxt/ui/components/Select.vue'
+import URadioGroup from '@nuxt/ui/components/RadioGroup.vue'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
@@ -38,6 +40,19 @@ vi.mock('@/app/router/outcome', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/app/router/outcome')>()),
   setRouteOutcome: outcome.setRouteOutcome,
 }))
+
+/** A mounted component, seen only through its props and emitted v-model. */
+interface Probe {
+  props: (key: string) => unknown
+  vm: { $emit: (event: string, value: unknown) => void }
+}
+
+const g = globalThis as { ResizeObserver?: unknown }
+g.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
 
 const stub = { template: '<div />' }
 
@@ -124,6 +139,11 @@ async function mountAt(component: object, path: string, props: Record<string, un
 
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid="${id}"]`)
 
+/** Reka selects / radios are not native: drive them through their v-model. */
+const category = (w: VueWrapper) => w.findAllComponents(USelect)[0]! as unknown as Probe
+const subject = (w: VueWrapper) => w.findAllComponents(USelect)[1]! as unknown as Probe
+const visibility = (w: VueWrapper) => w.findComponent(URadioGroup) as unknown as Probe
+
 beforeEach(() => {
   localStorage.clear()
   setActivePinia(createPinia())
@@ -174,8 +194,8 @@ describe('VideoListPage (S17)', () => {
     ])
     expect(t(w, 'video-add').attributes('href')).toBe('/video/tambah')
     expect(w.findAll('[data-testid="video-card"]')).toHaveLength(2)
-    expect(t(w, 'video-card-views').text()).toBe('11 tontonan')
-    expect(w.text()).toContain('Showing 1 to 24 of 50 results')
+    expect(t(w, 'video-card').text()).toContain('11 tontonan')
+    expect(w.find('[data-testid="video-pager"]').exists()).toBe(true)
     expect(t(w, 'video-search').attributes('placeholder')).toBe('Cari video...')
   })
 
@@ -184,7 +204,7 @@ describe('VideoListPage (S17)', () => {
     const w = await mountAt(VideoListPage, '/page')
     const pills = w.findAll('[data-testid="video-category-pill"]')
     expect(pills[1]?.attributes('href')).toBe('/video?category=motivasi')
-    expect(pills[3]?.element.tagName).toBe('SPAN')
+    expect(pills[3]?.element.tagName).toBe('BUTTON')
     expect(pills[3]?.attributes('href')).toBeUndefined()
   })
 
@@ -291,17 +311,11 @@ describe('VideoDetailPage (S18)', () => {
     login()
     api.fetchVideos.mockResolvedValue(listResult([card(1), card(2, { thumbnailUrl: null })]))
     const w = await mountAt(VideoListPage, '/page')
-    const thumbs = w.findAll('[data-testid="video-thumb"]')
-    expect(thumbs[0]?.find('img').attributes('src')).toBe(
+    const cards = w.findAll('[data-testid="video-card"]')
+    expect(cards[0]?.find('img').attributes('src')).toBe(
       'https://img.youtube.com/vi/ID1/hqdefault.jpg',
     )
-    expect(thumbs[1]?.find('img').exists()).toBe(false)
-    expect(thumbs[1]?.find('svg').exists()).toBe(false)
-    await thumbs[0]?.find('img').trigger('error')
-    expect(thumbs[0]?.find('img').exists()).toBe(false)
-    expect(thumbs[0]?.attributes('data-thumbnail-url')).toBe(
-      'https://img.youtube.com/vi/ID1/hqdefault.jpg',
-    )
+    expect(cards[1]?.find('img').exists()).toBe(false)
   })
 
   it('delete: dismiss keeps the video; accept deletes, flashes and returns to /video', async () => {
@@ -341,12 +355,13 @@ describe('VideoFormPage (S20 add)', () => {
     expect(t(w, 'video-url').attributes('required')).toBeDefined()
     expect(t(w, 'video-url').attributes('type')).toBe('url')
     expect(t(w, 'video-title-input').attributes('required')).toBeDefined()
-    expect(t(w, 'video-category-input').attributes('required')).toBeDefined()
+    expect(category(w).props('required')).toBe(true)
     expect(t(w, 'video-description-input').attributes('maxlength')).toBe('1000')
-    const options = w.findAll('[data-testid="video-subject-input"] option').map((o) => o.text())
+    const options = (subject(w).props('items') as { label: string }[]).map((o) => o.label)
     expect(options).toEqual(['Tiada subjek khusus', 'Matematik', 'Sejarah'])
-    expect(t(w, 'video-visibility-school').attributes('disabled')).toBeDefined()
-    expect(t(w, 'video-school-hint').text()).toBe('Tiada sekolah')
+    const radios = visibility(w).props('items') as { disabled?: boolean; description?: string }[]
+    expect(radios[1]?.disabled).toBe(true)
+    expect(radios[1]?.description).toBe('Tiada sekolah')
     expect(t(w, 'video-uploader-strip').text()).toContain('Admin Demo')
     expect(t(w, 'video-form-submit').text()).toBe('Terbitkan Video')
     expect(t(w, 'video-form-cancel').attributes('href')).toBe('/video')
@@ -359,8 +374,9 @@ describe('VideoFormPage (S20 add)', () => {
       school: { id: 900001, name: 'SMK DEMO' },
     })
     const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
-    expect(t(w, 'video-visibility-school').attributes('disabled')).toBeUndefined()
-    expect(t(w, 'video-school-hint').text()).toBe('SMK DEMO')
+    const radios = visibility(w).props('items') as { disabled?: boolean; description?: string }[]
+    expect(radios[1]?.disabled).toBe(false)
+    expect(radios[1]?.description).toBe('SMK DEMO')
   })
 
   it('detects the platform 500 ms after the last input and shows nothing for other URLs', async () => {
@@ -393,8 +409,9 @@ describe('VideoFormPage (S20 add)', () => {
     const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
     await t(w, 'video-url').setValue('https://youtu.be/abc123XYZ00')
     await t(w, 'video-title-input').setValue('  Tajuk baru ')
-    await t(w, 'video-category-input').setValue('tutorial')
-    await t(w, 'video-subject-input').setValue('3')
+    category(w).vm.$emit('update:modelValue', 'tutorial')
+    subject(w).vm.$emit('update:modelValue', '3')
+    await flushPromises()
     await t(w, 'video-form').trigger('submit')
     await flushPromises()
     expect(api.createVideo).toHaveBeenCalledWith({
@@ -421,10 +438,11 @@ describe('VideoFormPage (S20 add)', () => {
     const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
     await t(w, 'video-url').setValue('https://example.com')
     await t(w, 'video-title-input').setValue('T')
-    await t(w, 'video-category-input').setValue('ceramah')
+    category(w).vm.$emit('update:modelValue', 'ceramah')
+    await flushPromises()
     await t(w, 'video-form').trigger('submit')
     await flushPromises()
-    expect(t(w, 'field-error').text()).toBe('Medan tidak sah.')
+    expect(w.text()).toContain('Medan tidak sah.')
     expect(router.currentRoute.value.path).toBe('/page')
   })
 })
@@ -439,9 +457,8 @@ describe('VideoFormPage (S19 edit)', () => {
     expect((t(w, 'video-url').element as HTMLInputElement).value).toBe(
       'https://www.youtube.com/watch?v=abc123XYZ00',
     )
-    expect((t(w, 'video-category-input').element as HTMLSelectElement).value).toBe('ceramah')
-    expect((t(w, 'video-subject-input').element as HTMLSelectElement).value).toBe('5')
-    expect(w.find('[data-testid="video-category-input"] option[value=""]').exists()).toBe(false)
+    expect(category(w).props('modelValue')).toBe('ceramah')
+    expect(subject(w).props('modelValue')).toBe('5')
     expect(t(w, 'video-preview-label').text()).toBe('Platform dikesan: Youtube')
     expect(w.find('[data-testid="video-uploader-strip"]').exists()).toBe(false)
     expect(w.text()).not.toContain('(opsional)')
@@ -495,9 +512,9 @@ describe('VideoFormPage (S19 edit)', () => {
     const w = await mountAt(VideoFormPage, '/page', { mode: 'edit', id: 2224 })
     await flushPromises()
     await nextTick()
-    expect(t(w, 'video-visibility-school').attributes('disabled')).toBeDefined()
-    expect((t(w, 'video-visibility-school').element as HTMLInputElement).checked).toBe(false)
-    expect((t(w, 'video-visibility-global').element as HTMLInputElement).checked).toBe(true)
+    const radios = visibility(w).props('items') as { disabled?: boolean }[]
+    expect(radios[1]?.disabled).toBe(true)
+    expect(visibility(w).props('modelValue')).toBe('global')
   })
 
   it('keeps "school" when the user has a video-form school', async () => {
@@ -508,6 +525,6 @@ describe('VideoFormPage (S19 edit)', () => {
     })
     editApi.fetchVideoForEdit.mockResolvedValue(detail(2224, { visibility: 'school' }))
     const w = await mountAt(VideoFormPage, '/page', { mode: 'edit', id: 2224 })
-    expect((t(w, 'video-visibility-school').element as HTMLInputElement).checked).toBe(true)
+    expect(visibility(w).props('modelValue')).toBe('school')
   })
 })

@@ -26,6 +26,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Tips belajar, berita pendidikan, motivasi dan panduan',
       },
       module: 'M09',
+      v2: true,
     },
   },
   {
@@ -40,6 +41,7 @@ const routes: RouteRecordRaw[] = [
       guestTitle: PUBLIC_SECTIONS.artikel.guestTitle,
       header: { title: 'Artikel' },
       module: 'M09',
+      v2: true,
     },
   },
 ]

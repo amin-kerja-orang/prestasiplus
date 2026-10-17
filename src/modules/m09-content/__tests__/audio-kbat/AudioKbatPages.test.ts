@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import URadioGroup from '@nuxt/ui/components/RadioGroup.vue'
+import USelect from '@nuxt/ui/components/Select.vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -19,7 +21,24 @@ vi.mock('../../api', () => api)
 const options = vi.hoisted(() => ({ fetchLevelOptions: vi.fn(), fetchSubjectOptions: vi.fn() }))
 vi.mock('../../api/admin-media', () => options)
 
+/** A mounted component, seen only through its props and emitted v-model. */
+interface Probe {
+  props: (key: string) => unknown
+  vm: { $emit: (event: string, value: unknown) => void }
+}
+
+const g = globalThis as { ResizeObserver?: unknown }
+g.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 const stub = { template: '<div />' }
+const level = (w: VueWrapper) => w.findAllComponents(USelect)[0]! as unknown as Probe
+const subject = (w: VueWrapper) => w.findAllComponents(USelect)[1]! as unknown as Probe
+const groups = (w: VueWrapper) =>
+  w.findAllComponents(URadioGroup) as unknown as Probe[] as unknown as Probe[]
 const meta = { page: 1, pageSize: 20, totalItems: 0, totalPages: 1, from: null, to: null }
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid="${id}"]`)
 
@@ -97,25 +116,25 @@ describe('AudioKbatListPage (S21)', () => {
     expect(w.text()).toContain('Ujian Mendengar')
     expect(w.text()).toContain('Set ini tidak dirawak supaya audio kekal selari')
     expect(t(w, 'audio-empty').text()).toBe('Belum ada set Audio KBAT yang approved.')
-    expect(
-      t(w, 'filter-subject')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['Semua Subjek', 'Bahasa Melayu', 'Matematik'])
-    expect(t(w, 'filter-submit').text()).toBe('Tapis')
-    expect(t(w, 'filter-submit').classes()).toContain('bg-slate-900')
+    expect((subject(w).props('items') as { label: string }[]).map((o) => o.label)).toEqual([
+      'Semua Subjek',
+      'Bahasa Melayu',
+      'Matematik',
+    ])
+    expect(w.get('[data-ds="filter-bar"]').text()).toContain('Tapis')
   })
 
   it('passes the URL filter to the API and keeps the values', async () => {
     const { w } = await mountList('/audio-kbat?education_level_id=10&subject_id=3')
     expect(api.fetchAudioSets.mock.calls[0]?.[0]).toEqual({ educationLevelId: 10, subjectId: 3 })
-    expect((t(w, 'filter-level').element as HTMLSelectElement).value).toBe('10')
-    expect((t(w, 'filter-subject').element as HTMLSelectElement).value).toBe('3')
+    expect(level(w).props('modelValue')).toBe('10')
+    expect(subject(w).props('modelValue')).toBe('3')
   })
 
   it('"Tapis" navigates with the non-empty values', async () => {
     const { w, r } = await mountList()
-    await t(w, 'filter-level').setValue('10')
+    level(w).vm.$emit('update:modelValue', '10')
+    await flushPromises()
     await t(w, 'audio-filter').trigger('submit')
     await flushPromises()
     expect(r.currentRoute.value.path).toBe('/audio-kbat')
@@ -156,7 +175,8 @@ describe('AudioKbatPlayerPage (provisional)', () => {
     expect(w.findAll('[data-testid=audio-section]')).toHaveLength(2)
     expect(w.findAll('audio')).toHaveLength(1)
     expect(w.find('[data-testid=section-no-audio]').exists()).toBe(true)
-    expect(w.findAll('input[type=radio]')).toHaveLength(8)
+    expect(groups(w)).toHaveLength(2)
+    expect(groups(w)[0]?.props('items')).toHaveLength(4)
     expect(t(w, 'player-submit').text()).toBe('Hantar')
   })
 
@@ -164,7 +184,8 @@ describe('AudioKbatPlayerPage (provisional)', () => {
     api.fetchAudioSet.mockResolvedValue(SET)
     api.submitAudioAttempt.mockResolvedValue({ score: 1, totalMarks: 2 })
     const w = await mountPlayer()
-    await t(w, 'q1-A').setValue(true)
+    groups(w)[0]?.vm.$emit('update:modelValue', 'A')
+    await flushPromises()
     await t(w, 'player-form').trigger('submit')
     await flushPromises()
     expect(api.submitAudioAttempt).toHaveBeenCalledWith(7, { answers: [{ no: 1, choice: 'A' }] })

@@ -13,6 +13,7 @@ const meta = {
   title: 'Audio KBAT',
   header: { title: 'Audio KBAT' },
   module: 'M09' as const,
+  v2: true,
 }
 
 const routes: RouteRecordRaw[] = [

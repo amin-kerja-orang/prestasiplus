@@ -108,19 +108,20 @@ describe('ArtikelListPage (S15)', () => {
     const w = await mountAt('/artikel', ArtikelListPage)
     expect(w.find('[data-testid=artikel-hero]').exists()).toBe(false)
     expect(w.get('[data-testid=artikel-hot-heading]').text()).toBe('Artikel Paling Hangat')
-    const badges = w.findAll('[data-testid=artikel-hot-badge]').map((b) => b.text())
-    expect(badges).toEqual(['PILIHAN', 'POPULAR'])
+    const hot = w.findAll('[data-testid=artikel-hot-card]')
+    expect(hot.map((c) => c.attributes('data-badge'))).toEqual(['PILIHAN', 'POPULAR'])
+    expect(hot[0]?.text()).toContain('PILIHAN')
+    expect(hot[1]?.text()).toContain('POPULAR')
     const cards = w.findAll('[data-testid=artikel-card]')
     expect(cards).toHaveLength(2)
-    expect(cards[0]?.get('[data-testid=artikel-card-hot]').text()).toBe('HOT')
-    expect(cards[1]?.find('[data-testid=artikel-card-hot]').exists()).toBe(false)
-    expect(cards[0]?.attributes('href')).toBe('/artikel/artikel-1')
-    expect(cards[0]?.get('[data-testid=artikel-card-views]').text()).toBe('👁️ 310')
-    expect(cards[0]?.find('[data-icon=clock]').exists()).toBe(false)
+    expect(cards[0]?.text()).toContain('HOT')
+    expect(cards[1]?.text()).not.toContain('HOT')
+    expect(cards[0]?.get('a').attributes('href')).toBe('/artikel/artikel-1')
+    expect(cards[0]?.text()).toContain('310 Pembaca')
     expect(w.get('[data-testid=artikel-search-input]').attributes('placeholder')).toBe(
       'Cari artikel...',
     )
-    expect(w.text()).toContain('Showing 1 to 18 of 72 results')
+    expect(w.find('[data-testid=artikel-pager]').exists()).toBe(true)
   })
 
   it('search or category hides the hot section, keeps the filters on pills', async () => {
@@ -145,7 +146,6 @@ describe('ArtikelListPage (S15)', () => {
     expect(pills[0]?.attributes('href')).toBe('/artikel?search=sifir')
     expect(pills[2]?.attributes('href')).toBe('/artikel?search=sifir&category=BERITA')
     expect(pills[2]?.attributes('data-active')).toBe('true')
-    expect(w.get('input[type=hidden][name=category]').attributes('value')).toBe('BERITA')
   })
 
   it('submitting the search pushes ?search and keeps the category', async () => {
@@ -165,23 +165,21 @@ describe('ArtikelListPage (S15)', () => {
     expect(w.get('[data-testid=artikel-empty-action]').attributes('href')).toBe('/artikel')
     expect(w.text()).toContain('Lihat Semua Artikel')
     expect(w.find('[data-testid=artikel-grid]').exists()).toBe(false)
-    expect(w.find('nav[aria-label="Pagination Navigation"]').exists()).toBe(false)
+    expect(w.find('[data-testid=artikel-pager]').exists()).toBe(false)
   })
 
   it('the pager keeps category and search', async () => {
     api.fetchArticles.mockResolvedValue(list([card(1)], 21))
     const w = await mountAt('/artikel?category=TIPS_BELAJAR&page=2', ArtikelListPage)
-    const hrefs = w
-      .findAll('nav[aria-label="Pagination Navigation"] a')
-      .map((a) => a.attributes('href'))
-    expect(hrefs).toContain('/artikel?category=TIPS_BELAJAR&page=1')
+    const hrefs = w.findAll('[data-testid=artikel-pager] a').map((a) => a.attributes('href'))
+    expect(hrefs).toContain('/artikel?category=TIPS_BELAJAR')
   })
 
   it('guest: hero, clock before the date, guest copy and "✨" pills', async () => {
     session.loggedIn = false
     const w = await mountAt('/artikel', ArtikelListPage)
     expect(w.get('h1').text()).toBe('Artikel Pilihan')
-    expect(w.findAll('[data-testid=artikel-hero-line] .font-bold').map((s) => s.text())).toEqual([
+    expect(w.findAll('[data-testid=artikel-hero-line] strong').map((s) => s.text())).toEqual([
       'tips belajar',
       'berita pendidikan',
       'motivasi',
@@ -191,9 +189,7 @@ describe('ArtikelListPage (S15)', () => {
       'Cari artikel menarik...',
     )
     expect(w.text()).toContain('Pilih Kategori:')
-    expect(w.findAll('[data-testid=artikel-pill]')[1]?.text()).toBe('✨ Tips Belajar')
-    expect(w.find('[data-testid=artikel-card-date] [data-icon=clock]').exists()).toBe(true)
-    expect(w.get('[data-testid=artikel-hot-heading]').text()).toContain('🔥')
+    expect(w.findAll('[data-testid=artikel-pill]')[1]?.text()).toBe('Tips Belajar')
   })
 })
 

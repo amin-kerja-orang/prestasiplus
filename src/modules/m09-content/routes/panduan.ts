@@ -12,13 +12,13 @@ const routes: RouteRecordRaw[] = [
     path: '/panduan',
     name: 'm09.panduan',
     component: () => import('../pages/PanduanPage.vue'),
-    meta: { layout: 'bare', access: 'public', title: TITLE, module: 'M09' },
+    meta: { layout: 'bare', access: 'public', title: TITLE, module: 'M09', v2: true },
   },
   {
     path: '/pusat-tuisyen/panduan',
     name: 'm09.panduan.tuisyen',
     component: () => import('../pages/PanduanPage.vue'),
-    meta: { layout: 'bare', access: 'auth', title: TITLE, module: 'M09' },
+    meta: { layout: 'bare', access: 'auth', title: TITLE, module: 'M09', v2: true },
   },
 ]
 

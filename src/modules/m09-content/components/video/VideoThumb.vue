@@ -1,39 +1,23 @@
 <script setup lang="ts">
 /**
  * Video thumbnail (URS FN-M09-6.1.6). Only the live thumbnail URL of the row is used (YouTube
- * `hqdefault`, Dailymotion). When the row has none (Vimeo, TikTok, Facebook) or the image fails to
- * load (live `onerror`), the frame stays empty: no icon or image of our own is drawn. The URL is
- * also kept in `data-thumbnail-url`.
+ * `hqdefault`, Dailymotion). When the row has none (Vimeo, TikTok, Facebook) the frame stays
+ * empty on the elevated surface. The URL is also kept in `data-thumbnail-url`. The image is the
+ * DS plain art (no raw `<img>`).
  */
-import { ref, watch } from 'vue'
+import { DsArt3D } from '@/ds'
 
-const props = defineProps<{ thumbnailUrl: string | null }>()
-
-const failed = ref(false)
-watch(
-  () => props.thumbnailUrl,
-  () => {
-    failed.value = false
-  },
-)
+defineProps<{ thumbnailUrl: string | null }>()
 
 const isHttps = (url: string | null): url is string => url !== null && /^https:\/\//.test(url)
 </script>
 
 <template>
   <div
-    class="h-full w-full bg-slate-200"
+    class="size-full overflow-hidden bg-elevated"
     :data-thumbnail-url="thumbnailUrl ?? undefined"
     data-testid="video-thumb"
   >
-    <img
-      v-if="isHttps(thumbnailUrl) && !failed"
-      :src="thumbnailUrl"
-      alt=""
-      loading="lazy"
-      referrerpolicy="no-referrer"
-      class="h-full w-full object-cover"
-      @error="failed = true"
-    />
+    <DsArt3D v-if="isHttps(thumbnailUrl)" variant="plain" :src="thumbnailUrl" class="size-full" />
   </div>
 </template>

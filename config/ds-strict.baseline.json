@@ -104,6 +104,38 @@
     {
       "glob": "src/modules/m08-student-performance/components/shared/**",
       "level": "ds"
+    },
+    {
+      "glob": "src/modules/m09-content/pages/Artikel*.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m09-content/pages/AudioKbat*.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m09-content/pages/Video*.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m09-content/pages/PanduanPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m09-content/components/artikel/**",
+      "level": "ds"
+    },
+    {
+      "glob": "src/modules/m09-content/components/audio-kbat/**",
+      "level": "ds"
+    },
+    {
+      "glob": "src/modules/m09-content/components/panduan/**",
+      "level": "ds"
+    },
+    {
+      "glob": "src/modules/m09-content/components/video/**",
+      "level": "ds"
     }
   ],
   "exempt": [
