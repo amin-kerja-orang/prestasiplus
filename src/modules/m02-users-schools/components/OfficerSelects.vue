@@ -9,7 +9,8 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 
 import { fetchPpdList, type Jpn, type Ppd } from '../api/schools'
-import { FORM_INPUT_CLASS } from '@/components/form'
+import AdminField from './AdminField.vue'
+import NativeSelect from './native/NativeSelect.vue'
 
 const state = defineModel<string>('state', { required: true })
 const district = defineModel<string>('district', { required: true })
@@ -55,39 +56,29 @@ onBeforeUnmount(() => {
   seq += 1
   controller?.abort()
 })
-
-const SELECT = `${FORM_INPUT_CLASS} min-h-11 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400`
 </script>
 
 <template>
-  <div>
-    <label for="officer-jpn" class="mb-1.5 block text-sm font-semibold text-slate-700">
-      Negeri (JPN) <span class="text-red-500">*</span>
-    </label>
-    <select
+  <AdminField for="officer-jpn" label="Negeri (JPN)" required>
+    <NativeSelect
       id="officer-jpn"
       v-model="jpnId"
-      :class="SELECT"
       data-testid="officer-jpn"
       @change="onJpnChange"
     >
       <option value="">-- Pilih Negeri --</option>
       <option v-for="jpn in jpns" :key="jpn.id" :value="String(jpn.id)">{{ jpn.name }}</option>
-    </select>
-  </div>
-  <div v-if="needsPpd">
-    <label for="officer-ppd" class="mb-1.5 block text-sm font-semibold text-slate-700">
-      PPD <span class="text-red-500">*</span>
-    </label>
-    <select
+    </NativeSelect>
+  </AdminField>
+  <AdminField v-if="needsPpd" for="officer-ppd" label="PPD" required>
+    <NativeSelect
       id="officer-ppd"
       v-model="district"
       :disabled="jpnId === '' || loading"
-      :class="SELECT"
       data-testid="officer-ppd"
     >
       <option value="">-- Pilih PPD --</option>
       <option v-for="ppd in ppds" :key="ppd.id" :value="ppd.code">{{ ppd.name }}</option>
-    </select>
-  </div>
+    </NativeSelect>
+  </AdminField>
 </template>

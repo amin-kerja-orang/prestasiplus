@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
         subtitle: 'Daftarkan akaun pengguna baru ke sistem',
       },
       module: 'M02',
+      v2: true,
     },
   },
   {
@@ -35,6 +36,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Edit Pengguna - Admin Panel',
       header: { title: 'Edit Pengguna', subtitle: 'Kemaskini maklumat pengguna' },
       module: 'M02',
+      v2: true,
     },
   },
 ]

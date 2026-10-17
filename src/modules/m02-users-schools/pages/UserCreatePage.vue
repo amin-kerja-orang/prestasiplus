@@ -1,35 +1,24 @@
 <script setup lang="ts">
 /**
- * S2 `/admin/users/create` "Tambah Pengguna Baru" (M02-T5; FR-M02-20…36). A role-driven form: only "Peranan *"
- * shows until a role is chosen, then that role's section (standard roles, `school_admin` generator,
- * `ppd_officer` / `jpn_officer`). Choosing a role resets only the generator, the JPN / PPD choice and the
- * linked children (FR-M02-21); the standard fields, the grade, the IC and the student / teacher school pick
- * keep their values, and, as live, a checked grade and that school pick are sent for every standard role.
+ * S2 `/admin/users/create` "Tambah Pengguna Baru" (M02-T5; FR-M02-20…36), v2 staff theme. A role-driven
+ * form: only "Peranan *" shows until a role is chosen, then that role's section (standard roles,
+ * `school_admin` generator, `ppd_officer` / `jpn_officer`). Choosing a role resets only the generator, the
+ * JPN / PPD choice and the linked children (FR-M02-21); the standard fields, the grade, the IC and the
+ * student / teacher school pick keep their values, and, as live, a checked grade and that school pick are
+ * sent for every standard role.
  *
  * Native HTML5 validation only, as live: `role` is `required`, the other inputs are not (server-validated,
- * §5). A server `VALIDATION_ERROR` shows in the red alert above the form (one line per error), keeps the
+ * 5). A server `VALIDATION_ERROR` shows in the red alert above the form (one line per error), keeps the
  * role and the values, and clears the passwords (the generated password is kept). Success queues the flash
  * (UNVERIFIED COPY, the API `status`) and goes to the user list.
  */
-import {
-  ArrowLeft,
-  Lock,
-  Mail,
-  Phone,
-  User,
-  UserPlus,
-  IdCard,
-  ShieldCheck,
-  UserCog,
-} from '@lucide/vue'
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 import type { Role } from '@/modules/m01-authentication'
 
-import { AlertBox, LoadingSpinner, ToastMessage } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
 import { useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchJpnList, type Jpn, type SchoolSummary } from '../api/schools'
 import {
@@ -39,7 +28,10 @@ import {
   type CreateAdminUserRequest,
   type StudentSearchItem,
 } from '../api/users'
+import AdminAlert from '../components/AdminAlert.vue'
+import AdminField from '../components/AdminField.vue'
 import GradeCards from '../components/GradeCards.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import OfficerSelects from '../components/OfficerSelects.vue'
 import ParentStudentLinker from '../components/ParentStudentLinker.vue'
 import SchoolAdminGenerator from '../components/SchoolAdminGenerator.vue'
@@ -87,6 +79,7 @@ const jpnState = ref('')
 const ppdDistrict = ref('')
 
 const copied = ref(false)
+let copiedTimer: ReturnType<typeof setTimeout> | null = null
 const saving = ref(false)
 const errors = ref<string[]>([])
 const alertBox = ref<HTMLElement | null>(null)
@@ -114,6 +107,9 @@ onMounted(() => {
     },
     () => undefined,
   )
+})
+onBeforeUnmount(() => {
+  if (copiedTimer) clearTimeout(copiedTimer)
 })
 
 // FR-M02-21: a role change resets the generator, the JPN / PPD choice and the linked children only.
@@ -149,9 +145,13 @@ async function copyText(value: string): Promise<void> {
   } catch {
     return
   }
+  if (copiedTimer) clearTimeout(copiedTimer)
   copied.value = false
   await nextTick()
   copied.value = true
+  copiedTimer = setTimeout(() => {
+    copied.value = false
+  }, 2000)
 }
 
 /** FR-M02-35: only the visible section's fields (plus the two live exceptions of FR-M02-21). */
@@ -219,55 +219,41 @@ async function submit(): Promise<void> {
     saving.value = false
   }
 }
-
-const LABEL = 'mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700'
-const ICON = 'h-4 w-4 text-indigo-500'
-const BUTTON_BASE =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
 </script>
 
 <template>
-  <div data-testid="user-create-page">
-    <form
-      method="post"
-      class="rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="user-form"
-      @submit.prevent="submit"
-    >
-      <div class="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
-        <span
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600"
-        >
-          <UserPlus class="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div class="min-w-0">
-          <h2 class="text-base font-bold text-slate-800">Borang Pendaftaran Pengguna</h2>
-          <p class="text-sm text-slate-500">Isi maklumat untuk mendaftarkan pengguna baru</p>
+  <DsPage data-testid="user-create-page">
+    <UCard class="max-w-4xl">
+      <form
+        method="post"
+        class="flex min-w-0 flex-col gap-6"
+        data-testid="user-form"
+        @submit.prevent="submit"
+      >
+        <div class="flex items-center gap-3">
+          <UIcon name="i-ph-user-plus" class="size-6 shrink-0 text-primary" aria-hidden="true" />
+          <div class="min-w-0">
+            <h2 class="text-subheading text-highlighted">Borang Pendaftaran Pengguna</h2>
+            <p class="text-label text-muted">Isi maklumat untuk mendaftarkan pengguna baru</p>
+          </div>
         </div>
-      </div>
 
-      <div ref="alertBox" class="scroll-mt-4">
-        <AlertBox :messages="errors" class="mb-5" data-testid="user-form-alert" />
-      </div>
+        <div ref="alertBox" >
+          <AdminAlert :messages="errors" data-testid="user-form-alert" />
+        </div>
 
-      <div class="space-y-5">
-        <div>
-          <label for="user-role" :class="LABEL">
-            <UserCog :class="ICON" aria-hidden="true" />
-            Peranan <span class="-ml-1.5 text-red-500">*</span>
-          </label>
-          <select
+        <AdminField for="user-role" label="Peranan" icon="i-ph-user-gear" required>
+          <NativeSelect
             id="user-role"
             v-model="role"
             name="role"
             required
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
             data-testid="user-role"
           >
             <option value="">-- Pilih Peranan --</option>
             <option v-for="o in ROLE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-          </select>
-        </div>
+          </NativeSelect>
+        </AdminField>
 
         <!-- school_admin (FR-M02-27…31) -->
         <SchoolAdminGenerator
@@ -285,48 +271,38 @@ const BUTTON_BASE =
         <!-- standard roles and officers (FR-M02-22, FR-M02-32) -->
         <div
           v-if="isStandard || isOfficer"
-          class="grid grid-cols-1 gap-x-5 gap-y-5 md:grid-cols-2"
+          class="grid grid-cols-1 gap-6 md:grid-cols-2"
           data-testid="user-fields"
         >
-          <div>
-            <label for="user-name" :class="LABEL">
-              <User :class="ICON" aria-hidden="true" />
-              Nama <span class="-ml-1.5 text-red-500">*</span>
-            </label>
-            <input
+          <AdminField for="user-name" label="Nama" icon="i-ph-user" required>
+            <UInput
               id="user-name"
               v-model="form.name"
               type="text"
               name="name"
               :placeholder="isOfficer ? 'Nama penuh pegawai' : 'Nama penuh'"
-              :class="[FORM_INPUT_CLASS, 'min-h-11']"
+              size="lg"
+              class="w-full"
               data-testid="user-name"
             />
-          </div>
+          </AdminField>
 
-          <div>
-            <label for="user-email" :class="LABEL">
-              <Mail :class="ICON" aria-hidden="true" />
-              Emel <span class="-ml-1.5 text-red-500">*</span>
-            </label>
-            <input
+          <AdminField for="user-email" label="Emel" icon="i-ph-envelope-simple" required>
+            <UInput
               id="user-email"
               v-model="form.email"
               type="email"
               name="email"
               placeholder="contoh@email.com"
-              :class="[FORM_INPUT_CLASS, 'min-h-11']"
+              size="lg"
+              class="w-full"
               data-testid="user-email"
             />
-          </div>
+          </AdminField>
 
           <template v-if="isStandard">
-            <div>
-              <label for="user-phone" :class="LABEL">
-                <Phone class="h-4 w-4 text-emerald-500" aria-hidden="true" />
-                No. Telefon <span class="-ml-1 font-normal text-slate-400">(Pilihan)</span>
-              </label>
-              <input
+            <AdminField for="user-phone" label="No. Telefon" icon="i-ph-phone" optional>
+              <UInput
                 id="user-phone"
                 v-model="form.phone"
                 type="tel"
@@ -334,10 +310,11 @@ const BUTTON_BASE =
                 maxlength="14"
                 inputmode="tel"
                 placeholder="Cth: 0191234567"
-                :class="[FORM_INPUT_CLASS, 'min-h-11']"
+                size="lg"
+                class="w-full"
                 data-testid="user-phone"
               />
-            </div>
+            </AdminField>
 
             <div v-if="role === 'parent'" class="md:col-span-2">
               <ParentStudentLinker v-model="linked" variant="create" />
@@ -348,25 +325,26 @@ const BUTTON_BASE =
                 <GradeCards v-model="grade" />
               </div>
               <div class="md:col-span-2">
-                <label for="user-ic" :class="LABEL">
-                  <IdCard class="h-4 w-4 text-amber-500" aria-hidden="true" />
-                  No. Kad Pengenalan <span class="-ml-1 font-normal text-slate-400">(Pilihan)</span>
-                </label>
-                <input
-                  id="user-ic"
-                  v-model="form.icNumber"
-                  type="text"
-                  name="ic_number"
-                  maxlength="14"
-                  inputmode="numeric"
-                  placeholder="Cth: 031215101234"
-                  :class="[FORM_INPUT_CLASS, 'min-h-11']"
-                  data-testid="user-ic"
-                />
-                <p class="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-                  <ShieldCheck class="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
-                  12 digit MyKad. Dilindungi PDPA.
-                </p>
+                <AdminField
+                  for="user-ic"
+                  label="No. Kad Pengenalan"
+                  icon="i-ph-identification-card"
+                  optional
+                  hint="12 digit MyKad. Dilindungi PDPA."
+                >
+                  <UInput
+                    id="user-ic"
+                    v-model="form.icNumber"
+                    type="text"
+                    name="ic_number"
+                    maxlength="14"
+                    inputmode="numeric"
+                    placeholder="Cth: 031215101234"
+                    size="lg"
+                    class="w-full"
+                    data-testid="user-ic"
+                  />
+                </AdminField>
               </div>
             </template>
 
@@ -384,39 +362,38 @@ const BUTTON_BASE =
             :jpns="jpns"
           />
 
-          <div>
-            <label for="user-password" :class="LABEL">
-              <Lock class="h-4 w-4 text-slate-500" aria-hidden="true" />
-              Kata Laluan <span class="-ml-1.5 text-red-500">*</span>
-            </label>
-            <input
+          <AdminField for="user-password" label="Kata Laluan" icon="i-ph-lock" required>
+            <UInput
               id="user-password"
               v-model="form.password"
               type="password"
               name="password"
               autocomplete="new-password"
               placeholder="Minimum 6 aksara"
-              :class="[FORM_INPUT_CLASS, 'min-h-11']"
+              size="lg"
+              class="w-full"
               data-testid="user-password"
             />
-          </div>
+          </AdminField>
 
-          <div>
-            <label for="user-password-confirm" :class="LABEL">
-              <Lock class="h-4 w-4 text-slate-500" aria-hidden="true" />
-              Sahkan Kata Laluan <span class="-ml-1.5 text-red-500">*</span>
-            </label>
-            <input
+          <AdminField
+            for="user-password-confirm"
+            label="Sahkan Kata Laluan"
+            icon="i-ph-lock"
+            required
+          >
+            <UInput
               id="user-password-confirm"
               v-model="form.passwordConfirmation"
               type="password"
               name="password_confirmation"
               autocomplete="new-password"
               placeholder="Taip semula kata laluan"
-              :class="[FORM_INPUT_CLASS, 'min-h-11']"
+              size="lg"
+              class="w-full"
               data-testid="user-password-confirm"
             />
-          </div>
+          </AdminField>
 
           <div v-if="isStandard" class="md:col-span-2">
             <UserFormSwitch
@@ -428,38 +405,41 @@ const BUTTON_BASE =
             />
           </div>
         </div>
-      </div>
 
-      <!-- FR-M02-34: the footer appears once a role is chosen -->
-      <div
-        v-if="role !== ''"
-        class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5"
-        data-testid="user-form-footer"
-      >
-        <RouterLink
-          :to="USERS_LIST_PATH"
-          :class="[BUTTON_BASE, 'bg-slate-100 text-slate-600 hover:bg-slate-200']"
-          data-testid="user-cancel"
+        <!-- FR-M02-34: the footer appears once a role is chosen -->
+        <div
+          v-if="role !== ''"
+          class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between"
+          data-testid="user-form-footer"
         >
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          Batal
-        </RouterLink>
-        <button
-          type="submit"
-          :disabled="saving || (isSchoolAdmin && !generated)"
-          :class="[
-            BUTTON_BASE,
-            'bg-indigo-600 text-white shadow hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50',
-          ]"
-          data-testid="user-submit"
-        >
-          <LoadingSpinner v-if="saving" class="h-4 w-4" />
-          <UserPlus v-else class="h-4 w-4" aria-hidden="true" />
-          Daftar Pengguna
-        </button>
-      </div>
-    </form>
+          <UButton
+            :to="USERS_LIST_PATH"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-arrow-left"
+            label="Batal"
+            data-testid="user-cancel"
+          />
+          <UButton
+            type="submit"
+            icon="i-ph-user-plus"
+            label="Daftar Pengguna"
+            :loading="saving"
+            :disabled="saving || (isSchoolAdmin && !generated)"
+            data-testid="user-submit"
+          />
+        </div>
+      </form>
+    </UCard>
 
-    <ToastMessage v-model:show="copied" message="Disalin!" :duration="2000" />
-  </div>
+    <UBadge
+      v-if="copied"
+      color="success"
+      size="lg"
+      label="Disalin!"
+      role="status"
+      class="fixed right-4 bottom-4"
+      data-testid="copied-toast"
+    />
+  </DsPage>
 </template>

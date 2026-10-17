@@ -1,32 +1,35 @@
 <script setup lang="ts">
 /**
- * S12 `/admin/school-subscriptions` "Langganan Sekolah - Admin PRESTASIPLUS" (M02-T9; FR-M02-82, 83).
+ * S12 `/admin/school-subscriptions` "Langganan Sekolah - Admin PRESTASIPLUS" (M02-T9; FR-M02-82, 83), v2
+ * staff theme.
  *
- * - Four stat cards (`meta.counts`, over all subscriptions: Aktif, Tempoh Ihsan, Tamat Tempoh, Jumlah
+ * - Four stat tiles (`meta.counts`, over all subscriptions: Aktif, Tempoh Ihsan, Tamat Tempoh, Jumlah
  *   Kuota Pelajar of the active rows only).
- * - GET filter (`search`, `status`, `form_level`, "Cari") and "Langganan Baru". The query string is the
- *   state, as on the live GET form.
- * - All rows, no pagination; the table scrolls inside its card below its natural width.
+ * - Filter bar (`search`, `status`, `form_level`) and "Langganan Baru". The query string is the state, as
+ *   on the live GET form.
+ * - All rows, no pagination; the table scrolls inside its card from `md`, below `md` each row is a card.
  */
-import { ArrowRight, FilePenLine, Infinity as InfinityIcon, Eye, Plus, Search } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter, type LocationQueryValue } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
-import { FORM_INPUT_CLASS } from '@/components/form'
 import { useApi } from '@/composables'
-import { formatDate } from '@/lib/time'
+import { DsFilterBar, DsPage, DsStatTile } from '@/ds'
 import { formatNumber } from '@/lib/number'
+import { formatDate } from '@/lib/time'
 
 import {
   fetchSubscriptions,
   type SchoolFormLevel,
   type SubscriptionStatus,
 } from '../api/subscriptions'
+import AdminAlert from '../components/AdminAlert.vue'
+import CardCell from '../components/native/CardCell.vue'
+import CardRow from '../components/native/CardRow.vue'
+import CardTable from '../components/native/CardTable.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import { errorLines } from '../lib/school-errors'
 import {
-  barClass,
+  barColor,
   FORM_LEVEL_FILTER_OPTIONS,
   levelLabel,
   STATUS_BADGE,
@@ -76,6 +79,7 @@ const { data, error, reload } = useApi(
 const rows = computed(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.counts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
+const activeCount = computed(() => [status.value, formLevel.value].filter((v) => v !== '').length)
 
 async function submitFilter(): Promise<void> {
   const query: Record<string, string> = {}
@@ -91,208 +95,213 @@ async function submitFilter(): Promise<void> {
   else await router.push({ path: SUBSCRIPTIONS_LIST_PATH, query })
 }
 
+async function resetFilter(): Promise<void> {
+  search.value = ''
+  status.value = ''
+  formLevel.value = ''
+  await submitFilter()
+}
+
 function percent(used: number, quota: number): number {
   return quota > 0 ? Math.min(100, Math.round((used * 100) / quota)) : 0
 }
 
-const COLUMNS = ['Sekolah', 'Tingkatan', 'Pakej', 'Kuota', 'Status', 'Mula', 'Tamat', ''] as const
+const COLUMNS = [
+  { key: 'school', label: 'Sekolah' },
+  { key: 'level', label: 'Tingkatan' },
+  { key: 'tier', label: 'Pakej' },
+  { key: 'quota', label: 'Kuota' },
+  { key: 'status', label: 'Status' },
+  { key: 'start', label: 'Mula' },
+  { key: 'end', label: 'Tamat' },
+  { key: 'view', label: 'Tindakan' },
+]
 const SKELETON_ROWS = 5
-const STAT_CARD = 'rounded-2xl p-5 shadow'
-const STAT_NUMBER = 'font-heading text-3xl font-bold'
 </script>
 
 <template>
-  <div class="space-y-4 sm:space-y-6" data-testid="subs-page">
-    <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-      <div :class="[STAT_CARD, 'bg-emerald-50 text-emerald-600']" data-testid="subs-stat-active">
-        <div v-if="counts" :class="STAT_NUMBER">{{ formatNumber(counts.active) }}</div>
-        <div v-else class="h-9 w-16 animate-pulse rounded-lg bg-white/70"></div>
-        <p class="text-sm">Aktif</p>
+  <DsPage data-testid="subs-page">
+    <template #actions>
+      <UButton
+        :to="{ name: SUBSCRIPTION_ROUTES.create }"
+        icon="i-ph-plus"
+        label="Langganan Baru"
+        data-testid="subs-add"
+      />
+    </template>
+
+    <section class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-testid="subs-stat-active">
+        <DsStatTile
+          v-if="counts"
+          :value="formatNumber(counts.active)"
+          unit="Aktif"
+          icon="i-ph-check-circle"
+        />
+        <USkeleton v-else class="h-24 w-full" />
       </div>
-      <div :class="[STAT_CARD, 'bg-amber-50 text-amber-600']" data-testid="subs-stat-grace">
-        <div v-if="counts" :class="STAT_NUMBER">{{ formatNumber(counts.grace) }}</div>
-        <div v-else class="h-9 w-16 animate-pulse rounded-lg bg-white/70"></div>
-        <p class="text-sm">Tempoh Ihsan</p>
+      <div data-testid="subs-stat-grace">
+        <DsStatTile
+          v-if="counts"
+          :value="formatNumber(counts.grace)"
+          unit="Tempoh Ihsan"
+          icon="i-ph-hourglass-medium"
+        />
+        <USkeleton v-else class="h-24 w-full" />
       </div>
-      <div :class="[STAT_CARD, 'bg-red-50 text-red-600']" data-testid="subs-stat-expired">
-        <div v-if="counts" :class="STAT_NUMBER">{{ formatNumber(counts.expired) }}</div>
-        <div v-else class="h-9 w-16 animate-pulse rounded-lg bg-white/70"></div>
-        <p class="text-sm">Tamat Tempoh</p>
+      <div data-testid="subs-stat-expired">
+        <DsStatTile
+          v-if="counts"
+          :value="formatNumber(counts.expired)"
+          unit="Tamat Tempoh"
+          icon="i-ph-calendar-x"
+        />
+        <USkeleton v-else class="h-24 w-full" />
       </div>
-      <div :class="[STAT_CARD, 'bg-blue-50 text-blue-600']" data-testid="subs-stat-quota">
-        <div v-if="counts" :class="STAT_NUMBER">{{ formatNumber(counts.totalQuota) }}</div>
-        <div v-else class="h-9 w-16 animate-pulse rounded-lg bg-white/70"></div>
-        <p class="text-sm">Jumlah Kuota Pelajar</p>
+      <div data-testid="subs-stat-quota">
+        <DsStatTile
+          v-if="counts"
+          :value="formatNumber(counts.totalQuota)"
+          unit="Jumlah Kuota Pelajar"
+          icon="i-ph-users"
+        />
+        <USkeleton v-else class="h-24 w-full" />
       </div>
     </section>
 
-    <form
-      method="get"
-      class="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:p-5 md:flex-row md:items-center"
+    <DsFilterBar
+      :active-count="activeCount"
       data-testid="subs-filter"
-      @submit.prevent="submitFilter"
+      @apply="submitFilter"
+      @reset="resetFilter"
     >
-      <input
-        v-model="search"
-        type="text"
-        name="search"
-        placeholder="Cari sekolah..."
-        :class="[FORM_INPUT_CLASS, 'min-h-11 md:min-w-0 md:flex-1']"
-        data-testid="subs-search"
-      />
-      <select
+      <template #search>
+        <UInput
+          v-model="search"
+          type="text"
+          name="search"
+          aria-label="Cari"
+          placeholder="Cari sekolah..."
+          icon="i-ph-magnifying-glass"
+          size="lg"
+          class="md:w-72"
+          data-testid="subs-search"
+        />
+      </template>
+      <NativeSelect
         v-model="status"
         name="status"
-        :class="[FORM_INPUT_CLASS, 'min-h-11 md:w-auto']"
+        aria-label="Status"
+        class="md:w-48"
         data-testid="subs-status"
       >
         <option value="">Semua Status</option>
         <option v-for="o in STATUS_FILTER_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
-      </select>
-      <select
+      </NativeSelect>
+      <NativeSelect
         v-model="formLevel"
         name="form_level"
-        :class="[FORM_INPUT_CLASS, 'min-h-11 md:w-auto']"
+        aria-label="Tingkatan"
+        class="md:w-48"
         data-testid="subs-level"
       >
         <option value="">Semua Tingkatan</option>
         <option v-for="o in FORM_LEVEL_FILTER_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
-      </select>
-      <button
-        type="submit"
-        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-        data-testid="subs-search-submit"
-      >
-        <Search class="h-4 w-4" aria-hidden="true" />
-        Cari
-      </button>
-      <RouterLink
-        :to="{ name: SUBSCRIPTION_ROUTES.create }"
-        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 md:ml-auto"
-        data-testid="subs-add"
-      >
-        <Plus class="h-4 w-4" aria-hidden="true" />
-        Langganan Baru
-      </RouterLink>
-    </form>
+      </NativeSelect>
+    </DsFilterBar>
 
-    <div v-if="error" class="space-y-3" data-testid="subs-error">
-      <AlertBox :messages="errorLines(error)" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-500 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-600"
-        data-testid="subs-retry"
-        @click="reload()"
-      >
-        Cuba Lagi
-      </button>
+    <div v-if="error" class="flex flex-col gap-3" data-testid="subs-error">
+      <AdminAlert :messages="errorLines(error)" />
+      <div>
+        <UButton label="Cuba Lagi" data-testid="subs-retry" @click="reload()" />
+      </div>
     </div>
 
-    <DataTableCard v-else :min-width="880">
-      <table :class="T.table" data-testid="subs-table">
-        <thead>
-          <tr>
-            <th v-for="(label, i) in COLUMNS" :key="i" scope="col" :class="T.th">{{ label }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-if="firstLoad">
-            <tr v-for="n in SKELETON_ROWS" :key="n" :class="T.row" data-testid="subs-skeleton">
-              <td v-for="(_, i) in COLUMNS" :key="i" :class="T.td">
-                <div class="h-4 w-full max-w-32 animate-pulse rounded bg-slate-100"></div>
-              </td>
-            </tr>
-          </template>
+    <CardTable v-else :columns="COLUMNS" caption="Senarai langganan sekolah" data-testid="subs-table">
+      <template v-if="firstLoad">
+        <CardRow v-for="n in SKELETON_ROWS" :key="n" data-testid="subs-skeleton">
+          <CardCell v-for="c in COLUMNS" :key="c.key">
+            <USkeleton class="h-4 w-full max-w-32" />
+          </CardCell>
+        </CardRow>
+      </template>
 
-          <tr v-else-if="rows.length === 0" :class="T.row" data-testid="subs-empty">
-            <td :colspan="COLUMNS.length" class="px-4 py-12 text-center text-slate-400">
-              <FilePenLine
-                class="mr-2 inline-block h-10 w-10 align-middle text-slate-400"
-                aria-hidden="true"
+      <CardRow v-else-if="rows.length === 0" data-testid="subs-empty">
+        <CardCell :colspan="COLUMNS.length">
+          <UIcon name="i-ph-file-text" class="mx-auto mb-2 size-8 text-muted" aria-hidden="true" />
+          <p class="text-label text-default">Tiada langganan dijumpai.</p>
+        </CardCell>
+      </CardRow>
+
+      <template v-else>
+        <CardRow v-for="row in rows" :key="row.id" data-testid="subs-row" :data-sub-id="row.id">
+          <CardCell label="Sekolah">
+            <div class="flex flex-col gap-1">
+              <span class="text-label text-highlighted">{{ row.school.name }}</span>
+              <span class="text-caption text-muted">{{ row.school.code }}</span>
+            </div>
+          </CardCell>
+          <CardCell label="Tingkatan">
+            <UBadge
+              color="neutral"
+              variant="subtle"
+              :label="levelLabel(row.formLevel)"
+              data-testid="subs-level-badge"
+            />
+          </CardCell>
+          <CardCell label="Pakej">
+            <UBadge
+              color="neutral"
+              variant="subtle"
+              :icon="row.packageTier === 'basic' ? 'i-ph-eye' : 'i-ph-infinity'"
+              :label="TIER_LABEL[row.packageTier]"
+              data-testid="subs-tier-badge"
+            />
+          </CardCell>
+          <CardCell label="Kuota">
+            <div class="flex items-center gap-2">
+              <UProgress
+                class="w-20"
+                :model-value="percent(row.used, row.studentQuota)"
+                :color="barColor(percent(row.used, row.studentQuota))"
+                :aria-label="`Kuota digunakan ${String(percent(row.used, row.studentQuota))}%`"
               />
-              <span class="align-middle">Tiada langganan dijumpai.</span>
-            </td>
-          </tr>
-
-          <template v-else>
-            <tr
-              v-for="row in rows"
-              :key="row.id"
-              :class="[T.row, 'align-middle']"
-              data-testid="subs-row"
-              :data-sub-id="row.id"
-            >
-              <td :class="[T.td, 'min-w-48']">
-                <div class="font-semibold text-slate-800">{{ row.school.name }}</div>
-                <div class="font-mono text-xs text-slate-400">{{ row.school.code }}</div>
-              </td>
-              <td :class="T.td">
-                <span
-                  class="inline-block rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-purple-700"
-                  data-testid="subs-level-badge"
-                  >{{ levelLabel(row.formLevel) }}</span
-                >
-              </td>
-              <td :class="T.td">
-                <span
-                  :class="[
-                    'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap',
-                    row.packageTier === 'basic'
-                      ? 'bg-cyan-100 text-cyan-700'
-                      : 'bg-emerald-100 text-emerald-700',
-                  ]"
-                  data-testid="subs-tier-badge"
-                >
-                  <Eye v-if="row.packageTier === 'basic'" class="h-3 w-3" aria-hidden="true" />
-                  <InfinityIcon v-else class="h-3 w-3" aria-hidden="true" />
-                  {{ TIER_LABEL[row.packageTier] }}
-                </span>
-              </td>
-              <td :class="[T.td, 'whitespace-nowrap']">
-                <div class="flex items-center gap-2">
-                  <div class="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
-                    <div
-                      :class="[
-                        'h-full rounded-full',
-                        barClass(percent(row.used, row.studentQuota)),
-                      ]"
-                      :style="{ width: `${percent(row.used, row.studentQuota)}%` }"
-                    ></div>
-                  </div>
-                  <span class="text-xs text-slate-600" data-testid="subs-quota"
-                    >{{ row.used }}/{{ row.studentQuota }}</span
-                  >
-                </div>
-              </td>
-              <td :class="T.td">
-                <span
-                  :class="[
-                    'inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap',
-                    STATUS_BADGE[row.status].cls,
-                  ]"
-                  data-testid="subs-status-badge"
-                  >{{ STATUS_BADGE[row.status].label }}</span
-                >
-              </td>
-              <td :class="[T.td, 'whitespace-nowrap']">{{ formatDate(row.startsAt) }}</td>
-              <td :class="[T.td, 'whitespace-nowrap']">{{ formatDate(row.endsAt) }}</td>
-              <td :class="T.td">
-                <RouterLink
-                  :to="{ name: SUBSCRIPTION_ROUTES.detail, params: { id: row.id } }"
-                  class="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800 lg:min-h-0"
-                  data-testid="subs-view"
-                >
-                  Lihat <ArrowRight class="h-3.5 w-3.5" aria-hidden="true" />
-                </RouterLink>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </DataTableCard>
-  </div>
+              <span class="text-caption text-muted" data-testid="subs-quota"
+                >{{ row.used }}/{{ row.studentQuota }}</span
+              >
+            </div>
+          </CardCell>
+          <CardCell label="Status">
+            <UBadge
+              :color="STATUS_BADGE[row.status].color"
+              variant="subtle"
+              :label="STATUS_BADGE[row.status].label"
+              data-testid="subs-status-badge"
+            />
+          </CardCell>
+          <CardCell label="Mula">
+            <span class="text-nowrap">{{ formatDate(row.startsAt) }}</span>
+          </CardCell>
+          <CardCell label="Tamat">
+            <span class="text-nowrap">{{ formatDate(row.endsAt) }}</span>
+          </CardCell>
+          <CardCell label="Tindakan">
+            <UButton
+              :to="{ name: SUBSCRIPTION_ROUTES.detail, params: { id: row.id } }"
+              size="sm"
+              color="neutral"
+              variant="soft"
+              trailing-icon="i-ph-arrow-right"
+              label="Lihat"
+              data-testid="subs-view"
+            />
+          </CardCell>
+        </CardRow>
+      </template>
+    </CardTable>
+  </DsPage>
 </template>

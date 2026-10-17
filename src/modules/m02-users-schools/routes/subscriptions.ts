@@ -7,7 +7,13 @@ import { SUBSCRIPTION_ROUTES } from '../lib/subscription-options'
  * `bare`) and S16 assign SPM packages (M02-T9; FR-M02-47..50, 82..97). Admin only. Tab titles are exact
  * (SRS §2); S14, S15 and S16 replace them (and S14/S16 the header subtitle) once the data is loaded.
  */
-const adminMeta = { layout: 'admin', access: 'auth', roles: ['admin'], module: 'M02' } as const
+const adminMeta = {
+  layout: 'admin',
+  access: 'auth',
+  roles: ['admin'],
+  module: 'M02',
+  v2: true,
+} as const
 
 const routes: RouteRecordRaw[] = [
   {

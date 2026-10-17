@@ -1,29 +1,22 @@
 <script setup lang="ts">
 /**
  * S10 `/admin/schools/create` "Tambah Sekolah" and S11 `/admin/schools/:id/edit` "Edit Sekolah"
- * (M02-T8; FR-M02-80, FR-M02-81). One form for both: `mode="create"` posts a new school ("Simpan",
- * "Sekolah Aktif" on by default), `mode="edit"` loads the school, pre-fills it and puts its name in
- * the shell header subtitle ("Kemaskini").
+ * (M02-T8; FR-M02-80, FR-M02-81), v2 staff theme. One form for both: `mode="create"` posts a new school
+ * ("Simpan", "Sekolah Aktif" on by default), `mode="edit"` loads the school, pre-fills it and puts its name
+ * in the shell header subtitle ("Kemaskini").
  *
- * Native HTML5 validation only (`required`, no `novalidate`; design-system §7.2). A server
+ * Native HTML5 validation only (`required`, no `novalidate`; design-system 7.2). A server
  * `VALIDATION_ERROR` (e.g. a duplicate code) shows in the red alert above the form, marks the field
  * and keeps the input. Success queues the flash (UNVERIFIED COPY, from the API `status`) and goes
  * back to the list.
  */
-import { ArrowLeft, Save } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import {
-  FORM_ERROR_MODIFIER,
-  FORM_ERROR_TEXT_CLASS,
-  FORM_INPUT_CLASS,
-  FORM_SELECT_CLASS,
-} from '@/components/form'
 import { useApi, useFlash, usePageMeta } from '@/composables'
+import { DsPage } from '@/ds'
 
 import {
   createSchool,
@@ -32,6 +25,10 @@ import {
   type SchoolInputBody,
   type SchoolType,
 } from '../api/schools-admin'
+import AdminAlert from '../components/AdminAlert.vue'
+import AdminField from '../components/AdminField.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
+import UserFormSwitch from '../components/UserFormSwitch.vue'
 import { errorLines, fieldErrors } from '../lib/school-errors'
 import { SCHOOLS_LIST_PATH, SCHOOL_STATE_OPTIONS, SCHOOL_TYPE_OPTIONS } from '../lib/school-options'
 
@@ -109,10 +106,6 @@ function invalid(field: keyof SchoolForm): boolean {
   return fieldMessages.value[field] !== undefined
 }
 
-function fieldClass(base: string, field: keyof SchoolForm): string[] {
-  return [base, 'min-h-11', invalid(field) ? FORM_ERROR_MODIFIER : '']
-}
-
 async function submit(): Promise<void> {
   if (saving.value || form.type === '') return
   saving.value = true
@@ -138,195 +131,171 @@ async function submit(): Promise<void> {
     saving.value = false
   }
 }
-
-const LABEL = 'mb-1.5 block text-sm font-semibold text-slate-700'
-const BUTTON_BASE =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
 </script>
 
 <template>
-  <div class="space-y-4" data-testid="school-form-page">
-    <RouterLink
-      :to="SCHOOLS_LIST_PATH"
-      class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-500 transition hover:text-slate-700"
-      data-testid="school-back"
-    >
-      <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-      Kembali ke Senarai Sekolah
-    </RouterLink>
+  <DsPage data-testid="school-form-page">
+    <div>
+      <UButton
+        :to="SCHOOLS_LIST_PATH"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-arrow-left"
+        label="Kembali ke Senarai Sekolah"
+        data-testid="school-back"
+      />
+    </div>
 
     <!-- S11 could not load the school (unknown id): red box + the way back. INFERRED. -->
-    <div v-if="editing && loadError && !notFound" class="space-y-3" data-testid="school-load-error">
-      <AlertBox :messages="errorLines(loadError)" />
-      <button
-        type="button"
-        :class="[BUTTON_BASE, 'bg-indigo-500 text-white shadow hover:bg-indigo-600']"
-        @click="reloadSchool()"
-      >
-        Cuba Lagi
-      </button>
-    </div>
-
     <div
-      v-else-if="!ready && !notFound"
-      class="space-y-5 rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="school-form-skeleton"
+      v-if="editing && loadError && !notFound"
+      class="flex flex-col gap-3"
+      data-testid="school-load-error"
     >
-      <div v-for="n in 4" :key="n" class="h-11 animate-pulse rounded-xl bg-slate-100"></div>
+      <AdminAlert :messages="errorLines(loadError)" />
+      <div>
+        <UButton label="Cuba Lagi" @click="reloadSchool()" />
+      </div>
     </div>
 
-    <form
-      v-else-if="!notFound"
-      method="post"
-      class="rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="school-form"
-      @submit.prevent="submit"
-    >
-      <AlertBox :messages="errors" class="mb-5" data-testid="school-form-alert" />
+    <UCard v-else-if="!ready && !notFound" class="max-w-3xl" data-testid="school-form-skeleton">
+      <div class="flex flex-col gap-6">
+        <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
+      </div>
+    </UCard>
 
-      <div class="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-          <label for="school-name" :class="LABEL"
-            >Nama Sekolah <span class="text-red-500">*</span></label
-          >
-          <input
-            id="school-name"
-            v-model="form.name"
-            type="text"
-            name="name"
-            required
-            placeholder="cth: SK TAMAN KLUANG BARU"
-            :class="fieldClass(FORM_INPUT_CLASS, 'name')"
-            data-testid="school-name"
-          />
-          <p v-if="invalid('name')" :class="FORM_ERROR_TEXT_CLASS">{{ fieldMessages.name }}</p>
-        </div>
+    <UCard v-else-if="!notFound" class="max-w-3xl">
+      <form
+        method="post"
+        class="flex min-w-0 flex-col gap-6"
+        data-testid="school-form"
+        @submit.prevent="submit"
+      >
+        <AdminAlert :messages="errors" data-testid="school-form-alert" />
 
-        <div class="sm:col-span-2">
-          <label for="school-code" :class="LABEL"
-            >Kod Sekolah <span class="text-red-500">*</span></label
-          >
-          <input
-            id="school-code"
-            v-model="form.code"
-            type="text"
-            name="code"
-            required
-            placeholder="cth: JBA1234"
-            :class="[...fieldClass(FORM_INPUT_CLASS, 'code'), 'font-mono']"
-            data-testid="school-code"
-          />
-          <p v-if="invalid('code')" :class="FORM_ERROR_TEXT_CLASS">{{ fieldMessages.code }}</p>
-        </div>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div class="sm:col-span-2">
+            <AdminField for="school-name" label="Nama Sekolah" required :error="fieldMessages.name">
+              <UInput
+                id="school-name"
+                v-model="form.name"
+                type="text"
+                name="name"
+                required
+                placeholder="cth: SK TAMAN KLUANG BARU"
+                :color="invalid('name') ? 'error' : undefined"
+                size="lg"
+                class="w-full"
+                data-testid="school-name"
+              />
+            </AdminField>
+          </div>
 
-        <div>
-          <label for="school-type" :class="LABEL">Jenis <span class="text-red-500">*</span></label>
-          <select
-            id="school-type"
-            v-model="form.type"
-            name="type"
-            required
-            :class="fieldClass(FORM_SELECT_CLASS, 'type')"
-            data-testid="school-type"
-          >
-            <option value="">Pilih jenis</option>
-            <option v-for="type in SCHOOL_TYPE_OPTIONS" :key="type" :value="type">
-              {{ type }}
-            </option>
-          </select>
-          <p v-if="invalid('type')" :class="FORM_ERROR_TEXT_CLASS">{{ fieldMessages.type }}</p>
-        </div>
+          <div class="sm:col-span-2">
+            <AdminField for="school-code" label="Kod Sekolah" required :error="fieldMessages.code">
+              <UInput
+                id="school-code"
+                v-model="form.code"
+                type="text"
+                name="code"
+                required
+                placeholder="cth: JBA1234"
+                :color="invalid('code') ? 'error' : undefined"
+                size="lg"
+                class="w-full"
+                data-testid="school-code"
+              />
+            </AdminField>
+          </div>
 
-        <div>
-          <label for="school-state" :class="LABEL"
-            >Negeri <span class="text-red-500">*</span></label
-          >
-          <select
-            id="school-state"
-            v-model="form.state"
-            name="state"
-            required
-            :class="fieldClass(FORM_SELECT_CLASS, 'state')"
-            data-testid="school-state"
-          >
-            <option value="">Pilih negeri</option>
-            <option v-for="name in SCHOOL_STATE_OPTIONS" :key="name" :value="name">
-              {{ name }}
-            </option>
-          </select>
-          <p v-if="invalid('state')" :class="FORM_ERROR_TEXT_CLASS">{{ fieldMessages.state }}</p>
-        </div>
+          <AdminField for="school-type" label="Jenis" required :error="fieldMessages.type">
+            <NativeSelect
+              id="school-type"
+              v-model="form.type"
+              name="type"
+              required
+              :aria-invalid="invalid('type') ? 'true' : undefined"
+              data-testid="school-type"
+            >
+              <option value="">Pilih jenis</option>
+              <option v-for="type in SCHOOL_TYPE_OPTIONS" :key="type" :value="type">
+                {{ type }}
+              </option>
+            </NativeSelect>
+          </AdminField>
 
-        <div>
-          <label for="school-district" :class="LABEL">Daerah</label>
-          <input
-            id="school-district"
-            v-model="form.district"
-            type="text"
-            name="district"
-            placeholder="cth: KLUANG"
-            :class="fieldClass(FORM_INPUT_CLASS, 'district')"
-            data-testid="school-district"
-          />
-          <p v-if="invalid('district')" :class="FORM_ERROR_TEXT_CLASS">
-            {{ fieldMessages.district }}
-          </p>
-        </div>
+          <AdminField for="school-state" label="Negeri" required :error="fieldMessages.state">
+            <NativeSelect
+              id="school-state"
+              v-model="form.state"
+              name="state"
+              required
+              :aria-invalid="invalid('state') ? 'true' : undefined"
+              data-testid="school-state"
+            >
+              <option value="">Pilih negeri</option>
+              <option v-for="name in SCHOOL_STATE_OPTIONS" :key="name" :value="name">
+                {{ name }}
+              </option>
+            </NativeSelect>
+          </AdminField>
 
-        <div>
-          <label for="school-city" :class="LABEL">Bandar</label>
-          <input
-            id="school-city"
-            v-model="form.city"
-            type="text"
-            name="city"
-            placeholder="cth: KLUANG"
-            :class="fieldClass(FORM_INPUT_CLASS, 'city')"
-            data-testid="school-city"
-          />
-          <p v-if="invalid('city')" :class="FORM_ERROR_TEXT_CLASS">{{ fieldMessages.city }}</p>
-        </div>
-
-        <div class="sm:col-span-2">
-          <label class="inline-flex min-h-11 cursor-pointer items-center gap-3">
-            <input
-              v-model="form.isActive"
-              type="checkbox"
-              name="is_active"
-              class="peer sr-only"
-              data-testid="school-active"
+          <AdminField for="school-district" label="Daerah" :error="fieldMessages.district">
+            <UInput
+              id="school-district"
+              v-model="form.district"
+              type="text"
+              name="district"
+              placeholder="cth: KLUANG"
+              :color="invalid('district') ? 'error' : undefined"
+              size="lg"
+              class="w-full"
+              data-testid="school-district"
             />
-            <span
-              class="relative h-6 w-11 shrink-0 rounded-full bg-slate-300 transition peer-checked:bg-green-500 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-300 after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-5"
-              aria-hidden="true"
-            ></span>
-            <span class="text-sm font-medium text-slate-700">Sekolah Aktif</span>
-          </label>
-        </div>
-      </div>
+          </AdminField>
 
-      <div class="mt-6 flex flex-wrap gap-3 border-t border-slate-100 pt-5">
-        <button
-          type="submit"
-          :disabled="saving"
-          :class="[
-            BUTTON_BASE,
-            'bg-indigo-500 text-white shadow hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-50',
-          ]"
-          data-testid="school-submit"
-        >
-          <LoadingSpinner v-if="saving" class="h-4 w-4" />
-          <Save v-else class="h-4 w-4" aria-hidden="true" />
-          {{ editing ? 'Kemaskini' : 'Simpan' }}
-        </button>
-        <RouterLink
-          :to="SCHOOLS_LIST_PATH"
-          :class="[BUTTON_BASE, 'bg-slate-200 text-slate-600 hover:bg-slate-300']"
-          data-testid="school-cancel"
-        >
-          Batal
-        </RouterLink>
-      </div>
-    </form>
-  </div>
+          <AdminField for="school-city" label="Bandar" :error="fieldMessages.city">
+            <UInput
+              id="school-city"
+              v-model="form.city"
+              type="text"
+              name="city"
+              placeholder="cth: KLUANG"
+              :color="invalid('city') ? 'error' : undefined"
+              size="lg"
+              class="w-full"
+              data-testid="school-city"
+            />
+          </AdminField>
+
+          <div class="sm:col-span-2">
+            <UserFormSwitch
+              v-model="form.isActive"
+              name="is_active"
+              label="Sekolah Aktif"
+              testid="school-active"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <UButton
+            type="submit"
+            icon="i-ph-floppy-disk"
+            :label="editing ? 'Kemaskini' : 'Simpan'"
+            :loading="saving"
+            :disabled="saving"
+            data-testid="school-submit"
+          />
+          <UButton
+            :to="SCHOOLS_LIST_PATH"
+            color="neutral"
+            variant="soft"
+            label="Batal"
+            data-testid="school-cancel"
+          />
+        </div>
+      </form>
+    </UCard>
+  </DsPage>
 </template>

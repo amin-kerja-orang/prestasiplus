@@ -19,11 +19,8 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/users', () => api)
 
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn(() => true) }))
-vi.mock('@/components/overlay/native-dialogs', () => ({
-  confirmNative: dialogs.confirmNative,
-  alertNative: vi.fn(),
-}))
+// `useConfirm` falls back to `window.confirm` when no `DsConfirmHost` is mounted (same BM text).
+const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn<(message: string) => boolean>(() => true) }))
 
 const ME = 1
 
@@ -89,6 +86,7 @@ beforeEach(() => {
   for (const fn of Object.values(api)) fn.mockReset()
   dialogs.confirmNative.mockReset()
   dialogs.confirmNative.mockReturnValue(true)
+  vi.spyOn(window, 'confirm').mockImplementation((message) => dialogs.confirmNative(message ?? ''))
   const session = useSessionStore()
   session.setSession({
     token: 'admin-token',
@@ -118,10 +116,14 @@ afterEach(() => {
 describe('UserListPage (M02 S1)', () => {
   it('shows the 7 stat cards, the rows and the pager total', async () => {
     const w = await render()
-    const counts = w.findAll('[data-testid="users-stat-count"]').map((n) => n.text())
-    expect(counts).toEqual(['4533', '551', '38', '6', '16', '5', '2'])
+    const counts = w
+      .findAll('[data-testid^="users-stat-"]:not([data-testid="users-stats"])')
+      .map((n) => n.text())
+    expect(counts).toHaveLength(7)
+    const expected = ['4533', '551', '38', '6', '16', '5', '2']
+    expected.forEach((n, i) => expect(counts[i]).toContain(n))
     expect(w.findAll('[data-testid="user-row"]')).toHaveLength(3)
-    expect(w.text()).toContain('Showing')
+    expect(w.text()).toContain('Menunjukkan 1-3 daripada 5159 hasil')
     expect(w.text()).toContain('5159')
     expect(w.text()).toContain('21/09/2026')
     expect(w.text()).toContain('0123456789')
@@ -211,7 +213,7 @@ describe('UserListPage (M02 S1)', () => {
     const w = await render('/admin/users?search=zzz')
     expect(w.get('[data-testid="users-empty"]').text()).toContain('Tiada pengguna dijumpai')
     expect(w.get('[data-testid="users-empty"]').text()).toContain('Cuba ubah kriteria carian anda')
-    expect(w.text()).not.toContain('Showing')
+    expect(w.text()).not.toContain('Menunjukkan')
   })
 
   it('goes back one page when a delete empties the current page (FR-M02-14)', async () => {

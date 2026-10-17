@@ -115,17 +115,22 @@ onBeforeUnmount(() => {
 
       <!-- Sidebar (>= lg) -->
       <aside
-        class="fixed inset-y-0 start-0 z-30 hidden w-72 flex-col gap-4 overflow-y-auto bg-default p-4 shadow-ds-xs lg:flex"
+        class="fixed inset-y-0 start-0 z-30 hidden w-72 flex-col gap-4 overflow-x-hidden overflow-y-auto bg-default p-4 shadow-ds-xs lg:flex"
         data-testid="pentadbiran-sidebar"
       >
-        <div class="flex items-center gap-2 px-2 pt-2">
+        <div class="flex min-w-0 items-center gap-2 px-2 pt-2">
           <RouterLink
             to="/admin"
-            class="font-display text-title font-extrabold text-highlighted"
+            class="min-w-0 truncate font-display text-title font-extrabold text-highlighted"
           >
             Prestasi<span class="text-primary-t">Plus</span>
           </RouterLink>
-          <UBadge label="Pentadbiran" color="primary" variant="subtle" />
+          <UBadge
+            label="Pentadbiran"
+            color="primary"
+            variant="subtle"
+            :ui="{ base: 'shrink-0 whitespace-nowrap' }"
+          />
         </div>
         <nav aria-label="Menu utama" class="flex-1">
           <PentadbiranNavList

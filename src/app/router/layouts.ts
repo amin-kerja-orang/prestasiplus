@@ -31,9 +31,10 @@ export type ShellKind = 'admin' | 'user' | 'pembelajaran' | 'pentadbiran' | 'pub
  * other role and for the unscoped e2e build.
  */
 export function userShellFor(role: Role | null): ShellKind {
-  return isPrototypeScopeOn() && (role === 'student' || role === 'teacher')
-    ? 'pembelajaran'
-    : 'user'
+  if (!isPrototypeScopeOn()) return 'user'
+  if (role === 'student' || role === 'teacher' || role === 'school_admin') return 'pembelajaran'
+  // Admin Pusat keeps its own portal on the shared account screens (Profil, Tetapan, Tiket).
+  return role === 'admin' ? 'pentadbiran' : 'user'
 }
 
 /**
@@ -42,7 +43,10 @@ export function userShellFor(role: Role | null): ShellKind {
  * unscoped e2e build.
  */
 export function adminShellFor(role: Role | null): ShellKind {
-  return isPrototypeScopeOn() && role === 'admin' ? 'pentadbiran' : 'admin'
+  if (!isPrototypeScopeOn()) return 'admin'
+  if (role === 'admin') return 'pentadbiran'
+  // Guru and Admin Sekolah screens on the admin layout (Monitoring, Kirkpatrick) use the staff shell.
+  return role === 'teacher' || role === 'school_admin' ? 'pembelajaran' : 'admin'
 }
 
 /** Standalone (`bare`) admin screens that sit inside the Pentadbiran portal for Admin Pusat. */

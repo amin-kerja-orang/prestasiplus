@@ -1,40 +1,29 @@
 <script setup lang="ts">
 /**
- * S4 `/admin/users/bulk-import` "Import Pengguna Pukal" (M02-T6; FR-M02-51…56, BR-14). Hero card, then the
- * card "Borang Import Pengguna": role radio cards (none checked), the school picker for Guru / Admin,
- * "Kata Laluan Default" (pre-filled with the configured bulk default), "Kaedah Import" (CSV or paste), the
- * format box, "Kembali" and "Import"; the card "Nota Penting:" sits below.
+ * S4 `/admin/users/bulk-import` "Import Pengguna Pukal" (M02-T6; FR-M02-51…56, BR-14), v2 staff theme. Hero
+ * card, then the card "Borang Import Pengguna": role radio cards (none checked), the school picker for
+ * Guru / Admin, "Kata Laluan Default" (pre-filled with the configured bulk default), "Kaedah Import" (CSV
+ * or paste), the format box, "Kembali" and "Import"; the card "Nota Penting:" sits below.
  *
  * Native validation only, as live: the role radios are `required`; the school, the data and the rest are
- * server-validated (§5). "Import" calls `POST /api/admin/users/bulk-import`; success reloads S4 with the
- * green result flash (UNVERIFIED COPY, the API `status`) and the form reset; a `VALIDATION_ERROR` shows in the red alert above the form, input kept.
+ * server-validated (5). "Import" calls `POST /api/admin/users/bulk-import`; success reloads S4 with the
+ * green result flash (UNVERIFIED COPY, the API `status`) and the form reset; a `VALIDATION_ERROR` shows in
+ * the red alert above the form, input kept.
  */
-import {
-  ArrowLeft,
-  Building,
-  FileUp,
-  Info,
-  KeyRound,
-  Lightbulb,
-  LoaderCircle,
-  Presentation,
-  ShieldCheck,
-  UserCheck,
-  Users,
-  UsersRound,
-} from '@lucide/vue'
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
 import { useFlash } from '@/composables'
+import { DsIconChip, DsPage } from '@/ds'
 
 import { importUsers, type BulkImportRole, type ImportMode } from '../api/imports'
 import type { SchoolSummary } from '../api/schools'
 import { fetchAdminDefaults } from '../api/users'
+import AdminAlert from '../components/AdminAlert.vue'
+import AdminField from '../components/AdminField.vue'
 import BulkSchoolPicker from '../components/BulkSchoolPicker.vue'
 import ImportSourceFields from '../components/ImportSourceFields.vue'
+import NativeChoice from '../components/native/NativeChoice.vue'
+import NativePanel from '../components/native/NativePanel.vue'
 import {
   BULK_PASTE_PLACEHOLDER,
   BULK_ROLE_OPTIONS,
@@ -105,196 +94,163 @@ async function submit(): Promise<void> {
   }
 }
 
-const LABEL = 'mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700'
-const CARD_BASE =
-  'flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 peer-checked:border-transparent peer-checked:bg-gradient-to-r peer-checked:from-blue-500 peer-checked:to-indigo-600 peer-checked:text-white peer-checked:shadow-lg peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-300'
+const ROLE_ICONS: Record<string, string> = {
+  teacher: 'i-ph-chalkboard-teacher',
+  parent: 'i-ph-users',
+  admin: 'i-ph-shield-check',
+  ppd: 'i-ph-buildings',
+}
 </script>
 
 <template>
-  <div class="space-y-5" data-testid="bulk-import-page">
-    <section
-      class="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 shadow-sm sm:p-5"
-      data-testid="bulk-hero"
-    >
-      <div class="flex items-start gap-3 sm:gap-4">
-        <span
-          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow"
-        >
-          <UsersRound class="h-6 w-6" aria-hidden="true" />
-        </span>
-        <div class="min-w-0">
-          <h3 class="text-base font-bold text-slate-800 sm:text-lg">Import Pengguna Pukal</h3>
-          <p class="text-sm text-indigo-700">
+  <DsPage data-testid="bulk-import-page">
+    <UCard class="max-w-4xl" data-testid="bulk-hero">
+      <div class="flex items-start gap-4">
+        <DsIconChip icon="i-ph-users-three" size="lg" />
+        <div class="flex min-w-0 flex-col gap-2">
+          <h3 class="text-subheading text-highlighted">Import Pengguna Pukal</h3>
+          <p class="text-label text-muted">
             Daftarkan guru, ibu bapa, atau pentadbir sekolah secara pukal.
           </p>
-          <div class="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
-            <span
-              class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-blue-700"
-            >
-              <Presentation class="h-3.5 w-3.5" aria-hidden="true" /> Guru
-            </span>
-            <span
-              class="inline-flex items-center gap-1 rounded-full border border-pink-200 bg-pink-50 px-2.5 py-1 text-pink-700"
-            >
-              <Users class="h-3.5 w-3.5" aria-hidden="true" /> Ibu Bapa
-            </span>
-            <span
-              class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-700"
-            >
-              <ShieldCheck class="h-3.5 w-3.5" aria-hidden="true" /> Admin
-            </span>
+          <div class="flex flex-wrap gap-2">
+            <UBadge
+              color="neutral"
+              variant="subtle"
+              icon="i-ph-chalkboard-teacher"
+              label="Guru"
+            />
+            <UBadge color="neutral" variant="subtle" icon="i-ph-users" label="Ibu Bapa" />
+            <UBadge color="neutral" variant="subtle" icon="i-ph-shield-check" label="Admin" />
           </div>
         </div>
       </div>
-    </section>
+    </UCard>
 
-    <form
-      method="post"
-      enctype="multipart/form-data"
-      class="rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="bulk-form"
-      @submit.prevent="submit"
-    >
-      <h2 class="mb-5 flex items-center gap-2 text-base font-bold text-slate-800">
-        <FileUp class="h-5 w-5 text-indigo-500" aria-hidden="true" />
-        Borang Import Pengguna
-      </h2>
+    <UCard class="max-w-4xl">
+      <form
+        method="post"
+        enctype="multipart/form-data"
+        class="flex min-w-0 flex-col gap-6"
+        data-testid="bulk-form"
+        @submit.prevent="submit"
+      >
+        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+          <UIcon name="i-ph-file-arrow-up" class="size-5 text-muted" aria-hidden="true" />
+          Borang Import Pengguna
+        </h2>
 
-      <div ref="alertBox" class="scroll-mt-4">
-        <AlertBox :messages="errors" class="mb-5" data-testid="bulk-alert" />
-      </div>
+        <div ref="alertBox">
+          <AdminAlert :messages="errors" data-testid="bulk-alert" />
+        </div>
 
-      <div class="space-y-5">
-        <fieldset>
-          <legend :class="LABEL">
-            <UserCheck class="h-4 w-4 text-indigo-500" aria-hidden="true" />
-            Peranan Pengguna <span class="text-red-500">*</span>
+        <fieldset class="flex min-w-0 flex-col gap-2">
+          <legend class="mb-2 flex items-center gap-2 text-label text-default">
+            <UIcon name="i-ph-user-check" class="size-4 text-muted" aria-hidden="true" />
+            Peranan Pengguna <span class="text-error">*</span>
           </legend>
           <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <label
+            <NativeChoice
               v-for="o in BULK_ROLE_OPTIONS"
               :key="o.value"
-              class="block"
+              v-model="role"
+              name="role"
+              :value="o.value"
+              required
               :data-testid="`bulk-role-${o.value}`"
             >
-              <input
-                v-model="role"
-                type="radio"
-                name="role"
-                :value="o.value"
-                required
-                class="peer sr-only"
-              />
-              <span :class="CARD_BASE">
-                <Presentation v-if="o.icon === 'teacher'" class="h-4 w-4" aria-hidden="true" />
-                <Users v-else-if="o.icon === 'parent'" class="h-4 w-4" aria-hidden="true" />
-                <ShieldCheck v-else-if="o.icon === 'admin'" class="h-4 w-4" aria-hidden="true" />
-                <Building v-else class="h-4 w-4" aria-hidden="true" />
-                {{ o.label }}
-              </span>
-            </label>
+              <UIcon :name="ROLE_ICONS[o.icon] ?? 'i-ph-buildings'" class="size-4" aria-hidden="true" />
+              {{ o.label }}
+            </NativeChoice>
           </div>
         </fieldset>
 
         <BulkSchoolPicker v-if="showSchool" v-model="school" />
 
-        <div>
-          <label for="bulk-default-password" :class="LABEL">
-            <KeyRound class="h-4 w-4 text-amber-500" aria-hidden="true" />
-            <span>
-              Kata Laluan Default
-              <span class="text-xs font-normal text-slate-400"
-                >(untuk pengguna tanpa kata laluan)</span
-              >
-            </span>
-          </label>
-          <input
+        <AdminField
+          for="bulk-default-password"
+          label="Kata Laluan Default (untuk pengguna tanpa kata laluan)"
+          icon="i-ph-key"
+          hint="Kata laluan jika tidak dinyatakan dalam data import."
+        >
+          <UInput
             id="bulk-default-password"
             v-model="defaultPassword"
             type="text"
             name="default_password"
             autocomplete="off"
             :placeholder="configuredDefault"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
+            size="lg"
+            class="w-full"
             data-testid="bulk-default-password"
           />
-          <p class="mt-1 text-xs text-slate-500">
-            Kata laluan jika tidak dinyatakan dalam data import.
-          </p>
-        </div>
+        </AdminField>
 
         <ImportSourceFields
           v-model:mode="mode"
           v-model:paste="paste"
           v-model:file="file"
-          accent="indigo"
           :paste-placeholder="BULK_PASTE_PLACEHOLDER"
         >
           <template #format>
-            <div
-              class="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-slate-600"
+            <NativePanel
+              tone="soft"
+              class="flex flex-col gap-1 text-caption text-muted"
               data-testid="bulk-format"
             >
-              <p class="mb-1 flex items-center gap-1.5 font-semibold text-blue-700">
-                <Info class="h-3.5 w-3.5" aria-hidden="true" />
+              <p class="flex items-center gap-2 text-label text-default">
+                <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
                 Format CSV:
               </p>
-              <p class="font-mono break-words text-blue-600">
-                Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)
-              </p>
-              <p class="mt-1 font-mono break-words">
+              <p class="break-words">Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)</p>
+              <p class="break-words">
                 Contoh: Muhammad Fulan bin Fulan, ahmad@email.com, 0123456789, pass123
               </p>
-              <p class="mt-1">Baris pertama akan dilangkau jika ia mengandungi tajuk (header).</p>
-            </div>
+              <p>Baris pertama akan dilangkau jika ia mengandungi tajuk (header).</p>
+            </NativePanel>
           </template>
         </ImportSourceFields>
-      </div>
 
-      <div
-        class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5"
-      >
-        <RouterLink
-          :to="USERS_LIST_PATH"
-          class="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-          data-testid="bulk-back"
-        >
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          Kembali
-        </RouterLink>
-        <button
-          type="submit"
-          :disabled="submitting"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-sm font-bold text-white shadow transition hover:from-indigo-600 hover:to-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-50"
-          data-testid="bulk-submit"
-        >
-          <LoaderCircle v-if="submitting" class="h-4 w-4 animate-spin" aria-hidden="true" />
-          <UsersRound v-else class="h-4 w-4" aria-hidden="true" />
-          Import
-        </button>
-      </div>
-    </form>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <UButton
+            :to="USERS_LIST_PATH"
+            color="neutral"
+            variant="ghost"
+            icon="i-ph-arrow-left"
+            label="Kembali"
+            data-testid="bulk-back"
+          />
+          <UButton
+            type="submit"
+            icon="i-ph-users-three"
+            label="Import"
+            :loading="submitting"
+            :disabled="submitting"
+            data-testid="bulk-submit"
+          />
+        </div>
+      </form>
+    </UCard>
 
-    <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5" data-testid="bulk-notes">
-      <h3 class="mb-2 flex items-center gap-2 text-sm font-bold text-slate-800">
-        <Lightbulb class="h-4 w-4 text-amber-500" aria-hidden="true" />
+    <UCard class="max-w-4xl" data-testid="bulk-notes">
+      <h3 class="mb-2 flex items-center gap-2 text-label text-highlighted">
+        <UIcon name="i-ph-lightbulb" class="size-4 text-muted" aria-hidden="true" />
         Nota Penting:
       </h3>
-      <ul class="list-disc space-y-1 pl-9 text-sm text-slate-600">
-        <li>Emel sedia ada akan dilangkau automatik</li>
-        <li>Guru &amp; admin sekolah dikaitkan dengan sekolah dipilih</li>
-        <li>Kata laluan boleh dinyatakan per-pengguna di lajur ke-4</li>
+      <ul class="flex flex-col gap-1 text-label text-muted">
+        <li>• Emel sedia ada akan dilangkau automatik</li>
+        <li>• Guru &amp; admin sekolah dikaitkan dengan sekolah dipilih</li>
+        <li>• Kata laluan boleh dinyatakan per-pengguna di lajur ke-4</li>
         <li>
-          Pelajar DELIMa &rarr;
-          <RouterLink
+          • Pelajar DELIMa &rarr;
+          <ULink
             :to="STUDENT_IMPORT_PATH"
-            class="inline-flex min-h-11 items-center text-indigo-600 underline hover:text-indigo-800 sm:min-h-0"
+            class="text-primary"
             data-testid="bulk-students-link"
           >
             Import Pelajar
-          </RouterLink>
+          </ULink>
         </li>
       </ul>
-    </section>
-  </div>
+    </UCard>
+  </DsPage>
 </template>

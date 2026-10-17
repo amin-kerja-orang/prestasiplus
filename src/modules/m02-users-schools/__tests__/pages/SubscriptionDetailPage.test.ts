@@ -143,7 +143,7 @@ describe('SubscriptionDetailPage (M02 S14)', () => {
     expect(w.get('[data-testid=sub-school]').text()).toBe('SEKOLAH CONTOH')
     expect(w.get('[data-testid=sub-code]').text()).toBe('BFT4001 · Pakej SPM Tingkatan 5')
     expect(w.get('[data-testid=sub-usage]').text()).toBe('150 / 1000')
-    expect(w.get('[data-testid=sub-bar]').classes()).toContain('bg-emerald-500')
+    expect(w.get('[data-testid=sub-bar]').html()).toContain('bg-success')
     expect(w.get('[data-testid=sub-percent]').text()).toBe('15% digunakan')
     expect(w.get('[data-testid=sub-remaining]').text()).toBe('Baki: 850 pelajar')
     expect(w.get('[data-testid=sub-basic-box]').text()).toContain(
@@ -166,7 +166,7 @@ describe('SubscriptionDetailPage (M02 S14)', () => {
       }),
     )
     const { w } = await render()
-    expect(w.get('[data-testid=sub-bar]').classes()).toContain('bg-red-500')
+    expect(w.get('[data-testid=sub-bar]').html()).toContain('bg-error')
     expect(w.get('[data-testid=sub-usage]').text()).toBe('562 / 500')
     expect(w.get('[data-testid=sub-price]').text()).toBe('RM30.00')
     expect(w.get('[data-testid=sub-total]').text()).toBe('RM15,000.00')
