@@ -4,23 +4,24 @@
  * for "Muat Turun") and the two buttons "Muat Turun" and "WhatsApp" (or "Kongsi" on the mastery
  * cards). The frame only emits; the page owns the `downloading` guard.
  */
-import { Download } from '@lucide/vue'
 import { ref } from 'vue'
 
 import { KAD_COPY } from '../../lib/student/kadkongsi-lib'
 import BrandWhatsAppIcon from './BrandWhatsAppIcon.vue'
 
+type FrameColor = 'primary' | 'secondary' | 'warning' | 'success' | 'info'
+
 withDefaults(
   defineProps<{
     title?: string
-    /** Classes of the "Muat Turun" button (colour per card). */
-    downloadClass: string
+    /** Colour of the "Muat Turun" button (per card). */
+    downloadColor?: FrameColor
     shareLabel?: string
     /** Smaller buttons inside the mastery grid. */
     compact?: boolean
     testKey: string
   }>(),
-  { title: '', shareLabel: KAD_COPY.whatsapp, compact: false },
+  { title: '', downloadColor: 'primary', shareLabel: KAD_COPY.whatsapp, compact: false },
 )
 const emit = defineEmits<{ download: [el: HTMLElement | null]; share: [] }>()
 
@@ -28,10 +29,10 @@ const cardEl = ref<HTMLElement | null>(null)
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col items-center" :data-testid="`kad-${testKey}`">
+  <div class="flex min-w-0 flex-col items-center gap-4" :data-testid="`kad-${testKey}`">
     <h3
       v-if="title"
-      class="mb-4 w-full text-base font-bold text-slate-800"
+      class="w-full font-display text-subheading font-bold text-highlighted"
       :data-testid="`kad-${testKey}-title`"
     >
       {{ title }}
@@ -39,32 +40,27 @@ const cardEl = ref<HTMLElement | null>(null)
     <div ref="cardEl" class="w-full max-w-85" :data-testid="`kad-${testKey}-card`">
       <slot />
     </div>
-    <div class="mt-4 flex flex-wrap justify-center gap-3">
-      <button
+    <div class="flex flex-wrap justify-center gap-3">
+      <UButton
         type="button"
-        :class="[
-          'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl font-bold text-white shadow-sm',
-          compact ? 'px-4 py-2 text-xs' : 'px-5 py-2.5 text-sm',
-          downloadClass,
-        ]"
+        :size="compact ? 'lg' : 'xl'"
+        :color="downloadColor"
+        icon="i-ph-download-simple-duotone"
         :data-testid="`kad-${testKey}-download`"
         @click="emit('download', cardEl)"
       >
-        <Download class="h-4 w-4" aria-hidden="true" />
         {{ KAD_COPY.download }}
-      </button>
-      <button
+      </UButton>
+      <UButton
         type="button"
-        :class="[
-          'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-green-600 font-bold text-white shadow-sm',
-          compact ? 'px-4 py-2 text-xs' : 'px-5 py-2.5 text-sm',
-        ]"
+        :size="compact ? 'lg' : 'xl'"
+        color="success"
         :data-testid="`kad-${testKey}-share`"
         @click="emit('share')"
       >
-        <BrandWhatsAppIcon class="h-4 w-4" />
+        <BrandWhatsAppIcon class="size-4" />
         {{ shareLabel }}
-      </button>
+      </UButton>
     </div>
   </div>
 </template>

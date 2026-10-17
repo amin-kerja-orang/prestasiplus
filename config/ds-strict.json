@@ -6,7 +6,14 @@
     { "glob": "src/modules/m05-practice/pages/DashboardPage.vue", "level": "page" },
     { "glob": "src/modules/m05-practice/components/dashboard-v2/**", "level": "page" },
     { "glob": "src/modules/m28-bijak-spm/pages/**", "level": "page" },
-    { "glob": "src/modules/m28-bijak-spm/components/**", "level": "ds" }
+    { "glob": "src/modules/m28-bijak-spm/components/**", "level": "ds" },
+    { "glob": "src/modules/m14-gamification/pages/**", "level": "page" },
+    { "glob": "src/modules/m14-gamification/components/student-a/**", "level": "ds" },
+    { "glob": "src/modules/m14-gamification/components/student-b/AchievementBadgeCard.vue", "level": "ds" },
+    { "glob": "src/modules/m14-gamification/components/student-b/KadCardFrame.vue", "level": "ds" },
+    { "glob": "src/modules/m14-gamification/components/student-b/LeaderboardPodium.vue", "level": "ds" },
+    { "glob": "src/modules/m14-gamification/components/student-b/LeaderboardRows.vue", "level": "ds" },
+    { "glob": "src/modules/m14-gamification/components/student-b/StudentBLoadState.vue", "level": "ds" }
   ],
   "exempt": ["src/theme/**"]
 }

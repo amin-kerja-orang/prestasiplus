@@ -93,7 +93,7 @@ describe('S17 history (AC-M14-06)', () => {
     expect(r[0]!.get('[data-testid="s17-row-balance"]').text()).toBe('Baki: 256')
     expect(r[1]!.get('[data-testid="s17-row-icon"]').text()).toBe('🔄')
     expect(r[1]!.get('[data-testid="s17-row-amount"]').text()).toBe('−250')
-    expect(r[1]!.get('[data-testid="s17-row-amount"]').classes()).toContain('text-red-500')
+    expect(r[1]!.get('[data-testid="s17-row-amount"]').classes()).toContain('text-muted')
     expect(r[1]!.get('[data-testid="s17-row-balance"]').text()).toBe('Baki: 6')
     expect(r[2]!.get('[data-testid="s17-row-desc"]').text()).toBe(
       'Cabaran Kilat: 3 betul, combo 2x',
@@ -132,7 +132,6 @@ describe('S17 history (AC-M14-06)', () => {
       meta: { currentSyiling: 256, type: 'zzz' },
     })
     await mountAt('/gamification/history?type=zzz')
-    expect(t('s17-empty').text()).toContain('📋')
     expect(t('s17-empty').text()).toContain('Belum ada transaksi')
     expect(t('s17-empty').text()).toContain('Mula latih tubi untuk dapatkan syiling!')
     expect(all('s17-pill').every((p) => p.attributes('data-active') === 'false')).toBe(true)

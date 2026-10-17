@@ -5,7 +5,6 @@
  * "{syiling} 🪙 Syiling", "{xp} ⭐ XP"), "Muat Turun", "WhatsApp" and "Tutup". A click on the
  * backdrop closes it. Full width on mobile, centred from 768 px.
  */
-import { Download } from '@lucide/vue'
 import { ref } from 'vue'
 
 import type { AchievementItem } from '../../api'
@@ -42,7 +41,7 @@ function whatsapp(): void {
     @click.self="emit('close')"
   >
     <div
-      class="m-auto w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+      class="m-auto w-full max-w-sm rounded-sheet bg-default p-6 shadow-lift"
       data-testid="share-dialog"
     >
       <div
@@ -81,33 +80,40 @@ function whatsapp(): void {
         </div>
       </div>
       <div class="mt-4 grid grid-cols-2 gap-3">
-        <button
+        <UButton
           type="button"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-linear-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-bold text-white shadow"
+          size="xl"
+          icon="i-ph-download-simple-duotone"
+          block
           data-testid="share-download"
           @click="download"
         >
-          <Download class="h-4 w-4" aria-hidden="true" />
           {{ ACHIEVEMENTS_COPY.download }}
-        </button>
-        <button
+        </UButton>
+        <UButton
           type="button"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-green-500 px-4 py-2.5 text-sm font-bold text-white shadow"
+          size="xl"
+          color="success"
+          block
           data-testid="share-whatsapp"
           @click="whatsapp"
         >
-          <BrandWhatsAppIcon class="h-4 w-4" />
+          <BrandWhatsAppIcon class="size-4" />
           {{ ACHIEVEMENTS_COPY.whatsapp }}
-        </button>
+        </UButton>
       </div>
-      <button
+      <UButton
         type="button"
-        class="mt-3 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-500"
+        size="xl"
+        color="neutral"
+        variant="soft"
+        block
+        class="mt-3"
         data-testid="share-close"
         @click="emit('close')"
       >
         {{ ACHIEVEMENTS_COPY.close }}
-      </button>
+      </UButton>
     </div>
   </div>
 </template>

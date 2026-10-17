@@ -5,10 +5,10 @@
  * WhatsApp and Telegram links (new tab), "Salin Link" ("✓ Link Disalin!") and the three statistics.
  * A copied label stays until the page is reloaded (as live).
  */
-import { Copy, Link } from '@lucide/vue'
 import { ref } from 'vue'
 
 import { useApi } from '@/composables'
+import { DsCharacterCard, DsPage, DsStatTile } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchReferral } from '../../api'
@@ -34,122 +34,137 @@ async function copyLink(): Promise<void> {
   await copyText(data.value.registerUrl)
   linkCopied.value = true
 }
-
-const BUTTON =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-sm'
 </script>
 
 <template>
-  <div class="space-y-5" data-testid="referral-page">
+  <DsPage data-testid="referral-page">
     <template v-if="data">
-      <section
-        class="rounded-2xl bg-linear-to-br from-emerald-600 to-emerald-400 px-5 py-5 text-center text-white shadow-lg"
-        data-testid="referral-hero"
-      >
-        <h1 class="font-heading text-2xl font-bold text-white">{{ REFERRAL_COPY.title }}</h1>
-        <p class="mt-1 text-sm text-white/95">{{ REFERRAL_COPY.subtitle }}</p>
-      </section>
+      <UCard data-testid="referral-hero">
+        <div class="flex flex-col gap-1">
+          <h1 class="text-title text-highlighted">
+            {{ REFERRAL_COPY.title }}
+          </h1>
+          <p class="text-body text-muted">{{ REFERRAL_COPY.subtitle }}</p>
+        </div>
+      </UCard>
 
-      <div class="grid grid-cols-2 gap-3 sm:gap-5" data-testid="referral-tiles">
-        <div class="rounded-2xl bg-white p-4 text-center shadow-sm sm:p-6">
-          <div class="text-4xl" aria-hidden="true">🎁</div>
-          <div class="mt-2 font-heading text-3xl font-bold text-amber-500" data-testid="reward-you">
-            {{ data.rewardReferrer }}
+      <div class="grid grid-cols-2 gap-3 sm:gap-4" data-testid="referral-tiles">
+        <UCard>
+          <div class="flex flex-col items-center gap-1 text-center">
+            <span class="text-title" aria-hidden="true">🎁</span>
+            <span
+              class="tabular text-display text-highlighted"
+              data-testid="reward-you"
+              >{{ data.rewardReferrer }}</span
+            >
+            <span class="text-label text-muted">{{ REFERRAL_COPY.forYou }}</span>
           </div>
-          <div class="mt-1 text-sm text-slate-600">{{ REFERRAL_COPY.forYou }}</div>
-        </div>
-        <div class="rounded-2xl bg-white p-4 text-center shadow-sm sm:p-6">
-          <div class="text-4xl" aria-hidden="true">👋</div>
-          <div
-            class="mt-2 font-heading text-3xl font-bold text-amber-500"
-            data-testid="reward-friend"
-          >
-            {{ data.rewardReferee }}
+        </UCard>
+        <UCard>
+          <div class="flex flex-col items-center gap-1 text-center">
+            <span class="text-title" aria-hidden="true">👋</span>
+            <span
+              class="tabular text-display text-highlighted"
+              data-testid="reward-friend"
+              >{{ data.rewardReferee }}</span
+            >
+            <span class="text-label text-muted">{{ REFERRAL_COPY.forFriend }}</span>
           </div>
-          <div class="mt-1 text-sm text-slate-600">{{ REFERRAL_COPY.forFriend }}</div>
-        </div>
+        </UCard>
       </div>
 
-      <section
-        class="rounded-2xl border-2 border-dashed border-emerald-500 p-5 text-center sm:p-6"
+      <DsCharacterCard
+        variant="action"
+        icon="i-ph-users-three-duotone"
+        :title="REFERRAL_COPY.codeLabel"
         data-testid="referral-code-box"
       >
-        <div class="text-sm text-slate-600">{{ REFERRAL_COPY.codeLabel }}</div>
-        <div
-          class="mx-auto mt-3 inline-block max-w-full rounded-xl bg-emerald-100 px-6 py-3 font-heading text-2xl font-bold tracking-[0.25em] wrap-anywhere text-emerald-700 sm:text-3xl"
-          data-testid="referral-code"
-        >
-          {{ data.code }}
-        </div>
-        <div class="mt-3">
-          <button
-            type="button"
-            :class="[BUTTON, 'bg-emerald-600']"
-            data-testid="referral-copy-code"
-            @click="copyCode"
+        <div class="flex flex-col gap-3">
+          <div
+            class="tabular text-display break-words text-highlighted"
+            data-testid="referral-code"
           >
-            <Copy class="h-4 w-4" aria-hidden="true" />
-            {{ codeCopied ? REFERRAL_COPY.copiedCode : REFERRAL_COPY.copyCode }}
-          </button>
-        </div>
-        <div class="mt-3 flex flex-wrap items-center justify-center gap-3">
-          <a
-            :href="data.whatsappUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            :class="[BUTTON, 'bg-green-500']"
-            data-testid="referral-whatsapp"
-          >
-            <BrandWhatsAppIcon class="h-4 w-4" />
-            {{ REFERRAL_COPY.whatsapp }}
-          </a>
-          <a
-            :href="data.telegramUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            :class="[BUTTON, 'bg-sky-600']"
-            data-testid="referral-telegram"
-          >
-            <BrandTelegramIcon class="h-4 w-4" />
-            {{ REFERRAL_COPY.telegram }}
-          </a>
-          <button
-            type="button"
-            :class="[BUTTON, 'bg-slate-500']"
-            data-testid="referral-copy-link"
-            @click="copyLink"
-          >
-            <Link class="h-4 w-4" aria-hidden="true" />
-            {{ linkCopied ? REFERRAL_COPY.copiedLink : REFERRAL_COPY.copyLink }}
-          </button>
-        </div>
-      </section>
-
-      <section class="rounded-2xl bg-white p-5 shadow-sm sm:p-6" data-testid="referral-stats">
-        <h3 class="font-heading text-lg font-bold text-slate-800">
-          {{ REFERRAL_COPY.statsTitle }}
-        </h3>
-        <div class="mt-4 grid grid-cols-3 gap-2 text-center">
-          <div class="min-w-0">
-            <div
-              class="font-heading text-2xl font-bold text-slate-800"
-              data-testid="stat-referrals"
+            {{ data.code }}
+          </div>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <UButton
+              type="button"
+              size="xl"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-copy-duotone"
+              block
+              data-testid="referral-copy-code"
+              @click="copyCode"
             >
-              {{ formatNumber(data.stats.referrals) }}
-            </div>
-            <div class="text-xs text-slate-500 sm:text-sm">{{ REFERRAL_COPY.referrals }}</div>
+              {{ codeCopied ? REFERRAL_COPY.copiedCode : REFERRAL_COPY.copyCode }}
+            </UButton>
+            <UButton
+              type="button"
+              size="xl"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-link-duotone"
+              block
+              data-testid="referral-copy-link"
+              @click="copyLink"
+            >
+              {{ linkCopied ? REFERRAL_COPY.copiedLink : REFERRAL_COPY.copyLink }}
+            </UButton>
+            <UButton
+              :href="data.whatsappUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              size="xl"
+              color="success"
+              block
+              data-testid="referral-whatsapp"
+            >
+              <BrandWhatsAppIcon class="size-4" />
+              {{ REFERRAL_COPY.whatsapp }}
+            </UButton>
+            <UButton
+              :href="data.telegramUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              size="xl"
+              color="info"
+              block
+              data-testid="referral-telegram"
+            >
+              <BrandTelegramIcon class="size-4" />
+              {{ REFERRAL_COPY.telegram }}
+            </UButton>
           </div>
-          <div class="min-w-0">
-            <div class="font-heading text-2xl font-bold text-slate-800" data-testid="stat-rewarded">
-              {{ formatNumber(data.stats.rewarded) }}
-            </div>
-            <div class="text-xs text-slate-500 sm:text-sm">{{ REFERRAL_COPY.rewarded }}</div>
+        </div>
+      </DsCharacterCard>
+
+      <section class="flex flex-col gap-3" data-testid="referral-stats">
+        <h2 class="text-subheading text-highlighted">
+          {{ REFERRAL_COPY.statsTitle }}
+        </h2>
+        <div class="grid grid-cols-3 gap-3">
+          <div data-testid="stat-referrals">
+            <DsStatTile
+              icon="i-ph-users-duotone"
+              :value="formatNumber(data.stats.referrals)"
+              :unit="REFERRAL_COPY.referrals"
+            />
           </div>
-          <div class="min-w-0">
-            <div class="font-heading text-2xl font-bold text-slate-800" data-testid="stat-earned">
-              {{ formatNumber(data.stats.syilingEarned) }}
-            </div>
-            <div class="text-xs text-slate-500 sm:text-sm">{{ REFERRAL_COPY.earned }}</div>
+          <div data-testid="stat-rewarded">
+            <DsStatTile
+              icon="i-ph-gift-duotone"
+              accent="win"
+              :value="formatNumber(data.stats.rewarded)"
+              :unit="REFERRAL_COPY.rewarded"
+            />
+          </div>
+          <div data-testid="stat-earned">
+            <DsStatTile
+              art="coin"
+              :value="formatNumber(data.stats.syilingEarned)"
+              :unit="REFERRAL_COPY.earned"
+            />
           </div>
         </div>
       </section>
@@ -162,5 +177,5 @@ const BUTTON =
       test-key="referral"
       @retry="reload()"
     />
-  </div>
+  </DsPage>
 </template>

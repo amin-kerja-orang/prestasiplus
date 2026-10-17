@@ -6,10 +6,11 @@
  * An unknown `?rarity=` renders the pills and no card and no message (FR-M14-08).
  */
 import { computed, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { useSession } from '@/composables/useSession'
+import { DsArt3D, DsPage } from '@/ds'
 
 import { fetchGamificationAchievements, type AchievementItem } from '../../api'
 import AchievementBadgeCard from '../../components/student-b/AchievementBadgeCard.vue'
@@ -45,51 +46,58 @@ const progressWidth = computed(() =>
 </script>
 
 <template>
-  <div class="space-y-5" data-testid="achievements-page">
+  <DsPage data-testid="achievements-page">
     <template v-if="data">
-      <section
-        class="rounded-2xl bg-linear-to-br from-violet-500 to-purple-400 px-5 py-5 text-white shadow-lg"
-        data-testid="achievements-hero"
-      >
-        <h1 class="font-heading text-2xl font-bold text-white">{{ ACHIEVEMENTS_COPY.title }}</h1>
-        <p class="mt-1 text-sm text-white/90" data-testid="achievements-subtitle">
-          {{ achievementsSubtitle(data.unlocked, data.total) }}
-        </p>
-        <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/30">
-          <div
-            class="h-full rounded-full bg-white/80"
-            :style="{ width: `${String(progressWidth)}%` }"
-          ></div>
-        </div>
-      </section>
-
-      <section
-        class="flex items-center justify-between gap-4 rounded-2xl bg-linear-to-br from-orange-500 to-red-500 px-5 py-5 text-white shadow-lg"
-        data-testid="achievements-streak"
-      >
-        <div class="flex min-w-0 items-center gap-4">
-          <div class="text-4xl" aria-hidden="true">🔥</div>
-          <div class="min-w-0">
-            <div class="font-heading text-4xl leading-none font-bold" data-testid="streak-current">
-              {{ data.streak.current }}
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <UCard data-testid="achievements-hero">
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-3">
+              <DsArt3D name="trophy" size="lg" float />
+              <div class="flex min-w-0 flex-col gap-1">
+                <h1 class="text-title text-highlighted">
+                  {{ ACHIEVEMENTS_COPY.title }}
+                </h1>
+                <p class="text-label text-muted" data-testid="achievements-subtitle">
+                  {{ achievementsSubtitle(data.unlocked, data.total) }}
+                </p>
+              </div>
             </div>
-            <div class="mt-1 text-sm">{{ ACHIEVEMENTS_COPY.streakLabel }}</div>
+            <UProgress
+              :model-value="progressWidth"
+              :max="100"
+              aria-label="Pencapaian dicapai"
+              :data-value="progressWidth"
+            />
           </div>
-        </div>
-        <div class="shrink-0 text-right">
-          <span
-            class="inline-block rounded-full bg-white/25 px-3 py-1 text-sm font-bold"
-            data-testid="streak-bonus"
-            >{{ streakBonusLabel(data.streak.multiplier) }}</span
-          >
-          <div class="mt-2 text-sm" data-testid="streak-best">
-            {{ streakBestLabel(data.streak.best) }}
-          </div>
-        </div>
-      </section>
+        </UCard>
 
-      <nav class="flex flex-wrap gap-2" data-testid="achievements-pills">
-        <RouterLink
+        <UCard data-testid="achievements-streak">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex min-w-0 items-center gap-3">
+              <DsArt3D name="fire" size="lg" float />
+              <div class="flex min-w-0 flex-col">
+                <span
+                  class="tabular text-display text-highlighted"
+                  data-testid="streak-current"
+                  >{{ data.streak.current }}</span
+                >
+                <span class="text-label text-muted">{{ ACHIEVEMENTS_COPY.streakLabel }}</span>
+              </div>
+            </div>
+            <div class="flex shrink-0 flex-col items-end gap-1">
+              <UBadge color="warning" variant="solid" data-testid="streak-bonus">{{
+                streakBonusLabel(data.streak.multiplier)
+              }}</UBadge>
+              <span class="text-caption text-muted" data-testid="streak-best">{{
+                streakBestLabel(data.streak.best)
+              }}</span>
+            </div>
+          </div>
+        </UCard>
+      </div>
+
+      <nav class="flex gap-2 overflow-x-auto" data-testid="achievements-pills" aria-label="Kelangkaan">
+        <UButton
           v-for="pill in RARITY_PILLS"
           :key="pill.label"
           :to="
@@ -97,15 +105,13 @@ const progressWidth = computed(() =>
               ? { path: ACHIEVEMENTS_PATH }
               : { path: ACHIEVEMENTS_PATH, query: { rarity: pill.value } }
           "
-          :class="[
-            'inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition',
-            rarity === pill.value
-              ? 'bg-purple-600 text-white'
-              : 'bg-white text-slate-600 hover:bg-slate-50',
-          ]"
+          size="lg"
+          class="shrink-0"
+          :color="rarity === pill.value ? 'primary' : 'neutral'"
+          :variant="rarity === pill.value ? 'solid' : 'soft'"
           :data-active="rarity === pill.value ? 'true' : 'false'"
           data-testid="achievements-pill"
-          >{{ pill.label }}</RouterLink
+          >{{ pill.label }}</UButton
         >
       </nav>
 
@@ -137,5 +143,5 @@ const progressWidth = computed(() =>
       test-key="achievements"
       @retry="reload()"
     />
-  </div>
+  </DsPage>
 </template>

@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Gamifikasi Dashboard',
       header: { title: 'Gamifikasi Dashboard', subtitle: SUBTITLE },
       module: 'M14',
+      v2: true,
     },
   },
   {
@@ -31,6 +32,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tukar Token',
       header: { title: 'Tukar Syiling → Token', subtitle: SUBTITLE },
       module: 'M14',
+      v2: true,
     },
   },
   {
@@ -43,6 +45,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Cabaran Harian',
       header: { title: 'Cabaran Harian', subtitle: SUBTITLE },
       module: 'M14',
+      v2: true,
     },
   },
   {
@@ -55,6 +58,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Sejarah Transaksi',
       header: { title: 'Sejarah Transaksi', subtitle: SUBTITLE },
       module: 'M14',
+      v2: true,
     },
   },
 ]
