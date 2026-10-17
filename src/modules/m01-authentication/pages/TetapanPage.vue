@@ -1,20 +1,22 @@
 <script setup lang="ts">
 /**
- * S9 `/tetapan` "Tetapan Peribadi" (M01-T7a; FR-M01-46, 48; BR-17). Renders in the user shell for
+ * S9 `/tetapan` "Tetapan Peribadi" (M01-T7a; FR-M01-46, 48; BR-17), v2 restyle (B09 / A2). Renders in the user shell for
  * Murid / Guru / Admin Sekolah (INFERRED, OQ-6). The controls are independent (no show/hide or
  * enable logic, as live). Save sends every field to `PUT /api/me/settings` and re-renders with the
  * saved values and the green status box (UNVERIFIED COPY).
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
+import { DsPage } from '@/ds'
 
 import { getSettings, saveSettings, type Faith, type UserSettings } from '../api'
 import SettingRow from '../components/tetapan/SettingRow.vue'
 import { errorLines } from '../lib/error-lines'
 
-const FAITH_OPTIONS: { value: '' | Faith; label: string }[] = [
-  { value: '', label: '— Tidak nyatakan —' },
+/** Reka selects reject an empty item value, so "Tidak nyatakan" uses a sentinel. */
+const NO_FAITH = '__tiada'
+const FAITH_OPTIONS: { value: string; label: string }[] = [
+  { value: NO_FAITH, label: '— Tidak nyatakan —' },
   { value: 'muslim', label: 'Islam' },
   { value: 'hindu', label: 'Hindu' },
   { value: 'buddhist', label: 'Buddha' },
@@ -47,6 +49,12 @@ const saving = ref(false)
 const errors = ref<string[]>([])
 const status = ref('')
 
+const faithModel = computed({
+  get: () => (form.faith === '' ? NO_FAITH : form.faith),
+  set: (value: string) => {
+    form.faith = value === NO_FAITH ? '' : (value as Faith)
+  },
+})
 const canSave = computed(() => !loading.value && !loadFailed.value && !saving.value)
 
 function fill(s: UserSettings): void {
@@ -93,115 +101,154 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-182 space-y-6" data-testid="tetapan-page">
-    <header
-      class="rounded-2xl bg-linear-to-br from-slate-600 to-slate-500 p-6 text-white shadow-lg"
+  <DsPage
+    title="⚙️ Tetapan Peribadi"
+    subtitle="Atur pengalaman PrestasiPlus mengikut keperluan rohani & masa anda."
+    data-testid="tetapan-page"
+  >
+    <UAlert
+      v-if="status"
+      color="success"
+      variant="subtle"
+      icon="i-ph-check-circle"
+      :title="status"
+      data-variant="success"
+      data-testid="tetapan-status"
+    />
+    <UAlert
+      v-if="errors.length > 0"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      data-testid="tetapan-alert"
     >
-      <h1 class="text-2xl font-bold text-white sm:text-3xl">⚙️ Tetapan Peribadi</h1>
-      <p class="mt-2 text-base text-slate-100">
-        Atur pengalaman PrestasiPlus mengikut keperluan rohani &amp; masa anda.
-      </p>
-    </header>
-
-    <AlertBox variant="success" :messages="status" data-testid="tetapan-status" />
-    <AlertBox :messages="errors" data-testid="tetapan-alert" />
+      <template #title>
+        <p v-for="line in errors" :key="line">{{ line }}</p>
+      </template>
+    </UAlert>
 
     <div
       v-if="loading"
-      class="flex justify-center py-10 text-teal-600"
+      class="flex flex-col gap-4"
       role="status"
+      aria-busy="true"
       data-testid="tetapan-loading"
     >
-      <LoadingSpinner />
+      <USkeleton class="h-48 w-full" />
+      <USkeleton class="h-24 w-full" />
     </div>
 
     <div v-else-if="loadFailed" class="text-center">
-      <button
+      <UButton
         type="button"
-        class="min-h-11 rounded-xl border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+        color="neutral"
+        variant="soft"
+        size="lg"
         data-testid="tetapan-retry"
         @click="load"
+        >Cuba lagi</UButton
       >
-        Cuba lagi
-      </button>
     </div>
 
-    <form v-else class="space-y-6" data-testid="tetapan-form" @submit.prevent="submit">
-      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <h2 class="text-lg font-bold text-slate-900">🕌 Mod Rohani</h2>
-        <p class="mt-2 mb-5 text-sm text-slate-500">
-          Personalisasi pembelajaran ikut nilai keagamaan anda. Boleh toggle off bila-bila masa.
-        </p>
+    <form
+      v-else
+      class="flex flex-col gap-4 md:gap-6"
+      data-testid="tetapan-form"
+      @submit.prevent="submit"
+    >
+      <div class="grid grid-cols-1 items-start gap-4 md:gap-6 xl:grid-cols-2">
+        <UCard>
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+              <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+                <UIcon name="i-ph-moon-stars" class="size-5" aria-hidden="true" />
+                🕌 Mod Rohani
+              </h2>
+              <p class="text-caption text-muted">
+                Personalisasi pembelajaran ikut nilai keagamaan anda. Boleh toggle off bila-bila
+                masa.
+              </p>
+            </div>
 
-        <SettingRow
-          id="spiritual_mode"
-          v-model:checked="form.spiritualMode"
-          label="Aktifkan Mod Rohani"
-          description="Master toggle — kalau off, semua spiritual touchpoints disable."
-        />
-        <SettingRow
-          id="show_bismillah_splash"
-          v-model:checked="form.showBismillahSplash"
-          label="Tunjuk doa sebelum quiz"
-          description='Splash 2-saat sebelum mula quiz: "Bismillahi tawakkaltu &apos;alallah". Tetapan untuk Muslim.'
-        />
-        <SettingRow
-          id="subuh_push_enabled"
-          v-model:checked="form.subuhPushEnabled"
-          v-model:time="form.subuhPushTime"
-          has-time
-          label="Push waktu Subuh"
-          description="Push notifikasi pagi awal untuk yang bangun Subuh — 30 minit study window selepas Subuh = paling produktif."
-        />
-        <SettingRow
-          id="ramadan_mode_enabled"
-          v-model:checked="form.ramadanModeEnabled"
-          v-model:time="form.sahurPushTime"
-          has-time
-          label="Mod Ramadan"
-          description="Push waktu sahur (~4:30am) untuk study sebelum Subuh. Pace lebih ringan waktu Ramadan."
-        />
-      </section>
-
-      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <h2 class="text-lg font-bold text-slate-900">🌍 Latar Agama (opsyen)</h2>
-        <p class="mt-2 mb-5 text-sm text-slate-500">
-          Bagi konteks supaya AI dan content lebih relevan. Tidak diwajibkan.
-        </p>
-
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div class="min-w-0 flex-1">
-            <label for="faith" class="block text-base font-semibold text-slate-900">
-              Agama / kepercayaan
-            </label>
-            <p class="text-sm leading-relaxed text-slate-500">
-              Untuk mod rohani yang sesuai. Future: Hindu/Buddhist/Christian content akan ditambah.
-            </p>
+            <SettingRow
+              id="spiritual_mode"
+              v-model:checked="form.spiritualMode"
+              label="Aktifkan Mod Rohani"
+              description="Master toggle — kalau off, semua spiritual touchpoints disable."
+            />
+            <SettingRow
+              id="show_bismillah_splash"
+              v-model:checked="form.showBismillahSplash"
+              label="Tunjuk doa sebelum quiz"
+              description='Splash 2-saat sebelum mula quiz: "Bismillahi tawakkaltu &apos;alallah". Tetapan untuk Muslim.'
+            />
+            <SettingRow
+              id="subuh_push_enabled"
+              v-model:checked="form.subuhPushEnabled"
+              v-model:time="form.subuhPushTime"
+              has-time
+              label="Push waktu Subuh"
+              description="Push notifikasi pagi awal untuk yang bangun Subuh — 30 minit study window selepas Subuh = paling produktif."
+            />
+            <SettingRow
+              id="ramadan_mode_enabled"
+              v-model:checked="form.ramadanModeEnabled"
+              v-model:time="form.sahurPushTime"
+              has-time
+              label="Mod Ramadan"
+              description="Push waktu sahur (~4:30am) untuk study sebelum Subuh. Pace lebih ringan waktu Ramadan."
+            />
           </div>
-          <select
-            id="faith"
-            v-model="form.faith"
-            name="faith"
-            class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-700 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-300 sm:w-auto sm:shrink-0"
-            data-testid="tetapan-faith"
-          >
-            <option v-for="o in FAITH_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.label }}
-            </option>
-          </select>
-        </div>
-      </section>
+        </UCard>
 
-      <button
-        type="submit"
-        :disabled="!canSave"
-        class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-linear-to-r from-teal-700 to-cyan-500 px-6 py-3 text-base font-bold text-white shadow-md transition hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
-        data-testid="tetapan-submit"
-      >
-        <LoadingSpinner v-if="saving" />
-        <span v-else aria-hidden="true">💾</span>
-        Simpan Tetapan
-      </button>
+        <UCard>
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+              <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+                <UIcon name="i-ph-globe-hemisphere-west" class="size-5" aria-hidden="true" />
+                🌍 Latar Agama (opsyen)
+              </h2>
+              <p class="text-caption text-muted">
+                Bagi konteks supaya AI dan content lebih relevan. Tidak diwajibkan.
+              </p>
+            </div>
+
+            <div class="flex min-h-14 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="min-w-0 flex-1">
+                <label for="faith" class="block text-label text-highlighted">
+                  Agama / kepercayaan
+                </label>
+                <p class="text-caption text-muted">
+                  Untuk mod rohani yang sesuai. Future: Hindu/Buddhist/Christian content akan
+                  ditambah.
+                </p>
+              </div>
+              <USelect
+                id="faith"
+                v-model="faithModel"
+                name="faith"
+                :items="FAITH_OPTIONS"
+                size="lg"
+                class="w-full sm:w-auto sm:shrink-0"
+                data-testid="tetapan-faith"
+              />
+            </div>
+          </div>
+        </UCard>
+      </div>
+
+      <div class="flex justify-end">
+        <UButton
+          type="submit"
+          color="primary"
+          size="lg"
+          icon="i-ph-floppy-disk"
+          :loading="saving"
+          :disabled="!canSave"
+          data-testid="tetapan-submit"
+          >Simpan Tetapan</UButton
+        >
+      </div>
     </form>
-  </div>
+  </DsPage>
 </template>

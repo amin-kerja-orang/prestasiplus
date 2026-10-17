@@ -17,6 +17,8 @@
  * here: the router applies the route's `meta.guestTitle` when this layout is resolved
  * (`guards.ts`), so it is right on the first load before this lazy chunk arrives.
  */
+import { DsConfirmHost } from '@/ds'
+import { uiLocale } from '@/theme/locale-ms'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -31,23 +33,26 @@ const section = computed(() => publicSectionFor(route.path))
 </script>
 
 <template>
-  <div
-    class="flex min-h-screen flex-col bg-app-user font-body antialiased"
-    data-layout="public"
-    :data-section="section?.key"
-  >
-    <PublicTopBar :section="section" />
-
+  <UApp :locale="uiLocale">
     <div
-      :key="route.path"
-      class="mx-auto w-full max-w-7xl flex-1 px-3 py-6 sm:px-6 sm:py-8"
-      data-testid="public-layout-main"
+      class="flex min-h-screen flex-col bg-app-user font-body antialiased"
+      data-layout="public"
+      :data-section="section?.key"
     >
-      <slot />
+      <PublicTopBar :section="section" />
+
+      <div
+        :key="route.path"
+        class="mx-auto w-full max-w-7xl flex-1 px-3 py-6 sm:px-6 sm:py-8"
+        data-testid="public-layout-main"
+      >
+        <slot />
+      </div>
+
+      <PublicCta v-if="section" :cta="section.cta" />
+
+      <PublicFooter />
     </div>
-
-    <PublicCta v-if="section" :cta="section.cta" />
-
-    <PublicFooter />
-  </div>
+    <DsConfirmHost />
+  </UApp>
 </template>

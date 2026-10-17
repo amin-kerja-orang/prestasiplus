@@ -1,15 +1,13 @@
 <script setup lang="ts">
 /**
  * S8 "Tahap" radio cards (FR-M01-40). One group only: Darjah 1-6 (grade null or 1-6) or Ting. 1-5
- * (grade 7-11, INFERRED, OQ-5). The radios are `hidden` (display:none) as on live (D10, no added focus ring); the labels are the cards and the
- * checked one carries the indigo -> purple gradient. Shown for every role, as live. Darjah is 6 columns from 360px (live), 3 columns below it so the
- * 44px targets and the "Darjah" label fit at 320px (D9 deviation candidate).
+ * (grade 7-11, INFERRED, OQ-5). A card-variant `URadioGroup` (indicator hidden): the checked card
+ * carries the primary tone. Shown for every role, as live. Darjah is 6 columns from sm, 3
+ * columns below it so the 44px targets fit at 320px (D9 deviation candidate).
  */
-import { Building, GraduationCap, School } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { DARJAH_GRADES, TINGKATAN_GRADES } from '../../lib/lookups'
-import { PROFILE_LABEL_CLASS } from './classes'
 
 const props = defineProps<{
   modelValue: number | null
@@ -18,61 +16,46 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ 'update:modelValue': [grade: number] }>()
 
-interface Option {
-  value: number
-  prefix: string
-  n: number
-}
-
-const options = computed<Option[]>(() =>
+const items = computed(() =>
   props.secondary
-    ? TINGKATAN_GRADES.map((n) => ({ value: n + 6, prefix: 'Ting.', n }))
-    : DARJAH_GRADES.map((n) => ({ value: n, prefix: 'Darjah', n })),
+    ? TINGKATAN_GRADES.map((n) => ({ value: n + 6, label: `Ting. ${String(n)}` }))
+    : DARJAH_GRADES.map((n) => ({ value: n, label: `Darjah ${String(n)}` })),
 )
+
+function onChange(value: unknown): void {
+  if (typeof value === 'number') emit('update:modelValue', value)
+}
 </script>
 
 <template>
-  <div class="min-w-0" data-testid="grade-picker">
-    <div :class="PROFILE_LABEL_CLASS">
-      <GraduationCap class="h-4 w-4 text-indigo-500" />
+  <div class="flex min-w-0 flex-col gap-2" data-testid="grade-picker">
+    <p class="flex items-center gap-2 text-label text-highlighted">
+      <UIcon name="i-ph-graduation-cap" class="size-4" aria-hidden="true" />
       Tahap
-    </div>
-    <div
-      class="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-500 uppercase"
-      data-testid="grade-group"
-    >
-      <Building v-if="secondary" class="h-4 w-4" />
-      <School v-else class="h-4 w-4" />
+    </p>
+    <p class="flex items-center gap-2 text-overline text-muted" data-testid="grade-group">
+      <UIcon
+        :name="secondary ? 'i-ph-buildings' : 'i-ph-student'"
+        class="size-4"
+        aria-hidden="true"
+      />
       {{ secondary ? 'Sekolah Menengah' : 'Sekolah Rendah' }}
-    </div>
-    <div
-      class="grid gap-2"
-      :class="secondary ? 'grid-cols-5' : 'grid-cols-3 min-[360px]:grid-cols-6'"
+    </p>
+    <URadioGroup
+      :model-value="modelValue ?? undefined"
+      :items="items"
+      legend="Tahap"
+      variant="card"
+      indicator="hidden"
+      orientation="horizontal"
+      :ui="{
+        fieldset: secondary ? 'grid grid-cols-5 gap-2' : 'grid grid-cols-3 gap-2 sm:grid-cols-6',
+        item: 'min-h-11 items-center justify-center p-2 text-center',
+        wrapper: 'w-full text-center',
+        legend: 'sr-only',
+      }"
       data-testid="grade-grid"
-    >
-      <label
-        v-for="option in options"
-        :key="option.value"
-        class="flex min-h-11 cursor-pointer flex-col items-center justify-center rounded-xl py-2 text-center transition"
-        :class="
-          modelValue === option.value
-            ? 'text-white shadow-md bg-save-gradient'
-            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-        "
-        :data-selected="modelValue === option.value"
-        :data-testid="`grade-${String(option.value)}`"
-      >
-        <input
-          type="radio"
-          name="grade"
-          :value="option.value"
-          :checked="modelValue === option.value"
-          class="hidden"
-          @change="emit('update:modelValue', option.value)"
-        />
-        <span class="text-xs">{{ option.prefix }}</span>
-        <span class="text-base font-bold">{{ option.n }}</span>
-      </label>
-    </div>
+      @update:model-value="onChange"
+    />
   </div>
 </template>

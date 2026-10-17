@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tetapan Peribadi',
       header: { title: 'Tetapan Peribadi' },
       module: 'M01',
+      v2: true,
     },
   },
 ]

@@ -15,6 +15,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Profil Saya - PRESTASIPLUS',
       header: { title: 'Profil Saya', subtitle: 'Statistik & Pencapaian Anda' },
       module: 'M01',
+      v2: true,
     },
   },
   {
@@ -27,6 +28,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kemaskini Profil - PRESTASIPLUS',
       header: { title: 'Kemaskini Profil', subtitle: 'Maklumat peribadi & sekolah anda' },
       module: 'M01',
+      v2: true,
     },
   },
 ]

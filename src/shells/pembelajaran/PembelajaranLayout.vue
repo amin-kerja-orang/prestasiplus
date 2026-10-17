@@ -18,7 +18,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
-import { DsArt3D, DsFriendAvatar, DsFriendPicker, DsIcon, DsRewardChip } from '@/ds'
+import { DsArt3D, DsConfirmHost, DsFriendAvatar, DsFriendPicker, DsIcon, DsRewardChip } from '@/ds'
 import { useGamificationSummary } from '@/shells/user/useGamificationSummary'
 import { useToast } from '@nuxt/ui/composables'
 import { uiLocale } from '@/theme/locale-ms'
@@ -33,6 +33,8 @@ import {
   tabActive,
 } from './pembelajaran-nav'
 import { FRIEND_OPTIONS, useFriend } from '@/composables/useFriend'
+import { LG_QUERY, useMediaQuery } from '@/shells/admin/useMinWidth'
+import { useExclusiveSheets } from './useExclusiveSheets'
 import { useShellUser } from './useShellUser'
 
 const route = useRoute()
@@ -49,6 +51,7 @@ const { friend, friendName, pickerOpen, choose, openPicker } = useFriend()
 const { summary, refresh: refreshSummary } = useGamificationSummary()
 
 const lagiOpen = ref(false)
+useExclusiveSheets(lagiOpen, pickerOpen, useMediaQuery(LG_QUERY))
 const tabs = computed(() => pembelajaranTabs(role.value))
 const sidebar = computed(() => sidebarEntries(role.value))
 const drawer = computed(() => drawerEntries(role.value))
@@ -292,6 +295,7 @@ const themeLabel = computed(() =>
         group-label="Rakan belajar"
         @confirm="onPicked"
       />
+      <DsConfirmHost />
     </div>
   </UApp>
 </template>

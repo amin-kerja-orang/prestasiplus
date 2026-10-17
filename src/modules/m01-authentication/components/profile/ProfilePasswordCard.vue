@@ -1,25 +1,16 @@
 <script setup lang="ts">
 /**
  * S8 "Tukar Kata Laluan" card (FR-M01-45, BR-16): its own form, three password fields with no
- * `required` attribute and no eye toggle (server-side validation only, as live). Hint
- * "Sekurang-kurangnya 6 aksara" (DV-03; live says 8). On success the fields are cleared and the
- * session is kept; the page shows the flash.
+ * `required` attribute (server-side validation only, as live). Hint "Sekurang-kurangnya 6 aksara"
+ * (DV-03; live says 8). On
+ * success the fields are cleared and the session is kept; the page shows the flash.
  */
-import { KeyRound, Lock, Shield } from '@lucide/vue'
 import { ref } from 'vue'
 
-import { LoadingSpinner } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
 
 import { changePassword } from '../../api'
 import { errorLines } from '../../lib/error-lines'
-import {
-  PROFILE_BUTTON_CLASS,
-  PROFILE_CARD_CLASS,
-  PROFILE_CARD_TITLE_CLASS,
-  PROFILE_INPUT_CLASS,
-  PROFILE_LABEL_CLASS,
-} from './classes'
 
 const emit = defineEmits<{
   saved: [status: string]
@@ -54,72 +45,61 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <form :class="PROFILE_CARD_CLASS" data-testid="password-form" @submit.prevent="submit">
-    <h2 :class="PROFILE_CARD_TITLE_CLASS">
-      <Lock class="h-5 w-5 text-amber-500" />
-      Tukar Kata Laluan
-    </h2>
+  <UCard>
+    <form class="flex flex-col gap-4" data-testid="password-form" @submit.prevent="submit">
+      <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+        <UIcon name="i-ph-lock-key" class="size-5" aria-hidden="true" />
+        Tukar Kata Laluan
+      </h2>
 
-    <div class="space-y-4">
-      <div>
-        <label for="current_password" :class="PROFILE_LABEL_CLASS">
-          <KeyRound class="h-4 w-4 text-amber-500" />
-          Kata Laluan Semasa
-        </label>
-        <input
-          id="current_password"
+      <UFormField label="Kata Laluan Semasa">
+        <UInput
           v-model="currentPassword"
           type="password"
           name="current_password"
           autocomplete="current-password"
-          :class="PROFILE_INPUT_CLASS"
+          size="lg"
+          class="w-full"
           data-testid="password-current"
         />
-      </div>
+      </UFormField>
 
-      <div>
-        <label for="password" :class="PROFILE_LABEL_CLASS">
-          <Lock class="h-4 w-4 text-green-500" />
-          Kata Laluan Baharu
-        </label>
-        <input
-          id="password"
+      <UFormField label="Kata Laluan Baharu" help="Sekurang-kurangnya 6 aksara">
+        <UInput
           v-model="password"
           type="password"
           name="password"
           autocomplete="new-password"
-          :class="PROFILE_INPUT_CLASS"
+          size="lg"
+          class="w-full"
           data-testid="password-new"
         />
-        <p class="mt-1 text-xs text-slate-500">Sekurang-kurangnya 6 aksara</p>
-      </div>
+      </UFormField>
 
-      <div>
-        <label for="password_confirmation" :class="PROFILE_LABEL_CLASS">
-          <Lock class="h-4 w-4 text-green-500" />
-          Sahkan Kata Laluan Baharu
-        </label>
-        <input
-          id="password_confirmation"
+      <UFormField label="Sahkan Kata Laluan Baharu">
+        <UInput
           v-model="passwordConfirmation"
           type="password"
           name="password_confirmation"
           autocomplete="new-password"
-          :class="PROFILE_INPUT_CLASS"
+          size="lg"
+          class="w-full"
           data-testid="password-confirm"
         />
-      </div>
+      </UFormField>
 
-      <button
-        type="submit"
-        :disabled="saving"
-        :class="[PROFILE_BUTTON_CLASS, 'bg-warn-gradient']"
-        data-testid="password-submit"
-      >
-        <LoadingSpinner v-if="saving" />
-        <Shield v-else class="h-4 w-4" />
-        Tukar Kata Laluan
-      </button>
-    </div>
-  </form>
+      <div class="flex justify-end">
+        <UButton
+          type="submit"
+          color="primary"
+          size="lg"
+          icon="i-ph-shield-check"
+          :loading="saving"
+          :disabled="saving"
+          data-testid="password-submit"
+          >Tukar Kata Laluan</UButton
+        >
+      </div>
+    </form>
+  </UCard>
 </template>

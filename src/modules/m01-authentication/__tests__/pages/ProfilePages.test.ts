@@ -79,6 +79,14 @@ async function render(
   return wrapper
 }
 
+/** Reka controls have no native input: values are driven through the component. */
+const groupOf = (w: VueWrapper) => w.findComponent({ name: 'RadioGroup' })
+const selectOf = (w: VueWrapper) => w.findComponent({ name: 'Select' })
+const checkedGrade = (w: VueWrapper) =>
+  w
+    .findAll('[data-testid=grade-grid] [role=radio]')
+    .filter((r) => r.attributes('aria-checked') === 'true')
+
 function apiError(fields: Record<string, string>): ApiError {
   return new ApiError({
     status: 422,
@@ -106,7 +114,6 @@ describe('S7 /profile (FR-M01-38)', () => {
   it('shows the hero: name, email, "Ahli sejak" in BM and the edit pill', async () => {
     const w = await render(ProfilePage)
     expect(w.get('[data-testid=profile-name]').text()).toBe('Pelajar Demo')
-    expect(w.get('[data-testid=profile-name]').classes()).toContain('text-white')
     expect(w.get('[data-testid=profile-email]').text()).toBe('pelajar@demo.test')
     expect(w.get('[data-testid=profile-member-since]').text()).toBe('Ahli sejak 6 Februari 2026')
     expect(w.find('[data-testid=profile-crown]').exists()).toBe(true)
@@ -117,9 +124,9 @@ describe('S7 /profile (FR-M01-38)', () => {
 
   it('uses the initials image without a picture and the uploaded picture otherwise', async () => {
     let w = await render(ProfilePage)
-    expect(
-      decodeURIComponent(w.get('[data-testid=profile-avatar]').attributes('src') ?? ''),
-    ).toContain('#4F46E5')
+    // No picture: the avatar falls back to the user's initials.
+    expect(w.find('img[data-testid=profile-avatar]').exists()).toBe(false)
+    expect(w.get('[data-testid=profile-avatar]').text()).toBe('PD')
     w.unmount()
     w = await render(ProfilePage, { ...USER, avatarUrl: 'data:image/png;base64,AAAA' })
     expect(w.get('[data-testid=profile-avatar]').attributes('src')).toBe(
@@ -150,18 +157,16 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     const w = await render(ProfileEditPage)
     const picker = w.get('[data-testid=grade-picker]')
     expect(picker.text()).toContain('Sekolah Menengah')
-    expect(picker.findAll('input[type=radio]')).toHaveLength(5)
-    expect(picker.find('input[type=radio]').classes()).toContain('hidden')
-    expect(w.get('[data-testid=grade-10]').attributes('data-selected')).toBe('true')
-    expect(w.get('[data-testid=grade-10]').text()).toContain('Ting.')
-    expect(w.get('[data-testid=grade-10]').text()).toContain('4')
+    expect(picker.findAll('[role=radio]')).toHaveLength(5)
+    expect(checkedGrade(w)).toHaveLength(1)
+    expect(checkedGrade(w)[0]?.attributes('value')).toBe('10')
   })
 
   it('shows Darjah 1-6 for a null grade and for grade 1-6', async () => {
     const w = await render(ProfileEditPage, { ...USER, role: 'admin', grade: null })
     expect(w.get('[data-testid=grade-picker]').text()).toContain('Sekolah Rendah')
-    expect(w.findAll('[data-testid=grade-picker] input[type=radio]')).toHaveLength(6)
-    expect(w.findAll('[data-selected=true]')).toHaveLength(0)
+    expect(w.findAll('[data-testid=grade-picker] [role=radio]')).toHaveLength(6)
+    expect(checkedGrade(w)).toHaveLength(0)
   })
 
   it('saves name, phone, bio, grade and school, then shows the success flash', async () => {
@@ -171,7 +176,8 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     })
     const w = await render(ProfileEditPage)
     await w.get('[data-testid=profile-name-input]').setValue('Nama Baru')
-    await w.get('[data-testid=grade-9] input').setValue(true)
+    groupOf(w).vm.$emit('update:modelValue', 9)
+    await flushPromises()
     await w.get('[data-testid=profile-form]').trigger('submit')
     await flushPromises()
     expect(apiMocks.updateProfile).toHaveBeenCalledWith({
@@ -244,10 +250,11 @@ describe('S8 late refresh does not undo edits', () => {
   it('keeps a clicked grade when GET /api/me resolves afterwards', async () => {
     let resolve!: (me: UserMe) => void
     const w = await render(ProfileEditPage, USER, new Promise<UserMe | null>((r) => (resolve = r)))
-    await w.get('[data-testid=grade-9] input').setValue(true)
+    groupOf(w).vm.$emit('update:modelValue', 9)
+    await flushPromises()
     resolve(FRESH)
     await flushPromises()
-    expect(w.get('[data-testid=grade-9]').attributes('data-selected')).toBe('true')
+    expect(checkedGrade(w)[0]?.attributes('value')).toBe('9')
     expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
       'Pelajar Demo',
     )
@@ -271,10 +278,10 @@ describe('S8 school picker (FR-M01-42, 43)', () => {
     )
     await w.get('[data-testid=school-clear]').trigger('click')
     expect(w.find('[data-testid=school-chip]').exists()).toBe(false)
-    const select = w.get('[data-testid=profile-state]')
-    expect(select.findAll('option')).toHaveLength(17)
-    expect(select.findAll('option')[0]?.text()).toBe('Semua Negeri')
-    expect(select.findAll('option')[5]?.text()).toBe('Labuan')
+    const items = selectOf(w).props('items') as { label: string }[]
+    expect(items).toHaveLength(17)
+    expect(items[0]?.label).toBe('Semua Negeri')
+    expect(items[5]?.label).toBe('Labuan')
     expect(w.get('[data-testid=profile-school-search]').attributes('placeholder')).toBe(
       'Taip nama sekolah (min. 2 huruf)...',
     )
@@ -316,7 +323,8 @@ describe('S8 school picker (FR-M01-42, 43)', () => {
     vi.useFakeTimers()
     searchSchools.mockResolvedValue([])
     const w = await render(ProfileEditPage, { ...USER, school: null, schoolId: null })
-    await w.get('[data-testid=profile-state]').setValue('Perlis')
+    selectOf(w).vm.$emit('update:modelValue', 'Perlis')
+    await flushPromises()
     await vi.advanceTimersByTimeAsync(300)
     await flushPromises()
     expect(searchSchools).toHaveBeenCalledWith(
@@ -350,9 +358,7 @@ describe('S8 picture card (FR-M01-41)', () => {
   const png = () => new File([new Uint8Array([137, 80, 78, 71])], 'a.png', { type: 'image/png' })
 
   async function choose(w: VueWrapper, file: File): Promise<void> {
-    const input = w.get('[data-testid=picture-input]')
-    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
-    await input.trigger('change')
+    w.findComponent({ name: 'FileUpload' }).vm.$emit('update:modelValue', file)
     await vi.waitFor(() =>
       expect(w.get('[data-testid=picture-preview]').attributes('src')).toContain('data:image/png'),
     )
@@ -361,10 +367,10 @@ describe('S8 picture card (FR-M01-41)', () => {
   it('offers the hint and accept list, and hides "Simpan" until a file is chosen', async () => {
     const w = await render(ProfileEditPage)
     expect(w.text()).toContain('JPG, PNG atau WEBP. Maks 2MB.')
-    expect(w.get('[data-testid=picture-input]').attributes('accept')).toBe(
+    expect(w.findComponent({ name: 'FileUpload' }).props('accept')).toBe(
       'image/jpeg,image/png,image/webp',
     )
-    expect(w.get('[data-testid=picture-save]').attributes('style')).toContain('display: none')
+    expect(w.find('[data-testid=picture-save]').exists()).toBe(false)
   })
 
   it('only previews on choose, and posts the file on "Simpan"', async () => {
@@ -376,9 +382,7 @@ describe('S8 picture card (FR-M01-41)', () => {
     const file = png()
     await choose(w, file)
     expect(apiMocks.uploadPicture).not.toHaveBeenCalled()
-    expect(w.get('[data-testid=picture-save]').attributes('style') ?? '').not.toContain(
-      'display: none',
-    )
+    expect(w.find('[data-testid=picture-save]').exists()).toBe(true)
     await w.get('[data-testid=picture-form]').trigger('submit')
     await flushPromises()
     expect(apiMocks.uploadPicture).toHaveBeenCalledWith(file)

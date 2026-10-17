@@ -14,6 +14,8 @@
  *
  * Not rendered (overview §10): the M22 chatbot FAB and the live PWA install banner.
  */
+import { DsConfirmHost } from '@/ds'
+import { uiLocale } from '@/theme/locale-ms'
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -120,66 +122,69 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="user-shell min-h-screen bg-app-user font-body antialiased" data-layout="user">
-    <ImpersonationBanner />
-    <UserSidebar
-      :open="shell.sidebarOpen"
-      :entries="sidebarEntries"
-      :current-path="route.path"
-      :user="user"
-    />
-
-    <!-- Main Content Area -->
-    <div
-      class="flex min-h-screen flex-col pb-20 transition-[margin] duration-300 lg:pb-0"
-      :class="shell.sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'"
-    >
-      <UserHeader
-        :header="header"
-        :summary="summary"
-        :chips="chips"
+  <UApp :locale="uiLocale">
+    <div class="user-shell min-h-screen bg-app-user font-body antialiased" data-layout="user">
+      <ImpersonationBanner />
+      <UserSidebar
+        :open="shell.sidebarOpen"
+        :entries="sidebarEntries"
+        :current-path="route.path"
         :user="user"
-        :bell-count="bell.count"
-        @toggle-sidebar="shell.toggleSidebar()"
-        @toggle-drawer="toggleDrawer"
       />
 
-      <!-- Main Content (live `page-transition`: fades in on every page load) -->
-      <main
-        :key="route.path"
-        class="mx-auto w-[95%] flex-1 animate-page-transition py-3 sm:py-6"
-        data-testid="shell-user-main"
+      <!-- Main Content Area -->
+      <div
+        class="flex min-h-screen flex-col pb-20 transition-[margin] duration-300 lg:pb-0"
+        :class="shell.sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'"
       >
-        <!-- M16 S30: live `tournamentBanner()` block (`mb-4`, hidden while
+        <UserHeader
+          :header="header"
+          :summary="summary"
+          :chips="chips"
+          :user="user"
+          :bell-count="bell.count"
+          @toggle-sidebar="shell.toggleSidebar()"
+          @toggle-drawer="toggleDrawer"
+        />
+
+        <!-- Main Content (live `page-transition`: fades in on every page load) -->
+        <main
+          :key="route.path"
+          class="mx-auto w-[95%] flex-1 animate-page-transition py-3 sm:py-6"
+          data-testid="shell-user-main"
+        >
+          <!-- M16 S30: live `tournamentBanner()` block (`mb-4`, hidden while
              `GET /api/tournament/active` returns []); mounted once per page (`:key` above).
              Order agreed with Session 2: ImpersonationBanner (M27) first, then TournamentBanner (M16). -->
-        <TournamentBanner v-if="showTournamentBanner" />
-        <FlashOutlet :flash="flash" class="mb-4" />
-        <slot />
-      </main>
+          <TournamentBanner v-if="showTournamentBanner" />
+          <FlashOutlet :flash="flash" class="mb-4" />
+          <slot />
+        </main>
 
-      <!-- Footer (Desktop Only) -->
-      <footer class="topbar mt-auto hidden px-6 py-6 lg:block" data-testid="shell-user-footer">
-        <div class="footer-text mx-auto w-[95%] text-center text-sm">
-          <p class="font-semibold">
-            &copy; 2026 PRESTASIPLUS. Hakcipta Terpelihara <span class="emoji">✨</span>
-          </p>
-          <p class="mt-1.5 font-medium">
-            Didikan penuh <span class="emoji text-red-500">❤️</span> dari Malaysia
-            <span class="emoji">🇲🇾</span>
-          </p>
-        </div>
-      </footer>
+        <!-- Footer (Desktop Only) -->
+        <footer class="topbar mt-auto hidden px-6 py-6 lg:block" data-testid="shell-user-footer">
+          <div class="footer-text mx-auto w-[95%] text-center text-sm">
+            <p class="font-semibold">
+              &copy; 2026 PRESTASIPLUS. Hakcipta Terpelihara <span class="emoji">✨</span>
+            </p>
+            <p class="mt-1.5 font-medium">
+              Didikan penuh <span class="emoji text-red-500">❤️</span> dari Malaysia
+              <span class="emoji">🇲🇾</span>
+            </p>
+          </div>
+        </footer>
+      </div>
+
+      <UserDrawer
+        :open="shell.drawerOpen"
+        :entries="drawerEntries"
+        :current-path="route.path"
+        :user="user"
+        @close="closeDrawer"
+      />
+
+      <UserBottomNav :current-path="route.path" @toggle-drawer="toggleDrawer" />
     </div>
-
-    <UserDrawer
-      :open="shell.drawerOpen"
-      :entries="drawerEntries"
-      :current-path="route.path"
-      :user="user"
-      @close="closeDrawer"
-    />
-
-    <UserBottomNav :current-path="route.path" @toggle-drawer="toggleDrawer" />
-  </div>
+    <DsConfirmHost />
+  </UApp>
 </template>

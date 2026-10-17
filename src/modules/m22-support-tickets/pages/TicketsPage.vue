@@ -1,19 +1,19 @@
 <script setup lang="ts">
 /**
- * S1 `/pusat-tuisyen/tiket` "Tiket Bantuan" (SRS M22 v1.1 FR-M22-01…27; roles-matrix row L04). User shell,
- * every signed-in role, own tickets only. Markup and copy follow the server view `content/tiket.blade.php`;
- * the 10/11 px badge and time are raised to 12 px (DV-M22-06). One list call (`GET /api/tiket`), one create
- * (`POST /api/tiket`); after a create the page stays on `/pusat-tuisyen/tiket` (DV-M22-03).
+ * S1 `/pusat-tuisyen/tiket` "Tiket Bantuan" (SRS M22 v1.1 FR-M22-01…27; roles-matrix row L04), v2
+ * restyle (B09 / A4). User shell, every signed-in role, own tickets only. Copy follows the server
+ * view `content/tiket.blade.php`. One list call (`GET /api/tiket`), one create (`POST /api/tiket`);
+ * after a create the page stays on `/pusat-tuisyen/tiket` (DV-M22-03). The create form opens in a
+ * `DsDialog` (bottom sheet below `sm`); its fields are the contract's: Subjek and Butiran.
  *
- * States: loading spinner; load failure shows the server message with a retry button (FR-M22-46).
+ * States: loading skeleton; load failure shows the server message with a retry button (FR-M22-46). No aria-* attribute (CHK-M22-02, D10): the controls carry their own semantics.
  */
-import { CircleCheck, Clock, Plus, Reply, Send, Ticket } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsDialog, DsEmptyState } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import { createTicket, fetchTickets } from '../api/tickets'
@@ -47,12 +47,14 @@ const { data, error, loading, reload } = useApi(
 const tickets = computed(() => data.value?.data ?? [])
 const total = computed(() => data.value?.meta.total ?? 0)
 
-const BADGE: Record<TicketStatus, string> = {
-  dibuka: 'bg-red-100 text-red-700',
-  dalam_proses: 'bg-amber-100 text-amber-700',
-  menunggu_balas: 'bg-blue-100 text-blue-700',
-  selesai: 'bg-green-100 text-green-700',
-  ditutup: 'bg-slate-200 text-slate-600',
+type BadgeColor = 'error' | 'warning' | 'info' | 'success' | 'neutral'
+/** Status = tone + icon + word (the word is the live label). */
+const BADGE: Record<TicketStatus, { color: BadgeColor; icon: string }> = {
+  dibuka: { color: 'info', icon: 'i-ph-envelope-open' },
+  dalam_proses: { color: 'warning', icon: 'i-ph-hourglass-medium' },
+  menunggu_balas: { color: 'info', icon: 'i-ph-chat-circle-dots' },
+  selesai: { color: 'success', icon: 'i-ph-check-circle' },
+  ditutup: { color: 'neutral', icon: 'i-ph-lock-simple' },
 }
 
 const tabs = [
@@ -75,7 +77,6 @@ const banner = ref(false)
 
 function openForm(): void {
   formOpen.value = true
-  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 async function submit(): Promise<void> {
@@ -112,182 +113,183 @@ watch(
 </script>
 
 <template>
-  <div class="mx-auto min-w-0" data-testid="tk-page">
-    <div
-      v-if="banner"
-      class="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800"
-      data-testid="tk-flash"
-    >
-      <CircleCheck class="mr-1 inline h-4 w-4" />
-      {{ TICKET_CREATED_FLASH }}
-    </div>
+  <div class="mx-auto flex w-full max-w-4xl min-w-0 flex-col gap-4 md:gap-6" data-testid="tk-page">
+    <h1 class="sr-only">Tiket Bantuan</h1>
 
-    <div class="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-      <p class="text-sm text-slate-500" data-testid="tk-total">
-        Jumlah tiket: <span class="font-bold text-slate-700">{{ total }}</span>
+    <UAlert
+      v-if="banner"
+      color="success"
+      variant="subtle"
+      icon="i-ph-check-circle"
+      :title="TICKET_CREATED_FLASH"
+      data-testid="tk-flash"
+    />
+
+    <div class="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+      <p class="text-body text-muted" data-testid="tk-total">
+        Jumlah tiket: <span class="text-label text-highlighted">{{ total }}</span>
       </p>
-      <button
+      <UButton
         type="button"
-        class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:from-red-600 hover:to-rose-700"
+        color="primary"
+        size="lg"
+        icon="i-ph-plus"
         data-testid="tk-new"
         @click="formOpen = !formOpen"
+        >Tiket Baru</UButton
       >
-        <Plus class="h-4 w-4" /> Tiket Baru
-      </button>
     </div>
 
-    <div
-      v-show="formOpen"
-      id="tiket-baru"
-      class="mb-6 rounded-xl border border-slate-100 bg-white p-5 shadow-sm"
-      data-testid="tk-form-card"
-    >
-      <h3 class="mb-3 text-sm font-bold text-slate-700">
-        <Ticket class="mr-1 inline h-4 w-4 text-red-500" /> Tiket Baru
-      </h3>
-      <div
+    <DsDialog v-model:open="formOpen" title="Tiket Baru" data-testid="tk-form-card">
+      <UAlert
         v-if="formError"
-        class="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        :title="formError"
+        class="mb-4"
         data-testid="tk-form-error"
+      />
+      <form
+        id="tiket-baru"
+        class="flex flex-col gap-4"
+        data-testid="tk-form"
+        @submit.prevent="submit"
       >
-        {{ formError }}
-      </div>
-      <form class="space-y-3" data-testid="tk-form" @submit.prevent="submit">
-        <div>
-          <label class="mb-1 block text-xs font-medium text-slate-500" for="tk-subject"
-            >Subjek</label
-          >
-          <input
-            id="tk-subject"
+        <UFormField label="Subjek">
+          <UInput
             v-model="subject"
             type="text"
             name="subject"
             required
             :maxlength="SUBJECT_MAX"
-            class="w-full rounded-lg border border-slate-300 text-sm"
             placeholder="Ringkasan masalah atau permintaan anda"
+            size="lg"
+            class="w-full"
+            data-testid="tk-subject"
           />
-        </div>
-        <div>
-          <label class="mb-1 block text-xs font-medium text-slate-500" for="tk-body">Butiran</label>
-          <textarea
-            id="tk-body"
+        </UFormField>
+        <UFormField label="Butiran">
+          <UTextarea
             v-model="body"
             name="body"
-            rows="5"
+            :rows="5"
             required
             :maxlength="BODY_MAX"
-            class="w-full rounded-lg border border-slate-300 text-sm"
             placeholder="Terangkan masalah anda dengan terperinci..."
-          ></textarea>
-        </div>
-        <button
-          type="submit"
-          class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:from-red-600 hover:to-rose-700"
-          data-testid="tk-submit"
-        >
-          <Send class="h-4 w-4" /> Hantar Tiket
-        </button>
+            size="lg"
+            class="w-full"
+            data-testid="tk-body-input"
+          />
+        </UFormField>
       </form>
-    </div>
+      <template #footer>
+        <UButton
+          type="button"
+          color="neutral"
+          variant="ghost"
+          size="lg"
+          data-testid="tk-cancel"
+          @click="formOpen = false"
+          >Batal</UButton
+        >
+        <UButton
+          type="submit"
+          form="tiket-baru"
+          color="primary"
+          size="lg"
+          icon="i-ph-paper-plane-tilt"
+          :loading="submitting"
+          data-testid="tk-submit"
+          >Hantar Tiket</UButton
+        >
+      </template>
+    </DsDialog>
 
-    <div class="mb-4 flex flex-wrap gap-2" data-testid="tk-tabs">
-      <RouterLink
+    <nav class="flex max-w-full gap-2 overflow-x-auto" data-testid="tk-tabs">
+      <UButton
         v-for="t in tabs"
         :key="t.label"
         :to="t.to"
-        class="inline-flex min-h-11 items-center rounded-lg px-3 py-1.5 text-xs font-bold transition"
-        :class="
-          status === t.key
-            ? 'bg-slate-800 text-white'
-            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-        "
+        size="lg"
+        :color="status === t.key ? 'primary' : 'neutral'"
+        :variant="status === t.key ? 'solid' : 'soft'"
+        class="shrink-0"
         :data-active="status === t.key"
+        >{{ t.label }}</UButton
       >
-        {{ t.label }}
-      </RouterLink>
-    </div>
+    </nav>
 
     <template v-if="data">
-      <div
-        v-if="tickets.length === 0"
-        class="rounded-xl border border-slate-100 bg-white p-8 text-center"
-        data-testid="tk-empty"
-      >
-        <Ticket class="mx-auto mb-3 h-10 w-10 text-slate-200" />
-        <p class="text-sm text-slate-500">Tiada tiket lagi.</p>
-        <button
-          type="button"
-          class="mt-2 inline-flex min-h-11 items-center gap-1 text-sm font-bold text-red-600 hover:underline"
-          data-testid="tk-first"
-          @click="openForm"
-        >
-          <Plus class="h-3 w-3" /> Buat Tiket Pertama
-        </button>
+      <div v-if="tickets.length === 0" data-testid="tk-empty">
+        <DsEmptyState title="Tiada tiket lagi." icon="i-ph-lifebuoy">
+          <template #actions>
+            <UButton
+              type="button"
+              color="primary"
+              variant="soft"
+              size="lg"
+              icon="i-ph-plus"
+              data-testid="tk-first"
+              @click="openForm"
+              >Buat Tiket Pertama</UButton
+            >
+          </template>
+        </DsEmptyState>
       </div>
-      <div v-else class="space-y-3" data-testid="tk-list">
-        <div
-          v-for="t in tickets"
-          :key="t.id"
-          class="rounded-xl border border-slate-100 bg-white p-4 transition hover:shadow-md sm:p-5"
-          data-testid="tk-card"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <h3 class="text-sm font-bold break-words text-slate-800 sm:text-base">
-                #{{ t.id }} — {{ t.subject }}
-              </h3>
-              <p
-                class="mt-1 line-clamp-2 text-xs break-words text-slate-500 sm:text-sm"
-                data-testid="tk-body"
+      <ul v-else class="flex flex-col gap-3" data-testid="tk-list">
+        <li v-for="t in tickets" :key="t.id">
+          <UCard data-testid="tk-card">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 flex-col gap-1">
+                <h3 class="text-subheading break-words text-highlighted">
+                  #{{ t.id }} — {{ t.subject }}
+                </h3>
+                <p class="line-clamp-2 text-body break-words text-muted" data-testid="tk-body">
+                  {{ t.body }}
+                </p>
+                <p class="flex items-center gap-1 text-caption text-muted" data-testid="tk-time">
+                  <UIcon name="i-ph-clock" class="size-4" />{{ diffForHumans(t.createdAt) }}
+                </p>
+              </div>
+              <UBadge
+                :color="BADGE[t.status].color"
+                variant="subtle"
+                :icon="BADGE[t.status].icon"
+                class="shrink-0"
+                data-testid="tk-badge"
+                >{{ t.statusLabel }}</UBadge
               >
-                {{ t.body }}
+            </div>
+            <div v-if="t.adminReply" class="mt-3 bg-elevated p-3" data-testid="tk-reply">
+              <p class="mb-1 flex items-center gap-1 text-label text-highlighted">
+                <UIcon name="i-ph-chat-circle-text" class="size-4" />Balasan Sokongan
               </p>
-              <p class="mt-2 text-xs text-slate-400" data-testid="tk-time">
-                <Clock class="mr-1 inline h-3 w-3" />{{ diffForHumans(t.createdAt) }}
+              <p class="text-body break-words whitespace-pre-line text-default">
+                {{ t.adminReply }}
               </p>
             </div>
-            <span
-              class="shrink-0 rounded-lg px-2.5 py-1 text-xs font-bold"
-              :class="BADGE[t.status]"
-              data-testid="tk-badge"
-              >{{ t.statusLabel }}</span
-            >
-          </div>
-          <div
-            v-if="t.adminReply"
-            class="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3"
-            data-testid="tk-reply"
-          >
-            <p class="mb-1 text-xs font-bold text-indigo-700">
-              <Reply class="mr-1 inline h-3 w-3" />Balasan Sokongan
-            </p>
-            <p class="text-xs break-words whitespace-pre-line text-slate-600 sm:text-sm">
-              {{ t.adminReply }}
-            </p>
-          </div>
-        </div>
-      </div>
+          </UCard>
+        </li>
+      </ul>
     </template>
-    <div v-else-if="error" class="space-y-3" data-testid="tk-error">
-      <AlertBox :messages="error.message" />
+    <div v-else-if="error" class="flex flex-col gap-3" data-testid="tk-error">
+      <UAlert color="error" variant="subtle" icon="i-ph-warning-circle" :title="error.message" />
       <div class="text-center">
-        <button
+        <UButton
           type="button"
-          class="min-h-11 rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          color="neutral"
+          variant="soft"
+          size="lg"
           data-testid="tk-retry"
           @click="reload"
+          >Cuba lagi</UButton
         >
-          Cuba lagi
-        </button>
       </div>
     </div>
-    <p
-      v-else-if="loading"
-      class="flex justify-center py-10 text-slate-500"
-      data-testid="tk-loading"
-    >
-      <LoadingSpinner class="h-6 w-6" />
-    </p>
+    <div v-else-if="loading" class="flex flex-col gap-3" data-testid="tk-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-24 w-full" />
+    </div>
   </div>
 </template>

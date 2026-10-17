@@ -207,15 +207,20 @@ export const uiConfig = {
 
   modal: {
     slots: {
-      overlay: 'bg-(--ds-overlay)',
-      content: 'divide-y-0',
+      overlay: 'z-50 bg-(--ds-overlay)',
+      content: 'z-50 divide-y-0',
     },
     variants: {
       fullscreen: { false: { content: 'rounded-lg shadow-modal ring-0' } },
     },
   },
-  slideover: { slots: { overlay: 'bg-(--ds-overlay)', content: 'divide-y-0 shadow-modal ring-0' } },
-  drawer: { slots: { overlay: 'bg-(--ds-overlay)', content: 'bg-elevated shadow-modal ring-0' } },
+  // Overlays sit above the shell chrome (sidebar and bars are z-30): modal surfaces never hide behind it.
+  slideover: {
+    slots: { overlay: 'z-50 bg-(--ds-overlay)', content: 'z-50 divide-y-0 shadow-modal ring-0' },
+  },
+  drawer: {
+    slots: { overlay: 'z-50 bg-(--ds-overlay)', content: 'z-50 bg-elevated shadow-modal ring-0' },
+  },
 
   // Zebra rows on the raised surface, no row lines.
   table: {

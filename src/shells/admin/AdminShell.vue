@@ -13,6 +13,8 @@
  * page opens on every route change. Not rendered: a global search, a bell, an avatar or logout
  * below `lg` (live, DV-SH-02).
  */
+import { DsConfirmHost } from '@/ds'
+import { uiLocale } from '@/theme/locale-ms'
 import { computed, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -90,67 +92,70 @@ onBeforeUnmount(() => shell.closeOverlays())
 </script>
 
 <template>
-  <div
-    class="admin-shell min-h-screen font-body antialiased bg-app-admin"
-    data-layout="admin"
-    :data-role="role ?? undefined"
-  >
-    <AdminSidebar
-      :entries="entries"
-      :footer-links="footerLinks"
-      :active-id="activeId"
-      :caption="chrome.caption"
-      :home="chrome.home"
-      :role-label="chrome.roleLabel"
-      :user="user"
-    />
-
-    <!-- Main column: offset by the sidebar at ≥ lg; below lg the bottom nav clearance is the
-         bottom padding (45px + safe-area + 16px), so the footer strip is never under it. -->
+  <UApp :locale="uiLocale">
     <div
-      class="flex min-h-screen flex-col pb-[calc(45px+env(safe-area-inset-bottom)+16px)] lg:ml-64 lg:pb-0"
+      class="admin-shell min-h-screen font-body antialiased bg-app-admin"
+      data-layout="admin"
+      :data-role="role ?? undefined"
     >
-      <AdminHeader
-        :header="header"
-        :user="user"
+      <AdminSidebar
+        :entries="entries"
+        :footer-links="footerLinks"
+        :active-id="activeId"
+        :caption="chrome.caption"
         :home="chrome.home"
-        :server-status="chrome.serverStatus"
+        :role-label="chrome.roleLabel"
+        :user="user"
       />
 
-      <!-- Live `page-transition`: fades in on every page load -->
-      <main
-        :key="route.path"
-        class="mx-auto w-[95%] flex-1 animate-page-transition py-3 sm:py-6"
-        data-testid="shell-admin-main"
+      <!-- Main column: offset by the sidebar at ≥ lg; below lg the bottom nav clearance is the
+         bottom padding (45px + safe-area + 16px), so the footer strip is never under it. -->
+      <div
+        class="flex min-h-screen flex-col pb-[calc(45px+env(safe-area-inset-bottom)+16px)] lg:ml-64 lg:pb-0"
       >
-        <FlashOutlet :flash="flash" class="mb-4" />
-        <slot />
-      </main>
+        <AdminHeader
+          :header="header"
+          :user="user"
+          :home="chrome.home"
+          :server-status="chrome.serverStatus"
+        />
 
-      <!-- Copyright strip: below lg only (shells.md §2.1) -->
-      <footer
-        class="px-3 py-4 text-center text-xs text-slate-500 lg:hidden"
-        data-testid="shell-admin-footer"
-      >
-        <p class="font-semibold">&copy; 2026 PRESTASIPLUS. Hakcipta Terpelihara.</p>
-        <p class="mt-1 font-medium">
-          Didikan penuh <span class="text-red-500">❤️</span> dari Malaysia 🇲🇾
-        </p>
-      </footer>
+        <!-- Live `page-transition`: fades in on every page load -->
+        <main
+          :key="route.path"
+          class="mx-auto w-[95%] flex-1 animate-page-transition py-3 sm:py-6"
+          data-testid="shell-admin-main"
+        >
+          <FlashOutlet :flash="flash" class="mb-4" />
+          <slot />
+        </main>
+
+        <!-- Copyright strip: below lg only (shells.md §2.1) -->
+        <footer
+          class="px-3 py-4 text-center text-xs text-slate-500 lg:hidden"
+          data-testid="shell-admin-footer"
+        >
+          <p class="font-semibold">&copy; 2026 PRESTASIPLUS. Hakcipta Terpelihara.</p>
+          <p class="mt-1 font-medium">
+            Didikan penuh <span class="text-red-500">❤️</span> dari Malaysia 🇲🇾
+          </p>
+        </footer>
+      </div>
+
+      <AdminBottomNav
+        :entries="bottomEntries"
+        :current-path="route.path"
+        :lagi-open="shell.lagiOpen"
+        :lagi-active="lagiActive"
+        @toggle-lagi="shell.setLagiOpen(!shell.lagiOpen)"
+      />
+      <AdminLagiPopover
+        :open="shell.lagiOpen"
+        :menu="lagiMenu"
+        :is-active="rowActive"
+        @close="shell.setLagiOpen(false)"
+      />
     </div>
-
-    <AdminBottomNav
-      :entries="bottomEntries"
-      :current-path="route.path"
-      :lagi-open="shell.lagiOpen"
-      :lagi-active="lagiActive"
-      @toggle-lagi="shell.setLagiOpen(!shell.lagiOpen)"
-    />
-    <AdminLagiPopover
-      :open="shell.lagiOpen"
-      :menu="lagiMenu"
-      :is-active="rowActive"
-      @close="shell.setLagiOpen(false)"
-    />
-  </div>
+    <DsConfirmHost />
+  </UApp>
 </template>
