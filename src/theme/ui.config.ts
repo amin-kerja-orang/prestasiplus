@@ -201,10 +201,22 @@ export const uiConfig = {
     ],
   },
 
-  // Hit-area: visible control stays small, the tap target grows to >= 44px.
-  carousel: { slots: { dot: "relative after:absolute after:-inset-4 after:content-['']" } },
-  checkbox: { slots: { base: "relative after:absolute after:-inset-3 after:content-['']" } },
-  switch: { slots: { base: "relative after:absolute after:-inset-3 after:content-['']" } },
+  // Touch targets >= 44px. Dots: a 44px button painting a 12px dot (padding + bg-clip-content).
+  // Checkbox / switch: the container is a 44px box with the control centred.
+  carousel: { slots: { dot: 'size-11 rounded-full bg-clip-content p-4' } },
+  checkbox: {
+    slots: {
+      container: 'min-h-11 min-w-11 justify-center',
+      base: "relative overflow-visible after:absolute after:-inset-2.5 after:content-['']",
+    },
+    variants: { size: { md: { base: 'size-6' }, sm: { base: 'size-6' } } },
+  },
+  switch: {
+    slots: {
+      container: 'min-h-11 min-w-11 justify-center',
+      base: "relative after:absolute after:-inset-2 after:content-['']",
+    },
+  },
   navigationMenu: {
     slots: { link: 'min-h-10 pointer-coarse:min-h-12' },
   },

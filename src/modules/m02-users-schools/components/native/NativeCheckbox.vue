@@ -5,5 +5,7 @@ const model = defineModel<unknown>()
 </script>
 
 <template>
-  <input v-model="model" v-bind="$attrs" type="checkbox" class="size-5 shrink-0 accent-primary" />
+  <span class="inline-flex size-11 shrink-0 items-center justify-center">
+    <input v-model="model" v-bind="$attrs" type="checkbox" class="size-5 shrink-0 accent-primary" />
+  </span>
 </template>

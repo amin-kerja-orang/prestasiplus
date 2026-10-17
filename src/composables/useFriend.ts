@@ -3,7 +3,7 @@
  * `localStorage['pp.friend']` (try/catch: blocked storage keeps it for this page view only). One
  * shared state, so the header avatar, the Home greeting and the picker stay in step.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { FriendId, FriendOption } from '@/ds'
 
@@ -34,7 +34,7 @@ export function resetFriendForTests(): void {
 }
 
 export function useFriend() {
-  /** Dismissing the first-run picker without a choice falls back to Aiman (not stored). */
+  /** Until a choice is stored, Aiman is shown; dismissing the first-run picker stores it. */
   const friend = computed<FriendId>(() => stored.value ?? 'aiman')
   const friendName = computed(
     () => FRIEND_OPTIONS.find((f) => f.value === friend.value)?.name ?? 'Aiman',
@@ -58,6 +58,12 @@ export function useFriend() {
     if (offered || stored.value !== null) return
     offered = true
     pickerOpen.value = true
+    // Dismissing without a choice also ends the first run: persist the default (Aiman).
+    const stop = watch(pickerOpen, (open) => {
+      if (open) return
+      stop()
+      if (stored.value === null) choose('aiman')
+    })
   }
 
   return {

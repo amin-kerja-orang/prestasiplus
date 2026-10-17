@@ -34,7 +34,9 @@ const label = computed(() =>
         class="sticky top-0 z-20 flex min-h-16 items-center gap-2 bg-default px-4 shadow-bar sm:px-6"
         data-testid="cc-brand-bar"
       >
-        <RouterLink to="/" class="font-display text-subheading font-extrabold text-highlighted"
+        <RouterLink
+          to="/"
+          class="inline-flex min-h-11 items-center font-display text-subheading font-extrabold text-highlighted"
           >Prestasi<span class="text-primary-t">Plus</span></RouterLink
         >
         <UButton

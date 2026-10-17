@@ -226,6 +226,7 @@ function goToPage(page: number): void {
           color="neutral"
           variant="outline"
           size="sm"
+          class="min-h-11"
           data-testid="video-subject-pill"
           :data-subject-id="s.id"
           >{{ s.name }} <span class="tabular">({{ s.count }})</span></UButton
@@ -237,6 +238,7 @@ function goToPage(page: number): void {
           variant="ghost"
           size="sm"
           icon="i-ph-x"
+          class="min-h-11"
           data-testid="video-reset-subject"
           >{{ COPY.resetSubject }}</UButton
         >
