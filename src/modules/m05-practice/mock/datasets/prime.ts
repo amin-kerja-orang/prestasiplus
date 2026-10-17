@@ -29,7 +29,7 @@
  * Issues (a pin the generation cannot meet) are collected in `issues` for the build check.
  */
 
-import { hashKey } from '@/mock/dataset'
+import { buildChecksEnabled, hashKey } from '@/mock/dataset'
 import type { UserRow } from '@/modules/m01-authentication/mock'
 import { users } from '@/modules/m01-authentication/mock'
 
@@ -2364,7 +2364,8 @@ export function buildPracticePrime(inputs: PrimeInputs): PracticePrime {
           map,
           found,
         )
-        if (found.length > 0) throw new Error(`M05 practice prime: ${found.join('; ')}`)
+        if (found.length > 0 && buildChecksEnabled())
+          throw new Error(`M05 practice prime: ${found.join('; ')}`)
         designedMap = map
       }
       return designedMap.get(key)

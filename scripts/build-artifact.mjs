@@ -52,8 +52,12 @@ if (scripts.length === 0) throw new Error('build-artifact: no module script foun
 // Inline splash (style + markup inside #app); Vue's mount replaces it. Order matters: the splash
 // style and #app come BEFORE the render-blocking stylesheet and module script, so it paints first.
 const splashStyle = tags(/<style\b[^>]*id="pp-splash-css"[^>]*>.*?<\/style>/gs)[0]
-const appDiv = tags(/<div id="app">.*?<\/div>\s*<\/div>/gs)[0]
+// The `<!--pp-splash-end-->` sentinel in index.html closes the splash, so the match no longer
+// depends on how many nested divs the splash has.
+const appDiv = tags(/<div id="app">[\s\S]*?<!--pp-splash-end-->\s*<\/div>/g)[0]
 if (!splashStyle || !appDiv) throw new Error('build-artifact: splash markup missing in index.html')
+if (!appDiv.includes('id="pp-splash"'))
+  throw new Error('build-artifact: splash sentinel found but #pp-splash is missing')
 const fragment =
   [
     title,
