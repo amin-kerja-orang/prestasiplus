@@ -23,7 +23,7 @@ import { isPrototypeScopeOn } from '../prototype-scope'
 
 import type { LayoutMode } from './meta'
 
-export type ShellKind = 'admin' | 'user' | 'pembelajaran' | 'public'
+export type ShellKind = 'admin' | 'user' | 'pembelajaran' | 'pentadbiran' | 'public'
 
 /**
  * The frame of a logged-in user: the v2 Pembelajaran layout for the student and the teacher (the
@@ -36,6 +36,35 @@ export function userShellFor(role: Role | null): ShellKind {
     : 'user'
 }
 
+/**
+ * The admin frame: the v2 Portal Pentadbiran for Admin Pusat while the prototype scope is on (D30,
+ * D48); the legacy admin shell for every other role (teacher on `/guru/monitoring`) and for the
+ * unscoped e2e build.
+ */
+export function adminShellFor(role: Role | null): ShellKind {
+  return isPrototypeScopeOn() && role === 'admin' ? 'pentadbiran' : 'admin'
+}
+
+/** Standalone (`bare`) admin screens that sit inside the Pentadbiran portal for Admin Pusat. */
+const BARE_IN_PORTAL = ['/admin/command-center']
+
+/** `resolveShell`, plus the portal frame for the admin Command Center boards (layout `bare`). */
+export function resolveShellForPath(
+  mode: LayoutMode,
+  session: { isLoggedIn: boolean; role: Role | null },
+  path: string,
+): ShellKind | null {
+  if (
+    mode === 'bare' &&
+    session.role === 'admin' &&
+    isPrototypeScopeOn() &&
+    BARE_IN_PORTAL.some((p) => path === p || path.startsWith(`${p}/`))
+  ) {
+    return 'pentadbiran'
+  }
+  return resolveShell(mode, session)
+}
+
 /** The shell for `mode`, or `null` for `bare`. Pure, for unit tests. */
 export function resolveShell(
   mode: LayoutMode,
@@ -43,11 +72,11 @@ export function resolveShell(
 ): ShellKind | null {
   switch (mode) {
     case 'admin':
-      return 'admin'
+      return adminShellFor(session.role)
     case 'user':
       return userShellFor(session.role)
     case 'role':
-      return session.role === 'admin' ? 'admin' : userShellFor(session.role)
+      return session.role === 'admin' ? adminShellFor('admin') : userShellFor(session.role)
     case 'public-or-user':
       return session.isLoggedIn ? userShellFor(session.role) : 'public'
     case 'bare':
@@ -61,5 +90,6 @@ export const shellComponents: Readonly<Record<ShellKind, Component>> = {
   admin: defineAsyncComponent(() => import('@/shells/admin/AdminShell.vue')), // F-18
   user: defineAsyncComponent(() => import('@/shells/user/UserShell.vue')), // F-19
   pembelajaran: defineAsyncComponent(() => import('@/shells/pembelajaran/PembelajaranLayout.vue')), // V2-T15 subset (student, teacher)
+  pentadbiran: defineAsyncComponent(() => import('@/shells/pentadbiran/PentadbiranLayout.vue')), // V2-T13/T14 PoC (Admin Pusat)
   public: defineAsyncComponent(() => import('@/shells/public/PublicLayout.vue')), // F-20
 }

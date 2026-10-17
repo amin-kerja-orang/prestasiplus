@@ -161,7 +161,23 @@ function previewHubRoutes(): RouteRecordRaw[] {
 }
 
 /** Core routes that precede the module routes. */
-export const leadingCoreRoutes: readonly RouteRecordRaw[] = [rootRoute, logoutRoute]
+export const leadingCoreRoutes: readonly RouteRecordRaw[] = [
+  rootRoute,
+  logoutRoute,
+  // Portal Pentadbiran items that are not built yet (V2-T13/T14 PoC): `/admin/p/<id>`.
+  {
+    path: '/admin/p/:itemId',
+    name: 'pentadbiran.placeholder',
+    component: () => import('@/shells/pentadbiran/PentadbiranPlaceholderPage.vue'),
+    meta: {
+      layout: 'admin',
+      access: 'auth',
+      roles: ['admin'],
+      v2: true,
+      title: 'Belum Tersedia dalam Prototaip | PRESTASIPLUS',
+    },
+  },
+]
 
 /** Must be the last route. */
 export const catchAllRoute: RouteRecordRaw = notFoundRoute

@@ -33,6 +33,7 @@ export function commandCenterDrillRoutes(
   const prefix = options.prefix.replace(/\/+$/, '')
   const meta = {
     layout: 'bare' as const,
+    v2: true,
     access: 'auth' as const,
     roles,
     ...(options.onForbidden ? { onForbidden: options.onForbidden } : {}),
@@ -86,6 +87,7 @@ function boardRoutes(alias: boolean): RouteRecordRaw[] {
   const name = alias ? 'm17.ccsa' : 'm17.cc'
   const meta = {
     layout: 'bare' as const,
+    v2: !alias,
     access: 'auth' as const,
     roles: [alias ? 'school_admin' : 'admin'] as readonly Role[],
     ...(alias ? { onForbidden: '403' as const } : {}),
