@@ -5,26 +5,18 @@
  * "No. Telefon (Pilihan)", "Kata Laluan *" and "Sahkan Kata Laluan *", footer "Batal" / "Daftar Pengguna".
  *
  * The role, school and `isActive` are fixed by the server; the form sends none of them. A server
- * `VALIDATION_ERROR` shows in the red alert above the form, keeps the values and clears the passwords. Success
+ * `VALIDATION_ERROR` shows in the alert above the form, keeps the values and clears the passwords. Success
  * queues the flash (the API `status`) and opens S7. No native validation, so the server's messages show.
  */
-import { ArrowLeft, Lock, Mail, Phone, User, UserCog, UserPlus } from '@lucide/vue'
 import { nextTick, reactive, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
 import { useFlash, useSession } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { createSchoolTeacher } from '../api/school-admin'
 import LockedSchoolLabel from '../components/users/LockedSchoolLabel.vue'
-import {
-  BUTTON_CANCEL,
-  BUTTON_PRIMARY,
-  errorLines,
-  LABEL,
-  TEACHER_LIST_PATH,
-} from '../components/users/users-format'
+import { errorLines, TEACHER_LIST_PATH } from '../components/users/users-format'
 
 const router = useRouter()
 const flash = useFlash()
@@ -62,145 +54,140 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-w-0" data-testid="sg-create-page">
-    <form
-      method="post"
-      novalidate
-      class="rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="user-form"
-      @submit.prevent="submit"
-    >
-      <div class="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
-        <span
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600"
-        >
-          <UserPlus class="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div class="min-w-0">
-          <h2 class="text-base font-bold text-slate-800">Borang Pendaftaran Pengguna</h2>
-          <p class="text-sm text-slate-500">Isi maklumat untuk mendaftarkan pengguna baru</p>
+  <DsPage class="max-w-4xl" data-testid="sg-create-page">
+    <form method="post" novalidate data-testid="user-form" @submit.prevent="submit">
+      <UCard>
+        <div class="mb-4 flex items-center gap-3">
+          <UIcon name="i-ph-user-plus-duotone" class="size-8 shrink-0 text-primary" aria-hidden="true" />
+          <div class="min-w-0">
+            <h2 class="text-subheading text-highlighted">Borang Pendaftaran Pengguna</h2>
+            <p class="text-body text-muted">Isi maklumat untuk mendaftarkan pengguna baru</p>
+          </div>
         </div>
-      </div>
 
-      <div ref="alertBox" class="scroll-mt-4">
-        <AlertBox :messages="errors" class="mb-5" data-testid="user-form-alert" />
-      </div>
-
-      <div class="grid grid-cols-1 gap-x-5 gap-y-5 md:grid-cols-2">
-        <div>
-          <span :class="LABEL">
-            <UserCog class="h-4 w-4 text-indigo-500" aria-hidden="true" />
-            Peranan
-          </span>
-          <p
-            class="flex min-h-11 items-center rounded-xl border-2 border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-semibold text-slate-800"
-            data-testid="user-role"
+        <div ref="alertBox" class="empty:hidden">
+          <UAlert
+            v-if="errors.length"
+            color="error"
+            variant="subtle"
+            icon="i-ph-warning-circle"
+            class="mb-4"
+            role="alert"
+            data-testid="user-form-alert"
           >
-            Guru
-          </p>
+            <template #description>
+              <ul class="flex flex-col gap-1">
+                <li v-for="line in errors" :key="line">{{ line }}</li>
+              </ul>
+            </template>
+          </UAlert>
         </div>
 
-        <LockedSchoolLabel v-if="me?.school" :school="me.school" />
+        <div class="grid grid-cols-1 gap-x-6 gap-y-6 md:grid-cols-2">
+          <UFormField label="Peranan">
+            <UCard variant="soft" :ui="{ body: 'flex min-h-11 items-center p-3 sm:p-3' }">
+              <p class="text-label text-highlighted" data-testid="user-role">Guru</p>
+            </UCard>
+          </UFormField>
 
-        <div>
-          <label for="user-name" :class="LABEL">
-            <User class="h-4 w-4 text-indigo-500" aria-hidden="true" />
-            Nama <span class="-ml-1.5 text-red-500">*</span>
-          </label>
-          <input
-            id="user-name"
-            v-model="form.name"
-            type="text"
-            name="name"
-            placeholder="Nama penuh"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
-            data-testid="user-name"
-          />
+          <LockedSchoolLabel v-if="me?.school" :school="me.school" />
+
+          <UFormField label="Nama *" name="user-name">
+            <UInput
+              id="user-name"
+              v-model="form.name"
+              type="text"
+              name="name"
+              icon="i-ph-user"
+              placeholder="Nama penuh"
+              class="w-full"
+              data-testid="user-name"
+            />
+          </UFormField>
+
+          <UFormField label="Emel *" name="user-email">
+            <UInput
+              id="user-email"
+              v-model="form.email"
+              type="email"
+              name="email"
+              icon="i-ph-envelope-simple"
+              placeholder="contoh@email.com"
+              class="w-full"
+              data-testid="user-email"
+            />
+          </UFormField>
+
+          <UFormField label="No. Telefon (Pilihan)" name="user-phone">
+            <UInput
+              id="user-phone"
+              v-model="form.phone"
+              type="tel"
+              name="phone"
+              maxlength="14"
+              inputmode="tel"
+              icon="i-ph-phone"
+              placeholder="Cth: 0191234567"
+              class="w-full"
+              data-testid="user-phone"
+            />
+          </UFormField>
+
+          <UFormField label="Kata Laluan *" name="user-password">
+            <UInput
+              id="user-password"
+              v-model="form.password"
+              type="password"
+              name="password"
+              autocomplete="new-password"
+              icon="i-ph-lock-simple"
+              placeholder="Minimum 6 aksara"
+              class="w-full"
+              data-testid="user-password"
+            />
+          </UFormField>
+
+          <UFormField label="Sahkan Kata Laluan *" name="user-password-confirm">
+            <UInput
+              id="user-password-confirm"
+              v-model="form.passwordConfirmation"
+              type="password"
+              name="password_confirmation"
+              autocomplete="new-password"
+              icon="i-ph-lock-simple"
+              placeholder="Taip semula kata laluan"
+              class="w-full"
+              data-testid="user-password-confirm"
+            />
+          </UFormField>
         </div>
 
-        <div>
-          <label for="user-email" :class="LABEL">
-            <Mail class="h-4 w-4 text-indigo-500" aria-hidden="true" />
-            Emel <span class="-ml-1.5 text-red-500">*</span>
-          </label>
-          <input
-            id="user-email"
-            v-model="form.email"
-            type="email"
-            name="email"
-            placeholder="contoh@email.com"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
-            data-testid="user-email"
-          />
+        <div
+          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between"
+          data-testid="user-form-footer"
+        >
+          <UButton
+            :to="TEACHER_LIST_PATH"
+            color="neutral"
+            variant="ghost"
+            size="lg"
+            icon="i-ph-arrow-left"
+            class="min-h-11 justify-center"
+            data-testid="user-cancel"
+            >Batal</UButton
+          >
+          <UButton
+            type="submit"
+            size="lg"
+            :loading="saving"
+            :disabled="saving"
+            :icon="saving ? undefined : 'i-ph-user-plus'"
+            class="min-h-11 justify-center"
+            data-testid="user-submit"
+            >Daftar Pengguna</UButton
+          >
         </div>
-
-        <div>
-          <label for="user-phone" :class="LABEL">
-            <Phone class="h-4 w-4 text-emerald-500" aria-hidden="true" />
-            No. Telefon <span class="-ml-1 font-normal text-slate-400">(Pilihan)</span>
-          </label>
-          <input
-            id="user-phone"
-            v-model="form.phone"
-            type="tel"
-            name="phone"
-            maxlength="14"
-            inputmode="tel"
-            placeholder="Cth: 0191234567"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
-            data-testid="user-phone"
-          />
-        </div>
-
-        <div>
-          <label for="user-password" :class="LABEL">
-            <Lock class="h-4 w-4 text-slate-500" aria-hidden="true" />
-            Kata Laluan <span class="-ml-1.5 text-red-500">*</span>
-          </label>
-          <input
-            id="user-password"
-            v-model="form.password"
-            type="password"
-            name="password"
-            autocomplete="new-password"
-            placeholder="Minimum 6 aksara"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
-            data-testid="user-password"
-          />
-        </div>
-
-        <div>
-          <label for="user-password-confirm" :class="LABEL">
-            <Lock class="h-4 w-4 text-slate-500" aria-hidden="true" />
-            Sahkan Kata Laluan <span class="-ml-1.5 text-red-500">*</span>
-          </label>
-          <input
-            id="user-password-confirm"
-            v-model="form.passwordConfirmation"
-            type="password"
-            name="password_confirmation"
-            autocomplete="new-password"
-            placeholder="Taip semula kata laluan"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
-            data-testid="user-password-confirm"
-          />
-        </div>
-      </div>
-
-      <div
-        class="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
-        data-testid="user-form-footer"
-      >
-        <RouterLink :to="TEACHER_LIST_PATH" :class="BUTTON_CANCEL" data-testid="user-cancel">
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          Batal
-        </RouterLink>
-        <button type="submit" :disabled="saving" :class="BUTTON_PRIMARY" data-testid="user-submit">
-          <LoadingSpinner v-if="saving" class="h-4 w-4" />
-          <UserPlus v-else class="h-4 w-4" aria-hidden="true" />
-          Daftar Pengguna
-        </button>
-      </div>
+      </UCard>
     </form>
-  </div>
+  </DsPage>
 </template>

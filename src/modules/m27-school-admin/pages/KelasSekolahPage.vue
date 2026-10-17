@@ -2,24 +2,22 @@
 /**
  * S8 `/admin-sekolah/kelas` "Kelas Sekolah" (SRS M27 Part B v1.8 FR-M27-111…116, 44, 49; PROPOSED screen,
  * D26, DV-M27-20: M10 `classroom` rows only). User shell; one read-only call (`GET /api/admin-sekolah/kelas`
- * with `level`, `search`, `page`; school from the session). Top to bottom: breadcrumb, the tile "Kelas Aktif"
- * and the line "{n} kelas dipaparkan", the filter card, the table and the Laravel paginator (25 per page).
+ * with `level`, `search`, `page`; school from the session). Top to bottom: back link, the tile "Kelas Aktif"
+ * and the line "{n} kelas dipaparkan", the filter bar, the table and the pager (25 per page).
  * The header sub-line (the school name) comes from the session user: #16 does not return the school.
  *
- * States: loading shows the spinner; a 403 renders the global 403 page in place; any other failure shows
+ * States: loading shows a skeleton; a 403 renders the global 403 page in place; any other failure shows
  * the server's own message. The list stays on screen while the next filter or page loads.
  */
-import { School } from '@lucide/vue'
 import { computed, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { LaravelPager } from '@/components/data'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { useSession } from '@/composables/useSession'
+import { DsPage, DsStatTile } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchSchoolClasses } from '../api/school-admin'
@@ -93,65 +91,56 @@ function goPage(page: number) {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="kl-page">
+  <DsPage data-testid="kl-page">
     <template v-if="data">
-      <nav class="flex min-w-0 flex-wrap items-center gap-x-2 text-sm" data-testid="kl-breadcrumb">
-        <RouterLink
+      <div>
+        <UButton
           to="/admin-sekolah"
-          class="inline-flex min-h-11 items-center text-slate-500 hover:text-slate-700"
+          color="neutral"
+          variant="ghost"
+          icon="i-ph-arrow-left"
+          class="min-h-11"
           data-testid="kl-crumb-back"
-          >← Dashboard Sekolah</RouterLink
+          >Dashboard Sekolah</UButton
         >
-        <span class="text-slate-300">/</span>
-        <span class="font-bold text-slate-700" data-testid="kl-crumb-current">{{ TITLE }}</span>
-      </nav>
+      </div>
 
       <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div
-          class="flex min-w-0 items-center gap-3 rounded-2xl bg-white p-4 shadow sm:w-64"
-          data-testid="kl-tile"
-        >
-          <span
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600"
-          >
-            <School class="h-5 w-5" />
-          </span>
-          <div class="min-w-0">
-            <p
-              class="text-xs font-bold tracking-wide text-slate-500 uppercase"
-              data-testid="kl-tile-label"
-            >
-              Kelas Aktif
-            </p>
-            <p class="text-2xl font-bold text-slate-800" data-testid="kl-tile-value">
-              {{ formatCount(data.tiles.activeClasses) }}
-            </p>
-          </div>
+        <div class="sm:w-64" data-testid="kl-tile">
+          <DsStatTile
+            :value="formatCount(data.tiles.activeClasses)"
+            unit="Kelas Aktif"
+            icon="i-ph-chalkboard"
+          />
         </div>
-        <p class="text-sm text-slate-600" data-testid="kl-displayed">
+        <p class="text-body text-muted" data-testid="kl-displayed">
           {{ formatCount(data.meta.displayed) }} kelas dipaparkan
         </p>
       </div>
 
       <ClassFilters :levels="data.levels" :level="level" :search="search" @apply="apply" />
 
-      <ClassTable :rows="data.data" :from="data.meta.from ?? 1" />
-      <LaravelPager
+      <ClassTable
+        :rows="data.data"
+        :from="data.meta.from ?? 1"
         :page="pageNo"
         :total="data.meta.totalItems"
-        :per-page="data.meta.pageSize"
-        :path="PATH"
-        :query="{ level, search }"
-        @change="goPage"
+        :page-size="data.meta.pageSize"
+        @page="goPage"
       />
     </template>
-    <AlertBox v-else-if="error && !refused" :messages="error.message" data-testid="kl-error" />
-    <p
-      v-else-if="loading"
-      class="flex justify-center py-10 text-slate-500"
-      data-testid="kl-loading"
-    >
-      <LoadingSpinner class="h-6 w-6" />
-    </p>
-  </div>
+    <UAlert
+      v-else-if="error && !refused"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      :title="error.message"
+      role="alert"
+      data-testid="kl-error"
+    />
+    <div v-else-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="kl-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-48 w-full" />
+    </div>
+  </DsPage>
 </template>

@@ -1,13 +1,15 @@
 <script setup lang="ts">
 /**
- * S8 filter card (FR-M27-114; PROPOSED): select "Tingkatan / Darjah" ("Semua" and the levels the school
+ * S8 filter bar (FR-M27-114; PROPOSED): select "Tingkatan / Darjah" ("Semua" and the levels the school
  * has) and the search "Cari" ("Cari kelas...", class name). A GET filter: the select applies on change, the
  * search on Enter or after a short pause; both keep the other value and drop the page.
  */
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { FORM_INPUT_CLASS, FORM_SELECT_CLASS } from '@/components/form'
 import { useDebounce } from '@/composables'
+import { DsFilterBar } from '@/ds'
+
+import NativeSelect from '../native/NativeSelect.vue'
 
 const props = defineProps<{
   levels: { code: string; label: string }[]
@@ -28,6 +30,8 @@ watch(
   (v) => (searchValue.value = v),
 )
 
+const activeCount = computed(() => (levelValue.value !== '' ? 1 : 0))
+
 function apply() {
   emit('apply', { level: levelValue.value, search: searchValue.value.trim() })
 }
@@ -37,47 +41,44 @@ function onSubmit() {
   applyLater.cancel()
   apply()
 }
+
+function onReset() {
+  applyLater.cancel()
+  levelValue.value = ''
+  searchValue.value = ''
+  apply()
+}
 </script>
 
 <template>
-  <form
-    class="grid min-w-0 grid-cols-1 gap-3 rounded-2xl bg-white p-4 shadow sm:grid-cols-2"
-    data-testid="kl-filters"
-    @submit.prevent="onSubmit"
-  >
-    <div class="min-w-0">
-      <label for="kl-level" class="mb-1 block text-xs font-bold text-slate-500 uppercase"
-        >Tingkatan / Darjah</label
-      >
-      <select
+  <DsFilterBar :active-count="activeCount" data-testid="kl-filters" @apply="onSubmit" @reset="onReset">
+    <template #search>
+      <UFormField label="Cari" name="search" class="min-w-0 grow">
+        <UInput
+          id="kl-search"
+          v-model="searchValue"
+          type="search"
+          name="search"
+          icon="i-ph-magnifying-glass"
+          placeholder="Cari kelas..."
+          autocomplete="off"
+          class="w-full"
+          data-testid="kl-search"
+          @input="applyLater"
+        />
+      </UFormField>
+    </template>
+    <UFormField label="Tingkatan / Darjah" name="level" class="min-w-48">
+      <NativeSelect
         id="kl-level"
         v-model="levelValue"
         name="level"
-        :class="FORM_SELECT_CLASS"
-        class="min-h-11"
         data-testid="kl-level"
         @change="onSubmit"
       >
         <option value="">Semua</option>
         <option v-for="l in levels" :key="l.code" :value="l.code">{{ l.label }}</option>
-      </select>
-    </div>
-    <div class="min-w-0">
-      <label for="kl-search" class="mb-1 block text-xs font-bold text-slate-500 uppercase"
-        >Cari</label
-      >
-      <input
-        id="kl-search"
-        v-model="searchValue"
-        type="search"
-        name="search"
-        placeholder="Cari kelas..."
-        autocomplete="off"
-        :class="FORM_INPUT_CLASS"
-        class="min-h-11"
-        data-testid="kl-search"
-        @input="applyLater"
-      />
-    </div>
-  </form>
+      </NativeSelect>
+    </UFormField>
+  </DsFilterBar>
 </template>

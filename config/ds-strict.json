@@ -101,7 +101,17 @@
     { "glob": "src/modules/m02-users-schools/pages/JemputIbuBapaPage.vue", "level": "ds" },
     { "glob": "src/modules/m02-users-schools/components/jemput/**", "level": "ds" },
     { "glob": "src/modules/m08-student-performance/pages/Headcount*.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/components/headcount/**", "level": "page" }
+    { "glob": "src/modules/m08-student-performance/components/headcount/**", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/pages/SenaraiPelajarPage.vue", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/pages/SenaraiGuruPage.vue", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/pages/TambahPelajarPage.vue", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/pages/CiptaGuruPage.vue", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/pages/EditPelajarPage.vue", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/pages/EditGuruPage.vue", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/pages/KelasSekolahPage.vue", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/components/users/**", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/components/classes/**", "level": "page" },
+    { "glob": "src/modules/m16-battle-games/pages/SekolahBersaingPage.vue", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

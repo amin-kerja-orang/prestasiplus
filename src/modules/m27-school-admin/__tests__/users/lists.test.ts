@@ -108,20 +108,17 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
       subtitle: 'SMK Contoh Ujian',
     })
     const back = w.get('[data-testid="user-crumb-back"]')
-    expect(back.text()).toBe('← Dashboard Sekolah')
+    expect(back.text()).toBe('Dashboard Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
-    const current = w.get('[data-testid="user-crumb-current"]')
-    expect(current.text()).toBe('Senarai Pelajar')
-    expect(current.element.tagName).not.toBe('A')
   })
 
   it('shows one count card "Pelajar" (unfiltered total) and "{n} pengguna dijumpai"', async () => {
     const { wrapper: w } = await mountPupils(
       list([pupil()], { totalItems: 1234, totalPages: 50 }, { total: 2000, active: 1900, inactive: 100 }),
     )
-    expect(w.findAll('[data-testid="user-count-card"] > div')).toHaveLength(1)
-    expect(text(w, 'user-count')).toBe('2,000')
-    expect(text(w, 'user-count-label')).toBe('Pelajar')
+    expect(w.findAll('[data-testid="user-count-card"] > [data-ds="stat-tile"]')).toHaveLength(1)
+    expect(text(w, 'user-count-card')).toContain('2,000')
+    expect(text(w, 'user-count-card')).toContain('Pelajar')
     expect(text(w, 'user-found')).toBe('1,234 pengguna dijumpai')
   })
 
@@ -154,7 +151,7 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
 
   it('renders an active pupil with a name link, "Edit", the grade, classes and dd/mm/yyyy date', async () => {
     const { wrapper: w } = await mountPupils()
-    const row = w.findAll('[data-testid="user-row"]')[0]!
+    const row = w.findAll('tbody tr')[0]!
     expect(row.get('[data-testid="user-index"]').text()).toBe('1')
     expect(row.get('[data-testid="user-avatar"]').text()).toBe('MC')
     const name = row.get('[data-testid="user-name"]')
@@ -171,7 +168,7 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
 
   it('renders an inactive pupil with no link and no "Edit", "-" cells and a red read-only "Tidak" badge', async () => {
     const { wrapper: w } = await mountPupils()
-    const row = w.findAll('[data-testid="user-row"]')[1]!
+    const row = w.findAll('tbody tr')[1]!
     expect(row.get('[data-testid="user-name"]').element.tagName).toBe('SPAN')
     expect(row.find('[data-testid="user-edit"]').exists()).toBe(false)
     expect(row.get('[data-testid="user-phone"]').text()).toBe('-')
@@ -180,7 +177,6 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     const badge = row.get('[data-testid="user-status"]')
     expect(badge.text()).toBe('Tidak')
     expect(badge.element.tagName).toBe('SPAN')
-    expect(badge.classes()).toContain('text-red-700')
     // the only button is the disabled "Menyamar" (FR-M27-121)
     expect(row.findAll('button').map((b) => b.text())).toEqual(['Menyamar'])
     expect(row.get('[data-testid="user-impersonate"]').attributes('title')).toBe('Akaun ini tidak aktif')
@@ -200,7 +196,7 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     expect(text(w, 'user-empty')).toContain('Tiada pengguna dijumpai')
     expect(text(w, 'user-empty')).toContain('Cuba ubah kriteria carian anda')
     expect(text(w, 'user-found')).toBe('0 pengguna dijumpai')
-    expect(text(w, 'user-pager')).toBe('')
+    expect(w.find('[data-ds="data-table-pager"]').exists()).toBe(false)
   })
 
   it('has the filter form: Status options, Cari with its placeholder, submit "Cari"; no role / school / class control', async () => {
@@ -212,7 +208,7 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
       ['0', 'Tidak Aktif'],
     ])
     expect(w.get('[data-testid="user-search"]').attributes('placeholder')).toBe('Nama atau emel...')
-    expect(text(w, 'user-search-submit')).toBe('Cari')
+    expect(w.get('[data-ds="filter-bar"] button[type="submit"]').text()).toBe('Cari')
     expect(w.get('[data-testid="user-filter"]').findAll('select')).toHaveLength(1)
   })
 
@@ -270,13 +266,15 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
   })
 
   it('shows the 25-row pager only with more than one page, keeping the filters in the links', async () => {
-    const { wrapper: w } = await mountPupils(
+    const { wrapper: w, router } = await mountPupils(
       list([pupil()], { totalItems: 60, totalPages: 3, to: 1 }),
       '/admin-sekolah/pelajar?is_active=1&search=a',
     )
-    const hrefs = w.findAll('[data-testid="user-pager"] a').map((a) => a.attributes('href'))
-    expect(hrefs).toContain('/admin-sekolah/pelajar?is_active=1&search=a&page=2')
-    expect(text(w, 'user-pager')).toContain('Showing 1 to 25 of 60 results')
+    expect(text(w, 'user-table')).toContain('Menunjukkan 1-25 daripada 60 hasil')
+    const next = w.findAll('[data-ds="data-table-pager"] button').find((b) => b.text() === '2')
+    await next!.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ is_active: '1', search: 'a', page: '2' })
   })
 
   it('renders the global 403 page for a 403 and the server message for another failure', async () => {
@@ -304,8 +302,7 @@ describe('S7 Senarai Guru (FR-M27-99 to 103)', () => {
       title: 'Senarai Guru',
       subtitle: 'SMK Contoh Ujian',
     })
-    expect(text(w, 'user-crumb-current')).toBe('Senarai Guru')
-    expect(text(w, 'user-count-label')).toBe('Guru')
+    expect(text(w, 'user-count-card')).toContain('Guru')
     expect(text(w, 'user-found')).toBe('2 pengguna dijumpai')
     expect(text(w, 'user-export')).toBe('Eksport CSV')
     const add = w.get('[data-testid="user-add"]')
@@ -331,7 +328,7 @@ describe('S7 Senarai Guru (FR-M27-99 to 103)', () => {
 
   it('renders "{n} kelas", "Belum login", the active button and the edit link; an inactive teacher has none', async () => {
     const { wrapper: w } = await mountTeachers()
-    const [a, b] = w.findAll('[data-testid="user-row"]')
+    const [a, b] = w.findAll('tbody tr')
     expect(a!.get('[data-testid="user-classes"]').text()).toBe('2 kelas')
     expect(a!.get('[data-testid="user-last-login"]').text()).toBe('Belum login')
     expect(a!.get('[data-testid="user-phone"]').text()).toBe('-')
@@ -350,7 +347,7 @@ describe('S7 Senarai Guru (FR-M27-99 to 103)', () => {
   it('the "Aktif?" button asks the native confirm; cancel does nothing', async () => {
     const confirm = confirmWith(false)
     const { wrapper: w } = await mountTeachers()
-    await w.get('[data-testid="user-toggle"]').trigger('submit')
+    await w.get('[data-testid="user-toggle"]').trigger('click')
     expect(confirm).toHaveBeenCalledWith('Pasti untuk menukar status pengguna ini?')
     expect(api.toggleSchoolTeacherActive).not.toHaveBeenCalled()
   })
@@ -363,7 +360,7 @@ describe('S7 Senarai Guru (FR-M27-99 to 103)', () => {
     })
     const { wrapper: w } = await mountTeachers()
     expect(api.fetchSchoolTeachers).toHaveBeenCalledTimes(1)
-    await w.get('[data-testid="user-toggle"]').trigger('submit')
+    await w.get('[data-testid="user-toggle"]').trigger('click')
     await flushPromises()
     expect(api.toggleSchoolTeacherActive).toHaveBeenCalledWith(5)
     expect(api.fetchSchoolTeachers).toHaveBeenCalledTimes(2)
@@ -377,7 +374,7 @@ describe('S7 Senarai Guru (FR-M27-99 to 103)', () => {
     confirmWith(true)
     api.toggleSchoolTeacherActive.mockResolvedValue({ data: { isActive: true }, status: 'ok' })
     const { wrapper: w } = await mountTeachers()
-    await w.findAll('[data-testid="user-toggle"]')[1]!.trigger('submit')
+    await w.findAll('[data-testid="user-toggle"]')[1]!.trigger('click')
     await flushPromises()
     expect(api.toggleSchoolTeacherActive).toHaveBeenCalledWith(6)
   })

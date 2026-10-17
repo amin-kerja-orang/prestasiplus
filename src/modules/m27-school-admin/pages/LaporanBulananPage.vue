@@ -61,7 +61,7 @@ watch(
 const hasAnswers = computed(() => (data.value?.cards.answers ?? 0) > 0)
 
 const LINK =
-  'inline-flex min-h-11 items-center rounded-lg px-1 text-sm font-semibold text-blue-700 hover:underline'
+  'inline-flex min-h-11 items-center rounded-lg px-1 text-sm font-semibold text-blue-700'
 
 function print() {
   window.print()
