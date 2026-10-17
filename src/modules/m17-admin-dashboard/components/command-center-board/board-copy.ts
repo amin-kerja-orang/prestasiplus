@@ -1,5 +1,5 @@
 /**
- * Copy, paths and class strings shared by the Command Center board S2 and the daily-activity board S3
+ * Copy and paths shared by the Command Center board S2 and the daily-activity board S3
  * (M17-T3b; SRS M17 §3 FR-M17-20..47, §3.2 FR-M17-101..118, §8). Exact BM copy of live S2 / S3; the school
  * view's copy is the SERVER-defined one (FR-M17-106, 116).
  */
@@ -9,7 +9,7 @@ import type { CcMood } from '../../api/command-center-board-types'
 export const S2_COPY = {
   title: 'PrestasiPlus Command Center',
   back: '← Dashboard',
-  daily: '📊 Aktiviti Harian',
+  daily: 'Aktiviti Harian',
   live: 'LIVE',
   tz: 'MYT',
   /** School view only (FR-M17-106 a). */
@@ -28,7 +28,7 @@ export const S3_COPY = {
   report: 'Laporan Eksekutif',
   noData: 'Tiada data',
   noActivity: 'Tiada aktiviti',
-  noSchools: '😴 Tiada aktiviti',
+  noSchools: 'Tiada aktiviti',
   noLogins: 'Tiada login',
   noBadges: 'Tiada badge baru',
   noDrill: 'Tiada data terperinci',
@@ -40,9 +40,9 @@ export const S3_COPY = {
 } as const
 
 export const S3_TABS = [
-  { period: 'today', label: '📅 Hari Ini' },
-  { period: 'week', label: '📆 Minggu Ini' },
-  { period: 'month', label: '🗓️ Bulan Ini' },
+  { period: 'today', label: 'Hari Ini', icon: 'i-ph-calendar-blank' },
+  { period: 'week', label: 'Minggu Ini', icon: 'i-ph-calendar-dots' },
+  { period: 'month', label: 'Bulan Ini', icon: 'i-ph-calendar' },
 ] as const
 
 /** Poll intervals (FR-M17-21, FR-M17-36). */
@@ -53,11 +53,11 @@ export const S2_REQUEST_TIMEOUT_MS = 15_000
 /** The counter animation (FR-M17-21). */
 export const COUNT_UP_MS = 800
 
-export const MOODS: readonly { key: CcMood; emoji: string; label: string }[] = [
-  { key: 'happy', emoji: '😊', label: 'Gembira' },
-  { key: 'okay', emoji: '😐', label: 'OK' },
-  { key: 'sad', emoji: '😢', label: 'Sedih' },
-  { key: 'stressed', emoji: '😩', label: 'Tekanan' },
+export const MOODS: readonly { key: CcMood; icon: string; label: string }[] = [
+  { key: 'happy', icon: 'i-ph-smiley', label: 'Gembira' },
+  { key: 'okay', icon: 'i-ph-smiley-meh', label: 'OK' },
+  { key: 'sad', icon: 'i-ph-smiley-sad', label: 'Sedih' },
+  { key: 'stressed', icon: 'i-ph-smiley-nervous', label: 'Tekanan' },
 ]
 
 export interface BoardPaths {
@@ -85,32 +85,6 @@ export function boardPaths(alias: boolean): BoardPaths {
   }
 }
 
-export type BoardAccent = 'indigo' | 'emerald' | 'amber' | 'rose' | 'cyan' | 'violet'
-
-export const ACCENT_EDGE: Record<BoardAccent, string> = {
-  indigo: 'border-t-indigo-500',
-  emerald: 'border-t-emerald-500',
-  amber: 'border-t-amber-500',
-  rose: 'border-t-rose-500',
-  cyan: 'border-t-cyan-500',
-  violet: 'border-t-violet-500',
-}
-export const ACCENT_TEXT: Record<BoardAccent, string> = {
-  indigo: 'text-indigo-300',
-  emerald: 'text-emerald-400',
-  amber: 'text-amber-400',
-  rose: 'text-rose-400',
-  cyan: 'text-cyan-400',
-  violet: 'text-violet-400',
-}
-
-/** Rank badge classes (top schools r1-r5, top pupils rank-1..3 then rank-n). */
-export const RANK_BADGE: readonly string[] = [
-  'bg-amber-400 text-slate-900',
-  'bg-slate-300 text-slate-900',
-  'bg-amber-600 text-white',
-  'bg-slate-700 text-slate-200',
-  'bg-slate-700 text-slate-200',
-]
-
-export const MEDALS: readonly string[] = ['🥇', '🥈', '🥉']
+/** Colour of a rank badge (top schools and pupils): the podium is primary, the rest neutral. */
+export const rankColor = (index: number): 'primary' | 'neutral' =>
+  index < 3 ? 'primary' : 'neutral'

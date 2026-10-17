@@ -78,7 +78,13 @@
     { "glob": "src/modules/m10-teacher-class/components/dashboard/*.vue", "level": "page" },
     { "glob": "src/modules/m10-teacher-class/components/kelas/{ClassCard,QrModal,SchoolPicker}.vue", "level": "page" },
     { "glob": "src/modules/m10-teacher-class/components/pelajar/*.vue", "level": "page" },
-    { "glob": "src/modules/m10-teacher-class/components/soalan/*.vue", "level": "page" }
+    { "glob": "src/modules/m10-teacher-class/components/soalan/*.vue", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/pages/CommandCenterPage.vue", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/components/command-center/*.vue", "level": "page" },
+    { "glob": "src/modules/m17-admin-dashboard/pages/CommandCenter*.vue", "level": "page" },
+    { "glob": "src/modules/m17-admin-dashboard/components/command-center-board/*.vue", "level": "page" },
+    { "glob": "src/modules/m17-admin-dashboard/components/command-center/*.vue", "level": "page" },
+    { "glob": "src/modules/m17-admin-dashboard/components/frame/CcBoardFrame.vue", "level": "ds" }
   ],
   "exempt": [
     "src/theme/**"

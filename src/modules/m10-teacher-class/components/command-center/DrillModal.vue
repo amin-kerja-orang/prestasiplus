@@ -10,9 +10,10 @@ import { useApi } from '@/composables'
 
 import { fetchCommandCenterDrill } from '../../api/command-center'
 import type { CcDrillType } from '../../api/command-center-types'
+import CcDialog from './CcDialog.vue'
+import CcTable from './CcTable.vue'
 import { useOpenTab } from './composables'
-import { plain, S2_COPY, studentPath, TBL } from './copy'
-import DarkModal from './DarkModal.vue'
+import { plain, S2_COPY, studentPath } from './copy'
 import { drillTable } from './drill-table'
 import StatCards from './StatCards.vue'
 
@@ -38,7 +39,6 @@ const vsCards = computed(() => {
     {
       label: 'Perubahan',
       value: `${e.accuracyChange > 0 ? '+' : ''}${plain(e.accuracyChange)}%`,
-      tone: e.accuracyChange < 0 ? 'text-rose-400' : 'text-emerald-400',
     },
     { label: 'Jawapan Kini', value: String(e.answersNow) },
     { label: 'Jawapan Lepas', value: String(e.answersPrev) },
@@ -51,51 +51,30 @@ const errorText = computed(() => (error.value ? `Ralat: ${error.value.message}` 
 </script>
 
 <template>
-  <DarkModal :title="title" testid="cc-drill-modal" wide @close="$emit('close')">
-    <p v-if="error" class="text-sm text-rose-400" data-testid="cc-drill-error">{{ errorText }}</p>
-    <p v-else-if="!data" class="text-sm text-slate-300" data-testid="cc-drill-loading">
+  <CcDialog :title="title" testid="cc-drill-modal" wide @close="$emit('close')">
+    <p v-if="error" class="text-body text-error" data-testid="cc-drill-error">{{ errorText }}</p>
+    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-drill-loading">
       {{ S2_COPY.loadingBody }}
     </p>
     <template v-else>
       <template v-if="extra">
-        <p
-          v-if="data.vsLabel"
-          class="mb-2 text-sm font-semibold text-slate-300"
-          data-testid="cc-drill-vs-label"
-        >
+        <p v-if="data.vsLabel" class="text-label text-toned" data-testid="cc-drill-vs-label">
           {{ data.vsLabel }}
         </p>
         <StatCards :cards="vsCards" />
       </template>
-      <div v-if="table && table.rows.length" :class="TBL.wrap" data-testid="cc-drill-table-wrap">
-        <table :class="TBL.table" data-testid="cc-drill-table">
-          <thead>
-            <tr>
-              <th v-for="h in table.headers" :key="h" :class="TBL.th">{{ h }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(row, i) in table.rows"
-              :key="i"
-              :class="[TBL.row, row.studentId !== undefined ? TBL.link : '']"
-              data-testid="cc-drill-row"
-              @click="row.studentId !== undefined && openTab(studentPath(row.studentId))"
-            >
-              <td
-                v-for="(cell, j) in row.cells"
-                :key="j"
-                :class="[TBL.td, cell.tone, cell.mono ? 'font-mono' : '']"
-              >
-                {{ cell.text }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p v-else-if="!extra" class="text-base text-slate-50" data-testid="cc-drill-empty">
+      <CcTable
+        v-if="table && table.rows.length"
+        :headers="table.headers"
+        :rows="table.rows"
+        testid="cc-drill-table-wrap"
+        row-testid="cc-drill-row"
+        :caption="title"
+        @open="openTab(studentPath($event))"
+      />
+      <p v-else-if="!extra" class="text-body text-highlighted" data-testid="cc-drill-empty">
         {{ S2_COPY.noData }}
       </p>
     </template>
-  </DarkModal>
+  </CcDialog>
 </template>

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /**
- * S2 `/guru/command-center` "Command Center" (FR-M10-14..25, FN-M10-2.2.1-2.2.14): standalone dark layout, no
- * shell. Polls `live-data` every 10 s, a 1 s clock, four KPI tiles, the panels, the drill modal and the five
- * modals of the top bar. DV-M10-17: KPI and panel grids 4 / 2 / 1 columns at >= 1024 / 640 / below with no
- * panel clipped; DV-M10-28: no text under 12 px.
+ * S2 `/guru/command-center` "Command Center" (FR-M10-14..25, FN-M10-2.2.1-2.2.14), v2: inside the staff shell
+ * (the v1 standalone dark layout is gone). Polls `live-data` every 10 s (the "Jeda" control pauses it), a 1 s
+ * clock, four KPI tiles, the panels, the drill dialog and the five dialogs of the top bar. KPI and panel grids
+ * 2 / 2 / 4 columns at 375 / 768 / 1280 with no panel clipped.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { usePageMeta } from '@/composables'
+import { DsPage } from '@/ds'
 
 import AchievementsModal from '../components/command-center/AchievementsModal.vue'
 import ActivityPanel from '../components/command-center/ActivityPanel.vue'
@@ -35,7 +36,7 @@ import PredictiveModal from '../components/command-center/PredictiveModal.vue'
 import RemedialModal from '../components/command-center/RemedialModal.vue'
 import TopBar from '../components/command-center/TopBar.vue'
 
-const { data } = useLiveData()
+const { data, paused, togglePause } = useLiveData()
 const d = computed(() => data.value ?? EMPTY_LIVE)
 
 const pageMeta = usePageMeta()
@@ -63,19 +64,39 @@ function openDrill(req: DrillRequest) {
   drill.value = req
   drillKey.value += 1
 }
+
+// Full screen: the browser Fullscreen API when it exists; `aria-pressed` follows the real state.
+const fullscreen = ref(false)
+function syncFullscreen() {
+  fullscreen.value = document.fullscreenElement !== null
+}
+function toggleFullscreen() {
+  if (document.fullscreenElement) void document.exitFullscreen()
+  else void document.documentElement.requestFullscreen?.()
+}
+document.addEventListener('fullscreenchange', syncFullscreen)
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', syncFullscreen)
+})
 </script>
 
 <template>
-  <div class="min-h-dvh min-w-0 bg-slate-900 text-slate-200" data-testid="cc-s2">
-    <TopBar @open="modal = $event" />
+  <DsPage data-testid="cc-s2">
+    <TopBar
+      :paused="paused"
+      :fullscreen="fullscreen"
+      @open="modal = $event"
+      @pause="togglePause"
+      @fullscreen="toggleFullscreen"
+    />
 
-    <div class="min-w-0 space-y-3 p-3 sm:p-4" data-testid="cc-body">
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="cc-kpis">
+    <div class="flex min-w-0 flex-col gap-4" data-testid="cc-body">
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="cc-kpis" aria-live="off">
         <KpiTile
           label="Pelajar Berdaftar"
           :value="students"
           :sub="`${d.activeStudents} aktif menjawab`"
-          accent="indigo"
+          icon="i-ph-student"
           testid="cc-kpi-students"
           @click="openDrill({ type: 'students', label: 'Pelajar Berdaftar' })"
         />
@@ -83,7 +104,7 @@ function openDrill(req: DrillRequest) {
           label="Soalan Dijawab"
           :value="answered"
           sub="sepanjang masa"
-          accent="emerald"
+          icon="i-ph-clipboard-text"
           testid="cc-kpi-answered"
           @click="openDrill({ type: 'today', label: 'Soalan Dijawab' })"
         />
@@ -91,7 +112,7 @@ function openDrill(req: DrillRequest) {
           label="Ketepatan Purata"
           :value="`${String(d.accuracy)}%`"
           sub="keseluruhan sekolah"
-          accent="amber"
+          icon="i-ph-target"
           testid="cc-kpi-accuracy"
           @click="openDrill({ type: 'subjects', label: 'Ketepatan Purata' })"
         />
@@ -99,36 +120,33 @@ function openDrill(req: DrillRequest) {
           label="GPS Sekolah"
           :value="gpsText(d.gpsOverall)"
           sub="purata GPS"
-          accent="rose"
+          icon="i-ph-chart-bar"
           testid="cc-kpi-gps"
           @click="openDrill({ type: 'gps', label: 'GPS Sekolah' })"
         />
       </div>
 
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="cc-panels">
-        <div class="contents lg:col-span-1 lg:flex lg:flex-col lg:gap-3">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" data-testid="cc-panels">
+        <div class="flex min-w-0 flex-col gap-4 xl:col-span-1">
           <ClassPanel :classes="d.classes" />
           <KirkPanel :d="d" @drill="openDrill" />
           <MoodPanel :mood="d.mood" @drill="openDrill" />
           <InsightPanel :d="d" />
         </div>
-        <div class="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-3">
+        <div class="flex min-w-0 flex-col gap-4 xl:col-span-2">
           <ActivityPanel :d="d" @drill="openDrill" />
           <FeedPanel :feed="d.recentFeed" />
           <LeaderboardPanel :rows="d.leaderboardWeek" :badges="d.recentBadges" />
         </div>
-        <div class="contents lg:col-span-1 lg:flex lg:flex-col lg:gap-3">
+        <div class="flex min-w-0 flex-col gap-4 md:col-span-2 xl:col-span-1">
           <EngagementPanel :engagement="d.engagement" @drill="openDrill" />
         </div>
       </div>
     </div>
 
-    <footer
-      class="border-t border-slate-800 px-4 py-3 text-center text-xs text-slate-400"
-      data-testid="cc-footer"
-    >
+    <p class="text-center text-caption text-muted" data-testid="cc-footer">
       {{ S2_COPY.footer }}
-    </footer>
+    </p>
 
     <DrillModal
       v-if="drill"
@@ -143,5 +161,5 @@ function openDrill(req: DrillRequest) {
     <PredictiveModal v-else-if="modal === 'predictive'" @close="modal = null" />
     <ClassSummaryModal v-else-if="modal === 'kelas'" @close="modal = null" />
     <AchievementsModal v-else-if="modal === 'badges'" @close="modal = null" />
-  </div>
+  </DsPage>
 </template>

@@ -4,18 +4,23 @@
  * breadcrumb, the info bar "Sekolah:" and "Senarai Kelas ({n})" (a row opens S6; no class = the row
  * "Tiada kelas aktif"). The route prefix is a prop (M10 and school-admin mounts).
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { LoadingSpinner } from '@/components/feedback'
+import { DsDrillTable } from '@/ds'
 
 import { fetchCcTeacher } from '../api/command-center'
-import { CC_TABLE as T, count, LOAD_ERROR_COPY } from '../components/command-center/cc-format'
+import type { CcTeacherClass } from '../api/command-center-types'
+import { count, LOAD_ERROR_COPY } from '../components/command-center/cc-format'
 import { ccPaths } from '../components/command-center/cc-paths'
 import CcAccuracyBar from '../components/command-center/CcAccuracyBar.vue'
 import CcFrame from '../components/command-center/CcFrame.vue'
 import CcPanel from '../components/command-center/CcPanel.vue'
 import { useCcPage } from '../components/command-center/use-cc-page'
+
+/** The DS table wants an index signature, which a mapped alias gives an interface. */
+type Row = { [K in keyof CcTeacherClass]: CcTeacherClass[K] }
 
 const props = withDefaults(defineProps<{ schoolId: number; userId: number; basePath?: string }>(), {
   basePath: '/admin/command-center',
@@ -39,14 +44,14 @@ const crumbs = computed(() => {
     { label: d.teacher.name },
   ]
 })
-const COLUMNS = [
-  '#',
-  'Nama Kelas',
-  'Tahap',
-  'Pelajar',
-  'Aktif (30h)',
-  'Jumlah Jawapan',
-  'Ketepatan',
+const columns: TableColumn<Row>[] = [
+  { id: 'no', header: '#' },
+  { id: 'name', header: 'Nama Kelas' },
+  { id: 'level', header: 'Tahap' },
+  { id: 'students', header: 'Pelajar' },
+  { id: 'active', header: 'Aktif (30h)' },
+  { id: 'answers', header: 'Jumlah Jawapan' },
+  { id: 'acc', header: 'Ketepatan' },
 ]
 
 function open(classId: number) {
@@ -61,51 +66,60 @@ function open(classId: number) {
     back-label="← Kembali ke Sekolah"
     :crumbs="crumbs"
   >
-    <p v-if="error" class="text-sm text-rose-400" data-testid="cc-error">{{ LOAD_ERROR_COPY }}</p>
+    <p v-if="error" class="text-body text-error" data-testid="cc-error">{{ LOAD_ERROR_COPY }}</p>
     <p
       v-else-if="!data"
-      class="flex items-center gap-2 text-sm text-slate-400"
+      class="flex items-center gap-2 text-body text-muted"
       data-testid="cc-loading"
     >
-      <LoadingSpinner class="h-4 w-4" aria-hidden="true" />Memuatkan...
+      <UProgress class="w-16" aria-hidden="true" />Memuatkan...
     </p>
     <template v-else>
-      <p class="text-sm text-slate-400" data-testid="cc-info">
-        Sekolah: <strong class="text-slate-50">{{ data.school.name }}</strong>
+      <p class="text-body text-muted" data-testid="cc-info">
+        Sekolah: <strong class="text-highlighted">{{ data.school.name }}</strong>
       </p>
 
-      <CcPanel icon="📚" :title="`Senarai Kelas (${data.classes.length})`">
-        <div class="overflow-x-auto" data-testid="cc-table-scroller">
-          <table :class="[T.table, 'min-w-[640px]']" data-testid="cc-classes-table">
-            <thead>
-              <tr>
-                <th v-for="c in COLUMNS" :key="c" :class="T.th">{{ c }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="data.classes.length === 0" :class="T.row" data-testid="cc-empty-row">
-                <td :class="[T.td, 'text-slate-400']" colspan="7">Tiada kelas aktif</td>
-              </tr>
-              <tr
-                v-for="(c, i) in data.classes"
-                :key="c.id"
-                :class="[T.row, T.rowLink]"
+      <CcPanel icon="i-ph-chalkboard" :title="`Senarai Kelas (${data.classes.length})`">
+        <p v-if="data.classes.length === 0" class="text-body text-muted" data-testid="cc-empty-row">
+          Tiada kelas aktif
+        </p>
+        <div v-else data-testid="cc-table-scroller">
+          <DsDrillTable
+            :data="data.classes"
+            :columns="columns"
+            caption="Senarai Kelas"
+            data-testid="cc-classes-table"
+            @drill="(c: Row) => open(c.id)"
+          >
+            <template #no-cell="{ row }"
+              ><span class="tabular text-caption text-muted">{{ row.index + 1 }}</span></template
+            >
+            <template #name-cell="{ row }">
+              <UButton
+                variant="link"
+                color="neutral"
+                class="h-auto p-0 text-start"
+                trailing-icon="i-ph-caret-right"
+                :label="row.original.name"
                 data-testid="cc-class-row"
-                :data-class-id="c.id"
-                @click="open(c.id)"
-              >
-                <td :class="[T.td, 'font-mono text-xs text-slate-500']">{{ i + 1 }}</td>
-                <td :class="[T.td, 'font-semibold text-slate-50']">
-                  {{ c.name }}
-                </td>
-                <td :class="T.td">{{ c.level }}</td>
-                <td :class="[T.td, 'font-mono text-slate-50']">{{ c.students }}</td>
-                <td :class="[T.td, 'font-mono text-emerald-400']">{{ c.active30d }}</td>
-                <td :class="[T.td, 'font-mono text-slate-50']">{{ count(c.answers) }}</td>
-                <td :class="T.td"><CcAccuracyBar :value="c.accuracy" /></td>
-              </tr>
-            </tbody>
-          </table>
+                :data-class-id="row.original.id"
+                @click.stop="open(row.original.id)"
+              />
+            </template>
+            <template #level-cell="{ row }">{{ row.original.level }}</template>
+            <template #students-cell="{ row }"
+              ><span class="tabular">{{ row.original.students }}</span></template
+            >
+            <template #active-cell="{ row }"
+              ><span class="tabular text-success">{{ row.original.active30d }}</span></template
+            >
+            <template #answers-cell="{ row }"
+              ><span class="tabular">{{ count(row.original.answers) }}</span></template
+            >
+            <template #acc-cell="{ row }"
+              ><CcAccuracyBar :value="row.original.accuracy"
+            /></template>
+          </DsDrillTable>
         </div>
       </CcPanel>
     </template>

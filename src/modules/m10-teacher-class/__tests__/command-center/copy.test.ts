@@ -52,25 +52,25 @@ describe('rules of S2 (FN-M10-2.2.3-2.2.13)', () => {
   })
 
   it('words the week change by its sign', () => {
-    expect(weekChangeText(0)).toEqual({ text: 'Sama dengan minggu lepas', tone: 'text-slate-400' })
-    expect(weekChangeText(12)).toEqual({ text: '▲ +12% vs minggu lepas', tone: 'text-emerald-400' })
-    expect(weekChangeText(-23)).toEqual({ text: '▼ 23% vs minggu lepas', tone: 'text-rose-400' })
+    expect(weekChangeText(0)).toEqual({ text: 'Sama dengan minggu lepas', tone: 'text-muted' })
+    expect(weekChangeText(12)).toEqual({ text: '▲ +12% vs minggu lepas', tone: 'text-success' })
+    expect(weekChangeText(-23)).toEqual({ text: '▼ 23% vs minggu lepas', tone: 'text-error' })
   })
 
-  it('colours accuracy (>= 70 emerald, < 50 rose, else amber) and GPS (<= 2, <= 3)', () => {
+  it('colours accuracy (>= 70 success, < 50 error, else warning) and GPS (<= 2, <= 3)', () => {
     expect([90, 70, 69, 50, 49].map(accuracyTone)).toEqual([
-      'text-emerald-400',
-      'text-emerald-400',
-      'text-amber-400',
-      'text-amber-400',
-      'text-rose-400',
+      'text-success',
+      'text-success',
+      'text-warning',
+      'text-warning',
+      'text-error',
     ])
     expect([1.9, 2, 2.5, 3, 3.1].map(gpsTone)).toEqual([
-      'text-emerald-400',
-      'text-emerald-400',
-      'text-amber-400',
-      'text-amber-400',
-      'text-rose-400',
+      'text-success',
+      'text-success',
+      'text-warning',
+      'text-warning',
+      'text-error',
     ])
   })
 
@@ -103,7 +103,7 @@ describe('drill tables (FN-M10-2.2.7)', () => {
     const t = drillTable('gps', rows)
     expect(t.headers).toEqual(['Subjek', 'GPS', 'Gred', 'Pelajar', 'Sumber'])
     expect(t.rows[0]!.cells.map((c) => c.text)).toEqual(['Kimia', '4.69', 'D', '8', 'Anggaran OTR'])
-    expect(t.rows[0]!.cells[1]!.tone).toBe('text-rose-400')
+    expect(t.rows[0]!.cells[1]!.tone).toBe('text-error')
     expect(t.rows[0]!.studentId).toBeUndefined()
   })
 

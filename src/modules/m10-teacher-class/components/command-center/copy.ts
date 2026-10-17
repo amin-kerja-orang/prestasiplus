@@ -38,53 +38,32 @@ export const TAB_TITLE = (name: string) => `Command Center — Guru: ${name}`
 export type NavAction = 'remedial' | 'evaluate' | 'predictive' | 'kelas' | 'badges'
 
 /** The six top-bar links in live order; `rekod` is a real link, the rest open a modal. */
-export const NAV_LINKS: readonly { id: NavAction | 'rekod'; label: string; tone: string }[] = [
-  {
-    id: 'remedial',
-    label: '🔬 Remedial',
-    tone: 'border-rose-400/40 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25',
-  },
-  {
-    id: 'rekod',
-    label: '📊 Rekod',
-    tone: 'border-indigo-400/40 bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25',
-  },
-  {
-    id: 'evaluate',
-    label: '⚠ Evaluate',
-    tone: 'border-amber-400/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25',
-  },
-  {
-    id: 'predictive',
-    label: '🔮 Ramalan SPM',
-    tone: 'border-emerald-400/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25',
-  },
-  {
-    id: 'kelas',
-    label: '👩‍🏫 Kelas',
-    tone: 'border-indigo-400/40 bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25',
-  },
-  {
-    id: 'badges',
-    label: '🏆 Badges',
-    tone: 'border-amber-400/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25',
-  },
+export const NAV_LINKS: readonly { id: NavAction | 'rekod'; label: string; icon: string }[] = [
+  { id: 'remedial', label: 'Remedial', icon: 'i-ph-flask' },
+  { id: 'rekod', label: 'Rekod', icon: 'i-ph-chart-bar' },
+  { id: 'evaluate', label: 'Evaluate', icon: 'i-ph-warning' },
+  { id: 'predictive', label: 'Ramalan SPM', icon: 'i-ph-crystal-ball' },
+  { id: 'kelas', label: 'Kelas', icon: 'i-ph-chalkboard-teacher' },
+  { id: 'badges', label: 'Badges', icon: 'i-ph-trophy' },
 ]
 export const REKOD_PATH = '/guru/remedial-progress'
 
-export const MOODS: readonly { key: CcMoodName; emoji: string; label: string }[] = [
-  { key: 'happy', emoji: '😊', label: 'Gembira' },
-  { key: 'okay', emoji: '😐', label: 'OK' },
-  { key: 'sad', emoji: '😢', label: 'Sedih' },
-  { key: 'stressed', emoji: '😩', label: 'Tekanan' },
+export const MOODS: readonly { key: CcMoodName; icon: string; label: string }[] = [
+  { key: 'happy', icon: 'i-ph-smiley', label: 'Gembira' },
+  { key: 'okay', icon: 'i-ph-smiley-meh', label: 'OK' },
+  { key: 'sad', icon: 'i-ph-smiley-sad', label: 'Sedih' },
+  { key: 'stressed', icon: 'i-ph-smiley-nervous', label: 'Tekanan' },
 ]
 
-export const BANDS: readonly { key: CcEngagementBand; label: string; bar: string }[] = [
-  { key: 'champion', label: 'Champion', bar: 'bg-emerald-500' },
-  { key: 'consistent', label: 'Konsisten', bar: 'bg-cyan-500' },
-  { key: 'developing', label: 'Berkembang', bar: 'bg-amber-500' },
-  { key: 'minimum', label: 'Minimum', bar: 'bg-orange-500' },
-  { key: 'disengaged', label: 'Disengaged', bar: 'bg-rose-500' },
+/** Colour of a `UProgress` bar. */
+export type BarColor = 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral'
+
+export const BANDS: readonly { key: CcEngagementBand; label: string; bar: BarColor }[] = [
+  { key: 'champion', label: 'Champion', bar: 'success' },
+  { key: 'consistent', label: 'Konsisten', bar: 'primary' },
+  { key: 'developing', label: 'Berkembang', bar: 'info' },
+  { key: 'minimum', label: 'Minimum', bar: 'warning' },
+  { key: 'disengaged', label: 'Disengaged', bar: 'error' },
 ]
 
 export const GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'] as const
@@ -153,59 +132,50 @@ export function activityWidth(today: number, week: number): number {
 
 /** FN-M10-2.2.5: the week-change text and its colour. */
 export function weekChangeText(change: number): { text: string; tone: string } {
-  if (change === 0) return { text: S2_COPY.sameWeek, tone: 'text-slate-400' }
-  if (change > 0) return { text: `▲ +${String(change)}% vs minggu lepas`, tone: 'text-emerald-400' }
-  return { text: `▼ ${String(Math.abs(change))}% vs minggu lepas`, tone: 'text-rose-400' }
+  if (change === 0) return { text: S2_COPY.sameWeek, tone: 'text-muted' }
+  if (change > 0) return { text: `▲ +${String(change)}% vs minggu lepas`, tone: 'text-success' }
+  return { text: `▼ ${String(Math.abs(change))}% vs minggu lepas`, tone: 'text-error' }
 }
 
 /** FN-M10-2.2.5 / 2.2.7: accuracy >= 70 emerald, < 50 rose, else amber. */
 export function accuracyTone(value: number): string {
-  if (value >= 70) return 'text-emerald-400'
-  if (value < 50) return 'text-rose-400'
-  return 'text-amber-400'
+  if (value >= 70) return 'text-success'
+  if (value < 50) return 'text-error'
+  return 'text-warning'
 }
 
 /** FN-M10-2.2.7: GPS <= 2 emerald, <= 3 amber, else rose. */
 export function gpsTone(gps: number): string {
-  if (gps <= 2) return 'text-emerald-400'
-  if (gps <= 3) return 'text-amber-400'
-  return 'text-rose-400'
+  if (gps <= 2) return 'text-success'
+  if (gps <= 3) return 'text-warning'
+  return 'text-error'
 }
 
 /** FN-M10-2.2.13: Common >= 20, Uncommon >= 10, Rare >= 5, Epic >= 1, Legendary 0 holders. */
 export function rarityOf(holders: number): { label: string; tone: string } {
-  if (holders >= 20) return { label: 'Common', tone: 'text-slate-300' }
-  if (holders >= 10) return { label: 'Uncommon', tone: 'text-emerald-300' }
-  if (holders >= 5) return { label: 'Rare', tone: 'text-sky-300' }
-  if (holders >= 1) return { label: 'Epic', tone: 'text-violet-300' }
-  return { label: 'Legendary', tone: 'text-amber-300' }
+  if (holders >= 20) return { label: 'Common', tone: 'text-muted' }
+  if (holders >= 10) return { label: 'Uncommon', tone: 'text-success' }
+  if (holders >= 5) return { label: 'Rare', tone: 'text-info' }
+  if (holders >= 1) return { label: 'Epic', tone: 'text-primary' }
+  return { label: 'Legendary', tone: 'text-warning' }
 }
 
 type AnyRisk = CcRisk | CcEvaluationRisk
-const RISK: Record<AnyRisk, { label: string; tone: string }> = {
-  kritikal: { label: 'KRITIKAL', tone: 'bg-rose-500/20 text-rose-300' },
-  critical: { label: 'KRITIKAL', tone: 'bg-rose-500/20 text-rose-300' },
-  tinggi: { label: 'TINGGI', tone: 'bg-orange-500/20 text-orange-300' },
-  high: { label: 'TINGGI', tone: 'bg-orange-500/20 text-orange-300' },
-  sederhana: { label: 'SEDERHANA', tone: 'bg-amber-500/20 text-amber-300' },
-  medium: { label: 'SEDERHANA', tone: 'bg-amber-500/20 text-amber-300' },
-  rendah: { label: 'RENDAH', tone: 'bg-emerald-500/20 text-emerald-300' },
+export type RiskColor = 'error' | 'warning' | 'info' | 'success'
+const RISK: Record<AnyRisk, { label: string; color: RiskColor }> = {
+  kritikal: { label: 'KRITIKAL', color: 'error' },
+  critical: { label: 'KRITIKAL', color: 'error' },
+  tinggi: { label: 'TINGGI', color: 'warning' },
+  high: { label: 'TINGGI', color: 'warning' },
+  sederhana: { label: 'SEDERHANA', color: 'info' },
+  medium: { label: 'SEDERHANA', color: 'info' },
+  rendah: { label: 'RENDAH', color: 'success' },
 }
-export const riskTone = (risk: AnyRisk) => RISK[risk].tone
+export const riskColor = (risk: AnyRisk): RiskColor => RISK[risk].color
 export const riskLabel = (risk: AnyRisk) => RISK[risk].label
 
 /** The signed percent of a predictive trend ("+8%", "-3%", "0%"). */
 export const signedPct = (value: number): string => `${value > 0 ? '+' : ''}${plain(value)}%`
-
-/** Dark-table class strings (text never below 12 px, DV-M10-28). */
-export const TBL = {
-  wrap: 'overflow-x-auto',
-  table: 'w-full min-w-max border-collapse text-left',
-  th: 'px-2 py-2 text-xs font-semibold tracking-wider whitespace-nowrap text-slate-400 uppercase',
-  td: 'px-2 py-2 align-middle text-sm text-slate-300',
-  row: 'border-t border-slate-700/60',
-  link: 'cursor-pointer hover:bg-slate-700/40',
-} as const
 
 /** FN-M10-2.2.14: the mounted M17 pages (new tab). */
 export const studentPath = (id: number) => `${S2_BASE}/student/${String(id)}`

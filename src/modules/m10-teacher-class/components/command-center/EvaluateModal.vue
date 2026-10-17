@@ -1,17 +1,23 @@
 <script setup lang="ts">
 /**
- * "⚠ Evaluate" -> "Auto Evaluate — Penilaian Risiko Pelajar" (FR-M10-24, FN-M10-2.2.12, BR-M10-15; read-only):
+ * "Evaluate" -> "Auto Evaluate — Penilaian Risiko Pelajar" (FR-M10-24, FN-M10-2.2.12, BR-M10-15; read-only):
  * five cards, then "Semua pelajar dalam keadaan baik! Tiada risiko dikesan." or the alert table.
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
+import { DsDrillTable } from '@/ds'
 
 import { fetchCommandCenterEvaluation } from '../../api/command-center'
+import type { CcEvaluation } from '../../api/command-center-types'
+import CcDialog from './CcDialog.vue'
 import { useOpenTab } from './composables'
-import { riskLabel, riskTone, studentPath, TBL } from './copy'
-import DarkModal from './DarkModal.vue'
+import { riskColor, riskLabel, studentPath } from './copy'
 import StatCards from './StatCards.vue'
+
+/** One student of the alert list; a mapped alias so the DS table gets an index signature. */
+type Row = { [K in keyof CcEvaluation['alerts'][number]]: CcEvaluation['alerts'][number][K] }
 
 defineEmits<{ close: [] }>()
 
@@ -20,69 +26,79 @@ const openTab = useOpenTab()
 const cards = computed(() => {
   const s = data.value?.summary
   return [
-    { label: 'Jumlah Pelajar', value: String(s?.totalStudents ?? 0), tone: 'text-indigo-300' },
-    { label: 'Berisiko', value: String(s?.atRisk ?? 0), tone: 'text-rose-300' },
-    { label: 'Kritikal', value: String(s?.critical ?? 0), tone: 'text-rose-300' },
-    { label: 'Tinggi', value: String(s?.high ?? 0), tone: 'text-orange-300' },
-    { label: 'Sederhana', value: String(s?.medium ?? 0), tone: 'text-amber-300' },
+    { label: 'Jumlah Pelajar', value: String(s?.totalStudents ?? 0) },
+    { label: 'Berisiko', value: String(s?.atRisk ?? 0) },
+    { label: 'Kritikal', value: String(s?.critical ?? 0) },
+    { label: 'Tinggi', value: String(s?.high ?? 0) },
+    { label: 'Sederhana', value: String(s?.medium ?? 0) },
   ]
 })
-const HEADERS = ['Risiko', 'Pelajar', 'Amaran', 'Cadangan Tindakan']
+const columns: TableColumn<Row>[] = [
+  { id: 'risk', header: 'Risiko' },
+  { id: 'name', header: 'Pelajar' },
+  { id: 'warn', header: 'Amaran' },
+  { id: 'todo', header: 'Cadangan Tindakan' },
+]
 </script>
 
 <template>
-  <DarkModal
+  <CcDialog
     title="Auto Evaluate — Penilaian Risiko Pelajar"
     testid="cc-evaluate-modal"
     wide
     @close="$emit('close')"
   >
-    <p v-if="error" class="text-sm text-rose-400">Ralat: {{ error.message }}</p>
-    <p v-else-if="!data" class="text-sm text-slate-300" data-testid="cc-modal-loading">
+    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
+    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Menilai semua pelajar...
     </p>
     <template v-else>
-      <StatCards :cards="cards" cols="grid-cols-2 sm:grid-cols-5" />
+      <StatCards :cards="cards" :cols="5" />
       <p
         v-if="data.alerts.length === 0"
-        class="mt-4 text-base text-slate-50"
+        class="text-body text-highlighted"
         data-testid="cc-evaluate-empty"
       >
         Semua pelajar dalam keadaan baik! Tiada risiko dikesan.
       </p>
-      <div v-else :class="[TBL.wrap, 'mt-4']">
-        <table :class="TBL.table" data-testid="cc-evaluate-table">
-          <thead>
-            <tr>
-              <th v-for="h in HEADERS" :key="h" :class="TBL.th">{{ h }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="a in data.alerts"
-              :key="a.studentId"
-              :class="[TBL.row, TBL.link]"
-              data-testid="cc-evaluate-row"
-              @click="openTab(studentPath(a.studentId))"
+      <div v-else data-testid="cc-evaluate-table">
+        <DsDrillTable
+          :data="data.alerts"
+          :columns="columns"
+          caption="Auto Evaluate — Penilaian Risiko Pelajar"
+          @drill="(a: Row) => openTab(studentPath(a.studentId))"
+        >
+          <template #risk-cell="{ row }">
+            <UBadge
+              :color="riskColor(row.original.riskLevel)"
+              variant="soft"
+              icon="i-ph-warning"
+              data-testid="cc-risk"
+              >{{ riskLabel(row.original.riskLevel) }}</UBadge
             >
-              <td :class="TBL.td">
-                <span
-                  :class="['rounded-full px-2 py-0.5 text-xs font-bold', riskTone(a.riskLevel)]"
-                  data-testid="cc-risk"
-                  >{{ riskLabel(a.riskLevel) }}</span
-                >
-              </td>
-              <td :class="[TBL.td, 'text-slate-50']">{{ a.name }}</td>
-              <td :class="TBL.td">
-                <div v-for="(al, i) in a.alerts" :key="i">{{ al.message }}</div>
-              </td>
-              <td :class="TBL.td">
-                <div v-for="(al, i) in a.alerts" :key="i">{{ al.suggestion }}</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+          <template #name-cell="{ row }">
+            <UButton
+              variant="link"
+              color="neutral"
+              class="h-auto p-0 text-start"
+              :label="row.original.name"
+              data-testid="cc-evaluate-row"
+              @click.stop="openTab(studentPath(row.original.studentId))"
+            />
+          </template>
+          <template #warn-cell="{ row }">
+            <div v-for="(al, i) in row.original.alerts" :key="i" class="text-body">
+              {{ al.message }}
+            </div>
+          </template>
+          <template #todo-cell="{ row }">
+            <div v-for="(al, i) in row.original.alerts" :key="i" class="text-body">
+              {{ al.suggestion }}
+            </div>
+          </template>
+        </DsDrillTable>
       </div>
     </template>
-  </DarkModal>
+  </CcDialog>
 </template>

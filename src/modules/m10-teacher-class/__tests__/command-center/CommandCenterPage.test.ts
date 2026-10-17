@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
@@ -41,23 +41,39 @@ async function mountPage() {
   await router.push('/guru/command-center')
   await router.isReady()
   wrapper = mount(CommandCenterPage, {
-    global: { plugins: [router], stubs: { teleport: true } },
+    global: { plugins: [router] },
     attachTo: document.body,
   })
   await flushPromises()
   return wrapper
 }
 
-const t = (id: string) => wrapper!.find(`[data-testid="${id}"]`)
-const all = (id: string) => wrapper!.findAll(`[data-testid="${id}"]`)
+/** Dialogs are portalled to the body, so everything is looked up there. */
+const wrap = (e: Element) => {
+  const w = new DOMWrapper(e)
+  const trigger = w.trigger.bind(w)
+  // the portalled dialog mounts a few ticks after a click
+  w.trigger = (async (...a: Parameters<typeof trigger>) => {
+    await trigger(...a)
+    await flushPromises()
+  })
+  return w
+}
+const q = (sel: string) => Array.from(document.body.querySelectorAll(sel)).map(wrap)
+const t = (id: string) => q(`[data-testid="${id}"]`)[0] ?? wrapper!.find(`[data-testid="${id}"]`)
+const all = (id: string) => q(`[data-testid="${id}"]`)
 const cards = () =>
   all('cc-modal-card').map((c) =>
-    c
-      .findAll('div')
-      .map((d) => d.text())
+    Array.from(c.element.querySelectorAll('span'))
+      .map((s) => s.textContent)
       .join(' '),
   )
 const text = (id: string) => t(id).text().replace(/\s+/g, ' ')
+const modalTitle = () => q('[data-slot="title"]')[0]!.text()
+/** The table row of an element that sits in its first cell (the DS table gives rows no test id). */
+const trOf = (w: { element: Element }) => new DOMWrapper(w.element.closest('tr'))
+const cellTone = (w: { element: Element }, i: number) =>
+  w.element.closest('tr')!.querySelectorAll('td')[i]!.querySelector('span')!.className
 
 /** Runs the 600 ms count animation of the two tiles to its end. */
 async function settle() {
@@ -94,19 +110,12 @@ describe('S2 board (FR-M10-14..18)', () => {
   it('renders the six top links, in live order with the Rekod href', async () => {
     await mountPage()
     const labels = t('cc-links')
-      .findAll('a')
+      .findAll('a, button')
       .map((a) => a.text())
-    expect(labels).toEqual([
-      '🔬 Remedial',
-      '📊 Rekod',
-      '⚠ Evaluate',
-      '🔮 Ramalan SPM',
-      '👩‍🏫 Kelas',
-      '🏆 Badges',
-    ])
+    expect(labels).toEqual(['Remedial', 'Rekod', 'Evaluate', 'Ramalan SPM', 'Kelas', 'Badges'])
     expect(t('cc-link-rekod').attributes('href')).toBe('/guru/remedial-progress')
     expect(t('cc-back').attributes('href')).toBe('/guru')
-    expect(text('cc-back')).toBe('← Dashboard')
+    expect(text('cc-back')).toBe('Dashboard')
   })
 
   it('shows the KPI values of the teacher after the count animation', async () => {
@@ -181,7 +190,7 @@ describe('S2 board (FR-M10-14..18)', () => {
     expect(text('cc-activity-week')).toBe('36')
     expect(text('cc-week-change')).toBe('▼ 23% vs minggu lepas')
     expect(all('cc-feed-row')).toHaveLength(2)
-    expect(all('cc-leaderboard-row')[0]!.text()).toContain('🥇')
+    expect(all('cc-leaderboard-row')[0]!.text()).toContain('1')
     expect(all('cc-leaderboard-row')[3]!.text()).toContain('4')
     expect(all('cc-leaderboard-row')[0]!.text()).toContain('20 jwb')
     expect(all('cc-band-count').map((c) => c.text())).toEqual(['0', '1', '5', '2', '0'])
@@ -270,11 +279,11 @@ describe('drill modal (FR-M10-19, FN-M10-2.2.7)', () => {
       undefined,
       expect.anything(),
     )
-    expect(text('cc-modal-title')).toBe('Memuatkan...')
+    expect(modalTitle()).toBe('Memuatkan...')
     expect(text('cc-drill-loading')).toBe('Memuatkan data...')
     resolve({ title: 'Pelajar Berdaftar', students: [] })
     await flushPromises()
-    expect(text('cc-modal-title')).toBe('Pelajar Berdaftar')
+    expect(modalTitle()).toBe('Pelajar Berdaftar')
     expect(text('cc-drill-empty')).toBe('Tiada data')
   })
 
@@ -322,16 +331,16 @@ describe('drill modal (FR-M10-19, FN-M10-2.2.7)', () => {
     })
     await mountPage()
     await t('cc-kpi-students').trigger('click')
-    const heads = t('cc-drill-table')
+    const heads = t('cc-drill-table-wrap')
       .findAll('th')
       .map((h) => h.text())
     expect(heads[0]).toBe('Pelajar')
     expect(heads.at(-1)).toBe('Status')
     const rows = all('cc-drill-row')
     expect(rows).toHaveLength(2)
-    expect(rows[0]!.findAll('td')[3]!.classes()).toContain('text-emerald-400')
-    expect(rows[1]!.findAll('td')[3]!.classes()).toContain('text-rose-400')
-    expect(rows[1]!.findAll('td')[4]!.text()).toBe('-')
+    expect(cellTone(rows[0]!, 3)).toContain('text-success')
+    expect(cellTone(rows[1]!, 3)).toContain('text-error')
+    expect(trOf(rows[1]!).findAll('td')[4]!.text()).toBe('-')
     await rows[0]!.trigger('click')
     expect(open).toHaveBeenLastCalledWith('/guru/command-center/student/3001', '_blank', 'noopener')
   })
@@ -365,7 +374,7 @@ describe('drill modal (FR-M10-19, FN-M10-2.2.7)', () => {
       '0 Aktif Lepas (30h)',
       '8 Pelajar Baru',
     ])
-    expect(t('cc-drill-table').exists()).toBe(false)
+    expect(t('cc-drill-table-wrap').exists()).toBe(false)
     expect(t('cc-drill-empty').exists()).toBe(false)
   })
 
@@ -376,19 +385,10 @@ describe('drill modal (FR-M10-19, FN-M10-2.2.7)', () => {
     await mountPage()
     await t('cc-mood-happy').trigger('click')
     expect(text('cc-drill-error')).toBe('Ralat: Jenis tidak sah')
-    expect(text('cc-modal-title')).toBe('Mood Pelajar')
+    expect(modalTitle()).toBe('Mood Pelajar')
   })
 
-  it('does not close on Esc (only "×" or the backdrop)', async () => {
-    api.fetchCommandCenterDrill.mockResolvedValue({ title: 'GPS Sekolah', students: [] })
-    await mountPage()
-    await t('cc-kpi-gps').trigger('click')
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-    await flushPromises()
-    expect(t('cc-drill-modal').exists()).toBe(true)
-  })
-
-  it('closes with the "×" and with the backdrop', async () => {
+  it('closes with "Tutup" and can be opened again', async () => {
     api.fetchCommandCenterDrill.mockResolvedValue({ title: 'GPS Sekolah', students: [] })
     await mountPage()
     await t('cc-kpi-gps').trigger('click')
@@ -397,9 +397,7 @@ describe('drill modal (FR-M10-19, FN-M10-2.2.7)', () => {
     await flushPromises()
     expect(t('cc-drill-modal').exists()).toBe(false)
     await t('cc-kpi-gps').trigger('click')
-    await wrapper!.find('[data-testid="cmp-modal-backdrop"]').trigger('click')
-    await flushPromises()
-    expect(t('cc-drill-modal').exists()).toBe(false)
+    expect(t('cc-drill-modal').exists()).toBe(true)
   })
 })
 
@@ -426,7 +424,7 @@ describe('"👩‍🏫 Kelas" and "🔮 Ramalan SPM" (FR-M10-20, FR-M10-21)', ()
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     await mountPage()
     await t('cc-link-kelas').trigger('click')
-    expect(text('cc-modal-title')).toBe('Kelas Saya — Ringkasan Prestasi')
+    expect(modalTitle()).toBe('Kelas Saya — Ringkasan Prestasi')
     expect(api.fetchCommandCenterLiveData).toHaveBeenCalledTimes(2)
     await flushPromises()
     expect(cards()).toEqual(['8 Jumlah Pelajar', '0 Aktif', '46% Ketepatan'])
@@ -458,7 +456,7 @@ describe('"👩‍🏫 Kelas" and "🔮 Ramalan SPM" (FR-M10-20, FR-M10-21)', ()
     await mountPage()
     await t('cc-link-predictive').trigger('click')
     await flushPromises()
-    expect(text('cc-modal-title')).toBe('Ramalan SPM — Predictive Analytics')
+    expect(modalTitle()).toBe('Ramalan SPM — Predictive Analytics')
     expect(all('cc-grade-chip').map((c) => c.text())).toEqual([
       'A+',
       'A',
@@ -489,7 +487,7 @@ describe('"👩‍🏫 Kelas" and "🔮 Ramalan SPM" (FR-M10-20, FR-M10-21)', ()
     expect(chips).toContain('A (1)')
     expect(chips).toContain('G (1)')
     expect(chips).toContain('B')
-    const rows = all('cc-predictive-row')
+    const rows = all('cc-predictive-row').map((r) => trOf(r))
     expect(rows).toHaveLength(2)
     expect(rows[0]!.text()).toContain('KRITIKAL')
     expect(rows[0]!.text()).toContain('Turun (-8%)')
@@ -508,7 +506,7 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     api.fetchRemedialScan.mockResolvedValue({ weakStudents: [], existingRemedials: [] })
     await mountPage()
     await t('cc-link-remedial').trigger('click')
-    expect(text('cc-modal-title')).toBe('Smart Remedial — Scan Pelajar Lemah')
+    expect(modalTitle()).toBe('Smart Remedial — Scan Pelajar Lemah')
     await flushPromises()
     expect(text('cc-remedial-empty')).toBe(
       'Tiada pelajar dengan topik lemah (<50% accuracy). Tahniah!',
@@ -537,6 +535,8 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
         .map((h) => h.text()),
     ).toEqual(['Pelajar', 'Topik Lemah', 'Accuracy Terendah', 'Tindakan'])
     const rows = all('cc-remedial-row')
+      .map((r) => trOf(r))
+      .map((r) => trOf(r))
     expect(rows[0]!.text()).toContain('Polimer (12.5%)')
     expect(rows[0]!.text()).toContain('Getah Asli (30%)')
     expect(rows[0]!.text()).toContain('12.5%')
@@ -632,7 +632,7 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     expect(cancel.text()).toBe('Membatal...')
     resolve({ success: true })
     await flushPromises()
-    const row = all('cc-remedial-row')[1]!
+    const row = trOf(all('cc-remedial-row')[1]!)
     expect(row.find('[data-testid="cc-remedial-cancel-text"]').text()).toBe(
       'Dibatalkan — boleh jana semula',
     )
@@ -671,7 +671,7 @@ describe('"⚠ Evaluate" (FR-M10-24) @provisional UNVERIFIED COPY', () => {
     await mountPage()
     await t('cc-link-evaluate').trigger('click')
     await flushPromises()
-    expect(text('cc-modal-title')).toBe('Auto Evaluate — Penilaian Risiko Pelajar')
+    expect(modalTitle()).toBe('Auto Evaluate — Penilaian Risiko Pelajar')
     expect(cards()).toEqual([
       '0 Jumlah Pelajar',
       '0 Berisiko',
@@ -691,7 +691,7 @@ describe('"⚠ Evaluate" (FR-M10-24) @provisional UNVERIFIED COPY', () => {
     await t('cc-link-evaluate').trigger('click')
     await flushPromises()
     expect(all('cc-risk').map((r) => r.text())).toEqual(['TINGGI', 'SEDERHANA'])
-    const row = all('cc-evaluate-row')[0]!
+    const row = trOf(all('cc-evaluate-row')[0]!)
     expect(row.text()).toContain('Tiada aktiviti 7 hari')
     expect(row.text()).toContain('Beri latihan tambahan')
     await row.trigger('click')
@@ -705,7 +705,7 @@ describe('"🏆 Badges" (FR-M10-25) @provisional UNVERIFIED COPY', () => {
     await mountPage()
     await t('cc-link-badges').trigger('click')
     await flushPromises()
-    expect(text('cc-modal-title')).toBe('Achievement System — Scan & Award Badges')
+    expect(modalTitle()).toBe('Achievement System — Scan & Award Badges')
     expect(cards()).toEqual(['8 Pelajar', '1 Lencana Baru Dianugerah', '2 Jenis Lencana Aktif'])
     const chips = all('cc-badge-chip').map((c) => c.text())
     expect(chips[0]).toContain('Pemula Rajin')
@@ -715,7 +715,7 @@ describe('"🏆 Badges" (FR-M10-25) @provisional UNVERIFIED COPY', () => {
     expect(chips[1]).toContain('Legendary')
     expect(t('cc-collectors-table').text()).toContain('Murid Demo 02')
     expect(text('cc-new-awards')).toContain('Pemula Rajin')
-    expect(wrapper!.text()).toContain('Baru Dianugerahkan Hari Ini!')
+    expect(document.body.textContent).toContain('Baru Dianugerahkan Hari Ini!')
   })
 
   it('opens "Lencana: {nama}" with the holders, and its empty text', async () => {
@@ -745,7 +745,7 @@ describe('"🏆 Badges" (FR-M10-25) @provisional UNVERIFIED COPY', () => {
       ],
     })
     await flushPromises()
-    const titles = all('cc-modal-title').map((x) => x.text())
+    const titles = q('[data-slot="title"]').map((x) => x.text())
     expect(titles.at(-1)).toBe('Lencana: Pemula Rajin')
     expect(text('cc-holders-count')).toBe('1 pelajar memiliki lencana ini')
     expect(

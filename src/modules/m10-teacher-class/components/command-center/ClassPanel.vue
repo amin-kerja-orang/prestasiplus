@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** "📚 Kelas Saya" (FN-M10-2.2.4): a row per class; a click opens the mounted M17 class page in a new tab. */
+/** "Kelas Saya" (FN-M10-2.2.4): a row per class; a click opens the mounted M17 class page in a new tab. */
 import type { CcClassRow } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
 import { useOpenTab } from './composables'
@@ -10,28 +10,36 @@ const openTab = useOpenTab()
 </script>
 
 <template>
-  <BoardPanel icon="📚" title="Kelas Saya" testid="cc-panel-classes">
-    <p v-if="classes.length === 0" class="text-sm text-slate-400" data-testid="cc-classes-empty">
+  <BoardPanel icon="i-ph-chalkboard-teacher" title="Kelas Saya" testid="cc-panel-classes">
+    <p v-if="classes.length === 0" class="text-body text-muted" data-testid="cc-classes-empty">
       {{ S2_COPY.noData }}
     </p>
-    <ul v-else class="space-y-2">
-      <li
-        v-for="c in classes"
-        :key="c.id"
-        class="min-w-0 cursor-pointer rounded-xl border border-slate-700 bg-slate-900/50 px-3 py-2 hover:bg-slate-700/50"
-        :title="S2_COPY.classHint"
-        data-testid="cc-class-row"
-        @click="openTab(classPath(c.id))"
-      >
-        <div class="font-semibold break-words text-slate-50" data-testid="cc-class-name">
-          {{ c.name }}
-        </div>
-        <div class="text-xs text-slate-400" data-testid="cc-class-level">
-          {{ c.educationLevel }}
-        </div>
-        <div class="text-sm text-slate-300" data-testid="cc-class-stats">
-          {{ c.studentCount }} plj | {{ c.active }} aktif | {{ c.accuracy }}%
-        </div>
+    <ul v-else class="flex flex-col gap-2">
+      <li v-for="c in classes" :key="c.id" class="min-w-0">
+        <UButton
+          color="neutral"
+          variant="soft"
+          block
+          trailing-icon="i-ph-caret-right"
+          class="h-auto min-w-0 justify-between gap-3 py-2 text-start"
+          :title="S2_COPY.classHint"
+          data-testid="cc-class-row"
+          @click="openTab(classPath(c.id))"
+        >
+          <span class="flex min-w-0 flex-1 flex-col">
+            <span
+              class="min-w-0 text-label break-words text-highlighted"
+              data-testid="cc-class-name"
+              >{{ c.name }}</span
+            >
+            <span class="text-caption text-muted" data-testid="cc-class-level">{{
+              c.educationLevel
+            }}</span>
+            <span class="tabular text-caption text-toned" data-testid="cc-class-stats"
+              >{{ c.studentCount }} plj | {{ c.active }} aktif | {{ c.accuracy }}%</span
+            >
+          </span>
+        </UButton>
       </li>
     </ul>
   </BoardPanel>

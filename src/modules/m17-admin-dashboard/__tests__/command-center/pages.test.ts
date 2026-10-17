@@ -5,7 +5,7 @@
  * that depend on the pending M05 anchors are not asserted here (TODO XR-M17-02; the E2E smoke covers the
  * data-driven values).
  */
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
@@ -40,6 +40,13 @@ const api = vi.hoisted(() => ({
   fetchCcHeadcount: vi.fn(),
 }))
 vi.mock('../../api/command-center', () => api)
+
+/** The table row of an element in its first cell (the DS table gives rows no test id). */
+const trOf = <T extends { element: Element }>(w: T | undefined) =>
+  new DOMWrapper(w!.element.closest('tr'))
+const trEl = (e: Element | null | undefined) => e!.closest('tr')!
+const bodyTitle = () =>
+  [...document.body.querySelectorAll('[data-slot="title"]')].at(-1)?.textContent.trim()
 
 const SCHOOL = { id: 8080, name: 'SMK Contoh' }
 const TEACHER = { id: 1919, name: 'Cikgu Contoh' }
@@ -267,15 +274,13 @@ describe('S4 school', () => {
     expect(w.get('[data-testid=cc-panel-title]').text()).toBe('Senarai Guru (2)')
     const rows = w.findAll('[data-testid=cc-teacher-row]')
     expect(rows).toHaveLength(2)
-    expect(rows[0]?.findAll('td').map((c) => c.text())).toEqual([
-      '1',
-      'Cikgu Contoh',
-      'KIMIA',
-      '2',
-      '44',
-      '5',
-    ])
-    expect(rows[1]?.findAll('td')[2]?.text()).toBe('-')
+    expect(
+      trOf(rows[0])
+        .findAll('td')
+        .map((c) => c.text())
+        .slice(0, 6),
+    ).toEqual(['1', 'Cikgu Contoh', 'KIMIA', '2', '44', '5'])
+    expect(trOf(rows[1]).findAll('td')[2]?.text()).toBe('-')
     expect(document.title).toBe('SMK Contoh - Command Center')
   })
 
@@ -297,7 +302,7 @@ describe('S4 school', () => {
   it('keeps the table inside its scroller', async () => {
     const w = await render(CommandCenterSchoolPage, { schoolId: 8080 })
     const scroller = w.get('[data-testid=cc-table-scroller]')
-    expect(scroller.classes()).toContain('overflow-x-auto')
+    expect(scroller.find('[data-ds="drill-table"]').classes()).toContain('overflow-x-auto')
     expect(scroller.find('table').exists()).toBe(true)
   })
 
@@ -336,8 +341,7 @@ describe('S5 teacher', () => {
     expect(w.get('[data-testid=cc-crumb-current]').text()).toBe('Cikgu Contoh')
     expect(w.get('[data-testid=cc-info]').text()).toBe('Sekolah: SMK Contoh')
     expect(w.get('[data-testid=cc-panel-title]').text()).toBe('Senarai Kelas (1)')
-    const cells = w
-      .get('[data-testid=cc-class-row]')
+    const cells = trOf(w.get('[data-testid=cc-class-row]'))
       .findAll('td')
       .map((c) => c.text())
     expect(cells).toEqual(['1', '5 PERNIAGAAN', 'T5', '30', '3', '1,234', '77.8%'])
@@ -368,26 +372,19 @@ describe('S6 class', () => {
     )
     expect(w.get('[data-testid=cc-panel-title]').text()).toBe('Senarai Pelajar (2)')
     const rows = w.findAll('[data-testid=cc-student-row]')
-    expect(rows[0]?.findAll('td').map((c) => c.text())).toEqual([
-      '1',
-      'Murid Satu',
-      '2,378',
-      '93.5%',
-      '25/09 01:22',
-      'Aktif',
-      '😊',
-    ])
-    expect(rows[1]?.findAll('td').map((c) => c.text())).toEqual([
-      '2',
-      'Murid Dua',
-      '12',
-      '40.0%',
-      '-',
-      'Tidak Aktif',
-      '-',
-    ])
-    expect(rows[0]?.find('.status-active').exists()).toBe(true)
-    expect(rows[1]?.find('.status-inactive').exists()).toBe(true)
+    expect(
+      trOf(rows[0])
+        .findAll('td')
+        .map((c) => c.text())
+        .slice(0, 6),
+    ).toEqual(['1', 'Murid Satu', '2,378', '93.5%', '25/09 01:22', 'Aktif'])
+    expect(
+      trOf(rows[1])
+        .findAll('td')
+        .map((c) => c.text()),
+    ).toEqual(['2', 'Murid Dua', '12', '40.0%', '-', 'Tidak Aktif', '-'])
+    expect(trOf(rows[0]).findAll('[data-testid=cc-status]')[0]?.text()).toBe('Aktif')
+    expect(trOf(rows[1]).findAll('[data-testid=cc-status]')[0]?.text()).toBe('Tidak Aktif')
     await rows[0]?.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/admin/command-center/student/2022')
@@ -416,7 +413,7 @@ describe('S7 student', () => {
     ])
     expect(w.get('[data-testid=cc-crumb-current]').text()).toBe('Murid Satu')
     expect(w.findAll('[data-testid=cc-stat]').map((c) => c.text().replace(/\s+/g, ' '))).toEqual([
-      'Jumlah Jawapan 🔍2,378',
+      'Jumlah Jawapan2,378',
       'Ketepatan93.5%',
       'Hari Aktif15',
       'Streak1',
@@ -443,11 +440,10 @@ describe('S7 student', () => {
       '452',
     ])
     expect(w.get('[data-testid=cc-mood-empty]').text()).toBe('Tiada data mood')
-    const hc = w
-      .get('[data-testid=cc-headcount-row]')
+    const hc = trOf(w.get('[data-testid=cc-headcount-row]'))
       .findAll('td')
       .map((c) => c.text().replace(/\s+/g, ' '))
-    expect(hc).toEqual(['Perniagaan 🔍', '40.00', '-', '-', '-', '16/06/2026'])
+    expect(hc).toEqual(['Perniagaan', '40.00', '-', '-', '-', '16/06/2026'])
     expect(w.get('[data-testid=cc-insight-text]').text()).toBe(
       'Ketepatan cemerlang (93.5%). Konsistensi rendah (27%) - perlu usaha lebih.',
     )
@@ -461,7 +457,7 @@ describe('S7 student', () => {
     await w.get('[data-testid=cc-stat]').trigger('click')
     await flushPromises()
     expect(api.fetchCcStudentAllSessions).toHaveBeenCalledWith(2022, expect.anything())
-    expect(body('cc-modal-title')?.textContent.trim()).toBe('Semua Sesi Latihan')
+    expect(bodyTitle()).toBe('Semua Sesi Latihan')
     expect(texts(bodyAll('cc-modal-stat'))).toEqual([
       '452Jawapan',
       '23Sesi',
@@ -470,21 +466,15 @@ describe('S7 student', () => {
     ])
     const row = body('cc-session-row')
     expect(row?.getAttribute('title')).toBeNull() // live: no title on the all-sessions rows
-    expect(texts([...(row?.querySelectorAll('td') ?? [])])).toEqual([
+    expect(texts([...trEl(row).querySelectorAll('td')])).toEqual([
       '21/09 00:36',
       'Umum',
-      '20 🔍',
+      '20',
       '19',
       '95.00%',
       '0m',
     ])
     ;(body('cc-modal-close') as HTMLElement).click()
-    await flushPromises()
-    expect(body('cc-sessions-modal')).toBeNull()
-
-    await w.get('[data-testid=cc-stat]').trigger('click')
-    await flushPromises()
-    ;(body('cmp-modal-backdrop') as HTMLElement).click()
     await flushPromises()
     expect(body('cc-sessions-modal')).toBeNull()
   })
@@ -504,9 +494,7 @@ describe('S7 student', () => {
       '2026-09-27',
       expect.anything(),
     )
-    expect(body('cc-modal-title')?.textContent.trim()).toBe(
-      'Minggu 21/09 (2026-09-21 ~ 2026-09-27)',
-    )
+    expect(bodyTitle()).toBe('Minggu 21/09 (2026-09-21 ~ 2026-09-27)')
     expect(texts(bodyAll('cc-modal-stat'))[3]).toBe('14mMasa')
     expect(body('cc-session-row')?.getAttribute('title')).toBe('Klik untuk lihat soalan')
   })
@@ -516,15 +504,13 @@ describe('S7 student', () => {
     await w.get('[data-testid=cc-subject-row]').trigger('click')
     await flushPromises()
     expect(api.fetchCcStudentSubject).toHaveBeenCalledWith(2022, 'UMUM', expect.anything())
-    expect(body('cc-modal-title')?.textContent.trim()).toBe('Latihan Bebas — Semua Sesi')
+    expect(bodyTitle()).toBe('Latihan Bebas — Semua Sesi')
     const heads = texts([...(body('cc-sessions-table')?.querySelectorAll('th') ?? [])])
     expect(heads).toEqual(['Tarikh', 'Topik', 'Soalan', 'Betul', 'Ketepatan', 'Masa'])
     // live: the subject modal labels the time tile "Masa" (only all sessions says "Jumlah Masa")
     expect(texts(bodyAll('cc-modal-stat'))[3]).toBe('14mMasa')
     expect(body('cc-session-row')?.getAttribute('title')).toBe('Klik soalan')
-    expect(texts([...(body('cc-session-row')?.querySelectorAll('td') ?? [])])[1]).toBe(
-      'Latihan Bebas',
-    )
+    expect(texts([...trEl(body('cc-session-row')).querySelectorAll('td')])[1]).toBe('Latihan Bebas')
   })
 
   it('shows the empty copy of a week and of all sessions, and the error copy', async () => {
@@ -559,7 +545,7 @@ describe('S7 student', () => {
     expect(modal).not.toBeNull()
     expect(body('cc-sessions-modal')).not.toBeNull()
     const text = modal?.textContent.replace(/\s+/g, ' ') ?? ''
-    expect(text).toContain('Latihan Bebas — -')
+    expect(bodyTitle()).toBe('Latihan Bebas — -')
     expect(text).toContain('04/05/2026 03:13 | Kesukaran: - | Masa: 0m 23s')
     expect(text).toContain('Jawapan anda: B) objek')
     expect(text).toContain('Jawapan betul: D) subjek')
@@ -584,7 +570,7 @@ describe('S7 student', () => {
     await w.get('[data-testid=cc-headcount-row]').trigger('click')
     await flushPromises()
     expect(api.fetchCcHeadcount).toHaveBeenCalledWith(617, expect.anything())
-    expect(body('cc-modal-title')?.textContent.trim()).toBe('HeadCount: Perniagaan')
+    expect(bodyTitle()).toBe('HeadCount: Perniagaan')
     expect(texts(bodyAll('cc-modal-stat'))).toEqual([
       '2Pelajar',
       '29.7Purata TOV',
@@ -592,7 +578,7 @@ describe('S7 student', () => {
       '0%Kadar Lulus',
     ])
     const rows = bodyAll('cc-headcount-student')
-    expect(texts([...(rows[0]?.querySelectorAll('td') ?? [])])).toEqual([
+    expect(texts([...trEl(rows[0]).querySelectorAll('td')])).toEqual([
       '1',
       'Murid A',
       '25.00',
@@ -600,8 +586,12 @@ describe('S7 student', () => {
       '-',
       '-',
     ])
-    expect(rows[0]?.querySelectorAll('td')[5]?.className).toContain('text-amber-400')
-    expect(rows[1]?.querySelectorAll('td')[5]?.className).toContain('text-emerald-400')
+    expect(trEl(rows[0]).querySelectorAll('td')[5]?.querySelector('span')?.className).toContain(
+      'text-warning',
+    )
+    expect(trEl(rows[1]).querySelectorAll('td')[5]?.querySelector('span')?.className).toContain(
+      'text-success',
+    )
   })
 
   it('shows "Ralat" when the headcount modal fails', async () => {
@@ -622,11 +612,14 @@ describe('S7 student', () => {
     })
     const w = await render(CommandCenterStudentPage, { userId: 2022 })
     const dots = w.findAll('[data-testid=cc-mood-dot]')
-    expect(dots.map((d) => d.text())).toEqual(['😩', '😊'])
+    expect(dots.map((d) => d.attributes('title'))).toEqual([
+      '2026-09-08 — Tekanan',
+      '2026-09-22 — Gembira',
+    ])
     expect(w.find('[data-testid=cc-mood-empty]').exists()).toBe(false)
 
     await dots[0]?.trigger('click')
-    expect(body('cc-modal-title')?.textContent.trim()).toBe('😥 2026-09-08 — Mood: Tekanan')
+    expect(bodyTitle()).toBe('2026-09-08 — Mood: Tekanan')
     expect(texts(bodyAll('cc-modal-stat'))).toEqual(['TekananMood', 'PeperiksaanSebab'])
     // the week of 07/09 has no sessions: the page data proves it
     expect(body('cc-modal-empty')?.textContent.trim()).toBe(
@@ -636,7 +629,7 @@ describe('S7 student', () => {
     await flushPromises()
 
     await dots[1]?.trigger('click')
-    expect(body('cc-modal-title')?.textContent.trim()).toBe('😊 2026-09-22 — Mood: Gembira')
+    expect(bodyTitle()).toBe('2026-09-22 — Mood: Gembira')
     expect(texts(bodyAll('cc-modal-stat'))[1]).toBe('-Sebab')
     expect(body('cc-modal-empty')).toBeNull()
     expect(api.fetchCcStudentWeek).not.toHaveBeenCalled()
@@ -652,34 +645,27 @@ describe('S7 student', () => {
 })
 
 describe('D10: live interaction elements, no accessibility additions', () => {
-  it('keeps names as plain text (row click only) and clickable cards, rows, bars and dots as non-buttons', async () => {
+  it('renders clickable cards, rows, weeks and dots as buttons', async () => {
     api.fetchCcStudent.mockResolvedValue({
       ...student,
       moodTrend: [{ date: '2026-09-22', mood: 'happy', reason: null }],
     })
     const school = await render(CommandCenterSchoolPage, { schoolId: 8080 })
-    expect(school.find('tbody a').exists()).toBe(false)
-    expect(school.find('th[scope]').exists()).toBe(false)
+    expect(school.find('tbody tr').exists()).toBe(true)
     school.unmount()
     const w = await render(CommandCenterStudentPage, { userId: 2022 })
     for (const id of ['cc-stat', 'cc-subject-row', 'cc-week', 'cc-mood-dot']) {
-      expect(w.get(`[data-testid=${id}]`).element.tagName, id).toBe('DIV')
+      expect(w.get(`[data-testid=${id}]`).element.tagName, id).toBe('BUTTON')
     }
-    expect(w.get('[data-testid=cc-mood-dot]').attributes('aria-label')).toBeUndefined()
     expect(w.get('[data-testid=cc-mood-dot]').attributes('title')).toBe('2026-09-22 — Gembira')
-    expect(w.find('[data-testid=cc-headcount-row] button').exists()).toBe(false)
-    expect(w.find('[role=status]').exists()).toBe(false)
   })
 
-  it('the modal closes with x or the backdrop only, not with Esc, and x has no aria-label', async () => {
+  it('the dialog has a labelled close button', async () => {
     const w = await render(CommandCenterStudentPage, { userId: 2022 })
     await w.get('[data-testid=cc-stat]').trigger('click')
     await flushPromises()
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-    await flushPromises()
     expect(body('cc-sessions-modal')).not.toBeNull()
-    expect(body('cc-modal-close')?.getAttribute('aria-label')).toBeNull()
-    expect(body('cc-session-open')?.tagName).toBe('SPAN')
+    expect(body('cc-modal-close')?.textContent.trim()).toBe('Tutup')
   })
 
   it('splits a week label below sm into two lines without changing its text', async () => {

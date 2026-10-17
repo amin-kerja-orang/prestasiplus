@@ -8,13 +8,13 @@ import { formatMyt } from '@/lib/time'
 import type { CcDrillRowMap, CcDrillType } from '../../api/command-center-types'
 import { accuracyTone, gpsTone, plain } from './copy'
 
-export interface DrillCell {
+export type DrillCell = {
   text: string
-  /** Tailwind text colour class. */
+  /** Token text colour class (`text-success`, ...). */
   tone?: string
   mono?: boolean
 }
-export interface DrillRow {
+export type DrillRow = {
   /** A row with a student id opens the student page in a new tab. */
   studentId?: number
   cells: DrillCell[]
@@ -56,7 +56,7 @@ export function drillTable<T extends CcDrillType>(type: T, rows: CcDrillRowMap[T
             num(r.answered),
             pct(r.accuracy),
             when(r.lastActiveAt),
-            { text: r.status, tone: r.status === 'Aktif' ? 'text-emerald-400' : 'text-slate-400' },
+            { text: r.status, tone: r.status === 'Aktif' ? 'text-success' : 'text-muted' },
           ],
         })),
       }

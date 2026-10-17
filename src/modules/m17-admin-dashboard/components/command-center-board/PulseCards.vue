@@ -5,6 +5,7 @@
  */
 import { computed } from 'vue'
 
+import { DsIconChip } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import {
@@ -14,8 +15,7 @@ import {
   type CcDailyActivity,
   type CcPeriod,
 } from '../../api/command-center-board'
-import type { BoardAccent } from './board-copy'
-import { ACCENT_EDGE, ACCENT_TEXT, S3_COPY } from './board-copy'
+import { S3_COPY } from './board-copy'
 
 const props = defineProps<{ data: CcDailyActivity | null; period: CcPeriod }>()
 
@@ -26,7 +26,6 @@ interface Card {
   value: string
   /** Sub-line pieces; `bold` pieces are the highlighted figures. */
   sub: { text: string; bold?: boolean }[]
-  accent: BoardAccent
 }
 
 const cards = computed<Card[]>(() => {
@@ -34,33 +33,24 @@ const cards = computed<Card[]>(() => {
   const dash = S3_COPY.empty
   if (!d) {
     return [
-      {
-        id: 'schools',
-        icon: '🏫',
-        label: 'Sekolah Aktif',
-        value: dash,
-        sub: [],
-        accent: 'emerald',
-      },
+      { id: 'schools', icon: 'i-ph-buildings', label: 'Sekolah Aktif', value: dash, sub: [] },
       {
         id: 'logins',
-        icon: '👤',
+        icon: 'i-ph-sign-in',
         label: CC_LOGIN_LABEL[props.period],
         value: dash,
         sub: [],
-        accent: 'cyan',
       },
-      { id: 'pupils', icon: '🎓', label: 'Pelajar Aktif', value: dash, sub: [], accent: 'amber' },
+      { id: 'pupils', icon: 'i-ph-student', label: 'Pelajar Aktif', value: dash, sub: [] },
       {
         id: 'answers',
-        icon: '📝',
+        icon: 'i-ph-clipboard-text',
         label: 'Soalan Dijawab',
         value: dash,
         sub: [],
-        accent: 'indigo',
       },
-      { id: 'sessions', icon: '🕐', label: 'Sesi Latihan', value: dash, sub: [], accent: 'violet' },
-      { id: 'engagement', icon: '🔥', label: 'Engagement', value: dash, sub: [], accent: 'rose' },
+      { id: 'sessions', icon: 'i-ph-clock', label: 'Sesi Latihan', value: dash, sub: [] },
+      { id: 'engagement', icon: 'i-ph-fire', label: 'Engagement', value: dash, sub: [] },
     ]
   }
   const acc = ccAccuracyLabel(d.practice.accuracy).split(': ')
@@ -74,47 +64,42 @@ const cards = computed<Card[]>(() => {
   return [
     {
       id: 'schools',
-      icon: '🏫',
+      icon: 'i-ph-buildings',
       label: 'Sekolah Aktif',
       value: formatCount(d.summary.activeSchools),
       sub: [{ text: `daripada ${formatCount(d.summary.totalSchools)}` }],
-      accent: 'emerald',
     },
     {
       id: 'logins',
-      icon: '👤',
+      icon: 'i-ph-sign-in',
       label: CC_LOGIN_LABEL[props.period],
       value: formatCount(d.logins.total),
       sub: roleSub,
-      accent: 'cyan',
     },
     {
       id: 'pupils',
-      icon: '🎓',
+      icon: 'i-ph-student',
       label: 'Pelajar Aktif',
       value: formatCount(d.summary.activeStudents),
       sub: [{ text: `daripada ${formatCount(d.summary.totalStudents)}` }],
-      accent: 'amber',
     },
     {
       id: 'answers',
-      icon: '📝',
+      icon: 'i-ph-clipboard-text',
       label: 'Soalan Dijawab',
       value: formatCount(d.practice.totalAnswers),
       sub: [{ text: `${acc[0] ?? ''}: ` }, { text: acc[1] ?? '', bold: true }],
-      accent: 'indigo',
     },
     {
       id: 'sessions',
-      icon: '🕐',
+      icon: 'i-ph-clock',
       label: 'Sesi Latihan',
       value: `${formatCount(d.practice.sessionsCompleted)}/${formatCount(d.practice.sessionsStarted)}`,
       sub: [{ text: ccAvgSessionLabel(d.practice.avgSessionSeconds) }],
-      accent: 'violet',
     },
     {
       id: 'engagement',
-      icon: '🔥',
+      icon: 'i-ph-fire',
       label: 'Engagement',
       value: formatCount(total),
       sub: [
@@ -122,42 +107,37 @@ const cards = computed<Card[]>(() => {
           text: `Mood:${String(e.moodCheckins)} Badge:${String(e.badgesEarned)} Misi:${String(e.missionsCompleted)}`,
         },
       ],
-      accent: 'rose',
     },
   ]
 })
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" data-testid="cc-pulse">
-    <div
-      v-for="c in cards"
-      :key="c.id"
-      :class="[
-        'relative min-w-0 rounded-2xl border border-t-2 border-slate-800 bg-slate-900 p-3',
-        ACCENT_EDGE[c.accent],
-      ]"
-      :data-testid="`cc-pulse-${c.id}`"
-    >
-      <span class="absolute top-3 right-3 text-2xl opacity-25">{{ c.icon }}</span>
-      <div
-        class="pr-8 text-xs font-semibold tracking-wider text-slate-400 uppercase"
-        data-testid="cc-pulse-label"
-      >
-        {{ c.label }}
-      </div>
-      <div
-        :class="['mt-1 font-mono text-3xl font-bold break-words', ACCENT_TEXT[c.accent]]"
-        data-testid="cc-pulse-value"
-      >
-        {{ c.value }}
-      </div>
-      <div class="mt-1 text-sm text-slate-400" data-testid="cc-pulse-sub">
-        <template v-for="(s, i) in c.sub" :key="i"
-          ><b v-if="s.bold" class="text-slate-100">{{ s.text }}</b
-          ><template v-else>{{ s.text }}</template></template
+  <div
+    class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
+    data-testid="cc-pulse"
+    aria-live="off"
+  >
+    <UCard v-for="c in cards" :key="c.id" class="min-w-0" :data-testid="`cc-pulse-${c.id}`">
+      <div class="flex min-w-0 flex-col items-start gap-1">
+        <span class="flex w-full min-w-0 items-center gap-2">
+          <DsIconChip :icon="c.icon" size="sm" />
+          <span class="min-w-0 text-overline text-muted" data-testid="cc-pulse-label">{{
+            c.label
+          }}</span>
+        </span>
+        <span
+          class="tabular text-title break-words text-highlighted"
+          data-testid="cc-pulse-value"
+          >{{ c.value }}</span
         >
+        <span class="text-caption text-muted" data-testid="cc-pulse-sub">
+          <template v-for="(s, i) in c.sub" :key="i"
+            ><b v-if="s.bold" class="text-highlighted">{{ s.text }}</b
+            ><template v-else>{{ s.text }}</template></template
+          >
+        </span>
       </div>
-    </div>
+    </UCard>
   </div>
 </template>
