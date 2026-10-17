@@ -65,13 +65,18 @@ Log masuk sebagai `admin@demo.test`. Portal ini menggabungkan tiga panel admin l
 
 ## Status tema baharu (v2)
 
-| Peranan | Sudah dalam tema baharu | Masih rupa lama |
+Semua skrin dalam `docs/requirements/role-access-matrix.md` (Murid 37, Guru 15, Admin Sekolah 18, bahagian A) kini dalam tema baharu, termasuk bingkai menu, halaman ralat 403/404 dan halaman "Belum tersedia".
+
+| Peranan | Bingkai | Catatan |
 |---|---|---|
-| Semua | Log Masuk, Daftar, Lupa/Reset Kata Laluan; Profil, Tetapan, Tiket Bantuan | — |
-| Murid | Dashboard, Bijak SPM, Latih Tubi, Soalan by Chapter, Ulangkaji, Remedial, Soalan Berstruktur, Set Soalan, PKSK, Kelas Saya, Syiling & Token, Cabaran Harian, Pencapaian, Papan Pendahulu, Prestasi, Analitik Adaptif, Analisa Item, Video, Artikel, Audio KBAT, Panduan, Topik, Peta Belajar, Heatmap Topik Lemah, Cikgu Alesa, Mohon Keluarga Angkat, Jemput Ibu Bapa, Kedai Hadiah, Kotak Misteri, Cabutan Bertuah, Kedai Hadiah Digital, Marketplace | Permainan, Kedudukan, Timeline |
-| Guru | Command Center, Dashboard Guru, Kelas Saya, Pelajar Saya, Sumbang Soalan, Prestasi, Analitik Adaptif, Analisa Item, Video | Monitoring, Kirkpatrick, Headcount, Laporan |
-| Admin Sekolah | Command Center, Prestasi, Analitik Adaptif, Analisa Item, Video | Monitoring, Kirkpatrick, Headcount, laporan sekolah, senarai pengguna |
-| Admin | Bingkai Portal Pentadbiran, Command Center (Pemantauan › Langsung) dan Aktiviti Harian | Skrin admin lain (pengguna, sekolah, bank soalan, dll.) |
+| Murid | Pembelajaran (Elektrik) | Semua skrin, termasuk Kemajuan Saya dan Sejarah Latihan |
+| Guru | Pembelajaran (staf) | Semua skrin, termasuk Command Center, Monitoring dan Kirkpatrick |
+| Admin Sekolah | Pembelajaran (staf) | Semua skrin |
+| Admin | Portal Pentadbiran | Command Center, Pengguna, Sekolah, Import, Langganan, Bank Soalan, Kurikulum. Item .cloud yang belum dibina memaparkan "Belum tersedia". |
+
+Sama seperti laman live, bukan pepijat: Headcount (Murid) dan Laporan Mingguan (Guru) memaparkan 403; Murid yang membuka Analisa Item dibawa ke Dashboard.
+
+Semakan visual: `docs/qa/v2-visual-sweep.md`.
 
 ## Bijak SPM (murid)
 
