@@ -5,7 +5,8 @@
  * (menus stay usable) or, for a guest, on its own. The tab title comes from the router.
  */
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+
+import { DsEmptyState, usePersonality } from '@/ds'
 
 import {
   isPrototypeRole,
@@ -16,6 +17,7 @@ import {
 import { useSessionStore } from '@/stores/session'
 
 const session = useSessionStore()
+const personality = usePersonality()
 
 const home = computed(() => {
   // A role outside the prototype has no dashboard to go back to: offer to sign out.
@@ -29,21 +31,26 @@ const home = computed(() => {
 
 <template>
   <main
-    class="flex min-h-[60vh] items-center justify-center px-4 py-10"
+    class="flex min-h-[60vh] items-center justify-center px-4 py-8"
     data-page="prototype-unavailable"
     data-testid="prototype-unavailable"
   >
-    <div class="mx-auto max-w-md text-center">
-      <div class="mb-4 text-6xl leading-none" aria-hidden="true">🚧</div>
-      <h1 class="mb-2 text-2xl font-bold text-slate-800">{{ SCOPE_PAGE_HEADING }}</h1>
-      <p class="mb-8 text-[15px] leading-relaxed text-slate-600">{{ SCOPE_PAGE_MESSAGE }}</p>
-      <RouterLink
-        :to="home.to"
-        class="inline-flex min-h-11 items-center justify-center rounded-full bg-indigo-600 px-8 py-3 font-semibold text-white hover:bg-indigo-700"
-        data-testid="prototype-unavailable-home"
+    <div class="flex max-w-md flex-col items-center text-center">
+      <DsEmptyState
+        :title="SCOPE_PAGE_HEADING"
+        :description="SCOPE_PAGE_MESSAGE"
+        icon="i-ph-flask"
+        :friend="personality === 'learner' ? 'aiman' : undefined"
       >
-        {{ home.label }}
-      </RouterLink>
+        <template #actions>
+          <UButton
+            :to="home.to"
+            size="lg"
+            :label="home.label"
+            data-testid="prototype-unavailable-home"
+          />
+        </template>
+      </DsEmptyState>
     </div>
   </main>
 </template>
