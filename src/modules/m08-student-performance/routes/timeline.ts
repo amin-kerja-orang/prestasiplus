@@ -18,6 +18,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Timeline Saya - PRESTASIPLUS',
       header: { title: 'Timeline Saya', subtitle: 'Kongsi pencapaian & cerita anda' },
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -30,13 +31,14 @@ const routes: RouteRecordRaw[] = [
       title: 'Tambah Post - Timeline',
       header: { title: 'Tambah Post', subtitle: 'Kongsi pencapaian atau cerita baru' },
       module: 'M08',
+      v2: true,
     },
   },
   {
     path: '/pelajar/:id(\\d+)',
     name: 'm08.pelajar.public',
     component: () => import('../pages/PublicProfilePage.vue'),
-    meta: { layout: 'bare', access: 'public', title: 'Pelajar PRESTASIPLUS', module: 'M08' },
+    meta: { layout: 'bare', access: 'public', title: 'Pelajar PRESTASIPLUS', module: 'M08', v2: true },
   },
 ]
 

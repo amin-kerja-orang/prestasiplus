@@ -12,23 +12,23 @@ defineProps<{ post: TimelinePost }>()
 
 <template>
   <article
-    class="min-w-0 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5"
+    class="min-w-0 rounded-card bg-default p-4 shadow-card sm:p-5"
     data-testid="post-card"
   >
-    <div class="flex flex-wrap items-center gap-2 text-xs">
+    <div class="flex flex-wrap items-center gap-2 text-caption">
       <span
-        class="rounded-full bg-indigo-50 px-2.5 py-1 font-semibold text-indigo-700"
+        class="rounded-chip bg-primary px-2.5 py-1 text-label text-inverted"
         data-testid="post-category"
         >{{ categoryLabel(post.category) }}</span
       >
-      <span class="text-slate-500" data-testid="post-date">{{ postDateText(post) }}</span>
+      <span class="tabular text-muted" data-testid="post-date">{{ postDateText(post) }}</span>
     </div>
-    <h3 class="mt-2 text-base font-bold break-words text-slate-800" data-testid="post-title">
+    <h3 class="mt-2 font-display text-heading font-extrabold break-words text-highlighted" data-testid="post-title">
       {{ post.title }}
     </h3>
     <p
       v-if="post.story"
-      class="mt-1 text-sm break-words whitespace-pre-line text-slate-600"
+      class="mt-1 text-body break-words whitespace-pre-line text-default"
       data-testid="post-story"
     >
       {{ post.story }}
@@ -37,16 +37,16 @@ defineProps<{ post: TimelinePost }>()
       <figure
         v-for="(photo, i) in post.photos"
         :key="i"
-        class="min-w-0 overflow-hidden rounded-xl bg-slate-100"
+        class="min-w-0 overflow-hidden rounded-card bg-elevated"
       >
         <img
           :src="photoSrc(photo.url)"
           :alt="photo.caption ?? post.title"
-          class="aspect-[4/3] w-full object-cover"
+          class="aspect-4/3 w-full object-cover"
           loading="lazy"
           data-testid="post-photo"
         />
-        <figcaption v-if="photo.caption" class="px-2 py-1 text-xs break-words text-slate-600">
+        <figcaption v-if="photo.caption" class="px-2 py-1 text-caption break-words text-muted">
           {{ photo.caption }}
         </figcaption>
       </figure>

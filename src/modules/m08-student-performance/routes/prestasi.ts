@@ -68,7 +68,7 @@ const routes: RouteRecordRaw[] = [
     path: '/laporan-mingguan',
     name: 'm08.laporan-mingguan',
     component: () => import('../pages/LaporanMingguanPage.vue'),
-    meta: { layout: 'user', access: 'auth', roles: [], onForbidden: '403', module: 'M08' },
+    meta: { layout: 'user', access: 'auth', roles: [], onForbidden: '403', module: 'M08', v2: true },
   },
 ]
 

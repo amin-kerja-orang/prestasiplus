@@ -17,6 +17,11 @@ const api = vi.hoisted(() => ({
 vi.mock('../../api/performance', () => api)
 
 const dialogs = vi.hoisted(() => ({ alertNative: vi.fn() }))
+const toast = vi.hoisted(() => ({ add: vi.fn() }))
+vi.mock('@nuxt/ui/composables', async (orig) => ({
+  ...(await orig<object>()),
+  useToast: () => toast,
+}))
 vi.mock('@/components/overlay/native-dialogs', () => dialogs)
 
 const post = (over: Partial<TimelinePost> = {}): TimelinePost => ({
@@ -79,6 +84,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   Object.values(api).forEach((m) => m.mockReset())
   dialogs.alertNative.mockReset()
+  toast.add.mockReset()
   const t: Timeline = { profileUrl: '/pelajar/1', posts: [] }
   api.fetchTimeline.mockResolvedValue(t)
   api.fetchPublicProfile.mockResolvedValue(profile())
@@ -93,7 +99,7 @@ afterEach(() => {
 describe('S16 TimelinePage', () => {
   it('shows the empty card, the add links and the own public link', async () => {
     const w = await render(TimelinePage, '/timeline', '/timeline')
-    expect(w.get('h2').text()).toBe('📸 Timeline Saya')
+    expect(w.get('h1').text()).toBe('📸 Timeline Saya')
     expect(w.get('[data-testid=timeline-empty]').text()).toContain('Timeline Kosong')
     expect(w.get('[data-testid=add-post]').attributes('href')).toBe('/timeline/create')
     expect(w.get('[data-testid=add-first]').text()).toBe('Tambah Post Pertama')
@@ -129,7 +135,7 @@ describe('S16 TimelinePage', () => {
 describe('S17 TimelineCreatePage', () => {
   it('has the live fields, defaults and limits', async () => {
     const w = await render(TimelineCreatePage, '/timeline/create', '/timeline/create')
-    expect(w.get('h2').text()).toBe('📸 Post Baru')
+    expect(w.get('h1').text()).toBe('📸 Post Baru')
     const title = w.get('input[name=title]')
     expect(title.attributes('maxlength')).toBe('150')
     expect(title.attributes('required')).toBeDefined()
@@ -153,7 +159,9 @@ describe('S17 TimelineCreatePage', () => {
       configurable: true,
     })
     await input.trigger('change')
-    expect(dialogs.alertNative).toHaveBeenCalledWith('big.png terlalu besar (maks 2MB)')
+    expect(toast.add).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'big.png terlalu besar (maks 2MB)' }),
+    )
     expect(w.findAll('[data-testid=photo-preview]')).toHaveLength(2)
     const caps = w.findAll('[data-testid=caption-input]')
     expect(caps[1]?.attributes('placeholder')).toBe('Keterangan gambar 2...')

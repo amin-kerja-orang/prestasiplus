@@ -72,9 +72,9 @@ describe('S19 query strings (FR-M08-109, FR-M08-110)', () => {
 
 describe('S19 accuracy colour (FR-M08-112)', () => {
   it('is green from 50 and red below', () => {
-    expect(accuracyClass(50)).toBe('text-green-600')
-    expect(accuracyClass(93.48)).toBe('text-green-600')
-    expect(accuracyClass(49.99)).toBe('text-red-500')
-    expect(accuracyClass(35.5)).toBe('text-red-500')
+    expect(accuracyClass(50)).toBe('text-success')
+    expect(accuracyClass(93.48)).toBe('text-success')
+    expect(accuracyClass(49.99)).toBe('text-error')
+    expect(accuracyClass(35.5)).toBe('text-error')
   })
 })

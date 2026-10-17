@@ -18,6 +18,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kedudukan Nasional',
       header: { title: 'Kedudukan', subtitle: 'Selamat datang kembali' },
       module: 'M08',
+      v2: true,
     },
   },
   {
@@ -30,6 +31,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Papan Pendahulu - PRESTASIPLUS',
       header: { title: 'Papan Pendahulu', subtitle: 'Siapa juara minggu ini?' },
       module: 'M08',
+      v2: true,
     },
   },
 ]

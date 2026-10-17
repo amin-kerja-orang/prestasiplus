@@ -9,20 +9,11 @@
  *   Ketepatan from 1024px. Every viewer sees the same list; names are plain text (no user link).
  * - Footer "{n} peserta bersaing" and, from 768px, "Dikemaskini real-time".
  */
-import {
-  CalendarDays,
-  CalendarRange,
-  CircleUserRound,
-  Coins,
-  Infinity as InfinityIcon,
-  RefreshCw,
-  Users,
-} from '@lucide/vue'
-import { computed, type Component } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsIconChip, DsPage } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchLeaderboard } from '../api/performance'
@@ -32,8 +23,7 @@ import {
   PERIOD_TABS,
   initialOf,
   percentText,
-  pillClass,
-  rankCircleClass,
+  accuracyColor,
   readPeriod,
 } from '../lib/leaderboard'
 
@@ -51,216 +41,186 @@ const firstLoad = computed(() => data.value === null && error.value === null)
 const rows = computed(() => data.value?.rows ?? [])
 const me = computed(() => data.value?.me ?? null)
 
-const TAB_ICONS: Record<string, Component> = {
-  all: InfinityIcon,
-  week: CalendarRange,
-  month: CalendarDays,
+const meTiles = computed(() => {
+  const m = me.value
+  if (!m) return []
+  return [
+    { id: 'rank', label: 'Ranking', icon: 'i-ph-ranking', accent: 'action' as const, value: m.rank === null ? '#-' : `#${String(m.rank)}` },
+    { id: 'coins', label: 'Koin', icon: 'i-ph-coins', accent: 'win' as const, value: formatNumber(m.coins) },
+    { id: 'sessions', label: 'Sesi', icon: 'i-ph-books', accent: 'action' as const, value: formatNumber(m.sessions) },
+    { id: 'accuracy', label: 'Ketepatan', icon: 'i-ph-target', accent: 'win' as const, value: percentText(m.accuracy) },
+  ]
+})
+
+const TAB_ICONS:Record<string, string> = {
+  all: 'i-ph-infinity',
+  week: 'i-ph-calendar-dots',
+  month: 'i-ph-calendar-blank',
 }
 
-const TAB_BASE =
-  'inline-flex min-h-11 items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold transition'
 </script>
 
 <template>
-  <div class="space-y-4 sm:space-y-5" data-testid="leaderboard-page">
-    <!-- Hero -->
-    <section
-      class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-8 text-center text-white shadow-lg"
-      data-testid="leaderboard-hero"
-    >
-      <div
-        class="pointer-events-none absolute top-6 -left-4 text-7xl opacity-20"
-        aria-hidden="true"
-      >
-        ⭐
-      </div>
-      <div
-        class="pointer-events-none absolute -top-2 -right-2 text-7xl opacity-20"
-        aria-hidden="true"
-      >
-        🏅
-      </div>
-      <div class="relative">
-        <div class="text-5xl" aria-hidden="true">🏆</div>
-        <h2 class="mt-2 font-heading text-2xl font-bold text-white sm:text-3xl">Papan Pendahulu</h2>
-        <p class="mt-1 text-sm text-white/80">Siapa juara minggu ini?</p>
-      </div>
-    </section>
+  <DsPage title="Papan Pendahulu" subtitle="Siapa juara minggu ini?" data-testid="leaderboard-page">
 
     <!-- Period links -->
-    <nav class="flex flex-wrap justify-center gap-2 sm:gap-3" data-testid="leaderboard-tabs">
-      <RouterLink
+    <nav class="flex flex-wrap gap-2" data-testid="leaderboard-tabs">
+      <UButton
         v-for="tab in PERIOD_TABS"
         :key="tab.id"
         :to="{ path: LEADERBOARD_PATH, query: { period: tab.id } }"
-        :class="[
-          TAB_BASE,
-          period === tab.id
-            ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg'
-            : 'bg-white text-slate-600 shadow hover:bg-slate-50',
-        ]"
+        :color="period === tab.id ? 'primary' : 'neutral'"
+        :variant="period === tab.id ? 'solid' : 'soft'"
+        :icon="TAB_ICONS[tab.id]"
+        :label="tab.label"
+        size="lg"
         :data-testid="`leaderboard-tab-${tab.id}`"
         :data-active="period === tab.id ? 'true' : 'false'"
-      >
-        <component :is="TAB_ICONS[tab.id]" class="h-4 w-4" aria-hidden="true" />
-        {{ tab.label }}
-      </RouterLink>
+      />
     </nav>
 
     <!-- Error -->
-    <div v-if="error" class="space-y-3" data-testid="leaderboard-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
+    <div v-if="error" class="flex flex-col items-start gap-3" data-testid="leaderboard-error">
+      <UAlert
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        :title="LOAD_ERROR"
+        class="w-full"
+      />
+      <UButton
+        color="neutral"
+        variant="soft"
+        size="lg"
+        label="Cuba Semula"
         data-testid="leaderboard-retry"
         @click="reload()"
-      >
-        Cuba Semula
-      </button>
+      />
     </div>
 
     <!-- Loading -->
-    <div v-else-if="firstLoad" class="space-y-3" data-testid="leaderboard-loading">
-      <div class="h-32 animate-pulse rounded-2xl bg-white/70"></div>
-      <div class="h-64 animate-pulse rounded-2xl bg-white/70"></div>
+    <div
+      v-else-if="firstLoad"
+      class="flex flex-col gap-3"
+      aria-busy="true"
+      data-testid="leaderboard-loading"
+    >
+      <USkeleton class="h-32 w-full" />
+      <USkeleton class="h-64 w-full" />
     </div>
 
     <template v-else-if="me">
       <!-- Kedudukan Anda -->
-      <section
-        class="rounded-2xl border-2 border-indigo-400 bg-gradient-to-br from-indigo-100 to-violet-100 p-4 sm:p-5"
-        data-testid="leaderboard-me"
-      >
-        <h3 class="flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-          <CircleUserRound class="h-6 w-6 text-indigo-500" aria-hidden="true" />
+      <section class="flex flex-col gap-3" data-testid="leaderboard-me">
+        <h2 class="flex items-center gap-2 text-heading text-highlighted">
+          <UIcon name="i-ph-user-circle" class="size-6 text-primary" aria-hidden="true" />
           Kedudukan Anda
-        </h3>
-        <div class="mt-3 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-          <div class="rounded-xl bg-white p-3 text-center sm:p-4">
-            <div class="font-heading text-2xl font-bold text-indigo-600" data-testid="me-rank">
-              {{ me.rank === null ? '#-' : `#${String(me.rank)}` }}
+        </h2>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <UCard v-for="t in meTiles" :key="t.id" class="min-w-0">
+            <div class="flex flex-col items-start gap-2">
+              <DsIconChip :icon="t.icon" :accent="t.accent" />
+              <span class="tabular text-heading text-highlighted" :data-testid="`me-${t.id}`">{{
+                t.value
+              }}</span>
+              <span class="-mt-1 text-caption text-muted">{{ t.label }}</span>
             </div>
-            <div class="text-xs text-slate-500">Ranking</div>
-          </div>
-          <div class="rounded-xl bg-white p-3 text-center sm:p-4">
-            <div class="font-heading text-2xl font-bold text-amber-600" data-testid="me-coins">
-              {{ formatNumber(me.coins) }}
-            </div>
-            <div class="text-xs text-slate-500">Koin</div>
-          </div>
-          <div class="rounded-xl bg-white p-3 text-center sm:p-4">
-            <div class="font-heading text-2xl font-bold text-blue-600" data-testid="me-sessions">
-              {{ formatNumber(me.sessions) }}
-            </div>
-            <div class="text-xs text-slate-500">Sesi</div>
-          </div>
-          <div class="rounded-xl bg-white p-3 text-center sm:p-4">
-            <div class="font-heading text-2xl font-bold text-green-600" data-testid="me-accuracy">
-              {{ percentText(me.accuracy) }}
-            </div>
-            <div class="text-xs text-slate-500">Ketepatan</div>
-          </div>
+          </UCard>
         </div>
       </section>
 
       <!-- Podium + table -->
-      <section class="overflow-hidden rounded-2xl bg-white shadow" data-testid="leaderboard-board">
-        <div v-if="rows.length > 0" class="px-3 pt-8 pb-0 sm:px-6">
+      <UCard :ui="{ body: 'p-0 sm:p-0' }" data-testid="leaderboard-board">
+        <div v-if="rows.length > 0" class="px-3 pt-8 sm:px-6">
           <LeaderboardPodium :rows="rows" />
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-sm" data-testid="leaderboard-table">
-            <thead>
-              <tr
-                class="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold text-slate-500"
+          <div role="table" aria-label="Papan Pendahulu" data-testid="leaderboard-table">
+            <div
+              role="row"
+              class="mt-4 grid grid-cols-12 items-center gap-2 bg-elevated px-3 py-3 text-overline text-muted sm:px-4"
+            >
+              <div role="columnheader" class="col-span-2 text-center sm:col-span-1">#</div>
+              <div role="columnheader" class="col-span-6 md:col-span-5 lg:col-span-4">Pelajar</div>
+              <div role="columnheader" class="col-span-4 text-end md:col-span-2">Koin</div>
+              <div role="columnheader" class="hidden text-end md:col-span-2 md:block">Sesi</div>
+              <div role="columnheader" class="hidden text-end lg:col-span-2 lg:block">
+                Ketepatan
+              </div>
+            </div>
+            <div
+              v-for="row in rows"
+              :key="row.rank"
+              role="row"
+              class="grid min-h-14 grid-cols-12 items-center gap-2 px-3 py-2 odd:bg-soft sm:px-4"
+              data-testid="leaderboard-row"
+            >
+              <div role="cell" class="col-span-2 flex justify-center sm:col-span-1">
+                <UBadge
+                  :color="row.rank <= 3 ? 'primary' : 'neutral'"
+                  :variant="row.rank <= 3 ? 'solid' : 'subtle'"
+                  :label="String(row.rank)"
+                  class="tabular"
+                  data-testid="row-rank"
+                />
+              </div>
+              <div role="cell" class="col-span-6 min-w-0 md:col-span-5 lg:col-span-4">
+                <div class="flex min-w-0 items-center gap-2">
+                  <UAvatar
+                    :src="row.avatarUrl ?? undefined"
+                    :alt="row.name"
+                    :text="initialOf(row.name)"
+                    size="md"
+                  />
+                  <span class="truncate text-label text-highlighted" data-testid="row-name">{{
+                    row.name
+                  }}</span>
+                </div>
+              </div>
+              <div
+                role="cell"
+                class="tabular col-span-4 text-end text-label whitespace-nowrap text-highlighted md:col-span-2"
               >
-                <th scope="col" class="w-12 px-3 py-3 text-center sm:px-4">#</th>
-                <th scope="col" class="px-3 py-3">Pelajar</th>
-                <th scope="col" class="px-3 py-3 text-right">Koin</th>
-                <th scope="col" class="hidden px-3 py-3 text-right md:table-cell">Sesi</th>
-                <th scope="col" class="hidden px-3 py-3 text-right lg:table-cell">Ketepatan</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="row in rows"
-                :key="row.rank"
-                class="border-b border-slate-100 last:border-b-0"
-                data-testid="leaderboard-row"
+                <UIcon name="i-ph-coins" class="size-4" aria-hidden="true" />
+                <span data-testid="row-coins">{{ formatNumber(row.coins) }}</span>
+              </div>
+              <div
+                role="cell"
+                class="tabular hidden text-end text-body whitespace-nowrap text-muted md:col-span-2 md:block"
+                data-testid="row-sessions"
               >
-                <td class="px-3 py-2.5 text-center sm:px-4">
-                  <span
-                    :class="[
-                      'inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold',
-                      rankCircleClass(row.rank),
-                    ]"
-                    data-testid="row-rank"
-                    >{{ row.rank }}</span
-                  >
-                </td>
-                <td class="max-w-0 px-3 py-2.5">
-                  <div class="flex min-w-0 items-center gap-2">
-                    <div
-                      :class="[
-                        'flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-white text-sm font-bold text-indigo-600',
-                        row.rank <= 3 ? 'border-amber-300' : 'border-slate-200',
-                      ]"
-                    >
-                      <img
-                        v-if="row.avatarUrl"
-                        :src="row.avatarUrl"
-                        :alt="row.name"
-                        class="h-full w-full object-cover"
-                      />
-                      <span v-else>{{ initialOf(row.name) }}</span>
-                    </div>
-                    <span class="truncate font-semibold text-slate-800" data-testid="row-name">{{
-                      row.name
-                    }}</span>
-                  </div>
-                </td>
-                <td class="px-3 py-2.5 text-right font-bold whitespace-nowrap text-amber-600">
-                  <Coins class="mr-1 inline h-4 w-4" aria-hidden="true" />
-                  <span data-testid="row-coins">{{ formatNumber(row.coins) }}</span>
-                </td>
-                <td
-                  class="hidden px-3 py-2.5 text-right whitespace-nowrap text-slate-600 md:table-cell"
-                  data-testid="row-sessions"
-                >
-                  {{ formatNumber(row.sessions) }}
-                </td>
-                <td class="hidden px-3 py-2.5 text-right lg:table-cell">
-                  <span
-                    :class="[
-                      'inline-block rounded-full px-2.5 py-0.5 text-xs font-bold',
-                      pillClass(row.accuracy),
-                    ]"
-                    data-testid="row-accuracy"
-                    >{{ percentText(row.accuracy) }}</span
-                  >
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                {{ formatNumber(row.sessions) }}
+              </div>
+              <div role="cell" class="hidden text-end lg:col-span-2 lg:block">
+                <UBadge
+                  :color="accuracyColor(row.accuracy)"
+                  variant="solid"
+                  :label="percentText(row.accuracy)"
+                  class="tabular"
+                  data-testid="row-accuracy"
+                />
+              </div>
+            </div>
+          </div>
         </div>
         <div
-          class="flex items-center justify-between gap-3 bg-slate-50 px-4 py-3 text-xs text-slate-500"
+          class="flex items-center justify-between gap-3 bg-elevated px-4 py-3 text-caption text-muted"
           data-testid="leaderboard-footer"
         >
-          <span class="inline-flex items-center gap-1.5">
-            <Users class="h-4 w-4" aria-hidden="true" />
+          <span class="inline-flex items-center gap-2">
+            <UIcon name="i-ph-users" class="size-4" aria-hidden="true" />
             <span
               ><span data-testid="participants">{{ data?.participants ?? 0 }}</span> peserta
               bersaing</span
             >
           </span>
-          <span class="hidden items-center gap-1.5 md:inline-flex">
-            <RefreshCw class="h-4 w-4" aria-hidden="true" />
+          <span class="hidden items-center gap-2 md:inline-flex">
+            <UIcon name="i-ph-arrows-clockwise" class="size-4" aria-hidden="true" />
             Dikemaskini real-time
           </span>
         </div>
-      </section>
+      </UCard>
     </template>
-  </div>
+  </DsPage>
 </template>

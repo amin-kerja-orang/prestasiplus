@@ -133,7 +133,9 @@
     { "glob": "src/modules/m27-school-admin/pages/KelasSekolahPage.vue", "level": "page" },
     { "glob": "src/modules/m27-school-admin/components/users/**", "level": "page" },
     { "glob": "src/modules/m27-school-admin/components/classes/**", "level": "page" },
-    { "glob": "src/modules/m16-battle-games/pages/SekolahBersaingPage.vue", "level": "page" }
+    { "glob": "src/modules/m16-battle-games/pages/SekolahBersaingPage.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/{Ranking,Leaderboard,Timeline,PublicProfile}*.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/components/{LeaderboardPodium.vue,timeline/**}", "level": "ds" }
   ],
   "exempt": [
     "src/theme/**"
