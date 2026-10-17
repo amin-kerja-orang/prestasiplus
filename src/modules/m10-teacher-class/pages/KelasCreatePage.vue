@@ -4,26 +4,19 @@
  * level tiles filtered by the school type. Native validation only (name, subject); the level
  * radios carry no `required` (DV-M10-22). 201 → `/guru/kelas`; 422 → the shared red box.
  */
-import { ArrowLeft, CirclePlus, Laptop } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import {
-  FORM_ERROR_MODIFIER,
-  FORM_ERROR_TEXT_CLASS,
-  FORM_INPUT_CLASS,
-  FORM_SELECT_CLASS,
-  FORM_TEXTAREA_CLASS,
-} from '@/components/form'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 import type { SchoolSummary } from '@/modules/m02-users-schools'
 
 import { createGuruClass } from '../api/guru'
 import type { EducationLevelSlug } from '../api/types'
 import { KELAS_COPY, tilesForSchoolType } from '../components/kelas/copy'
 import SchoolPicker from '../components/kelas/SchoolPicker.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import { fetchSubjectOptions } from '../components/kelas/subjects'
 
 const router = useRouter()
@@ -74,127 +67,116 @@ async function submit(): Promise<void> {
     submitting.value = false
   }
 }
-
-const fieldClass = (base: string, key: string): string =>
-  fields.value[key] ? `${base} ${FORM_ERROR_MODIFIER}` : base
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl min-w-0 space-y-5" data-testid="kelas-create-page">
-    <RouterLink
-      to="/guru/kelas"
-      class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-600 hover:text-indigo-600"
-      data-testid="kelas-back"
-    >
-      <ArrowLeft class="h-4 w-4" />{{ KELAS_COPY.back }}
-    </RouterLink>
+  <DsPage class="max-w-4xl" data-testid="kelas-create-page">
+    <div>
+      <UButton
+        to="/guru/kelas"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-arrow-left"
+        class="min-h-11"
+        data-testid="kelas-back"
+        >{{ KELAS_COPY.back }}</UButton
+      >
+    </div>
 
-    <form class="space-y-5" data-testid="kelas-form" @submit.prevent="submit">
-      <AlertBox :messages="failure" />
+    <form class="flex flex-col gap-4" data-testid="kelas-form" @submit.prevent="submit">
+      <UAlert
+        v-if="failure.length"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle-duotone"
+        :title="failure.join(' ')"
+        role="alert"
+      />
 
       <SchoolPicker @select="school = $event" />
 
-      <section class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-        <h2 class="mb-4 flex items-center gap-2 font-heading text-lg font-bold text-slate-800">
-          <Laptop class="h-5 w-5 text-indigo-500" />{{ KELAS_COPY.info }}
+      <UCard>
+        <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
+          <UIcon name="i-ph-laptop-duotone" class="size-5 text-primary" />{{ KELAS_COPY.info }}
         </h2>
 
-        <div class="space-y-4">
-          <div>
-            <label for="kelas-name" class="mb-1 block text-sm font-semibold text-slate-700"
-              >{{ KELAS_COPY.name }} *</label
-            >
-            <input
+        <div class="flex flex-col gap-4">
+          <UFormField
+            :label="`${KELAS_COPY.name} *`"
+            name="kelas-name"
+            :help="KELAS_COPY.nameHelp"
+            :error="fields.name"
+          >
+            <UInput
               id="kelas-name"
               v-model="name"
               type="text"
               required
               maxlength="255"
               :placeholder="KELAS_COPY.namePlaceholder"
-              :class="fieldClass(FORM_INPUT_CLASS, 'name')"
+              class="w-full"
               data-testid="kelas-name"
             />
-            <p class="mt-1 text-xs text-slate-500">{{ KELAS_COPY.nameHelp }}</p>
-            <p v-if="fields.name" :class="FORM_ERROR_TEXT_CLASS">{{ fields.name }}</p>
-          </div>
+          </UFormField>
 
-          <div>
-            <label for="kelas-subject" class="mb-1 block text-sm font-semibold text-slate-700"
-              >{{ KELAS_COPY.subject }} *</label
-            >
-            <select
+          <UFormField
+            :label="`${KELAS_COPY.subject} *`"
+            name="kelas-subject"
+            :error="fields.subjectId"
+          >
+            <NativeSelect
               id="kelas-subject"
               v-model="subjectId"
               required
-              :class="fieldClass(FORM_SELECT_CLASS, 'subjectId')"
               data-testid="kelas-subject"
             >
               <option value="">{{ KELAS_COPY.subjectPlaceholder }}</option>
               <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">
                 {{ s.name }}
               </option>
-            </select>
-            <p v-if="fields.subjectId" :class="FORM_ERROR_TEXT_CLASS">{{ fields.subjectId }}</p>
-          </div>
+            </NativeSelect>
+          </UFormField>
 
-          <fieldset class="min-w-0">
-            <legend class="mb-1 block text-sm font-semibold text-slate-700">
-              {{ KELAS_COPY.level }} *
-            </legend>
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3" data-testid="kelas-levels">
-              <label
-                v-for="tile in tiles"
-                :key="tile.slug"
-                class="relative block cursor-pointer"
-                data-testid="kelas-level"
-              >
-                <input
-                  v-model="level"
-                  type="radio"
-                  name="education_level"
-                  :value="tile.slug"
-                  class="peer hidden"
-                />
-                <span
-                  class="flex min-h-11 items-center justify-center rounded-xl border-2 border-slate-200 bg-white px-3 text-sm text-slate-700 transition peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:font-semibold peer-checked:text-indigo-700"
-                  >{{ tile.label }}</span
-                >
-              </label>
-            </div>
-            <p v-if="fields.educationLevel" :class="FORM_ERROR_TEXT_CLASS">
-              {{ fields.educationLevel }}
-            </p>
-          </fieldset>
+          <URadioGroup
+            :model-value="level || undefined"
+            :legend="`${KELAS_COPY.level} *`"
+            :items="tiles.map((t) => ({ label: t.label, value: t.slug }))"
+            variant="card"
+            orientation="horizontal"
+            name="education_level"
+            class="min-w-0"
+            data-testid="kelas-levels"
+            @update:model-value="level = $event as EducationLevelSlug"
+          />
+          <p v-if="fields.educationLevel" class="text-caption text-error">
+            {{ fields.educationLevel }}
+          </p>
 
-          <div>
-            <label
-              for="kelas-description"
-              class="mb-1 block text-sm font-semibold text-slate-700"
-              >{{ KELAS_COPY.description }}</label
-            >
-            <textarea
+          <UFormField :label="KELAS_COPY.description" name="kelas-description">
+            <UTextarea
               id="kelas-description"
               v-model="description"
-              rows="3"
+              :rows="3"
               maxlength="2000"
               :placeholder="KELAS_COPY.descriptionPlaceholder"
-              :class="FORM_TEXTAREA_CLASS"
+              class="w-full"
               data-testid="kelas-description"
             />
-          </div>
+          </UFormField>
         </div>
-      </section>
+      </UCard>
 
-      <button
+      <UButton
         type="submit"
+        size="xl"
+        block
+        :loading="submitting"
         :disabled="submitting"
-        class="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-indigo-500 to-purple-500 px-5 py-3 font-semibold text-white shadow hover:opacity-90 disabled:opacity-60"
+        :icon="submitting ? undefined : 'i-ph-plus-circle-duotone'"
         data-testid="kelas-submit"
       >
-        <LoadingSpinner v-if="submitting" />
-        <CirclePlus v-else class="h-5 w-5" />
         {{ submitting ? KELAS_COPY.submitting : KELAS_COPY.submit }}
-      </button>
+      </UButton>
     </form>
-  </div>
+  </DsPage>
 </template>

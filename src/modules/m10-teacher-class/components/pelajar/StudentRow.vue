@@ -2,10 +2,9 @@
 /**
  * One student row of S6 (PROPOSED, FR-M10-36/37): name, level, the viewer's class chips. On the
  * "Pelajar Saya" tab each chip with a known class id has a remove button (#17); on the school tab
- * the row has an add button (#16) for the class chosen in the "Tambah pelajar ke:" bar.
+ * the row has an add button (#16) for the class chosen in the "Tambah pelajar ke:" bar. A card at
+ * every width (layers, no lines); the name links to the student's prestasi page.
  */
-import { Plus, X } from '@lucide/vue'
-
 import type { GuruStudent } from '../../api/types'
 import { PELAJAR_COPY } from './copy'
 
@@ -24,57 +23,63 @@ defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: num
 </script>
 
 <template>
-  <li
-    class="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3 shadow-sm"
-    data-testid="student-row"
-    :data-student-id="student.id"
-  >
-    <div class="min-w-0 flex-1">
-      <p class="font-semibold break-words text-slate-800" data-testid="student-name">
-        {{ student.name }}
-      </p>
-      <p v-if="student.levelName" class="text-xs text-slate-500" data-testid="student-level">
-        {{ student.levelName }}
-      </p>
-      <ul v-if="student.classNames.length > 0" class="mt-1.5 flex flex-wrap gap-1.5">
-        <li
-          v-for="cls in student.classNames"
-          :key="cls"
-          class="inline-flex items-center gap-1 rounded-full bg-indigo-50 pl-2.5 text-xs font-semibold text-indigo-700"
-          :class="mode === 'mine' && classIds?.has(cls) ? 'pr-0.5' : 'pr-2.5'"
-          data-testid="student-class"
-        >
-          {{ cls }}
-          <button
-            v-if="mode === 'mine' && classIds?.has(cls)"
-            type="button"
-            class="inline-flex h-11 w-11 items-center justify-center rounded-full text-indigo-400 hover:text-red-600 disabled:opacity-50"
-            :disabled="busy"
-            data-testid="student-remove"
-            @click="$emit('remove', student.id, classIds?.get(cls) as number)"
+  <li class="min-w-0" data-testid="student-row" :data-student-id="student.id">
+    <UCard :ui="{ body: 'p-3 sm:p-3' }">
+      <div class="flex min-w-0 flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
+          <UAvatar :alt="student.name" size="md" />
+          <div class="min-w-0 flex-1">
+            <p class="text-label break-words text-highlighted" data-testid="student-name">
+              {{ student.name }}
+            </p>
+            <p v-if="student.levelName" class="text-caption text-muted" data-testid="student-level">
+              {{ student.levelName }}
+            </p>
+            <ul v-if="student.classNames.length > 0" class="mt-2 flex flex-wrap items-center gap-2">
+              <li
+                v-for="cls in student.classNames"
+                :key="cls"
+                class="inline-flex items-center gap-1"
+                data-testid="student-class"
+              >
+                <UBadge color="primary" variant="subtle">{{ cls }}</UBadge>
+                <UButton
+                  v-if="mode === 'mine' && classIds?.has(cls)"
+                  type="button"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-ph-x"
+                  :aria-label="`Keluarkan daripada ${cls}`"
+                  class="size-11 justify-center"
+                  :disabled="busy"
+                  data-testid="student-remove"
+                  @click="$emit('remove', student.id, classIds?.get(cls) as number)"
+                />
+              </li>
+            </ul>
+          </div>
+        </div>
+        <template v-if="mode === 'school'">
+          <UBadge
+            v-if="alreadyIn"
+            color="success"
+            variant="subtle"
+            icon="i-ph-check-circle-duotone"
+            data-testid="student-in-class"
+            >{{ PELAJAR_COPY.inClass }}</UBadge
           >
-            <X class="h-4 w-4" />
-          </button>
-        </li>
-      </ul>
-    </div>
-    <template v-if="mode === 'school'">
-      <span
-        v-if="alreadyIn"
-        class="text-xs font-semibold text-emerald-600"
-        data-testid="student-in-class"
-        >{{ PELAJAR_COPY.inClass }}</span
-      >
-      <button
-        v-else
-        type="button"
-        class="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-indigo-500 px-4 text-sm font-semibold text-white hover:bg-indigo-600 disabled:cursor-not-allowed disabled:bg-slate-300"
-        :disabled="!canAdd || busy"
-        data-testid="student-add"
-        @click="$emit('add', student.id)"
-      >
-        <Plus class="h-4 w-4" />{{ PELAJAR_COPY.add }}
-      </button>
-    </template>
+          <UButton
+            v-else
+            type="button"
+            icon="i-ph-plus"
+            class="min-h-11"
+            :disabled="!canAdd || busy"
+            data-testid="student-add"
+            @click="$emit('add', student.id)"
+            >{{ PELAJAR_COPY.add }}</UButton
+          >
+        </template>
+      </div>
+    </UCard>
   </li>
 </template>
