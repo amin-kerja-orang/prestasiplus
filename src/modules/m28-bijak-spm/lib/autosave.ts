@@ -33,7 +33,7 @@ export interface AutosaveOptions {
   retryMs?: number
   now?: () => number
   onStatus?: (status: SaveStatus) => void
-  /** The server reports the attempt closed (deadline passed); the local copy is kept. */
+  /** The server reports the attempt closed (deadline passed); the page then opens its Semakan and clears the local copy. */
   onClosed?: () => void
 }
 

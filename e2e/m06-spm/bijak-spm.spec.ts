@@ -33,8 +33,10 @@ async function startPaper(
 ): Promise<void> {
   await page.getByTestId(`open-${paperId}`).click()
   await expect(page.getByTestId('bijak-cover')).toBeVisible()
+  await expect(page.locator('[data-ds=hero-cta]')).toBeVisible()
+  await shot(page, 'cover')
   if (mode === 'latihan') await page.getByText('Mod Latihan', { exact: true }).click()
-  await page.getByTestId('start').click()
+  await page.locator('[data-ds=hero-cta]').click()
   await expect(page.getByTestId('attempt-shell')).toBeVisible()
 }
 
@@ -168,9 +170,7 @@ test.describe('Bijak SPM', () => {
     await expect(page.getByTestId('shortage-line')).toHaveText(
       'Bahagian A: perlu 40 soalan, hanya 0 tersedia',
     )
-    await page
-      .getByTestId('shortage-line')
-      .evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    await page.getByTestId('shortage-line').evaluate((el) => el.scrollIntoView({ block: 'center' }))
     await shot(page, 'jana-shortage')
   })
 })

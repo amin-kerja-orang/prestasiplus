@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState } from '@/ds'
+import { DsEmptyState, DsHeroCard } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import RichText from '../components/RichText.vue'
@@ -87,14 +87,16 @@ async function begin(restart: boolean): Promise<void> {
     </div>
 
     <template v-else>
-      <header class="flex flex-col gap-2">
-        <p class="text-overline text-muted">SULIT · {{ cover.code }}</p>
-        <h1 class="text-title text-highlighted" data-testid="cover-title">{{ cover.title }}</h1>
-        <p class="text-body text-toned">
-          {{ cover.subjectName }} · Kertas {{ cover.kertas }} · {{ cover.durationMin }} minit ·
-          {{ cover.marks }} markah · {{ cover.questionCount }} soalan
-        </p>
-      </header>
+      <h1 class="sr-only" data-testid="cover-title">{{ cover.title }}</h1>
+      <DsHeroCard
+        :overline="`SULIT · ${cover.code}`"
+        :title="cover.title"
+        :subtitle="`${cover.subjectName} · Kertas ${cover.kertas} · ${cover.durationMin} minit · ${cover.marks} markah · ${cover.questionCount} soalan`"
+        art="books"
+        :cta-label="open ? 'Sambung' : 'Mula'"
+        data-testid="cover-hero"
+        @cta="begin(false)"
+      />
 
       <UAlert
         v-if="needsChoice && open"
@@ -169,15 +171,6 @@ async function begin(restart: boolean): Promise<void> {
           data-testid="mode-choice"
         />
         <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" />
-        <UButton
-          size="lg"
-          :loading="starting"
-          class="self-start"
-          data-testid="start"
-          @click="begin(false)"
-        >
-          {{ open ? 'Sambung' : 'Mula' }}
-        </UButton>
       </section>
     </template>
 

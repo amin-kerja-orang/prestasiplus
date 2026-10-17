@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState } from '@/ds'
+import { DsEmptyState, DsHeroCard } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import { shortageLine } from '../domain/blueprint'
@@ -63,7 +63,11 @@ const grouped = computed(() => {
   }
   return [...map.entries()].map(([code, v]) => ({ code, ...v }))
 })
-const inProgress = computed(() => (papers.value ?? []).filter((p) => p.status === 'sedang'))
+/** Hero: the sitting in progress ("Sambung kertas"), else the next paper to start ("Mula kertas"). */
+const heroPaper = computed(() => {
+  const all = papers.value ?? []
+  return all.find((p) => p.status === 'sedang') ?? all.find((p) => p.status === 'belum') ?? all[0]
+})
 
 function statusText(p: PaperSummary): string {
   if (p.status === 'sedang') return 'Sedang dijawab'
@@ -136,24 +140,18 @@ async function generate(): Promise<void> {
       </div>
     </header>
 
-    <UTabs v-model="tab" :items="tabs" :content="false" class="w-full" data-testid="bijak-tabs" />
+    <DsHeroCard
+      v-if="heroPaper"
+      :overline="heroPaper.status === 'sedang' ? 'Sambung kertas' : 'Mula kertas'"
+      :title="heroPaper.title"
+      :subtitle="`${heroPaper.subjectName} · Kertas ${heroPaper.kertas} · ${heroPaper.durationMin} minit · ${heroPaper.marks} markah`"
+      :art="heroPaper.status === 'sedang' ? 'books' : 'rocket'"
+      :cta-label="heroPaper.status === 'sedang' ? 'Sambung' : 'Mula'"
+      data-testid="hero"
+      @cta="open(heroPaper)"
+    />
 
-    <section
-      v-if="inProgress.length"
-      class="flex flex-col gap-2"
-      aria-label="Percubaan belum dihantar"
-      data-testid="resume-list"
-    >
-      <UAlert
-        v-for="p in inProgress"
-        :key="p.id"
-        color="info"
-        variant="soft"
-        icon="i-ph-hourglass-medium"
-        :title="`Percubaan belum dihantar: ${p.title}`"
-        :actions="[{ label: 'Sambung', color: 'primary', onClick: () => open(p) }]"
-      />
-    </section>
+    <UTabs v-model="tab" :items="tabs" :content="false" class="w-full" data-testid="bijak-tabs" />
 
     <!-- Kertas Pilihan -->
     <section
