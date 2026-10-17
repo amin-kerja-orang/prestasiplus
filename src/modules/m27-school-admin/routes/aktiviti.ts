@@ -19,6 +19,8 @@ const routes: RouteRecordRaw[] = [
       title: 'Laporan Aktiviti - PRESTASIPLUS',
       header: { title: 'Laporan Aktiviti' },
       module: 'M27',
+
+      v2: true,
     },
   },
 ]

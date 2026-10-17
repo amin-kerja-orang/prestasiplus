@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /**
- * S2 filter card (FR-M27-59; PROPOSED, pattern of M08 S8 and the M18 level pills). A GET filter: the select
- * "Subjek" submits on change; the level pills "Tingkatan 4" (default) and "Tingkatan 5" are links that keep
- * the chosen subject. The select lists only the subjects with at least one SP at the level; there is no
- * "all" option.
+ * S2 filter card (FR-M27-59; PROPOSED, pattern of M08 S8 and the M18 level pills; restyle spec AS-47). A GET
+ * filter: the select "Subjek" submits on change; the level pills "Tingkatan 4" (default) and "Tingkatan 5"
+ * are links that keep the chosen subject. The select lists only the subjects with at least one SP at the
+ * level; there is no "all" option. Deviation: it is not a `DsFilterBar`, because that bar adds "Cari" and
+ * "Set Semula" buttons the live screen does not have (the filters apply on change).
  */
-import { RouterLink } from 'vue-router'
-
-import { FORM_SELECT_CLASS } from '@/components/form'
+import { computed } from 'vue'
 
 import type { HeatmapLevelCode } from '../../api/school-admin'
+import PillNav, { type PillItem } from '../shared/PillNav.vue'
 
 const props = defineProps<{
   subjects: { id: number; name: string }[]
@@ -25,62 +25,47 @@ const LEVELS = [
   { code: 't5', query: 'T5', label: 'Tingkatan 5' },
 ] as const
 
-const PILL =
-  'inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors'
-
-function pillTo(query: string) {
-  return {
-    query: {
-      ...(props.subjectId === '' ? {} : { subjectId: String(props.subjectId) }),
-      tingkatan: query,
+const levelItems = computed<PillItem<HeatmapLevelCode>[]>(() =>
+  LEVELS.map((l) => ({
+    key: l.code,
+    label: l.label,
+    to: {
+      query: {
+        ...(props.subjectId === '' ? {} : { subjectId: String(props.subjectId) }),
+        tingkatan: l.query,
+      },
     },
-  }
-}
+  })),
+)
+const subjectItems = computed(() => props.subjects.map((s) => ({ label: s.name, value: s.id })))
 
-function onChange(event: Event) {
-  const value = Number((event.target as HTMLSelectElement).value)
-  if (Number.isInteger(value) && value > 0) emit('subject', value)
+function onChange(value: unknown) {
+  const id = Number(value)
+  if (Number.isInteger(id) && id > 0) emit('subject', id)
 }
 </script>
 
 <template>
-  <form
-    class="flex min-w-0 flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-end sm:justify-between"
-    data-testid="dh-filters"
-    @submit.prevent
-  >
-    <div class="min-w-0 sm:w-72">
-      <label for="dh-subject" class="mb-1 block text-xs font-bold text-slate-500 uppercase"
-        >Subjek</label
-      >
-      <select
-        id="dh-subject"
-        name="subjectId"
-        :value="subjectId"
-        :class="FORM_SELECT_CLASS"
-        class="min-h-11"
-        data-testid="dh-subject"
-        @change="onChange"
-      >
-        <option v-if="subjectId === ''" value="" disabled></option>
-        <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
-      </select>
-    </div>
-    <div class="flex flex-wrap gap-2" data-testid="dh-levels">
-      <RouterLink
-        v-for="l in LEVELS"
-        :key="l.code"
-        :to="pillTo(l.query)"
-        :class="[
-          PILL,
-          level === l.code
-            ? 'bg-blue-700 text-white'
-            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
-        ]"
-        :data-testid="`dh-level-${l.code}`"
-        :data-active="level === l.code"
-        >{{ l.label }}</RouterLink
-      >
-    </div>
-  </form>
+  <UCard data-testid="dh-filters">
+    <form class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between" @submit.prevent>
+      <UFormField label="Subjek" name="subjectId" class="min-w-0 sm:w-80">
+        <USelect
+          id="dh-subject"
+          :model-value="subjectId === '' ? undefined : subjectId"
+          :items="subjectItems"
+          size="lg"
+          class="w-full"
+          data-testid="dh-subject"
+          @update:model-value="onChange"
+        />
+      </UFormField>
+      <PillNav
+        :items="levelItems"
+        :active="level"
+        nav-id="dh-levels"
+        prefix="dh-level"
+        label="Tingkatan"
+      />
+    </form>
+  </UCard>
 </template>

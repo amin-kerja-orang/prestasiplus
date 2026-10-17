@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
- * S4 card "Taburan Risiko Seluruh Sekolah" (FR-M27-75, 79): a stacked bar (Hijau, Kuning, Merah) with the integer
- * percent in each segment, and the legend "Hijau: {n}", "Kuning: {n}", "Merah: {n}". Without pupils the bar has no
- * segments (FR-M27-79).
+ * S4 card "Taburan Risiko Seluruh Sekolah" (restyle spec AS-49): a `DsChart` of the pupils per risk level
+ * (Hijau, Kuning, Merah, with the integer percent in the label) and the legend with the three counts,
+ * each with its icon so colour never stands alone.
  */
 import { computed } from 'vue'
 
+import { DsChart } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { RiskTallyView } from '../../api/amaran'
@@ -18,59 +19,56 @@ const segments = computed(() => [
     label: 'Hijau',
     count: props.tally.green,
     pct: props.tally.pct.green,
-    color: 'bg-emerald-500',
+    icon: 'i-ph-check-circle',
   },
   {
     key: 'yellow',
     label: 'Kuning',
     count: props.tally.yellow,
     pct: props.tally.pct.yellow,
-    color: 'bg-amber-500',
+    icon: 'i-ph-warning',
   },
   {
     key: 'red',
     label: 'Merah',
     count: props.tally.red,
     pct: props.tally.pct.red,
-    color: 'bg-red-500',
+    icon: 'i-ph-warning-octagon',
   },
 ])
-const visible = computed(() => segments.value.filter((s) => s.count > 0))
+const labels = computed(() => segments.value.map((s) => `${s.label} (${String(s.pct)}%)`))
+const series = computed(() => [{ label: 'Pelajar', data: segments.value.map((s) => s.count) }])
 </script>
 
 <template>
-  <section
-    class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
-    data-testid="am-distribution"
-  >
-    <h2 class="text-base font-bold text-slate-800">Taburan Risiko Seluruh Sekolah</h2>
-    <div
-      class="mt-3 flex h-8 w-full min-w-0 overflow-hidden rounded-full bg-slate-100"
-      data-testid="am-bar"
-    >
-      <div
-        v-for="s in visible"
-        :key="s.key"
-        :class="[
-          'flex min-w-0 items-center justify-center overflow-hidden text-xs font-bold text-white',
-          s.color,
-        ]"
-        :style="{ flexGrow: s.count, flexBasis: 0 }"
-        :data-testid="`am-seg-${s.key}`"
-      >
-        {{ s.pct }}%
-      </div>
+  <UCard data-testid="am-distribution">
+    <div class="flex flex-col gap-4">
+      <h2 class="text-subheading text-highlighted">Taburan Risiko Seluruh Sekolah</h2>
+      <DsChart
+        type="bar"
+        horizontal
+        title="Pelajar mengikut tahap risiko"
+        table-label="Pelajar mengikut tahap risiko"
+        :labels="labels"
+        :series="series"
+        data-testid="am-bar"
+      />
+      <ul class="flex flex-wrap gap-x-6 gap-y-2 text-body text-default" data-testid="am-legend">
+        <li
+          v-for="s in segments"
+          :key="s.key"
+          class="inline-flex items-center gap-2"
+          :data-testid="`am-legend-${s.key}`"
+        >
+          <UIcon
+            :name="s.icon"
+            class="size-5"
+            :class="s.key === 'green' ? 'text-success' : s.key === 'yellow' ? 'text-warning' : 'text-error'"
+            aria-hidden="true"
+          />
+          {{ s.label }}: {{ formatCount(s.count) }}
+        </li>
+      </ul>
     </div>
-    <ul class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-700" data-testid="am-legend">
-      <li
-        v-for="s in segments"
-        :key="s.key"
-        class="inline-flex items-center gap-2"
-        :data-testid="`am-legend-${s.key}`"
-      >
-        <span :class="['h-3 w-3 rounded-full', s.color]" />
-        {{ s.label }}: {{ formatCount(s.count) }}
-      </li>
-    </ul>
-  </section>
+  </UCard>
 </template>

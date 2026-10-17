@@ -1,31 +1,25 @@
 <script setup lang="ts">
 /**
- * S1 period pills (FR-M27-51): "Hari Ini", "7 Hari", "30 Hari". Every pill is a link to `?period=`; the
- * active one is highlighted. Touch targets are at least 44 px high.
+ * S1 period pills (FR-M27-51; restyle spec AS-46): "Hari Ini", "7 Hari", "30 Hari" as a segmented row. Every
+ * item is a link to `?period=`; the active one is the solid kobalt button. Touch targets are at least 44 px.
  */
-import { RouterLink } from 'vue-router'
+import { computed } from 'vue'
 
 import type { UsagePeriod } from '../../api/school-admin'
+import PillNav, { type PillItem } from '../shared/PillNav.vue'
 import { PERIODS, USAGE_PATH } from './usage-format'
 
 defineProps<{ active: UsagePeriod }>()
+
+const items = computed<PillItem<UsagePeriod>[]>(() =>
+  PERIODS.map((p) => ({
+    key: p.period,
+    label: p.label,
+    to: { path: USAGE_PATH, query: { period: p.period } },
+  })),
+)
 </script>
 
 <template>
-  <nav class="flex min-w-0 flex-wrap gap-2" data-testid="su-pills">
-    <RouterLink
-      v-for="p in PERIODS"
-      :key="p.period"
-      :to="{ path: USAGE_PATH, query: { period: p.period } }"
-      :class="[
-        'inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold transition-colors',
-        p.period === active
-          ? 'border-indigo-600 bg-indigo-600 text-white'
-          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
-      ]"
-      :data-testid="`su-pill-${p.period}`"
-      :data-active="p.period === active ? 'true' : 'false'"
-      >{{ p.label }}</RouterLink
-    >
-  </nav>
+  <PillNav :items="items" :active="active" nav-id="su-pills" prefix="su-pill" label="Tempoh" />
 </template>

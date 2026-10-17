@@ -189,24 +189,23 @@ describe('tiles and distribution (FR-M27-75; AC-M27-21.2)', () => {
     expect(texts(w, 'am-tile-value')).toEqual(['10', '5', '3', '2'])
   })
 
-  it('shows the card, the stacked bar with integer percents and the legend', async () => {
+  it('shows the card, the chart with integer percents and the legend', async () => {
     const w = await mountPage(data())
     expect(text(w, 'am-distribution')).toContain('Taburan Risiko Seluruh Sekolah')
-    expect(text(w, 'am-seg-green')).toBe('50%')
-    expect(text(w, 'am-seg-yellow')).toBe('30%')
-    expect(text(w, 'am-seg-red')).toBe('20%')
+    const chart = text(w, 'am-bar')
+    expect(chart).toContain('Hijau (50%)')
+    expect(chart).toContain('Kuning (30%)')
+    expect(chart).toContain('Merah (20%)')
     expect(texts(w, 'am-legend').join(' ')).toContain('Hijau: 5')
     expect(text(w, 'am-legend-yellow')).toBe('Kuning: 3')
     expect(text(w, 'am-legend-red')).toBe('Merah: 2')
   })
 
-  it('omits zero segments from the bar', async () => {
+  it('keeps a zero level in the legend', async () => {
     const w = await mountPage(
       data({ tally: { green: 4, yellow: 0, red: 0, total: 4, pct: { green: 100, yellow: 0, red: 0 } } }),
     )
-    expect(has(w, 'am-seg-green')).toBe(true)
-    expect(has(w, 'am-seg-yellow')).toBe(false)
-    expect(has(w, 'am-seg-red')).toBe(false)
+    expect(text(w, 'am-bar')).toContain('Hijau (100%)')
     expect(text(w, 'am-legend-yellow')).toBe('Kuning: 0')
   })
 })

@@ -23,15 +23,6 @@ export const STATUS_LABEL: Readonly<Record<RiskStatus, string>> = {
   high: 'Berisiko Tinggi',
 }
 
-export const STATUS_BADGE: Readonly<Record<RiskStatus, string>> = {
-  on_track: 'bg-emerald-100 text-emerald-700',
-  watch: 'bg-amber-100 text-amber-800',
-  high: 'bg-red-100 text-red-700',
-}
-
-export const BUTTON_CLASS =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors'
-
 export const keberkesananHref = '/amaran/keberkesanan'
 export const ringkasanHref = (schoolId: number): string =>
   `/amaran/ringkasan-eksekutif?scope=school&school_id=${String(schoolId)}`

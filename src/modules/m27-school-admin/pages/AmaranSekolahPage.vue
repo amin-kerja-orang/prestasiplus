@@ -14,9 +14,9 @@ import { useRoute } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi, useFlash, useSession } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { DsPage } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadSchoolRiskCsv, fetchSchoolRisk } from '../api/amaran'
@@ -81,7 +81,7 @@ async function download(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="am-page" :data-level="data?.levelFilter ?? 'all'">
+  <DsPage data-testid="am-page" :data-level="data?.levelFilter ?? 'all'">
     <template v-if="data && schoolId !== null">
       <AmaranLevelPills :active="level" />
       <AmaranTiles :tally="data.tally" />
@@ -90,13 +90,18 @@ async function download(): Promise<void> {
       <AmaranSubjectCard v-if="data.weakness.length > 0" :rows="data.weakness" />
       <AmaranPupilTable :rows="data.pupils" />
     </template>
-    <AlertBox v-else-if="error && !refused" :messages="error.message" data-testid="am-error" />
-    <p
-      v-else-if="loading"
-      class="flex justify-center py-10 text-slate-500"
-      data-testid="am-loading"
-    >
-      <LoadingSpinner class="h-6 w-6" />
-    </p>
-  </div>
+    <UAlert
+      v-else-if="error && !refused"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      :description="error.message"
+      role="alert"
+      data-testid="am-error"
+    />
+    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="am-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
+  </DsPage>
 </template>

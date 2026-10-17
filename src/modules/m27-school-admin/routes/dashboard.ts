@@ -22,6 +22,8 @@ const routes: RouteRecordRaw[] = [
       title: 'Dashboard Sekolah - PRESTASIPLUS',
       header: { title: 'Dashboard Sekolah' },
       module: 'M27',
+
+      v2: true,
     },
   },
 ]
