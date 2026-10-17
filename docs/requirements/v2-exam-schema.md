@@ -1,7 +1,7 @@
 # v2 Exam and question schema (derived proposal)
 
 - **Slug:** `v2-exam-schema`
-- **Status:** PROPOSED for user approval (G2 decision pack). Nothing here is built.
+- **Status:** APPROVED by the user 2026-10-17 (TRACKER D47) with the defaults for Q-S1–Q-S4; Q-S5 deferred.
 - **Date:** 2026-10-17
 - **Owner:** solution-architect
 - **Resolves:** TRACKER D46 (we derive the schema; the user does not supply one), and the "waiting for the schema" items of D28(e), D39, D40, Q1 / Q-B1 in `v2-question-bank.md`. Answers `v2-question-bank.md` section 8.1, items D1 to D12.
