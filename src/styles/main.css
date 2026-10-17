@@ -4,6 +4,7 @@
 @import '@nuxt/ui';
 @import '../theme/fonts.css';
 @import '../theme/tokens.css';
+@import '../theme/ds-extras.css';
 
 @import './fonts.css';
 @import './theme.css';

@@ -1,0 +1,77 @@
+/* Composite support rules that cannot be expressed as utilities in strict files (exempt from the
+   DS lint like tokens.css): rich-text typography (DsProse) and the print sheet (DsPrintSheet).
+   Tokens only; no new colours. */
+
+[data-ds='prose'] {
+  color: var(--ui-text);
+  font-size: var(--text-body);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+[data-ds='prose'] > * + * {
+  margin-top: 1rem;
+}
+[data-ds='prose'] h2 {
+  font-family: var(--font-display, inherit);
+  font-size: var(--text-heading);
+  font-weight: 800;
+  color: var(--ui-text-highlighted);
+  margin-top: 2rem;
+}
+[data-ds='prose'] h3 {
+  font-size: var(--text-subheading);
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+  margin-top: 1.5rem;
+}
+[data-ds='prose'] ul,
+[data-ds='prose'] ol {
+  padding-inline-start: 1.5rem;
+}
+[data-ds='prose'] ul {
+  list-style: disc;
+}
+[data-ds='prose'] ol {
+  list-style: decimal;
+}
+[data-ds='prose'] li + li {
+  margin-top: 0.25rem;
+}
+[data-ds='prose'] blockquote {
+  background: var(--ui-bg-elevated);
+  border-radius: var(--ds-r-card);
+  padding: 0.75rem 1rem;
+  color: var(--ui-text-toned);
+}
+[data-ds='prose'] img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--ds-r-card);
+}
+[data-ds='prose'] a {
+  color: var(--ds-primary-t);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+[data-ds='prose'] strong {
+  color: var(--ui-text-highlighted);
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  [data-ds='print-sheet'],
+  [data-ds='print-sheet'] * {
+    visibility: visible;
+  }
+  [data-ds='print-sheet'] {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+  }
+}
