@@ -68,3 +68,45 @@ Passing at 375 (no header overflow): `/headcount` (403), `/panduan`.
 ## Verdict
 
 **Not ready for the responsive gate (G5).** Two Major defects remain, both at 375 only. The fixes are small: shrink or reflow the Pembelajaran header cluster so it fits at 320 px (RESP-01, one component, clears 47 routes), and add `min-w-0` and truncation on the Command Center crumb link (RESP-02). Re-run `.playwright-mcp/lane2/scripts/s1.js`, `s2.js`, `s3.js` and `d3.js`, `d4.js` after the fix.
+
+## Re-test (after RESP-01 / RESP-02 fixes)
+
+Date: 2026-10-17. Preview rebuilt by the coordinator; same method (lane 2, light mode, client-side navigation). Scripts: `.playwright-mcp/lane2/scripts/rs1.js`, `rs2.js`, `rs3.js` (Student at 320/375/768), `rd4.js` (Admin student detail at 320/375/768). Failure screenshots use the `re_` prefix in `.playwright-mcp/qa-responsive/`.
+
+Method note: the Student "choose a study friend" sheet opens after every Student login and covers the new fixed bottom nav. The first run reported a false "content hidden behind nav, 52 px" at 320/375 because of that sheet. After dismissing it ("Batal"), and with a manual scroll-to-bottom check, the last content sits 60 px above the bottom nav (nav top 744, content bottom 684, main bottom padding 128 px). No overlap.
+
+| Check | Size | Routes | Pass | Fail (Major) | Minor |
+|---|---|---|---|---|---|
+| Student, all routes (RESP-01) | 320 | 49 | 49 | 0 | 1 (`/cikgu`) |
+| Student, all routes | 375 | 49 | 49 | 0 | 1 (`/cikgu`) |
+| Student, all routes | 768 | 49 | 49 | 0 | 1 (`/cikgu`) |
+| Admin `/admin/command-center/student/{102,83,53,35,25}` (RESP-02) | 320 | 5 | 5 | 0 | 0 |
+| Admin student detail | 375 | 5 | 5 | 0 | 0 |
+| Admin student detail | 768 | 5 | 5 | 0 | 0 |
+| Dashboards, all 4 roles (Student `/dashboard`, Guru `/guru`, Admin Sekolah `/admin-sekolah`, Admin `/admin/command-center`) | 320 | 4 | 4 | 0 | 0 |
+
+Result: **RESP-01 fixed, RESP-02 fixed.** Overflow at 375 is now at most 0 (was 2 px, 17 px with scrollbar), the theme toggle is fully visible, and no route fails at 320. Guru and Admin Sekolah Command Center pages also pass at 320/375/768.
+
+### Remaining observations
+
+| ID | Severity | Where | Detail |
+|---|---|---|---|
+| RESP-04 | Minor | Student `/cikgu`, 320/375/768 | `button.rounded-sm.ring.ring-inset.ring-accented` is 16x16 but its content is 28 px wide (`scrollWidth 28`, `clientWidth 16`, overflow hidden). Looks like a dot or swatch whose active state is wider than its box. Screenshot: `re_student___cikgu__375.png`. Not a layout break. |
+| RESP-05 | Minor | Student `/dashboard` and `/prestasi/sekolah` at 320 | With Chromium's classic 15 px scrollbar the page scrolls 9 px sideways (`scrollWidth 314` vs `clientWidth 305`). Relative to the 320 px viewport (overlay scrollbars on phones) there is no overflow (-6). Other Student routes show no such scroll. Low risk; check the content min width if 320 with classic scrollbars matters. |
+
+### RESP-03 touch targets, re-measured (375)
+
+| Target | Before | After | Status |
+|---|---|---|---|
+| Student header logo link | 111x24 on every Student route | Not flagged on any Student route (all "small" counts dropped, for example `/remedial/saya` 3 to 0) | Fixed |
+| Student carousel dots | 12x12 (dashboard), 16x16 (many pages) | 12x12 still on `/dashboard`; 16x16 only on `/cikgu`; gone from other pages | Partly fixed |
+| Student `/tetapan` switches | 40x21 | 40x21 (`tetapan-spiritual_mode`), 4 targets | Not fixed |
+| Student `/video` subject pills | 119x28 | 119x28 (10 targets) | Not fixed (28 px high) |
+| Student `/artikel`, article text links | 17 px high | 17 px high (inline text links) | Unchanged, low value |
+| Admin switches (`/admin/subjects`, `/admin/education-levels`) | 36x19 | 36x19, no label hit area | Not fixed |
+| Admin checkboxes (`/admin/users`, `/admin/comp-students`, `/admin/pksk/questions`) | 16 to 20 px | 20x20 (users, comp-students), no larger hit area | Not fixed |
+| Command Center logo (Guru, Admin Sekolah) | 111x24 | 111x24 at 320/375, 117x25 at 768 | Not fixed |
+
+### Re-test verdict
+
+Responsive layout gate: **Pass for Major issues** (0 horizontal scroll or clipped content on any Student route at 320/375/768, Admin student detail at 320/375/768, and all four dashboards at 320). The remaining items are Minor (RESP-03 partly open, RESP-04, RESP-05). Not covered in this re-test: Guru, Admin Sekolah and Admin routes other than the ones named above (they passed at 375/768/1280 in the first sweep; the fix touched only the Student shell and the Command Center crumb).
