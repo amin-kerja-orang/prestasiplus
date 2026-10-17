@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Senarai Pelajar - PRESTASIPLUS',
       header: { title: 'Senarai Pelajar' },
       module: 'M27',
+      v2: true,
     },
   },
   {
@@ -34,6 +35,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tambah Pelajar - PRESTASIPLUS',
       header: { title: 'Tambah Pelajar', subtitle: 'Cipta satu akaun pelajar' },
       module: 'M27',
+      v2: true,
     },
   },
   {
@@ -49,6 +51,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Edit Pengguna - PRESTASIPLUS',
       header: { title: 'Edit Pengguna', subtitle: 'Kemaskini maklumat pengguna' },
       module: 'M27',
+      v2: true,
     },
   },
 ]

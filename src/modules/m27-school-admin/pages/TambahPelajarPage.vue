@@ -10,30 +10,22 @@
  * rendered, BR-M27-41): leaving the page or reloading shows nothing. Errors show above the form and keep the values
  * (the password is cleared). The role, school and `isActive` are never sent. No native validation.
  */
-import { ArrowLeft, GraduationCap, KeyRound, Mail, User, UserPlus } from '@lucide/vue'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import { FORM_INPUT_CLASS, FORM_SELECT_CLASS } from '@/components/form'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import {
   createSchoolPupil,
   fetchSchoolPupilFormOptions,
   type CreatePupilResult,
 } from '../api/school-admin'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import LockedSchoolLabel from '../components/users/LockedSchoolLabel.vue'
 import PupilCredentialBlock from '../components/users/PupilCredentialBlock.vue'
-import {
-  BUTTON_CANCEL,
-  BUTTON_PRIMARY,
-  errorLines,
-  LABEL,
-  PUPIL_LIST_PATH,
-} from '../components/users/users-format'
+import { errorLines, PUPIL_LIST_PATH } from '../components/users/users-format'
 
 const flash = useFlash()
 
@@ -84,122 +76,130 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto min-w-0 max-w-2xl space-y-4" data-testid="sp-create-page">
+  <DsPage class="max-w-2xl" data-testid="sp-create-page">
     <PupilCredentialBlock v-if="credential" :credential="credential" />
 
-    <AlertBox
+    <UAlert
       v-if="loadError && !refused"
-      :messages="errorLines(loadError)"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      :title="errorLines(loadError).join(' ')"
+      role="alert"
       data-testid="user-load-error"
     />
 
-    <div
-      v-else-if="!options"
-      class="space-y-5 rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="user-form-skeleton"
-    >
-      <div v-for="n in 4" :key="n" class="h-11 animate-pulse rounded-xl bg-slate-100"></div>
-    </div>
-
-    <form
-      v-else
-      method="post"
-      novalidate
-      class="rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="user-form"
-      @submit.prevent="submit"
-    >
-      <div ref="alertBox" class="scroll-mt-4">
-        <AlertBox :messages="errors" class="mb-5" data-testid="user-form-alert" />
+    <UCard v-else-if="!options" data-testid="user-form-skeleton">
+      <div class="flex flex-col gap-6">
+        <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
       </div>
+    </UCard>
 
-      <div class="space-y-5">
-        <div>
-          <label for="pupil-name" :class="LABEL">
-            <User class="h-4 w-4 text-indigo-500" aria-hidden="true" />
-            Nama penuh <span class="-ml-1.5 text-red-500">*</span>
-          </label>
-          <input
-            id="pupil-name"
-            v-model="form.name"
-            type="text"
-            name="name"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
-            data-testid="pupil-name"
-          />
-        </div>
-
-        <LockedSchoolLabel :school="options.school" />
-
-        <div>
-          <label for="pupil-class" :class="LABEL">
-            <GraduationCap class="h-4 w-4 text-indigo-500" aria-hidden="true" />
-            Kelas
-          </label>
-          <select
-            id="pupil-class"
-            v-model="form.classId"
-            name="classId"
-            :class="[FORM_SELECT_CLASS, 'min-h-11']"
-            data-testid="pupil-class"
+    <form v-else method="post" novalidate data-testid="user-form" @submit.prevent="submit">
+      <UCard>
+        <div ref="alertBox" class="empty:hidden">
+          <UAlert
+            v-if="errors.length"
+            color="error"
+            variant="subtle"
+            icon="i-ph-warning-circle"
+            class="mb-4"
+            role="alert"
+            data-testid="user-form-alert"
           >
-            <option value="">Tiada kelas</option>
-            <option v-for="c in options.classes" :key="c.id" :value="String(c.id)">
-              {{ c.name }}
-            </option>
-          </select>
+            <template #description>
+              <ul class="flex flex-col gap-1">
+                <li v-for="line in errors" :key="line">{{ line }}</li>
+              </ul>
+            </template>
+          </UAlert>
         </div>
 
-        <div>
-          <label for="pupil-email" :class="LABEL">
-            <Mail class="h-4 w-4 text-indigo-500" aria-hidden="true" />
-            Emel <span class="-ml-1.5 text-red-500">*</span>
-          </label>
-          <input
-            id="pupil-email"
-            v-model="form.email"
-            type="email"
-            name="email"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
-            data-testid="pupil-email"
-          />
+        <div class="flex flex-col gap-6">
+          <UFormField label="Nama penuh *" name="pupil-name">
+            <UInput
+              id="pupil-name"
+              v-model="form.name"
+              type="text"
+              name="name"
+              icon="i-ph-user"
+              class="w-full"
+              data-testid="pupil-name"
+            />
+          </UFormField>
+
+          <LockedSchoolLabel :school="options.school" />
+
+          <UFormField label="Kelas" name="pupil-class">
+            <NativeSelect
+              id="pupil-class"
+              v-model="form.classId"
+              name="classId"
+              data-testid="pupil-class"
+            >
+              <option value="">Tiada kelas</option>
+              <option v-for="c in options.classes" :key="c.id" :value="String(c.id)">
+                {{ c.name }}
+              </option>
+            </NativeSelect>
+          </UFormField>
+
+          <UFormField label="Emel *" name="pupil-email">
+            <UInput
+              id="pupil-email"
+              v-model="form.email"
+              type="email"
+              name="email"
+              icon="i-ph-envelope-simple"
+              class="w-full"
+              data-testid="pupil-email"
+            />
+          </UFormField>
+
+          <UFormField label="Kata laluan" name="pupil-password">
+            <UInput
+              id="pupil-password"
+              v-model="form.password"
+              type="password"
+              name="password"
+              autocomplete="new-password"
+              icon="i-ph-key"
+              :placeholder="options.passwordPlaceholder"
+              class="w-full"
+              data-testid="pupil-password"
+            />
+            <template #help>
+              <span data-testid="pupil-password-hint">{{ options.passwordHint }}</span>
+            </template>
+          </UFormField>
         </div>
 
-        <div>
-          <label for="pupil-password" :class="LABEL">
-            <KeyRound class="h-4 w-4 text-slate-500" aria-hidden="true" />
-            Kata laluan
-          </label>
-          <input
-            id="pupil-password"
-            v-model="form.password"
-            type="password"
-            name="password"
-            autocomplete="new-password"
-            :placeholder="options.passwordPlaceholder"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
-            data-testid="pupil-password"
-          />
-          <p class="mt-1 text-xs text-slate-500" data-testid="pupil-password-hint">
-            {{ options.passwordHint }}
-          </p>
+        <div
+          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between"
+          data-testid="user-form-footer"
+        >
+          <UButton
+            :to="PUPIL_LIST_PATH"
+            color="neutral"
+            variant="ghost"
+            size="lg"
+            icon="i-ph-arrow-left"
+            class="min-h-11 justify-center"
+            data-testid="user-cancel"
+            >Batal</UButton
+          >
+          <UButton
+            type="submit"
+            size="lg"
+            :loading="saving"
+            :disabled="saving"
+            :icon="saving ? undefined : 'i-ph-user-plus'"
+            class="min-h-11 justify-center"
+            data-testid="user-submit"
+            >Cipta Pelajar</UButton
+          >
         </div>
-      </div>
-
-      <div
-        class="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
-        data-testid="user-form-footer"
-      >
-        <RouterLink :to="PUPIL_LIST_PATH" :class="BUTTON_CANCEL" data-testid="user-cancel">
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          Batal
-        </RouterLink>
-        <button type="submit" :disabled="saving" :class="BUTTON_PRIMARY" data-testid="user-submit">
-          <LoadingSpinner v-if="saving" class="h-4 w-4" />
-          <UserPlus v-else class="h-4 w-4" aria-hidden="true" />
-          Cipta Pelajar
-        </button>
-      </div>
+      </UCard>
     </form>
-  </div>
+  </DsPage>
 </template>

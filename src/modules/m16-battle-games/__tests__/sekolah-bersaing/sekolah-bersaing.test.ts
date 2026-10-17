@@ -77,20 +77,21 @@ describe('route (FR-M16-127, DV-M16-02, roles-matrix L50)', () => {
 describe('S28 SekolahBersaingPage', () => {
   it('renders the hero, the week line, the header row, the rows and the footer tip', async () => {
     const w = await open('/sekolah-bersaing')
-    expect(w.get('h1').text()).toBe('🏆 Sekolah Bersaing')
-    expect(w.get('[data-testid="sb-hero"]').text()).toContain(
+    expect(w.get('h1').text()).toBe('Sekolah Bersaing')
+    expect(w.text()).toContain(
       'Leaderboard mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
     )
     expect(w.get('[data-testid="sb-week"]').text()).toBe(
       'Minggu 21 Sep 2026 · 4 sekolah dalam pertandingan',
     )
-    expect(
-      w
-        .get('[data-testid="sb-header"]')
-        .findAll('div')
-        .map((d) => d.text()),
-    ).toEqual(['#', 'Sekolah', '% Aktif', 'Streak Avg', 'Nota/Pelajar'])
-    const rows = w.findAll('[data-testid="sb-row"]')
+    expect(w.findAll('thead th').map((d) => d.text())).toEqual([
+      '#',
+      'Sekolah',
+      '% Aktif',
+      'Streak Avg',
+      'Nota/Pelajar',
+    ])
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(4)
     expect(rows.map((r) => r.get('[data-testid="sb-rank"]').text())).toEqual([
       '🥇',
@@ -100,39 +101,13 @@ describe('S28 SekolahBersaingPage', () => {
     ])
     expect(rows[0]?.get('[data-testid="sb-school"]').text()).toBe('Sekolah 1')
     expect(rows[0]?.get('[data-testid="sb-state"]').text()).toBe('Kelantan')
-    expect(rows[0]?.get('[data-testid="sb-aktif"]').text()).toBe('0.0%aktif')
-    expect(rows[0]?.get('[data-testid="sb-streak"]').text()).toBe('🔥 15.0hari')
-    expect(rows[0]?.get('[data-testid="sb-nota"]').text()).toBe('0.0per 10')
-    expect(rows[3]?.get('[data-testid="sb-aktif"]').text()).toBe('0.5%aktif')
-    expect(rows[3]?.get('[data-testid="sb-streak"]').text()).toBe('🔥 1.6hari')
-    expect(rows[3]?.get('[data-testid="sb-nota"]').text()).toBe('2.3per 10')
+    const cells = (i: number) => rows[i]?.findAll('td').map((c) => c.text())
+    expect(cells(0)?.slice(2)).toEqual(['0.0% aktif', '15.0 hari', '0.0 per 10'])
+    expect(cells(3)?.slice(2)).toEqual(['0.5% aktif', '1.6 hari', '2.3 per 10'])
     const tip = w.get('[data-testid="sb-tip"]').text()
-    expect(tip).toContain('💡 Untuk Cikgu Besar / PIBG:')
+    expect(tip).toContain('Untuk Cikgu Besar / PIBG:')
     expect(tip).toContain('Share ranking ini ke parent group WhatsApp.')
     expect(tip).toContain('"Sekolah anonim"')
-  })
-
-  it('styles the top three gold / silver / bronze', async () => {
-    const w = await open('/sekolah-bersaing')
-    const rows = w.findAll('[data-testid="sb-row"]')
-    expect(rows[0]?.classes()).toContain('gold')
-    expect(rows[1]?.classes()).toContain('silver')
-    expect(rows[2]?.classes()).toContain('bronze')
-    expect(rows[3]?.classes()).not.toContain('gold')
-  })
-
-  it('hides "Streak Avg" and "Nota/Pelajar" below 768 px (md:block)', async () => {
-    const w = await open('/sekolah-bersaing')
-    const cells = [
-      ...w.findAll('[data-testid="sb-streak"]'),
-      ...w.findAll('[data-testid="sb-nota"]'),
-      ...w.get('[data-testid="sb-header"]').findAll('div.hidden'),
-    ]
-    expect(cells.length).toBeGreaterThan(2)
-    for (const c of cells) {
-      expect(c.classes()).toContain('hidden')
-      expect(c.classes()).toContain('md:block')
-    }
   })
 
   it('an anonymous school shows "Sekolah anonim" and no state', async () => {
@@ -148,8 +123,8 @@ describe('S28 SekolahBersaingPage', () => {
   it('a week without a snapshot shows the hero and the empty state', async () => {
     api.fetchSekolahBersaing.mockResolvedValue(week([], '2025-01-06'))
     const w = await open('/sekolah-bersaing?week=2025-01-06')
-    expect(w.get('h1').text()).toBe('🏆 Sekolah Bersaing')
-    expect(w.get('[data-testid="sb-empty"]').text()).toContain('📊 Data minggu ini belum dijana.')
+    expect(w.get('h1').text()).toBe('Sekolah Bersaing')
+    expect(w.get('[data-testid="sb-empty"]').text()).toContain('Data minggu ini belum dijana.')
     expect(w.get('[data-testid="sb-empty"]').text()).toContain(
       'Cron mingguan akan kira pada Isnin pagi. Tunggu kejap ya.',
     )

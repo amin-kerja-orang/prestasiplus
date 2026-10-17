@@ -18,6 +18,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Sekolah Bersaing — Leaderboard Mingguan',
       header: { title: 'Sekolah Bersaing', subtitle: 'Selamat datang kembali' },
       module: 'M16',
+      v2: true,
     },
   },
 ]

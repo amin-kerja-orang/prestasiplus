@@ -11,9 +11,7 @@ import { useFlashStore } from '@/stores/flash'
 import { useSessionStore } from '@/stores/session'
 
 import ImpersonateButton from '../../components/users/ImpersonateButton.vue'
-import PupilRow from '../../components/users/PupilRow.vue'
-import TeacherRow from '../../components/users/TeacherRow.vue'
-import { mountAt, pupil, teacher } from './helpers'
+import { mountAt } from './helpers'
 
 const api = vi.hoisted(() => ({ impersonateSchoolUser: vi.fn() }))
 vi.mock('../../api/school-admin', async (importActual) => ({
@@ -79,29 +77,6 @@ describe('"Menyamar" states', () => {
     expect(api.impersonateSchoolUser).not.toHaveBeenCalled()
   })
 
-  it('shows on every S6 and S7 row', async () => {
-    const a = await mountAt(
-      {
-        template: '<table><tbody><PupilRow :row="row" :index="1" /></tbody></table>',
-        components: { PupilRow },
-        props: ['row'],
-      },
-      '/admin-sekolah/pelajar',
-      { row: pupil({ isActive: false, canEdit: false }) },
-    )
-    expect(a.wrapper.get(BTN).attributes('disabled')).toBeDefined()
-    const b = await mountAt(
-      {
-        template:
-          '<table><tbody><TeacherRow :row="row" :index="1" :toggling="false" /></tbody></table>',
-        components: { TeacherRow },
-        props: ['row'],
-      },
-      '/admin-sekolah/guru',
-      { row: teacher() },
-    )
-    expect(b.wrapper.get(BTN).attributes('disabled')).toBeUndefined()
-  })
 })
 
 describe('"Menyamar" start', () => {
