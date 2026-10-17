@@ -73,34 +73,37 @@ afterEach(() => {
 describe('QuestionQualityPage (M04 S6)', () => {
   it('shows the KPI cards and the bucket cards with separators and one decimal', async () => {
     const w = await render()
-    expect(t(w, 'kpi-total-value').text()).toBe('465,278')
-    expect(t(w, 'kpi-average-value').text()).toBe('94.1')
-    expect(t(w, 'kpi-excellent-value').text()).toBe('146,275')
-    expect(t(w, 'kpi-action-value').text()).toBe('2')
+    expect(t(w, 'kpi-total').text()).toContain('465,278')
+    expect(t(w, 'kpi-average').text()).toContain('94.1')
+    expect(t(w, 'kpi-excellent').text()).toContain('146,275')
+    expect(t(w, 'kpi-action').text()).toContain('2')
     expect(t(w, 'bucket-baik-value').text()).toBe('749')
     expect(t(w, 'bucket-lemah-value').text()).toBe('2')
     expect(t(w, 'bucket-legacy-value').text()).toBe('373')
     expect(t(w, 'bucket-legacy').text()).toContain('`source_type=ai_generated`')
   })
 
-  it('draws the distribution, keeping the narrow segment label outside the bar', async () => {
+  it('draws the distribution as one labelled progress row per segment', async () => {
     const w = await render()
     expect(t(w, 'dist-cemerlang').text()).toBe('99.5%')
-    expect(t(w, 'dist-baik').text()).toBe('')
-    expect(t(w, 'dist-label-baik').text()).toBe('Baik 0.5%')
+    expect(t(w, 'dist-baik').text()).toBe('0.5%')
     expect(w.find('[data-testid=dist-lemah]').exists()).toBe(false)
   })
 
   it('lists subjects (pill colour by average), levels and the action row with its edit link', async () => {
     const w = await render()
-    const subjects = w.findAll('[data-testid=subject-row]')
+    const subjects = t(w, 'quality-subjects').findAll('tbody tr')
     expect(subjects).toHaveLength(2)
     expect(subjects[0]?.text()).toContain('96.0')
-    expect(subjects[0]?.find('span').classes()).toContain('bg-emerald-100')
-    expect(subjects[1]?.find('span').classes()).toContain('bg-amber-100')
+    expect(subjects[0]?.get('[data-testid=subject-average]').classes().join(' ')).toContain(
+      'success',
+    )
+    expect(subjects[1]?.get('[data-testid=subject-average]').classes().join(' ')).toContain(
+      'warning',
+    )
     expect(t(w, 'level-row').text()).toContain('4,325 soalan · 95.4')
     expect(t(w, 'action-count').text()).toBe('1 soalan')
-    const row = t(w, 'action-row')
+    const row = t(w, 'quality-actions').get('tbody tr')
     expect(row.text()).toContain('#129114')
     expect(t(w, 'action-edit').attributes('href')).toBe('/admin/questions/129114/edit')
   })
@@ -127,6 +130,6 @@ describe('QuestionQualityPage (M04 S6)', () => {
     expect(t(w, 'quality-error').text()).toContain('Maaf, berlaku ralat. Sila cuba semula.')
     await t(w, 'quality-retry').trigger('click')
     await flushPromises()
-    expect(t(w, 'kpi-total-value').text()).toBe('465,278')
+    expect(t(w, 'kpi-total').text()).toContain('465,278')
   })
 })

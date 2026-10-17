@@ -92,18 +92,23 @@ describe('SubmissionListPage (M04 S10)', () => {
     expect(w.get('section').text()).not.toContain('Ditolak')
   })
 
-  it('offers the status filter with Tapis and shows Reset only when filtered', async () => {
+  it('offers the status filter with Tapis and resets from the filter bar', async () => {
     let w = await render()
     const options = w.findAll('[data-testid=submissions-status] option').map((o) => o.text())
     expect(options).toEqual(['Semua Status', 'Pending', 'Processing', 'Selesai', 'Ditolak'])
-    expect(w.get('[data-testid=submissions-filter-submit]').text()).toBe('Tapis')
-    expect(w.find('[data-testid=submissions-reset]').exists()).toBe(false)
+    expect(w.get('[data-testid=submissions-filter] button[type=submit]').text()).toBe('Tapis')
     w.unmount()
     w = await render('/admin/question-submissions?status=done')
-    expect(w.get('[data-testid=submissions-reset]').text()).toBe('Reset')
     expect(api.fetchQuestionSubmissions).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: 'done' }),
     )
+    const reset = w
+      .get('[data-testid=submissions-filter]')
+      .findAll('button')
+      .find((b) => b.text() === 'Reset')
+    await reset?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({})
   })
 
   it('submits the status filter as the query string', async () => {
@@ -124,7 +129,7 @@ describe('SubmissionListPage (M04 S10)', () => {
       'Tarikh',
       'Tindakan',
     ])
-    const row = w.findAll('[data-testid=submission-row]')[0]
+    const row = w.findAll('tbody tr')[0]
     const text = row?.text() ?? ''
     expect(text).toContain('Cikgu Demo 01')
     expect(text).toContain('demo01@example.test')
@@ -140,7 +145,7 @@ describe('SubmissionListPage (M04 S10)', () => {
     expect(row?.get('[data-testid=submission-admin-notes]').text()).toBe('nota lama')
     expect(text).toContain('09 Mar 2026')
     expect(text).toContain('08:49')
-    const second = w.findAll('[data-testid=submission-row]')[1]
+    const second = w.findAll('tbody tr')[1]
     expect(second?.get('[data-testid=submission-status]').text()).toBe('Processing')
     expect(second?.find('[data-testid=submission-admin-notes]').exists()).toBe(false)
   })
@@ -153,7 +158,7 @@ describe('SubmissionListPage (M04 S10)', () => {
 
   it('"Kemaskini" toggles the inline panel with the current status and note', async () => {
     const w = await render()
-    const row = w.findAll('[data-testid=submission-row]')[0]
+    const row = w.findAll('tbody tr')[0]
     expect(row?.find('[data-testid=submission-panel]').exists()).toBe(false)
     await row?.get('[data-testid=submission-toggle]').trigger('click')
     const status = row?.get('[data-testid=submission-panel-status]')
@@ -170,7 +175,7 @@ describe('SubmissionListPage (M04 S10)', () => {
 
   it('re-syncs the panel fields from the stored paper each time it opens', async () => {
     const w = await render()
-    const row = w.findAll('[data-testid=submission-row]')[0]
+    const row = w.findAll('tbody tr')[0]
     await row?.get('[data-testid=submission-toggle]').trigger('click')
     await row?.get('[data-testid=submission-panel-status]').setValue('rejected')
     await row?.get('[data-testid=submission-panel-notes]').setValue('belum disimpan')
@@ -190,7 +195,7 @@ describe('SubmissionListPage (M04 S10)', () => {
     const confirm = vi.spyOn(window, 'confirm')
     const w = await render()
     const calls = api.fetchQuestionSubmissions.mock.calls.length
-    const row = w.findAll('[data-testid=submission-row]')[0]
+    const row = w.findAll('tbody tr')[0]
     await row?.get('[data-testid=submission-toggle]').trigger('click')
     await row?.get('[data-testid=submission-panel-status]').setValue('rejected')
     await row?.get('[data-testid=submission-panel-notes]').setValue('tidak lengkap')
@@ -213,7 +218,7 @@ describe('SubmissionListPage (M04 S10)', () => {
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Kertas tidak dijumpai.' }),
     )
     const w = await render()
-    const row = w.findAll('[data-testid=submission-row]')[0]
+    const row = w.findAll('tbody tr')[0]
     await row?.get('[data-testid=submission-toggle]').trigger('click')
     await row?.get('[data-testid=submission-panel]').trigger('submit')
     await flushPromises()
@@ -230,7 +235,7 @@ describe('SubmissionListPage (M04 S10)', () => {
       }),
     )
     const w = await render()
-    const row = w.findAll('[data-testid=submission-row]')[0]
+    const row = w.findAll('tbody tr')[0]
     await row?.get('[data-testid=submission-toggle]').trigger('click')
     await row?.get('[data-testid=submission-panel]').trigger('submit')
     await flushPromises()
@@ -246,6 +251,6 @@ describe('SubmissionListPage (M04 S10)', () => {
     expect(w.get('[data-testid=submissions-error]').text()).toContain('Cuba Semula')
     await w.get('[data-testid=submissions-retry]').trigger('click')
     await flushPromises()
-    expect(w.findAll('[data-testid=submission-row]')).toHaveLength(2)
+    expect(w.findAll('tbody tr')).toHaveLength(2)
   })
 })

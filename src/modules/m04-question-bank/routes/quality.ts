@@ -13,6 +13,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/QuestionQualityPage.vue'),
     meta: {
       layout: 'admin',
+      v2: true,
       access: 'auth',
       roles: ['admin'],
       title: 'Kualiti Soalan - Admin',

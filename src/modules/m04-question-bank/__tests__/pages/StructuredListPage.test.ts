@@ -96,7 +96,6 @@ afterEach(() => {
 describe('StructuredListPage (M04 S8)', () => {
   it('renders the header, the create link, the stats and the subject pills', async () => {
     const w = await render()
-    expect(w.get('h1').text()).toBe('Soalan Berstruktur')
     expect(w.text()).toContain('Semua soalan berstruktur SPM dalam sistem')
     const add = w.get('[data-testid=structured-add]')
     expect(add.text()).toBe('Tambah Soalan')
@@ -123,10 +122,10 @@ describe('StructuredListPage (M04 S8)', () => {
       'Menganalisis (L4)',
       'Menilai/Mencipta (L5)',
     ])
-    expect(w.get('[data-testid=structured-search]').text()).toBe('Cari')
+    expect(w.get('[data-testid=structured-filter] button[type=submit]').text()).toBe('Cari')
   })
 
-  it('renders the columns and rows, hiding Subjek, Tgk, Markah and Sub-Q on small widths', async () => {
+  it('renders the columns and rows (cards below md)', async () => {
     const w = await render()
     const headers = w.findAll('thead th')
     expect(headers.map((th) => th.text())).toEqual([
@@ -139,12 +138,7 @@ describe('StructuredListPage (M04 S8)', () => {
       'Sub-Q',
       'Aksi',
     ])
-    expect(headers[2]?.classes()).toContain('hidden')
-    expect(headers[2]?.classes()).toContain('sm:table-cell')
-    expect(headers[3]?.classes()).toContain('hidden')
-    expect(headers[5]?.classes()).toContain('hidden')
-    expect(headers[6]?.classes()).toContain('md:table-cell')
-    const rows = w.findAll('[data-testid=structured-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(2)
     expect(rows[0]?.text()).toContain('4454')
     expect(rows[0]?.text()).toContain('Perniagaan')
@@ -156,14 +150,13 @@ describe('StructuredListPage (M04 S8)', () => {
     expect(view?.attributes('href')).toBe('/admin/structured-questions/4454')
   })
 
-  it('shows the Malay counter and the English pager with the filters kept', async () => {
+  it('shows the pager summary and keeps the filters on the next page', async () => {
     const w = await render('/admin/structured-questions?kbat_level=5')
-    expect(w.get('[data-testid=structured-counter]').text()).toBe(
-      'Menunjukkan 1–2 daripada 4,064 soalan',
-    )
-    const next = w.get('nav[aria-label="Pagination Navigation"] a[rel=next]')
-    expect(next.attributes('href')).toBe('/admin/structured-questions?kbat_level=5&page=2')
-    await next.trigger('click')
+    expect(w.find('[data-testid=structured-counter]').exists()).toBe(false)
+    const pager = w.get('[data-ds=data-table-pager]')
+    expect(pager.text()).toContain('Menunjukkan 1-25 daripada 4064 hasil')
+    const next = pager.findAll('button').find((b) => b.text() === '2')
+    await next?.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({ kbat_level: '5', page: '2' })
     expect(api.fetchStructuredQuestions).toHaveBeenLastCalledWith(
@@ -171,14 +164,15 @@ describe('StructuredListPage (M04 S8)', () => {
     )
   })
 
-  it('has no Reset link unfiltered and shows it with a filter', async () => {
-    let w = await render()
-    expect(w.find('[data-testid=structured-reset]').exists()).toBe(false)
-    w.unmount()
-    w = await render('/admin/structured-questions?subject_id=9')
-    expect(w.get('[data-testid=structured-reset]').attributes('href')).toBe(
-      '/admin/structured-questions',
-    )
+  it('resets the filter from the filter bar', async () => {
+    const w = await render('/admin/structured-questions?subject_id=9')
+    const reset = w
+      .get('[data-testid=structured-filter]')
+      .findAll('button')
+      .find((b) => b.text() === 'Set Semula')
+    await reset?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({})
   })
 
   it('submits the filter as the query string', async () => {
@@ -214,12 +208,13 @@ describe('StructuredListPage (M04 S8)', () => {
     await retry.trigger('click')
     await flushPromises()
     expect(w.find('[data-testid=structured-error]').exists()).toBe(false)
-    expect(w.findAll('[data-testid=structured-row]')).toHaveLength(2)
+    expect(w.findAll('tbody tr')).toHaveLength(2)
   })
 
-  it('shows skeleton rows while the first load is pending', async () => {
+  it('shows the table without rows while the first load is pending', async () => {
     api.fetchStructuredQuestions.mockReturnValue(new Promise(() => undefined))
     const w = await render()
-    expect(w.findAll('[data-testid=structured-skeleton]')).toHaveLength(5)
+    expect(w.find('[data-testid=structured-table]').exists()).toBe(true)
+    expect(w.findAll('[data-testid=structured-row]')).toHaveLength(0)
   })
 })

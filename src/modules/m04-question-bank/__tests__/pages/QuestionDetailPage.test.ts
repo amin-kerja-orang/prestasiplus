@@ -19,11 +19,8 @@ const questions = vi.hoisted(() => ({
 }))
 vi.mock('../../api/questions', () => questions)
 
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn(() => true) }))
-vi.mock('@/components/overlay/native-dialogs', () => ({
-  confirmNative: dialogs.confirmNative,
-  alertNative: vi.fn(),
-}))
+/** `useConfirm` falls back to `window.confirm` when no host is mounted. */
+const dialogs = { confirmNative: vi.fn((message: string) => message !== '') }
 
 function detail(extra: Partial<QuestionDetail> = {}): QuestionDetail {
   return {
@@ -111,6 +108,7 @@ beforeEach(() => {
   for (const fn of Object.values(questions)) fn.mockReset()
   dialogs.confirmNative.mockReset()
   dialogs.confirmNative.mockReturnValue(true)
+  vi.spyOn(window, 'confirm').mockImplementation((message) => dialogs.confirmNative(message ?? ''))
   questions.fetchQuestion.mockResolvedValue(detail())
 })
 
@@ -123,7 +121,6 @@ afterEach(() => {
 describe('QuestionDetailPage (M04 S3)', () => {
   it('shows the header, the question, the options and the correct answer', async () => {
     const w = await render()
-    expect(w.text()).toContain('📝 Detail Soalan')
     expect(t(w, 'question-subtitle').text()).toBe('Soalan #564159')
     expect(t(w, 'question-status').text()).toBe('Diluluskan')
     expect(t(w, 'question-text').text()).toBe('Apakah maksud satelit buatan?')
@@ -228,7 +225,7 @@ describe('QuestionDetailPage (M04 S3)', () => {
       status: 'Soalan berjaya dipadam.',
     })
     const w = await render()
-    await t(w, 'question-delete').trigger('submit')
+    await t(w, 'question-delete').trigger('click')
     await flushPromises()
     expect(dialogs.confirmNative).toHaveBeenCalledWith(
       'Adakah anda pasti mahu memadamkan soalan ini?',

@@ -5,7 +5,13 @@ import type { RouteRecordRaw } from 'vue-router'
  * only, admin shell. Tab titles are exact (SRS §2); the shell header has no subtitle (DV-M04-02).
  * `/admin/questions/create` is a static path, so it never meets the `:id(\d+)` detail route.
  */
-const adminMeta = { layout: 'admin', access: 'auth', roles: ['admin'], module: 'M04' } as const
+const adminMeta = {
+  layout: 'admin',
+  v2: true,
+  access: 'auth',
+  roles: ['admin'],
+  module: 'M04',
+} as const
 
 const routes: RouteRecordRaw[] = [
   {

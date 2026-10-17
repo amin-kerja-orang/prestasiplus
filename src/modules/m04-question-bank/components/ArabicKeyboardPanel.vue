@@ -5,7 +5,6 @@
  * sheet over a backdrop that closes on tap; from 640px a 580px panel placed by `placePanel()` below the
  * textarea (or above it when there is no room), clamped inside the viewport. Esc closes it.
  */
-import { CornerDownLeft, Delete, X } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import {
@@ -75,38 +74,38 @@ const panelStyle = computed(() => {
 })
 
 const KEY =
-  'inline-flex min-h-11 min-w-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 font-arabic text-xl text-slate-800 shadow-sm transition select-none hover:bg-slate-50 active:bg-slate-100'
+  'inline-flex min-h-11 min-w-10 items-center justify-center rounded-chip bg-elevated px-2 font-jawi text-xl text-highlighted transition select-none hover:bg-accented active:bg-accented'
 const MODE_BASE =
-  'relative min-h-11 rounded-lg border px-3 font-arabic text-base font-bold transition select-none after:absolute after:inset-x-0 after:-inset-y-1 sm:min-h-9'
+  'relative min-h-11 rounded-chip px-3 font-jawi text-base font-bold transition select-none sm:min-h-9'
 </script>
 
 <template>
   <Teleport to="body">
     <div
       v-if="sheet"
-      class="fixed inset-0 z-40 bg-slate-900/40"
+      class="fixed inset-0 z-40 bg-inverted/40"
       data-testid="vkb-backdrop"
       @click="emit('close')"
     ></div>
     <div
-      class="fixed z-50 max-h-[85vh] overflow-y-auto border border-slate-200 bg-white shadow-2xl"
-      :class="sheet ? 'inset-x-0 bottom-0 rounded-t-2xl' : 'rounded-xl'"
+      class="fixed z-50 max-h-[85vh] overflow-y-auto bg-default shadow-modal"
+      :class="sheet ? 'inset-x-0 bottom-0 rounded-t-sheet' : 'rounded-card'"
       :style="panelStyle"
       data-testid="vkb-panel"
     >
       <div
-        class="flex items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2"
+        class="flex items-center justify-between gap-2 bg-elevated px-3 py-2"
       >
         <button
           type="button"
-          class="relative inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition after:absolute after:-inset-1.5 hover:bg-slate-200"
+          class="inline-flex size-11 items-center justify-center rounded-chip text-muted transition hover:bg-accented"
           data-testid="vkb-close"
           @mousedown.prevent
           @click="emit('close')"
         >
-          <X class="h-4 w-4" aria-hidden="true" />
+          <UIcon name="i-ph-x" class="size-4" aria-hidden="true" />
         </button>
-        <span class="min-w-0 truncate text-xs font-medium text-slate-500" data-testid="vkb-caption">
+        <span class="min-w-0 truncate text-caption text-muted" data-testid="vkb-caption">
           {{ KEYBOARD_CAPTIONS[mode] }}
         </span>
         <div class="flex gap-1.5">
@@ -114,9 +113,7 @@ const MODE_BASE =
             type="button"
             :class="[
               MODE_BASE,
-              mode === 'jawi'
-                ? 'border-emerald-600 bg-emerald-600 text-white'
-                : 'border-slate-200 bg-white text-slate-700',
+              mode === 'jawi' ? 'bg-primary text-primary-on' : 'bg-default text-default',
             ]"
             data-testid="vkb-mode-jawi"
             @mousedown.prevent
@@ -128,9 +125,7 @@ const MODE_BASE =
             type="button"
             :class="[
               MODE_BASE,
-              mode === 'arab'
-                ? 'border-blue-600 bg-blue-600 text-white'
-                : 'border-slate-200 bg-white text-slate-700',
+              mode === 'arab' ? 'bg-primary text-primary-on' : 'bg-default text-default',
             ]"
             data-testid="vkb-mode-arab"
             @mousedown.prevent
@@ -161,13 +156,13 @@ const MODE_BASE =
           </button>
         </div>
 
-        <div class="flex flex-wrap justify-center gap-1.5 border-t border-slate-100 pt-2" dir="rtl">
+        <div class="flex flex-wrap justify-center gap-1.5 pt-2" dir="rtl">
           <button
             v-for="h in HARAKAT"
             :key="h.title"
             type="button"
             :title="h.title"
-            :class="[KEY, 'border-amber-300 bg-amber-50']"
+            :class="[KEY, 'bg-warning/10']"
             data-testid="vkb-harakat"
             @mousedown.prevent
             @click="emit('insert', h.mark)"
@@ -183,7 +178,7 @@ const MODE_BASE =
             type="button"
             :class="[
               KEY,
-              b.label === 'SPACE' ? 'min-w-28 flex-1 !font-sans !text-xs font-semibold' : '',
+              b.label === 'SPACE' ? 'min-w-28 flex-1 !font-sans !text-caption font-semibold' : '',
             ]"
             data-testid="vkb-key"
             @mousedown.prevent
@@ -193,21 +188,21 @@ const MODE_BASE =
           </button>
           <button
             type="button"
-            :class="[KEY, 'border-red-200 bg-red-50 text-red-600']"
+            :class="[KEY, 'bg-error/10 text-error']"
             data-testid="vkb-backspace"
             @mousedown.prevent
             @click="emit('backspace')"
           >
-            <Delete class="h-5 w-5" aria-hidden="true" />
+            <UIcon name="i-ph-backspace" class="size-5" aria-hidden="true" />
           </button>
           <button
             type="button"
-            :class="[KEY, 'bg-slate-100 text-slate-600']"
+            :class="[KEY, 'text-muted']"
             data-testid="vkb-newline"
             @mousedown.prevent
             @click="emit('insert', '\n')"
           >
-            <CornerDownLeft class="h-5 w-5" aria-hidden="true" />
+            <UIcon name="i-ph-arrow-elbow-down-left" class="size-5" aria-hidden="true" />
           </button>
         </div>
       </div>

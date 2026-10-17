@@ -8,13 +8,11 @@
  *   "Subjek" counts, the "Aktif?" switch (same failure handling as S6) and edit / delete actions.
  * - The table fits its card from 1280 and scrolls inside the card below (FR-46).
  */
-import { Baby, BookOpenText, GraduationCap, Plus, SquarePen, Trash } from '@lucide/vue'
-import { ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import type { TableColumn } from '@nuxt/ui'
+import { computed, ref, watch } from 'vue'
 
-import { AlertBox } from '@/components/feedback'
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
-import { alertNative, confirmNative, useApi, useFlash } from '@/composables'
+import { alertNative, useApi, useFlash } from '@/composables'
+import { DsDataTable, DsPage, useConfirm, type CardField } from '@/ds'
 
 import {
   deleteLevel,
@@ -22,19 +20,18 @@ import {
   setLevelActive,
   type AdminEducationLevelListItem,
 } from '../api/admin-subjects-levels'
+import ErrorBox from '../components/ErrorBox.vue'
 import ActiveSwitch from '../components/subjects-levels/ActiveSwitch.vue'
 import {
-  ACCENT_BUTTON_CLASS,
   COPY,
-  iconButtonClass,
   LEVEL_ROUTES,
-  STAGE_BADGE_CLASS,
   STAGE_LABELS,
   errorLines,
   isNetworkFailure,
 } from '../lib/subjects-levels'
 
 const flash = useFlash()
+const confirm = useConfirm()
 
 const { data, error, reload } = useApi((signal) => fetchAdminLevels({ signal }))
 
@@ -43,24 +40,31 @@ const rows = ref<AdminEducationLevelListItem[]>([])
 watch(data, (result) => {
   rows.value = result ? result.data.map((row) => ({ ...row })) : []
 })
+type LevelRow = AdminEducationLevelListItem & Record<string, unknown>
+const tableRows = computed(() => rows.value as LevelRow[])
 
-const COLUMNS = [
-  '#',
-  'Nama (BM)',
-  'Nama (EN)',
-  'Kod',
-  'Peringkat',
-  'Kurikulum',
-  'Soalan',
-  'Subjek',
-  'Aktif?',
-  'Tindakan',
-] as const
+const columns: TableColumn<LevelRow>[] = [
+  { accessorKey: 'id', header: '#' },
+  { accessorKey: 'name', header: 'Nama (BM)' },
+  { accessorKey: 'nameEn', header: 'Nama (EN)' },
+  { accessorKey: 'code', header: 'Kod' },
+  { accessorKey: 'stage', header: 'Peringkat' },
+  { accessorKey: 'curriculum', header: 'Kurikulum' },
+  { accessorKey: 'questionCount', header: 'Soalan' },
+  { accessorKey: 'subjectCount', header: 'Subjek' },
+  { accessorKey: 'isActive', header: 'Aktif?' },
+  { id: 'actions', header: 'Tindakan' },
+]
+const cardFields: CardField[] = [
+  { key: 'code', label: 'Kod' },
+  { key: 'nameEn', label: 'Nama (EN)' },
+  { key: 'curriculum', label: 'Kurikulum' },
+]
 
 const STAGE_ICON = {
-  primary: Baby,
-  lower_secondary: BookOpenText,
-  upper_secondary: GraduationCap,
+  primary: 'i-ph-baby',
+  lower_secondary: 'i-ph-book-open-text',
+  upper_secondary: 'i-ph-graduation-cap',
 } as const
 
 /** Rows whose PATCH is in flight: further clicks on them are ignored (no race). */
@@ -84,7 +88,7 @@ async function toggle(row: AdminEducationLevelListItem): Promise<void> {
 const deleting = ref(false)
 
 async function remove(row: AdminEducationLevelListItem): Promise<void> {
-  if (!confirmNative(COPY.confirmDeleteLevel)) return
+  if (!(await confirm({ message: COPY.confirmDeleteLevel, tone: 'danger' }))) return
   if (deleting.value) return
   deleting.value = true
   try {
@@ -97,128 +101,125 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
     deleting.value = false
   }
 }
+
 </script>
 
 <template>
-  <div class="space-y-4" data-testid="levels-page">
-    <AlertBox v-if="error" :messages="COPY.loadFailed" data-testid="levels-error" />
+  <DsPage data-testid="levels-page">
+    <ErrorBox v-if="error" :messages="COPY.loadFailed" data-testid="levels-error" />
 
-    <DataTableCard v-else-if="data" :min-width="860">
-      <template #header>
-        <div
-          class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4"
-        >
-          <div>
-            <h2 class="font-heading text-lg font-bold text-slate-800">Senarai Tahap Pendidikan</h2>
-            <p class="text-sm text-slate-500" data-testid="levels-count">
-              Jumlah: {{ rows.length }} tahap
-            </p>
-          </div>
-          <RouterLink
-            :to="{ name: LEVEL_ROUTES.create }"
-            :class="[
-              'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition focus:outline-none',
-              ACCENT_BUTTON_CLASS.pink,
-            ]"
-            data-testid="levels-add"
-          >
-            <Plus class="h-4 w-4" aria-hidden="true" />
-            Tambah Tahap
-          </RouterLink>
+    <template v-else-if="data">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-subheading text-highlighted">Senarai Tahap Pendidikan</h2>
+          <p class="text-body text-muted" data-testid="levels-count">
+            Jumlah: {{ rows.length }} tahap
+          </p>
         </div>
-      </template>
+        <UButton
+          :to="{ name: LEVEL_ROUTES.create }"
+          icon="i-ph-plus"
+          class="min-h-11"
+          data-testid="levels-add"
+        >
+          Tambah Tahap
+        </UButton>
+      </div>
 
-      <table :class="T.table" data-testid="levels-table">
-        <thead>
-          <tr>
-            <th v-for="label in COLUMNS" :key="label" scope="col" :class="[T.th, 'px-3!']">
-              {{ label }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="row in rows"
-            :key="row.id"
-            :class="[T.row, 'align-middle text-xs']"
-            data-testid="level-row"
-            :data-level-id="row.id"
-          >
-            <td :class="[T.td, 'px-3! text-xs! text-slate-500!']">{{ row.id }}</td>
-            <td :class="[T.td, 'px-3! text-xs! font-semibold text-slate-800!']">{{ row.name }}</td>
-            <td :class="[T.td, 'px-3! text-xs!']">{{ row.nameEn }}</td>
-            <td :class="[T.td, 'px-3! text-xs!']">
-              <span
-                class="inline-block rounded bg-slate-100 px-2 py-0.5 font-mono text-xs whitespace-nowrap text-slate-600"
-                >{{ row.code }}</span
-              >
-            </td>
-            <td :class="[T.td, 'px-3! text-xs!']">
-              <span
-                :class="[
-                  'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap',
-                  STAGE_BADGE_CLASS[row.stage],
-                ]"
-                data-testid="level-stage"
-              >
-                <component :is="STAGE_ICON[row.stage]" class="h-3 w-3" aria-hidden="true" />
-                {{ STAGE_LABELS[row.stage] }}
-              </span>
-            </td>
-            <td :class="[T.td, 'px-3! text-xs!']">{{ row.curriculum }}</td>
-            <td :class="[T.td, 'px-3! text-xs!']">
-              <span
-                class="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-amber-700"
-                data-testid="level-questions"
-                >{{ row.questionCount }} soalan</span
-              >
-            </td>
-            <td :class="[T.td, 'px-3! text-xs!']">
-              <span
-                class="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-emerald-700"
-                data-testid="level-subjects"
-                >{{ row.subjectCount }} subjek</span
-              >
-            </td>
-            <td :class="[T.td, 'px-3!']">
-              <ActiveSwitch
-                :active="row.isActive"
-                accent="pink"
-                data-testid="level-switch"
-                @toggle="toggle(row)"
-              />
-            </td>
-            <td :class="[T.td, 'px-3!']">
-              <div class="flex items-center gap-1.5">
-                <RouterLink
-                  :to="{ name: LEVEL_ROUTES.edit, params: { id: row.id } }"
-                  title="Edit"
-                  :class="[
-                    iconButtonClass('pink'),
-                    'bg-slate-100 text-slate-500 hover:bg-slate-200',
-                  ]"
-                  data-testid="level-edit"
-                >
-                  <SquarePen class="h-4 w-4" aria-hidden="true" />
-                </RouterLink>
-                <button
-                  type="button"
-                  title="Padam"
-                  :disabled="deleting"
-                  :class="[
-                    iconButtonClass('pink'),
-                    'bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60',
-                  ]"
-                  data-testid="level-delete"
-                  @click="remove(row)"
-                >
-                  <Trash class="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </DataTableCard>
-  </div>
+      <DsDataTable
+        :data="tableRows"
+        :columns="columns"
+        caption="Senarai tahap pendidikan"
+        :page-size="Math.max(tableRows.length, 1)"
+        card-title="name"
+        :card-fields="cardFields"
+        data-testid="levels-table"
+      >
+        <template #code-cell="{ row }">
+          <UBadge color="neutral" variant="subtle" :label="row.original.code" />
+        </template>
+        <template #stage-cell="{ row }">
+          <UBadge
+            color="neutral"
+            variant="subtle"
+            :icon="STAGE_ICON[row.original.stage]"
+            :label="STAGE_LABELS[row.original.stage]"
+            data-testid="level-stage"
+          />
+        </template>
+        <template #questionCount-cell="{ row }">
+          <UBadge
+            color="warning"
+            variant="subtle"
+            :label="`${row.original.questionCount} soalan`"
+            data-testid="level-questions"
+          />
+        </template>
+        <template #subjectCount-cell="{ row }">
+          <UBadge
+            color="success"
+            variant="subtle"
+            :label="`${row.original.subjectCount} subjek`"
+            data-testid="level-subjects"
+          />
+        </template>
+        <template #isActive-cell="{ row }">
+          <ActiveSwitch
+            :active="row.original.isActive"
+            data-testid="level-switch"
+            @toggle="toggle(row.original)"
+          />
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex items-center gap-1">
+            <UButton
+              :to="{ name: LEVEL_ROUTES.edit, params: { id: row.original.id } }"
+              title="Edit"
+              aria-label="Edit"
+              color="neutral"
+              variant="ghost"
+              icon="i-ph-pencil-simple"
+              class="size-11 justify-center"
+              data-testid="level-edit"
+            />
+            <UButton
+              type="button"
+              title="Padam"
+              aria-label="Padam"
+              color="error"
+              variant="ghost"
+              icon="i-ph-trash"
+              :disabled="deleting"
+              class="size-11 justify-center"
+              data-testid="level-delete"
+              @click="remove(row.original)"
+            />
+          </div>
+        </template>
+        <template #card-actions="{ row }">
+          <div class="flex items-center gap-1">
+            <ActiveSwitch :active="row.isActive as boolean" @toggle="toggle(row as AdminEducationLevelListItem)" />
+            <UButton
+              :to="{ name: LEVEL_ROUTES.edit, params: { id: row.id as number } }"
+              aria-label="Edit"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-pencil-simple"
+              class="size-11 justify-center"
+            />
+            <UButton
+              type="button"
+              aria-label="Padam"
+              color="error"
+              variant="soft"
+              icon="i-ph-trash"
+              :disabled="deleting"
+              class="size-11 justify-center"
+              @click="remove(row as AdminEducationLevelListItem)"
+            />
+          </div>
+        </template>
+      </DsDataTable>
+    </template>
+  </DsPage>
 </template>

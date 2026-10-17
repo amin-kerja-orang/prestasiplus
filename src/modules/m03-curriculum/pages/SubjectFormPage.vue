@@ -10,12 +10,11 @@
  * (UNVERIFIED COPY, from the API `status`) and returns to S6. An unknown id goes back to S6 with
  * the one-time flash "Subjek tidak dijumpai." (FR-45, BR-18). No "Aktif" field (FR-56).
  */
-import { ArrowLeft, ArrowUpDown, Info, Lightbulb } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import {
   createSubject,
@@ -24,12 +23,11 @@ import {
   updateSubject,
   type SubjectInputBody,
 } from '../api/admin-subjects-levels'
+import ErrorBox from '../components/ErrorBox.vue'
+import NativeColor from '../components/native/NativeColor.vue'
 import FormActions from '../components/subjects-levels/FormActions.vue'
 import {
-  ACCENT_INPUT_CLASS,
   COPY,
-  FORM_HINT_CLASS,
-  FORM_LABEL_CLASS,
   SUBJECTS_LIST_PATH,
   errorLines,
   isNotFoundError,
@@ -111,11 +109,6 @@ const ready = computed(() => levels.value !== null && (!editing.value || loaded.
 const saving = ref(false)
 const errors = ref<string[]>([])
 
-/** Server errors show only in the red box above the form (FR-27); no per-field marker. */
-function inputClass(): string {
-  return ACCENT_INPUT_CLASS.indigo
-}
-
 async function submit(): Promise<void> {
   if (saving.value) return
   saving.value = true
@@ -140,194 +133,199 @@ async function submit(): Promise<void> {
     saving.value = false
   }
 }
+const FONT_AWESOME_URL = 'https://fontawesome.com/icons'
+
+function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
+  const rest = form.educationLevelIds.filter((v) => v !== id)
+  form.educationLevelIds = checked === true ? [...rest, id] : rest
+}
 </script>
-
 <template>
-  <div class="space-y-4" data-testid="subject-form-page">
-    <RouterLink
-      :to="SUBJECTS_LIST_PATH"
-      class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-500 transition hover:text-slate-700"
-      data-testid="subject-back"
-    >
-      <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-      Kembali ke Senarai
-    </RouterLink>
+  <DsPage class="max-w-3xl" data-testid="subject-form-page">
+    <div>
+      <UButton
+        :to="SUBJECTS_LIST_PATH"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-arrow-left"
+        class="min-h-11"
+        data-testid="subject-back"
+      >
+        Kembali ke Senarai
+      </UButton>
+    </div>
 
-    <AlertBox v-if="failed" :messages="COPY.loadFailed" data-testid="subject-load-error" />
+    <ErrorBox v-if="failed" :messages="COPY.loadFailed" data-testid="subject-load-error" />
 
-    <form
-      v-else-if="ready"
-      method="post"
-      class="space-y-5 rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="subject-form"
-      @submit.prevent="submit"
-    >
-      <AlertBox :messages="errors" data-testid="subject-form-alert" />
+    <form v-else-if="ready" method="post" data-testid="subject-form" @submit.prevent="submit">
+      <UCard>
+        <div class="flex min-w-0 flex-col gap-4">
+          <ErrorBox :messages="errors" data-testid="subject-form-alert" />
 
-      <div>
-        <label for="subject-name" :class="FORM_LABEL_CLASS"
-          >Nama Subjek (Bahasa Melayu) <span class="text-red-500">*</span></label
-        >
-        <input
-          id="subject-name"
-          v-model="form.name"
-          type="text"
-          name="name"
-          required
-          placeholder="cth: Matematik"
-          :class="inputClass()"
-          data-testid="subject-name"
-        />
-      </div>
-
-      <div>
-        <label for="subject-name-en" :class="FORM_LABEL_CLASS"
-          >Nama Subjek (English) <span class="text-red-500">*</span></label
-        >
-        <input
-          id="subject-name-en"
-          v-model="form.nameEn"
-          type="text"
-          name="nameEn"
-          required
-          placeholder="e.g: Mathematics"
-          :class="inputClass()"
-          data-testid="subject-name-en"
-        />
-      </div>
-
-      <div>
-        <label for="subject-code" :class="FORM_LABEL_CLASS"
-          >Kod Subjek <span class="text-red-500">*</span></label
-        >
-        <input
-          id="subject-code"
-          v-model="form.code"
-          type="text"
-          name="code"
-          required
-          maxlength="20"
-          placeholder="cth: MATH01"
-          :class="[inputClass(), 'font-mono uppercase']"
-          data-testid="subject-code"
-        />
-        <p :class="FORM_HINT_CLASS">
-          <Info class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Kod akan ditukar ke huruf besar automatik
-        </p>
-      </div>
-
-      <div>
-        <label for="subject-icon" :class="FORM_LABEL_CLASS">Ikon (Font Awesome)</label>
-        <input
-          id="subject-icon"
-          v-model="form.icon"
-          type="text"
-          name="icon"
-          placeholder="cth: fas fa-calculator"
-          :class="inputClass()"
-          data-testid="subject-icon-input"
-        />
-        <p :class="FORM_HINT_CLASS">
-          <Lightbulb class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span
-            >Lihat ikon di
-            <a
-              href="https://fontawesome.com/icons"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-indigo-600 underline"
-              data-testid="subject-icon-link"
-              >Font Awesome</a
-            ></span
-          >
-        </p>
-      </div>
-
-      <div>
-        <label for="subject-color" :class="FORM_LABEL_CLASS">Warna Tema</label>
-        <div class="flex items-center gap-3">
-          <input
-            id="subject-color"
-            v-model="form.color"
-            type="color"
-            name="color"
-            class="h-11 w-14 shrink-0 cursor-pointer rounded-lg border-2 border-slate-200 bg-white p-1"
-            data-testid="subject-color"
-          />
-          <input
-            :value="form.color"
-            type="text"
-            name="colorText"
-            readonly
-            :class="[ACCENT_INPUT_CLASS.indigo, 'font-mono']"
-            data-testid="subject-color-text"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label class="inline-flex min-h-11 cursor-pointer items-center gap-2.5">
-          <input
-            v-model="form.isCore"
-            type="checkbox"
-            name="isCore"
-            value="1"
-            class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
-            data-testid="subject-core"
-          />
-          <span class="text-sm font-semibold text-slate-700">Subjek Teras (Core Subject)</span>
-        </label>
-        <p :class="FORM_HINT_CLASS">Tandakan jika subjek ini adalah subjek wajib</p>
-      </div>
-
-      <div>
-        <label for="subject-order" :class="FORM_LABEL_CLASS">Susunan Paparan</label>
-        <input
-          id="subject-order"
-          v-model.number="form.order"
-          type="number"
-          name="order"
-          min="0"
-          :class="inputClass()"
-          data-testid="subject-order"
-        />
-        <p :class="FORM_HINT_CLASS">
-          <ArrowUpDown class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Nombor lebih kecil akan dipaparkan dahulu
-        </p>
-      </div>
-
-      <fieldset class="min-w-0">
-        <legend :class="FORM_LABEL_CLASS">Tahap Pendidikan Berkaitan</legend>
-        <div
-          class="max-h-64 overflow-y-auto rounded-xl border-2 border-slate-200 p-2"
-          data-testid="subject-levels-box"
-        >
-          <label
-            v-for="level in levels?.data ?? []"
-            :key="level.id"
-            class="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg p-2 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            <input
-              v-model="form.educationLevelIds"
-              type="checkbox"
-              name="educationLevelIds"
-              :value="level.id"
-              class="h-4 w-4 shrink-0 rounded border-slate-300 accent-indigo-600"
-              data-testid="subject-level-option"
+          <div class="min-w-0">
+            <label for="subject-name" class="mb-2 block text-label text-highlighted"
+              >Nama Subjek (Bahasa Melayu) *</label
+            >
+            <UInput
+              id="subject-name"
+              v-model="form.name"
+              type="text"
+              name="name"
+              required
+              placeholder="cth: Matematik"
+              class="w-full"
+              data-testid="subject-name"
             />
-            <span>{{ level.name }} ({{ level.nameEn }})</span>
-          </label>
-        </div>
-      </fieldset>
+          </div>
 
-      <FormActions
-        :cancel-to="SUBJECTS_LIST_PATH"
-        :submit-label="editing ? 'Kemaskini Subjek' : 'Simpan Subjek'"
-        :saving="saving"
-        accent="indigo"
-      />
+          <div class="min-w-0">
+            <label for="subject-name-en" class="mb-2 block text-label text-highlighted"
+              >Nama Subjek (English) *</label
+            >
+            <UInput
+              id="subject-name-en"
+              v-model="form.nameEn"
+              type="text"
+              name="nameEn"
+              required
+              placeholder="e.g: Mathematics"
+              class="w-full"
+              data-testid="subject-name-en"
+            />
+          </div>
+
+          <div class="min-w-0">
+            <label for="subject-code" class="mb-2 block text-label text-highlighted"
+              >Kod Subjek *</label
+            >
+            <UInput
+              id="subject-code"
+              v-model="form.code"
+              type="text"
+              name="code"
+              required
+              maxlength="20"
+              placeholder="cth: MATH01"
+              class="w-full"
+              data-testid="subject-code"
+            />
+            <p class="mt-1 flex items-start gap-2 text-caption text-muted">
+              <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />
+              Kod akan ditukar ke huruf besar automatik
+            </p>
+          </div>
+
+          <div class="min-w-0">
+            <label for="subject-icon" class="mb-2 block text-label text-highlighted"
+              >Ikon (Font Awesome)</label
+            >
+            <UInput
+              id="subject-icon"
+              v-model="form.icon"
+              type="text"
+              name="icon"
+              placeholder="cth: fas fa-calculator"
+              class="w-full"
+              data-testid="subject-icon-input"
+            />
+            <p class="mt-1 flex items-start gap-2 text-caption text-muted">
+              <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0" />
+              <span
+                >Lihat ikon di
+                <ULink
+                  :href="FONT_AWESOME_URL"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary"
+                  data-testid="subject-icon-link"
+                  >Font Awesome</ULink
+                ></span
+              >
+            </p>
+          </div>
+
+          <div class="min-w-0">
+            <label for="subject-color" class="mb-2 block text-label text-highlighted"
+              >Warna Tema</label
+            >
+            <div class="flex items-center gap-3">
+              <NativeColor
+                id="subject-color"
+                v-model="form.color"
+                name="color"
+                data-testid="subject-color"
+              />
+              <UInput
+                :model-value="form.color"
+                type="text"
+                name="colorText"
+                readonly
+                aria-label="Kod warna"
+                class="min-w-0 flex-1"
+                data-testid="subject-color-text"
+              />
+            </div>
+          </div>
+
+          <div class="min-w-0">
+            <UCheckbox
+              v-model="form.isCore"
+              name="isCore"
+              value="1"
+              label="Subjek Teras (Core Subject)"
+              data-testid="subject-core"
+            />
+            <p class="mt-1 text-caption text-muted">Tandakan jika subjek ini adalah subjek wajib</p>
+          </div>
+
+          <div class="min-w-0">
+            <label for="subject-order" class="mb-2 block text-label text-highlighted"
+              >Susunan Paparan</label
+            >
+            <UInput
+              id="subject-order"
+              v-model.number="form.order"
+              type="number"
+              name="order"
+              min="0"
+              class="w-full"
+              data-testid="subject-order"
+            />
+            <p class="mt-1 flex items-start gap-2 text-caption text-muted">
+              <UIcon name="i-ph-arrows-down-up" class="mt-1 size-4 shrink-0" />
+              Nombor lebih kecil akan dipaparkan dahulu
+            </p>
+          </div>
+
+          <fieldset class="min-w-0">
+            <legend class="mb-2 text-label text-highlighted">Tahap Pendidikan Berkaitan</legend>
+            <UCard variant="subtle" :ui="{ body: 'p-2 sm:p-2' }" data-testid="subject-levels-box">
+              <div class="max-h-64 overflow-y-auto">
+                <div
+                  v-for="level in levels?.data ?? []"
+                  :key="level.id"
+                  class="flex min-h-11 items-center"
+                >
+                  <UCheckbox
+                    :model-value="form.educationLevelIds.includes(level.id)"
+                    name="educationLevelIds"
+                    :value="level.id"
+                    :label="`${level.name} (${level.nameEn})`"
+                    data-testid="subject-level-option"
+                    @update:model-value="toggleLevel(level.id, $event)"
+                  />
+                </div>
+              </div>
+            </UCard>
+          </fieldset>
+
+          <FormActions
+            :cancel-to="SUBJECTS_LIST_PATH"
+            :submit-label="editing ? 'Kemaskini Subjek' : 'Simpan Subjek'"
+            :saving="saving"
+          />
+        </div>
+      </UCard>
     </form>
-  </div>
+  </DsPage>
 </template>

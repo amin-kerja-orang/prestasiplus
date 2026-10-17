@@ -97,13 +97,12 @@ describe('SubjectFormPage create (M03 S7)', () => {
     const code = t(w, 'subject-code')
     expect(code.attributes('placeholder')).toBe('cth: MATH01')
     expect(code.attributes('maxlength')).toBe('20')
-    expect(code.classes()).toEqual(expect.arrayContaining(['uppercase', 'font-mono']))
     expect((t(w, 'subject-icon-input').element as HTMLInputElement).value).toBe('fas fa-book')
     expect(t(w, 'subject-icon-input').attributes('placeholder')).toBe('cth: fas fa-calculator')
     expect(t(w, 'subject-icon-link').attributes('href')).toBe('https://fontawesome.com/icons')
     expect(t(w, 'subject-icon-link').attributes('target')).toBe('_blank')
     expect((t(w, 'subject-color-text').element as HTMLInputElement).value).toBe('#4f46e5')
-    expect((t(w, 'subject-core').element as HTMLInputElement).checked).toBe(false)
+    expect(t(w, 'subject-core').attributes('aria-checked')).toBe('false')
     expect((t(w, 'subject-order').element as HTMLInputElement).value).toBe('0')
     expect(t(w, 'subject-order').attributes('min')).toBe('0')
     expect(w.text()).toContain('Kod akan ditukar ke huruf besar automatik')
@@ -117,11 +116,9 @@ describe('SubjectFormPage create (M03 S7)', () => {
     const w = await render('create')
     const options = w.findAll('[data-testid=subject-level-option]')
     expect(options).toHaveLength(3)
-    expect(options.every((o) => !(o.element as HTMLInputElement).checked)).toBe(true)
-    expect(w.findAll('label span').map((s) => s.text())).toContain('Darjah 1 (Year 1)')
-    expect(t(w, 'subject-levels-box').classes()).toEqual(
-      expect.arrayContaining(['max-h-64', 'overflow-y-auto']),
-    )
+    expect(options.every((o) => o.attributes('aria-checked') === 'false')).toBe(true)
+    expect(t(w, 'subject-levels-box').text()).toContain('Darjah 1 (Year 1)')
+    expect(t(w, 'subject-levels-box').html()).toContain('overflow-y-auto')
   })
 
   it('mirrors the colour picker into the read-only text', async () => {
@@ -143,8 +140,8 @@ describe('SubjectFormPage create (M03 S7)', () => {
     await t(w, 'subject-name-en').setValue('Demo Science')
     await t(w, 'subject-code').setValue('DEMO01')
     const boxes = w.findAll('[data-testid=subject-level-option]')
-    await boxes[1]?.setValue(true)
-    await boxes[0]?.setValue(true)
+    await boxes[1]?.trigger('click')
+    await boxes[0]?.trigger('click')
     await t(w, 'subject-form').trigger('submit')
     await flushPromises()
     expect(api.createSubject).toHaveBeenCalledWith({
@@ -194,11 +191,11 @@ describe('SubjectFormPage edit (M03 S8)', () => {
     expect((t(w, 'subject-code').element as HTMLInputElement).value).toBe('MATH')
     expect((t(w, 'subject-icon-input').element as HTMLInputElement).value).toBe('calculator')
     expect((t(w, 'subject-color-text').element as HTMLInputElement).value).toBe('#EF4444')
-    expect((t(w, 'subject-core').element as HTMLInputElement).checked).toBe(true)
+    expect(t(w, 'subject-core').attributes('aria-checked')).toBe('true')
     expect((t(w, 'subject-order').element as HTMLInputElement).value).toBe('3')
     const ticked = w
       .findAll('[data-testid=subject-level-option]')
-      .map((o) => (o.element as HTMLInputElement).checked)
+      .map((o) => o.attributes('aria-checked') === 'true')
     expect(ticked).toEqual([true, false, true])
     expect(t(w, 'form-submit').text()).toBe('Kemaskini Subjek')
   })
@@ -206,7 +203,7 @@ describe('SubjectFormPage edit (M03 S8)', () => {
   it('PUTs the changed levels and returns to the list with the flash', async () => {
     api.updateSubject.mockResolvedValue({ data: SUBJECT, status: 'Subjek berjaya dikemaskini.' })
     const w = await render('edit')
-    await w.findAll('[data-testid=subject-level-option]')[0]?.setValue(false)
+    await w.findAll('[data-testid=subject-level-option]')[0]?.trigger('click')
     await t(w, 'subject-form').trigger('submit')
     await flushPromises()
     expect(api.updateSubject).toHaveBeenCalledWith(

@@ -147,7 +147,22 @@
     { "glob": "src/modules/m02-users-schools/pages/BulkImportPage.vue", "level": "page" },
     { "glob": "src/modules/m02-users-schools/pages/StudentImportPage.vue", "level": "page" },
     { "glob": "src/modules/m02-users-schools/pages/Subscription*.vue", "level": "page" },
-    { "glob": "src/modules/m02-users-schools/components/*.vue", "level": "page" }
+    { "glob": "src/modules/m02-users-schools/components/*.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/QuestionSummaryCard.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/ErrorBox.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/pages/QuestionListPage.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/pages/Question{Create,Edit}Page.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/{QuestionForm,DskpTagging,QuestionImagePicker}.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/pages/QuestionDetailPage.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/AiExplanationCard.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/pages/{QuestionImport,ImportHistory,QuestionQuality,QuestionReports}Page.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/report/ReportCard.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/pages/{Structured{List,Detail},SubmissionList,DiagramAudit,MasterNotes}Page.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/{SubmissionActions,DiagramCard,MasterNoteRow}.vue", "level": "page" },
+    { "glob": "src/modules/m03-curriculum/pages/{CurriculumBrowser,Chapter{Create,Edit},Topic{Create,Edit},Subject{List,Form},Level{List,Form}}Page.vue", "level": "page" },
+    { "glob": "src/modules/m03-curriculum/components/curriculum/*.vue", "level": "page" },
+    { "glob": "src/modules/m03-curriculum/components/ErrorBox.vue", "level": "page" },
+    { "glob": "src/modules/m03-curriculum/components/subjects-levels/{ActiveSwitch,FormActions}.vue", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

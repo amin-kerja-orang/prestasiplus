@@ -10,31 +10,19 @@
  * messages show only in the red alert above the form. Success keeps the page, resets the form and shows the
  * API `status` (UNVERIFIED COPY "Import selesai: {x} soalan diimport, {y} gagal.") as the green flash.
  */
-import {
-  ArrowLeft,
-  Check,
-  Download,
-  FileSpreadsheet,
-  FileUp,
-  History,
-  Info,
-  Lightbulb,
-  LoaderCircle,
-  ShieldCheck,
-  Upload,
-} from '@lucide/vue'
 import { computed, nextTick, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
-import { FORM_SELECT_CLASS } from '@/components/form'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
+import { saveBlob } from '@/lib/save-blob'
 
 import { downloadImportTemplate, importQuestions } from '../api/imports'
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
+import ErrorBox from '../components/ErrorBox.vue'
+import NativeFile from '../components/native/NativeFile.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import { DIFFICULTY_OPTIONS, IMPORT_HISTORY_PATH } from '../lib/import-quality'
 import { QUESTIONS_LIST_PATH } from '../lib/question-list'
-import { saveBlob } from '@/lib/save-blob'
 import { errorLines } from '../lib/ui-errors'
 
 const flash = useFlash()
@@ -104,221 +92,232 @@ async function downloadTemplate(): Promise<void> {
   }
 }
 
-const LABEL = 'mb-1.5 block text-sm font-medium text-slate-700'
-const CODE = 'rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700'
-const TOP_LINK =
-  'inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="import-page">
+  <DsPage data-testid="import-page">
     <div class="flex flex-wrap items-center gap-3">
-      <RouterLink
+      <UButton
         :to="IMPORT_HISTORY_PATH"
-        :class="[TOP_LINK, 'bg-slate-600 text-white hover:bg-slate-700']"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-clock-counter-clockwise"
+        class="min-h-11"
         data-testid="import-history-link"
       >
-        <History class="h-4 w-4" aria-hidden="true" />
         Sejarah Import
-      </RouterLink>
-      <RouterLink
+      </UButton>
+      <UButton
         :to="QUESTIONS_LIST_PATH"
-        :class="[TOP_LINK, 'bg-slate-100 text-slate-700 hover:bg-slate-200']"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-arrow-left"
+        class="min-h-11"
         data-testid="import-back"
       >
-        <ArrowLeft class="h-4 w-4" aria-hidden="true" />
         Kembali
-      </RouterLink>
+      </UButton>
     </div>
 
-    <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
       <form
         ref="form"
         method="post"
         enctype="multipart/form-data"
-        class="min-w-0 rounded-2xl bg-white p-5 shadow sm:p-6 lg:col-span-2 lg:self-start"
+        class="min-w-0 lg:col-span-2 lg:self-start"
         data-testid="import-form"
         @submit.prevent="submit"
       >
-        <h3 class="mb-5 flex items-center gap-2 text-lg font-bold text-slate-800">
-          <FileUp class="h-5 w-5 text-indigo-600" aria-hidden="true" />
-          Muat Naik Fail CSV
-        </h3>
+        <UCard>
+          <h3 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
+            <UIcon name="i-ph-file-arrow-up" class="size-5 text-primary" />
+            Muat Naik Fail CSV
+          </h3>
 
-        <div ref="alertBox" class="scroll-mt-4">
-          <AlertBox :messages="errors" class="mb-5" data-testid="import-alert" />
-        </div>
+          <div ref="alertBox" >
+            <ErrorBox :messages="errors" class="mb-4" data-testid="import-alert" />
+          </div>
 
-        <div>
-          <label for="import-csv-file" :class="LABEL">
-            Fail CSV <span class="text-red-500">*</span>
-          </label>
-          <input
-            id="import-csv-file"
-            type="file"
-            name="csv_file"
-            accept=".csv,.txt"
-            required
-            class="w-full min-w-0 rounded-xl border-2 border-slate-200 p-2 text-sm text-slate-700 file:mr-3 file:min-h-9 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-indigo-700"
-            data-testid="import-file"
-            @change="onPick"
-          />
-          <p class="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
-            <Info class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            Saiz maksimum: 5MB. Format: CSV atau TXT
-          </p>
-        </div>
+          <div class="min-w-0">
+            <label for="import-csv-file" class="mb-2 block text-label text-highlighted">
+              Fail CSV *
+            </label>
+            <NativeFile
+              id="import-csv-file"
+              name="csv_file"
+              accept=".csv,.txt"
+              required
+              data-testid="import-file"
+              @change="onPick"
+            />
+            <p class="mt-2 flex items-center gap-2 text-caption text-muted">
+              <UIcon name="i-ph-info" class="size-4 shrink-0" />
+              Saiz maksimum: 5MB. Format: CSV atau TXT
+            </p>
+          </div>
 
-        <div class="mt-6 border-t border-slate-100 pt-5">
-          <h4 class="mb-1 text-sm font-bold text-slate-800">Tetapan Lalai (Opsional)</h4>
-          <p class="mb-4 text-sm text-slate-500">
-            Nilai ini digunakan jika kolum berkaitan tiada dalam CSV.
-          </p>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <label for="import-default-subject" :class="LABEL">Subjek Lalai</label>
-              <select
-                id="import-default-subject"
-                v-model="subjectId"
-                name="default_subject_id"
-                :class="[FORM_SELECT_CLASS, 'min-h-11 bg-white']"
-                data-testid="import-default-subject"
-              >
-                <option value="">-- Tidak ditetapkan --</option>
-                <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">
-                  {{ s.name }}
-                </option>
-              </select>
-            </div>
-            <div>
-              <label for="import-default-level" :class="LABEL">Tahap Pendidikan</label>
-              <select
-                id="import-default-level"
-                v-model="levelId"
-                name="default_education_level_id"
-                :class="[FORM_SELECT_CLASS, 'min-h-11 bg-white']"
-                data-testid="import-default-level"
-              >
-                <option value="">-- Tidak ditetapkan --</option>
-                <option v-for="l in levelOptions" :key="l.id" :value="String(l.id)">
-                  {{ l.name }}
-                </option>
-              </select>
-            </div>
-            <div>
-              <label for="import-default-difficulty" :class="LABEL">Kesukaran</label>
-              <select
-                id="import-default-difficulty"
-                v-model="difficulty"
-                name="default_difficulty_level"
-                :class="[FORM_SELECT_CLASS, 'min-h-11 bg-white']"
-                data-testid="import-default-difficulty"
-              >
-                <option value="">-- Tidak ditetapkan --</option>
-                <option v-for="d in DIFFICULTY_OPTIONS" :key="d.value" :value="String(d.value)">
-                  {{ d.label }}
-                </option>
-              </select>
+          <div class="mt-6">
+            <h4 class="mb-1 text-label text-highlighted">Tetapan Lalai (Opsional)</h4>
+            <p class="mb-4 text-body text-muted">
+              Nilai ini digunakan jika kolum berkaitan tiada dalam CSV.
+            </p>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div class="min-w-0">
+                <label for="import-default-subject" class="mb-2 block text-label text-highlighted"
+                  >Subjek Lalai</label
+                >
+                <NativeSelect
+                  id="import-default-subject"
+                  v-model="subjectId"
+                  name="default_subject_id"
+                  data-testid="import-default-subject"
+                >
+                  <option value="">-- Tidak ditetapkan --</option>
+                  <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">
+                    {{ s.name }}
+                  </option>
+                </NativeSelect>
+              </div>
+              <div class="min-w-0">
+                <label for="import-default-level" class="mb-2 block text-label text-highlighted"
+                  >Tahap Pendidikan</label
+                >
+                <NativeSelect
+                  id="import-default-level"
+                  v-model="levelId"
+                  name="default_education_level_id"
+                  data-testid="import-default-level"
+                >
+                  <option value="">-- Tidak ditetapkan --</option>
+                  <option v-for="l in levelOptions" :key="l.id" :value="String(l.id)">
+                    {{ l.name }}
+                  </option>
+                </NativeSelect>
+              </div>
+              <div class="min-w-0">
+                <label for="import-default-difficulty" class="mb-2 block text-label text-highlighted"
+                  >Kesukaran</label
+                >
+                <NativeSelect
+                  id="import-default-difficulty"
+                  v-model="difficulty"
+                  name="default_difficulty_level"
+                  data-testid="import-default-difficulty"
+                >
+                  <option value="">-- Tidak ditetapkan --</option>
+                  <option v-for="d in DIFFICULTY_OPTIONS" :key="d.value" :value="String(d.value)">
+                    {{ d.label }}
+                  </option>
+                </NativeSelect>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div
-          class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5"
-        >
-          <p class="flex items-center gap-2 text-sm text-slate-500">
-            <ShieldCheck class="h-4 w-4 text-indigo-600" aria-hidden="true" />
-            Soalan disimpan sebagai draf
-          </p>
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-50"
-            data-testid="import-submit"
-          >
-            <LoaderCircle v-if="submitting" class="h-4 w-4 animate-spin" aria-hidden="true" />
-            <Upload v-else class="h-4 w-4" aria-hidden="true" />
-            Mula Import
-          </button>
-        </div>
+          <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <p class="flex items-center gap-2 text-body text-muted">
+              <UIcon name="i-ph-shield-check" class="size-4 text-primary" />
+              Soalan disimpan sebagai draf
+            </p>
+            <UButton
+              type="submit"
+              :loading="submitting"
+              :disabled="submitting"
+              :icon="submitting ? undefined : 'i-ph-upload-simple'"
+              class="min-h-11"
+              data-testid="import-submit"
+            >
+              Mula Import
+            </UButton>
+          </div>
+        </UCard>
       </form>
 
-      <div class="min-w-0 space-y-5">
-        <section
-          class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 text-center shadow-sm"
-          data-testid="import-template-card"
-        >
-          <Download class="mx-auto mb-2 h-8 w-8 text-indigo-600" aria-hidden="true" />
-          <h3 class="text-lg font-bold text-slate-800">Muat Turun Template</h3>
-          <p class="mt-1 text-sm text-slate-600">Template CSV dengan contoh soalan</p>
-          <button
-            type="button"
-            :disabled="downloading"
-            class="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:cursor-wait disabled:opacity-60"
-            data-testid="import-template-download"
-            @click="downloadTemplate"
-          >
-            <FileSpreadsheet class="h-4 w-4" aria-hidden="true" />
-            Download Template
-          </button>
-        </section>
+      <div class="flex min-w-0 flex-col gap-4 md:gap-6">
+        <UCard data-testid="import-template-card">
+          <div class="flex flex-col items-center gap-2 text-center">
+            <UIcon name="i-ph-download-simple" class="size-8 text-primary" />
+            <h3 class="text-subheading text-highlighted">Muat Turun Template</h3>
+            <p class="text-body text-muted">Template CSV dengan contoh soalan</p>
+            <UButton
+              type="button"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-file-csv"
+              :disabled="downloading"
+              class="mt-1 min-h-11"
+              data-testid="import-template-download"
+              @click="downloadTemplate"
+            >
+              Download Template
+            </UButton>
+          </div>
+        </UCard>
 
-        <section
-          class="rounded-2xl bg-white p-5 text-sm text-slate-700 shadow"
-          data-testid="import-format-card"
-        >
-          <h3 class="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
-            <Info class="h-5 w-5 text-indigo-600" aria-hidden="true" />
+        <UCard data-testid="import-format-card">
+          <h3 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
+            <UIcon name="i-ph-info" class="size-5 text-primary" />
             Format CSV
           </h3>
-          <p class="mb-1 font-medium">Kolum diperlukan:</p>
-          <ul class="mb-3 space-y-1.5">
-            <li><code :class="CODE">question_text</code> — Teks soalan</li>
+          <p class="mb-1 text-label text-highlighted">Kolum diperlukan:</p>
+          <ul class="mb-3 flex flex-col gap-2 text-body text-default">
+            <li><code class="bg-elevated px-1 text-caption">question_text</code> — Teks soalan</li>
             <li>
-              <code :class="CODE">option_a</code>, <code :class="CODE">option_b</code> — Pilihan
+              <code class="bg-elevated px-1 text-caption">option_a</code>,
+              <code class="bg-elevated px-1 text-caption">option_b</code> — Pilihan
             </li>
-            <li><code :class="CODE">correct_answer</code> — Jawapan (A/B/C/D)</li>
-            <li><code :class="CODE">subject_id</code> — ID subjek (atau guna Tetapan Lalai)</li>
             <li>
-              <code :class="CODE">education_level_id</code> — ID tahap (atau guna Tetapan Lalai)
+              <code class="bg-elevated px-1 text-caption">correct_answer</code> — Jawapan (A/B/C/D)
+            </li>
+            <li>
+              <code class="bg-elevated px-1 text-caption">subject_id</code> — ID subjek (atau guna
+              Tetapan Lalai)
+            </li>
+            <li>
+              <code class="bg-elevated px-1 text-caption">education_level_id</code> — ID tahap (atau
+              guna Tetapan Lalai)
             </li>
           </ul>
-          <p class="mb-1 font-medium">Kolum opsional:</p>
-          <ul class="space-y-1.5">
-            <li><code :class="CODE">option_c</code>, <code :class="CODE">option_d</code></li>
-            <li><code :class="CODE">difficulty_level</code> — Kesukaran (1-5)</li>
-            <li><code :class="CODE">marks</code>, <code :class="CODE">explanation</code></li>
+          <p class="mb-1 text-label text-highlighted">Kolum opsional:</p>
+          <ul class="flex flex-col gap-2 text-body text-default">
+            <li>
+              <code class="bg-elevated px-1 text-caption">option_c</code>,
+              <code class="bg-elevated px-1 text-caption">option_d</code>
+            </li>
+            <li>
+              <code class="bg-elevated px-1 text-caption">difficulty_level</code> — Kesukaran (1-5)
+            </li>
+            <li>
+              <code class="bg-elevated px-1 text-caption">marks</code>,
+              <code class="bg-elevated px-1 text-caption">explanation</code>
+            </li>
           </ul>
-        </section>
+        </UCard>
 
-        <section
-          class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-slate-700 shadow-sm"
-          data-testid="import-tips-card"
-        >
-          <h3 class="mb-3 flex items-center gap-2 text-base font-bold text-slate-800">
-            <Lightbulb class="h-5 w-5 text-amber-500" aria-hidden="true" />
+        <UCard data-testid="import-tips-card">
+          <h3 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
+            <UIcon name="i-ph-lightbulb" class="size-5 text-primary" />
             Tips
           </h3>
-          <ul class="space-y-1.5">
+          <ul class="flex flex-col gap-2 text-body text-default">
             <li class="flex items-start gap-2">
-              <Check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+              <UIcon name="i-ph-check" class="mt-1 size-4 shrink-0 text-success" />
               Fail CSV mesti encoding UTF-8
             </li>
             <li class="flex items-start gap-2">
-              <Check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+              <UIcon name="i-ph-check" class="mt-1 size-4 shrink-0 text-success" />
               Guna petikan dua (") untuk teks yang ada koma
             </li>
             <li class="flex items-start gap-2">
-              <Check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+              <UIcon name="i-ph-check" class="mt-1 size-4 shrink-0 text-success" />
               Baris pertama = header kolum
             </li>
             <li class="flex items-start gap-2">
-              <Check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+              <UIcon name="i-ph-check" class="mt-1 size-4 shrink-0 text-success" />
               Semua soalan disimpan sebagai "draf"
             </li>
           </ul>
-        </section>
+        </UCard>
       </div>
     </div>
-  </div>
+  </DsPage>
 </template>

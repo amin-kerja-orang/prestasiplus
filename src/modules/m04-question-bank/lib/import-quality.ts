@@ -13,11 +13,11 @@ export const IMPORT_ROUTES = {
   quality: 'm04.quality',
 } as const
 
-/** S6 "Purata" pill colours (FR-M04-61; thresholds INFERRED, every live value is emerald). */
-export function averagePillClass(average: number): string {
-  if (average >= 76) return 'bg-emerald-100 text-emerald-700'
-  if (average > 50) return 'bg-amber-100 text-amber-700'
-  return 'bg-red-100 text-red-700'
+/** S6 "Purata" badge colour (FR-M04-61; thresholds INFERRED, every live value is the green one). */
+export function averageColor(average: number): 'success' | 'warning' | 'error' {
+  if (average >= 76) return 'success'
+  if (average > 50) return 'warning'
+  return 'error'
 }
 
 /** Below this width a distribution label does not fit inside its segment (D9: live clips it). */

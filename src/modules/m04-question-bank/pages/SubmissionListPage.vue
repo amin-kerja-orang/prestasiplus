@@ -9,20 +9,31 @@
  *   status through the inline "Kemaskini" panel; the list then reloads with the API `status` flash.
  * - The table scrolls inside its card below its natural width (design-system §7.4).
  */
-import { Funnel } from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
 import { useApi, useFlash } from '@/composables'
+import { DsDataTable, DsFilterBar, DsPage, DsStatTile, type CardField } from '@/ds'
 import { formatNumber } from '@/lib/number'
+import { saveBlob } from '@/lib/save-blob'
 
-import { fetchQuestionSubmissions } from '../api/submissions'
-import SubmissionRow from '../components/SubmissionRow.vue'
+import {
+  downloadSubmissionFile,
+  fetchQuestionSubmissions,
+  type QuestionSubmission,
+} from '../api/submissions'
+import ErrorBox from '../components/ErrorBox.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
+import SubmissionActions from '../components/SubmissionActions.vue'
+import { formatEnDate, formatTime } from '../lib/audit-format'
 import { SUBMISSIONS_PATH } from '../lib/audit-routes'
-import { SUBMISSION_STATUS_OPTIONS } from '../lib/submission-options'
+import {
+  SUBMISSION_STATUS_COLOR,
+  SUBMISSION_STATUS_ICON,
+  SUBMISSION_STATUS_LABEL,
+  SUBMISSION_STATUS_OPTIONS,
+} from '../lib/submission-options'
 import { queryText } from '../lib/route-query'
 import { LOAD_ERROR, errorLines } from '../lib/ui-errors'
 
@@ -63,128 +74,227 @@ function onFailed(err: unknown): void {
   flash.show({ type: 'error', message: errorLines(err) })
 }
 
-const SKELETON_ROWS = 4
-const COLUMNS = ['Guru / Sekolah', 'Soalan', 'Fail', 'Status', 'Tarikh', 'Tindakan'] as const
-const CARD = 'rounded-2xl bg-white p-4 text-center shadow'
-const NUMBER = 'font-heading text-3xl font-bold'
+interface SubmissionTableRow extends Record<string, unknown> {
+  id: number
+  teacherName: string
+  paperTitle: string
+  fileCount: number
+  statusLabel: string
+  dateText: string
+  raw: QuestionSubmission
+}
+
+const tableRows = computed<SubmissionTableRow[]>(() =>
+  rows.value.map((s) => ({
+    id: s.id,
+    teacherName: s.teacher.name ?? '',
+    paperTitle: s.subjectText,
+    fileCount: s.files.length,
+    statusLabel: SUBMISSION_STATUS_LABEL[s.status],
+    dateText: `${formatEnDate(s.createdAt)} ${formatTime(s.createdAt)}`,
+    raw: s,
+  })),
+)
+
+const columns: TableColumn<SubmissionTableRow>[] = [
+  { accessorKey: 'teacherName', header: 'Guru / Sekolah' },
+  { accessorKey: 'paperTitle', header: 'Soalan' },
+  { id: 'files', header: 'Fail' },
+  { accessorKey: 'statusLabel', header: 'Status' },
+  { accessorKey: 'dateText', header: 'Tarikh' },
+  { id: 'actions', header: 'Tindakan' },
+]
+const cardFields: CardField[] = [
+  { key: 'paperTitle', label: 'Soalan' },
+  { key: 'statusLabel', label: 'Status' },
+  { key: 'dateText', label: 'Tarikh' },
+]
+
+async function download(submission: QuestionSubmission, index: number): Promise<void> {
+  try {
+    const file = await downloadSubmissionFile(submission.id, index)
+    saveBlob(file.blob, file.filename ?? submission.files[index]?.name ?? 'fail')
+  } catch (err) {
+    onFailed(err)
+  }
+}
+
+/** The raw submission of a card row (the card slot passes the row object). */
+const rawOf = (row: Record<string, unknown>): QuestionSubmission => row.raw as QuestionSubmission
+
+async function resetFilter(): Promise<void> {
+  status.value = ''
+  await router.push({ path: SUBMISSIONS_PATH })
+}
 </script>
 
 <template>
-  <div class="space-y-4 sm:space-y-6" data-testid="submissions-page">
+  <DsPage data-testid="submissions-page">
     <!-- Counters: 2 per row, 4 from md. -->
-    <section class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-      <div :class="CARD" data-testid="submissions-count-all">
-        <div v-if="counts" :class="[NUMBER, 'text-slate-800']">{{ formatNumber(counts.all) }}</div>
-        <div v-else class="mx-auto h-9 w-12 animate-pulse rounded-lg bg-slate-100"></div>
-        <p class="text-sm text-slate-500">Jumlah</p>
-      </div>
-      <div :class="CARD" data-testid="submissions-count-pending">
-        <div v-if="counts" :class="[NUMBER, 'text-amber-600']">
-          {{ formatNumber(counts.pending) }}
-        </div>
-        <div v-else class="mx-auto h-9 w-12 animate-pulse rounded-lg bg-slate-100"></div>
-        <p class="text-sm text-amber-600">Pending</p>
-      </div>
-      <div :class="CARD" data-testid="submissions-count-processing">
-        <div v-if="counts" :class="[NUMBER, 'text-blue-600']">
-          {{ formatNumber(counts.processing) }}
-        </div>
-        <div v-else class="mx-auto h-9 w-12 animate-pulse rounded-lg bg-slate-100"></div>
-        <p class="text-sm text-blue-600">Processing</p>
-      </div>
-      <div :class="CARD" data-testid="submissions-count-done">
-        <div v-if="counts" :class="[NUMBER, 'text-emerald-600']">
-          {{ formatNumber(counts.done) }}
-        </div>
-        <div v-else class="mx-auto h-9 w-12 animate-pulse rounded-lg bg-slate-100"></div>
-        <p class="text-sm text-emerald-600">Selesai</p>
-      </div>
+    <section class="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <template v-if="counts">
+        <DsStatTile
+          :value="formatNumber(counts.all)"
+          unit="Jumlah"
+          icon="i-ph-stack"
+          data-testid="submissions-count-all"
+        />
+        <DsStatTile
+          :value="formatNumber(counts.pending)"
+          unit="Pending"
+          icon="i-ph-clock"
+          data-testid="submissions-count-pending"
+        />
+        <DsStatTile
+          :value="formatNumber(counts.processing)"
+          unit="Processing"
+          icon="i-ph-gear"
+          data-testid="submissions-count-processing"
+        />
+        <DsStatTile
+          :value="formatNumber(counts.done)"
+          unit="Selesai"
+          icon="i-ph-check-circle"
+          data-testid="submissions-count-done"
+        />
+      </template>
+      <template v-else>
+        <USkeleton
+          v-for="k in ['all', 'pending', 'processing', 'done']"
+          :key="k"
+          class="h-24 w-full"
+          :data-testid="`submissions-count-${k}`"
+        />
+      </template>
     </section>
 
-    <!-- Filter (GET form). -->
-    <form
-      method="get"
-      class="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-center sm:p-5"
+    <!-- Filter (the URL is the state). -->
+    <DsFilterBar
+      :active-count="applied !== '' ? 1 : 0"
+      apply-label="Tapis"
+      reset-label="Reset"
       data-testid="submissions-filter"
-      @submit.prevent="submitFilter"
+      @apply="submitFilter"
+      @reset="resetFilter"
     >
-      <select
-        v-model="status"
-        name="status"
-        :class="[FORM_INPUT_CLASS, 'min-h-11 sm:w-auto']"
-        data-testid="submissions-status"
-      >
-        <option value="">Semua Status</option>
-        <option v-for="o in SUBMISSION_STATUS_OPTIONS" :key="o.value" :value="o.value">
-          {{ o.label }}
-        </option>
-      </select>
-      <button
-        type="submit"
-        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-        data-testid="submissions-filter-submit"
-      >
-        <Funnel class="h-4 w-4" aria-hidden="true" />
-        Tapis
-      </button>
-      <RouterLink
-        v-if="applied !== ''"
-        :to="SUBMISSIONS_PATH"
-        class="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-slate-500 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-        data-testid="submissions-reset"
-      >
-        Reset
-      </RouterLink>
-    </form>
+      <div class="w-full min-w-0 sm:w-56">
+        <label for="submissions-status" class="mb-2 block text-label text-highlighted">Status</label>
+        <NativeSelect
+          id="submissions-status"
+          v-model="status"
+          name="status"
+          data-testid="submissions-status"
+        >
+          <option value="">Semua Status</option>
+          <option v-for="o in SUBMISSION_STATUS_OPTIONS" :key="o.value" :value="o.value">
+            {{ o.label }}
+          </option>
+        </NativeSelect>
+      </div>
+    </DsFilterBar>
 
-    <div v-if="error" class="space-y-3" data-testid="submissions-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
-        data-testid="submissions-retry"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
+    <div v-if="error" class="flex flex-col gap-3" data-testid="submissions-error">
+      <ErrorBox :messages="LOAD_ERROR" />
+      <div>
+        <UButton type="button" class="min-h-11" data-testid="submissions-retry" @click="reload()">
+          Cuba Semula
+        </UButton>
+      </div>
     </div>
 
-    <DataTableCard v-else :min-width="880">
-      <table :class="T.table" data-testid="submissions-table">
-        <thead>
-          <tr>
-            <th v-for="label in COLUMNS" :key="label" scope="col" :class="T.th">{{ label }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-if="firstLoad">
-            <tr
-              v-for="n in SKELETON_ROWS"
-              :key="n"
-              :class="T.row"
-              data-testid="submissions-skeleton"
-            >
-              <td :class="T.td" :colspan="COLUMNS.length">
-                <div class="h-4 w-full animate-pulse rounded bg-slate-100"></div>
-              </td>
-            </tr>
-          </template>
-          <tr v-else-if="rows.length === 0" :class="T.row" data-testid="submissions-empty">
-            <td :colspan="COLUMNS.length" class="px-4 py-12 text-center text-slate-400">
-              Tiada rekod ditemui
-            </td>
-          </tr>
-          <template v-else>
-            <SubmissionRow
-              v-for="row in rows"
-              :key="row.id"
-              :submission="row"
-              @saved="onSaved"
-              @failed="onFailed"
-            />
-          </template>
-        </tbody>
-      </table>
-    </DataTableCard>
-  </div>
+    <DsDataTable
+      v-else
+      :data="tableRows"
+      :columns="columns"
+      caption="Kertas soalan guru"
+      :loading="firstLoad"
+      :page-size="Math.max(tableRows.length, 1)"
+      card-title="teacherName"
+      :card-fields="cardFields"
+      empty-label="Tiada rekod ditemui"
+      data-testid="submissions-table"
+    >
+      <template #empty>
+        <span data-testid="submissions-empty">Tiada rekod ditemui</span>
+      </template>
+      <template #teacherName-cell="{ row }">
+        <div class="min-w-40">
+          <div class="text-label text-highlighted">{{ row.original.raw.teacher.name }}</div>
+          <ULink
+            v-if="row.original.raw.teacher.email"
+            :href="`mailto:${row.original.raw.teacher.email}`"
+            class="block text-caption break-all text-muted"
+            >{{ row.original.raw.teacher.email }}</ULink
+          >
+          <div v-if="row.original.raw.teacher.school" class="mt-1 flex gap-1 text-caption text-muted">
+            <UIcon name="i-ph-buildings" class="mt-1 size-4 shrink-0" />
+            <span>{{ row.original.raw.teacher.school }}</span>
+          </div>
+        </div>
+      </template>
+      <template #paperTitle-cell="{ row }">
+        <div class="min-w-40">
+          <div class="text-label text-highlighted">
+            {{ row.original.raw.subjectText }}
+            <span v-if="row.original.raw.levelCode" class="text-caption text-muted">{{
+              row.original.raw.levelCode
+            }}</span>
+            <span class="text-caption text-muted"> ({{ row.original.raw.year }})</span>
+          </div>
+          <div class="text-caption text-primary">{{ row.original.raw.paperType }}</div>
+          <div class="text-caption text-muted">Oleh: {{ row.original.raw.authorCredit }}</div>
+          <div v-if="row.original.raw.note" class="mt-1 line-clamp-2 text-caption text-muted">
+            {{ row.original.raw.note }}
+          </div>
+        </div>
+      </template>
+      <template #files-cell="{ row }">
+        <div class="min-w-36">
+          <UButton
+            v-for="file in row.original.raw.files"
+            :key="file.index"
+            type="button"
+            color="neutral"
+            variant="link"
+            icon="i-ph-download-simple"
+            class="max-w-52 min-h-11 justify-start"
+            data-testid="submission-file"
+            @click="download(row.original.raw, file.index)"
+          >
+            <span class="truncate">{{ file.name }}</span>
+          </UButton>
+        </div>
+      </template>
+      <template #statusLabel-cell="{ row }">
+        <div class="min-w-28">
+          <UBadge
+            :color="SUBMISSION_STATUS_COLOR[row.original.raw.status]"
+            variant="subtle"
+            :icon="SUBMISSION_STATUS_ICON[row.original.raw.status]"
+            :label="SUBMISSION_STATUS_LABEL[row.original.raw.status]"
+            data-testid="submission-status"
+          />
+          <div
+            v-if="row.original.raw.adminNotes"
+            class="mt-1 text-caption break-words text-muted"
+            data-testid="submission-admin-notes"
+          >
+            {{ row.original.raw.adminNotes }}
+          </div>
+        </div>
+      </template>
+      <template #dateText-cell="{ row }">
+        <div class="text-caption whitespace-nowrap text-muted">
+          <div>{{ formatEnDate(row.original.raw.createdAt) }}</div>
+          <div>{{ formatTime(row.original.raw.createdAt) }}</div>
+        </div>
+      </template>
+      <template #actions-cell="{ row }">
+        <SubmissionActions :submission="row.original.raw" @saved="onSaved" @failed="onFailed" />
+      </template>
+      <template #card-actions="{ row }">
+        <SubmissionActions :submission="rawOf(row)" @saved="onSaved" @failed="onFailed" />
+      </template>
+    </DsDataTable>
+  </DsPage>
 </template>

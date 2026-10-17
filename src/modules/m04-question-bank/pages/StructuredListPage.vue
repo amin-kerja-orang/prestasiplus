@@ -10,17 +10,17 @@
  *   counter and the English Laravel pager (keeps the filters) sit under the table.
  * - Empty: one row "Tiada soalan berstruktur ditemui" and "Menunjukkan 0 daripada 0 soalan" (DV-M04-12).
  */
-import { Eye, Plus, Search } from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { DataTableCard, LaravelPager, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
 import { useApi } from '@/composables'
+import { DsDataTable, DsFilterBar, DsPage, DsStatTile, type CardField } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchStructuredQuestions } from '../api/structured'
+import ErrorBox from '../components/ErrorBox.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import { AUDIT_ROUTES, STRUCTURED_CREATE_PATH, STRUCTURED_LIST_PATH } from '../lib/audit-routes'
 import { fetchLevelOptions, fetchSubjectOptions } from '../lib/lookup-options'
 import { KBAT_FILTER_OPTIONS } from '../lib/structured-options'
@@ -37,13 +37,6 @@ const applied = computed(() => ({
   kbat_level: queryText(route.query.kbat_level),
   page: pageOf(route.query.page),
 }))
-
-const filterActive = computed(
-  () =>
-    applied.value.subject_id !== '' ||
-    applied.value.education_level_id !== '' ||
-    applied.value.kbat_level !== '',
-)
 
 // Draft values of the form controls; re-synced when the URL changes (back/forward, reset).
 const subjectId = ref(applied.value.subject_id)
@@ -119,257 +112,222 @@ function goToPage(page: number): void {
   void router.push({ path: STRUCTURED_LIST_PATH, query: { ...query, page: String(page) } })
 }
 
-const SKELETON_ROWS = 5
-const STAT_CARD = 'flex flex-col justify-center rounded-2xl bg-white p-5 text-center shadow'
-const LABEL = 'mb-1 block text-xs font-semibold text-slate-600'
-const CELL_HIDE_SM = 'hidden sm:table-cell'
+interface StructuredRow extends Record<string, unknown> {
+  id: number
+  stimulusExcerpt: string
+  subjectName: string
+  levelName: string
+  kbat: string
+  marks: string
+  subCount: number
+}
+
+const tableRows = computed<StructuredRow[]>(() =>
+  rows.value.map((r) => ({
+    id: r.id,
+    stimulusExcerpt: r.stimulusExcerpt,
+    subjectName: r.subject?.name ?? '',
+    levelName: r.level?.name ?? '',
+    kbat: `L${String(r.kbatLevel)}`,
+    marks: `${String(r.totalMarks)}m`,
+    subCount: r.subCount,
+  })),
+)
+
+const columns: TableColumn<StructuredRow>[] = [
+  { accessorKey: 'id', header: '#' },
+  { accessorKey: 'stimulusExcerpt', header: 'Stimulus / Soalan' },
+  { accessorKey: 'subjectName', header: 'Subjek' },
+  { accessorKey: 'levelName', header: 'Tgk' },
+  { accessorKey: 'kbat', header: 'KBAT' },
+  { accessorKey: 'marks', header: 'Markah' },
+  { accessorKey: 'subCount', header: 'Sub-Q' },
+  { id: 'actions', header: 'Aksi' },
+]
+const cardFields: CardField[] = [
+  { key: 'subjectName', label: 'Subjek' },
+  { key: 'levelName', label: 'Tgk' },
+  { key: 'kbat', label: 'KBAT' },
+  { key: 'marks', label: 'Markah' },
+  { key: 'subCount', label: 'Sub-Q' },
+]
+
+/** The Malay counter shows when there is no pager (an empty list included, DV-M04-12). */
+const showCounter = computed(() => !!data.value && data.value.meta.totalItems <= data.value.meta.pageSize)
+const activeCount = computed(
+  () => [applied.value.subject_id, applied.value.education_level_id, applied.value.kbat_level].filter((v) => v !== '').length,
+)
+
+async function resetFilter(): Promise<void> {
+  subjectId.value = ''
+  levelId.value = ''
+  kbat.value = ''
+  await router.push({ path: STRUCTURED_LIST_PATH })
+}
 </script>
 
 <template>
-  <div class="space-y-4 sm:space-y-6" data-testid="structured-page">
+  <DsPage data-testid="structured-page">
     <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div class="min-w-0">
-        <h1 class="font-heading text-2xl font-bold text-slate-800 sm:text-3xl">
-          Soalan Berstruktur
-        </h1>
-        <p class="text-sm text-slate-500">Semua soalan berstruktur SPM dalam sistem</p>
-      </div>
-      <RouterLink
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="min-w-0 text-body text-muted">Semua soalan berstruktur SPM dalam sistem</p>
+      <UButton
         :to="STRUCTURED_CREATE_PATH"
-        class="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold whitespace-nowrap text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 sm:self-auto"
+        icon="i-ph-plus"
+        class="min-h-11 shrink-0"
         data-testid="structured-add"
       >
-        <Plus class="h-4 w-4" aria-hidden="true" />
         Tambah Soalan
-      </RouterLink>
+      </UButton>
     </div>
 
     <!-- Stat cards + subject distribution (whole store). -->
-    <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
-      <div :class="STAT_CARD" data-testid="structured-stat-total">
-        <div
-          v-if="stats"
-          class="font-heading text-3xl font-bold text-indigo-600"
-          data-testid="structured-stat-total-value"
-        >
-          {{ formatNumber(stats.total) }}
-        </div>
-        <div v-else class="mx-auto h-9 w-20 animate-pulse rounded-lg bg-slate-100"></div>
-        <p class="text-sm text-slate-500">Jumlah Soalan</p>
-      </div>
-      <div :class="STAT_CARD" data-testid="structured-stat-published">
-        <div
-          v-if="stats"
-          class="font-heading text-3xl font-bold text-emerald-600"
-          data-testid="structured-stat-published-value"
-        >
-          {{ formatNumber(stats.published) }}
-        </div>
-        <div v-else class="mx-auto h-9 w-20 animate-pulse rounded-lg bg-slate-100"></div>
-        <p class="text-sm text-slate-500">Published</p>
-      </div>
-      <div
-        class="col-span-2 rounded-2xl bg-white p-5 text-center shadow lg:col-span-3"
-        data-testid="structured-by-subject"
-      >
-        <h2 class="mb-3 text-sm font-semibold text-slate-600">Agihan Mengikut Subjek</h2>
-        <div v-if="stats" class="flex flex-wrap justify-center gap-1.5">
-          <span
+    <section class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <template v-if="stats">
+        <DsStatTile
+          :value="formatNumber(stats.total)"
+          unit="Jumlah Soalan"
+          icon="i-ph-stack"
+          data-testid="structured-stat-total"
+        />
+        <DsStatTile
+          :value="formatNumber(stats.published)"
+          unit="Published"
+          icon="i-ph-check-circle"
+          data-testid="structured-stat-published"
+        />
+      </template>
+      <template v-else>
+        <USkeleton class="h-24 w-full" data-testid="structured-stat-total" />
+        <USkeleton class="h-24 w-full" data-testid="structured-stat-published" />
+      </template>
+      <UCard class="col-span-2 lg:col-span-3" data-testid="structured-by-subject">
+        <h2 class="mb-3 text-label text-muted">Agihan Mengikut Subjek</h2>
+        <div v-if="stats" class="flex flex-wrap gap-2">
+          <UBadge
             v-for="s in stats.bySubject"
             :key="s.name"
-            class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
+            color="neutral"
+            variant="soft"
             data-testid="structured-subject-pill"
-            >{{ s.name }}: <strong class="text-slate-800">{{ formatNumber(s.count) }}</strong></span
+            >{{ s.name }}: <strong class="tabular text-highlighted">{{ formatNumber(s.count) }}</strong></UBadge
           >
         </div>
-        <div
-          v-else
-          class="mx-auto h-16 w-full max-w-md animate-pulse rounded-lg bg-slate-100"
-        ></div>
-      </div>
+        <USkeleton v-else class="h-16 w-full" />
+      </UCard>
     </section>
 
-    <!-- Filter (GET form): one column below sm, four across from sm. -->
-    <form
-      method="get"
-      class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-4 shadow sm:grid-cols-4 sm:items-end sm:p-5"
+    <!-- Filter (the URL is the state). -->
+    <DsFilterBar
+      :active-count="activeCount"
       data-testid="structured-filter"
-      @submit.prevent="submitFilter"
+      @apply="submitFilter"
+      @reset="resetFilter"
     >
-      <div>
-        <label for="structured-subject" :class="LABEL">Subjek</label>
-        <select
+      <div class="w-full min-w-0 sm:w-56">
+        <label for="structured-subject" class="mb-2 block text-label text-highlighted">Subjek</label>
+        <NativeSelect
           id="structured-subject"
           v-model="subjectId"
           name="subject_id"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="structured-subject"
         >
           <option value="">Semua Subjek</option>
           <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">
             {{ s.name }}
           </option>
-        </select>
+        </NativeSelect>
       </div>
-      <div>
-        <label for="structured-level" :class="LABEL">Tingkatan</label>
-        <select
+      <div class="w-full min-w-0 sm:w-56">
+        <label for="structured-level" class="mb-2 block text-label text-highlighted">Tingkatan</label>
+        <NativeSelect
           id="structured-level"
           v-model="levelId"
           name="education_level_id"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="structured-level"
         >
           <option value="">Semua</option>
           <option v-for="l in levels ?? []" :key="l.id" :value="String(l.id)">
             {{ l.name }}
           </option>
-        </select>
+        </NativeSelect>
       </div>
-      <div>
-        <label for="structured-kbat" :class="LABEL">KBAT</label>
-        <select
-          id="structured-kbat"
-          v-model="kbat"
-          name="kbat_level"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
-          data-testid="structured-kbat"
-        >
+      <div class="w-full min-w-0 sm:w-56">
+        <label for="structured-kbat" class="mb-2 block text-label text-highlighted">KBAT</label>
+        <NativeSelect id="structured-kbat" v-model="kbat" name="kbat_level" data-testid="structured-kbat">
           <option value="">Semua KBAT</option>
           <option v-for="o in KBAT_FILTER_OPTIONS" :key="o.value" :value="String(o.value)">
             {{ o.label }}
           </option>
-        </select>
+        </NativeSelect>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-          data-testid="structured-search"
-        >
-          <Search class="h-4 w-4" aria-hidden="true" />
-          Cari
-        </button>
-        <RouterLink
-          v-if="filterActive"
-          :to="STRUCTURED_LIST_PATH"
-          class="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-slate-500 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-          data-testid="structured-reset"
-        >
-          Reset
-        </RouterLink>
-      </div>
-    </form>
+    </DsFilterBar>
 
-    <!-- Load failure: red box in place of the table + retry (design-system §7.4). -->
-    <div v-if="error" class="space-y-3" data-testid="structured-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        data-testid="structured-retry"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
+    <!-- Load failure: alert in place of the table + retry (design-system §7.4). -->
+    <div v-if="error" class="flex flex-col gap-3" data-testid="structured-error">
+      <ErrorBox :messages="LOAD_ERROR" />
+      <div>
+        <UButton type="button" class="min-h-11" data-testid="structured-retry" @click="reload()">
+          Cuba Semula
+        </UButton>
+      </div>
     </div>
 
-    <DataTableCard v-else>
-      <table :class="T.table" data-testid="structured-table">
-        <thead>
-          <tr>
-            <th scope="col" :class="T.th">#</th>
-            <th scope="col" :class="T.th">Stimulus / Soalan</th>
-            <th scope="col" :class="[T.th, CELL_HIDE_SM]">Subjek</th>
-            <th scope="col" :class="[T.th, CELL_HIDE_SM]">Tgk</th>
-            <th scope="col" :class="[T.th, 'text-center']">KBAT</th>
-            <th scope="col" :class="[T.th, 'text-center', CELL_HIDE_SM]">Markah</th>
-            <th scope="col" :class="[T.th, 'hidden text-center md:table-cell']">Sub-Q</th>
-            <th scope="col" :class="[T.th, 'text-center']">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-if="firstLoad">
-            <tr
-              v-for="n in SKELETON_ROWS"
-              :key="n"
-              :class="T.row"
-              data-testid="structured-skeleton"
-            >
-              <td :class="T.td" colspan="8">
-                <div class="h-4 w-full animate-pulse rounded bg-slate-100"></div>
-              </td>
-            </tr>
-          </template>
-
-          <tr v-else-if="rows.length === 0" :class="T.row" data-testid="structured-empty">
-            <td colspan="8" class="px-4 py-12 text-center text-slate-400">
-              Tiada soalan berstruktur ditemui
-            </td>
-          </tr>
-
-          <template v-else>
-            <tr
-              v-for="row in rows"
-              :key="row.id"
-              :class="[T.row, 'align-middle']"
-              data-testid="structured-row"
-              :data-question-id="row.id"
-            >
-              <td :class="[T.td, 'text-slate-400']">{{ row.id }}</td>
-              <td :class="[T.td, 'min-w-40 text-slate-800']">{{ row.stimulusExcerpt }}</td>
-              <td :class="[T.td, CELL_HIDE_SM]">
-                <span
-                  v-if="row.subject"
-                  class="inline-block rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-indigo-700"
-                  >{{ row.subject.name }}</span
-                >
-              </td>
-              <td :class="[T.td, CELL_HIDE_SM]">{{ row.level?.name }}</td>
-              <td :class="[T.td, 'text-center']">
-                <span
-                  class="inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700"
-                  data-testid="structured-kbat-pill"
-                  >L{{ row.kbatLevel }}</span
-                >
-              </td>
-              <td :class="[T.td, 'text-center', CELL_HIDE_SM]">{{ row.totalMarks }}m</td>
-              <td :class="[T.td, 'hidden text-center text-slate-500 md:table-cell']">
-                {{ row.subCount }}
-              </td>
-              <td :class="[T.td, 'text-center']">
-                <RouterLink
-                  :to="{ name: AUDIT_ROUTES.structuredDetail, params: { id: row.id } }"
-                  class="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold whitespace-nowrap text-slate-600 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-                  data-testid="structured-view"
-                >
-                  <Eye class="h-4 w-4" aria-hidden="true" />
-                  Lihat
-                </RouterLink>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-
-      <template #footer>
-        <div class="space-y-3 border-t border-slate-100 px-4 py-3" data-testid="structured-footer">
-          <div v-if="data" data-testid="structured-pager">
-            <LaravelPager
-              :page="data.meta.page"
-              :total="data.meta.totalItems"
-              :per-page="data.meta.pageSize"
-              :path="STRUCTURED_LIST_PATH"
-              :query="pagerQuery"
-              @change="goToPage"
-            />
-          </div>
-          <p v-if="data" class="text-sm text-slate-500" data-testid="structured-counter">
-            {{ counter }}
-          </p>
-        </div>
-      </template>
-    </DataTableCard>
-  </div>
+    <div v-else class="flex flex-col gap-3" data-testid="structured-footer-wrap">
+      <DsDataTable
+        :data="tableRows"
+        :columns="columns"
+        caption="Senarai soalan berstruktur"
+        :loading="firstLoad"
+        :total="data?.meta.totalItems ?? 0"
+        :page-size="data?.meta.pageSize ?? 25"
+        :page="data?.meta.page ?? applied.page"
+        card-title="stimulusExcerpt"
+        :card-fields="cardFields"
+        empty-label="Tiada soalan berstruktur ditemui"
+        data-testid="structured-table"
+        @update:page="goToPage"
+      >
+        <template #empty>
+          <span data-testid="structured-empty">Tiada soalan berstruktur ditemui</span>
+        </template>
+        <template #subjectName-cell="{ row }">
+          <UBadge
+            v-if="row.original.subjectName"
+            color="neutral"
+            variant="subtle"
+            :label="row.original.subjectName"
+          />
+        </template>
+        <template #kbat-cell="{ row }">
+          <UBadge color="info" variant="subtle" :label="row.original.kbat" data-testid="structured-kbat-pill" />
+        </template>
+        <template #actions-cell="{ row }">
+          <UButton
+            :to="{ name: AUDIT_ROUTES.structuredDetail, params: { id: row.original.id } }"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-eye"
+            class="min-h-11"
+            data-testid="structured-view"
+          >
+            Lihat
+          </UButton>
+        </template>
+        <template #card-actions="{ row }">
+          <UButton
+            :to="{ name: AUDIT_ROUTES.structuredDetail, params: { id: row.id as number } }"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-eye"
+            aria-label="Lihat"
+            class="min-h-11 min-w-11 justify-center"
+          />
+        </template>
+      </DsDataTable>
+      <p v-if="data && showCounter" class="text-caption text-muted" data-testid="structured-counter">
+        {{ counter }}
+      </p>
+    </div>
+  </DsPage>
 </template>

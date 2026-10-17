@@ -7,12 +7,13 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchTopic, updateTopic } from '../api/admin-curriculum'
 import ChapterContextCard from '../components/curriculum/ChapterContextCard.vue'
 import CurriculumBackLink from '../components/curriculum/CurriculumBackLink.vue'
+import ErrorBox from '../components/ErrorBox.vue'
 import TopicForm, {
   type TopicFormPayload,
   type TopicFormValues,
@@ -91,12 +92,12 @@ async function submit(payload: TopicFormPayload): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl min-w-0 space-y-4" data-testid="topic-edit-page">
-    <AlertBox v-if="loadFailed" :messages="LOAD_ERROR" data-testid="curriculum-load-error" />
+  <DsPage class="max-w-3xl" data-testid="topic-edit-page">
+    <ErrorBox v-if="loadFailed" :messages="LOAD_ERROR" data-testid="curriculum-load-error" />
     <template v-else-if="ready && topic">
       <CurriculumBackLink :to="backTo" />
       <ChapterContextCard :chapter="topic.chapter" />
-      <AlertBox :messages="errors" data-testid="curriculum-form-alert" />
+      <ErrorBox :messages="errors" data-testid="curriculum-form-alert" />
       <TopicForm
         mode="edit"
         :initial="initial"
@@ -105,5 +106,5 @@ async function submit(payload: TopicFormPayload): Promise<void> {
         @submit="submit"
       />
     </template>
-  </div>
+  </DsPage>
 </template>

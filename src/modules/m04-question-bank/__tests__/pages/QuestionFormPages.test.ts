@@ -141,7 +141,6 @@ afterEach(() => {
 describe('QuestionCreatePage (M04 S2)', () => {
   it('renders the header, the native required fields and the live defaults', async () => {
     const w = await render('create')
-    expect(w.get('h1').text()).toBe('✨ Tambah Soalan Baru')
     expect(w.text()).toContain('Isi maklumat di bawah untuk menambah soalan baharu')
     for (const id of ['q-subject', 'q-level', 'q-text'])
       expect(t(w, id).attributes('required')).toBeDefined()
@@ -282,7 +281,7 @@ describe('QuestionCreatePage (M04 S2)', () => {
       'Sila masukkan jawapan betul.',
     ])
     expect(value(w, 'q-text')).toBe('Pendek')
-    expect(t(w, 'q-text').classes()).toContain('border-red-400')
+    expect(t(w, 'q-text').attributes('aria-invalid')).toBe('true')
   })
 
   it('a failed load shows the red box with "Cuba Semula" that retries', async () => {
@@ -294,13 +293,13 @@ describe('QuestionCreatePage (M04 S2)', () => {
     expect(w.find('[data-testid=question-form]').exists()).toBe(true)
   })
 
-  it('the keyboard toggle opens the panel, sets rtl and the Scheherazade font, and inserts text', async () => {
+  it('the keyboard toggle opens the panel, sets rtl and the Jawi font, and inserts text', async () => {
     const w = await render('create')
     const textarea = t(w, 'q-text').element as HTMLTextAreaElement
     expect(textarea.getAttribute('dir')).toBeNull()
     await t(w, 'vkb-toggle').trigger('click')
     expect(textarea.getAttribute('dir')).toBe('rtl')
-    expect(textarea.style.fontFamily).toContain('Scheherazade New')
+    expect(textarea.closest('.font-jawi')).not.toBeNull()
     const panel = document.body.querySelector('[data-testid=vkb-panel]')
     expect(panel?.textContent).toContain('Papan Kekunci Arab')
     const key = document.body.querySelector('[data-testid=vkb-key]') as HTMLElement
@@ -339,7 +338,6 @@ describe('QuestionEditPage (M04 S4)', () => {
   it('pre-fills the form, has no type select or keyboard, and preloads the DSKP chain', async () => {
     const w = await render('edit')
     expect(questions.fetchQuestion).toHaveBeenCalledWith(564159, expect.anything())
-    expect(w.get('h1').text()).toBe('✏️ Edit Soalan')
     expect(w.text()).toContain('Kemaskini maklumat soalan #564159')
     expect(w.find('[data-testid=q-type]').exists()).toBe(false)
     expect(w.find('[data-testid=vkb-toggle]').exists()).toBe(false)

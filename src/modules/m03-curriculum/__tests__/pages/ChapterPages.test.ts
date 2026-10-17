@@ -154,7 +154,7 @@ describe('ChapterEditPage (M03 S3)', () => {
     expect(val(w, 'chapter-name')).toBe('Fungsi dan Persamaan Kuadratik')
     expect(val(w, 'chapter-name-en')).toBe('Functions and Quadratic Equations')
     expect(val(w, 'chapter-number')).toBe('1')
-    expect((w.get('[data-testid=chapter-active]').element as HTMLInputElement).checked).toBe(true)
+    expect(w.get('[data-testid=chapter-active]').attributes('aria-checked')).toBe('true')
     expect(w.get('[data-testid=chapter-form]').text()).toContain(
       'Nyahtanda jika bab ini tidak mahu dipaparkan buat masa ini',
     )
@@ -170,7 +170,7 @@ describe('ChapterEditPage (M03 S3)', () => {
     const { w, router } = await render(ChapterEditPage, URL, '/admin/curriculum/chapters/91/edit', {
       id: '91',
     })
-    await w.get('[data-testid=chapter-active]').setValue(false)
+    await w.get('[data-testid=chapter-active]').trigger('click')
     await w.get('[data-testid=chapter-level]').setValue('9')
     await w.get('[data-testid=chapter-form]').trigger('submit')
     await flushPromises()

@@ -17,7 +17,7 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/admin-subjects-levels', () => api)
 
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn(() => true), alertNative: vi.fn() }))
+const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn((message: string) => message !== ''), alertNative: vi.fn() }))
 vi.mock('@/components/overlay/native-dialogs', () => dialogs)
 
 function level(
@@ -85,6 +85,10 @@ beforeEach(() => {
   setActivePinia(createPinia())
   for (const fn of Object.values(api)) fn.mockReset()
   dialogs.confirmNative.mockReset()
+  // `useConfirm` falls back to `window.confirm` when no host is mounted.
+  vi.spyOn(window, 'confirm').mockImplementation((message) =>
+    Boolean(dialogs.confirmNative(message ?? '')),
+  )
   dialogs.confirmNative.mockReturnValue(true)
   dialogs.alertNative.mockReset()
   api.fetchAdminLevels.mockResolvedValue(
@@ -109,7 +113,6 @@ describe('LevelListPage (M03 S9)', () => {
     const add = w.get('[data-testid=levels-add]')
     expect(add.text()).toBe('Tambah Tahap')
     expect(add.attributes('href')).toBe('/admin/education-levels/create')
-    expect(add.classes()).toContain('from-pink-500')
   })
 
   it('renders the ten column headers and one row per level', async () => {
@@ -126,12 +129,12 @@ describe('LevelListPage (M03 S9)', () => {
       'Aktif?',
       'Tindakan',
     ])
-    expect(w.findAll('[data-testid=level-row]')).toHaveLength(3)
+    expect(w.findAll('tbody tr')).toHaveLength(3)
   })
 
   it('labels the stage badges and shows the counts at every width', async () => {
     const w = await render()
-    const rows = w.findAll('[data-testid=level-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows.map((r) => r.get('[data-testid=level-stage]').text())).toEqual([
       'Rendah',
       'Menengah Rendah',
@@ -149,8 +152,8 @@ describe('LevelListPage (M03 S9)', () => {
     const w = await render()
     await w.findAll('[data-testid=level-switch]')[0]?.trigger('click')
     expect(
-      w.findAll('[data-testid=level-row]')[0]!.get('[data-testid=switch-track]').classes(),
-    ).toContain('bg-slate-300')
+      w.findAll('tbody tr')[0]!.get('[data-testid=level-switch]').attributes('aria-checked'),
+    ).toBe('false')
     await flushPromises()
     expect(api.setLevelActive).toHaveBeenCalledWith(1, false)
     expect(dialogs.confirmNative).not.toHaveBeenCalled()
@@ -172,8 +175,8 @@ describe('LevelListPage (M03 S9)', () => {
     await flushPromises()
     expect(dialogs.alertNative).toHaveBeenLastCalledWith('Ralat rangkaian')
     expect(
-      w.findAll('[data-testid=level-row]')[0]!.get('[data-testid=switch-track]').classes(),
-    ).toContain('bg-emerald-500')
+      w.findAll('tbody tr')[0]!.get('[data-testid=level-switch]').attributes('aria-checked'),
+    ).toBe('true')
   })
 
   it('confirms with the level copy, deletes, reloads and flashes success', async () => {

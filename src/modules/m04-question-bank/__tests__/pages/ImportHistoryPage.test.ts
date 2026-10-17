@@ -72,13 +72,13 @@ describe('ImportHistoryPage (M04 S5h)', () => {
     const w = await render()
     expect(t(w, 'history-back').attributes('href')).toBe('/admin/questions/import')
     expect(w.findAll('th').map((th) => th.text())).toEqual(['Tarikh', 'Fail', 'Diimport', 'Gagal'])
-    const rows = w.findAll('[data-testid=history-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(2)
     expect(rows[0]?.get('[data-testid=history-date]').text()).toBe('20/07/2026 09:05')
     expect(rows[0]?.get('[data-testid=history-file]').text()).toBe('fail-2.csv')
     expect(rows[0]?.get('[data-testid=history-imported]').text()).toBe('12')
     expect(rows[0]?.get('[data-testid=history-failed]').text()).toBe('2')
-    expect(w.text()).toContain('of 1123 results')
+    expect(w.text()).toContain('daripada 1123 hasil')
   })
 
   it('asks the API for the page in the query', async () => {
@@ -90,7 +90,7 @@ describe('ImportHistoryPage (M04 S5h)', () => {
     api.fetchQuestionImports.mockResolvedValue(result([]))
     const w = await render()
     expect(t(w, 'history-empty').text()).toBe('Tiada sejarah import.')
-    expect(t(w, 'history-pager').text()).toBe('')
+    expect(w.find('[data-ds=data-table-pager]').exists()).toBe(false)
   })
 
   it('shows the red alert with "Cuba Semula" on a load failure and retries', async () => {
@@ -102,6 +102,6 @@ describe('ImportHistoryPage (M04 S5h)', () => {
     await t(w, 'history-retry').trigger('click')
     await flushPromises()
     expect(w.find('[data-testid=history-error]').exists()).toBe(false)
-    expect(w.findAll('[data-testid=history-row]')).toHaveLength(2)
+    expect(w.findAll('tbody tr')).toHaveLength(2)
   })
 })

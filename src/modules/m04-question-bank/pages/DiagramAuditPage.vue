@@ -12,18 +12,17 @@
  *   omitted when its count is 0. Both empty: "Semua soalan sudah lengkap dengan gambar rajah!".
  * - Upload and dismiss call the API and reload with the API `status` as the flash.
  */
-import { ChartBar, Funnel, ListOrdered, PenLine } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { LaravelPager } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
 import { useApi, useFlash } from '@/composables'
+import { DsFilterBar, DsPage, DsStatTile } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchDiagramAudit } from '../api/diagram-audit'
 import DiagramCard from '../components/DiagramCard.vue'
+import ErrorBox from '../components/ErrorBox.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import { DIAGRAMS_PATH } from '../lib/audit-routes'
 import { fetchSchoolNameOptions, fetchSubjectOptions } from '../lib/lookup-options'
 import { pageOf, queryText } from '../lib/route-query'
@@ -118,132 +117,118 @@ function onFailed(err: unknown): void {
   flash.show({ type: 'error', message: errorLines(err) })
 }
 
-const STAT_CARD = 'flex flex-col items-center rounded-2xl bg-white p-4 text-center shadow'
-const STAT_NUMBER = 'font-heading text-3xl font-bold'
-const STAT_LABEL = 'text-xs font-semibold tracking-wide text-slate-500 uppercase'
+async function resetFilter(): Promise<void> {
+  subjectId.value = ''
+  schoolId.value = ''
+  await router.push({ path: DIAGRAMS_PATH })
+}
+
+const filterCount = computed(
+  () => [applied.value.subject_id, applied.value.school_id].filter((v) => v !== '').length,
+)
 </script>
 
 <template>
-  <div class="space-y-4 sm:space-y-6" data-testid="diagrams-page">
+  <DsPage data-testid="diagrams-page">
     <!-- Stat cards: 2 + 1 below sm (as live), 3 across from sm. -->
-    <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-      <div :class="STAT_CARD" data-testid="diagrams-stat-mcq">
-        <ListOrdered class="h-5 w-5 text-orange-400" aria-hidden="true" />
-        <div
-          v-if="stats"
-          :class="[STAT_NUMBER, 'text-orange-700']"
-          data-testid="diagrams-stat-mcq-value"
-        >
-          {{ formatNumber(stats.mcq) }}
-        </div>
-        <div v-else class="my-1 h-9 w-20 animate-pulse rounded-lg bg-slate-100"></div>
-        <p :class="STAT_LABEL">MCQ Perlu Gambar</p>
-      </div>
-      <div :class="STAT_CARD" data-testid="diagrams-stat-structured">
-        <PenLine class="h-5 w-5 text-indigo-500" aria-hidden="true" />
-        <div
-          v-if="stats"
-          :class="[STAT_NUMBER, 'text-indigo-600']"
-          data-testid="diagrams-stat-structured-value"
-        >
-          {{ formatNumber(stats.structured) }}
-        </div>
-        <div v-else class="my-1 h-9 w-20 animate-pulse rounded-lg bg-slate-100"></div>
-        <p :class="STAT_LABEL">Struktur Perlu Gambar</p>
-      </div>
-      <div :class="[STAT_CARD, 'col-span-2 sm:col-span-1']" data-testid="diagrams-stat-total">
-        <ChartBar class="h-5 w-5 text-slate-500" aria-hidden="true" />
-        <div
-          v-if="stats"
-          :class="[STAT_NUMBER, 'text-slate-700']"
-          data-testid="diagrams-stat-total-value"
-        >
-          {{ formatNumber(stats.total) }}
-        </div>
-        <div v-else class="my-1 h-9 w-20 animate-pulse rounded-lg bg-slate-100"></div>
-        <p :class="STAT_LABEL">Jumlah</p>
-      </div>
+    <section class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <template v-if="stats">
+        <DsStatTile
+          :value="formatNumber(stats.mcq)"
+          unit="MCQ Perlu Gambar"
+          icon="i-ph-list-numbers"
+          data-testid="diagrams-stat-mcq"
+        />
+        <DsStatTile
+          :value="formatNumber(stats.structured)"
+          unit="Struktur Perlu Gambar"
+          icon="i-ph-pen-nib"
+          data-testid="diagrams-stat-structured"
+        />
+        <DsStatTile
+          class="col-span-2 sm:col-span-1"
+          :value="formatNumber(stats.total)"
+          unit="Jumlah"
+          icon="i-ph-chart-bar"
+          data-testid="diagrams-stat-total"
+        />
+      </template>
+      <template v-else>
+        <USkeleton class="h-24 w-full" data-testid="diagrams-stat-mcq" />
+        <USkeleton class="h-24 w-full" data-testid="diagrams-stat-structured" />
+        <USkeleton class="col-span-2 h-24 w-full sm:col-span-1" data-testid="diagrams-stat-total" />
+      </template>
     </section>
 
     <!-- Top-10 subjects by flagged MCQ count (global). -->
-    <section class="rounded-2xl bg-white p-4 shadow sm:p-5" data-testid="diagrams-by-subject">
-      <h2 class="mb-3 text-xs font-bold tracking-wide text-slate-600 uppercase">
-        MCQ Perlu Gambar Mengikut Mata Pelajaran
-      </h2>
+    <UCard data-testid="diagrams-by-subject">
+      <h2 class="mb-3 text-overline text-muted">MCQ Perlu Gambar Mengikut Mata Pelajaran</h2>
       <div class="flex flex-wrap gap-2">
-        <span
+        <UBadge
           v-for="p in pills"
           :key="p.name"
-          class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-orange-700"
+          color="neutral"
+          variant="soft"
+          :label="`${p.name}: ${formatNumber(p.count)}`"
           data-testid="diagrams-pill"
-          >{{ p.name }}: {{ formatNumber(p.count) }}</span
-        >
+        />
       </div>
-    </section>
+    </UCard>
 
-    <!-- Filter (GET form): one column below sm, three across from sm. -->
-    <form
-      method="get"
-      class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-4 shadow sm:grid-cols-3 sm:p-5"
+    <!-- Filter (the URL is the state). -->
+    <DsFilterBar
+      :active-count="filterCount"
+      apply-label="Tapis"
       data-testid="diagrams-filter"
-      @submit.prevent="submitFilter"
+      @apply="submitFilter"
+      @reset="resetFilter"
     >
-      <select
-        v-model="subjectId"
-        name="subject_id"
-        :class="[FORM_INPUT_CLASS, 'min-h-11']"
-        data-testid="diagrams-subject"
-      >
-        <option value="">Semua Mata Pelajaran</option>
-        <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
-      </select>
-      <select
-        v-model="schoolId"
-        name="school_id"
-        :class="[FORM_INPUT_CLASS, 'min-h-11']"
-        data-testid="diagrams-school"
-      >
-        <option value="">Semua Sekolah</option>
-        <option v-for="s in schools ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
-      </select>
-      <button
-        type="submit"
-        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-800 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-        data-testid="diagrams-filter-submit"
-      >
-        <Funnel class="h-4 w-4" aria-hidden="true" />
-        Tapis
-      </button>
-    </form>
+      <div class="w-full min-w-0 sm:w-64">
+        <label for="diagrams-subject" class="mb-2 block text-label text-highlighted"
+          >Mata Pelajaran</label
+        >
+        <NativeSelect
+          id="diagrams-subject"
+          v-model="subjectId"
+          name="subject_id"
+          data-testid="diagrams-subject"
+        >
+          <option value="">Semua Mata Pelajaran</option>
+          <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+        </NativeSelect>
+      </div>
+      <div class="w-full min-w-0 sm:w-64">
+        <label for="diagrams-school" class="mb-2 block text-label text-highlighted">Sekolah</label>
+        <NativeSelect id="diagrams-school" v-model="schoolId" name="school_id" data-testid="diagrams-school">
+          <option value="">Semua Sekolah</option>
+          <option v-for="s in schools ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+        </NativeSelect>
+      </div>
+    </DsFilterBar>
 
-    <div v-if="error" class="space-y-3" data-testid="diagrams-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-800 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-slate-900"
-        data-testid="diagrams-retry"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
+    <div v-if="error" class="flex flex-col gap-3" data-testid="diagrams-error">
+      <ErrorBox :messages="LOAD_ERROR" />
+      <div>
+        <UButton type="button" class="min-h-11" data-testid="diagrams-retry" @click="reload()">
+          Cuba Semula
+        </UButton>
+      </div>
     </div>
 
-    <div v-else-if="firstLoad" class="space-y-3" data-testid="diagrams-skeleton">
-      <div v-for="n in 3" :key="n" class="h-24 animate-pulse rounded-2xl bg-white shadow"></div>
+    <div v-else-if="firstLoad" class="flex flex-col gap-3" data-testid="diagrams-skeleton">
+      <USkeleton v-for="n in 3" :key="n" class="h-24 w-full" />
     </div>
 
     <template v-else>
-      <p
-        v-if="allDone"
-        class="rounded-2xl bg-white p-8 text-center text-emerald-700 shadow"
-        data-testid="diagrams-empty"
-      >
-        Semua soalan sudah lengkap dengan gambar rajah!
-      </p>
+      <UCard v-if="allDone" data-testid="diagrams-empty">
+        <p class="text-center text-body text-success">
+          Semua soalan sudah lengkap dengan gambar rajah!
+        </p>
+      </UCard>
 
-      <section v-if="mcq && mcq.meta.totalItems > 0" class="space-y-3" data-testid="diagrams-mcq">
-        <h2 class="flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-          <ListOrdered class="h-4 w-4 text-orange-400" aria-hidden="true" />
+      <section v-if="mcq && mcq.meta.totalItems > 0" class="flex flex-col gap-3" data-testid="diagrams-mcq">
+        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+          <UIcon name="i-ph-list-numbers" class="size-5 text-primary" />
           MCQ ({{ mcq.meta.totalItems }})
         </h2>
         <DiagramCard
@@ -254,26 +239,25 @@ const STAT_LABEL = 'text-xs font-semibold tracking-wide text-slate-500 uppercase
           @done="onDone"
           @failed="onFailed"
         />
-        <div data-testid="diagrams-mcq-pager">
-          <LaravelPager
+        <div v-if="mcq.meta.totalItems > mcq.meta.pageSize" data-testid="diagrams-mcq-pager">
+          <UPagination
             :page="mcq.meta.page"
             :total="mcq.meta.totalItems"
-            :per-page="mcq.meta.pageSize"
-            :path="DIAGRAMS_PATH"
-            :query="pagerQuery"
-            page-param="mcq_page"
-            @change="(p) => goToPage('mcq_page', p)"
+            :items-per-page="mcq.meta.pageSize"
+            :prev="{ 'aria-label': 'Sebelum' }"
+            :next="{ 'aria-label': 'Seterusnya' }"
+            @update:page="(p: number) => goToPage('mcq_page', p)"
           />
         </div>
       </section>
 
       <section
         v-if="structured && structured.meta.totalItems > 0"
-        class="space-y-3"
+        class="flex flex-col gap-3"
         data-testid="diagrams-structured"
       >
-        <h2 class="flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-          <PenLine class="h-4 w-4 text-indigo-500" aria-hidden="true" />
+        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+          <UIcon name="i-ph-pen-nib" class="size-5 text-primary" />
           Struktur ({{ structured.meta.totalItems }})
         </h2>
         <DiagramCard
@@ -284,18 +268,20 @@ const STAT_LABEL = 'text-xs font-semibold tracking-wide text-slate-500 uppercase
           @done="onDone"
           @failed="onFailed"
         />
-        <div data-testid="diagrams-structured-pager">
-          <LaravelPager
+        <div
+          v-if="structured.meta.totalItems > structured.meta.pageSize"
+          data-testid="diagrams-structured-pager"
+        >
+          <UPagination
             :page="structured.meta.page"
             :total="structured.meta.totalItems"
-            :per-page="structured.meta.pageSize"
-            :path="DIAGRAMS_PATH"
-            :query="pagerQuery"
-            page-param="str_page"
-            @change="(p) => goToPage('str_page', p)"
+            :items-per-page="structured.meta.pageSize"
+            :prev="{ 'aria-label': 'Sebelum' }"
+            :next="{ 'aria-label': 'Seterusnya' }"
+            @update:page="(p: number) => goToPage('str_page', p)"
           />
         </div>
       </section>
     </template>
-  </div>
+  </DsPage>
 </template>

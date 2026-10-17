@@ -10,6 +10,7 @@ import { LEVEL_ROUTES, SUBJECT_ROUTES } from '../lib/subjects-levels'
  */
 const meta = (title: string, header: { title: string; subtitle: string }) => ({
   layout: 'admin' as const,
+  v2: true,
   access: 'auth' as const,
   roles: ['admin'] as ['admin'],
   title,

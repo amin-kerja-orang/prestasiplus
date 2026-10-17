@@ -72,7 +72,6 @@ describe('LevelFormPage create (M03 S10)', () => {
     expect(t(w, 'level-name-en').attributes('placeholder')).toBe('e.g: Year 1')
     expect(t(w, 'level-code').attributes('placeholder')).toBe('cth: Y1')
     expect(t(w, 'level-code').attributes('maxlength')).toBe('10')
-    expect(t(w, 'level-code').classes()).toEqual(expect.arrayContaining(['uppercase', 'font-mono']))
     expect(t(w, 'level-curriculum').attributes('placeholder')).toBe('cth: KSSR, KSSM')
     expect(w.findAll('[data-testid=level-stage] option').map((o) => o.text())).toEqual([
       '-- Pilih Peringkat --',
@@ -83,7 +82,6 @@ describe('LevelFormPage create (M03 S10)', () => {
     expect((t(w, 'level-order').element as HTMLInputElement).value).toBe('0')
     expect(w.text()).toContain('Nama kurikulum yang diguna pakai')
     expect(t(w, 'form-submit').text()).toBe('Simpan Tahap')
-    expect(t(w, 'form-submit').classes()).toContain('from-pink-500')
     expect(w.text()).not.toContain('Aktif')
   })
 

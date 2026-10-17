@@ -103,8 +103,6 @@ export const upperWords = (code: string): string => code.replaceAll('_', ' ').to
 export const sourceLabel = (type: string | null): string =>
   type === null ? 'TIADA' : upperWords(type)
 
-const PILL = 'inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap'
-
 /** S1 status pill (BR-M04-02; archived is "Arkib" in the list, "Diarkibkan" on S3, as live). */
 const STATUS_LABEL: Record<QuestionStatus, string> = {
   draft: 'Draf',
@@ -117,25 +115,27 @@ const STATUS_LABEL: Record<QuestionStatus, string> = {
 export const statusLabel = (status: QuestionStatus, short = false): string =>
   short && status === 'archived' ? 'Arkib' : STATUS_LABEL[status]
 
-const STATUS_CLASS: Record<QuestionStatus, string> = {
-  draft: 'bg-slate-100 text-slate-700',
-  pending_review: 'bg-amber-100 text-amber-700',
-  approved: 'bg-emerald-100 text-emerald-700',
-  rejected: 'bg-red-100 text-red-700',
-  archived: 'bg-slate-100 text-slate-600',
-  pending: 'bg-amber-100 text-amber-700',
-}
-export const statusClass = (status: QuestionStatus): string => `${PILL} ${STATUS_CLASS[status]}`
+export type BadgeColor = 'success' | 'warning' | 'error' | 'neutral'
 
-const COMPLIANCE_CLASS: Record<ComplianceStatus, string> = {
-  verified: 'bg-emerald-100 text-emerald-700',
-  pending_mapping: 'bg-amber-100 text-amber-700',
-  quarantined: 'bg-red-100 text-red-700',
-  rejected: 'bg-red-100 text-red-700',
-  draft: 'bg-slate-100 text-slate-600',
+/** `UBadge` colour of a status (staff theme: tokens only, the word carries the meaning). */
+const STATUS_COLOR: Record<QuestionStatus, BadgeColor> = {
+  draft: 'neutral',
+  pending_review: 'warning',
+  approved: 'success',
+  rejected: 'error',
+  archived: 'neutral',
+  pending: 'warning',
 }
-export const complianceClass = (status: ComplianceStatus): string =>
-  `inline-block rounded px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${COMPLIANCE_CLASS[status]}`
+export const statusColor = (status: QuestionStatus): BadgeColor => STATUS_COLOR[status]
+
+const COMPLIANCE_COLOR: Record<ComplianceStatus, BadgeColor> = {
+  verified: 'success',
+  pending_mapping: 'warning',
+  quarantined: 'error',
+  rejected: 'error',
+  draft: 'neutral',
+}
+export const complianceColor = (status: ComplianceStatus): BadgeColor => COMPLIANCE_COLOR[status]
 
 export const LANGUAGE_LABELS: Record<string, string> = { bm: 'Bahasa Melayu', en: 'English' }
 

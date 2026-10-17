@@ -14,6 +14,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/MasterNotesPage.vue'),
     meta: {
       layout: 'user',
+      v2: true,
       access: 'auth',
       roles: ['admin'],
       title: 'Master Notes — Admin Review',

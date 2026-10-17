@@ -8,14 +8,11 @@
  * saving a subtopic send the mutation, reload the same tree (collapsed again, as after a live redirect)
  * and show the flash. Redirect flashes (BR-18) are shown by the shell once, after navigation.
  */
-import { Funnel, Inbox, Info, Plus, Search } from '@lucide/vue'
 import { computed, provide, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
-import { FORM_SELECT_CLASS } from '@/components/form'
-import { confirmNative } from '@/components/overlay/native-dialogs'
 import { useApi, useFlash } from '@/composables'
+import { DsEmptyState, DsPage, useConfirm } from '@/ds'
 
 import {
   createSubtopic,
@@ -30,6 +27,8 @@ import {
 } from '../api/admin-curriculum'
 import ChapterBlock from '../components/curriculum/ChapterBlock.vue'
 import CurriculumStatCards from '../components/curriculum/CurriculumStatCards.vue'
+import ErrorBox from '../components/ErrorBox.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import {
   CURRICULUM_PATH,
   chapterCreateTo,
@@ -43,6 +42,7 @@ import { TREE_ACTIONS, type TreeActions } from '../lib/tree-actions'
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+const confirm = useConfirm()
 
 const subjectParam = computed(() => queryString(route.query.subject_id))
 const levelParam = computed(() => queryString(route.query.education_level_id))
@@ -115,15 +115,21 @@ async function mutate(run: () => Promise<CurriculumMutation<unknown>>): Promise<
 
 const actions: TreeActions = {
   async deleteChapter(chapter) {
-    if (busy.value || !confirmNative('Adakah anda pasti mahu padam bab ini?')) return
+    if (busy.value || !(await confirm({ message: 'Adakah anda pasti mahu padam bab ini?', tone: 'danger' })))
+      return
     await mutate(() => deleteChapter(chapter.id))
   },
   async deleteTopic(topic) {
-    if (busy.value || !confirmNative('Adakah anda pasti mahu padam topik ini?')) return
+    if (busy.value || !(await confirm({ message: 'Adakah anda pasti mahu padam topik ini?', tone: 'danger' })))
+      return
     await mutate(() => deleteTopic(topic.id))
   },
   async deleteSubtopic(subtopicId) {
-    if (busy.value || !confirmNative('Adakah anda pasti mahu padam subtopik ini?')) return
+    if (
+      busy.value ||
+      !(await confirm({ message: 'Adakah anda pasti mahu padam subtopik ini?', tone: 'danger' }))
+    )
+      return
     await mutate(() => deleteSubtopic(subtopicId))
   },
   saveSubtopic: (subtopicId, input) => mutate(() => updateSubtopic(subtopicId, input)),
@@ -131,112 +137,107 @@ const actions: TreeActions = {
 }
 provide(TREE_ACTIONS, actions)
 
-const LABEL = 'mb-1.5 block text-sm font-semibold text-slate-700'
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4 sm:space-y-6" data-testid="curriculum-page">
-    <AlertBox
+  <DsPage data-testid="curriculum-page">
+    <ErrorBox
       v-if="optionsFailed || treeFailed"
       :messages="LOAD_ERROR"
       data-testid="curriculum-load-error"
     />
 
     <template v-if="optionsReady">
-      <form
-        method="get"
-        class="rounded-2xl bg-white p-4 shadow sm:p-5"
-        data-testid="curriculum-filter"
-        @submit.prevent="applyFilter"
-      >
-        <h2 class="mb-4 flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-          <Funnel class="h-4 w-4 text-indigo-500" />
-          Tapis Kurikulum
-        </h2>
-        <div class="grid grid-cols-2 items-end gap-3 md:grid-cols-3 md:gap-4">
-          <div class="min-w-0">
-            <label for="cur-subject" :class="LABEL">Subjek</label>
-            <select
-              id="cur-subject"
-              v-model="subjectSel"
-              name="subject_id"
-              :class="[FORM_SELECT_CLASS, 'min-h-11']"
-              data-testid="curriculum-subject"
+      <form method="get" data-testid="curriculum-filter" @submit.prevent="applyFilter">
+        <UCard>
+          <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
+            <UIcon name="i-ph-funnel" class="size-5 text-primary" />
+            Tapis Kurikulum
+          </h2>
+          <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-3">
+            <div class="min-w-0">
+              <label for="cur-subject" class="mb-2 block text-label text-highlighted">Subjek</label>
+              <NativeSelect
+                id="cur-subject"
+                v-model="subjectSel"
+                name="subject_id"
+                data-testid="curriculum-subject"
+              >
+                <option value="">-- Pilih Subjek --</option>
+                <option v-for="s in subjects?.data ?? []" :key="s.id" :value="String(s.id)">
+                  {{ s.name }}
+                </option>
+              </NativeSelect>
+            </div>
+            <div class="min-w-0">
+              <label for="cur-level" class="mb-2 block text-label text-highlighted">Tahap</label>
+              <NativeSelect
+                id="cur-level"
+                v-model="levelSel"
+                name="education_level_id"
+                data-testid="curriculum-level"
+              >
+                <option value="">-- Pilih Tahap --</option>
+                <option v-for="l in levels?.data ?? []" :key="l.id" :value="String(l.id)">
+                  {{ l.name }}
+                </option>
+              </NativeSelect>
+            </div>
+            <UButton
+              type="submit"
+              icon="i-ph-magnifying-glass"
+              block
+              class="min-h-11"
+              data-testid="curriculum-filter-submit"
             >
-              <option value="">-- Pilih Subjek --</option>
-              <option v-for="s in subjects?.data ?? []" :key="s.id" :value="String(s.id)">
-                {{ s.name }}
-              </option>
-            </select>
+              Tapis
+            </UButton>
           </div>
-          <div class="min-w-0">
-            <label for="cur-level" :class="LABEL">Tahap</label>
-            <select
-              id="cur-level"
-              v-model="levelSel"
-              name="education_level_id"
-              :class="[FORM_SELECT_CLASS, 'min-h-11']"
-              data-testid="curriculum-level"
-            >
-              <option value="">-- Pilih Tahap --</option>
-              <option v-for="l in levels?.data ?? []" :key="l.id" :value="String(l.id)">
-                {{ l.name }}
-              </option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            class="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 md:col-span-1"
-            data-testid="curriculum-filter-submit"
-          >
-            <Search class="h-4 w-4" />
-            Tapis
-          </button>
-        </div>
+        </UCard>
       </form>
 
-      <div
-        v-if="!hasPair"
-        class="rounded-2xl bg-white p-8 text-center shadow sm:p-12"
-        data-testid="curriculum-prompt"
-      >
-        <Info class="mx-auto mb-3 h-12 w-12 text-slate-300" />
-        <p class="font-semibold text-slate-700">Sila pilih subjek dan tahap pendidikan</p>
-        <p class="mt-1 text-sm text-slate-500">Gunakan penapis di atas</p>
-      </div>
+      <UCard v-if="!hasPair" data-testid="curriculum-prompt">
+        <DsEmptyState
+          title="Sila pilih subjek dan tahap pendidikan"
+          description="Gunakan penapis di atas"
+          icon="i-ph-info"
+        />
+      </UCard>
 
       <template v-else-if="showTree && tree">
         <CurriculumStatCards :tree="tree" />
 
-        <div class="flex">
-          <RouterLink
+        <div>
+          <UButton
             :to="chapterCreateTo(subjectParam, levelParam)"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow transition hover:from-indigo-600 hover:to-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+            icon="i-ph-plus"
+            class="min-h-11"
             data-testid="chapter-add"
           >
-            <Plus class="h-4 w-4" />
             Tambah Bab
-          </RouterLink>
+          </UButton>
         </div>
 
-        <div class="rounded-2xl bg-white p-3 shadow sm:p-6" data-testid="curriculum-tree">
-          <div v-if="tree.chapters.length === 0" class="py-8 text-center" data-testid="tree-empty">
-            <Inbox class="mx-auto mb-3 h-12 w-12 text-slate-300" />
-            <p class="text-slate-600">Tiada bab dijumpai untuk subjek dan tahap ini.</p>
-            <RouterLink
-              :to="chapterCreateTo(subjectParam, levelParam)"
-              class="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-              data-testid="chapter-add-first"
-            >
-              <Plus class="h-4 w-4" />
-              Tambah Bab Pertama
-            </RouterLink>
-          </div>
-          <div v-else class="space-y-3 sm:space-y-4">
+        <div class="flex flex-col gap-3 md:gap-4" data-testid="curriculum-tree">
+          <UCard v-if="tree.chapters.length === 0" data-testid="tree-empty">
+            <DsEmptyState title="Tiada bab dijumpai untuk subjek dan tahap ini." icon="i-ph-tray">
+              <template #actions>
+                <UButton
+                  :to="chapterCreateTo(subjectParam, levelParam)"
+                  icon="i-ph-plus"
+                  class="min-h-11"
+                  data-testid="chapter-add-first"
+                >
+                  Tambah Bab Pertama
+                </UButton>
+              </template>
+            </DsEmptyState>
+          </UCard>
+          <template v-else>
             <ChapterBlock v-for="c in tree.chapters" :key="c.id" :chapter="c" />
-          </div>
+          </template>
         </div>
       </template>
     </template>
-  </div>
+  </DsPage>
 </template>

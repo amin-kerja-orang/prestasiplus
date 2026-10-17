@@ -7,7 +7,13 @@ import { QUESTION_ROUTES, QUESTIONS_LIST_PATH } from '../lib/question-list'
  * only, admin shell. Tab titles are exact (SRS §2); the shell header has no subtitle (DV-M04-02).
  * `:id(\d+)` keeps `create`, `import` and `quality` (other tasks' routes) out of the detail route.
  */
-const adminMeta = { layout: 'admin', access: 'auth', roles: ['admin'], module: 'M04' } as const
+const adminMeta = {
+  layout: 'admin',
+  v2: true,
+  access: 'auth',
+  roles: ['admin'],
+  module: 'M04',
+} as const
 
 const routes: RouteRecordRaw[] = [
   {
