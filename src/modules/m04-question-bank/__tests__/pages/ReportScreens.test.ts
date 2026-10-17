@@ -119,7 +119,6 @@ afterEach(() => {
 describe('QuestionReportsPage (M04 S7)', () => {
   it('renders the header, five tabs with counts and the default active tab', async () => {
     const w = await renderAdmin()
-    expect(w.get('h1').text()).toBe('Laporan Soalan')
     expect(w.get('[data-testid=reports-subtitle]').text()).toBe(
       'Soalan yang dilaporkan oleh pelajar dari kuiz, latihan & Papan Bijak',
     )

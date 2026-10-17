@@ -17,7 +17,7 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/admin-subjects-levels', () => api)
 
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn(() => true), alertNative: vi.fn() }))
+const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn((message: string) => message !== ''), alertNative: vi.fn() }))
 vi.mock('@/components/overlay/native-dialogs', () => dialogs)
 
 function subject(id: number, extra: Partial<AdminSubjectListItem> = {}): AdminSubjectListItem {
@@ -86,6 +86,10 @@ beforeEach(() => {
   setActivePinia(createPinia())
   for (const fn of Object.values(api)) fn.mockReset()
   dialogs.confirmNative.mockReset()
+  // `useConfirm` falls back to `window.confirm` when no host is mounted.
+  vi.spyOn(window, 'confirm').mockImplementation((message) =>
+    Boolean(dialogs.confirmNative(message ?? '')),
+  )
   dialogs.confirmNative.mockReturnValue(true)
   dialogs.alertNative.mockReset()
   api.fetchAdminSubjects.mockResolvedValue(
@@ -125,7 +129,7 @@ describe('SubjectListPage (M03 S6)', () => {
       'Aktif?',
       'Tindakan',
     ])
-    const rows = w.findAll('[data-testid=subject-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(2)
     expect(rows[0]?.text()).toContain('Bahasa Melayu')
     expect(rows[0]?.get('[data-testid=subject-code]').text()).toBe('SUB1')
@@ -135,7 +139,7 @@ describe('SubjectListPage (M03 S6)', () => {
 
   it('shows Teras / Elektif, the colour as stored and the question count', async () => {
     const w = await render()
-    const rows = w.findAll('[data-testid=subject-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows[0]?.get('[data-testid=subject-core]').text()).toBe('Teras')
     expect(rows[1]?.get('[data-testid=subject-core]').text()).toBe('Elektif')
     expect(rows[1]?.get('[data-testid=subject-color]').text()).toBe('#0f766e')
@@ -153,7 +157,7 @@ describe('SubjectListPage (M03 S6)', () => {
 
   it('has edit links and "Padam" buttons with their tooltips', async () => {
     const w = await render()
-    const row = w.findAll('[data-testid=subject-row]')[0]
+    const row = w.findAll('tbody tr')[0]
     expect(row?.get('[data-testid=subject-edit]').attributes('href')).toBe('/admin/subjects/1/edit')
     expect(row?.get('[data-testid=subject-edit]').attributes('title')).toBe('Edit')
     expect(row?.get('[data-testid=subject-delete]').attributes('title')).toBe('Padam')
@@ -162,10 +166,10 @@ describe('SubjectListPage (M03 S6)', () => {
   it('flips the switch at once, sends the PATCH and shows no message', async () => {
     api.setSubjectActive.mockResolvedValue({ id: 1, isActive: false })
     const w = await render()
-    const track = () => w.findAll('[data-testid=subject-row]')[0]!.get('[data-testid=switch-track]')
-    expect(track().classes()).toContain('bg-emerald-500')
+    const track = () => w.findAll('tbody tr')[0]!.get('[data-testid=subject-switch]')
+    expect(track().attributes('aria-checked')).toBe('true')
     await w.findAll('[data-testid=subject-switch]')[0]?.trigger('click')
-    expect(track().classes()).toContain('bg-slate-300')
+    expect(track().attributes('aria-checked')).toBe('false')
     await flushPromises()
     expect(api.setSubjectActive).toHaveBeenCalledWith(1, false)
     expect(dialogs.confirmNative).not.toHaveBeenCalled()
@@ -182,8 +186,8 @@ describe('SubjectListPage (M03 S6)', () => {
     await flushPromises()
     expect(dialogs.alertNative).toHaveBeenCalledWith('Gagal kemaskini status')
     expect(
-      w.findAll('[data-testid=subject-row]')[0]!.get('[data-testid=switch-track]').classes(),
-    ).toContain('bg-emerald-500')
+      w.findAll('tbody tr')[0]!.get('[data-testid=subject-switch]').attributes('aria-checked'),
+    ).toBe('true')
   })
 
   it('reverts and alerts "Ralat rangkaian" on a network failure', async () => {
@@ -195,8 +199,8 @@ describe('SubjectListPage (M03 S6)', () => {
     await flushPromises()
     expect(dialogs.alertNative).toHaveBeenCalledWith('Ralat rangkaian')
     expect(
-      w.findAll('[data-testid=subject-row]')[1]!.get('[data-testid=switch-track]').classes(),
-    ).toContain('bg-slate-300')
+      w.findAll('tbody tr')[1]!.get('[data-testid=subject-switch]').attributes('aria-checked'),
+    ).toBe('false')
   })
 
   it('ignores further clicks on a row while its PATCH is in flight', async () => {
@@ -229,7 +233,7 @@ describe('SubjectListPage (M03 S6)', () => {
     await w.findAll('[data-testid=subject-delete]')[0]?.trigger('click')
     await flushPromises()
     expect(api.deleteSubject).toHaveBeenCalledWith(1)
-    expect(w.findAll('[data-testid=subject-row]')).toHaveLength(1)
+    expect(w.findAll('tbody tr')).toHaveLength(1)
     expect(w.get('[data-testid=subjects-count]').text()).toBe('Jumlah: 1 subjek')
     expect(useFlashStore().current).toEqual({
       type: 'success',

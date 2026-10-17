@@ -8,8 +8,8 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import {
   fetchChapter,
@@ -22,6 +22,7 @@ import ChapterForm, {
   type ChapterFormValues,
 } from '../components/curriculum/ChapterForm.vue'
 import CurriculumBackLink from '../components/curriculum/CurriculumBackLink.vue'
+import ErrorBox from '../components/ErrorBox.vue'
 import {
   CURRICULUM_PATH,
   errorLines,
@@ -107,11 +108,11 @@ async function submit(payload: ChapterFormPayload): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl min-w-0 space-y-4" data-testid="chapter-edit-page">
-    <AlertBox v-if="loadFailed" :messages="LOAD_ERROR" data-testid="curriculum-load-error" />
+  <DsPage class="max-w-3xl" data-testid="chapter-edit-page">
+    <ErrorBox v-if="loadFailed" :messages="LOAD_ERROR" data-testid="curriculum-load-error" />
     <template v-else-if="ready">
       <CurriculumBackLink :to="backTo" />
-      <AlertBox :messages="errors" data-testid="curriculum-form-alert" />
+      <ErrorBox :messages="errors" data-testid="curriculum-form-alert" />
       <ChapterForm
         mode="edit"
         :subjects="subjects?.data ?? []"
@@ -122,5 +123,5 @@ async function submit(payload: ChapterFormPayload): Promise<void> {
         @submit="submit"
       />
     </template>
-  </div>
+  </DsPage>
 </template>

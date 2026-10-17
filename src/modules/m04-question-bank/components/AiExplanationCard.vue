@@ -7,11 +7,10 @@
  * failure the empty state shows again beside the red error box, whose text follows the live script:
  * JSON `message`, else "HTTP {status}", else the JSON-parse exception text, else "Failed to fetch".
  */
-import { Bot, LoaderCircle, RefreshCw, TriangleAlert, WandSparkles } from '@lucide/vue'
 import { ref } from 'vue'
 
 import { isApiError } from '@/api'
-import { confirmNative } from '@/composables'
+import { useConfirm } from '@/ds'
 
 import { generateAiExplanation, type AiExplanation } from '../api/questions'
 import { errorTextOf, REGENERATE_CONFIRM } from '../lib/question-list'
@@ -20,6 +19,7 @@ import MarkdownView from './MarkdownView.vue'
 const props = defineProps<{ questionId: number; explanation: AiExplanation | null }>()
 const emit = defineEmits<{ generated: [] }>()
 
+const confirm = useConfirm()
 const loading = ref(false)
 const errorText = ref<string | null>(null)
 
@@ -51,77 +51,74 @@ async function run(force: boolean): Promise<void> {
   }
 }
 
-function regenerate(): void {
-  if (!confirmNative(REGENERATE_CONFIRM)) return
+async function regenerate(): Promise<void> {
+  if (!(await confirm({ message: REGENERATE_CONFIRM }))) return
   void run(true)
 }
 
-const BUTTON =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow transition focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300'
 </script>
 
 <template>
-  <section
-    id="penjelasan-ai-card"
-    class="rounded-2xl border-l-4 border-purple-500 bg-white p-4 shadow sm:p-6"
-    data-testid="ai-card"
-  >
+  <UCard id="penjelasan-ai-card" data-testid="ai-card">
     <div class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-      <h2 class="flex items-center gap-2 text-base font-bold text-slate-800">
-        <Bot class="h-5 w-5 text-purple-600" aria-hidden="true" />
+      <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+        <UIcon name="i-ph-robot" class="size-5 text-primary" />
         Penjelasan AI
       </h2>
-      <span class="text-xs font-medium text-slate-500"
+      <span class="text-caption text-muted"
         >Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu</span
       >
     </div>
 
     <MarkdownView v-if="explanation" :source="explanation.markdown" data-testid="ai-content" />
-    <p v-else-if="!loading" class="text-sm text-slate-600" data-testid="ai-empty">
+    <p v-else-if="!loading" class="text-body text-muted" data-testid="ai-empty">
       Belum ada Penjelasan AI untuk soalan ini. Klik butang untuk jana.
     </p>
 
-    <p
-      v-if="loading"
-      class="flex items-center gap-2 text-sm text-slate-600"
-      data-testid="ai-loading"
-    >
-      <LoaderCircle class="h-4 w-4 animate-spin" aria-hidden="true" />
+    <p v-if="loading" class="flex items-center gap-2 text-body text-muted" data-testid="ai-loading">
+      <UIcon name="i-ph-spinner" class="size-4" />
       Sedang menjana penjelasan... (anggaran 5-15 saat)
     </p>
 
-    <div
+    <UAlert
       v-if="errorText !== null"
-      class="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning"
+      class="mt-3"
+      role="alert"
       data-testid="ai-error"
     >
-      <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-      <span id="penjelasan-ai-error-msg" class="min-w-0 break-words">{{ errorText }}</span>
-    </div>
+      <template #description>
+        <span id="penjelasan-ai-error-msg" class="min-w-0 break-words">{{ errorText }}</span>
+      </template>
+    </UAlert>
 
     <div v-if="!loading" class="mt-3">
-      <button
+      <UButton
         v-if="!explanation"
         id="btn-jana-penjelasan-ai"
         type="button"
-        :class="[BUTTON, 'bg-purple-600 hover:bg-purple-700']"
+        icon="i-ph-magic-wand"
+        class="min-h-11"
         data-testid="ai-generate"
         @click="run(false)"
       >
-        <WandSparkles class="h-4 w-4" aria-hidden="true" />
         Jana Penjelasan AI
-      </button>
-      <button
+      </UButton>
+      <UButton
         v-else
         id="btn-regen-penjelasan-ai"
         type="button"
-        :class="[BUTTON, 'bg-purple-600 hover:bg-purple-700']"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-arrows-clockwise"
+        class="min-h-11"
         data-testid="ai-regenerate"
         @click="regenerate"
       >
-        <RefreshCw class="h-4 w-4" aria-hidden="true" />
         Jana Semula
-      </button>
+      </UButton>
     </div>
-  </section>
+  </UCard>
 </template>

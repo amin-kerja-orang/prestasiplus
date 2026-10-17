@@ -14,6 +14,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/QuestionImportPage.vue'),
     meta: {
       layout: 'admin',
+      v2: true,
       access: 'auth',
       roles: ['admin'],
       title: 'Import Soalan',
@@ -30,6 +31,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/ImportHistoryPage.vue'),
     meta: {
       layout: 'admin',
+      v2: true,
       access: 'auth',
       roles: ['admin'],
       title: 'Sejarah Import',

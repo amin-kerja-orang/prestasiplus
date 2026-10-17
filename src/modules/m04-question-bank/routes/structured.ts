@@ -14,6 +14,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/StructuredListPage.vue'),
     meta: {
       layout: 'admin',
+      v2: true,
       access: 'auth',
       roles: ['admin'],
       title: 'Soalan Berstruktur',
@@ -28,6 +29,7 @@ const routes: RouteRecordRaw[] = [
     props: (route) => ({ id: Number(route.params.id) }),
     meta: {
       layout: 'admin',
+      v2: true,
       access: 'auth',
       roles: ['admin'],
       title: 'Detail Soalan Berstruktur',

@@ -72,11 +72,8 @@ afterEach(() => {
 })
 
 describe('MasterNotesPage (M04 S12)', () => {
-  it('renders the dark header with the readable h1 and the summary line', async () => {
+  it('renders the summary line (the shell prints the title)', async () => {
     const w = await render()
-    const h1 = w.get('h1')
-    expect(h1.text()).toBe('Master Notes — Admin Review')
-    expect(h1.classes()).toContain('text-white')
     expect(w.get('[data-testid=notes-summary]').text()).toBe(
       'Self-healing nota AI: 0 flagged · 0 teacher-approved · 525 total. Review yang flagged untuk improve quality.',
     )
@@ -92,7 +89,6 @@ describe('MasterNotesPage (M04 S12)', () => {
       '/admin/master-notes?tab=all',
     ])
     expect(tabs.map((t) => t.attributes('data-active'))).toEqual(['false', 'false', 'true'])
-    expect(tabs[2]?.classes()).toContain('bg-gray-800')
   })
 
   it('defaults to the flagged tab and follows the tab the API applied', async () => {
@@ -147,7 +143,7 @@ describe('MasterNotesPage (M04 S12)', () => {
     await flushPromises()
     expect(approve?.text()).toBe('Done')
     expect(approve?.attributes('disabled')).toBeDefined()
-    expect(row?.classes()).toContain('opacity-50')
+    expect(row?.attributes('data-dimmed')).toBe('true')
     expect(row?.get('[data-testid=note-regen]').attributes('disabled')).toBeUndefined()
   })
 
@@ -163,14 +159,16 @@ describe('MasterNotesPage (M04 S12)', () => {
     expect(api.actOnMasterNote).toHaveBeenCalledWith(1, 'regen')
     expect(regen?.text()).toBe('Regenerate')
     expect(regen?.attributes('disabled')).toBeUndefined()
-    expect(row?.classes()).not.toContain('opacity-50')
+    expect(row?.attributes('data-dimmed')).toBe('false')
   })
 
   it('the pager keeps the tab in its links', async () => {
     const w = await render()
-    const next = w.get('[data-testid=notes-pager] a[rel=next]')
-    expect(next.attributes('href')).toBe('/admin/master-notes?tab=all&page=2')
-    await next.trigger('click')
+    const next = w
+      .get('[data-testid=notes-pager]')
+      .findAll('button')
+      .find((b) => b.text() === '2')
+    await next?.trigger('click')
     await flushPromises()
     expect(Object.keys(router.currentRoute.value.query)).toEqual(['tab', 'page'])
     expect(router.currentRoute.value.query).toEqual({ page: '2', tab: 'all' })

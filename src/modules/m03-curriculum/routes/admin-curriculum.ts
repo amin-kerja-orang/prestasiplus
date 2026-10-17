@@ -7,7 +7,13 @@ import { CURRICULUM_PATH, CURRICULUM_ROUTES } from '../lib/curriculum-paths'
  * Tab titles and headers are exact (§2). The id params are not restricted to digits: an unknown id
  * (even "zzz") redirects to S1 with the BR-18 flash.
  */
-const adminMeta = { layout: 'admin', access: 'auth', roles: ['admin'], module: 'M03' } as const
+const adminMeta = {
+  layout: 'admin',
+  v2: true,
+  access: 'auth',
+  roles: ['admin'],
+  module: 'M03',
+} as const
 
 const routes: RouteRecordRaw[] = [
   {

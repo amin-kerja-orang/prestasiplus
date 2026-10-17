@@ -16,9 +16,17 @@ export const SUBMISSION_STATUS_LABEL: Record<SubmissionStatus, string> = {
   rejected: 'Ditolak',
 }
 
-export const SUBMISSION_PILL_CLASS: Record<SubmissionStatus, string> = {
-  done: 'bg-green-100 text-green-700',
-  processing: 'bg-blue-100 text-blue-700',
-  pending: 'bg-amber-100 text-amber-700',
-  rejected: 'bg-red-100 text-red-700',
+/** `UBadge` colour and icon of a status (staff theme; the word carries the meaning). */
+export const SUBMISSION_STATUS_COLOR: Record<SubmissionStatus, 'success' | 'info' | 'warning' | 'error'> = {
+  done: 'success',
+  processing: 'info',
+  pending: 'warning',
+  rejected: 'error',
+}
+
+export const SUBMISSION_STATUS_ICON: Record<SubmissionStatus, string> = {
+  done: 'i-ph-check-circle',
+  processing: 'i-ph-gear',
+  pending: 'i-ph-clock',
+  rejected: 'i-ph-x-circle',
 }

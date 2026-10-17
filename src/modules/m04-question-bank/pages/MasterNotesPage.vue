@@ -9,13 +9,13 @@
  * - 15 rows per page and the English Laravel pager (keeps `tab`); "Tiada nota dalam tab ini." when empty.
  */
 import { computed } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { LaravelPager } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchMasterNotes, type MasterNoteTab } from '../api/master-notes'
+import ErrorBox from '../components/ErrorBox.vue'
 import MasterNoteRow from '../components/MasterNoteRow.vue'
 import { MASTER_NOTES_PATH } from '../lib/audit-routes'
 import { pageOf, queryText } from '../lib/route-query'
@@ -36,7 +36,6 @@ const rows = computed(() => data.value?.data ?? [])
 const summary = computed(() => data.value?.meta.summary ?? null)
 const activeTab = computed<MasterNoteTab>(() => data.value?.meta.activeTab ?? 'flagged')
 const firstLoad = computed(() => data.value === null && error.value === null)
-const pagerQuery = computed(() => ({ tab: tabQuery.value }))
 
 const TABS: { tab: MasterNoteTab; label: string }[] = [
   { tab: 'flagged', label: 'Flagged Review' },
@@ -50,81 +49,66 @@ function goToPage(next: number): void {
   query.page = String(next)
   void router.push({ path: MASTER_NOTES_PATH, query })
 }
+
 </script>
 
 <template>
-  <div class="space-y-3 sm:space-y-4" data-testid="notes-page">
-    <header class="rounded-2xl bg-gray-800 p-4 sm:p-5" data-testid="notes-header">
-      <h1 class="font-heading text-xl font-bold text-white sm:text-2xl">
-        Master Notes — Admin Review
-      </h1>
-      <p class="mt-1 text-sm text-slate-200" data-testid="notes-summary">
+  <DsPage data-testid="notes-page">
+    <UCard data-testid="notes-header">
+      <p class="text-body text-default" data-testid="notes-summary">
         <template v-if="summary">
           Self-healing nota AI: {{ summary.flagged }} flagged ·
           {{ summary.teacherApproved }} teacher-approved · {{ summary.total }} total. Review yang
           flagged untuk improve quality.
         </template>
-        <span
-          v-else
-          class="inline-block h-4 w-72 max-w-full animate-pulse rounded bg-gray-700"
-        ></span>
+        <USkeleton v-else class="h-4 w-72 max-w-full" />
       </p>
-    </header>
+    </UCard>
 
-    <nav class="flex flex-wrap gap-2 rounded-2xl bg-white p-2 shadow" data-testid="notes-tabs">
-      <RouterLink
+    <nav class="flex max-w-full flex-wrap gap-2" aria-label="Tab nota" data-testid="notes-tabs">
+      <UButton
         v-for="t in TABS"
         :key="t.tab"
         :to="{ path: MASTER_NOTES_PATH, query: { tab: t.tab } }"
-        :class="[
-          'inline-flex min-h-11 items-center rounded-lg px-4 py-2 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400',
-          activeTab === t.tab && !firstLoad
-            ? 'bg-gray-800 text-white'
-            : 'text-slate-600 hover:bg-slate-100',
-        ]"
+        :color="activeTab === t.tab && !firstLoad ? 'primary' : 'neutral'"
+        :variant="activeTab === t.tab && !firstLoad ? 'solid' : 'soft'"
+        class="min-h-11"
         :data-active="activeTab === t.tab && !firstLoad ? 'true' : 'false'"
         :data-testid="`notes-tab-${t.tab}`"
       >
         {{ t.label }}
-      </RouterLink>
+      </UButton>
     </nav>
 
-    <div v-if="error" class="space-y-3" data-testid="notes-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-gray-800 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-gray-900"
-        data-testid="notes-retry"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
+    <div v-if="error" class="flex flex-col gap-3" data-testid="notes-error">
+      <ErrorBox :messages="LOAD_ERROR" />
+      <div>
+        <UButton type="button" class="min-h-11" data-testid="notes-retry" @click="reload()">
+          Cuba Semula
+        </UButton>
+      </div>
     </div>
 
-    <div v-else-if="firstLoad" class="space-y-3" data-testid="notes-skeleton">
-      <div v-for="n in 3" :key="n" class="h-44 animate-pulse rounded-2xl bg-white shadow"></div>
+    <div v-else-if="firstLoad" class="flex flex-col gap-3" data-testid="notes-skeleton">
+      <USkeleton v-for="n in 3" :key="n" class="h-44 w-full" />
     </div>
 
-    <p
-      v-else-if="rows.length === 0"
-      class="rounded-2xl bg-white p-8 text-center text-slate-500 shadow"
-      data-testid="notes-empty"
-    >
-      Tiada nota dalam tab ini.
-    </p>
+    <UCard v-else-if="rows.length === 0" data-testid="notes-empty">
+      <p class="text-center text-body text-muted">Tiada nota dalam tab ini.</p>
+    </UCard>
 
     <template v-else>
       <MasterNoteRow v-for="note in rows" :key="note.id" :note="note" />
-      <div v-if="data" data-testid="notes-pager">
-        <LaravelPager
+      <div v-if="data && data.meta.totalItems > data.meta.pageSize" data-testid="notes-pager">
+        <UPagination
           :page="data.meta.page"
           :total="data.meta.totalItems"
-          :per-page="data.meta.pageSize"
-          :path="MASTER_NOTES_PATH"
-          :query="pagerQuery"
-          @change="goToPage"
+          :items-per-page="data.meta.pageSize"
+          :prev="{ 'aria-label': 'Sebelum' }"
+          :next="{ 'aria-label': 'Seterusnya' }"
+          @update:page="goToPage"
         />
       </div>
     </template>
-  </div>
+  </DsPage>
 </template>

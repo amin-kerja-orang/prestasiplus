@@ -1,32 +1,18 @@
 <script setup lang="ts">
 /**
- * S1 `/admin/questions` "Pengurusan Soalan" (M04-T3; FR-M04-01..16).
+ * S1 `/admin/questions` "Pengurusan Soalan" (M04-T3; FR-M04-01..16). v2: Portal Pentadbiran staff theme.
  *
- * - Header with the create button, the summary card with the 31 subject tiles, the 8-field GET
- *   filter form (the URL is the state), the table of 20 rows with bulk select, and the Laravel pager.
- * - Bulk bar: native `required` on the action select; native `confirm`; the API `status` is the flash.
- * - DV-M04-09: the table scrolls inside its card below 1280 and "Soalan" keeps 240px.
+ * - The create button, the summary card with the 31 subject tiles, the 8-field filter bar (the URL is
+ *   the state), the table of 20 rows with bulk select, and the server pager.
+ * - Bulk bar: the action select is `required`; confirmation through `useConfirm`; the API `status` is the flash.
+ * - The table scrolls inside its card; below `md` every row is a card.
  */
-import {
-  BookOpen,
-  Book,
-  CircleCheck,
-  Eye,
-  Inbox,
-  Plus,
-  Search,
-  SquareCheckBig,
-  SquarePen,
-  Star,
-  Trash,
-} from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { DataTableCard, LaravelPager, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
-import { confirmNative, useApi, useFlash } from '@/composables'
+import { useApi, useFlash } from '@/composables'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, useConfirm, type CardField } from '@/ds'
 
 import {
   bulkQuestionAction,
@@ -37,12 +23,14 @@ import {
   fetchSubjects,
   type QuestionRow,
 } from '../api'
+import ErrorBox from '../components/ErrorBox.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import QuestionSummaryCard from '../components/QuestionSummaryCard.vue'
 import {
   BULK_OPTIONS,
   bulkConfirmText,
   COMPLIANCE_OPTIONS,
-  complianceClass,
+  complianceColor,
   DELETE_CONFIRM,
   DIFFICULTY_OPTIONS,
   DSKP_OPTIONS,
@@ -54,7 +42,7 @@ import {
   questionEditPath,
   SOURCE_OPTIONS,
   sourceLabel,
-  statusClass,
+  statusColor,
   statusLabel,
   STATUS_OPTIONS,
   type FilterKey,
@@ -65,6 +53,7 @@ import { errorLines, LOAD_ERROR } from '../lib/ui-errors'
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+const confirm = useConfirm()
 
 /** The applied filters, read from the URL (the source of truth, as the live GET form). */
 const applied = computed(() => {
@@ -77,6 +66,7 @@ const activeSubjectId = computed(() => {
   const n = Number.parseInt(applied.value.subject_id, 10)
   return Number.isFinite(n) && n > 0 ? n : null
 })
+const activeCount = computed(() => FILTER_KEYS.filter((k) => applied.value[k] !== '').length)
 
 // Draft values of the form controls; re-synced when the URL changes.
 const draft = ref<Record<FilterKey, string>>(
@@ -116,7 +106,6 @@ const rows = computed<QuestionRow[]>(() => list.data.value?.data ?? [])
 const firstLoad = computed(() => list.data.value === null && list.error.value === null)
 const subjectOptions = computed(() => subjects.data.value?.data ?? [])
 const levelOptions = computed(() => levels.data.value?.data ?? [])
-const colors = computed(() => Object.fromEntries(subjectOptions.value.map((s) => [s.id, s.color])))
 
 /** The applied filters as the query of the pager links (empty ones dropped). */
 const pagerQuery = computed(() => {
@@ -139,6 +128,11 @@ async function submitFilter(): Promise<void> {
   }
 }
 
+async function resetFilter(): Promise<void> {
+  for (const key of FILTER_KEYS) draft.value[key] = ''
+  await router.push({ path: QUESTIONS_LIST_PATH })
+}
+
 function goToPage(next: number): void {
   void router.push({
     path: QUESTIONS_LIST_PATH,
@@ -157,8 +151,12 @@ watch(
     selected.value = []
   },
 )
-function toggleAll(event: Event): void {
-  selected.value = (event.target as HTMLInputElement).checked ? rows.value.map((r) => r.id) : []
+function toggleAll(checked: boolean | 'indeterminate'): void {
+  selected.value = checked === true ? rows.value.map((r) => r.id) : []
+}
+function toggleOne(id: number, checked: boolean | 'indeterminate'): void {
+  const rest = selected.value.filter((v) => v !== id)
+  selected.value = checked === true ? [...rest, id] : rest
 }
 
 // --- Bulk action and delete (FR-M04-13, 14, 16).
@@ -180,7 +178,7 @@ async function submitBulk(): Promise<void> {
   // The native `required` on the select already blocked an empty action; this guard is for tests.
   const option = BULK_OPTIONS.find((o) => o.value === bulkAction.value)
   if (!option || busy.value || selected.value.length === 0) return
-  if (!confirmNative(bulkConfirmText(option.verb, selected.value.length))) return
+  if (!(await confirm({ message: bulkConfirmText(option.verb, selected.value.length) }))) return
   busy.value = true
   try {
     const result = await bulkQuestionAction(option.value, selected.value)
@@ -196,7 +194,8 @@ async function submitBulk(): Promise<void> {
 }
 
 async function remove(row: QuestionRow): Promise<void> {
-  if (!confirmNative(DELETE_CONFIRM) || busy.value) return
+  if (busy.value) return
+  if (!(await confirm({ message: DELETE_CONFIRM, tone: 'danger' }))) return
   busy.value = true
   try {
     const result = await deleteQuestion(row.id)
@@ -210,407 +209,414 @@ async function remove(row: QuestionRow): Promise<void> {
   }
 }
 
-const SKELETON_ROWS = 5
-const COLUMN_COUNT = 8
-const HEADERS = ['#', 'Soalan', 'Subjek', 'Tahap', 'Kesukaran', 'Status', 'Tindakan']
-const CELL = 'px-3 py-3 align-top text-sm text-slate-700'
-const HEAD = 'px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide'
-const LABEL = 'mb-1 block text-sm font-medium text-slate-700'
-const ICON_LINK =
-  'inline-flex h-11 w-11 items-center justify-center rounded-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 lg:h-8 lg:w-8'
+interface TableRow extends Record<string, unknown> {
+  id: number
+  excerptText: string
+  subjectName: string
+  levelName: string
+  raw: QuestionRow
+}
+
+const tableRows = computed<TableRow[]>(() =>
+  rows.value.map((r) => ({
+    id: r.id,
+    excerptText: excerpt(r.questionText),
+    subjectName: r.subject?.name ?? '-',
+    levelName: r.level?.name ?? '-',
+    raw: r,
+  })),
+)
+
+const columns: TableColumn<TableRow>[] = [
+  { id: 'select', header: ' ' },
+  { accessorKey: 'id', header: '#' },
+  { accessorKey: 'excerptText', header: 'Soalan' },
+  { accessorKey: 'subjectName', header: 'Subjek' },
+  { accessorKey: 'levelName', header: 'Tahap' },
+  { id: 'difficulty', header: 'Kesukaran' },
+  { id: 'status', header: 'Status' },
+  { id: 'actions', header: 'Tindakan' },
+]
+const cardFields: CardField[] = [
+  { key: 'subjectName', label: 'Subjek' },
+  { key: 'levelName', label: 'Tahap' },
+]
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4 sm:space-y-6" data-testid="questions-page">
-    <!-- Header: h1, subtitle, create button ("Tambah Soalan" >= 640px, "Tambah" below). -->
+  <DsPage data-testid="questions-page">
+    <!-- Subtitle and the create button ("Tambah Soalan" >= 640px, "Tambah" below). -->
     <div class="flex items-center justify-between gap-3">
-      <div class="min-w-0">
-        <h1 class="text-xl font-bold text-slate-800 sm:text-2xl">📚 Pengurusan Soalan</h1>
-        <p class="text-sm text-slate-500">Urus bank soalan untuk platform PRESTASIPLUS</p>
-      </div>
-      <RouterLink
+      <p class="min-w-0 text-body text-muted">Urus bank soalan untuk platform PRESTASIPLUS</p>
+      <UButton
         :to="QUESTIONS_CREATE_PATH"
-        class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+        icon="i-ph-plus"
+        class="min-h-11 shrink-0"
         data-testid="questions-add"
       >
-        <Plus class="h-4 w-4" aria-hidden="true" />
         <span class="hidden sm:inline">Tambah Soalan</span>
         <span class="sm:hidden">Tambah</span>
-      </RouterLink>
+      </UButton>
     </div>
 
-    <QuestionSummaryCard
-      :summary="summary.data.value"
-      :colors="colors"
-      :active-subject-id="activeSubjectId"
-    />
+    <QuestionSummaryCard :summary="summary.data.value" :active-subject-id="activeSubjectId" />
 
-    <!-- Filter (GET form): 2 columns, 4 from md. -->
-    <form
-      method="get"
-      class="grid grid-cols-2 items-end gap-3 rounded-2xl bg-white p-4 shadow sm:p-5 md:grid-cols-4"
+    <!-- Filter (the URL is the state). -->
+    <DsFilterBar
+      :active-count="activeCount"
       data-testid="questions-filter"
-      @submit.prevent="submitFilter"
+      @apply="submitFilter"
+      @reset="resetFilter"
     >
-      <div class="min-w-0">
-        <label for="q-subject" :class="LABEL">Subjek</label>
-        <select
+      <div class="w-full min-w-0 sm:w-48">
+        <label for="q-subject" class="mb-2 block text-label text-highlighted">Subjek</label>
+        <NativeSelect
           id="q-subject"
           v-model="draft.subject_id"
           name="subject_id"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="questions-subject"
         >
           <option value="">Semua Subjek</option>
           <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">
             {{ s.name }}
           </option>
-        </select>
+        </NativeSelect>
       </div>
-      <div class="min-w-0">
-        <label for="q-level" :class="LABEL">Tahap</label>
-        <select
+      <div class="w-full min-w-0 sm:w-48">
+        <label for="q-level" class="mb-2 block text-label text-highlighted">Tahap</label>
+        <NativeSelect
           id="q-level"
           v-model="draft.education_level_id"
           name="education_level_id"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="questions-level"
         >
           <option value="">Semua Tahap</option>
           <option v-for="l in levelOptions" :key="l.id" :value="String(l.id)">{{ l.name }}</option>
-        </select>
+        </NativeSelect>
       </div>
-      <div class="min-w-0">
-        <label for="q-difficulty" :class="LABEL">Kesukaran</label>
-        <select
+      <div class="w-full min-w-0 sm:w-48">
+        <label for="q-difficulty" class="mb-2 block text-label text-highlighted">Kesukaran</label>
+        <NativeSelect
           id="q-difficulty"
           v-model="draft.difficulty_level"
           name="difficulty_level"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="questions-difficulty"
         >
           <option value="">Semua</option>
           <option v-for="o in DIFFICULTY_OPTIONS" :key="o.value" :value="o.value">
             {{ o.label }}
           </option>
-        </select>
+        </NativeSelect>
       </div>
-      <div class="min-w-0">
-        <label for="q-status" :class="LABEL">Status</label>
-        <select
+      <div class="w-full min-w-0 sm:w-48">
+        <label for="q-status" class="mb-2 block text-label text-highlighted">Status</label>
+        <NativeSelect
           id="q-status"
           v-model="draft.status"
           name="status"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="questions-status"
         >
           <option value="">Semua Status</option>
           <option v-for="o in STATUS_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </select>
+        </NativeSelect>
       </div>
-      <div class="min-w-0">
-        <label for="q-dskp" :class="LABEL">DSKP</label>
-        <select
+      <div class="w-full min-w-0 sm:w-48">
+        <label for="q-dskp" class="mb-2 block text-label text-highlighted">DSKP</label>
+        <NativeSelect
           id="q-dskp"
           v-model="draft.dskp_filter"
           name="dskp_filter"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="questions-dskp"
         >
           <option value="">Semua</option>
           <option v-for="o in DSKP_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </select>
+        </NativeSelect>
       </div>
-      <div class="min-w-0">
-        <label for="q-compliance" :class="LABEL">Compliance</label>
-        <select
+      <div class="w-full min-w-0 sm:w-48">
+        <label for="q-compliance" class="mb-2 block text-label text-highlighted">Compliance</label>
+        <NativeSelect
           id="q-compliance"
           v-model="draft.compliance_filter"
           name="compliance_filter"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="questions-compliance"
         >
           <option value="">Semua</option>
           <option v-for="o in COMPLIANCE_OPTIONS" :key="o.value" :value="o.value">
             {{ o.label }}
           </option>
-        </select>
+        </NativeSelect>
       </div>
-      <div class="min-w-0">
-        <label for="q-source" :class="LABEL">Source</label>
-        <select
+      <div class="w-full min-w-0 sm:w-48">
+        <label for="q-source" class="mb-2 block text-label text-highlighted">Source</label>
+        <NativeSelect
           id="q-source"
           v-model="draft.source_filter"
           name="source_filter"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
           data-testid="questions-source"
         >
           <option value="">Semua</option>
           <option v-for="o in SOURCE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </select>
+        </NativeSelect>
       </div>
-      <div class="col-span-2 min-w-0 md:col-span-4">
-        <label for="q-search" :class="LABEL">Cari</label>
-        <div class="flex gap-2">
-          <input
+      <template #search>
+        <div class="w-full min-w-0 sm:w-64">
+        <label for="q-search" class="mb-2 block text-label text-highlighted">Cari</label>
+          <UInput
             id="q-search"
             v-model="draft.search"
             type="text"
             name="search"
             placeholder="Cari soalan..."
-            :class="[FORM_INPUT_CLASS, 'min-h-11 min-w-0 flex-1']"
+            icon="i-ph-magnifying-glass"
+            class="w-full"
             data-testid="questions-search"
           />
-          <button
-            type="submit"
-            class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-indigo-600 px-4 text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-            data-testid="questions-search-submit"
-          >
-            <Search class="h-4 w-4" aria-hidden="true" />
-          </button>
         </div>
-      </div>
-    </form>
+      </template>
+    </DsFilterBar>
 
-    <!-- Load failure: red box in place of the table + retry (INFERRED copy, SRS §8.2). -->
-    <div v-if="list.error.value" class="space-y-3" data-testid="questions-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        data-testid="questions-retry"
-        @click="list.reload()"
-      >
-        Cuba Semula
-      </button>
+    <!-- Load failure: alert in place of the table + retry (INFERRED copy, SRS §8.2). -->
+    <div v-if="list.error.value" class="flex flex-col gap-3" data-testid="questions-error">
+      <ErrorBox :messages="LOAD_ERROR" />
+      <div>
+        <UButton
+          type="button"
+          class="min-h-11"
+          data-testid="questions-retry"
+          @click="list.reload()"
+        >
+          Cuba Semula
+        </UButton>
+      </div>
     </div>
 
     <!-- Empty: table and pager are not rendered (FR-M04-11). -->
-    <div
-      v-else-if="!firstLoad && rows.length === 0"
-      class="rounded-2xl bg-white px-4 py-12 text-center shadow"
-      data-testid="questions-empty"
-    >
-      <Inbox class="mx-auto mb-2 h-10 w-10 text-slate-300" aria-hidden="true" />
-      <p class="font-medium text-slate-500">Tiada soalan dijumpai</p>
-      <RouterLink
-        :to="QUESTIONS_CREATE_PATH"
-        class="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700"
-        data-testid="questions-empty-add"
+    <UCard v-else-if="!firstLoad && rows.length === 0" data-testid="questions-empty">
+      <DsEmptyState title="Tiada soalan dijumpai" icon="i-ph-tray">
+        <template #actions>
+          <UButton
+            :to="QUESTIONS_CREATE_PATH"
+            variant="link"
+            icon="i-ph-plus"
+            class="min-h-11"
+            data-testid="questions-empty-add"
+            >Tambah Soalan Pertama</UButton
+          >
+        </template>
+      </DsEmptyState>
+    </UCard>
+
+    <div v-else class="flex flex-col gap-3">
+      <UCard v-if="selected.length > 0">
+      <form
+        method="post"
+        class="flex flex-wrap items-center gap-3"
+        data-testid="questions-bulk-bar"
+        @submit.prevent="submitBulk"
       >
-        <Plus class="h-4 w-4" aria-hidden="true" />
-        Tambah Soalan Pertama
-      </RouterLink>
-    </div>
-
-    <DataTableCard v-else :min-width="780">
-      <template #header>
-        <form
-          v-if="selected.length > 0"
-          method="post"
-          class="flex flex-wrap items-center gap-3 border-b border-indigo-100 bg-indigo-50 px-4 py-3"
-          data-testid="questions-bulk-bar"
-          @submit.prevent="submitBulk"
+        <span class="inline-flex items-center gap-2 text-label text-highlighted">
+          <UIcon name="i-ph-check-square" class="size-5 text-primary" />
+          <span class="tabular" data-testid="questions-selected-count">{{ selected.length }}</span>
+          soalan dipilih
+        </span>
+        <NativeSelect
+          v-model="bulkAction"
+          name="action"
+          required
+          class="w-auto"
+          data-testid="questions-bulk-action"
         >
-          <span class="inline-flex items-center gap-2 text-sm font-medium text-indigo-700">
-            <SquareCheckBig class="h-4 w-4" aria-hidden="true" />
-            <span data-testid="questions-selected-count">{{ selected.length }}</span> soalan dipilih
-          </span>
-          <select
-            v-model="bulkAction"
-            name="action"
-            required
-            :class="[FORM_INPUT_CLASS, 'min-h-11 w-auto']"
-            data-testid="questions-bulk-action"
-          >
-            <option value="">Pilih Tindakan</option>
-            <option v-for="o in BULK_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-          </select>
-          <button
-            type="submit"
-            :disabled="busy"
-            class="inline-flex min-h-11 items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:opacity-60"
-            data-testid="questions-bulk-submit"
-          >
-            Laksanakan
-          </button>
-        </form>
-      </template>
+          <option value="">Pilih Tindakan</option>
+          <option v-for="o in BULK_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </NativeSelect>
+        <UButton type="submit" :disabled="busy" class="min-h-11" data-testid="questions-bulk-submit">
+          Laksanakan
+        </UButton>
+      </form>
+      </UCard>
 
-      <table :class="T.table" data-testid="questions-table">
-        <thead class="bg-slate-50">
-          <tr>
-            <th scope="col" :class="[HEAD, 'w-10']">
-              <input
-                type="checkbox"
-                class="h-5 w-5 rounded border-slate-300 accent-indigo-600"
-                :checked="allSelected"
-                data-testid="questions-select-all"
-                @change="toggleAll"
-              />
-            </th>
-            <th
-              v-for="label in HEADERS"
-              :key="label"
-              scope="col"
-              :class="[HEAD, label === 'Soalan' ? 'min-w-60' : '']"
-            >
-              {{ label }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-if="firstLoad">
-            <tr v-for="n in SKELETON_ROWS" :key="n" :class="T.row" data-testid="questions-skeleton">
-              <td v-for="c in COLUMN_COUNT" :key="c" :class="CELL">
-                <div class="h-4 w-full max-w-24 animate-pulse rounded bg-slate-100"></div>
-              </td>
-            </tr>
-          </template>
-
-          <template v-else>
-            <tr
-              v-for="row in rows"
-              :key="row.id"
-              :class="T.row"
-              data-testid="question-row"
-              :data-question-id="row.id"
-            >
-              <td :class="CELL">
-                <input
-                  v-model="selected"
-                  type="checkbox"
-                  :value="row.id"
-                  class="h-5 w-5 rounded border-slate-300 accent-indigo-600"
-                  data-testid="question-select"
-                />
-              </td>
-              <td :class="CELL" data-testid="question-id">{{ row.id }}</td>
-              <td :class="[CELL, 'min-w-60']">
-                <p class="break-words text-slate-800" data-testid="question-text">
-                  {{ excerpt(row.questionText) }}
-                </p>
-                <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                  <span
-                    v-if="row.dskpTagged"
-                    class="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700"
-                    data-testid="question-dskp"
-                  >
-                    <CircleCheck class="h-3 w-3" aria-hidden="true" />DSKP
-                  </span>
-                  <span
-                    v-else
-                    class="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600"
-                    data-testid="question-dskp"
-                  >
-                    <BookOpen class="h-3 w-3" aria-hidden="true" />Latihan Tambahan
-                  </span>
-                  <span
-                    :class="complianceClass(row.complianceStatus)"
-                    data-testid="question-compliance"
-                    >{{ row.complianceStatus.replaceAll('_', ' ').toUpperCase() }}</span
-                  >
-                  <span
-                    v-if="row.aiVerified"
-                    class="inline-block rounded bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-700"
-                    data-testid="question-ai-verified"
-                    >AI Verified</span
-                  >
-                </div>
-                <p class="mt-1 text-xs break-words text-slate-500" data-testid="question-source">
-                  Source: {{ sourceLabel(row.sourceType) }}
-                </p>
-                <p
-                  v-if="row.sourceFile"
-                  class="text-xs break-words text-slate-500"
-                  data-testid="question-source-file"
-                >
-                  {{ row.sourceFile }}
-                </p>
-              </td>
-              <td :class="CELL">
-                <span class="inline-flex items-start gap-1.5">
-                  <Book class="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" aria-hidden="true" />
-                  <span class="break-words">{{ row.subject?.name ?? '-' }}</span>
-                </span>
-              </td>
-              <td :class="CELL">{{ row.level?.name ?? '-' }}</td>
-              <td :class="[CELL, 'whitespace-nowrap']" data-testid="question-stars">
-                <span class="inline-flex gap-0.5">
-                  <Star
-                    v-for="n in 5"
-                    :key="n"
-                    class="h-4 w-4"
-                    :class="
-                      n <= row.difficultyLevel
-                        ? 'fill-amber-400 text-amber-400'
-                        : 'fill-slate-200 text-slate-200'
-                    "
-                    aria-hidden="true"
-                  />
-                </span>
-              </td>
-              <td :class="CELL">
-                <span :class="statusClass(row.status)" data-testid="question-status">{{
-                  statusLabel(row.status, true)
-                }}</span>
-                <p
-                  class="mt-1 text-xs font-semibold"
-                  :class="row.isActive ? 'text-emerald-600' : 'text-red-600'"
-                  data-testid="question-active"
-                >
-                  {{ row.isActive ? 'ACTIVE' : 'INACTIVE' }}
-                </p>
-              </td>
-              <td :class="CELL">
-                <div class="flex items-center gap-1">
-                  <RouterLink
-                    :to="questionDetailPath(row.id)"
-                    title="Lihat"
-                    :class="[ICON_LINK, 'text-indigo-600 hover:bg-indigo-50']"
-                    data-testid="question-view"
-                  >
-                    <Eye class="h-4 w-4" aria-hidden="true" />
-                  </RouterLink>
-                  <RouterLink
-                    :to="questionEditPath(row.id)"
-                    title="Edit"
-                    :class="[ICON_LINK, 'text-emerald-600 hover:bg-emerald-50']"
-                    data-testid="question-edit"
-                  >
-                    <SquarePen class="h-4 w-4" aria-hidden="true" />
-                  </RouterLink>
-                  <form method="post" class="inline-flex" @submit.prevent="remove(row)">
-                    <button
-                      type="submit"
-                      title="Padam"
-                      :disabled="busy"
-                      :class="[ICON_LINK, 'text-red-600 hover:bg-red-50 disabled:opacity-60']"
-                      data-testid="question-delete"
-                    >
-                      <Trash class="h-4 w-4" aria-hidden="true" />
-                    </button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-
-      <template #footer>
-        <div class="border-t border-slate-100 px-4 py-3 empty:hidden" data-testid="questions-pager">
-          <LaravelPager
-            v-if="list.data.value && rows.length > 0"
-            :page="list.data.value.meta.page"
-            :total="list.data.value.meta.totalItems"
-            :per-page="list.data.value.meta.pageSize"
-            :path="QUESTIONS_LIST_PATH"
-            :query="pagerQuery"
-            @change="goToPage"
+      <DsDataTable
+        :data="tableRows"
+        :columns="columns"
+        caption="Senarai soalan"
+        :loading="firstLoad"
+        :total="list.data.value?.meta.totalItems ?? 0"
+        :page-size="list.data.value?.meta.pageSize ?? 20"
+        :page="list.data.value?.meta.page ?? page"
+        card-title="excerptText"
+        :card-fields="cardFields"
+        empty-label="Tiada soalan dijumpai"
+        data-testid="questions-table"
+        @update:page="goToPage"
+      >
+        <template #select-header>
+          <UCheckbox
+            :model-value="allSelected"
+            aria-label="Pilih semua soalan"
+            data-testid="questions-select-all"
+            @update:model-value="toggleAll"
           />
-        </div>
-      </template>
-    </DataTableCard>
-  </div>
+        </template>
+        <template #select-cell="{ row }">
+          <UCheckbox
+            :model-value="selected.includes(row.original.id)"
+            :aria-label="`Pilih soalan ${row.original.id}`"
+            data-testid="question-select"
+            @update:model-value="toggleOne(row.original.id, $event)"
+          />
+        </template>
+        <template #id-cell="{ row }">
+          <span data-testid="question-id">{{ row.original.id }}</span>
+        </template>
+        <template #excerptText-cell="{ row }">
+          <div class="flex min-w-60 flex-col gap-1">
+            <p class="break-words text-highlighted" data-testid="question-text">
+              {{ row.original.excerptText }}
+            </p>
+            <div class="flex flex-wrap items-center gap-1">
+              <UBadge
+                v-if="row.original.raw.dskpTagged"
+                color="success"
+                variant="subtle"
+                icon="i-ph-check-circle"
+                label="DSKP"
+                data-testid="question-dskp"
+              />
+              <UBadge
+                v-else
+                color="neutral"
+                variant="subtle"
+                icon="i-ph-book-open"
+                label="Latihan Tambahan"
+                data-testid="question-dskp"
+              />
+              <UBadge
+                :color="complianceColor(row.original.raw.complianceStatus)"
+                variant="subtle"
+                :label="row.original.raw.complianceStatus.replaceAll('_', ' ').toUpperCase()"
+                data-testid="question-compliance"
+              />
+              <UBadge
+                v-if="row.original.raw.aiVerified"
+                color="info"
+                variant="subtle"
+                label="AI Verified"
+                data-testid="question-ai-verified"
+              />
+            </div>
+            <p class="text-caption break-words text-muted" data-testid="question-source">
+              Source: {{ sourceLabel(row.original.raw.sourceType) }}
+            </p>
+            <p
+              v-if="row.original.raw.sourceFile"
+              class="text-caption break-words text-muted"
+              data-testid="question-source-file"
+            >
+              {{ row.original.raw.sourceFile }}
+            </p>
+          </div>
+        </template>
+        <template #difficulty-cell="{ row }">
+          <span
+            class="inline-flex gap-1 whitespace-nowrap"
+            data-testid="question-stars"
+            :aria-label="`Kesukaran ${row.original.raw.difficultyLevel} daripada 5`"
+          >
+            <UIcon
+              v-for="n in 5"
+              :key="n"
+              :name="
+                n <= row.original.raw.difficultyLevel ? 'i-ph-star-fill' : 'i-ph-star'
+              "
+              class="size-4"
+              :class="n <= row.original.raw.difficultyLevel ? 'text-warning' : 'text-dimmed'"
+              :data-filled="n <= row.original.raw.difficultyLevel ? 'true' : 'false'"
+            />
+          </span>
+        </template>
+        <template #status-cell="{ row }">
+          <div class="flex flex-col items-start gap-1">
+            <UBadge
+              :color="statusColor(row.original.raw.status)"
+              variant="subtle"
+              :label="statusLabel(row.original.raw.status, true)"
+              data-testid="question-status"
+            />
+            <span
+              class="text-caption"
+              :class="row.original.raw.isActive ? 'text-success' : 'text-error'"
+              data-testid="question-active"
+              >{{ row.original.raw.isActive ? 'ACTIVE' : 'INACTIVE' }}</span
+            >
+          </div>
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex items-center gap-1">
+            <UButton
+              :to="questionDetailPath(row.original.id)"
+              color="neutral"
+              variant="ghost"
+              icon="i-ph-eye"
+              aria-label="Lihat"
+              title="Lihat"
+              class="min-h-11 min-w-11 justify-center"
+              data-testid="question-view"
+            />
+            <UButton
+              :to="questionEditPath(row.original.id)"
+              color="neutral"
+              variant="ghost"
+              icon="i-ph-pencil-simple"
+              aria-label="Edit"
+              title="Edit"
+              class="min-h-11 min-w-11 justify-center"
+              data-testid="question-edit"
+            />
+            <UButton
+              type="button"
+              color="error"
+              variant="ghost"
+              icon="i-ph-trash"
+              aria-label="Padam"
+              title="Padam"
+              :disabled="busy"
+              class="min-h-11 min-w-11 justify-center"
+              data-testid="question-delete"
+              @click="remove(row.original.raw)"
+            />
+          </div>
+        </template>
+        <template #card-actions="{ row }">
+          <div class="flex items-center gap-1">
+            <UButton
+              :to="questionDetailPath(row.id as number)"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-eye"
+              aria-label="Lihat"
+              class="min-h-11 min-w-11 justify-center"
+            />
+            <UButton
+              :to="questionEditPath(row.id as number)"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-pencil-simple"
+              aria-label="Edit"
+              class="min-h-11 min-w-11 justify-center"
+            />
+            <UButton
+              type="button"
+              color="error"
+              variant="soft"
+              icon="i-ph-trash"
+              aria-label="Padam"
+              :disabled="busy"
+              class="min-h-11 min-w-11 justify-center"
+              @click="remove(row.raw as QuestionRow)"
+            />
+          </div>
+        </template>
+      </DsDataTable>
+    </div>
+  </DsPage>
 </template>

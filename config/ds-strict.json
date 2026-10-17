@@ -27,28 +27,61 @@
     { "glob": "src/modules/m09-content/components/video/**", "level": "ds" },
     { "glob": "src/modules/m14-gamification/pages/**", "level": "page" },
     { "glob": "src/modules/m14-gamification/components/student-a/**", "level": "ds" },
-    { "glob": "src/modules/m14-gamification/components/student-b/AchievementBadgeCard.vue", "level": "ds" },
+    {
+      "glob": "src/modules/m14-gamification/components/student-b/AchievementBadgeCard.vue",
+      "level": "ds"
+    },
     { "glob": "src/modules/m14-gamification/components/student-b/KadCardFrame.vue", "level": "ds" },
-    { "glob": "src/modules/m14-gamification/components/student-b/LeaderboardPodium.vue", "level": "ds" },
-    { "glob": "src/modules/m14-gamification/components/student-b/LeaderboardRows.vue", "level": "ds" },
-    { "glob": "src/modules/m14-gamification/components/student-b/StudentBLoadState.vue", "level": "ds" },
+    {
+      "glob": "src/modules/m14-gamification/components/student-b/LeaderboardPodium.vue",
+      "level": "ds"
+    },
+    {
+      "glob": "src/modules/m14-gamification/components/student-b/LeaderboardRows.vue",
+      "level": "ds"
+    },
+    {
+      "glob": "src/modules/m14-gamification/components/student-b/StudentBLoadState.vue",
+      "level": "ds"
+    },
     { "glob": "src/modules/m01-authentication/pages/ProfilePage.vue", "level": "page" },
     { "glob": "src/modules/m01-authentication/pages/ProfileEditPage.vue", "level": "page" },
     { "glob": "src/modules/m01-authentication/pages/TetapanPage.vue", "level": "page" },
     { "glob": "src/modules/m01-authentication/components/profile/**", "level": "page" },
     { "glob": "src/modules/m01-authentication/components/tetapan/**", "level": "page" },
     { "glob": "src/modules/m22-support-tickets/pages/TicketsPage.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/pages/PrestasiSekolahPage.vue", "level": "page" },
+    {
+      "glob": "src/modules/m08-student-performance/pages/PrestasiSekolahPage.vue",
+      "level": "page"
+    },
     { "glob": "src/modules/m08-student-performance/pages/TingkatanPilihPage.vue", "level": "page" },
     { "glob": "src/modules/m08-student-performance/pages/TingkatanPage.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/pages/PrestasiKelasPilihPage.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/pages/PrestasiKelasDetailPage.vue", "level": "page" },
+    {
+      "glob": "src/modules/m08-student-performance/pages/PrestasiKelasPilihPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/PrestasiKelasDetailPage.vue",
+      "level": "page"
+    },
     { "glob": "src/modules/m08-student-performance/pages/Prestasi360Page.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/pages/AnalitikPelajarPage.vue", "level": "page" },
+    {
+      "glob": "src/modules/m08-student-performance/pages/AnalitikPelajarPage.vue",
+      "level": "page"
+    },
     { "glob": "src/modules/m08-student-performance/pages/AnalitikKelasPage.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/pages/AnalisaItemSekolahPage.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/pages/AnalisaItemKelasPilihPage.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/pages/AnalisaItemKelasPage.vue", "level": "page" },
+    {
+      "glob": "src/modules/m08-student-performance/pages/AnalisaItemSekolahPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/AnalisaItemKelasPilihPage.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m08-student-performance/pages/AnalisaItemKelasPage.vue",
+      "level": "page"
+    },
     { "glob": "src/modules/m08-student-performance/components/prestasi/**", "level": "page" },
     { "glob": "src/modules/m08-student-performance/components/prestasi360/**", "level": "page" },
     { "glob": "src/modules/m08-student-performance/components/analitik/**", "level": "page" },
@@ -66,8 +99,14 @@
     { "glob": "src/modules/m07-pksk/components/QuestionItem.vue", "level": "page" },
     { "glob": "src/modules/m10-teacher-class/pages/KelasSayaPelajarPage.vue", "level": "page" },
     { "glob": "src/modules/m10-teacher-class/pages/SetSoalanSayaPage.vue", "level": "page" },
-    { "glob": "src/modules/m10-teacher-class/components/kelas-saya/JoinedClassCard.vue", "level": "page" },
-    { "glob": "src/modules/m10-teacher-class/components/kelas-saya/JoinClassForm.vue", "level": "ds" },
+    {
+      "glob": "src/modules/m10-teacher-class/components/kelas-saya/JoinedClassCard.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m10-teacher-class/components/kelas-saya/JoinClassForm.vue",
+      "level": "ds"
+    },
     { "glob": "src/modules/m07-pksk/components/AccentBadge.vue", "level": "ds" },
     { "glob": "src/modules/m07-pksk/components/PkskBanner.vue", "level": "ds" },
     { "glob": "src/modules/m10-teacher-class/components/set-soalan-saya/*.vue", "level": "page" },
@@ -76,13 +115,19 @@
     { "glob": "src/modules/m10-teacher-class/pages/PelajarSayaPage.vue", "level": "page" },
     { "glob": "src/modules/m10-teacher-class/pages/SumbangSoalan*.vue", "level": "page" },
     { "glob": "src/modules/m10-teacher-class/components/dashboard/*.vue", "level": "page" },
-    { "glob": "src/modules/m10-teacher-class/components/kelas/{ClassCard,QrModal,SchoolPicker}.vue", "level": "page" },
+    {
+      "glob": "src/modules/m10-teacher-class/components/kelas/{ClassCard,QrModal,SchoolPicker}.vue",
+      "level": "page"
+    },
     { "glob": "src/modules/m10-teacher-class/components/pelajar/*.vue", "level": "page" },
     { "glob": "src/modules/m10-teacher-class/components/soalan/*.vue", "level": "page" },
     { "glob": "src/modules/m10-teacher-class/pages/CommandCenterPage.vue", "level": "page" },
     { "glob": "src/modules/m10-teacher-class/components/command-center/*.vue", "level": "page" },
     { "glob": "src/modules/m17-admin-dashboard/pages/CommandCenter*.vue", "level": "page" },
-    { "glob": "src/modules/m17-admin-dashboard/components/command-center-board/*.vue", "level": "page" },
+    {
+      "glob": "src/modules/m17-admin-dashboard/components/command-center-board/*.vue",
+      "level": "page"
+    },
     { "glob": "src/modules/m17-admin-dashboard/components/command-center/*.vue", "level": "page" },
     { "glob": "src/modules/m17-admin-dashboard/components/frame/CcBoardFrame.vue", "level": "ds" },
     { "glob": "src/modules/m15-rewards-shop/pages/*.vue", "level": "page" },
@@ -102,13 +147,28 @@
     { "glob": "src/modules/m02-users-schools/components/jemput/**", "level": "ds" },
     { "glob": "src/modules/m08-student-performance/pages/Headcount*.vue", "level": "page" },
     { "glob": "src/modules/m08-student-performance/components/headcount/**", "level": "page" },
-    { "glob": "src/modules/m16-battle-games/pages/{Permainan,Solo*,RodaNasib,Jutawan*,PapanBijak,Pertandingan,UjiMinda,SambungKata}Page.vue", "level": "page" },
-    { "glob": "src/modules/m16-battle-games/components/{hub,jutawan,competition}/*.vue", "level": "page" },
-    { "glob": "src/modules/m16-battle-games/components/solo/{GamePanel,LoadState,StatBar,RingTimer}.vue", "level": "page" },
-    { "glob": "src/modules/m16-battle-games/components/solo/{CountdownView,DarjahPicker,ResultCard,CoinFly,PrizeModal}.vue", "level": "ds" },
+    {
+      "glob": "src/modules/m16-battle-games/pages/{Permainan,Solo*,RodaNasib,Jutawan*,PapanBijak,Pertandingan,UjiMinda,SambungKata}Page.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m16-battle-games/components/{hub,jutawan,competition}/*.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m16-battle-games/components/solo/{GamePanel,LoadState,StatBar,RingTimer}.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m16-battle-games/components/solo/{CountdownView,DarjahPicker,ResultCard,CoinFly,PrizeModal}.vue",
+      "level": "ds"
+    },
     { "glob": "src/modules/m16-battle-games/components/wheel/*.vue", "level": "ds" },
     { "glob": "src/modules/m11-teacher-analytics/pages/*.vue", "level": "page" },
-    { "glob": "src/modules/m11-teacher-analytics/components/{analisis-item,laporan,monitoring}/*.vue", "level": "page" },
+    {
+      "glob": "src/modules/m11-teacher-analytics/components/{analisis-item,laporan,monitoring}/*.vue",
+      "level": "page"
+    },
     { "glob": "src/modules/m12-kirkpatrick/pages/Kirkpatrick*.vue", "level": "page" },
     { "glob": "src/modules/m12-kirkpatrick/components/kirkpatrick/**/*.vue", "level": "page" },
     { "glob": "src/modules/m27-school-admin/pages/SchoolDashboardPage.vue", "level": "page" },
@@ -123,9 +183,43 @@
     { "glob": "src/modules/m27-school-admin/components/heatmap/**", "level": "page" },
     { "glob": "src/modules/m27-school-admin/components/activity/**", "level": "page" },
     { "glob": "src/modules/m27-school-admin/components/amaran/**", "level": "page" },
-    { "glob": "src/modules/m27-school-admin/components/monthly/**", "level": "page" }
+    { "glob": "src/modules/m27-school-admin/components/monthly/**", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/QuestionSummaryCard.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/ErrorBox.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/pages/QuestionListPage.vue", "level": "page" },
+    {
+      "glob": "src/modules/m04-question-bank/pages/Question{Create,Edit}Page.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m04-question-bank/components/{QuestionForm,DskpTagging,QuestionImagePicker}.vue",
+      "level": "page"
+    },
+    { "glob": "src/modules/m04-question-bank/pages/QuestionDetailPage.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/AiExplanationCard.vue", "level": "page" },
+    {
+      "glob": "src/modules/m04-question-bank/pages/{QuestionImport,ImportHistory,QuestionQuality,QuestionReports}Page.vue",
+      "level": "page"
+    },
+    { "glob": "src/modules/m04-question-bank/components/report/ReportCard.vue", "level": "page" },
+    {
+      "glob": "src/modules/m04-question-bank/pages/{Structured{List,Detail},SubmissionList,DiagramAudit,MasterNotes}Page.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m04-question-bank/components/{SubmissionActions,DiagramCard,MasterNoteRow}.vue",
+      "level": "page"
+    },
+    {
+      "glob": "src/modules/m03-curriculum/pages/{CurriculumBrowser,Chapter{Create,Edit},Topic{Create,Edit},Subject{List,Form},Level{List,Form}}Page.vue",
+      "level": "page"
+    },
+    { "glob": "src/modules/m03-curriculum/components/curriculum/*.vue", "level": "page" },
+    { "glob": "src/modules/m03-curriculum/components/ErrorBox.vue", "level": "page" },
+    {
+      "glob": "src/modules/m03-curriculum/components/subjects-levels/{ActiveSwitch,FormActions}.vue",
+      "level": "page"
+    }
   ],
-  "exempt": [
-    "src/theme/**"
-  ]
+  "exempt": ["src/theme/**"]
 }

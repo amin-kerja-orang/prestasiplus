@@ -95,6 +95,10 @@ beforeEach(() => {
   for (const fn of Object.values(api)) fn.mockReset()
   scrollTo.mockReset()
   dialogs.confirmNative.mockReset()
+  // `useConfirm` falls back to `window.confirm` when no host is mounted.
+  vi.spyOn(window, 'confirm').mockImplementation((message) =>
+    Boolean(dialogs.confirmNative(message)),
+  )
   api.fetchSubjectOptions.mockResolvedValue(list(SUBJECTS))
   api.fetchLevelOptions.mockResolvedValue(list(LEVELS))
   window.scrollTo = scrollTo

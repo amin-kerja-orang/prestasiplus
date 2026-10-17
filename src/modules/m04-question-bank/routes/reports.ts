@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/QuestionReportsPage.vue'),
     meta: {
       layout: 'admin',
+      v2: true,
       access: 'auth',
       roles: ['admin'],
       title: 'Laporan Soalan — Admin Panel',

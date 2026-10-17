@@ -20,11 +20,8 @@ vi.mock('../../api/questions', () => questions)
 const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn() }))
 vi.mock('../../api/lookups', () => lookups)
 
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn(() => true) }))
-vi.mock('@/components/overlay/native-dialogs', () => ({
-  confirmNative: dialogs.confirmNative,
-  alertNative: vi.fn(),
-}))
+/** `useConfirm` falls back to `window.confirm` when no host is mounted. */
+const dialogs = { confirmNative: vi.fn((message: string) => message !== '') }
 
 function row(id: number, extra: Partial<QuestionRow> = {}): QuestionRow {
   return {
@@ -98,6 +95,7 @@ beforeEach(() => {
   for (const fn of [...Object.values(questions), ...Object.values(lookups)]) fn.mockReset()
   dialogs.confirmNative.mockReset()
   dialogs.confirmNative.mockReturnValue(true)
+  vi.spyOn(window, 'confirm').mockImplementation((message) => dialogs.confirmNative(message ?? ''))
   questions.fetchQuestionSummary.mockResolvedValue(SUMMARY)
   questions.fetchQuestions.mockResolvedValue(
     listResult(
@@ -128,7 +126,6 @@ afterEach(() => {
 describe('QuestionListPage (M04 S1)', () => {
   it('shows the header, the total and the tiles with the 12-character name cut', async () => {
     const w = await render()
-    expect(w.text()).toContain('📚 Pengurusan Soalan')
     expect(w.text()).toContain('Urus bank soalan untuk platform PRESTASIPLUS')
     expect(t(w, 'questions-total').text().replace(/\s+/g, ' ')).toBe('Jumlah: 465,278 soalan')
     const tiles = w.findAll('[data-testid="questions-tile"]')
@@ -145,7 +142,7 @@ describe('QuestionListPage (M04 S1)', () => {
     const w = await render('/admin/questions?subject_id=8')
     const active = w
       .findAll('[data-testid="questions-tile"]')
-      .filter((n) => n.classes('bg-indigo-50'))
+      .filter((n) => n.attributes('aria-current') === 'true')
     expect(active.map((n) => n.attributes('data-subject-id'))).toEqual(['8'])
     expect(t(w, 'questions-clear-subject').text()).toContain('Padam filter subjek — tunjuk semua')
     expect(questions.fetchQuestions.mock.calls[0]?.[0]).toMatchObject({ subjectId: '8' })
@@ -153,8 +150,8 @@ describe('QuestionListPage (M04 S1)', () => {
 
   it('renders the rows in API order with badges, source and status', async () => {
     const w = await render()
-    const rows = w.findAll('[data-testid="question-row"]')
-    expect(rows.map((r) => r.attributes('data-question-id'))).toEqual([
+    const rows = w.findAll('tbody tr')
+    expect(rows.map((r) => r.get('[data-testid="question-id"]').text())).toEqual([
       '564159',
       '564160',
       '564161',
@@ -181,11 +178,12 @@ describe('QuestionListPage (M04 S1)', () => {
 
   it('shows the English pager and keeps the filters on its links', async () => {
     const w = await render('/admin/questions?status=approved')
-    const pager = t(w, 'questions-pager')
-    expect(pager.text().replace(/\s+/g, ' ')).toContain('Showing 1 to 20 of 465278 results')
-    expect(pager.get('a[aria-label="Go to page 2"]').attributes('href')).toContain(
-      'status=approved',
-    )
+    const pager = w.get('[data-ds="data-table-pager"]')
+    expect(pager.text().replace(/\s+/g, ' ')).toContain('Menunjukkan 1-20 daripada 465278 hasil')
+    const next = pager.findAll('button').find((b) => b.text() === '2')
+    await next?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ status: 'approved', page: '2' })
   })
 
   it('submits the filter form to the URL (snake_case names) and refetches', async () => {
@@ -206,7 +204,7 @@ describe('QuestionListPage (M04 S1)', () => {
     expect(t(w, 'questions-empty').text()).toContain('Tiada soalan dijumpai')
     expect(t(w, 'questions-empty-add').text()).toContain('Tambah Soalan Pertama')
     expect(w.find('[data-testid="questions-table"]').exists()).toBe(false)
-    expect(w.find('[data-testid="questions-pager"]').exists()).toBe(false)
+    expect(w.find('[data-ds="data-table-pager"]').exists()).toBe(false)
   })
 
   it('shows the red box with "Cuba Semula" when the list fails, and retries', async () => {
@@ -217,16 +215,18 @@ describe('QuestionListPage (M04 S1)', () => {
     expect(t(w, 'questions-error').text()).toContain('Cuba Semula')
     await t(w, 'questions-retry').trigger('click')
     await flushPromises()
-    expect(w.findAll('[data-testid="question-row"]')).toHaveLength(3)
+    expect(w.findAll('tbody tr')).toHaveLength(3)
   })
 
   it('ticks rows, shows the bulk bar and select-all ticks the page', async () => {
     const w = await render()
     expect(w.find('[data-testid="questions-bulk-bar"]').exists()).toBe(false)
-    await w.findAll('[data-testid="question-select"]')[0]?.setValue(true)
+    await w.findAll('[data-testid="question-select"]')[0]?.trigger('click')
+    await flushPromises()
     expect(t(w, 'questions-selected-count').text()).toBe('1')
     expect(w.get('[data-testid="questions-bulk-bar"]').text()).toContain('soalan dipilih')
-    await t(w, 'questions-select-all').setValue(true)
+    await t(w, 'questions-select-all').trigger('click')
+    await flushPromises()
     expect(t(w, 'questions-selected-count').text()).toBe('3')
     expect(t(w, 'questions-bulk-action').attributes('required')).toBeDefined()
   })
@@ -238,8 +238,9 @@ describe('QuestionListPage (M04 S1)', () => {
     })
     const w = await render()
     const boxes = w.findAll('[data-testid="question-select"]')
-    await boxes[0]?.setValue(true)
-    await boxes[1]?.setValue(true)
+    await boxes[0]?.trigger('click')
+    await boxes[1]?.trigger('click')
+    await flushPromises()
     await t(w, 'questions-bulk-action').setValue('archive')
     await w.get('[data-testid="questions-bulk-bar"]').trigger('submit')
     await flushPromises()
@@ -257,7 +258,8 @@ describe('QuestionListPage (M04 S1)', () => {
   it('sends nothing when the bulk confirm is dismissed', async () => {
     dialogs.confirmNative.mockReturnValue(false)
     const w = await render()
-    await w.findAll('[data-testid="question-select"]')[0]?.setValue(true)
+    await w.findAll('[data-testid="question-select"]')[0]?.trigger('click')
+    await flushPromises()
     await t(w, 'questions-bulk-action').setValue('delete')
     await w.get('[data-testid="questions-bulk-bar"]').trigger('submit')
     await flushPromises()
@@ -270,7 +272,7 @@ describe('QuestionListPage (M04 S1)', () => {
       status: 'Soalan berjaya dipadam.',
     })
     const w = await render()
-    await w.findAll('[data-testid="question-delete"]')[0]?.trigger('submit')
+    await w.findAll('[data-testid="question-delete"]')[0]?.trigger('click')
     await flushPromises()
     expect(dialogs.confirmNative).toHaveBeenCalledWith(
       'Adakah anda pasti mahu memadamkan soalan ini?',
@@ -284,7 +286,7 @@ describe('QuestionListPage (M04 S1)', () => {
 
   it('links the row actions to the detail and edit pages', async () => {
     const w = await render()
-    const first = w.get('[data-question-id="564159"]')
+    const first = w.get('tbody tr')
     expect(first.get('[data-testid="question-view"]').attributes('href')).toBe(
       '/admin/questions/564159',
     )

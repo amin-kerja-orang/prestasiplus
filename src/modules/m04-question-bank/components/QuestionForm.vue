@@ -9,32 +9,7 @@
  * values, every field is posted) and the Teks Soalan textarea has the Arabic / Jawi key panel. Edit: no
  * type select (the saved type's card is shown, DV-M04-05), no keyboard, saved images and DSKP preloaded.
  */
-import {
-  CircleCheck,
-  CircleQuestionMark,
-  CircleX,
-  CheckCheck,
-  FileText,
-  Image as ImageIcon,
-  Info,
-  Keyboard,
-  ListChecks,
-  PenLine,
-  Save,
-  Star,
-  X,
-} from '@lucide/vue'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
-
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import {
-  FORM_ERROR_MODIFIER,
-  FORM_ERROR_TEXT_CLASS,
-  FORM_INPUT_CLASS,
-  FORM_SELECT_CLASS,
-  FORM_TEXTAREA_CLASS,
-} from '@/components/form'
 
 import type { EducationLevelLookup, SubjectLookup } from '../api/lookups'
 import type { QuestionDetail, QuestionInputBody } from '../api/questions'
@@ -50,7 +25,12 @@ import {
   type QuestionFormValues,
 } from '../lib/question-form'
 import ArabicKeyboardPanel from './ArabicKeyboardPanel.vue'
+import ChoiceRadio from './native/ChoiceRadio.vue'
 import DskpTagging from './DskpTagging.vue'
+import ErrorBox from './ErrorBox.vue'
+import NativeRadio from './native/NativeRadio.vue'
+import NativeSelect from './native/NativeSelect.vue'
+import RtlScope from './native/RtlScope.vue'
 import QuestionImagePicker from './QuestionImagePicker.vue'
 
 const props = defineProps<{
@@ -84,7 +64,7 @@ function submit(): void {
 // Server errors: red border + text under the field; scroll to the first one.
 const formEl = ref<HTMLFormElement | null>(null)
 const err = (key: string): string | undefined => props.errors.fields[key]
-const invalid = (key: string): string | false => key in props.errors.fields && FORM_ERROR_MODIFIER
+const invalid = (key: string): boolean => key in props.errors.fields
 
 watch(
   () => props.errors,
@@ -96,7 +76,8 @@ watch(
 )
 
 // Arabic / Jawi keyboard (create only).
-const textarea = ref<HTMLTextAreaElement | null>(null)
+const textareaCmp = ref<{ textareaRef?: HTMLTextAreaElement | null } | null>(null)
+const textarea = computed<HTMLTextAreaElement | null>(() => textareaCmp.value?.textareaRef ?? null)
 const keyboardOpen = ref(false)
 const keyboardMode = ref<KeyboardMode>('arab')
 const rtl = ref(false)
@@ -127,14 +108,7 @@ async function applyEdit(
 const insertKey = (text: string) => applyEdit((v, s, e) => insertAtCaret(v, s, e, text))
 const backspaceKey = () => applyEdit((v, s, e) => backspaceAtCaret(v, s, e))
 
-const LABEL = 'mb-1.5 block text-sm font-semibold text-slate-700'
-const STAR = 'h-4 w-4 fill-amber-400 text-amber-400'
-const CARD = 'rounded-2xl bg-white p-4 shadow sm:p-6'
-const CARD_TITLE = 'mb-4 flex items-center gap-2 text-lg font-bold text-slate-800'
-const CHOICE_CARD =
-  'flex min-h-11 items-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-300'
-const BTN =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
+const STAR_LABELS = [1, 2, 3, 4, 5]
 </script>
 
 <template>
@@ -142,59 +116,57 @@ const BTN =
     ref="formEl"
     method="post"
     enctype="multipart/form-data"
-    class="space-y-4 sm:space-y-6"
+    class="flex min-w-0 flex-col gap-4 md:gap-6"
     data-testid="question-form"
     @submit.prevent="submit"
   >
-    <AlertBox :messages="errors.general" data-testid="question-form-alert" />
+    <ErrorBox :messages="errors.general" data-testid="question-form-alert" />
 
     <!-- Card "Maklumat Soalan" -->
-    <section :class="CARD" data-testid="info-card">
-      <h2 :class="CARD_TITLE">
-        <CircleQuestionMark class="h-5 w-5 text-indigo-600" aria-hidden="true" />
+    <UCard data-testid="info-card">
+      <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
+        <UIcon name="i-ph-question" class="size-5 text-primary" />
         Maklumat Soalan
       </h2>
 
-      <div class="space-y-5">
-        <div>
-          <label for="q-subject" :class="LABEL">Subjek <span class="text-red-500">*</span></label>
-          <select
+      <div class="flex min-w-0 flex-col gap-4">
+        <div class="min-w-0">
+          <label for="q-subject" class="mb-2 block text-label text-highlighted">Subjek *</label>
+          <NativeSelect
             id="q-subject"
             v-model="values.subjectId"
             name="subject_id"
             required
-            :class="[FORM_SELECT_CLASS, 'min-h-11 bg-white', invalid('subjectId')]"
             data-testid="q-subject"
           >
             <option value="">Pilih Subjek</option>
             <option v-for="s in subjects" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
-          </select>
-          <p v-if="err('subjectId')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+          </NativeSelect>
+          <p v-if="err('subjectId')" class="mt-1 text-caption text-error" data-field-error>
             {{ err('subjectId') }}
           </p>
         </div>
 
-        <div>
-          <label for="q-level" :class="LABEL">
-            Tahap Pendidikan <span class="text-red-500">*</span>
-          </label>
-          <select
+        <div class="min-w-0">
+          <label for="q-level" class="mb-2 block text-label text-highlighted"
+            >Tahap Pendidikan *</label
+          >
+          <NativeSelect
             id="q-level"
             v-model="values.educationLevelId"
             name="education_level_id"
             required
-            :class="[FORM_SELECT_CLASS, 'min-h-11 bg-white', invalid('educationLevelId')]"
             data-testid="q-level"
           >
             <option value="">Pilih Tahap Pendidikan</option>
             <option v-for="l in levels" :key="l.id" :value="String(l.id)">{{ l.name }}</option>
-          </select>
-          <p v-if="err('educationLevelId')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+          </NativeSelect>
+          <p v-if="err('educationLevelId')" class="mt-1 text-caption text-error" data-field-error>
             {{ err('educationLevelId') }}
           </p>
         </div>
 
-        <div>
+        <div class="min-w-0">
           <DskpTagging
             v-model:sp-id="spId"
             :subject-id="values.subjectId"
@@ -202,99 +174,86 @@ const BTN =
             :initial="initial?.dskp ?? null"
             :edit="edit"
           />
-          <p v-if="err('dskpSpId')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+          <p v-if="err('dskpSpId')" class="mt-1 text-caption text-error" data-field-error>
             {{ err('dskpSpId') }}
           </p>
         </div>
 
         <fieldset class="min-w-0">
-          <legend :class="LABEL">Tahap Kesukaran <span class="text-red-500">*</span></legend>
+          <legend class="mb-2 text-label text-highlighted">Tahap Kesukaran *</legend>
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-            <label v-for="n in 5" :key="n" class="relative block">
-              <input
-                v-model="values.difficulty"
-                type="radio"
-                name="difficulty_level"
-                :value="String(n)"
-                required
-                class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                :data-testid="`q-difficulty-${String(n)}`"
-              />
-              <span
-                :class="[
-                  CHOICE_CARD,
-                  'h-full flex-col justify-center text-center text-xs',
-                  invalid('difficultyLevel'),
-                ]"
-              >
-                <span class="flex flex-wrap justify-center gap-0.5">
-                  <Star v-for="s in n" :key="s" :class="STAR" aria-hidden="true" />
-                </span>
-                {{ DIFFICULTY_LABELS[n] }}
+            <ChoiceRadio
+              v-for="n in STAR_LABELS"
+              :key="n"
+              v-model="values.difficulty"
+              name="difficulty_level"
+              :value="String(n)"
+              required
+              :invalid="invalid('difficultyLevel')"
+              :data-testid="`q-difficulty-${String(n)}`"
+            >
+              <span class="flex flex-wrap justify-center gap-1" aria-hidden="true">
+                <UIcon v-for="s in n" :key="s" name="i-ph-star-fill" class="size-4" />
               </span>
-            </label>
+              <span class="text-caption">{{ DIFFICULTY_LABELS[n] }}</span>
+            </ChoiceRadio>
           </div>
-          <p v-if="err('difficultyLevel')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+          <p v-if="err('difficultyLevel')" class="mt-1 text-caption text-error" data-field-error>
             {{ err('difficultyLevel') }}
           </p>
         </fieldset>
 
-        <div v-if="!edit">
-          <label for="q-type" :class="LABEL">
-            Jenis Soalan <span class="text-red-500">*</span>
-          </label>
-          <select
+        <div v-if="!edit" class="min-w-0">
+          <label for="q-type" class="mb-2 block text-label text-highlighted">Jenis Soalan *</label>
+          <NativeSelect
             id="q-type"
             v-model="values.questionType"
             name="question_type"
             required
-            :class="[FORM_SELECT_CLASS, 'min-h-11 bg-white', invalid('questionType')]"
             data-testid="q-type"
           >
             <option v-for="t in QUESTION_TYPE_OPTIONS" :key="t.value" :value="t.value">
               {{ t.label }}
             </option>
-          </select>
-          <p v-if="err('questionType')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+          </NativeSelect>
+          <p v-if="err('questionType')" class="mt-1 text-caption text-error" data-field-error>
             {{ err('questionType') }}
           </p>
         </div>
 
-        <div>
-          <label for="q-text" :class="LABEL">Teks Soalan <span class="text-red-500">*</span></label>
-          <div class="relative">
-            <textarea
+        <div class="min-w-0">
+          <label for="q-text" class="mb-2 block text-label text-highlighted">Teks Soalan *</label>
+          <RtlScope :rtl="rtl">
+            <UTextarea
               id="q-text"
-              ref="textarea"
+              ref="textareaCmp"
               v-model="values.questionText"
               name="question_text"
-              rows="4"
+              :rows="4"
               required
               placeholder="Masukkan teks soalan di sini..."
               :dir="rtl ? 'rtl' : undefined"
-              :class="[FORM_TEXTAREA_CLASS, 'block', !edit && 'pb-12', invalid('questionText')]"
-              :style="rtl ? { fontFamily: `'Scheherazade New', 'Lateef', serif` } : undefined"
+              :color="invalid('questionText') ? 'error' : undefined"
+              :aria-invalid="invalid('questionText') ? 'true' : undefined"
+              class="w-full"
               data-testid="q-text"
-            ></textarea>
-            <button
+            />
+            <UButton
               v-if="!edit"
               type="button"
               title="Papan kekunci Arab / Jawi"
-              :class="[
-                'absolute bottom-2 left-2 inline-flex h-9 w-9 items-center justify-center rounded-lg border transition after:absolute after:-inset-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
-                keyboardOpen
-                  ? 'border-blue-700 bg-blue-700 text-white'
-                  : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100',
-              ]"
+              aria-label="Papan kekunci Arab / Jawi"
+              :color="keyboardOpen ? 'primary' : 'neutral'"
+              :variant="keyboardOpen ? 'solid' : 'soft'"
+              icon="i-ph-keyboard"
+              class="mt-2 size-11 justify-center"
               data-testid="vkb-toggle"
               @mousedown.prevent
               @click="toggleKeyboard"
-            >
-              <Keyboard class="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
-          <p class="mt-1 text-xs text-slate-500">Minimum 10 aksara</p>
-          <p v-if="err('questionText')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+            />
+          </RtlScope>
+          <p class="mt-1 text-caption text-muted">Minimum 10 aksara</p>
+          <p v-if="err('questionText')" class="mt-1 text-caption text-error" data-field-error>
             {{ err('questionText') }}
           </p>
           <ArabicKeyboardPanel
@@ -307,10 +266,10 @@ const BTN =
           />
         </div>
 
-        <div>
-          <span :class="[LABEL, 'flex items-center gap-2']">
-            <ImageIcon class="h-4 w-4 text-indigo-500" aria-hidden="true" />
-            Gambar Soalan <span class="font-normal text-slate-400">(Pilihan)</span>
+        <div class="min-w-0">
+          <span class="mb-2 flex items-center gap-2 text-label text-highlighted">
+            <UIcon name="i-ph-image" class="size-4 text-primary" />
+            Gambar Soalan <span class="text-muted">(Pilihan)</span>
           </span>
           <QuestionImagePicker
             v-model:file="values.questionImage"
@@ -320,53 +279,44 @@ const BTN =
             :edit="edit"
             testid="q-image"
           />
-          <p v-if="err('questionImage')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+          <p v-if="err('questionImage')" class="mt-1 text-caption text-error" data-field-error>
             {{ err('questionImage') }}
           </p>
         </div>
       </div>
-    </section>
+    </UCard>
 
     <!-- MCQ card -->
-    <section v-show="isMcq" :class="CARD" data-testid="mcq-card">
-      <h2 :class="CARD_TITLE">
-        <ListChecks class="h-5 w-5 text-emerald-600" aria-hidden="true" />
+    <UCard v-show="isMcq" data-testid="mcq-card">
+      <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
+        <UIcon name="i-ph-list-checks" class="size-5 text-primary" />
         Pilihan Jawapan
       </h2>
-      <div class="space-y-3">
-        <div
-          v-for="(letter, i) in OPTION_LETTERS"
-          :key="letter"
-          class="min-w-0 rounded-xl border-2 border-slate-200 p-3 sm:p-4"
-        >
+      <div class="flex min-w-0 flex-col gap-3">
+        <UCard v-for="(letter, i) in OPTION_LETTERS" :key="letter" variant="subtle">
           <div class="flex items-start gap-3">
-            <!-- The label's pseudo-element widens the 20px radio to a 44px touch target. -->
-            <label class="relative mt-1 inline-flex shrink-0 after:absolute after:-inset-3">
-              <input
+            <label class="inline-flex size-11 shrink-0 items-center justify-center">
+              <NativeRadio
                 v-model="values.correctAnswer"
-                type="radio"
                 name="correct_answer"
                 :value="String(i)"
                 :required="isMcq"
-                class="relative z-10 h-5 w-5 accent-indigo-600"
+                :aria-label="`Jawapan betul ${letter}`"
                 :data-testid="`q-correct-${String(i)}`"
               />
             </label>
-            <div class="min-w-0 flex-1 space-y-2">
-              <label
-                :for="`q-option-${String(i)}`"
-                class="block text-sm font-semibold text-slate-700"
-              >
-                Pilihan {{ letter }} <span class="text-red-500">*</span>
+            <div class="flex min-w-0 flex-1 flex-col gap-2">
+              <label :for="`q-option-${String(i)}`" class="text-label text-highlighted">
+                Pilihan {{ letter }} *
               </label>
-              <input
+              <UInput
                 :id="`q-option-${String(i)}`"
                 v-model="values.options[i]"
                 type="text"
                 name="options[]"
                 :required="isMcq"
                 :placeholder="`Masukkan pilihan ${letter}`"
-                :class="[FORM_INPUT_CLASS, 'min-h-11']"
+                class="w-full"
                 :data-testid="`q-option-${String(i)}`"
               />
               <QuestionImagePicker
@@ -381,224 +331,205 @@ const BTN =
               />
               <p
                 v-if="err(`optionImages.${String(i)}`)"
-                :class="FORM_ERROR_TEXT_CLASS"
+                class="text-caption text-error"
                 data-field-error
               >
                 {{ err(`optionImages.${String(i)}`) }}
               </p>
             </div>
           </div>
-        </div>
+        </UCard>
       </div>
-      <p v-if="err('options')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+      <p v-if="err('options')" class="mt-2 text-caption text-error" data-field-error>
         {{ err('options') }}
       </p>
-      <p v-if="err('correctAnswer')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+      <p v-if="err('correctAnswer')" class="mt-2 text-caption text-error" data-field-error>
         {{ err('correctAnswer') }}
       </p>
-      <p
-        class="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800"
-      >
-        <Info class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+      <p class="mt-4 flex items-start gap-2 text-caption text-muted">
+        <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />
         <span>
           <strong>Nota:</strong> Pilih butang radio di sebelah pilihan yang merupakan jawapan yang
           betul.
         </span>
       </p>
-    </section>
+    </UCard>
 
     <!-- True / false card -->
-    <section v-show="values.questionType === 'true_false'" :class="CARD" data-testid="tf-card">
-      <h2 :class="CARD_TITLE">
-        <CheckCheck class="h-5 w-5 text-emerald-600" aria-hidden="true" />
+    <UCard v-show="values.questionType === 'true_false'" data-testid="tf-card">
+      <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
+        <UIcon name="i-ph-checks" class="size-5 text-primary" />
         Jawapan Betul / Salah
       </h2>
       <div class="grid grid-cols-2 gap-3">
-        <label class="relative block">
-          <input
-            v-model="values.tfAnswer"
-            type="radio"
-            name="tf_answer"
-            value="true"
-            class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            data-testid="q-tf-true"
-          />
-          <span
-            :class="[
-              CHOICE_CARD,
-              'justify-center peer-checked:border-emerald-500 peer-checked:bg-emerald-50',
-            ]"
-          >
-            <CircleCheck class="h-5 w-5 text-emerald-600" aria-hidden="true" />
+        <ChoiceRadio v-model="values.tfAnswer" name="tf_answer" value="true" data-testid="q-tf-true">
+          <span class="flex items-center gap-2">
+            <UIcon name="i-ph-check-circle" class="size-5" />
             Betul
           </span>
-        </label>
-        <label class="relative block">
-          <input
-            v-model="values.tfAnswer"
-            type="radio"
-            name="tf_answer"
-            value="false"
-            class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            data-testid="q-tf-false"
-          />
-          <span
-            :class="[
-              CHOICE_CARD,
-              'justify-center peer-checked:border-red-500 peer-checked:bg-red-50',
-            ]"
-          >
-            <CircleX class="h-5 w-5 text-red-600" aria-hidden="true" />
+        </ChoiceRadio>
+        <ChoiceRadio
+          v-model="values.tfAnswer"
+          name="tf_answer"
+          value="false"
+          data-testid="q-tf-false"
+        >
+          <span class="flex items-center gap-2">
+            <UIcon name="i-ph-x-circle" class="size-5" />
             Salah
           </span>
-        </label>
+        </ChoiceRadio>
       </div>
-      <p v-if="err('tfAnswer')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+      <p v-if="err('tfAnswer')" class="mt-2 text-caption text-error" data-field-error>
         {{ err('tfAnswer') }}
       </p>
-    </section>
+    </UCard>
 
     <!-- Short answer / fill blank card -->
-    <section v-show="isShortOrFill" :class="CARD" data-testid="short-card">
-      <h2 :class="CARD_TITLE">
-        <PenLine class="h-5 w-5 text-emerald-600" aria-hidden="true" />
+    <UCard v-show="isShortOrFill" data-testid="short-card">
+      <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
+        <UIcon name="i-ph-pen-nib" class="size-5 text-primary" />
         {{ values.questionType === 'fill_blank' ? 'Jawapan Isi Tempat Kosong' : 'Jawapan Pendek' }}
       </h2>
-      <div class="space-y-4">
-        <div>
-          <label for="q-answer-text" :class="LABEL">
-            Jawapan Betul <span class="text-red-500">*</span>
+      <div class="flex min-w-0 flex-col gap-4">
+        <div class="min-w-0">
+          <label for="q-answer-text" class="mb-2 block text-label text-highlighted">
+            Jawapan Betul *
           </label>
-          <input
+          <UInput
             id="q-answer-text"
             v-model="values.correctAnswerText"
             type="text"
             name="correct_answer_text"
             placeholder="Masukkan jawapan betul"
-            :class="[FORM_INPUT_CLASS, 'min-h-11', invalid('correctAnswerText')]"
+            :color="invalid('correctAnswerText') ? 'error' : undefined"
+            class="w-full"
             data-testid="q-answer-text"
           />
-          <p v-if="err('correctAnswerText')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+          <p v-if="err('correctAnswerText')" class="mt-1 text-caption text-error" data-field-error>
             {{ err('correctAnswerText') }}
           </p>
         </div>
-        <div>
-          <label for="q-alt" :class="LABEL">Jawapan Alternatif (pisahkan dengan koma)</label>
-          <input
+        <div class="min-w-0">
+          <label for="q-alt" class="mb-2 block text-label text-highlighted"
+            >Jawapan Alternatif (pisahkan dengan koma)</label
+          >
+          <UInput
             id="q-alt"
             v-model="values.altAnswers"
             type="text"
             name="alt_answers"
             placeholder="cth: jawapan1, jawapan2"
-            :class="[FORM_INPUT_CLASS, 'min-h-11']"
+            class="w-full"
             data-testid="q-alt"
           />
-          <p class="mt-1 text-xs text-slate-500">Jawapan lain yang juga diterima</p>
+          <p class="mt-1 text-caption text-muted">Jawapan lain yang juga diterima</p>
         </div>
       </div>
-    </section>
+    </UCard>
 
     <!-- Essay card -->
-    <section v-show="values.questionType === 'essay'" :class="CARD" data-testid="essay-card">
-      <h2 :class="CARD_TITLE">
-        <FileText class="h-5 w-5 text-emerald-600" aria-hidden="true" />
+    <UCard v-show="values.questionType === 'essay'" data-testid="essay-card">
+      <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
+        <UIcon name="i-ph-file-text" class="size-5 text-primary" />
         Jawapan Contoh (Esei)
       </h2>
-      <label for="q-model" :class="LABEL">
+      <label for="q-model" class="mb-2 block text-label text-highlighted">
         Jawapan Model (pilihan — ditunjukkan sebagai rujukan)
       </label>
-      <textarea
+      <UTextarea
         id="q-model"
         v-model="values.modelAnswer"
         name="model_answer"
-        rows="6"
+        :rows="6"
         placeholder="Tulis jawapan contoh di sini..."
-        :class="FORM_TEXTAREA_CLASS"
+        class="w-full"
         data-testid="q-model"
-      ></textarea>
-    </section>
+      />
+    </UCard>
 
     <!-- Card "Maklumat Tambahan" -->
-    <section :class="CARD" data-testid="extra-card">
-      <h2 :class="CARD_TITLE">
-        <Info class="h-5 w-5 text-blue-600" aria-hidden="true" />
+    <UCard data-testid="extra-card">
+      <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
+        <UIcon name="i-ph-info" class="size-5 text-primary" />
         Maklumat Tambahan
       </h2>
-      <div class="space-y-5">
-        <div>
-          <label for="q-explanation" :class="LABEL">Penjelasan</label>
-          <textarea
+      <div class="flex min-w-0 flex-col gap-4">
+        <div class="min-w-0">
+          <label for="q-explanation" class="mb-2 block text-label text-highlighted"
+            >Penjelasan</label
+          >
+          <UTextarea
             id="q-explanation"
             v-model="values.explanation"
             name="explanation"
-            rows="3"
+            :rows="3"
             placeholder="Penjelasan untuk jawapan (pilihan)"
-            :class="FORM_TEXTAREA_CLASS"
+            class="w-full"
             data-testid="q-explanation"
-          ></textarea>
-          <p class="mt-1 text-xs text-slate-500">
+          />
+          <p class="mt-1 text-caption text-muted">
             Penjelasan akan ditunjukkan kepada pelajar selepas menjawab
           </p>
         </div>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label for="q-language" :class="LABEL">Bahasa</label>
-            <select
+          <div class="min-w-0">
+            <label for="q-language" class="mb-2 block text-label text-highlighted">Bahasa</label>
+            <NativeSelect
               id="q-language"
               v-model="values.language"
               name="language"
-              :class="[FORM_SELECT_CLASS, 'min-h-11 bg-white', invalid('language')]"
               data-testid="q-language"
             >
               <option value="bm">Bahasa Melayu</option>
               <option value="en">English</option>
-            </select>
-            <p v-if="err('language')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+            </NativeSelect>
+            <p v-if="err('language')" class="mt-1 text-caption text-error" data-field-error>
               {{ err('language') }}
             </p>
           </div>
-          <div>
-            <label for="q-points" :class="LABEL">Nilai Mata</label>
-            <input
+          <div class="min-w-0">
+            <label for="q-points" class="mb-2 block text-label text-highlighted">Nilai Mata</label>
+            <UInput
               id="q-points"
               v-model="values.pointsValue"
               type="number"
               name="points_value"
               min="1"
-              :class="[FORM_INPUT_CLASS, 'min-h-11', invalid('pointsValue')]"
+              :color="invalid('pointsValue') ? 'error' : undefined"
+              class="w-full"
               data-testid="q-points"
             />
-            <p class="mt-1 text-xs text-slate-500">Mata yang diperoleh jika jawapan betul</p>
-            <p v-if="err('pointsValue')" :class="FORM_ERROR_TEXT_CLASS" data-field-error>
+            <p class="mt-1 text-caption text-muted">Mata yang diperoleh jika jawapan betul</p>
+            <p v-if="err('pointsValue')" class="mt-1 text-caption text-error" data-field-error>
               {{ err('pointsValue') }}
             </p>
           </div>
         </div>
       </div>
-    </section>
+    </UCard>
 
     <div class="flex flex-wrap items-center justify-end gap-3">
-      <RouterLink
+      <UButton
         :to="cancelTo"
-        :class="[BTN, 'border-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50']"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-x"
+        class="min-h-11"
         data-testid="q-cancel"
       >
-        <X class="h-4 w-4" aria-hidden="true" />
         Batal
-      </RouterLink>
-      <button
+      </UButton>
+      <UButton
         type="submit"
+        :loading="saving"
         :disabled="saving"
-        :class="[
-          BTN,
-          'bg-indigo-600 text-white shadow hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50',
-        ]"
+        :icon="saving ? undefined : 'i-ph-floppy-disk'"
+        class="min-h-11"
         data-testid="q-submit"
       >
-        <LoadingSpinner v-if="saving" class="h-4 w-4" />
-        <Save v-else class="h-4 w-4" aria-hidden="true" />
         {{ edit ? 'Kemaskini Soalan' : 'Simpan Soalan' }}
-      </button>
+      </UButton>
     </div>
   </form>
 </template>

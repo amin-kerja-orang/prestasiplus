@@ -144,7 +144,7 @@ describe('TopicEditPage (M03 S5)', () => {
     expect(val(w, 'topic-number')).toBe('1')
     expect(val(w, 'topic-description')).toBe('Konsep fungsi dan graf')
     expect(val(w, 'topic-standard')).toBe('')
-    expect((w.get('[data-testid=topic-active]').element as HTMLInputElement).checked).toBe(true)
+    expect(w.get('[data-testid=topic-active]').attributes('aria-checked')).toBe('true')
     expect(w.get('[data-testid=topic-form]').text()).toContain(
       'Nyahtanda jika topik ini tidak mahu dipaparkan buat masa ini',
     )
@@ -159,7 +159,7 @@ describe('TopicEditPage (M03 S5)', () => {
     const { w, router } = await render(TopicEditPage, URL, '/admin/curriculum/topics/126/edit', {
       id: '126',
     })
-    await w.get('[data-testid=topic-active]').setValue(false)
+    await w.get('[data-testid=topic-active]').trigger('click')
     await w.get('[data-testid=topic-form]').trigger('submit')
     await flushPromises()
     expect(api.updateTopic).toHaveBeenCalledWith('126', {

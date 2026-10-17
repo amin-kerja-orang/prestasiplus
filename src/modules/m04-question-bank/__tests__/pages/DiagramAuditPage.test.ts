@@ -144,7 +144,7 @@ describe('DiagramAuditPage (M04 S11)', () => {
       'SMK CONTOH A',
       'SMK CONTOH B',
     ])
-    expect(w.get('[data-testid=diagrams-filter-submit]').text()).toBe('Tapis')
+    expect(w.get('[data-testid=diagrams-filter] button[type=submit]').text()).toBe('Tapis')
   })
 
   it('renders the MCQ and Struktur sections with counts and cards', async () => {
@@ -188,17 +188,23 @@ describe('DiagramAuditPage (M04 S11)', () => {
 
   it('pager links keep the filters, use their own page parameter and drop the other list page', async () => {
     const w = await render('/admin/soalan-gambar?subject_id=9&str_page=3')
-    const next = w.get('[data-testid=diagrams-mcq-pager] a[rel=next]')
-    expect(next.attributes('href')).toBe('/admin/soalan-gambar?subject_id=9&mcq_page=2')
-    await next.trigger('click')
+    const next = w
+      .get('[data-testid=diagrams-mcq-pager]')
+      .findAll('button')
+      .find((b) => b.text() === '2')
+    await next?.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({ subject_id: '9', mcq_page: '2' })
     expect(api.fetchDiagramAudit).toHaveBeenLastCalledWith(
       expect.objectContaining({ subjectId: '9', mcqPage: 2, strPage: 1 }),
     )
-    const strNext = w.get('[data-testid=diagrams-structured-pager] a[rel=next]')
-    expect(strNext.attributes('href')).toContain('str_page=')
-    expect(strNext.attributes('href')).not.toContain('mcq_page')
+    const strNext = w
+      .get('[data-testid=diagrams-structured-pager]')
+      .findAll('button')
+      .find((b) => b.text() === '2')
+    await strNext?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ subject_id: '9', str_page: '2' })
   })
 
   it('shows a dash when the creator name is unknown', async () => {

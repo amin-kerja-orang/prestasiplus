@@ -7,16 +7,16 @@
  * import.". The table scrolls inside its card below `md`. A load failure shows the red alert with
  * "Cuba Semula" (SRS §8.2).
  */
-import { ArrowLeft } from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { DataTableCard, LaravelPager, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsDataTable, DsPage, type CardField } from '@/ds'
 import { formatDateTime } from '@/lib/time'
 
 import { fetchQuestionImports } from '../api/imports'
+import ErrorBox from '../components/ErrorBox.vue'
 import { IMPORT_HISTORY_PATH, IMPORT_PATH } from '../lib/import-quality'
 import { LOAD_ERROR } from '../lib/ui-errors'
 
@@ -40,93 +40,91 @@ function goToPage(next: number): void {
   void router.push({ path: IMPORT_HISTORY_PATH, query: { page: String(next) } })
 }
 
-const SKELETON_ROWS = 5
-const HEADERS = [
-  { label: 'Tarikh', cls: '' },
-  { label: 'Fail', cls: '' },
-  { label: 'Diimport', cls: 'text-right' },
-  { label: 'Gagal', cls: 'text-right' },
+interface HistoryRow extends Record<string, unknown> {
+  id: number
+  date: string
+  fileName: string
+  imported: number
+  failed: number
+}
+
+const tableRows = computed<HistoryRow[]>(() =>
+  rows.value.map((r) => ({
+    id: r.id,
+    date: formatDateTime(r.createdAt),
+    fileName: r.fileName,
+    imported: r.importedCount,
+    failed: r.failedCount,
+  })),
+)
+
+const columns: TableColumn<HistoryRow>[] = [
+  { accessorKey: 'date', header: 'Tarikh' },
+  { accessorKey: 'fileName', header: 'Fail' },
+  { accessorKey: 'imported', header: 'Diimport' },
+  { accessorKey: 'failed', header: 'Gagal' },
+]
+const cardFields: CardField[] = [
+  { key: 'date', label: 'Tarikh' },
+  { key: 'imported', label: 'Diimport' },
+  { key: 'failed', label: 'Gagal' },
 ]
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4 sm:space-y-5" data-testid="history-page">
+  <DsPage data-testid="history-page">
     <div>
-      <RouterLink
+      <UButton
         :to="IMPORT_PATH"
-        class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-arrow-left"
+        class="min-h-11"
         data-testid="history-back"
       >
-        <ArrowLeft class="h-4 w-4" aria-hidden="true" />
         Kembali
-      </RouterLink>
+      </UButton>
     </div>
 
-    <div v-if="error" class="space-y-3" data-testid="history-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        data-testid="history-retry"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
+    <div v-if="error" class="flex flex-col gap-3" data-testid="history-error">
+      <ErrorBox :messages="LOAD_ERROR" />
+      <div>
+        <UButton type="button" class="min-h-11" data-testid="history-retry" @click="reload()">
+          Cuba Semula
+        </UButton>
+      </div>
     </div>
 
-    <DataTableCard v-else :min-width="520">
-      <table :class="T.table" data-testid="history-table">
-        <thead class="bg-slate-50">
-          <tr>
-            <th v-for="h in HEADERS" :key="h.label" scope="col" :class="[T.th, h.cls]">
-              {{ h.label }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-if="firstLoad">
-            <tr v-for="n in SKELETON_ROWS" :key="n" :class="T.row" data-testid="history-skeleton">
-              <td v-for="c in 4" :key="c" :class="T.td">
-                <div class="h-4 w-full max-w-28 animate-pulse rounded bg-slate-100"></div>
-              </td>
-            </tr>
-          </template>
-
-          <tr v-else-if="rows.length === 0" :class="T.row" data-testid="history-empty">
-            <td colspan="4" class="px-4 py-12 text-center text-sm text-slate-500">
-              Tiada sejarah import.
-            </td>
-          </tr>
-
-          <template v-else>
-            <tr v-for="r in rows" :key="r.id" :class="T.row" data-testid="history-row">
-              <td :class="[T.td, 'whitespace-nowrap']" data-testid="history-date">
-                {{ formatDateTime(r.createdAt) }}
-              </td>
-              <td :class="[T.td, 'break-all']" data-testid="history-file">{{ r.fileName }}</td>
-              <td :class="[T.td, 'text-right tabular-nums']" data-testid="history-imported">
-                {{ r.importedCount }}
-              </td>
-              <td :class="[T.td, 'text-right tabular-nums']" data-testid="history-failed">
-                {{ r.failedCount }}
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-
-      <template #footer>
-        <div class="border-t border-slate-100 px-4 py-3 empty:hidden" data-testid="history-pager">
-          <LaravelPager
-            v-if="data"
-            :page="data.meta.page"
-            :total="data.meta.totalItems"
-            :per-page="data.meta.pageSize"
-            :path="IMPORT_HISTORY_PATH"
-            @change="goToPage"
-          />
-        </div>
+    <DsDataTable
+      v-else
+      :data="tableRows"
+      :columns="columns"
+      caption="Sejarah import"
+      :loading="firstLoad"
+      :total="data?.meta.totalItems ?? 0"
+      :page-size="data?.meta.pageSize ?? 20"
+      :page="data?.meta.page ?? page"
+      card-title="fileName"
+      :card-fields="cardFields"
+      empty-label="Tiada sejarah import."
+      data-testid="history-table"
+      @update:page="goToPage"
+    >
+      <template #empty>
+        <span data-testid="history-empty">Tiada sejarah import.</span>
       </template>
-    </DataTableCard>
-  </div>
+      <template #date-cell="{ row }">
+        <span class="whitespace-nowrap" data-testid="history-date">{{ row.original.date }}</span>
+      </template>
+      <template #fileName-cell="{ row }">
+        <span class="break-all" data-testid="history-file">{{ row.original.fileName }}</span>
+      </template>
+      <template #imported-cell="{ row }">
+        <span class="tabular" data-testid="history-imported">{{ row.original.imported }}</span>
+      </template>
+      <template #failed-cell="{ row }">
+        <span class="tabular" data-testid="history-failed">{{ row.original.failed }}</span>
+      </template>
+    </DsDataTable>
+  </DsPage>
 </template>

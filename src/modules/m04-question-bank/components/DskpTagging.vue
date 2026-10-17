@@ -8,7 +8,6 @@
  * "DSKP tagged". S4 preloads the saved chain and shows it selected (a saved id missing from its new
  * parent list is cleared; a failed lookup keeps the saved ids and shows "Cuba Semula", T4-1) and offers "Buang tag DSKP" whenever a Bidang is selected.
  */
-import { CircleCheck, Tags, X } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import {
@@ -21,6 +20,7 @@ import {
 } from '../api/lookups'
 import type { QuestionDetail } from '../api/questions'
 import { LOAD_ERROR } from '../lib/ui-errors'
+import NativeSelect from './native/NativeSelect.vue'
 
 const props = defineProps<{
   subjectId: string
@@ -205,93 +205,92 @@ function removeTag(): void {
   resetAll()
 }
 
-const SELECT =
-  'w-full min-w-0 min-h-11 rounded-lg border border-teal-200 bg-white px-2.5 py-2 text-xs text-slate-700 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400'
-const LABEL = 'mb-1 block text-xs font-medium text-slate-600'
 </script>
 
 <template>
-  <div class="rounded-xl border border-teal-200 bg-teal-50 p-3 sm:p-4" data-testid="dskp-block">
-    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-      <h3 class="flex items-center gap-2 text-sm font-semibold text-teal-800">
-        <Tags class="h-4 w-4" aria-hidden="true" />
-        DSKP Tagging <span class="text-xs font-normal text-teal-600">(Pilihan)</span>
+  <UCard variant="subtle" data-testid="dskp-block">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <h3 class="flex items-center gap-2 text-label text-highlighted">
+        <UIcon name="i-ph-tag" class="size-5 text-primary" />
+        DSKP Tagging <span class="text-caption text-muted">(Pilihan)</span>
       </h3>
-      <button
+      <UButton
         v-if="edit && bidangId !== ''"
         type="button"
-        class="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+        color="error"
+        variant="ghost"
+        icon="i-ph-x"
+        class="min-h-11"
         data-testid="dskp-remove"
         @click="removeTag"
       >
-        <X class="h-3.5 w-3.5" aria-hidden="true" />
         Buang tag DSKP
-      </button>
+      </UButton>
     </div>
     <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
       <div class="min-w-0">
-        <label for="q-dskp-bidang" :class="LABEL">Bidang</label>
-        <select id="q-dskp-bidang" v-model="bidangModel" :class="SELECT" data-testid="dskp-bidang">
+        <label for="q-dskp-bidang" class="mb-2 block text-label text-highlighted">Bidang</label>
+        <NativeSelect id="q-dskp-bidang" v-model="bidangModel" data-testid="dskp-bidang">
           <option value="">-- Pilih Bidang --</option>
           <option v-for="b in bidangList" :key="b.id" :value="String(b.id)">
             {{ b.code ? `${b.code} - ${b.name}` : b.name }}
           </option>
-        </select>
+        </NativeSelect>
       </div>
       <div class="min-w-0">
-        <label for="q-dskp-sk" :class="LABEL">Standard Kandungan</label>
-        <select
+        <label for="q-dskp-sk" class="mb-2 block text-label text-highlighted">Standard Kandungan</label>
+        <NativeSelect
           id="q-dskp-sk"
           v-model="skModel"
           :disabled="bidangId === ''"
-          :class="SELECT"
           data-testid="dskp-sk"
         >
           <option value="">-- Pilih SK --</option>
           <option v-for="s in skList" :key="s.id" :value="String(s.id)">
             {{ s.code }} - {{ s.description }}
           </option>
-        </select>
+        </NativeSelect>
       </div>
       <div class="min-w-0">
-        <label for="q-dskp-sp" :class="LABEL">Standard Pembelajaran</label>
-        <select
+        <label for="q-dskp-sp" class="mb-2 block text-label text-highlighted">Standard Pembelajaran</label>
+        <NativeSelect
           id="q-dskp-sp"
           v-model="spModel"
           name="dskp_sp_id"
           :disabled="skId === ''"
-          :class="SELECT"
           data-testid="dskp-sp"
         >
           <option value="">-- Pilih SP --</option>
           <option v-for="s in spList" :key="s.id" :value="String(s.id)">
             {{ s.code }} - {{ s.description }}
           </option>
-        </select>
+        </NativeSelect>
       </div>
     </div>
     <div
       v-if="failed"
-      class="mt-2 flex flex-wrap items-center gap-2 text-xs text-red-700"
+      class="mt-3 flex flex-wrap items-center gap-2 text-caption text-error"
       data-testid="dskp-load-error"
     >
       <span>{{ LOAD_ERROR }}</span>
-      <button
+      <UButton
         type="button"
-        class="inline-flex min-h-11 items-center rounded-lg bg-white px-3 font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+        color="neutral"
+        variant="soft"
+        class="min-h-11"
         data-testid="dskp-retry"
         @click="retry"
       >
         Cuba Semula
-      </button>
+      </UButton>
     </div>
     <p
       v-if="spId !== ''"
-      class="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-700"
+      class="mt-3 flex items-center gap-2 text-caption text-success"
       data-testid="dskp-tagged"
     >
-      <CircleCheck class="h-3.5 w-3.5" aria-hidden="true" />
+      <UIcon name="i-ph-check-circle" class="size-4" />
       DSKP tagged
     </p>
-  </div>
+  </UCard>
 </template>

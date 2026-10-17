@@ -5,17 +5,17 @@
  * unknown id is the standard 404 page; another load failure is the red box with "Cuba Semula". Save
  * sends #5 (the type never changes) and opens S3 with the API `status` flash (UNVERIFIED COPY).
  */
-import { ArrowLeft } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
-import { AlertBox } from '@/components/feedback'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import { fetchQuestion, updateQuestion, type QuestionInputBody } from '../api/questions'
+import ErrorBox from '../components/ErrorBox.vue'
 import QuestionForm from '../components/QuestionForm.vue'
 import { formErrors, type FormErrors } from '../lib/question-form'
 import { questionDetailPath } from '../lib/question-list'
@@ -77,36 +77,32 @@ async function save(body: QuestionInputBody): Promise<void> {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4 sm:space-y-6" data-testid="question-edit-page">
-    <div class="flex min-w-0 items-start gap-3">
-      <RouterLink
+  <DsPage data-testid="question-edit-page">
+    <div class="flex min-w-0 items-center gap-3">
+      <UButton
         :to="questionDetailPath(id)"
-        class="inline-flex min-h-11 min-w-11 items-center justify-center text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-arrow-left"
+        aria-label="Kembali"
+        class="size-11 shrink-0 justify-center"
         data-testid="question-back"
-      >
-        <ArrowLeft class="h-5 w-5" aria-hidden="true" />
-      </RouterLink>
-      <div class="min-w-0">
-        <h1 class="text-xl font-bold text-slate-800 sm:text-2xl">✏️ Edit Soalan</h1>
-        <p class="text-sm text-slate-500">Kemaskini maklumat soalan #{{ id }}</p>
+      />
+      <p class="min-w-0 text-body text-muted">Kemaskini maklumat soalan #{{ id }}</p>
+    </div>
+
+    <div v-if="loadError" class="flex flex-col gap-3" data-testid="question-form-error">
+      <ErrorBox :messages="LOAD_ERROR" />
+      <div>
+        <UButton type="button" class="min-h-11" data-testid="question-form-retry" @click="retry">
+          Cuba Semula
+        </UButton>
       </div>
     </div>
 
-    <div v-if="loadError" class="space-y-3" data-testid="question-form-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        data-testid="question-form-retry"
-        @click="retry"
-      >
-        Cuba Semula
-      </button>
-    </div>
-
-    <div v-else-if="!ready" class="space-y-4" data-testid="question-form-skeleton">
-      <div class="h-64 animate-pulse rounded-2xl bg-white shadow"></div>
-      <div class="h-48 animate-pulse rounded-2xl bg-white shadow"></div>
+    <div v-else-if="!ready" class="flex flex-col gap-4" data-testid="question-form-skeleton">
+      <USkeleton class="h-64 w-full" />
+      <USkeleton class="h-48 w-full" />
     </div>
 
     <QuestionForm
@@ -121,5 +117,5 @@ async function save(body: QuestionInputBody): Promise<void> {
       :cancel-to="questionDetailPath(id)"
       @submit="save"
     />
-  </div>
+  </DsPage>
 </template>

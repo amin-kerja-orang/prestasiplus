@@ -8,8 +8,8 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { createChapter, fetchLevelOptions, fetchSubjectOptions } from '../api/admin-curriculum'
 import ChapterForm, {
@@ -17,6 +17,7 @@ import ChapterForm, {
   type ChapterFormValues,
 } from '../components/curriculum/ChapterForm.vue'
 import CurriculumBackLink from '../components/curriculum/CurriculumBackLink.vue'
+import ErrorBox from '../components/ErrorBox.vue'
 import { errorLines, LOAD_ERROR, treeTo } from '../lib/curriculum-paths'
 import { queryString } from '../lib/query'
 
@@ -70,11 +71,11 @@ async function submit(payload: ChapterFormPayload): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl min-w-0 space-y-4" data-testid="chapter-create-page">
+  <DsPage class="max-w-3xl" data-testid="chapter-create-page">
     <CurriculumBackLink :to="treeTo(subjectParam, levelParam)" />
-    <AlertBox v-if="loadFailed" :messages="LOAD_ERROR" data-testid="curriculum-load-error" />
+    <ErrorBox v-if="loadFailed" :messages="LOAD_ERROR" data-testid="curriculum-load-error" />
     <template v-else-if="ready">
-      <AlertBox :messages="errors" data-testid="curriculum-form-alert" />
+      <ErrorBox :messages="errors" data-testid="curriculum-form-alert" />
       <ChapterForm
         mode="create"
         :subjects="subjects?.data ?? []"
@@ -85,5 +86,5 @@ async function submit(payload: ChapterFormPayload): Promise<void> {
         @submit="submit"
       />
     </template>
-  </div>
+  </DsPage>
 </template>

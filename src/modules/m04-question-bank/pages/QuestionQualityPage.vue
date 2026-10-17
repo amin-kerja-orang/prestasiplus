@@ -10,17 +10,16 @@
  * D9 deviation: a distribution segment narrower than {@link NARROW_SEGMENT_PCT} % keeps its label
  * outside the bar (live clips it, e.g. "0.5"). Nothing else changes.
  */
-import { ClipboardCheck, LoaderCircle, SquarePen } from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
 import { useApi, useFlash } from '@/composables'
+import { DsDataTable, DsPage, DsStatTile, type CardField } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchQualitySummary, runQualityAudit } from '../api/quality'
-import { averagePillClass, NARROW_SEGMENT_PCT } from '../lib/import-quality'
+import ErrorBox from '../components/ErrorBox.vue'
+import { averageColor } from '../lib/import-quality'
 import { questionEditPath } from '../lib/question-list'
 import { errorLines, LOAD_ERROR } from '../lib/ui-errors'
 
@@ -30,10 +29,10 @@ const { data, error, reload } = useApi((signal) => fetchQualitySummary({ signal 
 const firstLoad = computed(() => data.value === null && error.value === null)
 
 const SEGMENTS = [
-  { key: 'cemerlang', label: 'Cemerlang', bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
-  { key: 'baik', label: 'Baik', bar: 'bg-blue-500', dot: 'bg-blue-500' },
-  { key: 'lemah', label: 'Lemah', bar: 'bg-amber-400', dot: 'bg-amber-400' },
-  { key: 'kritikal', label: 'Kritikal', bar: 'bg-red-500', dot: 'bg-red-500' },
+  { key: 'cemerlang', label: 'Cemerlang', color: 'success' },
+  { key: 'baik', label: 'Baik', color: 'primary' },
+  { key: 'lemah', label: 'Lemah', color: 'warning' },
+  { key: 'kritikal', label: 'Kritikal', color: 'error' },
 ] as const
 
 const segments = computed(() => {
@@ -43,7 +42,6 @@ const segments = computed(() => {
     ...s,
     pct: d[s.key],
     text: `${formatNumber(d[s.key], { decimals: 1 })}%`,
-    narrow: d[s.key] < NARROW_SEGMENT_PCT,
   }))
 })
 
@@ -64,278 +62,268 @@ async function runAudit(): Promise<void> {
   }
 }
 
-const CARD = 'min-w-0 rounded-2xl bg-white p-5 shadow'
-const KPI = 'rounded-2xl bg-white p-4 text-center shadow sm:p-5'
-const KPI_LABEL = 'mt-1 text-xs text-slate-500 sm:text-sm'
-const BUCKET_TITLE = 'text-xs font-bold tracking-wide uppercase'
+interface SubjectRow extends Record<string, unknown> {
+  subjectId: number
+  name: string
+  count: string
+  average: number
+  averageText: string
+  excellent: string
+}
+interface ActionRow extends Record<string, unknown> {
+  id: number
+  idText: string
+  questionText: string
+  subjectName: string
+  levelName: string
+  source: string
+  score: number
+}
+
+const subjectRows = computed<SubjectRow[]>(() =>
+  (data.value?.bySubject ?? []).map((s) => ({
+    subjectId: s.subjectId,
+    name: s.name,
+    count: formatNumber(s.count),
+    average: s.average,
+    averageText: formatNumber(s.average, { decimals: 1 }),
+    excellent: `${String(s.excellentPct)}%`,
+  })),
+)
+const actionRows = computed<ActionRow[]>(() =>
+  (data.value?.actionList ?? []).map((q) => ({
+    id: q.id,
+    idText: `#${String(q.id)}`,
+    questionText: q.questionText,
+    subjectName: q.subject?.name ?? '',
+    levelName: q.level?.name ?? '',
+    source: q.sourceSet ?? '',
+    score: q.qualityScore,
+  })),
+)
+
+const subjectColumns: TableColumn<SubjectRow>[] = [
+  { accessorKey: 'name', header: 'Subjek' },
+  { accessorKey: 'count', header: 'Soalan' },
+  { accessorKey: 'averageText', header: 'Purata' },
+  { accessorKey: 'excellent', header: 'Cemerlang' },
+]
+const subjectCardFields: CardField[] = [
+  { key: 'count', label: 'Soalan' },
+  { key: 'averageText', label: 'Purata' },
+  { key: 'excellent', label: 'Cemerlang' },
+]
+const actionColumns: TableColumn<ActionRow>[] = [
+  { accessorKey: 'idText', header: 'ID' },
+  { accessorKey: 'questionText', header: 'Soalan' },
+  { accessorKey: 'subjectName', header: 'Subjek' },
+  { accessorKey: 'levelName', header: 'Tingkatan' },
+  { accessorKey: 'source', header: 'Sumber' },
+  { accessorKey: 'score', header: 'Skor' },
+]
+const actionCardFields: CardField[] = [
+  { key: 'subjectName', label: 'Subjek' },
+  { key: 'levelName', label: 'Tingkatan' },
+  { key: 'source', label: 'Sumber' },
+  { key: 'score', label: 'Skor' },
+]
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="quality-page">
-    <div v-if="error" class="space-y-3" data-testid="quality-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        data-testid="quality-retry"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
+  <DsPage data-testid="quality-page">
+    <div v-if="error" class="flex flex-col gap-3" data-testid="quality-error">
+      <ErrorBox :messages="LOAD_ERROR" />
+      <div>
+        <UButton type="button" class="min-h-11" data-testid="quality-retry" @click="reload()">
+          Cuba Semula
+        </UButton>
+      </div>
     </div>
 
-    <div v-else-if="firstLoad" class="space-y-5" data-testid="quality-skeleton">
-      <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div v-for="n in 4" :key="n" :class="KPI">
-          <div class="mx-auto h-8 w-24 animate-pulse rounded bg-slate-100"></div>
-        </div>
+    <div v-else-if="firstLoad" class="flex flex-col gap-4" data-testid="quality-skeleton">
+      <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <USkeleton v-for="n in 4" :key="n" class="h-24 w-full" />
       </div>
-      <div class="h-32 animate-pulse rounded-2xl bg-white shadow"></div>
-      <div class="h-64 animate-pulse rounded-2xl bg-white shadow"></div>
+      <USkeleton class="h-32 w-full" />
+      <USkeleton class="h-64 w-full" />
     </div>
 
     <template v-else-if="data">
-      <div class="grid grid-cols-2 gap-4 sm:grid-cols-4" data-testid="quality-kpis">
-        <div :class="KPI" data-testid="kpi-total">
-          <p class="text-2xl font-bold text-slate-800 sm:text-3xl" data-testid="kpi-total-value">
-            {{ formatNumber(data.total) }}
-          </p>
-          <p :class="KPI_LABEL">Jumlah Soalan</p>
-        </div>
-        <div :class="KPI" data-testid="kpi-average">
-          <p class="text-2xl font-bold text-blue-600 sm:text-3xl" data-testid="kpi-average-value">
-            {{ formatNumber(data.average, { decimals: 1 }) }}
-          </p>
-          <p :class="KPI_LABEL">Purata Skor</p>
-        </div>
-        <div :class="KPI" data-testid="kpi-excellent">
-          <p
-            class="text-2xl font-bold text-emerald-600 sm:text-3xl"
-            data-testid="kpi-excellent-value"
-          >
-            {{ formatNumber(data.excellentCount) }}
-          </p>
-          <p :class="KPI_LABEL">Cemerlang (76-100)</p>
-        </div>
-        <div :class="KPI" data-testid="kpi-action">
-          <p class="text-2xl font-bold text-red-600 sm:text-3xl" data-testid="kpi-action-value">
-            {{ formatNumber(data.activeActionCount) }}
-          </p>
-          <p :class="KPI_LABEL">Perlu Tindakan Aktif (≤ 50)</p>
-        </div>
+      <div class="grid grid-cols-2 gap-4 md:grid-cols-4" data-testid="quality-kpis">
+        <DsStatTile
+          :value="formatNumber(data.total)"
+          unit="Jumlah Soalan"
+          icon="i-ph-stack"
+          data-testid="kpi-total"
+        />
+        <DsStatTile
+          :value="formatNumber(data.average, { decimals: 1 })"
+          unit="Purata Skor"
+          icon="i-ph-gauge"
+          data-testid="kpi-average"
+        />
+        <DsStatTile
+          :value="formatNumber(data.excellentCount)"
+          unit="Cemerlang (76-100)"
+          icon="i-ph-seal-check"
+          data-testid="kpi-excellent"
+        />
+        <DsStatTile
+          :value="formatNumber(data.activeActionCount)"
+          unit="Perlu Tindakan Aktif (≤ 50)"
+          icon="i-ph-warning"
+          data-testid="kpi-action"
+        />
       </div>
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-3" data-testid="quality-buckets">
-        <div
-          class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-800"
-          data-testid="bucket-baik"
-        >
-          <p :class="BUCKET_TITLE">Skor 51-75</p>
-          <p class="my-1 text-3xl font-bold" data-testid="bucket-baik-value">
+        <UCard data-testid="bucket-baik">
+          <p class="text-overline text-muted">Skor 51-75</p>
+          <p class="tabular my-1 text-display text-highlighted" data-testid="bucket-baik-value">
             {{ formatNumber(data.buckets.baik) }}
           </p>
-          <p class="text-xs">Perlu semakan ringan atau pengayaan metadata.</p>
-        </div>
-        <div
-          class="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700"
-          data-testid="bucket-lemah"
-        >
-          <p :class="BUCKET_TITLE">Skor ≤ 50</p>
-          <p class="my-1 text-3xl font-bold" data-testid="bucket-lemah-value">
+          <p class="text-caption text-muted">Perlu semakan ringan atau pengayaan metadata.</p>
+        </UCard>
+        <UCard data-testid="bucket-lemah">
+          <p class="text-overline text-muted">Skor ≤ 50</p>
+          <p class="tabular my-1 text-display text-error" data-testid="bucket-lemah-value">
             {{ formatNumber(data.buckets.lemahKritikal) }}
           </p>
-          <p class="text-xs">Bucket ini patut jadi fokus tindakan segera.</p>
-        </div>
-        <div
-          class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-slate-700"
-          data-testid="bucket-legacy"
-        >
-          <p :class="BUCKET_TITLE">Legacy Generic</p>
-          <p class="my-1 text-3xl font-bold" data-testid="bucket-legacy-value">
+          <p class="text-caption text-muted">Bucket ini patut jadi fokus tindakan segera.</p>
+        </UCard>
+        <UCard data-testid="bucket-legacy">
+          <p class="text-overline text-muted">Legacy Generic</p>
+          <p class="tabular my-1 text-display text-highlighted" data-testid="bucket-legacy-value">
             {{ formatNumber(data.buckets.legacyGeneric) }}
           </p>
-          <p class="text-xs break-words">
+          <p class="text-caption break-words text-muted">
             Row legacy seperti `tracking_a_feed_20260308`, `spm_tracking_auto_seed_v1`, dan
             `source_type=ai_generated` diasingkan daripada senarai tindakan aktif.
           </p>
-        </div>
+        </UCard>
       </div>
 
-      <section :class="CARD" data-testid="quality-distribution">
-        <h3 class="mb-4 text-base font-bold text-slate-800">Taburan Kualiti</h3>
-        <div class="flex h-7 w-full overflow-hidden rounded-full bg-slate-100">
-          <div
-            v-for="s in segments"
-            :key="s.key"
-            :class="['flex items-center justify-center text-xs font-bold text-white', s.bar]"
-            :style="{ width: `${s.pct}%` }"
-            :data-testid="`dist-${s.key}`"
-          >
-            <span v-if="!s.narrow" class="whitespace-nowrap">{{ s.text }}</span>
-          </div>
-        </div>
-        <div
-          v-if="segments.some((s) => s.narrow)"
-          class="mt-1 flex flex-wrap gap-x-3 text-xs font-bold text-slate-600"
-        >
-          <span
-            v-for="s in segments.filter((x) => x.narrow)"
-            :key="s.key"
-            :data-testid="`dist-label-${s.key}`"
-          >
-            {{ s.label }} {{ s.text }}
-          </span>
-        </div>
-        <div class="mt-3 flex flex-wrap justify-between gap-x-4 gap-y-2 text-xs text-slate-600">
-          <span v-for="s in SEGMENTS" :key="s.key" class="inline-flex items-center gap-1.5">
-            <span :class="['h-3 w-3 rounded-sm', s.dot]"></span>
-            {{ s.label }}
-          </span>
-        </div>
-      </section>
+      <UCard data-testid="quality-distribution">
+        <h3 class="mb-4 text-subheading text-highlighted">Taburan Kualiti</h3>
+        <ul class="flex flex-col gap-3">
+          <li v-for="s in segments" :key="s.key" class="flex flex-col gap-1">
+            <div class="flex items-baseline justify-between gap-3 text-body">
+              <span class="text-highlighted">{{ s.label }}</span>
+              <span class="tabular text-label text-highlighted" :data-testid="`dist-${s.key}`">{{
+                s.text
+              }}</span>
+            </div>
+            <UProgress :model-value="s.pct" :max="100" :color="s.color" size="md" />
+          </li>
+        </ul>
+      </UCard>
 
-      <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <section :class="CARD" data-testid="quality-subjects">
-          <h3 class="mb-3 text-base font-bold text-slate-800">Mengikut Subjek</h3>
-          <div class="overflow-x-auto">
-            <table :class="[T.table, 'min-w-[22rem]']">
-              <thead>
-                <tr class="border-b-2 border-slate-200 text-xs text-slate-500">
-                  <th scope="col" class="py-2 pr-2 text-left font-medium">Subjek</th>
-                  <th scope="col" class="px-2 py-2 text-right font-medium">Soalan</th>
-                  <th scope="col" class="px-2 py-2 text-left font-medium">Purata</th>
-                  <th scope="col" class="py-2 pl-2 text-right font-medium">Cemerlang</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="s in data.bySubject"
-                  :key="s.subjectId"
-                  class="border-b border-slate-100"
-                  data-testid="subject-row"
-                >
-                  <td class="py-2 pr-2 text-slate-800">{{ s.name }}</td>
-                  <td class="px-2 py-2 text-right text-slate-600 tabular-nums">
-                    {{ formatNumber(s.count) }}
-                  </td>
-                  <td class="px-2 py-2">
-                    <span
-                      :class="[
-                        'inline-block rounded-full px-2 py-0.5 text-xs font-bold',
-                        averagePillClass(s.average),
-                      ]"
-                      >{{ formatNumber(s.average, { decimals: 1 }) }}</span
-                    >
-                  </td>
-                  <td class="py-2 pl-2 text-right text-slate-600 tabular-nums">
-                    {{ s.excellentPct }}%
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+      <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
+        <div class="min-w-0" data-testid="quality-subjects">
+          <h3 class="mb-3 text-subheading text-highlighted">Mengikut Subjek</h3>
+          <DsDataTable
+            :data="subjectRows"
+            :columns="subjectColumns"
+            caption="Kualiti mengikut subjek"
+            :page-size="Math.max(subjectRows.length, 1)"
+            card-title="name"
+            :card-fields="subjectCardFields"
+          >
+            <template #averageText-cell="{ row }">
+              <UBadge
+                :color="averageColor(row.original.average)"
+                variant="subtle"
+                :label="row.original.averageText"
+                data-testid="subject-average"
+              />
+            </template>
+          </DsDataTable>
+        </div>
 
-        <section :class="CARD" data-testid="quality-levels">
-          <h3 class="mb-3 text-base font-bold text-slate-800">Mengikut Tingkatan</h3>
-          <div class="space-y-3">
-            <div v-for="l in data.byLevel" :key="l.levelId" data-testid="level-row">
-              <div class="flex items-baseline justify-between gap-3 text-sm">
-                <span class="text-slate-800">{{ l.name }}</span>
-                <span class="text-slate-600"
+        <UCard data-testid="quality-levels">
+          <h3 class="mb-3 text-subheading text-highlighted">Mengikut Tingkatan</h3>
+          <div class="flex flex-col gap-4">
+            <div v-for="l in data.byLevel" :key="l.levelId" class="flex flex-col gap-1" data-testid="level-row">
+              <div class="flex items-baseline justify-between gap-3 text-body">
+                <span class="text-highlighted">{{ l.name }}</span>
+                <span class="tabular text-muted"
                   >{{ formatNumber(l.count) }} soalan ·
                   {{ formatNumber(l.average, { decimals: 1 }) }}</span
                 >
               </div>
-              <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                <div
-                  class="h-full rounded-full bg-emerald-500"
-                  :style="{ width: `${l.average}%` }"
-                  data-testid="level-bar"
-                ></div>
-              </div>
+              <UProgress :model-value="l.average" :max="100" size="sm" data-testid="level-bar" />
             </div>
           </div>
-        </section>
+        </UCard>
       </div>
 
-      <div data-testid="quality-actions">
-        <DataTableCard :min-width="640">
-          <template #header>
-            <div class="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
-              <div class="min-w-0">
-                <h3 class="text-base font-bold text-slate-800">Soalan Untuk Semakan Aktif</h3>
-                <p class="mt-0.5 text-xs text-slate-500">
-                  Memaparkan hanya soalan skor ≤ 50 selepas menolak sumber generic legacy.
-                </p>
-              </div>
-              <span
-                class="shrink-0 text-sm whitespace-nowrap text-slate-500"
-                data-testid="action-count"
-                >{{ formatNumber(data.actionList.length) }} soalan</span
+      <div class="flex flex-col gap-3" data-testid="quality-actions">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="text-subheading text-highlighted">Soalan Untuk Semakan Aktif</h3>
+            <p class="mt-1 text-caption text-muted">
+              Memaparkan hanya soalan skor ≤ 50 selepas menolak sumber generic legacy.
+            </p>
+          </div>
+          <span class="tabular shrink-0 text-body whitespace-nowrap text-muted" data-testid="action-count"
+            >{{ formatNumber(data.actionList.length) }} soalan</span
+          >
+        </div>
+        <DsDataTable
+          :data="actionRows"
+          :columns="actionColumns"
+          caption="Soalan untuk semakan aktif"
+          :page-size="Math.max(actionRows.length, 1)"
+          card-title="questionText"
+          :card-fields="actionCardFields"
+        >
+          <template #questionText-cell="{ row }">
+            <span class="block max-w-64 break-words text-highlighted">{{ row.original.questionText }}</span>
+          </template>
+          <template #source-cell="{ row }">
+            <span class="block max-w-56 text-caption break-all text-muted">{{ row.original.source }}</span>
+          </template>
+          <template #score-cell="{ row }">
+            <div class="flex items-center gap-2 whitespace-nowrap">
+              <UBadge color="warning" variant="subtle" :label="String(row.original.score)" />
+              <UButton
+                :to="questionEditPath(row.original.id)"
+                color="neutral"
+                variant="link"
+                icon="i-ph-pencil-simple"
+                class="min-h-11"
+                data-testid="action-edit"
               >
+                Edit
+              </UButton>
             </div>
           </template>
-          <table :class="T.table">
-            <thead>
-              <tr class="border-b-2 border-slate-200 text-xs text-slate-500">
-                <th scope="col" class="px-5 py-2 text-left font-medium">ID</th>
-                <th scope="col" class="px-2 py-2 text-left font-medium">Soalan</th>
-                <th scope="col" class="px-2 py-2 text-left font-medium">Subjek</th>
-                <th scope="col" class="px-2 py-2 text-left font-medium">Tingkatan</th>
-                <th scope="col" class="px-2 py-2 text-left font-medium">Sumber</th>
-                <th scope="col" class="px-5 py-2 text-left font-medium">Skor</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="q in data.actionList"
-                :key="q.id"
-                class="border-t border-slate-100"
-                data-testid="action-row"
-              >
-                <td class="px-5 py-2.5 whitespace-nowrap text-slate-600">#{{ q.id }}</td>
-                <td class="max-w-64 px-2 py-2.5 break-words text-slate-800">
-                  {{ q.questionText }}
-                </td>
-                <td class="px-2 py-2.5 text-slate-700">{{ q.subject?.name ?? '' }}</td>
-                <td class="px-2 py-2.5 text-slate-700">{{ q.level?.name ?? '' }}</td>
-                <td class="max-w-56 px-2 py-2.5 text-xs break-all text-slate-500">
-                  {{ q.sourceSet ?? '' }}
-                </td>
-                <td class="px-5 py-2.5 whitespace-nowrap">
-                  <span
-                    class="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700"
-                    >{{ q.qualityScore }}</span
-                  >
-                  <RouterLink
-                    :to="questionEditPath(q.id)"
-                    class="ml-2 inline-flex min-h-11 items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
-                    data-testid="action-edit"
-                  >
-                    <SquarePen class="h-3.5 w-3.5" aria-hidden="true" />
-                    Edit
-                  </RouterLink>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </DataTableCard>
+          <template #card-actions="{ row }">
+            <UButton
+              :to="questionEditPath(row.id as number)"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-pencil-simple"
+              aria-label="Edit"
+              class="min-h-11 min-w-11 justify-center"
+            />
+          </template>
+        </DsDataTable>
       </div>
 
       <div class="flex justify-end">
-        <button
+        <UButton
           type="button"
+          :loading="running"
           :disabled="running"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
+          :icon="running ? undefined : 'i-ph-clipboard-text'"
+          class="min-h-11"
           data-testid="quality-audit"
           @click="runAudit"
         >
-          <LoaderCircle v-if="running" class="h-4 w-4 animate-spin" aria-hidden="true" />
-          <ClipboardCheck v-else class="h-4 w-4" aria-hidden="true" />
           {{ running ? 'Sedang audit...' : 'Jalankan Audit Semula' }}
-        </button>
+        </UButton>
       </div>
     </template>
-  </div>
+  </DsPage>
 </template>
