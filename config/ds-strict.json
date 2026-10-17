@@ -23,7 +23,15 @@
     { "glob": "src/modules/m14-gamification/components/student-b/KadCardFrame.vue", "level": "ds" },
     { "glob": "src/modules/m14-gamification/components/student-b/LeaderboardPodium.vue", "level": "ds" },
     { "glob": "src/modules/m14-gamification/components/student-b/LeaderboardRows.vue", "level": "ds" },
-    { "glob": "src/modules/m14-gamification/components/student-b/StudentBLoadState.vue", "level": "ds" }
+    { "glob": "src/modules/m14-gamification/components/student-b/StudentBLoadState.vue", "level": "ds" },
+    { "glob": "src/modules/m10-teacher-class/pages/GuruDashboardPage.vue", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/pages/Kelas{List,Create}Page.vue", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/pages/PelajarSayaPage.vue", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/pages/SumbangSoalan*.vue", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/components/dashboard/*.vue", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/components/kelas/{ClassCard,QrModal,SchoolPicker}.vue", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/components/pelajar/*.vue", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/components/soalan/*.vue", "level": "page" }
   ],
   "exempt": ["src/theme/**"]
 }

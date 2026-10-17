@@ -51,7 +51,14 @@ describe('S23 detail', () => {
     expect(t(w, 'detail-type').text()).toBe('mcq')
     expect(t(w, 'detail-text').text()).toBe('Pilih ayat yang betul?')
     const options = all(w, 'detail-option')
-    expect(options.map((o) => o.text())).toEqual(['A) Satu', 'B) Dua', 'C) Tiga', 'D) Empat'])
+    expect(
+      options.map((o) =>
+        o
+          .text()
+          .replace(/Betul$/, '')
+          .trim(),
+      ),
+    ).toEqual(['A) Satu', 'B) Dua', 'C) Tiga', 'D) Empat'])
     expect(options.map((o) => o.attributes('data-correct'))).toEqual([
       'false',
       'false',
@@ -59,9 +66,9 @@ describe('S23 detail', () => {
       'false',
     ])
     expect(t(w, 'detail-explanation').text()).toContain('Penerangan')
-    expect(t(w, 'stat-attempts').text()).toBe('4')
-    expect(t(w, 'stat-correct').text()).toBe('3')
-    expect(t(w, 'stat-accuracy').text()).toBe('75%')
+    expect(t(w, 'stat-attempts').text()).toContain('4')
+    expect(t(w, 'stat-correct').text()).toContain('3')
+    expect(t(w, 'stat-accuracy').text()).toContain('75%')
     expect(t(w, 'detail-back').attributes('href')).toBe('/guru/soalan')
     expect(t(w, 'detail-edit').attributes('href')).toBe('/guru/soalan/522425/edit')
   })

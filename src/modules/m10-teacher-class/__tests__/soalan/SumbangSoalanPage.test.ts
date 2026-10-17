@@ -56,7 +56,7 @@ afterEach(() => vi.clearAllMocks())
 describe('S21 Sumbang Soalan', () => {
   it('renders the stats, tiers, next target and the subject chips', async () => {
     const w = await mountPage()
-    expect(t(w, 'stat-total-value').text()).toBe('120')
+    expect(t(w, 'stat-total-value').text()).toContain('120')
     expect(t(w, 'stat-pending').text()).toContain('⏳ Menunggu')
     expect(all(w, 'tier')).toHaveLength(3)
     expect(all(w, 'tier').map((x) => x.attributes('data-reached'))).toEqual([
@@ -149,8 +149,7 @@ describe('S21 Sumbang Soalan', () => {
       { page: 2 },
       expect.objectContaining({ signal: expect.any(AbortSignal) as AbortSignal }),
     )
-    expect(w.text()).toContain('Showing')
-    expect(w.text()).toContain('of 45 results')
+    expect(t(w, 'soalan-pager-text').text()).toBe('Menunjukkan 21-22 daripada 45 hasil')
   })
 
   it('shows the retry box when the stats fail to load @provisional UNVERIFIED COPY', async () => {
@@ -170,7 +169,7 @@ describe('S21 empty lists', () => {
     const w = await mountPage()
     expect(t(w, 'soalan-empty').text()).toBe('Belum ada soalan.')
     expect(all(w, 'question-card')).toHaveLength(0)
-    expect(w.text()).not.toContain('Showing')
+    expect(w.text()).not.toContain('Menunjukkan')
   })
 
   it('a page beyond the last shows no cards and no empty text, only the pager line', async () => {
@@ -178,7 +177,7 @@ describe('S21 empty lists', () => {
     const w = await mountPage('/guru/soalan?page=9')
     expect(all(w, 'question-card')).toHaveLength(0)
     expect(t(w, 'soalan-empty').exists()).toBe(false)
-    expect(w.text()).toContain('Showing 0 of 45 results')
+    expect(t(w, 'soalan-pager-text').text()).toBe('Menunjukkan 0-0 daripada 45 hasil')
   })
 })
 

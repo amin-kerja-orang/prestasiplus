@@ -5,14 +5,12 @@
  * `?page=`) with edit / delete (#56), and "Hantar Kertas Soalan kepada Admin". The list and the stats
  * reload after a delete or an import.
  */
-import { Plus } from '@lucide/vue'
 import { computed, ref } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import { LaravelPager } from '@/components/data'
-import { confirmNative, useApi, useFlash, usePrototypeScope } from '@/composables'
+import { useApi, useFlash, usePrototypeScope } from '@/composables'
+import { DsPage, useConfirm } from '@/ds'
 
 import {
   deleteContributedQuestion,
@@ -29,6 +27,7 @@ import QuestionCard from '../components/soalan/QuestionCard.vue'
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+const confirm = useConfirm()
 // Prototype scope (D43): the Audio KBAT card links to screens outside the matrix.
 const { allows } = usePrototypeScope()
 
@@ -44,7 +43,8 @@ const deleting = ref(false)
 const deleteError = ref<string[]>([])
 
 async function remove(id: number): Promise<void> {
-  if (deleting.value || !confirmNative(COPY.confirmDelete(id))) return
+  if (deleting.value || !(await confirm({ message: COPY.confirmDelete(id), tone: 'danger' })))
+    return
   deleting.value = true
   deleteError.value = []
   try {
@@ -66,6 +66,16 @@ function go(next: number): void {
   void router.push({ path: route.path, query: next > 1 ? { page: String(next) } : {} })
 }
 
+/** Pager line, BM copy of the design-system table pager (range shown, then the total). */
+const pagerText = computed(() => {
+  const meta = list.data.value?.meta
+  const rows = list.data.value?.data.length ?? 0
+  if (!meta) return ''
+  const from = rows === 0 ? 0 : (page.value - 1) * meta.pageSize + 1
+  const to = rows === 0 ? 0 : (page.value - 1) * meta.pageSize + rows
+  return `Menunjukkan ${String(from)}-${String(to)} daripada ${String(meta.totalItems)} hasil`
+})
+
 const retry = (): void => {
   void summary.reload()
   void list.reload()
@@ -73,70 +83,82 @@ const retry = (): void => {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="soalan-page">
-    <div
-      v-if="summary.error.value"
-      class="min-w-0 space-y-3 rounded-2xl bg-white p-4 shadow-sm"
-      data-testid="soalan-error"
-    >
-      <AlertBox :messages="COPY.loadFailed" />
-      <button
+  <DsPage data-testid="soalan-page">
+    <UCard v-if="summary.error.value" data-testid="soalan-error">
+      <UAlert
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle-duotone"
+        :title="COPY.loadFailed"
+        role="alert"
+      />
+      <UButton
         type="button"
-        class="inline-flex min-h-11 items-center rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+        color="neutral"
+        variant="soft"
+        class="mt-3 min-h-11"
         data-testid="soalan-retry"
         @click="retry"
+        >{{ COPY.retry }}</UButton
       >
-        {{ COPY.retry }}
-      </button>
-    </div>
+    </UCard>
     <div
       v-else-if="!summary.data.value"
-      class="flex justify-center rounded-2xl bg-white px-4 py-10 text-slate-400 shadow-sm"
+      class="grid grid-cols-2 gap-3 md:grid-cols-4"
+      aria-busy="true"
       data-testid="soalan-loading"
     >
-      <LoadingSpinner :size="24" />
+      <USkeleton v-for="n in 4" :key="n" class="h-28 w-full" />
     </div>
     <ContributionSummary v-else :summary="summary.data.value" />
 
     <ImportCard @imported="onImported" />
     <AudioKbatCard v-if="allows('/guru/audio-kbat')" />
 
-    <section class="min-w-0 space-y-3" data-testid="soalan-saya">
+    <section class="flex min-w-0 flex-col gap-3" data-testid="soalan-saya">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-lg font-bold text-slate-800">Soalan Saya</h2>
-        <RouterLink
+        <h2 class="text-heading text-highlighted">Soalan Saya</h2>
+        <UButton
           to="/guru/soalan/cipta"
-          class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-bold text-white hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+          icon="i-ph-plus-circle-duotone"
+          class="min-h-11"
           data-testid="soalan-add"
+          >Tambah Soalan</UButton
         >
-          <Plus class="h-4 w-4" />
-          Tambah Soalan
-        </RouterLink>
       </div>
 
-      <AlertBox :messages="deleteError" data-testid="soalan-delete-error" />
+      <UAlert
+        v-if="deleteError.length"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle-duotone"
+        role="alert"
+        data-testid="soalan-delete-error"
+      >
+        <template #description>
+          <p v-for="(m, i) in deleteError" :key="i">{{ m }}</p>
+        </template>
+      </UAlert>
 
-      <div
-        v-if="list.error.value"
-        class="rounded-2xl bg-white p-4 shadow-sm"
-        data-testid="soalan-list-error"
-      >
-        <AlertBox :messages="COPY.loadFailed" />
-      </div>
-      <div
-        v-else-if="!list.data.value"
-        class="flex justify-center rounded-2xl bg-white px-4 py-8 text-slate-400 shadow-sm"
-      >
-        <LoadingSpinner :size="24" />
+      <UCard v-if="list.error.value" data-testid="soalan-list-error">
+        <UAlert
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle-duotone"
+          :title="COPY.loadFailed"
+          role="alert"
+        />
+      </UCard>
+      <div v-else-if="!list.data.value" class="flex flex-col gap-3" aria-busy="true">
+        <USkeleton v-for="n in 3" :key="n" class="h-20 w-full" />
       </div>
       <template v-else>
-        <p
-          v-if="list.data.value.data.length === 0 && page === 1"
-          class="rounded-2xl bg-white px-4 py-8 text-center text-sm text-slate-500 shadow-sm"
-          data-testid="soalan-empty"
-        >
-          {{ COPY.listEmpty }}
-        </p>
+        <UCard v-if="list.data.value.data.length === 0 && page === 1" data-testid="soalan-empty">
+          <div class="flex flex-col items-center gap-2 py-6 text-center">
+            <UIcon name="i-ph-note-pencil-duotone" class="size-12 text-dimmed" />
+            <p class="text-body text-muted">{{ COPY.listEmpty }}</p>
+          </div>
+        </UCard>
         <ul v-else class="grid min-w-0 grid-cols-1 gap-3" data-testid="soalan-list">
           <QuestionCard
             v-for="q in list.data.value.data"
@@ -146,16 +168,26 @@ const retry = (): void => {
             @remove="remove"
           />
         </ul>
-        <LaravelPager
-          :page="page"
-          :total="list.data.value.meta.totalItems"
-          :per-page="list.data.value.meta.pageSize"
-          :path="route.path"
-          @change="go"
-        />
+        <div
+          v-if="list.data.value.meta.totalItems > list.data.value.meta.pageSize"
+          class="flex flex-wrap items-center justify-between gap-3"
+          data-testid="soalan-pager"
+        >
+          <p class="text-caption text-muted" role="status" data-testid="soalan-pager-text">
+            {{ pagerText }}
+          </p>
+          <UPagination
+            :page="page"
+            :total="list.data.value.meta.totalItems"
+            :items-per-page="list.data.value.meta.pageSize"
+            :prev="{ 'aria-label': 'Sebelum' }"
+            :next="{ 'aria-label': 'Seterusnya' }"
+            @update:page="go"
+          />
+        </div>
       </template>
     </section>
 
     <HantarKertasCard />
-  </div>
+  </DsPage>
 </template>

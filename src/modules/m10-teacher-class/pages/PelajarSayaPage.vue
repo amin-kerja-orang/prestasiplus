@@ -4,24 +4,11 @@
  * "Pelajar Sekolah" / "Pelajar Saya" (default, client state), the empty and no-school cards, and
  * the PROPOSED student rows with add (#16) and remove (#17).
  */
-import {
-  CirclePlus,
-  GraduationCap,
-  Building2,
-  UserCheck,
-  UserCog,
-  UserPlus,
-  Users,
-  Plus,
-} from '@lucide/vue'
 import { computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { ApiError } from '@/api'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import { FORM_INPUT_CLASS, FORM_SELECT_CLASS } from '@/components/form'
-import { confirmNative } from '@/components/overlay'
 import { useApi, useDebouncedRef, useFlash, usePrototypeScope } from '@/composables'
+import { DsIconChip, DsPage, useConfirm } from '@/ds'
 
 import {
   addStudentToClass,
@@ -31,9 +18,11 @@ import {
 } from '../api/guru'
 import type { StudentTab } from '../api/types'
 import { PELAJAR_COPY } from '../components/pelajar/copy'
+import NativeSelect from '../components/native/NativeSelect.vue'
 import StudentRow from '../components/pelajar/StudentRow.vue'
 
 const flash = useFlash()
+const confirm = useConfirm()
 // Prototype scope (D43): the teacher profile editor is outside the matrix.
 const { allows } = usePrototypeScope()
 const tab = ref<StudentTab>('mine')
@@ -108,97 +97,98 @@ const add = (studentId: number): Promise<void> =>
   )
 
 async function remove(studentId: number, classId: number): Promise<void> {
-  if (!confirmNative(PELAJAR_COPY.removeConfirm)) return
+  if (!(await confirm({ message: PELAJAR_COPY.removeConfirm, tone: 'danger' }))) return
   await act(() => removeStudentFromClass(studentId, classId), PELAJAR_COPY.removed)
 }
-
-const TAB =
-  'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold transition'
-const TAB_ON = 'bg-white text-indigo-700 shadow-sm'
-const TAB_OFF = 'text-slate-500 hover:text-slate-700'
-const CTA =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-500 px-6 text-sm font-semibold text-white hover:bg-indigo-600'
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="pelajar-page">
-    <section
-      class="flex items-center justify-between gap-3 rounded-2xl bg-linear-to-r from-blue-500 to-indigo-600 p-4 text-white shadow sm:p-5"
-    >
-      <div class="flex min-w-0 items-center gap-3">
-        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
-          <Users class="h-6 w-6" />
-        </span>
-        <div class="min-w-0">
-          <p class="font-heading text-2xl leading-none font-bold" data-testid="pelajar-count">
-            {{ count }}
-          </p>
-          <p class="text-sm text-white/80">{{ PELAJAR_COPY.counterLabel }}</p>
+  <DsPage data-testid="pelajar-page">
+    <UCard>
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-3">
+          <DsIconChip icon="i-ph-users-three-duotone" size="lg" />
+          <div class="min-w-0">
+            <p class="tabular text-title text-highlighted" data-testid="pelajar-count">
+              {{ count }}
+            </p>
+            <p class="text-body text-muted">{{ PELAJAR_COPY.counterLabel }}</p>
+          </div>
         </div>
+        <UButton
+          to="/guru/pelajar/cipta"
+          icon="i-ph-user-plus-duotone"
+          class="min-h-11 shrink-0"
+          data-testid="pelajar-create"
+          >Cipta<span class="hidden sm:inline">&nbsp;Pelajar</span></UButton
+        >
       </div>
-      <RouterLink
-        to="/guru/pelajar/cipta"
-        class="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
-        data-testid="pelajar-create"
-      >
-        <UserPlus class="h-4 w-4" />Cipta<span class="hidden sm:inline">&nbsp;Pelajar</span>
-      </RouterLink>
-    </section>
+    </UCard>
 
-    <div class="flex gap-1 rounded-xl bg-slate-100 p-1" data-testid="pelajar-tabs">
-      <button
+    <UFieldGroup class="w-full sm:w-fit" data-testid="pelajar-tabs">
+      <UButton
         type="button"
-        :class="[TAB, tab === 'school' ? TAB_ON : TAB_OFF]"
+        :color="tab === 'school' ? 'primary' : 'neutral'"
+        :variant="tab === 'school' ? 'solid' : 'soft'"
+        icon="i-ph-buildings-duotone"
+        class="min-h-11 grow justify-center"
+        :aria-pressed="tab === 'school'"
         data-testid="tab-school"
         @click="tab = 'school'"
+        >{{ PELAJAR_COPY.tabSchool }}</UButton
       >
-        <Building2 class="h-4 w-4" />{{ PELAJAR_COPY.tabSchool }}
-      </button>
-      <button
+      <UButton
         type="button"
-        :class="[TAB, tab === 'mine' ? TAB_ON : TAB_OFF]"
+        :color="tab === 'mine' ? 'primary' : 'neutral'"
+        :variant="tab === 'mine' ? 'solid' : 'soft'"
+        icon="i-ph-user-check-duotone"
+        class="min-h-11 grow justify-center"
+        :aria-pressed="tab === 'mine'"
         data-testid="tab-mine"
         @click="tab = 'mine'"
       >
-        <UserCheck class="h-4 w-4" />{{ PELAJAR_COPY.tabMine }}
-        <span
-          class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700"
-          data-testid="tab-mine-count"
-          >{{ count }}</span
-        >
-      </button>
-    </div>
+        {{ PELAJAR_COPY.tabMine }}
+        <UBadge color="neutral" variant="subtle" data-testid="tab-mine-count">{{ count }}</UBadge>
+      </UButton>
+    </UFieldGroup>
 
-    <AlertBox v-if="loadError" :messages="PELAJAR_COPY.loadFailed" />
+    <UAlert
+      v-if="loadError"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle-duotone"
+      :title="PELAJAR_COPY.loadFailed"
+      :actions="[
+        { label: 'Cuba Lagi', color: 'neutral', variant: 'soft', onClick: () => reloadAll() },
+      ]"
+      role="alert"
+    />
 
     <!-- Pelajar Saya -->
     <template v-else-if="tab === 'mine'">
       <div
         v-if="!mine.data.value"
-        class="flex justify-center py-10 text-slate-400"
+        class="flex flex-col gap-2"
+        aria-busy="true"
         data-testid="pelajar-loading"
       >
-        <LoadingSpinner :size="28" />
+        <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
       </div>
-      <section
-        v-else-if="mineRows.length === 0"
-        class="rounded-2xl bg-white px-6 py-10 text-center shadow-sm"
-        data-testid="pelajar-empty"
-      >
-        <GraduationCap class="mx-auto h-14 w-14 text-slate-400" />
-        <h2 class="mt-3 font-heading text-lg font-bold text-slate-500">
-          {{ PELAJAR_COPY.emptyTitle }}
-        </h2>
-        <p class="mt-1 text-sm text-slate-400">{{ PELAJAR_COPY.emptyBody }}</p>
-        <RouterLink
-          to="/guru/kelas/cipta"
-          :class="[CTA, 'mt-5']"
-          data-testid="pelajar-empty-create"
-        >
-          <Plus class="h-4 w-4" />{{ PELAJAR_COPY.createClass }}
-        </RouterLink>
-      </section>
-      <ul v-else class="space-y-2" data-testid="pelajar-mine-list">
+      <UCard v-else-if="mineRows.length === 0" data-testid="pelajar-empty">
+        <div class="flex flex-col items-center gap-2 py-6 text-center">
+          <UIcon name="i-ph-graduation-cap-duotone" class="size-12 text-dimmed" />
+          <h2 class="text-subheading text-highlighted">{{ PELAJAR_COPY.emptyTitle }}</h2>
+          <p class="text-body text-muted">{{ PELAJAR_COPY.emptyBody }}</p>
+          <UButton
+            to="/guru/kelas/cipta"
+            icon="i-ph-plus"
+            class="mt-3 min-h-11"
+            data-testid="pelajar-empty-create"
+            >{{ PELAJAR_COPY.createClass }}</UButton
+          >
+        </div>
+      </UCard>
+      <ul v-else class="flex flex-col gap-2" data-testid="pelajar-mine-list">
         <StudentRow
           v-for="s in mineRows"
           :key="s.id"
@@ -213,61 +203,54 @@ const CTA =
 
     <!-- Pelajar Sekolah -->
     <template v-else>
-      <section class="rounded-2xl bg-white p-4 shadow-sm" data-testid="pelajar-add-bar">
+      <UCard data-testid="pelajar-add-bar">
         <div class="flex flex-wrap items-center gap-3">
-          <label
-            for="pelajar-target"
-            class="flex items-center gap-2 text-sm font-semibold text-indigo-700"
-          >
-            <CirclePlus class="h-4 w-4" />{{ PELAJAR_COPY.addTo }}
+          <label for="pelajar-target" class="flex items-center gap-2 text-label text-highlighted">
+            <UIcon name="i-ph-plus-circle-duotone" class="size-4 text-primary" />{{
+              PELAJAR_COPY.addTo
+            }}
           </label>
-          <select
+          <NativeSelect
             id="pelajar-target"
             v-model="targetClass"
-            :class="[FORM_SELECT_CLASS, 'min-w-0 flex-1']"
+            class="min-w-0 grow"
             data-testid="pelajar-target"
           >
             <option value="">{{ PELAJAR_COPY.chooseClass }}</option>
             <option v-for="c in ownClasses" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
-          </select>
+          </NativeSelect>
         </div>
-      </section>
+      </UCard>
 
-      <section
-        v-if="school.data.value && !schoolSet"
-        class="rounded-2xl bg-white px-6 py-10 text-center shadow-sm"
-        data-testid="pelajar-no-school"
-      >
-        <Building2 class="mx-auto h-14 w-14 text-slate-300" />
-        <h2 class="mt-3 font-heading text-lg font-bold text-slate-700">
-          {{ PELAJAR_COPY.noSchoolTitle }}
-        </h2>
-        <p class="mx-auto mt-1 max-w-md text-sm text-slate-400">{{ PELAJAR_COPY.noSchoolBody }}</p>
-        <RouterLink
-          v-if="allows('/guru/profil/edit')"
-          to="/guru/profil/edit"
-          :class="[CTA, 'mt-5']"
-          data-testid="pelajar-profile-link"
-        >
-          <UserCog class="h-4 w-4" />{{ PELAJAR_COPY.profileSettings }}
-        </RouterLink>
-      </section>
+      <UCard v-if="school.data.value && !schoolSet" data-testid="pelajar-no-school">
+        <div class="flex flex-col items-center gap-2 py-6 text-center">
+          <UIcon name="i-ph-buildings-duotone" class="size-12 text-dimmed" />
+          <h2 class="text-subheading text-highlighted">{{ PELAJAR_COPY.noSchoolTitle }}</h2>
+          <p class="max-w-prose text-body text-muted">{{ PELAJAR_COPY.noSchoolBody }}</p>
+          <UButton
+            v-if="allows('/guru/profil/edit')"
+            to="/guru/profil/edit"
+            icon="i-ph-user-gear-duotone"
+            class="mt-3 min-h-11"
+            data-testid="pelajar-profile-link"
+            >{{ PELAJAR_COPY.profileSettings }}</UButton
+          >
+        </div>
+      </UCard>
       <template v-else-if="school.data.value">
-        <input
+        <UInput
           v-model="search"
           type="search"
+          icon="i-ph-magnifying-glass-duotone"
           :placeholder="PELAJAR_COPY.searchPlaceholder"
-          :class="FORM_INPUT_CLASS"
+          :aria-label="PELAJAR_COPY.searchPlaceholder"
+          class="w-full"
           data-testid="pelajar-search"
         />
-        <p
-          v-if="schoolRows.length === 0"
-          class="rounded-2xl bg-white px-6 py-8 text-center text-sm text-slate-500 shadow-sm"
-          data-testid="pelajar-school-empty"
-        >
-          {{ PELAJAR_COPY.schoolEmpty }}
-        </p>
-        <ul v-else class="space-y-2" data-testid="pelajar-school-list">
+        <UCard v-if="schoolRows.length === 0" data-testid="pelajar-school-empty">
+          <p class="py-4 text-center text-body text-muted">{{ PELAJAR_COPY.schoolEmpty }}</p>
+        </UCard>
+        <ul v-else class="flex flex-col gap-2" data-testid="pelajar-school-list">
           <StudentRow
             v-for="s in schoolRows"
             :key="s.id"
@@ -280,9 +263,9 @@ const CTA =
           />
         </ul>
       </template>
-      <div v-else class="flex justify-center py-10 text-slate-400" data-testid="pelajar-loading">
-        <LoadingSpinner :size="28" />
+      <div v-else class="flex flex-col gap-2" aria-busy="true" data-testid="pelajar-loading">
+        <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
       </div>
     </template>
-  </div>
+  </DsPage>
 </template>

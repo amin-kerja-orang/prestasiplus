@@ -109,8 +109,8 @@ describe('S1 GuruDashboardPage', () => {
     const cards = ['classes', 'students', 'questions', 'assignments'].map((k) => {
       const c = w.get(`[data-testid="stat-${k}"]`)
       return [
-        c.find('p').text(),
-        c.get('[data-testid="stat-value"]').text(),
+        c.get('[data-ds="stat-tile"] span.text-caption').text(),
+        c.get('[data-ds="stat-tile"] span.tabular').text(),
         c.get('[data-testid="stat-caption"]').text(),
       ]
     })

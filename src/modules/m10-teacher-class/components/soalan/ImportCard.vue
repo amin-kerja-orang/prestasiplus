@@ -5,16 +5,16 @@
  * #58 and reports the result: imported count and the failed rows (the valid rows are kept). The result
  * summary is UNVERIFIED COPY (SRS §8.3).
  */
-import { CloudUpload, Download, FileSpreadsheet, Info, Upload } from '@lucide/vue'
 import { ref } from 'vue'
 
 import { isApiError } from '@/api'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
+import { DsIconChip } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadQuestionTemplate, importQuestions } from '../../api/guru'
 import type { ImportResult } from '../../api/types'
 import { COPY } from './lib'
+import NativeFile from '../native/NativeFile.vue'
 
 const emit = defineEmits<{ imported: [result: ImportResult] }>()
 
@@ -23,7 +23,7 @@ const file = ref<File | null>(null)
 const busy = ref(false)
 const errors = ref<string[]>([])
 const result = ref<ImportResult | null>(null)
-const input = ref<HTMLInputElement | null>(null)
+const input = ref<{ el: HTMLInputElement | null } | null>(null)
 
 async function template(): Promise<void> {
   errors.value = []
@@ -44,7 +44,7 @@ async function submit(): Promise<void> {
     const res = await importQuestions(file.value)
     result.value = res
     file.value = null
-    if (input.value) input.value.value = ''
+    if (input.value?.el) input.value.el.value = ''
     emit('imported', res)
   } catch (err) {
     errors.value = isApiError(err) && err.fields ? Object.values(err.fields) : [COPY.saveFailed]
@@ -52,100 +52,104 @@ async function submit(): Promise<void> {
     busy.value = false
   }
 }
-
-const BTN =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300'
 </script>
 
 <template>
-  <section class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-5" data-testid="import-card">
+  <UCard data-testid="import-card">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex min-w-0 items-center gap-3">
-        <span
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white"
-        >
-          <FileSpreadsheet class="h-5 w-5" />
-        </span>
+        <DsIconChip icon="i-ph-file-csv-duotone" size="lg" />
         <div class="min-w-0">
-          <h2 class="text-sm font-bold text-slate-800 sm:text-base">Import Soalan (CSV/Excel)</h2>
-          <p class="text-sm text-slate-500">Muat naik banyak soalan sekaligus</p>
+          <h2 class="text-subheading text-highlighted">Import Soalan (CSV/Excel)</h2>
+          <p class="text-body text-muted">Muat naik banyak soalan sekaligus</p>
         </div>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button
+        <UButton
           type="button"
-          :class="[BTN, 'bg-slate-100 text-slate-700 hover:bg-slate-200']"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-download-simple-duotone"
+          class="min-h-11"
           data-testid="import-template"
           @click="template"
+          >Template</UButton
         >
-          <Download class="h-4 w-4" />
-          Template
-        </button>
-        <button
+        <UButton
           type="button"
-          :class="[BTN, 'bg-blue-600 text-white hover:bg-blue-700']"
+          icon="i-ph-upload-simple-duotone"
+          class="min-h-11"
           data-testid="import-toggle"
           @click="open = !open"
+          >Import CSV</UButton
         >
-          <Upload class="h-4 w-4" />
-          Import CSV
-        </button>
       </div>
     </div>
 
-    <AlertBox v-if="errors.length" class="mt-3" :messages="errors" data-testid="import-errors" />
+    <UAlert
+      v-if="errors.length"
+      class="mt-3"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle-duotone"
+      role="alert"
+      data-testid="import-errors"
+    >
+      <template #description>
+        <p v-for="(m, i) in errors" :key="i">{{ m }}</p>
+      </template>
+    </UAlert>
 
-    <div
+    <UAlert
       v-if="result"
-      class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+      class="mt-3"
+      color="success"
+      variant="subtle"
+      icon="i-ph-check-circle-duotone"
       data-testid="import-result"
     >
-      <p data-testid="import-result-summary">{{ COPY.importDone(result.imported) }}</p>
-      <ul v-if="result.failed.length" class="mt-2 list-disc space-y-0.5 pl-5 text-amber-800">
-        <li v-for="f in result.failed" :key="f.row" data-testid="import-failure">
-          Baris {{ f.row }}: {{ f.message }}
-        </li>
-      </ul>
-    </div>
+      <template #description>
+        <p data-testid="import-result-summary">{{ COPY.importDone(result.imported) }}</p>
+        <ul v-if="result.failed.length" class="mt-2 flex flex-col gap-1 pl-4">
+          <li v-for="f in result.failed" :key="f.row" data-testid="import-failure">
+            Baris {{ f.row }}: {{ f.message }}
+          </li>
+        </ul>
+      </template>
+    </UAlert>
 
     <form
       v-if="open"
-      class="mt-4 space-y-3 border-t border-slate-100 pt-4"
+      class="mt-4 flex flex-col gap-3"
       data-testid="import-form"
       @submit.prevent="submit"
     >
-      <div>
-        <label for="csv-file" class="mb-1.5 block text-sm font-semibold text-slate-700">
-          Pilih Fail CSV
-        </label>
-        <input
+      <UFormField label="Pilih Fail CSV" name="csv-file">
+        <NativeFile
           id="csv-file"
           ref="input"
-          type="file"
           name="csv_file"
           accept=".csv,.txt"
           required
-          class="block w-full min-w-0 text-sm text-slate-600 file:mr-3 file:min-h-11 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:font-semibold file:text-blue-700"
           data-testid="import-file"
           @change="file = ($event.target as HTMLInputElement).files?.[0] ?? null"
         />
-      </div>
-      <button
+      </UFormField>
+      <UButton
         type="submit"
+        :loading="busy"
         :disabled="busy"
-        :class="[BTN, 'bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50']"
+        icon="i-ph-cloud-arrow-up-duotone"
+        class="min-h-11 self-start"
         data-testid="import-submit"
+        >Import</UButton
       >
-        <LoadingSpinner v-if="busy" :size="16" />
-        <CloudUpload v-else class="h-4 w-4" />
-        Import
-      </button>
-      <div class="rounded-xl bg-slate-50 p-3 text-sm text-slate-600" data-testid="import-guide">
-        <p class="mb-1 flex items-center gap-1.5 font-semibold text-slate-700">
-          <Info class="h-4 w-4" />
+      <UCard variant="subtle" :ui="{ body: 'p-3 sm:p-3' }" data-testid="import-guide">
+        <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
+          <UIcon name="i-ph-info-duotone" class="size-4" />
           Panduan:
         </p>
-        <ul class="list-disc space-y-0.5 pl-5">
+        <ul class="flex flex-col gap-1 pl-4">
           <li>Muat turun template → isi soalan → import kembali</li>
           <li>
             Format: subjek, tahap, soalan, 4 pilihan, jawapan (A/B/C/D), kesukaran, penerangan
@@ -153,7 +157,7 @@ const BTN =
           <li>Soalan akan dihantar sebagai "Menunggu Semakan" untuk kelulusan admin</li>
           <li>Baris yang ada ralat akan dilaporkan — soalan sah tetap diimport</li>
         </ul>
-      </div>
+      </UCard>
     </form>
-  </section>
+  </UCard>
 </template>

@@ -4,17 +4,16 @@
  * source / "Tahap {n}" / type, the question and its image, options "A)" … "D)" (correct highlighted),
  * "Penerangan" and "Statistik". A question that is not own or unknown is the standard 404 (BR-M10-01).
  */
-import { ArrowLeft, Check, Pencil } from '@lucide/vue'
 import { computed, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsPage, DsStatTile } from '@/ds'
 
 import { fetchContributedQuestion } from '../api/guru'
 import { COPY, isLoadableImage, OPTION_LETTERS } from '../components/soalan/lib'
+import PreviewImage from '../components/native/PreviewImage.vue'
 
 const props = defineProps<{ id: number }>()
 
@@ -27,140 +26,140 @@ const notFound = computed(() => isApiError(error.value) && error.value.status ==
 watch(notFound, (is404) => {
   if (is404) setRouteOutcome(404)
 })
-
-const CHIP = 'rounded-full px-2.5 py-0.5 text-xs font-medium'
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl min-w-0 space-y-4" data-testid="soalan-detail-page">
-    <div
-      v-if="error && !notFound"
-      class="space-y-3 rounded-2xl bg-white p-4 shadow-sm"
-      data-testid="detail-error"
-    >
-      <AlertBox :messages="COPY.loadFailed" />
-      <button
+  <DsPage class="max-w-3xl" data-testid="soalan-detail-page">
+    <UCard v-if="error && !notFound" data-testid="detail-error">
+      <UAlert
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle-duotone"
+        :title="COPY.loadFailed"
+        role="alert"
+      />
+      <UButton
         type="button"
-        class="inline-flex min-h-11 items-center rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-slate-800"
+        color="neutral"
+        variant="soft"
+        class="mt-3 min-h-11"
         data-testid="detail-retry"
         @click="reload"
+        >{{ COPY.retry }}</UButton
       >
-        {{ COPY.retry }}
-      </button>
-    </div>
-    <div
-      v-else-if="!data && !notFound"
-      class="flex justify-center rounded-2xl bg-white px-4 py-10 text-slate-400 shadow-sm"
-    >
-      <LoadingSpinner :size="24" />
+    </UCard>
+    <div v-else-if="!data && !notFound" class="flex flex-col gap-3" aria-busy="true">
+      <USkeleton class="h-10 w-full" />
+      <USkeleton class="h-48 w-full" />
     </div>
 
     <template v-else-if="data">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <RouterLink
+        <UButton
           to="/guru/soalan"
-          class="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-blue-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+          color="neutral"
+          variant="ghost"
+          icon="i-ph-arrow-left"
+          class="min-h-11"
           data-testid="detail-back"
+          >Kembali</UButton
         >
-          <ArrowLeft class="h-4 w-4" />
-          Kembali
-        </RouterLink>
-        <RouterLink
+        <UButton
           :to="`/guru/soalan/${String(data.id)}/edit`"
-          class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-amber-500 px-4 text-sm font-bold text-white hover:bg-amber-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+          icon="i-ph-pencil-simple-duotone"
+          class="min-h-11"
           data-testid="detail-edit"
+          >Edit Soalan</UButton
         >
-          <Pencil class="h-4 w-4" />
-          Edit Soalan
-        </RouterLink>
       </div>
 
-      <section class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6" data-testid="detail-card">
-        <div class="mb-3 flex flex-wrap gap-1.5">
-          <span :class="[CHIP, 'bg-indigo-50 text-indigo-700']" data-testid="detail-subject">
-            {{ data.subjectName }}
-          </span>
-          <span
-            v-if="data.source"
-            :class="[CHIP, 'bg-slate-100 text-slate-600']"
-            data-testid="detail-source"
+      <UCard data-testid="detail-card">
+        <div class="mb-3 flex flex-wrap gap-2">
+          <UBadge color="neutral" variant="subtle" data-testid="detail-subject">{{
+            data.subjectName
+          }}</UBadge>
+          <UBadge v-if="data.source" color="neutral" variant="subtle" data-testid="detail-source">{{
+            data.source
+          }}</UBadge>
+          <UBadge color="neutral" variant="subtle" data-testid="detail-tahap"
+            >Tahap {{ data.difficultyLevel }}</UBadge
           >
-            {{ data.source }}
-          </span>
-          <span :class="[CHIP, 'bg-amber-50 text-amber-800']" data-testid="detail-tahap">
-            Tahap {{ data.difficultyLevel }}
-          </span>
-          <span :class="[CHIP, 'bg-emerald-50 text-emerald-700']" data-testid="detail-type">
-            {{ data.questionType }}
-          </span>
+          <UBadge color="primary" variant="subtle" data-testid="detail-type">{{
+            data.questionType
+          }}</UBadge>
         </div>
         <p
-          class="min-w-0 text-sm break-words whitespace-pre-wrap text-slate-800"
+          class="min-w-0 text-body break-words whitespace-pre-wrap text-default"
           data-testid="detail-text"
         >
           {{ data.questionText }}
         </p>
-        <img
+        <PreviewImage
           v-if="isLoadableImage(data.questionImage)"
           :src="data.questionImage"
           alt="Imej soalan"
-          class="mt-3 max-h-64 max-w-full rounded-lg border border-slate-200 object-contain"
+          class="mt-3"
         />
-        <ul v-if="data.options" class="mt-4 space-y-2">
+        <ul v-if="data.options" class="mt-4 flex flex-col gap-2">
           <li
             v-for="(opt, i) in data.options"
             :key="i"
-            :class="[
-              'flex min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm',
-              data.correctAnswer === i
-                ? 'border-emerald-300 bg-emerald-50 font-semibold text-emerald-800'
-                : 'border-slate-200 bg-slate-50 text-slate-700',
-            ]"
+            class="min-w-0"
             :data-correct="data.correctAnswer === i ? 'true' : 'false'"
             data-testid="detail-option"
           >
-            <span class="min-w-0 break-words"
-              ><strong>{{ OPTION_LETTERS[i] }})</strong> {{ opt }}</span
+            <UCard
+              variant="subtle"
+              :ui="{ body: 'flex min-w-0 items-center justify-between gap-2 p-3 sm:p-3' }"
             >
-            <Check v-if="data.correctAnswer === i" class="h-4 w-4 shrink-0 text-emerald-600" />
+              <span class="min-w-0 text-body break-words text-default"
+                ><strong>{{ OPTION_LETTERS[i] }})</strong> {{ opt }}</span
+              >
+              <UBadge
+                v-if="data.correctAnswer === i"
+                color="success"
+                variant="subtle"
+                icon="i-ph-check-circle-duotone"
+                >Betul</UBadge
+              >
+            </UCard>
           </li>
         </ul>
-      </section>
+      </UCard>
 
-      <section
-        v-if="data.explanation"
-        class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6"
-        data-testid="detail-explanation"
-      >
-        <h2 class="mb-1 text-sm font-bold text-slate-800">Penerangan</h2>
-        <p class="min-w-0 text-sm break-words whitespace-pre-wrap text-indigo-800">
+      <UCard v-if="data.explanation" data-testid="detail-explanation">
+        <h2 class="mb-1 text-subheading text-highlighted">Penerangan</h2>
+        <p class="min-w-0 text-body break-words whitespace-pre-wrap text-default">
           {{ data.explanation }}
         </p>
-      </section>
+      </UCard>
 
-      <section class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6" data-testid="detail-stats">
-        <h2 class="mb-3 text-sm font-bold text-slate-800">Statistik</h2>
-        <div class="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <div class="text-xl font-bold text-indigo-600" data-testid="stat-attempts">
-              {{ data.usage.attempts }}
-            </div>
-            <div class="text-xs text-slate-500 uppercase">Kali Digunakan</div>
+      <section data-testid="detail-stats">
+        <h2 class="mb-3 text-subheading text-highlighted">Statistik</h2>
+        <div class="grid grid-cols-3 gap-3">
+          <div data-testid="stat-attempts">
+            <DsStatTile
+              :value="data.usage.attempts"
+              unit="Kali Digunakan"
+              icon="i-ph-repeat-duotone"
+            />
           </div>
-          <div>
-            <div class="text-xl font-bold text-emerald-600" data-testid="stat-correct">
-              {{ data.usage.correct }}
-            </div>
-            <div class="text-xs text-slate-500 uppercase">Jawab Betul</div>
+          <div data-testid="stat-correct">
+            <DsStatTile
+              :value="data.usage.correct"
+              unit="Jawab Betul"
+              icon="i-ph-check-circle-duotone"
+            />
           </div>
-          <div>
-            <div class="text-xl font-bold text-orange-600" data-testid="stat-accuracy">
-              {{ data.usage.accuracy }}%
-            </div>
-            <div class="text-xs text-slate-500 uppercase">Ketepatan</div>
+          <div data-testid="stat-accuracy">
+            <DsStatTile
+              :value="`${data.usage.accuracy}%`"
+              unit="Ketepatan"
+              icon="i-ph-target-duotone"
+            />
           </div>
         </div>
       </section>
     </template>
-  </div>
+  </DsPage>
 </template>

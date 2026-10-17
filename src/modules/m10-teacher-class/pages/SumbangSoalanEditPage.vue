@@ -7,25 +7,20 @@
  * INFERRED). "Simpan Perubahan" sends #55 and goes to S23 (INFERRED). A question that is not own or
  * unknown is the standard 404.
  */
-import { ArrowLeft, Save } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import {
-  FORM_ERROR_MODIFIER,
-  FORM_ERROR_TEXT_CLASS,
-  FORM_INPUT_CLASS,
-  FORM_SELECT_CLASS,
-  FORM_TEXTAREA_CLASS,
-} from '@/components/form'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchContributedQuestion, updateContributedQuestion } from '../api/guru'
 import type { ContributedQuestionDetail, UpdateQuestionRequest } from '../api/types'
 import { COPY, EDIT_DIFFICULTIES, OPTION_LETTERS } from '../components/soalan/lib'
+import NativeFile from '../components/native/NativeFile.vue'
+import NativeRadio from '../components/native/NativeRadio.vue'
+import NativeSelect from '../components/native/NativeSelect.vue'
 
 const props = defineProps<{ id: number }>()
 
@@ -99,183 +94,198 @@ async function save(): Promise<void> {
     saving.value = false
   }
 }
-
-const invalid = (key: string): string | false => key in fields.value && FORM_ERROR_MODIFIER
-const CARD = 'min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6'
-const LABEL = 'mb-1.5 block text-sm font-semibold text-slate-700'
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl min-w-0 space-y-4" data-testid="soalan-edit-page">
-    <div
-      v-if="error && !notFound"
-      class="space-y-3 rounded-2xl bg-white p-4 shadow-sm"
-      data-testid="edit-error"
-    >
-      <AlertBox :messages="COPY.loadFailed" />
-      <button
+  <DsPage class="max-w-3xl" data-testid="soalan-edit-page">
+    <UCard v-if="error && !notFound" data-testid="edit-error">
+      <UAlert
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle-duotone"
+        :title="COPY.loadFailed"
+        role="alert"
+      />
+      <UButton
         type="button"
-        class="inline-flex min-h-11 items-center rounded-xl bg-slate-900 px-4 text-sm font-bold text-white hover:bg-slate-800"
+        color="neutral"
+        variant="soft"
+        class="mt-3 min-h-11"
         data-testid="edit-retry"
         @click="reload"
+        >{{ COPY.retry }}</UButton
       >
-        {{ COPY.retry }}
-      </button>
-    </div>
-    <div
-      v-else-if="!data && !notFound"
-      class="flex justify-center rounded-2xl bg-white px-4 py-10 text-slate-400 shadow-sm"
-    >
-      <LoadingSpinner :size="24" />
+    </UCard>
+    <div v-else-if="!data && !notFound" class="flex flex-col gap-3" aria-busy="true">
+      <USkeleton class="h-10 w-full" />
+      <USkeleton class="h-48 w-full" />
     </div>
 
     <template v-else-if="data">
-      <RouterLink
-        :to="back"
-        class="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-blue-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-        data-testid="edit-back"
-      >
-        <ArrowLeft class="h-4 w-4" />
-        Kembali
-      </RouterLink>
+      <div>
+        <UButton
+          :to="back"
+          color="neutral"
+          variant="ghost"
+          icon="i-ph-arrow-left"
+          class="min-h-11"
+          data-testid="edit-back"
+          >Kembali</UButton
+        >
+      </div>
 
       <form
         method="post"
         enctype="multipart/form-data"
-        class="min-w-0 space-y-4"
+        class="flex min-w-0 flex-col gap-4"
         data-testid="edit-form"
         @submit.prevent="save"
       >
-        <AlertBox :messages="general" data-testid="form-errors" />
+        <UAlert
+          v-if="general.length"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle-duotone"
+          role="alert"
+          data-testid="form-errors"
+        >
+          <template #description>
+            <p v-for="(m, i) in general" :key="i">{{ m }}</p>
+          </template>
+        </UAlert>
 
-        <section :class="CARD" data-testid="edit-source">
-          <p class="text-xs font-semibold text-slate-500 uppercase">Sumber Asal</p>
-          <p class="mt-1 text-sm break-all text-slate-800">{{ data.source ?? '' }}</p>
-        </section>
+        <UCard data-testid="edit-source">
+          <p class="text-overline text-muted">Sumber Asal</p>
+          <p class="mt-1 text-body break-all text-default">{{ data.source ?? '' }}</p>
+        </UCard>
 
-        <section :class="CARD">
-          <label for="e-text" :class="LABEL">Soalan <span class="text-red-500">*</span></label>
-          <textarea
-            id="e-text"
-            v-model="form.questionText"
-            name="question_text"
-            rows="3"
-            required
-            :class="[FORM_TEXTAREA_CLASS, invalid('questionText')]"
-            data-testid="e-text"
-          ></textarea>
-          <p v-if="fields.questionText" :class="FORM_ERROR_TEXT_CLASS">{{ fields.questionText }}</p>
-        </section>
+        <UCard>
+          <UFormField label="Soalan *" name="e-text" :error="fields.questionText">
+            <UTextarea
+              id="e-text"
+              v-model="form.questionText"
+              name="question_text"
+              :rows="3"
+              required
+              class="w-full"
+              data-testid="e-text"
+            />
+          </UFormField>
+        </UCard>
 
-        <section :class="CARD">
-          <label for="e-image" :class="LABEL">Tambah Gambarajah (optional)</label>
-          <input
-            id="e-image"
-            type="file"
-            name="image"
-            accept="image/jpeg,image/png"
-            class="block w-full min-w-0 text-sm text-slate-600 file:mr-3 file:min-h-11 file:rounded-xl file:border-0 file:bg-indigo-50 file:px-4 file:font-semibold file:text-indigo-700"
-            data-testid="e-image"
-            @change="image = ($event.target as HTMLInputElement).files?.[0] ?? null"
-          />
-          <p class="mt-1 text-xs text-slate-500">JPG, PNG, max 5MB.</p>
-          <p v-if="fields.image" :class="FORM_ERROR_TEXT_CLASS">{{ fields.image }}</p>
-        </section>
-
-        <section :class="CARD">
-          <label for="e-difficulty" :class="LABEL">Tahap Kesukaran</label>
-          <select
-            id="e-difficulty"
-            v-model="form.difficulty"
-            name="difficulty_level"
-            :class="[FORM_SELECT_CLASS, 'min-h-11 bg-white', invalid('difficultyLevel')]"
-            data-testid="e-difficulty"
+        <UCard>
+          <UFormField
+            label="Tambah Gambarajah (optional)"
+            name="e-image"
+            help="JPG, PNG, max 5MB."
+            :error="fields.image"
           >
-            <option value="">-- Pilih --</option>
-            <option v-for="d in EDIT_DIFFICULTIES" :key="d.value" :value="String(d.value)">
-              {{ d.label }}
-            </option>
-          </select>
-          <p v-if="fields.difficultyLevel" :class="FORM_ERROR_TEXT_CLASS">
-            {{ fields.difficultyLevel }}
-          </p>
-        </section>
+            <NativeFile
+              id="e-image"
+              name="image"
+              accept="image/jpeg,image/png"
+              data-testid="e-image"
+              @change="image = ($event.target as HTMLInputElement).files?.[0] ?? null"
+            />
+          </UFormField>
+        </UCard>
 
-        <section v-if="isMcq" :class="CARD" data-testid="edit-options">
-          <p :class="LABEL">Pilihan Jawapan <span class="text-red-500">*</span></p>
-          <div class="min-w-0 space-y-3">
-            <div
+        <UCard>
+          <UFormField label="Tahap Kesukaran" name="e-difficulty" :error="fields.difficultyLevel">
+            <NativeSelect
+              id="e-difficulty"
+              v-model="form.difficulty"
+              name="difficulty_level"
+              data-testid="e-difficulty"
+            >
+              <option value="">-- Pilih --</option>
+              <option v-for="d in EDIT_DIFFICULTIES" :key="d.value" :value="String(d.value)">
+                {{ d.label }}
+              </option>
+            </NativeSelect>
+          </UFormField>
+        </UCard>
+
+        <UCard v-if="isMcq" data-testid="edit-options">
+          <p class="mb-3 text-label text-highlighted">Pilihan Jawapan *</p>
+          <div class="flex min-w-0 flex-col gap-3">
+            <UCard
               v-for="(letter, i) in OPTION_LETTERS"
               :key="letter"
-              :class="[
-                'flex min-w-0 items-start gap-3 rounded-xl border p-3',
-                form.correct === i
-                  ? 'border-emerald-300 bg-emerald-50'
-                  : 'border-slate-200 bg-slate-50',
-              ]"
+              variant="subtle"
+              :ui="{ body: 'flex min-w-0 items-start gap-3 p-3 sm:p-3' }"
             >
-              <label class="relative inline-flex h-11 w-11 shrink-0 items-center justify-center">
-                <input
+              <label class="inline-flex size-11 shrink-0 items-center justify-center">
+                <NativeRadio
                   v-model="form.correct"
-                  type="radio"
                   name="correct_option"
                   :value="i"
-                  class="h-5 w-5 accent-indigo-600"
+                  :aria-label="`Jawapan betul ${letter}`"
                   :data-testid="`e-correct-${String(i)}`"
                 />
               </label>
-              <span class="mt-2.5 w-6 shrink-0 text-sm font-bold text-slate-700"
-                >{{ letter }})</span
-              >
-              <textarea
+              <span class="mt-3 w-6 shrink-0 text-label text-highlighted">{{ letter }})</span>
+              <UTextarea
                 v-model="form.options[i]"
                 :name="`options[${String(i)}][option_text]`"
-                rows="2"
+                :rows="2"
                 required
-                :class="[FORM_INPUT_CLASS, 'min-w-0 flex-1']"
+                class="min-w-0 flex-1"
+                :aria-label="`Pilihan ${letter}`"
                 :data-testid="`e-option-${String(i)}`"
-              ></textarea>
-            </div>
+              />
+              <UBadge
+                v-if="form.correct === i"
+                color="success"
+                variant="subtle"
+                icon="i-ph-check-circle-duotone"
+                class="mt-2 shrink-0"
+                >Betul</UBadge
+              >
+            </UCard>
           </div>
-          <p v-if="fields.options" :class="FORM_ERROR_TEXT_CLASS">{{ fields.options }}</p>
-          <p v-if="fields.correctOptionId" :class="FORM_ERROR_TEXT_CLASS">
+          <p v-if="fields.options" class="mt-2 text-caption text-error">{{ fields.options }}</p>
+          <p v-if="fields.correctOptionId" class="mt-2 text-caption text-error">
             {{ fields.correctOptionId }}
           </p>
-          <p class="mt-3 text-xs text-slate-500">Pilih radio button untuk tandakan jawapan betul</p>
-        </section>
+          <p class="mt-3 text-caption text-muted">
+            Pilih radio button untuk tandakan jawapan betul
+          </p>
+        </UCard>
 
-        <section :class="CARD">
-          <label for="e-explanation" :class="LABEL">Penerangan (optional)</label>
-          <textarea
-            id="e-explanation"
-            v-model="form.explanation"
-            name="explanation"
-            rows="3"
-            :class="FORM_TEXTAREA_CLASS"
-            data-testid="e-explanation"
-          ></textarea>
-        </section>
+        <UCard>
+          <UFormField label="Penerangan (optional)" name="e-explanation">
+            <UTextarea
+              id="e-explanation"
+              v-model="form.explanation"
+              name="explanation"
+              :rows="3"
+              class="w-full"
+              data-testid="e-explanation"
+            />
+          </UFormField>
+        </UCard>
 
         <div class="flex flex-wrap items-center gap-3">
-          <button
+          <UButton
             type="submit"
+            :loading="saving"
             :disabled="saving"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-50"
+            :icon="saving ? undefined : 'i-ph-floppy-disk-duotone'"
+            class="min-h-11"
             data-testid="form-submit"
+            >Simpan Perubahan</UButton
           >
-            <LoadingSpinner v-if="saving" :size="16" />
-            <Save v-else class="h-4 w-4" />
-            Simpan Perubahan
-          </button>
-          <RouterLink
+          <UButton
             :to="back"
-            class="inline-flex min-h-11 items-center rounded-xl bg-slate-200 px-5 text-sm font-semibold text-slate-700 hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+            color="neutral"
+            variant="soft"
+            class="min-h-11"
             data-testid="form-cancel"
+            >Batal</UButton
           >
-            Batal
-          </RouterLink>
         </div>
       </form>
     </template>
-  </div>
+  </DsPage>
 </template>

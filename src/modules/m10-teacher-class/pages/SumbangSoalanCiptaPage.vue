@@ -4,12 +4,12 @@
  * #53 (the question is stored `pending_review`, active) and returns to S21 with a flash (UNVERIFIED
  * COPY); a 422 shows its messages and keeps the form values. "Batal" leaves without saving.
  */
-import { ArrowLeft } from '@lucide/vue'
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { createContributedQuestion } from '../api/guru'
 import type { CreateQuestionRequest } from '../api/types'
@@ -51,15 +51,18 @@ async function save(
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="soalan-cipta-page">
-    <RouterLink
-      to="/guru/soalan"
-      class="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-teal-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
-      data-testid="back-link"
-    >
-      <ArrowLeft class="h-4 w-4" />
-      Kembali ke Senarai Soalan
-    </RouterLink>
+  <DsPage class="max-w-4xl" data-testid="soalan-cipta-page">
+    <div>
+      <UButton
+        to="/guru/soalan"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-arrow-left"
+        class="min-h-11"
+        data-testid="back-link"
+        >Kembali ke Senarai Soalan</UButton
+      >
+    </div>
     <QuestionForm :saving="saving" :general="general" :fields="fields" @submit="save" />
-  </div>
+  </DsPage>
 </template>

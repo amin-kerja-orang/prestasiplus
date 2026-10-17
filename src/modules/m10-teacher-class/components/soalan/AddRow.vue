@@ -4,12 +4,11 @@
  * SP of S22. The "+" button is disabled until `addDisabled` clears; it opens a panel whose fields keep
  * their typed values when "Batal" hides it. "Simpan" emits `add` with the field values; the owner does
  * nothing when a field is empty (live) and closes the panel through `close()` after a success.
+ * The select stays a native `<select>` (native validation and keyboard, cascading option lists).
  */
-import { Plus } from '@lucide/vue'
 import { reactive, ref } from 'vue'
 
-import { FORM_INPUT_CLASS, FORM_SELECT_CLASS } from '@/components/form'
-
+import NativeSelect from '../native/NativeSelect.vue'
 import type { PanelField, SelectOption } from './lib'
 
 const props = defineProps<{
@@ -43,46 +42,39 @@ function done(): void {
   open.value = false
 }
 defineExpose({ done })
-
-const LABEL = 'mb-1.5 block text-sm font-semibold text-slate-700'
 </script>
 
 <template>
   <div class="min-w-0" :data-testid="testid">
-    <label :for="id" :class="LABEL">{{ label }}</label>
+    <label :for="id" class="mb-2 block text-label text-highlighted">{{ label }}</label>
     <div class="flex min-w-0 items-center gap-2">
-      <select
-        :id="id"
-        v-model="model"
-        :disabled="disabled"
-        :class="[
-          FORM_SELECT_CLASS,
-          'min-h-11 min-w-0 flex-1 bg-white disabled:bg-slate-50 disabled:text-slate-400',
-        ]"
-        :data-testid="`${testid}-select`"
-      >
+      <NativeSelect :id="id" v-model="model" :disabled="disabled" :data-testid="`${testid}-select`">
         <option value="">{{ placeholder }}</option>
         <option v-for="o in options" :key="o.value" :value="o.value">{{ o.label }}</option>
-      </select>
-      <button
+      </NativeSelect>
+      <UButton
         type="button"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-plus"
         :disabled="addDisabled"
         :title="addTitle"
-        class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-emerald-300 text-emerald-600 transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+        :aria-label="addTitle"
+        class="size-11 shrink-0 justify-center"
         :data-testid="`${testid}-add`"
         @click="open = !open"
-      >
-        <Plus class="h-4 w-4" />
-      </button>
+      />
     </div>
-    <div
+    <UCard
       v-show="open"
-      class="mt-2 min-w-0 space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3"
+      variant="subtle"
+      class="mt-2"
+      :ui="{ body: 'flex min-w-0 flex-col gap-2 p-3 sm:p-3' }"
       :data-testid="`${testid}-panel`"
     >
-      <p class="text-sm font-semibold text-slate-700">{{ panelTitle }}</p>
+      <p class="text-label text-highlighted">{{ panelTitle }}</p>
       <div class="flex min-w-0 flex-wrap gap-2">
-        <input
+        <UInput
           v-for="f in panelFields"
           :key="f.key"
           v-model="values[f.key]"
@@ -90,32 +82,25 @@ const LABEL = 'mb-1.5 block text-sm font-semibold text-slate-700'
           :min="f.min"
           :max="f.max"
           :placeholder="f.placeholder"
-          :class="[
-            FORM_INPUT_CLASS,
-            'min-h-11',
-            f.narrow ? 'w-32 shrink-0' : 'min-w-0 flex-1 basis-40',
-          ]"
+          :aria-label="f.placeholder"
+          class="min-w-0 flex-1 basis-40"
           :data-testid="`${testid}-field-${f.key}`"
         />
       </div>
       <div class="flex gap-2">
-        <button
-          type="button"
-          class="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-          :data-testid="`${testid}-save`"
-          @click="save"
+        <UButton type="button" class="min-h-11" :data-testid="`${testid}-save`" @click="save"
+          >Simpan</UButton
         >
-          Simpan
-        </button>
-        <button
+        <UButton
           type="button"
-          class="inline-flex min-h-11 items-center rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+          color="neutral"
+          variant="ghost"
+          class="min-h-11"
           :data-testid="`${testid}-cancel`"
           @click="open = false"
+          >Batal</UButton
         >
-          Batal
-        </button>
       </div>
-    </div>
+    </UCard>
   </div>
 </template>
