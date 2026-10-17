@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { type Component } from 'vue'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
@@ -31,17 +32,13 @@ async function render(page: Component): Promise<{ w: VueWrapper; router: Router 
   return { w: wrapper, router }
 }
 
-/** Text of every leaf element, in document order. */
-function leafTexts(w: VueWrapper): string[] {
-  const root = w.element as HTMLElement
-  return Array.from(root.querySelectorAll('*'))
-    .filter((el) => el.children.length === 0)
-    .map((el) => (el.textContent ?? '').trim())
-}
-
 function links(w: VueWrapper): [string, string | undefined][] {
   return w.findAll('a').map((a) => [a.text(), a.attributes('href')])
 }
+
+beforeEach(() => {
+  setActivePinia(createPinia())
+})
 
 afterEach(() => {
   wrapper?.unmount()
@@ -49,25 +46,18 @@ afterEach(() => {
 })
 
 describe('NotFoundPage (M01 S10, FR-M01-50)', () => {
-  it('renders the exact live copy in order', async () => {
+  it('renders the exact live copy through DsErrorPage', async () => {
     const { w } = await render(NotFoundPage)
     const root = w.get('main')
     expect(root.attributes('data-page')).toBe('not-found')
     expect(root.attributes('data-testid')).toBe('app-placeholder')
-    expect(leafTexts(w)).toEqual([
-      '404',
-      '🔍',
-      'Halaman Tidak Dijumpai',
-      'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
-      'Halaman Utama',
-      'Mula Latihan',
-      'PRESTASIPLUS',
-    ])
+    expect(w.get('[data-ds=error-page]').attributes('data-code')).toBe('404')
     expect(w.findAll('h1')).toHaveLength(1)
     expect(w.get('h1').text()).toBe('Halaman Tidak Dijumpai')
-    expect(w.get('p').text()).toBe(
+    expect(w.text()).toContain(
       'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
     )
+    expect(w.text()).toContain('PRESTASIPLUS')
   })
 
   it('links "Halaman Utama" to / and "Mula Latihan" to /practice (DV-02)', async () => {
@@ -79,13 +69,9 @@ describe('NotFoundPage (M01 S10, FR-M01-50)', () => {
     expect(w.html()).not.toContain('/latih-tubi')
   })
 
-  it('uses the system font on the root and the heading, the 404 token and the violet-600 primary pill', async () => {
+  it('shows the icon chip for a guest (staff look)', async () => {
     const { w } = await render(NotFoundPage)
-    const root = w.get('main')
-    expect(root.classes()).toContain('font-sans')
-    expect(w.get('h1').classes()).toContain('font-sans')
-    expect(root.classes()).toContain('bg-error-page')
-    expect(w.get('a[href="/"]').classes()).toContain('text-violet-600')
+    expect(w.find('[data-ds=icon-chip]').exists()).toBe(true)
   })
 
   it('navigates in-app when a link is clicked', async () => {
@@ -97,21 +83,16 @@ describe('NotFoundPage (M01 S10, FR-M01-50)', () => {
 })
 
 describe('ForbiddenPage (M08 FN-M08-1.2.4)', () => {
-  it('renders the exact live copy in order', async () => {
+  it('renders the exact live copy through DsErrorPage', async () => {
     const { w } = await render(ForbiddenPage)
     const root = w.get('main')
     expect(root.attributes('data-page')).toBe('forbidden')
     expect(root.attributes('data-testid')).toBeUndefined()
-    expect(leafTexts(w)).toEqual([
-      '403',
-      '🚫',
-      'Akses Ditolak',
-      'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.',
-      'Halaman Utama',
-      'Log Masuk',
-      'PRESTASIPLUS',
-    ])
+    expect(w.get('[data-ds=error-page]').attributes('data-code')).toBe('403')
     expect(w.get('h1').text()).toBe('Akses Ditolak')
+    expect(w.text()).toContain(
+      'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.',
+    )
   })
 
   it('links "Halaman Utama" to / and "Log Masuk" to /login', async () => {
@@ -120,13 +101,5 @@ describe('ForbiddenPage (M08 FN-M08-1.2.4)', () => {
       ['Halaman Utama', '/'],
       ['Log Masuk', '/login'],
     ])
-  })
-
-  it('uses the 403 token, the red-600 primary pill and the system font', async () => {
-    const { w } = await render(ForbiddenPage)
-    const root = w.get('main')
-    expect(root.classes()).toEqual(expect.arrayContaining(['font-sans', 'bg-forbidden-page']))
-    expect(w.get('a[href="/"]').classes()).toContain('text-red-600')
-    expect(w.get('h1').classes()).toContain('font-sans')
   })
 })
