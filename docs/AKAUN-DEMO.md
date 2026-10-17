@@ -8,12 +8,10 @@ Semua akaun ialah **akaun demo rekaan** dalam data tiruan (mock) prototaip. Ia t
 
 ### Pilihan 1: Pratonton tempatan (semak di sini dahulu)
 
-1. Folder v2: `D:\Dev Projects\pretasiplus-v2`, cabang `feature/v2-frontend`.
-2. Jalankan server dalam folder itu: `npx vite --port 5180 --strictPort`.
-3. Buka **http://localhost:5180/login**.
+1. Guna cabang `feature/v2-frontend`. Cabang `feature/student-prototype` ialah prototaip lama, bukan v2.
+2. Jalankan server tempatan: `npm run dev`.
+3. Buka alamat yang dipaparkan oleh server, kemudian pergi ke `/login`.
 4. Skrin log masuk muncul dalam kira-kira 1 saat. Data tiruan mengambil lebih kurang 5 saat untuk siap.
-
-> Port **5173** ialah prototaip lama (folder `pretasiplus-app`, cabang `feature/student-prototype`). Ia bukan v2.
 
 ### Pilihan 2: Pautan demo dalam talian
 
@@ -46,7 +44,7 @@ Akaun berikut wujud, tetapi dalam skop prototaip (TRACKER D43) log masuknya mema
 | Pegawai PPD | `ppd@demo.test` |
 | Pegawai JPN | `jpn@demo.test` (dalam v2 digabung dengan Pegawai PPD, D31) |
 
-Untuk menggunakannya, matikan skop: `VITE_PROTOTYPE_SCOPE=off npx vite --port 5180 --strictPort`.
+Untuk menggunakannya, matikan skop: `VITE_PROTOTYPE_SCOPE=off npm run dev`.
 
 ## Bijak SPM (murid)
 
