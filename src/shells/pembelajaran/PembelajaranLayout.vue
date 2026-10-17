@@ -131,10 +131,10 @@ const themeLabel = computed(() =>
         >
           <RouterLink
             to="/dashboard"
-            class="font-display text-subheading font-extrabold text-highlighted lg:hidden"
+            class="inline-flex min-h-11 shrink-0 items-center font-display text-label font-extrabold text-highlighted sm:text-subheading lg:hidden"
             >Prestasi<span class="text-primary-t">Plus</span></RouterLink
           >
-          <div class="ms-auto flex min-w-0 items-center gap-1 sm:gap-2">
+          <div class="ms-auto flex min-w-0 shrink items-center gap-0.5 sm:gap-2">
             <template v-if="learner">
               <DsRewardChip art="fire" :value="summary.streakDays" label="hari" />
               <DsRewardChip art="coin" :value="summary.coins" label="Koin" />
@@ -143,7 +143,7 @@ const themeLabel = computed(() =>
                 size="sm"
                 interactive
                 :label="ariaFriend"
-                class="lg:hidden"
+                class="max-sm:min-h-11! max-sm:min-w-11! lg:hidden"
                 @press="openPicker"
               />
             </template>

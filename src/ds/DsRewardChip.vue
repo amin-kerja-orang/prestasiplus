@@ -23,7 +23,7 @@ withDefaults(
 
 <template>
   <span
-    class="inline-flex min-h-9 items-center gap-2 rounded-full bg-default py-1 pr-3 pl-2 shadow-ds-xs learner:shadow-lift"
+    class="inline-flex min-h-9 items-center gap-1 rounded-full bg-default py-1 pr-2 pl-1.5 sm:gap-2 sm:pr-3 sm:pl-2 shadow-ds-xs learner:shadow-lift"
     data-ds="reward-chip"
   >
     <DsArt3D v-if="art" :name="art" size="xs" />

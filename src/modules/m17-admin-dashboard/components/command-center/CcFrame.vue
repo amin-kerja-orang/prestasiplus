@@ -54,6 +54,8 @@ const bare = computed(() => route.meta.layout === 'bare')
             variant="link"
             color="primary"
             :label="crumb.label"
+            class="max-w-full min-w-0"
+            :ui="{ label: 'truncate' }"
             data-testid="cc-crumb"
           />
           <span v-else class="text-label text-highlighted" data-testid="cc-crumb-current">{{

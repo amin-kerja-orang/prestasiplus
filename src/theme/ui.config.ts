@@ -201,6 +201,10 @@ export const uiConfig = {
     ],
   },
 
+  // Hit-area: visible control stays small, the tap target grows to >= 44px.
+  carousel: { slots: { dot: "relative after:absolute after:-inset-4 after:content-['']" } },
+  checkbox: { slots: { base: "relative after:absolute after:-inset-3 after:content-['']" } },
+  switch: { slots: { base: "relative after:absolute after:-inset-3 after:content-['']" } },
   navigationMenu: {
     slots: { link: 'min-h-10 pointer-coarse:min-h-12' },
   },
