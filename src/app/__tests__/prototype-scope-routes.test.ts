@@ -13,7 +13,10 @@ describe('dev routes with the prototype scope on (D43)', () => {
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
     const found = paths()
     expect(found).toContain('/__ds')
-    expect(found).not.toContain('/admin')
+    // '/admin' is only a redirect to the admin Command Center (D48), not the preview hub.
+    expect(devRoutes().find((r) => r.path === '/admin')).toMatchObject({
+      redirect: '/admin/command-center',
+    })
     expect(found).not.toContain('/dashboard')
     expect(found.filter((p) => p.startsWith('/__dev'))).toEqual([])
   })
