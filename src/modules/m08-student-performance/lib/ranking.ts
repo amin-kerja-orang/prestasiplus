@@ -112,11 +112,11 @@ export function apiQuery(state: RankingState): {
 }
 
 export const MEDALS: Record<number, { emoji: string; cls: string }> = {
-  1: { emoji: '🥇', cls: 'text-yellow-500' },
-  2: { emoji: '🥈', cls: 'text-gray-400' },
-  3: { emoji: '🥉', cls: 'text-amber-600' },
+  1: { emoji: '🥇', cls: 'text-highlighted' },
+  2: { emoji: '🥈', cls: 'text-highlighted' },
+  3: { emoji: '🥉', cls: 'text-highlighted' },
 }
 
-/** "Tepat" colour: green-600 from 50 %, red-500 below (INFERRED threshold, FR-M08-112). */
+/** "Tepat" colour: success from 50 %, error below (INFERRED threshold, FR-M08-112). */
 export const accuracyClass = (accuracy: number): string =>
-  accuracy >= 50 ? 'text-green-600' : 'text-red-500'
+  accuracy >= 50 ? 'text-success' : 'text-error'

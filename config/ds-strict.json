@@ -108,7 +108,9 @@
     { "glob": "src/modules/m16-battle-games/components/solo/{CountdownView,DarjahPicker,ResultCard,CoinFly,PrizeModal}.vue", "level": "ds" },
     { "glob": "src/modules/m16-battle-games/components/wheel/*.vue", "level": "ds" },
     { "glob": "src/modules/m11-teacher-analytics/pages/*.vue", "level": "page" },
-    { "glob": "src/modules/m11-teacher-analytics/components/{analisis-item,laporan,monitoring}/*.vue", "level": "page" }
+    { "glob": "src/modules/m11-teacher-analytics/components/{analisis-item,laporan,monitoring}/*.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/{Ranking,Leaderboard,Timeline,PublicProfile}*.vue", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/components/{LeaderboardPodium.vue,timeline/**}", "level": "ds" }
   ],
   "exempt": [
     "src/theme/**"

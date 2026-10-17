@@ -25,17 +25,17 @@ export function readPeriod(
  * The API rounds to one decimal, so a displayed "60%" can be either; the API value is what is tested.
  */
 export function pillClass(accuracy: number): string {
-  if (accuracy >= 80) return 'bg-green-100 text-green-700'
-  if (accuracy >= 60) return 'bg-amber-100 text-amber-700'
-  return 'bg-red-100 text-red-700'
+  if (accuracy >= 80) return 'bg-success text-inverted'
+  if (accuracy >= 60) return 'bg-warning text-inverted'
+  return 'bg-error text-inverted'
 }
 
 /** Rank circle of the table (FR-M08-117). */
 export function rankCircleClass(rank: number): string {
-  if (rank === 1) return 'bg-amber-100 text-amber-700'
-  if (rank === 2) return 'bg-slate-200 text-slate-700'
-  if (rank === 3) return 'bg-orange-100 text-orange-700'
-  return 'bg-slate-50 text-slate-500'
+  if (rank === 1) return 'bg-highlight text-on-highlight'
+  if (rank === 2) return 'bg-highlight text-on-highlight'
+  if (rank === 3) return 'bg-highlight text-on-highlight'
+  return 'bg-elevated text-muted'
 }
 
 /** Whole-percent display of an accuracy ("98%"; the API already caps at 100, BR-M08-05). */
@@ -43,3 +43,10 @@ export const percentText = (accuracy: number): string => `${String(Math.round(ac
 
 /** Initial for an avatar placeholder (no real photos exist, avatars are fictitious). */
 export const initialOf = (name: string): string => name.trim().charAt(0).toUpperCase() || '?'
+
+/** Colour of the accuracy badge (same thresholds as `pillClass`). */
+export function accuracyColor(accuracy: number): "success" | "warning" | "error" {
+  if (accuracy >= 80) return "success"
+  if (accuracy >= 60) return "warning"
+  return "error"
+}

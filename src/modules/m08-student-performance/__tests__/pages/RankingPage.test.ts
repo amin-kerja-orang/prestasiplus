@@ -82,11 +82,12 @@ describe('RankingPage (M08 S19)', () => {
       'false',
       'false',
     ])
-    const subject = w.findAll('[data-testid=ranking-subject] option').map((o) => o.text())
-    expect(subject).toEqual(['Semua Subjek', 'Bahasa Melayu', 'Matematik'])
-    const tingkatan = w.findAll('[data-testid=ranking-tingkatan] option').map((o) => o.text())
-    expect(tingkatan).toEqual(['Semua', 'Tingkatan 4', 'Tingkatan 5'])
-    expect(w.find('[data-testid=ranking-negeri]').exists()).toBe(false)
+    const selects = w.findAllComponents({ name: 'Select' })
+    const labels = (i: number): string[] =>
+      (selects[i]?.props('items') as { label: string }[]).map((o) => o.label)
+    expect(labels(0)).toEqual(['Semua Subjek', 'Bahasa Melayu', 'Matematik'])
+    expect(labels(1)).toEqual(['Semua', 'Tingkatan 4', 'Tingkatan 5'])
+    expect(selects).toHaveLength(2)
   })
 
   it('renders rows as plain names (no link, even without a user id) and the footer', async () => {
@@ -99,8 +100,8 @@ describe('RankingPage (M08 S19)', () => {
     expect(rows[0]?.get('[data-testid=ranking-tahap]').text()).toBe('L8')
     expect(rows[0]?.get('[data-testid=ranking-betul]').text()).toBe('2,223')
     expect(rows[0]?.get('[data-testid=ranking-tepat]').text()).toBe('93.48%')
-    expect(rows[0]?.get('[data-testid=ranking-tepat]').classes()).toContain('text-green-600')
-    expect(rows[1]?.get('[data-testid=ranking-tepat]').classes()).toContain('text-red-500')
+    expect(rows[0]?.get('[data-testid=ranking-tepat]').classes()).toContain('text-success')
+    expect(rows[1]?.get('[data-testid=ranking-tepat]').classes()).toContain('text-error')
     expect(rows[2]?.get('[data-testid=ranking-betul]').text()).toBe('17,612')
     expect(w.findAll('[data-testid=ranking-head] div').map((d) => d.text())).toEqual([
       '#',
@@ -129,8 +130,7 @@ describe('RankingPage (M08 S19)', () => {
 
   it('submits a select change as the query string', async () => {
     const w = await render()
-    await w.get('[data-testid=ranking-tingkatan]').setValue('T5')
-    await w.get('[data-testid=ranking-tingkatan]').trigger('change')
+    w.findAllComponents({ name: 'Select' })[1]?.vm.$emit('update:modelValue', 'T5')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({ scope: 'nasional', tingkatan: 'T5' })
   })
@@ -140,12 +140,14 @@ describe('RankingPage (M08 S19)', () => {
     const w = await render('/ranking?scope=negeri&negeri=Selangor')
     expect(w.get('[data-testid=ranking-subtitle]').text()).toBe('Selangor')
     expect(document.title).toBe('Kedudukan Selangor')
-    const options = w.findAll('[data-testid=ranking-negeri] option').map((o) => o.text())
+    const options = (w.findAllComponents({ name: 'Select' })[2]?.props('items') as { label: string }[]).map(
+      (o) => o.label,
+    )
     expect(options).toEqual(['Pilih Negeri', 'Selangor'])
     expect(w.find('[data-testid=ranking-footer]').exists()).toBe(false)
     w.unmount()
     await render('/ranking?scope=daerah')
-    expect(wrapper?.find('[data-testid=ranking-negeri]').exists()).toBe(true)
+    expect(wrapper?.findAllComponents({ name: 'Select' })).toHaveLength(3)
     expect(wrapper?.get('[data-testid=ranking-subtitle]').text()).toBe('Daerah')
   })
 

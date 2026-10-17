@@ -4,15 +4,15 @@
  * "Tambah Post", the empty card or the posts (newest first, PROPOSED layout), and the "Profil Awam Anda"
  * box with the viewer's own public link (DV-19) and a copy button (`fa-copy` / `fa-check` for 2,000ms).
  */
-import { Check, Copy, Globe, Images, Plus } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
+import { DsEmptyState, DsIconChip, DsPage } from '@/ds'
 
 import { fetchTimeline } from '../api/performance'
+import PageLoadError from '../components/shared/PageLoadError.vue'
+import PageSkeleton from '../components/shared/PageSkeleton.vue'
 import PostCard from '../components/timeline/PostCard.vue'
-import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData } from '../lib/prestasi/load'
 import { copyText } from '../lib/timeline/clipboard'
 import { sortPosts } from '../lib/timeline/posts'
 import { absoluteUrl } from '../lib/timeline/profile'
@@ -37,90 +37,80 @@ async function copy(): Promise<void> {
 onBeforeUnmount(() => {
   clearTimeout(timer)
 })
-
-const ADD_BUTTON =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2.5 text-sm font-bold text-white shadow transition hover:opacity-90'
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="timeline-page">
-    <div v-if="loadFailed" class="space-y-3" data-testid="page-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        @click="reload()"
-      >
-        Cuba Semula
-      </button>
-    </div>
+  <DsPage data-testid="timeline-page">
+    <PageLoadError v-if="loadFailed" @retry="reload()" />
 
     <template v-else-if="data">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
-          <h2 class="flex items-center gap-2 text-xl font-bold text-slate-800 sm:text-2xl">
-            📸 Timeline Saya
-          </h2>
-          <p class="text-sm text-slate-500">Kongsi sijil, pencapaian, aktiviti &amp; cerita anda</p>
+          <h1 class="text-title text-highlighted">📸 Timeline Saya</h1>
+          <p class="text-body text-muted">Kongsi sijil, pencapaian, aktiviti &amp; cerita anda</p>
         </div>
-        <RouterLink to="/timeline/create" :class="ADD_BUTTON" data-testid="add-post">
-          <Plus class="h-4 w-4" /> Tambah Post
-        </RouterLink>
+        <UButton
+          to="/timeline/create"
+          icon="i-ph-plus"
+          label="Tambah Post"
+          size="lg"
+          data-testid="add-post"
+        />
       </div>
 
-      <div
-        v-if="posts.length === 0"
-        class="flex flex-col items-center px-4 py-12 text-center sm:py-16"
-        data-testid="timeline-empty"
-      >
-        <span
-          class="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-500"
+      <div v-if="posts.length === 0" data-testid="timeline-empty">
+        <DsEmptyState
+          title="Timeline Kosong"
+          description="Mula kongsi pencapaian, sijil, dan cerita anda untuk ditunjukkan pada profil awam anda!"
+          icon="i-ph-images"
+          friend="aisyah"
         >
-          <Images class="h-10 w-10" />
-        </span>
-        <h3 class="mt-5 text-lg font-bold text-slate-800">Timeline Kosong</h3>
-        <p class="mt-2 max-w-md text-slate-500">
-          Mula kongsi pencapaian, sijil, dan cerita anda untuk ditunjukkan pada profil awam anda!
-        </p>
-        <RouterLink to="/timeline/create" :class="[ADD_BUTTON, 'mt-5']" data-testid="add-first">
-          <Plus class="h-4 w-4" /> Tambah Post Pertama
-        </RouterLink>
+          <template #actions>
+            <UButton
+              to="/timeline/create"
+              icon="i-ph-plus"
+              label="Tambah Post Pertama"
+              size="lg"
+              data-testid="add-first"
+            />
+          </template>
+        </DsEmptyState>
       </div>
 
-      <div v-else class="space-y-4" data-testid="timeline-posts">
-        <PostCard v-for="p in posts" :key="p.id" :post="p" />
-      </div>
+      <ol v-else class="flex flex-col gap-4" data-testid="timeline-posts">
+        <li v-for="p in posts" :key="p.id" class="flex min-w-0 gap-3">
+          <DsIconChip icon="i-ph-image-duotone" accent="action" size="sm" class="mt-1 shrink-0" />
+          <PostCard :post="p" class="grow" />
+        </li>
+      </ol>
 
-      <div
-        class="flex items-center gap-3 rounded-2xl bg-white/70 p-4 shadow-sm"
-        data-testid="public-profile-box"
-      >
-        <span
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"
-        >
-          <Globe class="h-5 w-5" />
-        </span>
+      <UCard data-testid="public-profile-box">
+       <div class="flex items-center gap-3">
+        <DsIconChip icon="i-ph-globe" accent="action" size="sm" />
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-bold text-slate-800">Profil Awam Anda</p>
-          <a
+          <p class="text-label text-highlighted">Profil Awam Anda</p>
+          <ULink
             :href="publicUrl"
             target="_blank"
-            class="block text-xs break-all text-indigo-600 hover:underline"
+            class="block min-h-6 text-caption break-all text-primary"
             data-testid="public-url"
-            >{{ publicUrl }}</a
+            >{{ publicUrl }}</ULink
           >
         </div>
-        <button
+        <UButton
           type="button"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition hover:bg-indigo-100"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          :icon="copied ? 'i-ph-check' : 'i-ph-copy'"
+          :aria-label="copied ? 'Disalin' : 'Salin pautan'"
           data-testid="copy-url"
           :data-copied="copied"
           @click="copy"
-        >
-          <Check v-if="copied" class="h-4 w-4" data-icon="fa-check" />
-          <Copy v-else class="h-4 w-4" data-icon="fa-copy" />
-        </button>
-      </div>
+        />
+       </div>
+      </UCard>
     </template>
-  </div>
+    <PageSkeleton v-else-if="!error" />
+  </DsPage>
 </template>

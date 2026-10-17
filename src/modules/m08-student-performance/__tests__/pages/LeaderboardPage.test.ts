@@ -57,8 +57,8 @@ afterEach(() => {
 describe('LeaderboardPage (M08 S20)', () => {
   it('shows the hero and the period links, the week active by default', async () => {
     const w = await render()
-    expect(w.get('h2').text()).toBe('Papan Pendahulu')
-    expect(w.get('[data-testid=leaderboard-hero]').text()).toContain('Siapa juara minggu ini?')
+    expect(w.get('h1').text()).toBe('Papan Pendahulu')
+    expect(w.get('[data-ds=page-header]').text()).toContain('Siapa juara minggu ini?')
     const tabs = w.findAll('[data-testid=leaderboard-tabs] a')
     expect(tabs.map((t) => t.text())).toEqual(['Semua Masa', 'Minggu Ini', 'Bulan Ini'])
     expect(tabs.map((t) => t.attributes('data-active'))).toEqual(['false', 'true', 'false'])
@@ -114,25 +114,25 @@ describe('LeaderboardPage (M08 S20)', () => {
 
   it('renders the table with the responsive columns, plain names and colour pills', async () => {
     const w = await render()
-    expect(w.findAll('thead th').map((th) => th.text())).toEqual([
+    expect(w.findAll('[role=columnheader]').map((th) => th.text())).toEqual([
       '#',
       'Pelajar',
       'Koin',
       'Sesi',
       'Ketepatan',
     ])
-    const heads = w.findAll('thead th')
-    expect(heads[3]?.classes()).toEqual(expect.arrayContaining(['hidden', 'md:table-cell']))
-    expect(heads[4]?.classes()).toEqual(expect.arrayContaining(['hidden', 'lg:table-cell']))
+    const heads = w.findAll('[role=columnheader]')
+    expect(heads[3]?.classes()).toEqual(expect.arrayContaining(['hidden', 'md:block']))
+    expect(heads[4]?.classes()).toEqual(expect.arrayContaining(['hidden', 'lg:block']))
     expect(w.find('[data-testid=leaderboard-table] a').exists()).toBe(false)
     const rows = w.findAll('[data-testid=leaderboard-row]')
     expect(rows).toHaveLength(5)
     const pill = (i: number) => rows[i]?.get('[data-testid=row-accuracy]').classes() ?? []
-    expect(pill(0)).toContain('bg-green-100')
-    expect(pill(3)).toContain('bg-amber-100')
-    expect(pill(4)).toContain('bg-red-100')
+    expect(pill(0)).toContain('bg-success')
+    expect(pill(3)).toContain('bg-warning')
+    expect(pill(4)).toContain('bg-error')
     expect(rows[4]?.get('[data-testid=row-accuracy]').text()).toBe('60%')
-    expect(rows[0]?.get('[data-testid=row-rank]').classes()).toContain('bg-amber-100')
+    expect(rows[0]?.get('[data-testid=row-rank]').text()).toBe('1')
   })
 
   it('shows the footer count and the real-time note', async () => {

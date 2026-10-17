@@ -12,13 +12,11 @@
  *   must never become a `/pelajar/null` link.
  * - The query string is the state (a GET form on live).
  */
-import { Globe, MapPin, MapPinned, School, Trophy } from '@lucide/vue'
-import { computed, ref, watch, watchEffect, type Component } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { computed, ref, watch, watchEffect } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
-import { FORM_SELECT_CLASS } from '@/components/form'
 import { useApi, usePageMeta } from '@/composables'
+import { DsEmptyState, DsPage } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchRankings } from '../api/performance'
@@ -27,7 +25,6 @@ import {
   RANKING_PATH,
   SCOPE_PILLS,
   TINGKATAN_OPTIONS,
-  accuracyClass,
   activeScope,
   apiQuery,
   formQuery,
@@ -86,223 +83,220 @@ function submitForm(): void {
   })
 }
 
-const PILL_ICONS: Record<string, Component> = {
-  nasional: Globe,
-  negeri: MapPinned,
-  daerah: MapPin,
-  sekolah: School,
+const PILL_ICONS: Record<string, string> = {
+  nasional: 'i-ph-globe',
+  negeri: 'i-ph-map-pin-area',
+  daerah: 'i-ph-map-pin',
+  sekolah: 'i-ph-student',
 }
 
-const GRID = 'grid grid-cols-12 items-center gap-2 px-3 sm:gap-3 sm:px-4'
+/** A select cannot hold an empty value, so "no filter" travels as `all` and is query-less. */
+const ALL = 'all'
+const subjectItems = computed(() => [
+  { label: 'Semua Subjek', value: ALL },
+  ...(subjects.value ?? []).map((s) => ({ label: s.name, value: String(s.id) })),
+])
+const tingkatanItems = TINGKATAN_OPTIONS.map((o) => ({
+  label: o.label,
+  value: o.value === '' ? ALL : o.value,
+}))
+const negeriItems = computed(() => [
+  { label: 'Pilih Negeri', value: ALL },
+  ...(data.value?.states ?? []).map((n) => ({ label: n, value: n })),
+])
+
+function bindFilter(target: typeof subjectId) {
+  return computed({
+    get: () => (target.value === '' ? ALL : target.value),
+    set: (v: string | undefined) => {
+      target.value = v === undefined || v === ALL ? '' : v
+      submitForm()
+    },
+  })
+}
+const subjectModel = bindFilter(subjectId)
+const tingkatanModel = bindFilter(tingkatan)
+const negeriModel = bindFilter(negeri)
+
 </script>
 
 <template>
-  <div class="space-y-4 sm:space-y-5" data-testid="ranking-page">
-    <!-- Hero -->
-    <section
-      class="flex items-center gap-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-5 text-white shadow-lg sm:p-6"
-      data-testid="ranking-hero"
-    >
-      <div
-        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 sm:h-14 sm:w-14"
-      >
-        <Trophy class="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" />
-      </div>
-      <div class="min-w-0">
-        <h1 class="font-heading text-2xl font-bold text-white sm:text-3xl">Kedudukan</h1>
-        <p class="truncate text-sm text-white/80" data-testid="ranking-subtitle">{{ label }}</p>
-      </div>
-    </section>
+  <DsPage title="Kedudukan" data-testid="ranking-page">
+    <p class="-mt-3 text-body text-muted" data-testid="ranking-subtitle">{{ label }}</p>
 
     <!-- Scope pills -->
-    <nav class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" data-testid="ranking-pills">
-      <RouterLink
+    <nav class="flex gap-2 overflow-x-auto pb-1" data-testid="ranking-pills">
+      <UButton
         v-for="pill in SCOPE_PILLS"
         :key="pill.id"
         :to="{ path: RANKING_PATH, query: scopeQuery(state, pill.id) }"
-        :class="[
-          'inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap shadow-sm transition',
-          active === pill.id
-            ? 'bg-indigo-600 text-white'
-            : 'bg-white text-slate-700 hover:bg-slate-50',
-        ]"
+        :color="active === pill.id ? 'primary' : 'neutral'"
+        :variant="active === pill.id ? 'solid' : 'soft'"
+        :icon="PILL_ICONS[pill.id]"
+        :label="pill.label"
+        size="lg"
+        class="shrink-0"
         :data-testid="`ranking-pill-${pill.id}`"
         :data-active="active === pill.id ? 'true' : 'false'"
-      >
-        <component :is="PILL_ICONS[pill.id]" class="h-4 w-4" aria-hidden="true" />
-        {{ pill.label }}
-      </RouterLink>
+      />
     </nav>
 
     <!-- Filters (GET form) -->
-    <form
-      method="get"
-      :action="RANKING_PATH"
-      :class="[
-        'grid gap-3 rounded-2xl bg-white p-4 shadow sm:gap-4 sm:p-5',
-        showNegeri ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2',
-      ]"
-      data-testid="ranking-filter"
-      @submit.prevent="submitForm"
-    >
-      <input type="hidden" name="scope" :value="formScope" />
-      <div class="min-w-0">
-        <label for="ranking-subject" class="mb-1 block text-xs text-slate-500">Subjek</label>
-        <select
-          id="ranking-subject"
-          v-model="subjectId"
-          name="subject_id"
-          :class="[FORM_SELECT_CLASS, 'min-h-11']"
-          data-testid="ranking-subject"
-          @change="submitForm"
-        >
-          <option value="">Semua Subjek</option>
-          <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">
-            {{ s.name }}
-          </option>
-        </select>
-      </div>
-      <div class="min-w-0">
-        <label for="ranking-tingkatan" class="mb-1 block text-xs text-slate-500">Tingkatan</label>
-        <select
-          id="ranking-tingkatan"
-          v-model="tingkatan"
-          name="tingkatan"
-          :class="[FORM_SELECT_CLASS, 'min-h-11']"
-          data-testid="ranking-tingkatan"
-          @change="submitForm"
-        >
-          <option v-for="o in TINGKATAN_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
-      </div>
-      <div v-if="showNegeri" class="min-w-0">
-        <label for="ranking-negeri" class="mb-1 block text-xs text-slate-500">Negeri</label>
-        <select
-          id="ranking-negeri"
-          v-model="negeri"
-          name="negeri"
-          :class="[FORM_SELECT_CLASS, 'min-h-11']"
-          data-testid="ranking-negeri"
-          @change="submitForm"
-        >
-          <option value="">Pilih Negeri</option>
-          <option v-for="n in data?.states ?? []" :key="n" :value="n">{{ n }}</option>
-        </select>
-      </div>
-    </form>
+    <UCard data-testid="ranking-filter">
+      <form
+        method="get"
+        :action="RANKING_PATH"
+        :class="showNegeri ? 'grid grid-cols-1 gap-4 sm:grid-cols-3' : 'grid grid-cols-2 gap-4'"
+        @submit.prevent="submitForm"
+      >
+        <UFormField label="Subjek" for="ranking-subject" class="min-w-0">
+          <USelect
+            id="ranking-subject"
+            v-model="subjectModel"
+            name="subject_id"
+            :items="subjectItems"
+            size="lg"
+            class="w-full"
+            data-testid="ranking-subject"
+          />
+        </UFormField>
+        <UFormField label="Tingkatan" for="ranking-tingkatan" class="min-w-0">
+          <USelect
+            id="ranking-tingkatan"
+            v-model="tingkatanModel"
+            name="tingkatan"
+            :items="tingkatanItems"
+            size="lg"
+            class="w-full"
+            data-testid="ranking-tingkatan"
+          />
+        </UFormField>
+        <UFormField v-if="showNegeri" label="Negeri" for="ranking-negeri" class="min-w-0">
+          <USelect
+            id="ranking-negeri"
+            v-model="negeriModel"
+            name="negeri"
+            :items="negeriItems"
+            size="lg"
+            class="w-full"
+            data-testid="ranking-negeri"
+          />
+        </UFormField>
+      </form>
+    </UCard>
 
     <!-- Error -->
-    <div v-if="error" class="space-y-3" data-testid="ranking-error">
-      <AlertBox :messages="LOAD_ERROR" />
-      <button
-        type="button"
-        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
+    <div v-if="error" class="flex flex-col items-start gap-3" data-testid="ranking-error">
+      <UAlert
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        :title="LOAD_ERROR"
+        class="w-full"
+      />
+      <UButton
+        color="neutral"
+        variant="soft"
+        size="lg"
+        label="Cuba Semula"
         data-testid="ranking-retry"
         @click="reload()"
-      >
-        Cuba Semula
-      </button>
+      />
     </div>
 
     <!-- Loading -->
     <div
       v-else-if="firstLoad"
-      class="space-y-2 rounded-2xl bg-white p-4 shadow"
+      class="flex flex-col gap-2"
+      aria-busy="true"
       data-testid="ranking-loading"
     >
-      <div v-for="n in 3" :key="n" class="h-10 animate-pulse rounded-lg bg-slate-100"></div>
+      <USkeleton v-for="n in 3" :key="n" class="h-12 w-full" />
     </div>
 
     <!-- Empty -->
-    <div
-      v-else-if="rows.length === 0"
-      class="rounded-2xl bg-white px-4 py-12 text-center shadow"
-      data-testid="ranking-empty"
-    >
-      <div class="text-5xl" aria-hidden="true">🏆</div>
-      <h2 class="mt-3 font-heading text-lg font-bold text-slate-700">Tiada data kedudukan</h2>
-      <p class="mt-1 text-sm text-slate-500">
-        Mula menjawab soalan untuk muncul di papan kedudukan!
-      </p>
-      <RouterLink
-        to="/practice"
-        class="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700"
-        data-testid="ranking-start"
+    <div v-else-if="rows.length === 0" data-testid="ranking-empty">
+      <DsEmptyState
+        title="Tiada data kedudukan"
+        description="Mula menjawab soalan untuk muncul di papan kedudukan!"
+        icon="i-ph-trophy"
+        friend="aiman"
       >
-        Mula Latihan
-      </RouterLink>
+        <template #actions>
+          <UButton to="/practice" label="Mula Latihan" size="lg" data-testid="ranking-start" />
+        </template>
+      </DsEmptyState>
+      <span class="sr-only">🏆</span>
     </div>
 
     <!-- List -->
-    <div v-else class="overflow-hidden rounded-2xl bg-white shadow" data-testid="ranking-list">
-      <div
-        :class="[
-          GRID,
-          'border-b border-slate-900 bg-slate-50 py-3 text-xs font-semibold tracking-wide text-slate-500 uppercase',
-        ]"
-        data-testid="ranking-head"
-      >
-        <div class="col-span-1 text-center">#</div>
-        <div class="col-span-5">Pelajar</div>
-        <div class="col-span-2 text-center">Tahap</div>
-        <div class="col-span-2 text-center sm:col-span-2">Betul</div>
-        <div class="col-span-2 text-center sm:col-span-2">Tepat</div>
-      </div>
-      <div
-        v-for="row in rows"
-        :key="row.rank"
-        :class="[GRID, 'border-b border-slate-900 py-3']"
-        data-testid="ranking-row"
-      >
+    <UCard v-else :ui="{ body: 'p-0 sm:p-0' }" data-testid="ranking-list">
+      <div role="table" aria-label="Kedudukan">
         <div
-          class="col-span-1 text-center text-base font-bold text-slate-500 sm:text-lg"
-          data-testid="ranking-rank"
+          role="row"
+          class="grid grid-cols-12 items-center gap-2 bg-elevated px-3 py-3 text-overline text-muted sm:gap-3 sm:px-4"
+          data-testid="ranking-head"
         >
-          <span v-if="MEDALS[row.rank]" :class="MEDALS[row.rank]?.cls">{{
-            MEDALS[row.rank]?.emoji
-          }}</span>
-          <template v-else>{{ row.rank }}</template>
+          <div role="columnheader" class="col-span-1 text-center">#</div>
+          <div role="columnheader" class="col-span-5">Pelajar</div>
+          <div role="columnheader" class="col-span-2 text-center">Tahap</div>
+          <div role="columnheader" class="col-span-2 text-center sm:col-span-2">Betul</div>
+          <div role="columnheader" class="col-span-2 text-center sm:col-span-2">Tepat</div>
         </div>
-        <div class="col-span-5 min-w-0">
-          <p class="truncate text-sm font-semibold text-slate-800" data-testid="ranking-name">
-            {{ row.name }}
-          </p>
-          <p class="truncate text-xs text-slate-400" data-testid="ranking-school">
-            {{ row.schoolName }}
-          </p>
-        </div>
-        <div class="col-span-2 text-center">
-          <span
-            class="inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700"
-            data-testid="ranking-tahap"
-            >L{{ row.tahap }}</span
+        <div
+          v-for="row in rows"
+          :key="row.rank"
+          role="row"
+          class="grid min-h-14 grid-cols-12 items-center gap-2 px-3 py-3 odd:bg-soft sm:gap-3 sm:px-4"
+          data-testid="ranking-row"
+        >
+          <div role="cell" class="col-span-1 flex justify-center" data-testid="ranking-rank">
+            <UBadge
+              v-if="MEDALS[row.rank]"
+              color="primary"
+              variant="solid"
+              :label="MEDALS[row.rank]?.emoji"
+            />
+            <span v-else class="tabular text-label text-muted">{{ row.rank }}</span>
+          </div>
+          <div role="cell" class="col-span-5 min-w-0">
+            <p class="truncate text-label text-highlighted" data-testid="ranking-name">
+              {{ row.name }}
+            </p>
+            <p class="truncate text-caption text-muted" data-testid="ranking-school">
+              {{ row.schoolName }}
+            </p>
+          </div>
+          <div role="cell" class="col-span-2 text-center">
+            <UBadge color="neutral" variant="subtle" size="sm" data-testid="ranking-tahap"
+              >L{{ row.tahap }}</UBadge
+            >
+          </div>
+          <div
+            role="cell"
+            class="tabular col-span-2 text-center text-label text-highlighted"
+            data-testid="ranking-betul"
           >
+            {{ formatNumber(row.correct) }}
+          </div>
+          <div
+            role="cell"
+            class="tabular col-span-2 text-center text-label"
+            :class="row.accuracy >= 50 ? 'text-success' : 'text-error'"
+            data-testid="ranking-tepat"
+          >
+            {{ row.accuracy.toFixed(2) }}%
+          </div>
         </div>
         <div
-          class="col-span-2 text-center text-xs font-bold text-slate-800 sm:text-sm"
-          data-testid="ranking-betul"
+          v-if="footer"
+          class="bg-elevated px-4 py-3 text-center text-caption text-muted"
+          data-testid="ranking-footer"
         >
-          {{ formatNumber(row.correct) }}
-        </div>
-        <div
-          :class="[
-            'col-span-2 text-center text-xs font-semibold sm:text-sm',
-            accuracyClass(row.accuracy),
-          ]"
-          data-testid="ranking-tepat"
-        >
-          {{ row.accuracy.toFixed(2) }}%
+          Menunjukkan {{ rows.length }} dari {{ footer.total }} pelajar
         </div>
       </div>
-      <div
-        v-if="footer"
-        class="bg-gray-50 px-4 py-3 text-center text-xs text-gray-400"
-        data-testid="ranking-footer"
-      >
-        Menunjukkan {{ rows.length }} dari {{ footer.total }} pelajar
-      </div>
-    </div>
-  </div>
+    </UCard>
+  </DsPage>
 </template>
