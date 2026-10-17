@@ -26,6 +26,7 @@ import { useSessionStore, withSessionSliding } from '@/stores'
 import { uiLocale, uiLocaleKey } from '@/theme/locale-ms'
 
 import App from '../App.vue'
+import { showBootError } from './boot-error'
 import { connectUnauthorizedRedirect, createAppRouter } from './router'
 
 export interface BootstrapOptions {
@@ -81,6 +82,7 @@ async function createTransport(
     // Log a boot failure once; each request then rejects through the same promise.
     ready.catch((e: unknown) => {
       console.error('Mock boot failed', e)
+      showBootError()
     })
     const transport: Transport = {
       request: async (req, signal) => (await ready).transport.request(req, signal),

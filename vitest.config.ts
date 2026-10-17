@@ -24,7 +24,7 @@ export default mergeConfig(
       environment: 'node',
       // The prototype scope (D43) is ON by default; the existing admin/PPD/parent unit tests run
       // with it off. Scope tests turn it on with `vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')`.
-      env: { VITE_PROTOTYPE_SCOPE: 'off' },
+      env: { VITE_PROTOTYPE_SCOPE: 'off', VITE_DATA_PROFILE: 'full' },
       root: fileURLToPath(new URL('./', import.meta.url)),
       // Nuxt UI components import virtual modules (`#build/*`, `#imports`) that only the Vite
       // plugin resolves; inline the package so Vitest runs it through that pipeline (V2-T05).

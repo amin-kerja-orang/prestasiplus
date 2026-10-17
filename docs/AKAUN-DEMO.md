@@ -8,7 +8,9 @@ Semua akaun ialah **akaun demo rekaan** dalam data tiruan (mock) prototaip. Ia t
 
 1. Pastikan server tempatan sedang berjalan: `npm run dev`.
 2. Buka **http://127.0.0.1:5173/login**.
-3. Aplikasi mungkin mengambil 5–10 saat untuk dimuatkan kali pertama.
+3. Aplikasi mungkin mengambil beberapa saat untuk dimuatkan kali pertama (skrin log masuk muncul dalam kira-kira 1 saat; data tiruan menyusul).
+
+**Profil data (D45):** dalam binaan demo/artifact dan `npm run dev` dengan skop prototaip aktif, set data besar (soalan, jawapan, sesi, lejar syiling) dikecilkan; semua akaun demo dan rekod sauh kekal. `VITE_DATA_PROFILE=full` memulihkan data penuh; Vitest dan binaan e2e sentiasa guna `full`. Lihat `src/mock/dataset/data-profile.ts`.
 
 ## Akaun utama
 
