@@ -86,7 +86,7 @@ const { data: map, error } = useApi(
             {{ s.emoji }} {{ s.label }}
           </UButton>
         </nav>
-        <nav class="flex gap-2" aria-label="Darjah" data-testid="map-grade-chips">
+        <nav class="grid grid-cols-2 gap-2 sm:flex" aria-label="Darjah" data-testid="map-grade-chips">
           <UButton
             v-for="g in MAP_GRADES"
             :key="g"

@@ -159,6 +159,9 @@ export const uiConfig = {
   inputTags: fieldConfig,
   pinInput: { defaultVariants: { variant: 'soft' }, variants: { variant: { soft: filled } } },
 
+  // Pager wraps instead of overflowing on narrow screens (S-08 / S-09).
+  pagination: { slots: { root: 'max-w-full', list: 'flex-wrap justify-center' } },
+
   // Raised surface with a soft shadow, no divider lines.
   card: {
     slots: { root: 'rounded-card' },
