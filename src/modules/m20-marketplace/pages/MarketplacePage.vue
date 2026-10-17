@@ -9,9 +9,8 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { LaravelPager } from '@/components/data'
-import { LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsEmptyState, DsPage } from '@/ds'
 
 import { fetchMarketplaceCategories, searchMarketplaceProducts, type BuyerSort } from '../api'
 import CategoryChips from '../components/product/CategoryChips.vue'
@@ -80,7 +79,7 @@ const pagerQuery = computed(() => ({
 </script>
 
 <template>
-  <div class="min-w-0 space-y-5" data-testid="marketplace-page">
+  <DsPage data-testid="marketplace-page">
     <LoadError v-if="failed" @retry="retry" />
     <template v-else>
       <ProductFilters
@@ -97,32 +96,33 @@ const pagerQuery = computed(() => ({
 
       <div
         v-if="!ready"
-        class="flex justify-center py-10 text-slate-400"
+        class="flex flex-col gap-3"
+        aria-busy="true"
         data-testid="marketplace-loading"
       >
-        <LoadingSpinner :size="28" />
+        <USkeleton class="h-28 w-full" />
+        <USkeleton class="h-40 w-full" />
       </div>
-      <div
-        v-else-if="rows.length === 0"
-        class="rounded-2xl bg-white px-4 py-12 text-center shadow-md"
-        data-testid="marketplace-empty"
-      >
-        <p class="text-5xl" aria-hidden="true">{{ MARKETPLACE_COPY.emptyIcon }}</p>
-        <h3 class="mt-3 text-lg font-bold text-slate-800">{{ MARKETPLACE_COPY.emptyTitle }}</h3>
-        <p class="mt-1 text-sm text-slate-500">{{ MARKETPLACE_COPY.emptyHint }}</p>
+      <div v-else-if="rows.length === 0" data-testid="marketplace-empty">
+        <DsEmptyState
+          :title="MARKETPLACE_COPY.emptyTitle"
+          :description="MARKETPLACE_COPY.emptyHint"
+          icon="i-ph-storefront-duotone"
+        />
       </div>
       <template v-else>
         <ProductGrid :products="rows" />
-        <LaravelPager
-          v-if="meta && meta.totalPages > 1"
-          :page="page"
-          :total="meta.totalItems"
-          :per-page="meta.pageSize"
-          path="/marketplace"
-          :query="pagerQuery"
-          @change="goTo"
-        />
+        <div class="flex justify-center">
+          <UPagination
+            v-if="meta && meta.totalPages > 1"
+            :page="page"
+            :total="meta.totalItems"
+            :items-per-page="meta.pageSize"
+            :to="(p: number) => ({ path: '/marketplace', query: { ...pagerQuery, page: String(p) } })"
+            @update:page="goTo"
+          />
+        </div>
       </template>
     </template>
-  </div>
+  </DsPage>
 </template>

@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kedai Hadiah Digital',
       header: { title: 'Kedai Hadiah Digital', subtitle: SUBTITLE },
       module: 'M15',
+      v2: true,
     },
   },
   {
@@ -32,6 +33,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tebusan Saya',
       header: { title: 'Tebusan Saya', subtitle: SUBTITLE },
       module: 'M15',
+      v2: true,
     },
   },
 ]

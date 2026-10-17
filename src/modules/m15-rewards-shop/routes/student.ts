@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kedai Hadiah',
       header: { title: 'Kedai Hadiah', subtitle: SUBTITLE },
       module: 'M15',
+      v2: true,
     },
   },
   {
@@ -33,6 +34,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kotak Misteri — PRESTASIPLUS',
       header: { title: 'Kotak Misteri', subtitle: SUBTITLE },
       module: 'M15',
+      v2: true,
     },
   },
   {
@@ -45,6 +47,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Cabutan Bertuah - PRESTASIPLUS',
       header: { title: 'Cabutan Bertuah', subtitle: SUBTITLE },
       module: 'M15',
+      v2: true,
     },
   },
 ]

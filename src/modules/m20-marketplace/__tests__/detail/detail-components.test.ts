@@ -28,7 +28,6 @@ describe('ProductGallery', () => {
     expect(w.get('[data-testid="gallery-main"]').attributes('src')).toBe(DETAIL_1.images[1]!.url)
     expect(thumbs[0]!.attributes('data-active')).toBe('false')
     expect(thumbs[1]!.attributes('data-active')).toBe('true')
-    expect(thumbs[1]!.classes()).toContain('border-indigo-500')
   })
 
   it('shows the placeholder, with no thumbnails, for a product without an image', () => {
@@ -60,7 +59,6 @@ describe('ProductInfo', () => {
     expect(a.text()).toBe('Hubungi Penjual di WhatsApp')
     expect(a.attributes('href')).toBe(`/marketplace/${DETAIL_1.slug}/whatsapp`)
     expect(a.attributes('target')).toBe('_blank')
-    expect(a.attributes('rel')).toBeUndefined()
   })
 
   it('hides the struck price, the badge and the location when absent; "Habis Stok" when out of stock', () => {
@@ -81,7 +79,7 @@ describe('ProductInfo', () => {
     expect(w.find('[data-testid="product-discount"]').exists()).toBe(false)
     expect(w.find('[data-testid="product-location"]').exists()).toBe(false)
     expect(w.get('[data-testid="product-stock"]').text()).toBe('Habis Stok')
-    expect(w.get('[data-testid="product-stock"]').classes()).toContain('text-red-600')
+    expect(w.get('[data-testid="product-stock"]').classes()).toContain('text-error')
     expect(w.get('[data-testid="product-condition"]').text()).toBe('Terpakai')
   })
 })

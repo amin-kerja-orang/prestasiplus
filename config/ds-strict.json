@@ -62,7 +62,11 @@
     { "glob": "src/modules/m10-teacher-class/components/kelas-saya/JoinClassForm.vue", "level": "ds" },
     { "glob": "src/modules/m07-pksk/components/AccentBadge.vue", "level": "ds" },
     { "glob": "src/modules/m07-pksk/components/PkskBanner.vue", "level": "ds" },
-    { "glob": "src/modules/m10-teacher-class/components/set-soalan-saya/*.vue", "level": "page" }
+    { "glob": "src/modules/m10-teacher-class/components/set-soalan-saya/*.vue", "level": "page" },
+    { "glob": "src/modules/m15-rewards-shop/pages/*.vue", "level": "page" },
+    { "glob": "src/modules/m15-rewards-shop/components/*.vue", "level": "page" },
+    { "glob": "src/modules/m20-marketplace/pages/*.vue", "level": "page" },
+    { "glob": "src/modules/m20-marketplace/components/**/*.vue", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"
