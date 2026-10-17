@@ -9,6 +9,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import type { GameLobby } from '../../api'
 import PapanBijakPage from '../../pages/PapanBijakPage.vue'
+import { usel } from './select-helper'
 
 const fetchGameLobby = vi.hoisted(() => vi.fn())
 const createRoom = vi.hoisted(() => vi.fn())
@@ -89,7 +90,7 @@ async function mountPage() {
   return { wrapper, router }
 }
 
-const sel = (id: string) => wrapper!.get<HTMLSelectElement>(`[data-testid="${id}"]`)
+const sel = (id: string) => usel(wrapper!, id)
 
 beforeEach(() => {
   for (const m of [
@@ -115,11 +116,7 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     expect(wrapper!.get('[data-testid="pb-subtitle"]').text()).toBe(
       'Board game quiz multiplayer — jemput kawan, gulung dadu, jawab soalan! 🐍🪜',
     )
-    expect(
-      sel('create-subject')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['🔢 Matematik', '📝 Bahasa Melayu', '🔬 Sains', '🇬🇧 Bahasa Inggeris'])
+    expect(sel('create-subject').texts()).toEqual(['🔢 Matematik', '📝 Bahasa Melayu', '🔬 Sains', '🇬🇧 Bahasa Inggeris'])
     const auto = wrapper!.get('[data-testid="grade-auto"]').text()
     expect(auto).toContain('Darjah 4')
     expect(auto).toContain('(auto dari profil anda)')
@@ -140,16 +137,16 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     await wrapper!.get('[data-testid="grade-switch"]').trigger('click')
     expect(wrapper!.find('[data-testid="grade-auto"]').exists()).toBe(false)
     const select = sel('grade-select')
-    expect(select.findAll('optgroup').map((g) => g.attributes('label'))).toEqual([
+    expect(select.labels()).toEqual([
       'Sekolah Rendah',
       'Sekolah Menengah',
     ])
-    expect(select.element.value).toBe('DARJAH_4')
-    await select.setValue('TINGKATAN_2')
-    expect(sel('create-mode').findAll('option')[1]!.text()).toBe('Semua Tingkatan (1-5)')
+    expect(select.value()).toBe('DARJAH_4')
+    await select.set('TINGKATAN_2')
+    expect(sel('create-mode').texts()[1]).toBe('Semua Tingkatan (1-5)')
     await wrapper!.get('[data-testid="grade-back"]').trigger('click')
     expect(wrapper!.get('[data-testid="grade-auto"]').text()).toContain('Darjah 4')
-    expect(sel('create-mode').findAll('option')[1]!.text()).toBe('Semua Darjah (1-6)')
+    expect(sel('create-mode').texts()[1]).toBe('Semua Darjah (1-6)')
   })
 
   it('an account without a grade opens on the select (no auto box, no way back)', async () => {
@@ -163,16 +160,12 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
   it('custom shows "Dari" / "Hingga" (default D1 / D6) and "Maks Pemain" 2-6 defaults to 4', async () => {
     await mountPage()
     expect(wrapper!.find('[data-testid="create-range"]').exists()).toBe(false)
-    expect(
-      sel('create-max-players')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['2 Pemain', '3 Pemain', '4 Pemain', '5 Pemain', '6 Pemain'])
-    expect(sel('create-max-players').element.value).toBe('4')
-    await sel('create-mode').setValue('custom')
-    expect(sel('create-grade-min').element.value).toBe('1')
-    expect(sel('create-grade-max').element.value).toBe('6')
-    expect(sel('create-grade-max').findAll('option')).toHaveLength(11)
+    expect(sel('create-max-players').texts()).toEqual(['2 Pemain', '3 Pemain', '4 Pemain', '5 Pemain', '6 Pemain'])
+    expect(sel('create-max-players').value()).toBe(4)
+    await sel('create-mode').set('custom')
+    expect(sel('create-grade-min').value()).toBe(1)
+    expect(sel('create-grade-max').value()).toBe(6)
+    expect(sel('create-grade-max').items()).toHaveLength(11)
   })
 })
 
@@ -181,10 +174,9 @@ describe('S7 live look: tinted panels', () => {
     await mountPage()
     // v2: the hero is a DS card with the page h1 (the old violet gradient header is gone).
     expect(wrapper!.get('[data-testid="pb-h1"]').text()).toContain('Papan Bijak')
-    expect(wrapper!.get('[data-testid="create-card"]').classes()).toContain('from-violet-50')
-    expect(wrapper!.get('[data-testid="join-card"]').classes()).toContain('from-emerald-50')
-    expect(wrapper!.get('[data-testid="quick-match"]').classes()).toContain('from-amber-50')
-    expect(wrapper!.get('[data-testid="top10-card"]').classes()).toContain('from-pink-50')
+    // v2: UCard panels (no tinted gradients).
+    for (const id of ['create-card', 'join-card', 'quick-match', 'top10-card'])
+      expect(wrapper!.find(`[data-testid="${id}"]`).exists()).toBe(true)
     // "Cara Bermain:" lives inside the green join panel, as live.
     expect(wrapper!.get('[data-testid="join-card"]').text()).toContain('Cara Bermain:')
   })
@@ -194,7 +186,7 @@ describe('S7 create and join (FR-M16-56, 57)', () => {
   it('creates a room with the form body and opens /papan-bijak/{code}', async () => {
     createRoom.mockResolvedValueOnce({ code: 'K7M2QX' })
     const { router } = await mountPage()
-    await sel('create-max-players').setValue('4')
+    await sel('create-max-players').set(4)
     await wrapper!.get('[data-testid="create-form"]').trigger('submit')
     await flushPromises()
     expect(createRoom).toHaveBeenCalledWith('papan-bijak', {
@@ -209,9 +201,9 @@ describe('S7 create and join (FR-M16-56, 57)', () => {
   it('sends the custom range only for the custom mode', async () => {
     createRoom.mockResolvedValueOnce({ code: 'AAAAAA' })
     await mountPage()
-    await sel('create-mode').setValue('custom')
-    await sel('create-grade-min').setValue('2')
-    await sel('create-grade-max').setValue('9')
+    await sel('create-mode').set('custom')
+    await sel('create-grade-min').set(2)
+    await sel('create-grade-max').set(9)
     await wrapper!.get('[data-testid="create-form"]').trigger('submit')
     await flushPromises()
     expect(createRoom.mock.calls[0]![1]).toMatchObject({
@@ -277,15 +269,14 @@ describe('S7 Top 10 (FR-M16-61)', () => {
     await mountPage()
     const rows = wrapper!.findAll('[data-testid="top10-row"]')
     expect(rows).toHaveLength(3)
-    expect(rows.map((r) => r.get('[data-testid="top10-rank"]').text())).toEqual(['🥇', '🥈', '🥉'])
-    expect(rows[0]!.get('[data-testid="top10-initials"]').text()).toBe('AD')
-    expect(rows[1]!.get('[data-testid="top10-name"]').text()).toBe('Pelajar Panjang Na...')
+    expect(rows.map((r) => r.get('[data-testid="row-rank"]').text())).toEqual(['🥇', '🥈', '🥉'])
+    expect(rows[0]!.get('[data-testid="row-avatar"]').text()).toBe('AD')
+    expect(rows[1]!.get('[data-testid="row-title"]').text()).toBe('Pelajar Panjang Na...')
     const kadar = rows.map((r) => r.get('[data-testid="top10-kadar"]'))
     expect(kadar.map((k) => k.text())).toEqual(['67%', '75%', '25%'])
-    expect(kadar[0]!.classes().join(' ')).toContain('amber')
-    expect(kadar[1]!.classes().join(' ')).toContain('emerald')
-    expect(kadar[2]!.classes().join(' ')).toContain('red')
-    expect(wrapper!.get('[data-testid="top10-scroll"]').classes()).toContain('overflow-x-auto')
+    expect(kadar[0]!.classes().join(' ')).toContain('warning')
+    expect(kadar[1]!.classes().join(' ')).toContain('success')
+    expect(kadar[2]!.classes().join(' ')).toContain('error')
     expect(wrapper!.get('[data-testid="top10-card"]').text()).toContain(
       'Papan Markah — Top 10 Juara',
     )

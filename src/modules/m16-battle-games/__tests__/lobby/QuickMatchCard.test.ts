@@ -8,6 +8,7 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import QuickMatchCard from '../../components/lobby/QuickMatchCard.vue'
+import { usel } from './select-helper'
 
 const startPbQuickMatch = vi.hoisted(() => vi.fn())
 const pollPbQuickMatch = vi.hoisted(() => vi.fn())
@@ -17,9 +18,12 @@ vi.mock('../../api/games', () => ({ startPbQuickMatch, pollPbQuickMatch, cancelP
 const res = <T>(body: T, status = 200) => ({ status, headers: {}, body })
 
 let wrapper: VueWrapper | undefined
+/** Timers owned by the UI kit itself, counted before the search starts. */
+let baseTimers = 0
 
 async function search() {
   wrapper = mount(QuickMatchCard, { attachTo: document.body })
+  baseTimers = vi.getTimerCount()
   await wrapper.get('[data-testid="qm-start"]').trigger('click')
   await flushPromises()
 }
@@ -48,18 +52,8 @@ describe('Papan Bijak quick match', () => {
     expect(t).toContain('Cari Lawan Auto')
     expect(t).toContain('Sistem cari pemain sepadan secara automatik')
     expect(t).toContain('🔍 Cari Lawan Sekarang')
-    expect(
-      wrapper
-        .get('[data-testid="qm-subject"]')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['Matematik', 'Bahasa Melayu', 'Sains', 'Bahasa Inggeris'])
-    expect(
-      wrapper
-        .get('[data-testid="qm-mode"]')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['Tahap sama', 'Semua darjah/tingkatan'])
+    expect(usel(wrapper, 'qm-subject').texts()).toEqual(['Matematik', 'Bahasa Melayu', 'Sains', 'Bahasa Inggeris'])
+    expect(usel(wrapper, 'qm-mode').texts()).toEqual(['Tahap sama', 'Semua darjah/tingkatan'])
   })
 
   it('posts the subject and match mode, counts every second and polls every 3 s', async () => {
@@ -89,7 +83,7 @@ describe('Papan Bijak quick match', () => {
     await vi.advanceTimersByTimeAsync(9000)
     expect(wrapper!.emitted('matched')).toEqual([['K7M2QX']])
     expect(wrapper!.find('[data-testid="qm-searching"]').exists()).toBe(false)
-    expect(vi.getTimerCount()).toBe(0)
+    expect(vi.getTimerCount()).toBeLessThanOrEqual(baseTimers)
   })
 
   it('expired shows the error below the button and keeps it until the next search (DV-M16-20)', async () => {
@@ -146,7 +140,7 @@ describe('Papan Bijak quick match', () => {
     expect(vi.getTimerCount()).toBeGreaterThan(0)
     wrapper!.unmount()
     wrapper = undefined
-    expect(vi.getTimerCount()).toBe(0)
+    expect(vi.getTimerCount()).toBeLessThanOrEqual(baseTimers)
   })
 
   it('starts no timer when the card is left while #29 is still in flight', async () => {
@@ -158,7 +152,7 @@ describe('Papan Bijak quick match', () => {
     wrapper = undefined
     answer(res({ status: 'searching' }))
     await flushPromises()
-    expect(vi.getTimerCount()).toBe(0)
+    expect(vi.getTimerCount()).toBeLessThanOrEqual(baseTimers)
     await vi.advanceTimersByTimeAsync(9000)
     expect(pollPbQuickMatch).not.toHaveBeenCalled()
   })

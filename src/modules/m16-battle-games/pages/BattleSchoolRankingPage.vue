@@ -5,15 +5,15 @@
  * (national rows 1-3, only when rows exist) and the "Senarai Penuh" table. An unknown `period`
  * shows all-time rows with no pill active (`activePeriod` null). The table scrolls in its card.
  */
-import { Crown, ListOrdered, School } from '@lucide/vue'
 import { computed } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsArt3D, DsEmptyState, DsPage } from '@/ds'
 
 import { fetchSchoolStandings } from '../api'
 import { BATTLE_STATES } from '../components/battle/battle-lib'
+import StatRow from '../components/battle/StatRow.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,8 +55,15 @@ function periodTo(value: string) {
   }
 }
 
-function onState(event: Event): void {
-  const value = (event.target as HTMLSelectElement).value
+/** `USelect` cannot hold an empty value: "Semua Negeri" is carried as this sentinel. */
+const ALL_STATES = '__semua__'
+const stateItems = [
+  { value: ALL_STATES, label: 'Semua Negeri' },
+  ...BATTLE_STATES.map((s) => ({ value: s, label: s })),
+]
+
+function onState(picked: string): void {
+  const value = picked === ALL_STATES ? '' : picked
   void router.push({
     path: '/battle/ranking-sekolah',
     query: { period: currentPeriod.value, state: value },
@@ -73,178 +80,130 @@ const podiumOrder = computed(() => {
 </script>
 
 <template>
-  <div class="w-full space-y-4" data-testid="battle-schools">
-    <!-- DV-M16-41 (accepted for S3/S4, title colour only): white title; live is dark at about 2.0-2.5:1 contrast -->
-    <div
-      class="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 p-4 text-white shadow-lg"
-    >
-      <span class="absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10" />
-      <span
-        class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20"
-      >
-        <School class="h-6 w-6" />
-      </span>
-      <div class="relative min-w-0">
-        <h2 class="text-xl font-bold text-white">Papan Ranking Sekolah</h2>
-        <p class="text-sm text-white/90">Sekolah mana paling hebat? Wakili sekolah anda!</p>
+  <DsPage data-testid="battle-schools">
+    <UCard>
+      <div class="flex items-center justify-between gap-4">
+        <div class="min-w-0">
+          <h2 class="text-title text-highlighted">Papan Ranking Sekolah</h2>
+          <p class="text-body text-muted">Sekolah mana paling hebat? Wakili sekolah anda!</p>
+        </div>
+        <DsArt3D name="trophy" size="hero" float class="hidden sm:block" />
       </div>
-    </div>
+    </UCard>
 
-    <div class="flex flex-wrap items-center gap-2 rounded-2xl bg-white p-3 shadow-md">
-      <RouterLink
+    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <UButton
         v-for="p in PERIODS"
         :key="p.value"
         :to="periodTo(p.value)"
-        class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold transition"
-        :class="
-          (data?.activePeriod ?? currentPeriod) === p.value
-            ? 'bg-blue-500 text-white'
-            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-        "
+        size="xl"
+        :color="(data?.activePeriod ?? currentPeriod) === p.value ? 'primary' : 'neutral'"
+        :variant="(data?.activePeriod ?? currentPeriod) === p.value ? 'solid' : 'soft'"
+        class="min-h-12 justify-center"
         :data-testid="`battle-period-${p.value}`"
-        >{{ p.label }}</RouterLink
+        >{{ p.label }}</UButton
       >
-      <select
-        :value="stateQuery"
-        class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-300 sm:ml-auto sm:w-auto"
+      <USelect
+        :model-value="stateQuery === '' ? ALL_STATES : stateQuery"
+        :items="stateItems"
+        size="xl"
+        class="w-full sm:ml-auto sm:w-56"
         data-testid="battle-state-select"
-        @change="onState"
-      >
-        <option value="">Semua Negeri</option>
-        <option v-for="s in BATTLE_STATES" :key="s" :value="s">{{ s }}</option>
-      </select>
+        @update:model-value="onState(String($event))"
+      />
     </div>
 
-    <div v-if="error" class="space-y-3" data-testid="battle-load-error">
-      <AlertBox messages="Maaf, berlaku ralat. Sila cuba semula." />
-      <button
-        type="button"
-        class="min-h-11 rounded-xl border-2 border-slate-200 px-4 text-sm font-semibold text-slate-700"
-        @click="reload()"
-      >
-        Cuba Lagi
-      </button>
+    <div v-if="error" class="flex flex-col items-start gap-3" data-testid="battle-load-error">
+      <UAlert
+        color="error"
+        variant="subtle"
+        title="Maaf, berlaku ralat. Sila cuba semula."
+        class="w-full"
+      />
+      <UButton size="lg" class="min-h-11" @click="reload()">Cuba Lagi</UButton>
     </div>
-    <div v-else-if="loading && !data" class="flex justify-center py-10 text-slate-400">
-      <LoadingSpinner :size="28" />
+    <div v-else-if="loading && !data" class="flex flex-col gap-2" aria-busy="true">
+      <USkeleton v-for="n in 4" :key="n" class="h-16 w-full" />
     </div>
     <template v-else>
-      <!-- Podium: 2nd, 1st (raised, crown), 3rd -->
+      <!-- Podium: 2nd, 1st (raised), 3rd -->
       <div
         v-if="podiumOrder.length > 0"
-        class="grid grid-cols-3 items-end gap-2 pt-5 sm:gap-4"
+        class="grid grid-cols-3 items-end gap-2 sm:gap-4"
         data-testid="battle-podium"
       >
-        <div
+        <UCard
           v-for="p in podiumOrder"
           :key="p.column"
-          class="relative min-w-0 rounded-2xl border-t-4 bg-white px-2 pb-4 text-center shadow-md sm:px-4"
-          :class="
-            p.column === 1
-              ? 'border-amber-400 bg-amber-50 pt-8 pb-6'
-              : p.column === 2
-                ? 'border-slate-400 pt-7'
-                : 'border-orange-500 pt-7'
-          "
+          :ui="{ body: 'p-2 sm:p-4' }"
           :data-testid="`battle-podium-${p.column}`"
         >
-          <span
-            class="absolute -top-5 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full text-sm font-bold text-white"
-            :class="
-              p.column === 1 ? 'bg-amber-400' : p.column === 2 ? 'bg-slate-400' : 'bg-orange-500'
-            "
-          >
-            <Crown v-if="p.column === 1" class="h-5 w-5" />
-            <template v-else>{{ p.column }}</template>
-          </span>
-          <School
-            class="mx-auto h-6 w-6"
-            :class="
-              p.column === 1
-                ? 'text-amber-500'
-                : p.column === 2
-                  ? 'text-slate-400'
-                  : 'text-orange-500'
-            "
-          />
-          <p class="mt-1 text-xs font-bold break-words text-slate-800 sm:text-sm">{{ p.name }}</p>
-          <p class="text-xs text-slate-500">{{ p.state }}</p>
-          <p
-            class="mt-1 text-xl font-bold sm:text-2xl"
-            :class="p.column === 1 ? 'text-orange-500' : 'text-slate-700'"
-          >
-            {{ p.skor }}
-          </p>
-          <p class="text-xs text-slate-400">mata</p>
-        </div>
+          <div class="flex min-w-0 flex-col items-center gap-1 text-center">
+            <DsArt3D v-if="p.column === 1" name="trophy" size="md" float />
+            <UBadge v-else color="neutral" variant="soft" size="lg">{{ p.column }}</UBadge>
+            <p class="text-label break-words text-highlighted">
+              {{ p.name }}
+            </p>
+            <p class="text-caption text-muted">{{ p.state }}</p>
+            <p
+              class="tabular text-heading"
+              :class="p.column === 1 ? 'text-primary' : 'text-highlighted'"
+            >
+              {{ p.skor }}
+            </p>
+            <p class="text-caption text-muted">mata</p>
+          </div>
+        </UCard>
       </div>
 
-      <div class="overflow-hidden rounded-2xl bg-white shadow-md">
-        <h3 class="flex items-center gap-2 px-4 pt-4 text-base font-bold text-slate-800">
-          <ListOrdered class="h-5 w-5 text-blue-500" /> Senarai Penuh
+      <UCard>
+        <h3 class="flex items-center gap-2 text-subheading text-highlighted">
+          <UIcon name="i-ph-list-numbers-duotone" class="size-5 text-primary" aria-hidden="true" />
+          Senarai Penuh
         </h3>
-        <div class="mt-3 overflow-x-auto" data-testid="battle-schools-scroll">
-          <table class="w-full min-w-[34rem] text-sm">
-            <thead>
-              <tr class="bg-slate-50 text-left text-xs font-bold text-slate-600">
-                <th class="px-3 py-3">#</th>
-                <th class="px-3 py-3">Sekolah</th>
-                <th class="px-3 py-3 text-center">Battle</th>
-                <th class="px-3 py-3 text-center">M/S/K</th>
-                <th class="px-3 py-3 text-center">Ketepatan</th>
-                <th class="px-3 py-3 text-center">Pelajar</th>
-                <th class="px-3 py-3 text-right">Skor</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="rows.length === 0">
-                <td
-                  colspan="7"
-                  class="px-3 py-8 text-center text-slate-500"
-                  data-testid="battle-schools-empty"
-                >
-                  Belum ada data ranking. Mula battle untuk melihat ranking sekolah!
-                </td>
-              </tr>
-              <template v-else>
-                <tr
-                  v-for="r in rows"
-                  :key="r.schoolId"
-                  class="border-t border-slate-100"
-                  data-testid="battle-school-row"
-                >
-                  <td
-                    class="px-3 py-3 font-bold"
-                    :class="r.rank <= 3 ? 'text-orange-500' : 'text-slate-600'"
-                  >
-                    {{ r.rank }}
-                  </td>
-                  <td class="px-3 py-3">
-                    <RouterLink
-                      :to="`/battle/ranking-sekolah/${r.schoolId}`"
-                      class="block font-semibold text-slate-800 hover:underline"
-                      data-testid="battle-school-link"
-                      >{{ r.name }}</RouterLink
-                    >
-                    <span class="block text-xs text-slate-500">{{ r.state }} · {{ r.type }}</span>
-                  </td>
-                  <td class="px-3 py-3 text-center font-semibold text-slate-800">
-                    {{ r.battles }}
-                  </td>
-                  <td class="px-3 py-3 text-center" data-testid="battle-msk">
-                    <span class="text-green-600">{{ r.menang }}</span
-                    >/<span class="text-slate-500">{{ r.seri }}</span
-                    >/<span class="text-red-500">{{ r.kalah }}</span>
-                  </td>
-                  <td class="px-3 py-3 text-center text-slate-600">{{ r.ketepatan }}%</td>
-                  <td class="px-3 py-3 text-center text-slate-600">{{ r.pelajar }}</td>
-                  <td class="px-3 py-3 text-right font-bold text-blue-600">{{ r.skor }}</td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <DsEmptyState
+          v-if="rows.length === 0"
+          title="Belum ada data ranking. Mula battle untuk melihat ranking sekolah!"
+          icon="i-ph-trophy-duotone"
+          data-testid="battle-schools-empty"
+        />
+        <ul v-else class="mt-3 flex flex-col gap-2" data-testid="battle-schools-scroll">
+          <StatRow
+            v-for="r in rows"
+            :key="r.schoolId"
+            :rank="r.rank"
+            :title="r.name"
+            :subtitle="`${r.state} · ${r.type}`"
+            :to="`/battle/ranking-sekolah/${r.schoolId}`"
+            data-testid="battle-school-row"
+          >
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">Battle</dt>
+              <dd class="tabular text-label text-highlighted">{{ r.battles }}</dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">M/S/K</dt>
+              <dd class="tabular text-label" data-testid="battle-msk">
+                <span class="text-success">{{ r.menang }}</span
+                >/<span class="text-muted">{{ r.seri }}</span
+                >/<span class="text-error">{{ r.kalah }}</span>
+              </dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">Ketepatan</dt>
+              <dd class="tabular text-label text-highlighted">{{ r.ketepatan }}%</dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">Pelajar</dt>
+              <dd class="tabular text-label text-highlighted">{{ r.pelajar }}</dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">Skor</dt>
+              <dd class="tabular text-label text-primary">{{ r.skor }}</dd>
+            </div>
+          </StatRow>
+        </ul>
+      </UCard>
     </template>
-  </div>
+  </DsPage>
 </template>

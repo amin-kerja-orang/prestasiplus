@@ -135,7 +135,13 @@
     { "glob": "src/modules/m27-school-admin/components/classes/**", "level": "page" },
     { "glob": "src/modules/m16-battle-games/pages/SekolahBersaingPage.vue", "level": "page" },
     { "glob": "src/modules/m08-student-performance/pages/{Ranking,Leaderboard,Timeline,PublicProfile}*.vue", "level": "page" },
-    { "glob": "src/modules/m08-student-performance/components/{LeaderboardPodium.vue,timeline/**}", "level": "ds" }
+    { "glob": "src/modules/m08-student-performance/components/{LeaderboardPodium.vue,timeline/**}", "level": "ds" },
+    { "glob": "src/modules/m16-battle-games/pages/{Lobby,Room,Battle*,Tournament*}Page.vue", "level": "page" },
+    { "glob": "src/modules/m16-battle-games/components/lobby/{LeadersCard,RoomCreateForm,RoomQuestionCard,TopTenTable}.vue", "level": "page" },
+    { "glob": "src/modules/m16-battle-games/components/battle/ChallengeFriendModal.vue", "level": "page" },
+    { "glob": "src/modules/m16-battle-games/components/battle/{StatRow,BattleRecentList,InvitationsModal}.vue", "level": "ds" },
+    { "glob": "src/modules/m16-battle-games/components/lobby/{RoomBoard,RoomPlayers,GradeField,JoinCodeForm,QuickMatchCard}.vue", "level": "ds" },
+    { "glob": "src/modules/m16-battle-games/components/tournament/*.vue", "level": "ds" }
   ],
   "exempt": [
     "src/theme/**"

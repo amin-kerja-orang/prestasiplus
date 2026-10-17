@@ -6,11 +6,12 @@
  */
 import { computed, ref } from 'vue'
 
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { useApi } from '@/composables'
+import { DsEmptyState, DsPage } from '@/ds'
 
 import { fetchStudentStandings } from '../api'
 import { mskText } from '../components/battle/battle-lib'
+import StatRow from '../components/battle/StatRow.vue'
 
 const period = ref<'weekly' | 'monthly'>('weekly')
 const { data, error, loading, reload } = useApi(
@@ -26,85 +27,70 @@ const PILLS = [
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-4xl space-y-4" data-testid="battle-leaderboard">
-    <div class="flex gap-2" data-testid="battle-leaderboard-pills">
-      <button
+  <DsPage data-testid="battle-leaderboard">
+    <div class="grid grid-cols-2 gap-2 sm:flex" data-testid="battle-leaderboard-pills">
+      <UButton
         v-for="p in PILLS"
         :key="p.value"
-        type="button"
-        class="min-h-11 rounded-lg px-4 text-sm font-semibold transition"
-        :class="
-          period === p.value
-            ? 'bg-red-500 text-white'
-            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-        "
+        size="xl"
+        :color="period === p.value ? 'primary' : 'neutral'"
+        :variant="period === p.value ? 'solid' : 'soft'"
+        class="min-h-12 justify-center"
+        :aria-pressed="period === p.value"
         :data-testid="`battle-pill-${p.value}`"
         @click="period = p.value"
       >
         {{ p.label }}
-      </button>
+      </UButton>
     </div>
 
-    <div class="overflow-hidden rounded-2xl bg-white shadow-md">
-      <div v-if="error" class="space-y-3 p-4" data-testid="battle-load-error">
-        <AlertBox messages="Maaf, berlaku ralat. Sila cuba semula." />
-        <button
-          type="button"
-          class="min-h-11 rounded-xl border-2 border-slate-200 px-4 text-sm font-semibold text-slate-700"
-          @click="reload()"
-        >
-          Cuba Lagi
-        </button>
-      </div>
-      <div v-else class="overflow-x-auto" data-testid="battle-leaderboard-scroll">
-        <table class="w-full min-w-[34rem] text-sm">
-          <thead>
-            <tr class="bg-slate-50 text-left text-xs font-bold text-slate-600">
-              <th class="px-3 py-3">#</th>
-              <th class="px-3 py-3">Pelajar</th>
-              <th class="px-3 py-3">Sekolah</th>
-              <th class="px-3 py-3 text-center">M/S/K</th>
-              <th class="px-3 py-3 text-center">Ketepatan</th>
-              <th class="px-3 py-3 text-center">Streak</th>
-              <th class="px-3 py-3 text-right">Skor</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="loading && !data">
-              <td colspan="7" class="px-3 py-8 text-center text-slate-400">
-                <LoadingSpinner :size="24" />
-              </td>
-            </tr>
-            <tr v-else-if="rows.length === 0">
-              <td
-                colspan="7"
-                class="px-3 py-8 text-center text-slate-500"
-                data-testid="battle-leaderboard-empty"
-              >
-                Belum ada data ranking. Mula battle untuk muncul di sini!
-              </td>
-            </tr>
-            <template v-else>
-              <tr
-                v-for="r in rows"
-                :key="r.userId"
-                class="border-t border-slate-100"
-                data-testid="battle-leaderboard-row"
-              >
-                <td class="px-3 py-3 font-bold text-slate-700">{{ r.rank }}</td>
-                <td class="px-3 py-3 font-semibold text-slate-800">{{ r.name }}</td>
-                <td class="px-3 py-3 text-slate-600">{{ r.school }}</td>
-                <td class="px-3 py-3 text-center" data-testid="battle-msk">
-                  {{ mskText(r.menang, r.seri, r.kalah) }}
-                </td>
-                <td class="px-3 py-3 text-center">{{ r.ketepatan }}%</td>
-                <td class="px-3 py-3 text-center">{{ r.streak }}</td>
-                <td class="px-3 py-3 text-right font-bold text-slate-800">{{ r.skor }}</td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
+    <div v-if="error" class="flex flex-col items-start gap-3" data-testid="battle-load-error">
+      <UAlert
+        color="error"
+        variant="subtle"
+        title="Maaf, berlaku ralat. Sila cuba semula."
+        class="w-full"
+      />
+      <UButton size="lg" class="min-h-11" @click="reload()">Cuba Lagi</UButton>
     </div>
-  </div>
+    <div v-else-if="loading && !data" class="flex flex-col gap-2" aria-busy="true">
+      <USkeleton v-for="n in 4" :key="n" class="h-16 w-full" />
+    </div>
+    <DsEmptyState
+      v-else-if="rows.length === 0"
+      title="Belum ada data ranking. Mula battle untuk muncul di sini!"
+      icon="i-ph-medal-duotone"
+      data-testid="battle-leaderboard-empty"
+    />
+    <ul v-else class="flex flex-col gap-2" data-testid="battle-leaderboard-scroll">
+      <StatRow
+        v-for="r in rows"
+        :key="r.userId"
+        :rank="r.rank"
+        :title="r.name"
+        :subtitle="r.school"
+        :initials="r.name.slice(0, 2).toUpperCase()"
+        data-testid="battle-leaderboard-row"
+      >
+        <div class="flex flex-col">
+          <dt class="text-caption text-muted">M/S/K</dt>
+          <dd class="tabular text-label text-highlighted" data-testid="battle-msk">
+            {{ mskText(r.menang, r.seri, r.kalah) }}
+          </dd>
+        </div>
+        <div class="flex flex-col">
+          <dt class="text-caption text-muted">Ketepatan</dt>
+          <dd class="tabular text-label text-highlighted">{{ r.ketepatan }}%</dd>
+        </div>
+        <div class="flex flex-col">
+          <dt class="text-caption text-muted">Streak</dt>
+          <dd class="tabular text-label text-highlighted">{{ r.streak }}</dd>
+        </div>
+        <div class="flex flex-col">
+          <dt class="text-caption text-muted">Skor</dt>
+          <dd class="tabular text-label text-primary">{{ r.skor }}</dd>
+        </div>
+      </StatRow>
+    </ul>
+  </DsPage>
 </template>

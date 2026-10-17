@@ -5,9 +5,9 @@
  * error; cancelled → idle; no client timeout) and cancels through #31. The error line stays visible below
  * the button until the next search (DV-M16-20). All timers stop when the card is left.
  */
-import { onBeforeUnmount, ref, useId } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 
-import { LoadingSpinner } from '@/components/feedback'
+import { DsArt3D } from '@/ds'
 
 import {
   cancelPbQuickMatch,
@@ -27,8 +27,9 @@ const searching = ref(false)
 const starting = ref(false)
 const elapsed = ref(0)
 const error = ref('')
-const subjectId = useId()
-const modeId = useId()
+
+const subjectItems = PB_SUBJECTS.map((s) => ({ value: s.value, label: s.label }))
+const modeItems = QM_MATCH_OPTIONS.map((o) => ({ value: o.value, label: o.label }))
 
 const cancelling = ref(false)
 let unmounted = false
@@ -107,84 +108,68 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section
-    class="rounded-3xl border border-amber-200 bg-linear-to-br from-amber-50 to-yellow-100 p-5 shadow-sm sm:p-6"
-    data-testid="quick-match"
-  >
+  <UCard data-testid="quick-match">
     <div class="flex items-center gap-3">
-      <span
-        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-xl"
-        >🔍</span
-      >
-      <div>
-        <h2 class="font-heading text-lg font-bold text-slate-800">Cari Lawan Auto</h2>
-        <p class="text-xs text-amber-600">Sistem cari pemain sepadan secara automatik</p>
+      <DsArt3D name="bolt" size="lg" />
+      <div class="min-w-0">
+        <h2 class="text-subheading text-highlighted">Cari Lawan Auto</h2>
+        <p class="text-caption text-muted">Sistem cari pemain sepadan secara automatik</p>
       </div>
     </div>
 
-    <div v-if="!searching" class="mt-4 space-y-4" data-testid="quick-match-form">
+    <div v-if="!searching" class="mt-4 flex flex-col gap-4" data-testid="quick-match-form">
       <div class="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label
-            :for="subjectId"
-            class="mb-1 block text-xs font-bold tracking-wide text-amber-800 uppercase"
-            >Subjek</label
-          >
-          <select
-            :id="subjectId"
+        <UFormField label="Subjek">
+          <USelect
             v-model="subject"
-            class="min-h-11 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm shadow-sm outline-none focus:ring-2 focus:ring-amber-300"
+            :items="subjectItems"
+            size="xl"
+            class="w-full"
             data-testid="qm-subject"
-          >
-            <option v-for="s in PB_SUBJECTS" :key="s.value" :value="s.value">{{ s.label }}</option>
-          </select>
-        </div>
-        <div>
-          <label
-            :for="modeId"
-            class="mb-1 block text-xs font-bold tracking-wide text-amber-800 uppercase"
-            >Padanan</label
-          >
-          <select
-            :id="modeId"
+          />
+        </UFormField>
+        <UFormField label="Padanan">
+          <USelect
             v-model="matchMode"
-            class="min-h-11 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm shadow-sm outline-none focus:ring-2 focus:ring-amber-300"
+            :items="modeItems"
+            size="xl"
+            class="w-full"
             data-testid="qm-mode"
-          >
-            <option v-for="o in QM_MATCH_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.label }}
-            </option>
-          </select>
-        </div>
+          />
+        </UFormField>
       </div>
-      <button
-        type="button"
+      <UButton
+        size="xl"
+        color="primary"
+        icon="i-ph-magnifying-glass-bold"
         :disabled="starting || cancelling"
-        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-amber-600 to-orange-600 px-4 py-2.5 text-sm font-bold tracking-wide text-white uppercase shadow transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
+        class="min-h-12 w-full justify-center"
         data-testid="qm-start"
         @click="start"
       >
         🔍 Cari Lawan Sekarang
-      </button>
-      <p v-if="error" class="text-sm font-semibold text-red-600" data-testid="qm-error">
+      </UButton>
+      <p v-if="error" class="text-label text-error" role="alert" data-testid="qm-error">
         {{ error }}
       </p>
     </div>
 
-    <div v-else class="mt-4 space-y-3 text-center" data-testid="qm-searching">
-      <div class="flex items-center justify-center gap-2 text-indigo-600">
-        <LoadingSpinner :size="20" />
-        <span class="font-bold" data-testid="qm-elapsed">Mencari lawan... {{ elapsed }}s</span>
+    <div v-else class="mt-4 flex flex-col items-center gap-3 text-center" data-testid="qm-searching">
+      <div class="flex items-center justify-center gap-2 text-primary">
+        <UIcon name="i-ph-spinner-gap-bold" class="size-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+        <span class="text-label" data-testid="qm-elapsed">Mencari lawan... {{ elapsed }}s</span>
       </div>
-      <p class="text-sm text-slate-500">Sila tunggu, sistem sedang mencari pemain sepadan</p>
-      <button
-        type="button"
-        class="min-h-11 rounded-xl border-2 border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50"
+      <p class="text-body text-muted">Sila tunggu, sistem sedang mencari pemain sepadan</p>
+      <UButton
+        color="neutral"
+        variant="soft"
+        size="xl"
+        class="min-h-12"
         data-testid="qm-cancel"
         @click="cancel"
       >
         Batal Carian
-      </button>
+      </UButton>
     </div>
-  </section>
+  </UCard>
 </template>

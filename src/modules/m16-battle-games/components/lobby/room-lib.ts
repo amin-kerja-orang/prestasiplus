@@ -63,14 +63,14 @@ export interface TileView {
 
 /** One board tile (BR-M16-20): kinds `start`, `finish`, `plain`, `quiz`, `bonus`, `trap`, `ladder:N`, `snake:N`. */
 export function tileView(kind: string): TileView {
-  if (kind === 'start') return { emoji: '🚩', className: 'bg-emerald-100' }
-  if (kind === 'finish') return { emoji: '🏆', className: 'bg-amber-200' }
-  if (kind === 'quiz') return { emoji: '❓', className: 'bg-indigo-100' }
-  if (kind === 'bonus') return { emoji: '🎁', className: 'bg-pink-100' }
-  if (kind === 'trap') return { emoji: '⚠️', className: 'bg-orange-100' }
-  if (kind.startsWith('ladder:')) return { emoji: '🪜', className: 'bg-sky-100' }
-  if (kind.startsWith('snake:')) return { emoji: '🐍', className: 'bg-red-100' }
-  return { emoji: '', className: 'bg-slate-50' }
+  if (kind === 'start') return { emoji: '🚩', className: 'bg-success/12' }
+  if (kind === 'finish') return { emoji: '🏆', className: 'bg-highlight' }
+  if (kind === 'quiz') return { emoji: '❓', className: 'bg-primary/12' }
+  if (kind === 'bonus') return { emoji: '🎁', className: 'bg-secondary/12' }
+  if (kind === 'trap') return { emoji: '⚠️', className: 'bg-warning/12' }
+  if (kind.startsWith('ladder:')) return { emoji: '🪜', className: 'bg-info/12' }
+  if (kind.startsWith('snake:')) return { emoji: '🐍', className: 'bg-error/12' }
+  return { emoji: '', className: 'bg-elevated' }
 }
 
 /** Where a ladder or snake tile leads (`ladder:23` → 23), or null. */
@@ -81,14 +81,14 @@ export function tileTarget(kind: string): number | null {
 
 /** Tailwind classes of a player's marker, by join order. */
 export const MARKER_CLASSES = [
-  'bg-indigo-500',
-  'bg-rose-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-sky-500',
-  'bg-purple-500',
-  'bg-teal-500',
-  'bg-orange-500',
+  'bg-primary',
+  'bg-error',
+  'bg-success',
+  'bg-warning',
+  'bg-info',
+  'bg-secondary',
+  'bg-highlight',
+  'bg-accented',
 ] as const
 
 export const markerClass = (index: number): string =>

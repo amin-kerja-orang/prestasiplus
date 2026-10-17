@@ -93,8 +93,8 @@ describe('S1 lobby', () => {
     expect(wrapper!.findAll('[data-testid="battle-subject"]')).toHaveLength(31)
     expect(byId('battle-toggle-more').text()).toBe('Tutup')
     await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
-    expect(wrapper!.findAll('[data-testid="battle-subject"]')[2]!.classes()).toContain(
-      'border-red-500',
+    expect(wrapper!.findAll('[data-testid="battle-subject"]')[2]!.attributes('aria-pressed')).toBe(
+      'true',
     )
     expect(byId('battle-quick-match').attributes('disabled')).toBeUndefined()
   })
@@ -133,7 +133,7 @@ describe('S1 lobby', () => {
   it('the switch toggles its texts', async () => {
     await mountPage(BattleLobbyPage)
     expect(byId('battle-visibility-text').text()).toBe('Hanya pelajar gred sama boleh match')
-    await byId('battle-visibility-switch').setValue(true)
+    await byId('battle-visibility-switch').trigger('click')
     expect(byId('battle-visibility-text').text()).toBe(
       'Semua gred boleh nampak & mohon sertai anda',
     )
@@ -188,22 +188,22 @@ describe('BattleRecentList colours (BR-M16-14)', () => {
 
   it('home player A is slate, the winner score is green, B is blue', () => {
     const w = render(row())
-    expect(w.get('[data-testid="battle-player-a"]').classes()).toContain('text-slate-700')
-    expect(w.get('[data-testid="battle-score-a"]').classes()).toContain('text-green-600')
-    expect(w.get('[data-testid="battle-score-b"]').classes()).not.toContain('text-green-600')
-    expect(w.get('[data-testid="battle-player-b"]').classes()).toContain('text-blue-600')
+    expect(w.get('[data-testid="battle-player-a"]').classes()).toContain('text-highlighted')
+    expect(w.get('[data-testid="battle-score-a"]').classes()).toContain('text-success')
+    expect(w.get('[data-testid="battle-score-b"]').classes()).not.toContain('text-success')
+    expect(w.get('[data-testid="battle-player-b"]').classes()).toContain('text-primary')
   })
 
   it('a visiting player A is blue; a 0-0 row greens player B; a tie greens neither', () => {
     let w = render(row({ playerA: { id: 1, name: 'x', homeHere: false } }))
-    expect(w.get('[data-testid="battle-player-a"]').classes()).toContain('text-blue-600')
+    expect(w.get('[data-testid="battle-player-a"]').classes()).toContain('text-primary')
     w.unmount()
     w = render(row({ scoreA: 0, scoreB: 0, winner: 'B' }))
-    expect(w.get('[data-testid="battle-score-b"]').classes()).toContain('text-green-600')
-    expect(w.get('[data-testid="battle-score-a"]').classes()).not.toContain('text-green-600')
+    expect(w.get('[data-testid="battle-score-b"]').classes()).toContain('text-success')
+    expect(w.get('[data-testid="battle-score-a"]').classes()).not.toContain('text-success')
     w.unmount()
     w = render(row({ scoreA: 8830, scoreB: 8830, winner: null }))
-    expect(w.findAll('.text-green-600')).toHaveLength(0)
+    expect(w.findAll('.text-success')).toHaveLength(0)
   })
 })
 

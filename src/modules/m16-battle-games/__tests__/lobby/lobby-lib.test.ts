@@ -20,9 +20,8 @@ import {
   buildCreateBody,
   clock,
   errorLines,
-  kadarClass,
+  kadarColor,
   teamLabel,
-  topRowClass,
 } from '../../components/lobby/lobby-lib'
 import {
   answerBody,
@@ -137,20 +136,12 @@ describe('create body (FR-M16-55, 63)', () => {
 
 describe('Top 10 styling (BR-M16-22)', () => {
   it('uses green at 70 and above, amber 40-69, red below 40', () => {
-    expect(kadarClass(100)).toContain('emerald')
-    expect(kadarClass(75)).toContain('emerald')
-    expect(kadarClass(70)).toContain('emerald')
-    expect(kadarClass(67)).toContain('amber')
-    expect(kadarClass(40)).toContain('amber')
-    expect(kadarClass(33)).toContain('red')
-    expect(kadarClass(25)).toContain('red')
-  })
-
-  it('styles ranks 1-3 only', () => {
-    expect(topRowClass(1)).toContain('amber')
-    expect(topRowClass(2)).toContain('slate')
-    expect(topRowClass(3)).toContain('orange')
-    expect(topRowClass(4)).toBe('[&>td]:bg-white')
+    expect(kadarColor(100)).toBe('success')
+    expect(kadarColor(70)).toBe('success')
+    expect(kadarColor(67)).toBe('warning')
+    expect(kadarColor(40)).toBe('warning')
+    expect(kadarColor(33)).toBe('error')
+    expect(kadarColor(25)).toBe('error')
   })
 })
 

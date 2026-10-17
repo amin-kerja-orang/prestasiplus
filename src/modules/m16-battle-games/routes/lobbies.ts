@@ -15,6 +15,7 @@ const meta = (game: RoomGame) => ({
   title: `${ROOM_GAME_META[game].title} — PRESTASIPLUS`,
   header: { title: ROOM_GAME_META[game].title, subtitle: 'Selamat datang kembali' },
   module: 'M16' as const,
+  v2: true,
 })
 
 const room = (game: RoomGame): RouteRecordRaw => ({
@@ -30,7 +31,7 @@ const routes: RouteRecordRaw[] = [
     path: '/papan-bijak',
     name: 'm16.lobby.papan-bijak',
     component: () => import('../pages/PapanBijakPage.vue'),
-    meta: { ...meta('papan-bijak'), v2: true },
+    meta: meta('papan-bijak'),
   },
   room('papan-bijak'),
   ...LOBBY_GAMES.flatMap((game): RouteRecordRaw[] => [

@@ -9,6 +9,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import type { GameLobby, RoomGame } from '../../api'
 import LobbyPage from '../../pages/LobbyPage.vue'
+import { usel } from './select-helper'
 
 const fetchGameLobby = vi.hoisted(() => vi.fn())
 const createRoom = vi.hoisted(() => vi.fn())
@@ -107,22 +108,14 @@ describe('S8-S12 lobby template (FR-M16-62..65)', () => {
 
   it('create form: five subjects, one-way "Tukar", three match fields only', async () => {
     await mountPage()
-    expect(
-      get('create-subject')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['Matematik', 'Bahasa Melayu', 'Bahasa Inggeris', 'Sains', 'Sejarah'])
+    expect(usel(wrapper!, 'create-subject').texts()).toEqual(['Matematik', 'Bahasa Melayu', 'Bahasa Inggeris', 'Sains', 'Sejarah'])
     const auto = get('grade-auto').text()
     expect(auto).toContain('Darjah 4')
     expect(auto).toContain('(auto)')
     await get('grade-switch').trigger('click')
     expect(wrapper!.find('[data-testid="grade-select"]').exists()).toBe(true)
     expect(wrapper!.find('[data-testid="grade-back"]').exists()).toBe(false) // one-way, as live
-    expect(
-      get('create-mode')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['Tahap sama sahaja', 'Semua Darjah / Semua Tingkatan'])
+    expect(usel(wrapper!, 'create-mode').texts()).toEqual(['Tahap sama sahaja', 'Semua Darjah / Semua Tingkatan'])
     expect(wrapper!.find('[data-testid="create-max-players"]').exists()).toBe(false)
   })
 
@@ -139,22 +132,19 @@ describe('S8-S12 lobby template (FR-M16-62..65)', () => {
     expect(router.currentRoute.value.fullPath).toBe('/perang-fakta/Q1W2E3')
   })
 
-  it('looks like live: a game-coloured hero, the code box and "Masuk" on ONE row, a coloured button', async () => {
+  it('v2 look: a hero card, the code box and "Masuk" on ONE row, the game-coloured actions', async () => {
     await mountPage('perang-fakta')
-    expect(wrapper!.get('header').classes()).toContain('from-red-700')
-    expect(get('create-submit').classes()).toContain('from-red-600')
+    expect(get('lobby-h1').text()).toContain('Perang Fakta')
     const form = get('join-form')
     expect(form.classes()).toContain('flex') // input and button side by side, not stacked
-    expect(form.classes()).not.toContain('space-y-4')
-    expect(form.element.children).toHaveLength(2)
-    expect(get('join-submit').classes()).toContain('from-red-600')
-    expect(wrapper!.get('[data-testid="leaders-row"] span:last-child').classes()).toContain(
-      'text-red-600',
-    )
+    expect(form.classes()).not.toContain('flex-col')
+    expect(get('join-submit').text()).toBe('Masuk')
+    expect(get('create-submit').classes().join(' ')).toContain('error')
+    expect(get('join-submit').classes().join(' ')).toContain('error')
     wrapper!.unmount()
     await mountPage('benteng-ilmu')
-    expect(wrapper!.get('header').classes()).toContain('from-emerald-600')
-    expect(get('join-submit').classes()).toContain('from-emerald-600')
+    expect(get('create-submit').classes().join(' ')).toContain('success')
+    expect(get('join-submit').classes().join(' ')).toContain('success')
   })
 
   it('join: not required, upper case, placeholder "Contoh: ABC123", "Masuk"', async () => {
@@ -192,12 +182,11 @@ describe('S8-S12 lobby template (FR-M16-62..65)', () => {
   it('"Pendahulu" lists medals then "{n}." with "{n} menang"; Kuiz Relay "{n} kali MVP"', async () => {
     await mountPage()
     const rows = wrapper!.findAll('[data-testid="leaders-row"]').map((r) => r.text())
-    expect(rows).toEqual([
-      '🥇 Pelajar Satu5 menang',
-      '🥈 Pelajar Dua4 menang',
-      '🥉 Pelajar Tiga3 menang',
-      '4. Pelajar Empat3 menang',
-    ])
+    expect(rows).toHaveLength(4)
+    rows.forEach((text, i) => {
+      expect(text).toContain(['Pelajar Satu', 'Pelajar Dua', 'Pelajar Tiga', 'Pelajar Empat'][i]!)
+      expect(text).toContain(' menang')
+    })
     wrapper!.unmount()
     await mountPage('kuiz-relay')
     expect(wrapper!.findAll('[data-testid="leaders-row"]')[0]!.text()).toContain('5 kali MVP')

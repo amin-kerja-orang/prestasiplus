@@ -10,12 +10,10 @@
  * grey trophy. DV-M16-39 (D9): live paints the hero heading dark on the violet gradient (about
  * 2.7 to 2.9:1, unreadable), the rebuild keeps it white.
  */
-import { Plus, Trophy } from '@lucide/vue'
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { LoadingSpinner } from '@/components/feedback'
 import { useApi, useSession } from '@/composables'
+import { DsArt3D, DsEmptyState, DsPage } from '@/ds'
 
 import { fetchTournaments } from '../api'
 import PageLoadError from '../components/competition/PageLoadError.vue'
@@ -28,55 +26,52 @@ const view = useApi((signal) => fetchTournaments({ signal }))
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="m16-tournament-page">
-    <section
-      class="relative overflow-hidden rounded-2xl bg-linear-to-r from-[#5a3cf5] via-[#9a14ff] to-[#f5399f] p-8 text-white shadow-lg"
-      data-testid="tournament-hero"
-    >
-      <div
-        class="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10"
-      ></div>
-      <div class="relative flex min-w-0 items-center gap-3">
-        <Trophy class="h-8 w-8 shrink-0 text-white" />
-        <!-- DV-M16-39: white heading (live is dark, below 3:1 contrast). -->
-        <h2 class="font-heading text-3xl font-bold text-white">{{ COPY.heading }}</h2>
+  <DsPage data-testid="m16-tournament-page">
+    <UCard data-testid="tournament-hero">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex min-w-0 flex-col gap-1">
+          <h2 class="text-title text-highlighted">{{ COPY.heading }}</h2>
+          <p class="max-w-prose text-body text-muted">{{ COPY.sub }}</p>
+        </div>
+        <DsArt3D name="trophy" size="hero" float class="hidden sm:block" />
       </div>
-      <p class="relative mt-3 text-base text-white/90">{{ COPY.sub }}</p>
-    </section>
+    </UCard>
 
     <!--
       Known dead link until S24 lands: `/tournament/admin/create` is the T6 remainder and is not
       routed yet, so the admin sees the global 404 page there (XR-M16-11: S24 admin is deferred,
       outside the 1.0 student scope; recorded in TRACKER).
     -->
-    <RouterLink
+    <UButton
       v-if="isAdmin"
       :to="COPY.createTo"
-      class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-indigo-700"
+      size="xl"
+      color="primary"
+      icon="i-ph-plus-bold"
+      class="min-h-12 justify-center sm:self-start"
       data-testid="tournament-create"
     >
-      <Plus class="h-4 w-4" />
       {{ COPY.create }}
-    </RouterLink>
+    </UButton>
 
     <PageLoadError v-if="view.error.value" @retry="view.reload()" />
     <div
       v-else-if="!view.data.value"
-      class="flex justify-center py-10 text-slate-400"
+      class="flex flex-col gap-3"
+      aria-busy="true"
       data-testid="tournament-loading"
     >
-      <LoadingSpinner :size="28" />
+      <USkeleton class="h-16 w-full" />
+      <USkeleton class="h-16 w-full" />
     </div>
-    <div
+    <DsEmptyState
       v-else-if="view.data.value.length === 0"
-      class="rounded-2xl bg-white px-4 py-12 text-center shadow-sm"
+      :title="COPY.empty"
+      icon="i-ph-trophy-duotone"
       data-testid="tournament-empty"
-    >
-      <Trophy class="mx-auto h-14 w-14 text-gray-300" />
-      <p class="mt-3 text-gray-600">{{ COPY.empty }}</p>
-    </div>
-    <div v-else class="space-y-3" data-testid="tournament-list">
+    />
+    <div v-else class="flex flex-col gap-3" data-testid="tournament-list">
       <TournamentCard v-for="t in view.data.value" :key="t.uuid" :item="t" />
     </div>
-  </div>
+  </DsPage>
 </template>

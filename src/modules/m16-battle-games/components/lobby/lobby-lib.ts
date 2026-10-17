@@ -50,24 +50,11 @@ export function buildCreateBody(game: RoomGame, v: CreateFormValues): RoomCreate
   return body
 }
 
-/** Kadar pill classes (BR-M16-22): green at 70 % and above, amber 40–69 %, red below 40 %. */
-export function kadarClass(kadar: number): string {
-  if (kadar >= 70) return 'bg-emerald-100 text-emerald-800'
-  if (kadar >= 40) return 'bg-amber-100 text-amber-800'
-  return 'bg-red-100 text-red-800'
-}
-
-const ROW_EDGE = '[&>td]:border-y-2 [&>td:first-child]:border-l-2 [&>td:last-child]:border-r-2'
-
-/**
- * Top 10 row styling (live: each row is its own rounded card): gold, silver and bronze with a coloured
- * edge for ranks 1–3, white for the others. Applied to the cells of the row (`border-separate` table).
- */
-export function topRowClass(rank: number): string {
-  if (rank === 1) return `[&>td]:bg-amber-100 [&>td]:border-amber-400 ${ROW_EDGE}`
-  if (rank === 2) return `[&>td]:bg-slate-100 [&>td]:border-slate-300 ${ROW_EDGE}`
-  if (rank === 3) return `[&>td]:bg-orange-200 [&>td]:border-orange-400 ${ROW_EDGE}`
-  return '[&>td]:bg-white'
+/** Kadar badge colour (BR-M16-22): green at 70 % and above, amber 40–69 %, red below 40 %. */
+export function kadarColor(kadar: number): 'success' | 'warning' | 'error' {
+  if (kadar >= 70) return 'success'
+  if (kadar >= 40) return 'warning'
+  return 'error'
 }
 
 /** "m:ss" of a number of seconds (0 or more). */
