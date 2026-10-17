@@ -70,7 +70,7 @@ describe('S2 T1 Reaksi (AC-M12-10.1, 10.2, 01.3)', () => {
     ])
     const current = tabs.filter((a) => a.attributes('data-active') === 'true')
     expect(current).toHaveLength(1)
-    expect(current[0]!.classes()).toEqual(expect.arrayContaining(['bg-indigo-600', 'text-white']))
+    expect(current[0]!.attributes('data-testid')).toBe('kirk-tab-reaction')
   })
 
   it('tabs are unfiltered even with ?school_id and the call carries no scope', async () => {

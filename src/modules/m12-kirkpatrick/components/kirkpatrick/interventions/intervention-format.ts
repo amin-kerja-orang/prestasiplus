@@ -19,11 +19,11 @@ export const alertLabel = (v: AlertType) => ALERT_TYPES.find((a) => a.value === 
 export const moodLabel = (v: Mood | null) =>
   v === null ? '' : (MOODS.find((m) => m.value === v)?.label ?? v)
 
-/** Status pill classes (PROPOSED layout, FN-M12-8.3.2). */
-export const STATUS_PILL: Record<NonNullable<InterventionStatus>, string> = {
-  'Menunggu Semakan': 'bg-amber-100 text-amber-700',
-  Meningkat: 'bg-green-100 text-green-700',
-  Menurun: 'bg-red-100 text-red-700',
+/** Status badge colour (PROPOSED layout, FN-M12-8.3.2); the badge also prints the status word. */
+export const STATUS_COLOR: Record<NonNullable<InterventionStatus>, 'warning' | 'success' | 'error'> = {
+  'Menunggu Semakan': 'warning',
+  Meningkat: 'success',
+  Menurun: 'error',
 }
 
 /** The PROPOSED COPY of the server refusal (SRS §8.2). */

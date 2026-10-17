@@ -16,6 +16,7 @@ const meta = (mount: KirkpatrickMount) => ({
   access: 'auth' as const,
   roles: mount.roles,
   module: 'M12' as const,
+  v2: true,
   title: 'Kirkpatrick Evaluation Dashboard',
   header: {
     title: 'Kirkpatrick Evaluation',

@@ -122,7 +122,7 @@ describe('S8 header (AC-M12-30.1)', () => {
     expect(t(w, 'pel-name').text()).toBe('Pelajar Demo 004664')
     expect(squash(t(w, 'pel-school').text())).toBe('SMK Demo B · Tingkatan 5')
     expect(t(w, 'pel-back').attributes('href')).toBe('/admin/kirkpatrick/behavior')
-    expect(t(w, 'pel-back').text()).toBe('← Kembali ke Tahap 3')
+    expect(t(w, 'pel-back').text()).toBe('Kembali ke Tahap 3')
     expect(w.text()).toContain('ALESA — Analisis Tingkah Laku Kirkpatrick')
     expect(t(w, 'pel-alesa').text()).toContain('AI')
   })
@@ -228,13 +228,13 @@ describe('S8 Head Count and platform cards (AC-M12-31.1, 31.2, 31.4)', () => {
     ])
   })
 
-  it('colours the bars green (>= 70), yellow (50 to < 70) and red (below 50) with width = accuracy', async () => {
+  it('colours the bars success (>= 70), warning (50 to < 70) and error (below 50) with value = accuracy', async () => {
     const w = await open()
     const bars = all(w, 'pel-plat-bar')
-    expect(bars[0]?.classes()).toContain('bg-green-500')
-    expect(bars[0]?.attributes('style')).toContain('width: 78.9%')
-    expect(bars[1]?.classes()).toContain('bg-red-400')
-    expect(bars[2]?.classes()).toContain('bg-red-400')
+    expect(bars[0]?.html()).toContain('bg-success')
+    expect(bars[0]?.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('78.9')
+    expect(bars[1]?.html()).toContain('bg-error')
+    expect(bars[2]?.html()).toContain('bg-error')
     wrapper?.unmount()
     api.fetchKirkpatrickStudent.mockResolvedValue(studentB())
     const b = await open(4644)
@@ -245,10 +245,8 @@ describe('S8 Head Count and platform cards (AC-M12-31.1, 31.2, 31.4)', () => {
       '0.0% (5)',
     ])
     expect(
-      all(b, 'pel-plat-bar').map((e) =>
-        e.classes().find((c) => c.startsWith('bg-') && c !== 'bg-gray-100'),
-      ),
-    ).toEqual(['bg-yellow-500', 'bg-yellow-500', 'bg-red-400', 'bg-red-400'])
+      all(b, 'pel-plat-bar').map((e) => ['bg-success', 'bg-warning', 'bg-error'].find((c) => e.html().includes(c))),
+    ).toEqual(['bg-warning', 'bg-warning', 'bg-error', 'bg-error'])
   })
 
   it('stacks the two cards below md and puts them side by side from md', async () => {

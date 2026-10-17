@@ -3,7 +3,7 @@ import { type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import KirkpatrickLearningPage from '../../../pages/KirkpatrickLearningPage.vue'
-import { all, flat, has, learning, mountPage, squash, t } from '../fixtures'
+import { all, flat, has, learning, mountPage, rowOf, squash, t } from '../fixtures'
 
 const api = vi.hoisted(() => ({ fetchKirkpatrickLearning: vi.fn() }))
 vi.mock('../../../api', () => api)
@@ -96,12 +96,10 @@ describe('S3 subjects (AC-M12-12.1..12.3)', () => {
     const bar = (i: number) => rows[i]!.get('[data-testid="kirk-subject-bar"]')
     expect(
       [0, 1, 2].map((i) =>
-        bar(i)
-          .classes()
-          .find((c) => c.startsWith('bg-')),
+        ['bg-success', 'bg-warning', 'bg-error'].find((c) => bar(i).html().includes(c)),
       ),
-    ).toEqual(['bg-green-500', 'bg-amber-500', 'bg-red-500'])
-    expect(bar(1).attributes('style')).toContain('width: 76.3%')
+    ).toEqual(['bg-success', 'bg-warning', 'bg-error'])
+    expect(bar(1).get('[role="progressbar"]').attributes('aria-valuenow')).toBe('76.3')
     for (const r of rows) {
       expect(r.attributes('title')).toBeUndefined()
       expect(r.find('[title]').exists()).toBe(false)
@@ -122,7 +120,7 @@ describe('S3 school table (AC-M12-13.1..13.3)', () => {
         .findAll('th')
         .map((h) => h.text()),
     ).toEqual(['#', 'Sekolah', 'Pelajar', 'Soalan', 'Ketepatan', 'Skor Purata', 'Subjek'])
-    expect(all(w, 'kirk-school-row').map((r) => flat(r))).toEqual([
+    expect(all(w, 'kirk-school-link').map((a) => flat(rowOf(a)))).toEqual([
       '1 SMK Demo A 53 71,408 89.9% 84.7% 5',
       '2 SMK Demo B 184 15,007 55% 73.3% 3',
       '3 SMK Demo C 1 0 0% 0% 1',
@@ -134,14 +132,14 @@ describe('S3 school table (AC-M12-13.1..13.3)', () => {
     ])
     expect(
       all(w, 'kirk-school-accuracy').map((c) =>
-        c.classes().find((k) => k.startsWith('text-') && k.endsWith('-600')),
+        c.classes().find((k) => ['text-success', 'text-warning', 'text-error'].includes(k)),
       ),
-    ).toEqual(['text-green-600', 'text-amber-600', 'text-red-600'])
+    ).toEqual(['text-success', 'text-warning', 'text-error'])
   })
 
   it('scrolls inside its card; links follow the guru mount', async () => {
     const w = await open('/guru/kirkpatrick')
-    expect(t(w, 'kirk-schools-scroller').classes()).toContain('overflow-x-auto')
+    expect(t(w, 'kirk-schools-scroller').find('.overflow-x-auto').exists()).toBe(true)
     expect(all(w, 'kirk-school-link')[0]!.attributes('href')).toBe('/guru/monitoring/sekolah/8880')
     expect(t(w, 'kirk-tab-overview').attributes('href')).toBe('/guru/kirkpatrick')
   })

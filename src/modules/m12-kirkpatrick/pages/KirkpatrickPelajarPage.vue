@@ -6,9 +6,9 @@
  * are "Kirkpatrick — {nama}" (DV-M12-03).
  */
 import { computed, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { usePageMeta } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchKirkpatrickStudent } from '../api'
 import {
@@ -54,30 +54,31 @@ watch(
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl min-w-0 space-y-4" data-testid="kirk-pelajar">
+  <DsPage data-testid="kirk-pelajar">
     <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
     <template v-if="data">
       <header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div class="min-w-0">
-          <h1
-            class="font-heading text-xl font-bold break-words text-gray-900 sm:text-2xl"
-            data-testid="pel-name"
-          >
+        <div class="flex min-w-0 flex-col gap-1">
+          <h1 class="text-title break-words text-highlighted" data-testid="pel-name">
             {{ data.student.name }}
           </h1>
-          <p class="text-sm text-gray-500" data-testid="pel-school">
+          <p class="text-body text-muted" data-testid="pel-school">
             {{ data.student.schoolName
             }}<template v-if="data.student.grade !== null">
               · Tingkatan {{ tingkatanOf(data.student.grade) }}</template
             >
           </p>
         </div>
-        <RouterLink
+        <UButton
           :to="paths.behavior"
-          class="flex min-h-11 items-center text-sm text-indigo-600 hover:underline"
+          size="lg"
+          class="min-h-11"
+          color="neutral"
+          variant="ghost"
+          icon="i-ph-arrow-left"
+          label="Kembali ke Tahap 3"
           data-testid="pel-back"
-          >← Kembali ke Tahap 3</RouterLink
-        >
+        />
       </header>
       <PelajarAlesa :data="data" />
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -85,5 +86,5 @@ watch(
         <PelajarPlatform :platform="data.platform" />
       </div>
     </template>
-  </div>
+  </DsPage>
 </template>

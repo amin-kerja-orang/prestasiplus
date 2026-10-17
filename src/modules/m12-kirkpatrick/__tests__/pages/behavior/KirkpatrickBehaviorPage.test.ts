@@ -6,7 +6,7 @@ import { ApiError } from '@/api'
 import { useRouteOutcome, setRouteOutcome } from '@/app/router/outcome'
 
 import KirkpatrickBehaviorPage from '../../../pages/KirkpatrickBehaviorPage.vue'
-import { all, flat, has, mountPage, options, squash, t } from '../fixtures'
+import { all, flat, has, itemLabels, mountPage, options, pick, rowOf, squash, t } from '../fixtures'
 import { behavior } from './fixtures'
 
 const api = vi.hoisted(() => ({
@@ -46,7 +46,7 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
     expect(has(w, 'kirk-filter-state')).toBe(false)
     expect(t(w, 'kirk-filter-apply').text()).toBe('Tapis')
     expect(has(w, 'kirk-filter-reset')).toBe(false)
-    expect(w.findAll('[data-testid="kirk-filter-school"] option').map((o) => o.text())).toEqual([
+    expect(itemLabels(w, 'school_id')).toEqual([
       'Semua Sekolah',
       'SMK Demo Satu',
       'SMK Demo Dua',
@@ -55,7 +55,7 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
 
   it('Tapis pushes school_id, Reset appears and the API receives the id', async () => {
     const { wrapper: w, router } = await open()
-    await t(w, 'kirk-filter-school').setValue('8080')
+    await pick(w, 'school_id', '8080')
     await t(w, 'kirk-filter').trigger('submit')
     await vi.waitFor(() =>
       expect(router.currentRoute.value.fullPath).toBe('/admin/kirkpatrick/behavior?school_id=8080'),
@@ -165,7 +165,9 @@ describe('S4 band tiles (AC-M12-15.1)', () => {
     const { wrapper: w } = await open()
     const first = t(w, 'beh-band-champion')
     expect(first.attributes('href')).toBe('/admin/monitoring')
-    expect(first.get('[data-testid="band-bar"]').attributes('style')).toContain('width: 12.3%')
+    expect(
+      first.get('[data-testid="band-bar"] [role="progressbar"]').attributes('aria-valuenow'),
+    ).toBe('12.3')
     expect(t(w, 'beh-bands').get('.grid').classes()).toContain('grid-cols-5')
   })
 
@@ -190,7 +192,7 @@ describe('S4 school table (AC-M12-16.1)', () => {
       'Skor',
       'Tahap',
     ])
-    const rows = all(w, 'beh-school-row')
+    const rows = all(w, 'beh-school-link').map(rowOf)
     expect(rows).toHaveLength(3)
     expect(rows[0]?.get('[data-testid="beh-school-link"]').attributes('href')).toBe(
       '/admin/monitoring/sekolah/9681',
@@ -205,24 +207,22 @@ describe('S4 school table (AC-M12-16.1)', () => {
     expect(r8080.get('[data-testid="cell-tahap"]').text()).toBe('Konsisten')
   })
 
-  it('shows the code line or "-", slate-300 zero Aktif and a white-on-tahap pill', async () => {
+  it('shows the code line or "-", a dimmed zero Aktif and an error-toned tahap badge', async () => {
     const { wrapper: w } = await open()
-    const rows = all(w, 'beh-school-row')
+    const rows = all(w, 'beh-school-link').map(rowOf)
     expect(rows[0]?.text()).toContain('DEMO001')
     const r940 = rows[2]!
-    expect(r940.text()).toContain('-')
-    expect(r940.get('[data-testid="cell-active"]').classes()).toContain('text-slate-300')
+    expect(r940.get('[data-testid="beh-school-code"]').text()).toBe('-')
+    expect(r940.get('[data-testid="cell-active"]').classes()).toContain('text-dimmed')
     expect(r940.get('[data-testid="cell-active"]').text()).toBe('0')
     const pill = r940.get('[data-testid="cell-tahap"]')
-    expect(pill.classes()).toEqual(expect.arrayContaining(['text-white', 'bg-red-600']))
+    expect(pill.classes()).toContain('text-error')
     expect(r940.get('[data-testid="cell-per-active"]').text()).toBe('0')
   })
 
-  it('scrolls inside its card (overflow-x-auto wrapper with a minimum width)', async () => {
+  it('scrolls inside its own container (overflow-x-auto wrapper)', async () => {
     const { wrapper: w } = await open()
-    const scroller = t(w, 'beh-schools').find('.overflow-x-auto')
-    expect(scroller.exists()).toBe(true)
-    expect(scroller.element.firstElementChild?.getAttribute('style')).toContain('min-width')
+    expect(t(w, 'beh-schools').find('.overflow-x-auto').exists()).toBe(true)
   })
 })
 
@@ -230,11 +230,13 @@ describe('S4 heat map (AC-M12-17.1, 17.2)', () => {
   it('renders 7 rows by 18 columns with the hours 06 to 23', async () => {
     const { wrapper: w } = await open()
     expect(all(w, 'beh-heat-cell')).toHaveLength(126)
-    const heads = w.findAll('[data-testid="beh-heat-table"] thead th').map((h) => h.text())
-    expect(heads.slice(1)).toEqual(
-      Array.from({ length: 18 }, (_, i) => String(i + 6).padStart(2, '0')),
-    )
-    expect(w.findAll('[data-testid="beh-heat-table"] tbody th').map((h) => h.text())).toEqual([
+    // The labels (not cells) in document order: the 18 hour heads, then the day of each row.
+    const labels = w
+      .findAll('[data-testid="beh-heat-table"] span:not([data-testid])')
+      .map((h) => h.text())
+      .filter((s) => s !== '')
+    expect(labels).toEqual([
+      ...Array.from({ length: 18 }, (_, i) => String(i + 6).padStart(2, '0')),
       'Isnin',
       'Selasa',
       'Rabu',
@@ -245,32 +247,31 @@ describe('S4 heat map (AC-M12-17.1, 17.2)', () => {
     ])
   })
 
-  it('gives each cell the live title and alpha; the maximum is 1 and the smallest 0.15', async () => {
+  it('gives each cell the live title and a step of the kobalt ramp; the maximum is the darkest step', async () => {
     const { wrapper: w } = await open()
     const cells = all(w, 'beh-heat-cell')
     // Selasa (row 1) at 14:00 (column 8) is the maximum 736.
     const max = cells[1 * 18 + 8]!
     expect(max.attributes('title')).toBe('Selasa 14:00 — 736 soalan')
-    expect(max.attributes('style')).toContain('rgb(99, 102, 241)')
+    expect(max.classes()).toContain('bg-cat-1')
     expect(max.text()).toBe('736')
-    // Isnin 06:00 is 100 of 736: alpha max(0.15, 0.136) = 0.15.
+    // Isnin 06:00 is 100 of 736: alpha max(0.15, 0.136) = 0.15, the lightest step.
     const low = cells[0]!
     expect(low.attributes('title')).toBe('Isnin 06:00 — 100 soalan')
-    expect(low.attributes('style')).toContain('rgba(99, 102, 241, 0.15)')
+    expect(low.classes()).toContain('bg-cat-1/20')
   })
 
-  it('draws a zero cell flat slate with no number', async () => {
+  it('draws a zero cell as a flat layer with no number', async () => {
     const { wrapper: w } = await open()
     const zero = all(w, 'beh-heat-cell').find((c) => c.attributes('title')?.endsWith('— 0 soalan'))!
-    expect(zero.classes()).toContain('bg-slate-100')
-    expect(zero.attributes('style')).toBeUndefined()
+    expect(zero.classes()).toContain('bg-muted')
     expect(zero.text()).toBe('')
   })
 
-  it('sizes cells 20 px below sm and 24 px from sm inside a scrolling card', async () => {
+  it('sizes cells 24 px below sm and 32 px from sm inside a scrolling card', async () => {
     const { wrapper: w } = await open()
     const cell = all(w, 'beh-heat-cell')[0]!
-    expect(cell.classes()).toEqual(expect.arrayContaining(['h-5', 'w-5', 'sm:h-6', 'sm:w-6']))
+    expect(cell.classes()).toEqual(expect.arrayContaining(['size-6', 'sm:size-8']))
     expect(t(w, 'beh-heat').find('.overflow-x-auto').exists()).toBe(true)
   })
 })
@@ -285,13 +286,19 @@ describe('S4 alerts and mood (AC-M12-18.1 ... 18.4)', () => {
       'SMK Demo E: 62.5% pelajar aktif menjawab soalan. Tahniah!',
       'SMK Demo F: 100% pelajar aktif menjawab soalan. Tahniah!',
     ])
-    expect(items.map((i) => i.classes().includes('bg-green-50'))).toEqual([
+    expect(items.map((i) => i.attributes('data-kind'))).toEqual([
+      'never',
+      'teacher',
+      'good',
+      'good',
+    ])
+    expect(items.map((i) => i.classes().includes('text-success'))).toEqual([
       false,
       false,
       true,
       true,
     ])
-    expect(items[0]?.classes()).toContain('bg-red-50')
+    expect(items[0]?.classes()).toContain('text-error')
   })
 
   it('has no button in any item', async () => {
@@ -308,7 +315,7 @@ describe('S4 alerts and mood (AC-M12-18.1 ... 18.4)', () => {
   it('shows the mood empty card while the mood count is 0', async () => {
     const { wrapper: w } = await open()
     expect(flat(t(w, 'beh-mood'))).toBe(
-      '💭 Data Mood Belum Mencukupi Pelajar perlu check-in mood harian untuk analisis kesejahteraan vs prestasi.',
+      'Data Mood Belum Mencukupi Pelajar perlu check-in mood harian untuk analisis kesejahteraan vs prestasi.',
     )
   })
 })

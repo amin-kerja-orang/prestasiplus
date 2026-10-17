@@ -4,9 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
+import { DsChart } from '@/ds'
 
 import KirkpatrickResultsPage from '../../../pages/KirkpatrickResultsPage.vue'
-import { all, flat, has, mountPage, squash, t } from '../fixtures'
+import { all, flat, has, mountPage, rowOf, squash, t } from '../fixtures'
 import { results, resultsNoCounts, resultsNoHistory } from './fixtures'
 
 const api = vi.hoisted(() => ({ fetchKirkpatrickResults: vi.fn() }))
@@ -151,31 +152,29 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
 })
 
 describe('S5 Taburan Gred (AC-M12-20.1)', () => {
-  it('titles the card by year and lists ten rows with the live title and % text', async () => {
+  it('titles the card by year and charts the ten grades with the % in each label', async () => {
     const { wrapper: w } = await open()
     const card = t(w, 'res-grades')
     expect(squash(card.get('h2').text())).toBe('Taburan Gred (2025)')
     expect(card.text()).toContain('Berdasarkan 180 calon — sumber: Headcount OTR')
-    const rows = all(w, 'res-grade-row')
-    expect(rows).toHaveLength(10)
-    expect(rows[0]?.attributes('title')).toBe('A+: 10 pelajar (5.6%)')
-    expect(rows[1]?.attributes('title')).toBe('A: 18 pelajar (10%)')
-    expect(rows[9]?.attributes('title')).toBe('G: 1 pelajar (0.6%)')
-    expect(rows[0]?.classes()).toContain('cursor-default')
+    const chart = card.getComponent(DsChart)
+    const labels = chart.props('labels')
+    expect(labels).toHaveLength(10)
+    expect(labels[0]).toBe('A+ · 5.6%')
+    expect(labels[1]).toBe('A · 10%')
+    expect(labels[9]).toBe('G · 0.6%')
+    expect(chart.props('horizontal')).toBe(true)
   })
 
-  it('scales the bars to the largest count (B+ and B full width) with the grade colours', async () => {
+  it('charts the counts as given (B+ and B are the largest)', async () => {
     const { wrapper: w } = await open()
-    const bars = all(w, 'res-grade-bar')
-    expect(bars[3]?.attributes('style')).toContain('width: 100%')
-    expect(bars[4]?.attributes('style')).toContain('width: 100%')
-    expect(bars[0]?.attributes('style')).toContain('width: 31.25%')
-    expect(bars[0]?.classes()).toContain('bg-green-700')
-    expect(bars[9]?.classes()).toContain('bg-red-800')
-    expect(bars[0]?.text()).toBe('10')
+    const data = t(w, 'res-grades').getComponent(DsChart).props('series')[0]!.data
+    expect(data[0]).toBe(10)
+    expect(data[3]).toBe(Math.max(...data))
+    expect(data[4]).toBe(Math.max(...data))
   })
 
-  it('shows "0 pelajar (0%)" with an empty bar for a zero grade', async () => {
+  it('shows "0%" and a zero count for a zero grade', async () => {
     api.fetchKirkpatrickResults.mockResolvedValue(
       results({
         distribution: {
@@ -190,10 +189,10 @@ describe('S5 Taburan Gred (AC-M12-20.1)', () => {
       }),
     )
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=8080')
-    const rows = all(w, 'res-grade-row')
-    expect(rows[3]?.attributes('title')).toBe('B+: 1 pelajar (100%)')
-    expect(rows[0]?.attributes('title')).toBe('A+: 0 pelajar (0%)')
-    expect(all(w, 'res-grade-bar')[0]?.text()).toBe('')
+    const chart = t(w, 'res-grades').getComponent(DsChart)
+    expect(chart.props('labels')[3]).toBe('B+ · 100%')
+    expect(chart.props('labels')[0]).toBe('A+ · 0%')
+    expect(chart.props('series')[0]!.data[0]).toBe(0)
   })
 })
 
@@ -202,7 +201,7 @@ describe('S5 subject GPS and trend (AC-M12-21.1 ... 21.4)', () => {
     const { wrapper: w } = await open()
     const card = t(w, 'res-subject-gps')
     expect(squash(card.get('h2').text())).toBe('GPS Mengikut Subjek (2026)')
-    const rows = all(w, 'res-subject-row')
+    const rows = all(w, 'cell-subject').map(rowOf)
     expect(rows.map((r) => r.get('[data-testid="cell-subject"]').text())).toEqual([
       'Matematik',
       'Bahasa Melayu',
@@ -215,19 +214,18 @@ describe('S5 subject GPS and trend (AC-M12-21.1 ... 21.4)', () => {
     ])
     expect(rows.map((r) => r.get('[data-testid="cell-grade"]').text())).toEqual(['A-', 'A-', 'B+'])
     expect(rows[0]?.get('[data-testid="cell-trend"]').text()).toBe('4.45')
-    expect(rows[0]?.get('[data-testid="cell-trend"] span').classes()).toContain('text-green-500')
+    expect(rows[0]?.get('[data-testid="cell-trend"] span').classes()).toContain('text-success')
     expect(card.text()).toContain('GPS rendah = lebih baik. Trend: berbanding tahun sebelumnya.')
   })
 
-  it('keeps the subject cell plain: default cursor, no title, no link', async () => {
+  it('keeps the subject cell plain: no title, no link', async () => {
     const { wrapper: w } = await open()
-    const cell = all(w, 'res-subject-row')[0]!.get('[data-testid="cell-subject"]')
-    expect(cell.classes()).toContain('cursor-default')
+    const cell = all(w, 'cell-subject')[0]!
     expect(cell.attributes('title')).toBeUndefined()
     expect(cell.find('a').exists()).toBe(false)
   })
 
-  it('shows the trend table with colours, slate-300 dashes and the legend', async () => {
+  it('shows the trend table with colours, dimmed dashes and the legend', async () => {
     const { wrapper: w } = await open()
     const card = t(w, 'res-trend')
     expect(squash(card.get('h2').text())).toBe('Trend GPS (2022–2026)')
@@ -240,26 +238,21 @@ describe('S5 subject GPS and trend (AC-M12-21.1 ... 21.4)', () => {
       '2026',
       'Trend',
     ])
-    const rows = all(w, 'res-trend-row')
-    expect(rows[0]?.classes()).toEqual(expect.arrayContaining(['bg-indigo-50/50', 'font-semibold']))
+    const names = all(w, 'res-trend-row')
+    expect(names[0]?.classes()).toContain('text-primary')
+    expect(names[1]?.classes()).not.toContain('text-primary')
+    const rows = names.map(rowOf)
     const cells = rows[0]!.findAll('[data-testid="res-trend-cell"]')
     expect(cells.map((c) => c.text())).toEqual(['5.20', '4.80', '4.50', '4.30', '-'])
-    expect(cells[0]?.classes()).toContain('text-amber-600')
-    expect(cells[4]?.classes()).toContain('text-slate-300')
+    expect(cells[0]?.classes()).toContain('text-warning')
+    expect(cells[4]?.classes()).toContain('text-dimmed')
     const bm = rows[1]!.findAll('[data-testid="res-trend-cell"]')
     expect(bm[3]?.text()).toBe('4.00')
-    expect(bm[3]?.classes()).toContain('text-green-600')
+    expect(bm[3]?.classes()).toContain('text-success')
     expect(rows[2]?.findAll('[data-testid="res-trend-cell"]')[4]?.classes()).toContain(
-      'text-slate-300',
+      'text-dimmed',
     )
     expect(flat(card)).toContain('= GPS menurun (improving). Sumber: Headcount OTR & SPM sebenar.')
-  })
-
-  it('prints the trend headers in plain case (not upper-case, as live)', async () => {
-    const { wrapper: w } = await open()
-    for (const th of t(w, 'res-trend').findAll('thead th')) {
-      expect(th.classes()).not.toContain('uppercase')
-    }
   })
 
   it('both tables scroll inside their cards', async () => {
@@ -279,17 +272,18 @@ describe('S5 subject GPS and trend (AC-M12-21.1 ... 21.4)', () => {
 describe('S5 school table (AC-M12-22.1)', () => {
   it('fades the inactive rows and prints "-" for Ketepatan, Soalan and (without a session) Engagement', async () => {
     const { wrapper: w } = await open()
-    const rows = all(w, 'res-school-row')
+    const links = all(w, 'res-school-link')
+    const rows = links.map(rowOf)
     expect(rows).toHaveLength(4)
     expect(rows[0]?.get('[data-testid="res-school-link"]').attributes('href')).toBe(
       '/admin/monitoring/sekolah/9681',
     )
-    expect(rows[0]?.get('[data-testid="cell-accuracy"]').classes()).toContain('text-green-600')
-    expect(rows[1]?.get('[data-testid="cell-accuracy"]').classes()).toContain('text-amber-600')
-    expect(rows.map((r) => r.attributes('data-faded'))).toEqual(['false', 'false', 'true', 'true'])
-    expect(rows[2]?.classes()).toContain('opacity-50')
+    expect(rows[0]?.get('[data-testid="cell-accuracy"]').classes()).toContain('text-success')
+    expect(rows[1]?.get('[data-testid="cell-accuracy"]').classes()).toContain('text-warning')
+    expect(links.map((r) => r.attributes('data-faded'))).toEqual(['false', 'false', 'true', 'true'])
+    expect(links[2]?.classes()).toContain('text-dimmed')
     expect(rows[2]?.get('[data-testid="cell-accuracy"]').text()).toBe('-')
-    expect(rows[2]?.get('[data-testid="cell-accuracy"]').classes()).toContain('text-slate-300')
+    expect(rows[2]?.get('[data-testid="cell-accuracy"]').classes()).toContain('text-dimmed')
     expect(rows[2]?.get('[data-testid="cell-answers"]').text()).toBe('-')
     expect(rows[2]?.get('[data-testid="cell-engagement"]').text()).toBe('2')
     expect(rows[3]?.get('[data-testid="cell-engagement"]').text()).toBe('-')
@@ -298,10 +292,10 @@ describe('S5 school table (AC-M12-22.1)', () => {
 })
 
 describe('S5 prediction table (AC-M12-22.2, NFR-M12-01)', () => {
-  it('renders all 946 rows without a pager', async () => {
+  it('renders the first 50 of the 946 rows with a pager (D9: one 946-row page is too heavy)', async () => {
     const { wrapper: w } = await open()
-    expect(all(w, 'res-pred-row')).toHaveLength(946)
-    expect(t(w, 'res-predictions').find('nav, [aria-label="pagination"]').exists()).toBe(false)
+    expect(all(w, 'res-pred-row')).toHaveLength(50)
+    expect(t(w, 'res-predictions').text()).toContain('Menunjukkan 1-50 daripada 946 hasil')
   })
 
   it('keeps the accuracy non-increasing and the first row at school 8090', async () => {
@@ -324,7 +318,7 @@ describe('S5 prediction table (AC-M12-22.2, NFR-M12-01)', () => {
     )
   })
 
-  it('navigates in-app from a row link through the delegated click listener', async () => {
+  it('navigates in-app from a row link', async () => {
     const { wrapper: w, router } = await open()
     const push = vi.spyOn(router, 'push')
     await all(w, 'pred-student')[2]!.trigger('click')
@@ -335,10 +329,18 @@ describe('S5 prediction table (AC-M12-22.2, NFR-M12-01)', () => {
     const { wrapper: w } = await open()
     const grades = all(w, 'pred-grade')
     expect(grades[0]?.text()).toBe('A+')
-    expect(grades[0]?.classes()).toContain('bg-green-700')
-    const g = grades.map((c) => c.text())
-    expect(g).toContain('G')
-    expect(grades[g.indexOf('G')]?.classes()).toContain('bg-red-600')
+    expect(grades[0]?.classes()).toContain('text-success')
+    for (const pill of grades) {
+      const grade = pill.text()
+      const token = grade.startsWith('A')
+        ? 'text-success'
+        : grade.startsWith('B')
+          ? 'text-info'
+          : grade === 'G'
+            ? 'text-error'
+            : 'text-warning'
+      expect(pill.classes()).toContain(token)
+    }
     expect(t(w, 'res-predictions').text()).toContain(
       'Ramalan ini berdasarkan ketepatan menjawab soalan dalam platform sahaja. Ramalan penuh memerlukan lebih banyak data termasuk keputusan peperiksaan terdahulu.',
     )
@@ -349,7 +351,7 @@ describe('S5 ALESA (AC-M12-23.1 ... 23.4)', () => {
   it('shows a visible heading icon, the subtitle and the three tiles from the API', async () => {
     const { wrapper: w } = await open()
     const card = t(w, 'res-alesa')
-    expect(card.find('[data-testid="alesa-icon"]').exists()).toBe(true)
+    expect(card.find('[data-ds="icon-chip"]').exists()).toBe(true)
     expect(card.text()).toContain('Ramalan ALESA (Predictive Grade)')
     expect(card.text()).toContain(
       'Berdasarkan ketepatan, konsistensi, trend mingguan, dan jumlah latihan pelajar',
@@ -372,15 +374,8 @@ describe('S5 ALESA (AC-M12-23.1 ... 23.4)', () => {
       'Rendah',
       'Rendah',
     ])
-    expect(all(w, 'alesa-confidence')[0]?.classes()).toEqual(
-      expect.arrayContaining(['text-slate-500', 'bg-slate-100']),
-    )
-    expect(all(w, 'alesa-confidence')[1]?.classes()).toEqual(
-      expect.arrayContaining(['text-amber-600', 'bg-amber-50']),
-    )
-    expect(all(w, 'alesa-confidence')[2]?.classes()).toEqual(
-      expect.arrayContaining(['text-green-600', 'bg-green-50']),
-    )
+    expect(all(w, 'alesa-confidence')[1]?.classes()).toContain('text-warning')
+    expect(all(w, 'alesa-confidence')[2]?.classes()).toContain('text-success')
     expect(all(w, 'alesa-cadangan').map((e) => squash(e.text()))).toEqual([
       'Teruskan konsistensi latihan. Fokus pada topik yang masih lemah untuk capai kecemerlangan.',
       'Teruskan konsistensi latihan. Fokus pada topik yang masih lemah untuk capai kecemerlangan.',
@@ -416,7 +411,7 @@ describe('S5 ALESA (AC-M12-23.1 ... 23.4)', () => {
 })
 
 describe('S5 ROI and insights (AC-M12-24.1 ... 24.3)', () => {
-  it('shows the four ROI figures and the amber box', async () => {
+  it('shows the four ROI figures and the warning note', async () => {
     const { wrapper: w } = await open()
     expect(t(w, 'roi-active').text()).toBe('946')
     expect(t(w, 'roi-per-student').text()).toBe('323.6')
@@ -425,9 +420,9 @@ describe('S5 ROI and insights (AC-M12-24.1 ... 24.3)', () => {
     const box = t(w, 'res-roi')
     expect(box.text()).toContain('ROI penuh akan dapat dikira apabila:')
     expect(box.findAll('ol li').map((l) => l.text())).toEqual([
-      'Keputusan peperiksaan sebenar (SPM/dalaman) diimport',
-      'Data kos langganan platform dimasukkan',
-      'Perbandingan prestasi pelajar aktif vs tidak aktif dapat dibuat',
+      '1. Keputusan peperiksaan sebenar (SPM/dalaman) diimport',
+      '2. Data kos langganan platform dimasukkan',
+      '3. Perbandingan prestasi pelajar aktif vs tidak aktif dapat dibuat',
     ])
   })
 

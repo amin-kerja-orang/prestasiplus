@@ -1,61 +1,50 @@
 <script setup lang="ts">
 /**
  * "Taburan Tahap Engagement" (FN-M12-5.3.1; FR-M12-43): five tiles, 5 columns at every width, each a link to
- * the monitoring overview with count, label, caption, mini bar (width = %) and the %.
+ * the monitoring overview with count, label, caption, mini bar (value = %) and the %.
  */
 import { RouterLink } from 'vue-router'
 
-import { AppIcon } from '@/components/icon'
-
 import type { BandCount } from '../../../api/types'
-import { BAND, CARD, pct, plain } from '../common/kirkpatrick-format'
-import { BAND_CAPTION, BAND_FILL } from './behavior-format'
+import KirkpatrickPanel from '../common/KirkpatrickPanel.vue'
+import { BAND, pct, plain } from '../common/kirkpatrick-format'
+import { BAND_CAPTION } from './behavior-format'
 
 defineProps<{ bands: BandCount[]; monitoringPath: string }>()
 </script>
 
 <template>
-  <section :class="[CARD, 'min-w-0 p-3 sm:p-5']" data-testid="beh-bands">
-    <h2 class="mb-3 flex items-center gap-2 font-heading text-base font-bold text-slate-800">
-      <AppIcon name="fa-chart-pie" class="h-4 w-4 text-indigo-600" />Taburan Tahap Engagement
-    </h2>
+  <KirkpatrickPanel title="Taburan Tahap Engagement" icon="i-ph-chart-pie" data-testid="beh-bands">
     <div class="grid grid-cols-5 gap-1 sm:gap-3">
       <RouterLink
         v-for="b in bands"
         :key="b.key"
         :to="monitoringPath"
-        :class="['block min-w-0 rounded-xl p-1.5 text-center sm:p-3', BAND[b.key].tile]"
+        class="flex min-w-0 flex-col items-center gap-1 bg-muted p-1 text-center sm:p-3"
         :data-testid="`beh-band-${b.key}`"
       >
-        <p
-          :class="['font-heading text-xl font-bold sm:text-3xl', BAND[b.key].text]"
-          data-testid="band-count"
-        >
+        <p :class="['tabular text-subheading', BAND[b.key].text]" data-testid="band-count">
           {{ plain(b.count) }}
         </p>
-        <p
-          class="text-[10px] leading-tight font-semibold break-words text-slate-700 sm:text-sm"
-          data-testid="band-label"
-        >
+        <p class="text-caption break-words text-highlighted" data-testid="band-label">
           {{ BAND[b.key].label }}
         </p>
-        <p class="text-[10px] leading-tight text-slate-400 sm:text-xs" data-testid="band-caption">
+        <p class="text-caption text-muted" data-testid="band-caption">
           {{ BAND_CAPTION[b.key] }}
         </p>
-        <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-200">
-          <div
-            :class="['h-2 rounded-full', BAND_FILL[b.key]]"
-            :style="{ width: `${b.pct}%` }"
-            data-testid="band-bar"
-          />
-        </div>
-        <p
-          :class="['mt-1 text-[10px] font-medium sm:text-xs', BAND[b.key].text]"
-          data-testid="band-pct"
-        >
+        <UProgress
+          :model-value="b.pct"
+          :max="100"
+          :color="BAND[b.key].color"
+          size="sm"
+          class="w-full"
+          :aria-label="`${BAND[b.key].label} ${pct(b.pct)}`"
+          data-testid="band-bar"
+        />
+        <p :class="['tabular text-caption', BAND[b.key].text]" data-testid="band-pct">
           {{ pct(b.pct) }}
         </p>
       </RouterLink>
     </div>
-  </section>
+  </KirkpatrickPanel>
 </template>
