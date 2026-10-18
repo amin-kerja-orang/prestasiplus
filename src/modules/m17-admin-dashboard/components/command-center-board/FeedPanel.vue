@@ -5,6 +5,7 @@
  */
 import type { CcFeedRow } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
+import { shortSchool } from '../command-center/cc-format'
 import { S2_COPY } from './board-copy'
 import BoardPanel from './BoardPanel.vue'
 
@@ -42,7 +43,7 @@ const paths = ccPaths(props.basePath)
           color="neutral"
           size="sm"
           class="h-auto min-w-0 p-0"
-          :label="r.schoolName.slice(0, 15)"
+          :label="shortSchool(r.schoolName)"
           data-testid="cc-feed-school"
         />
         <span

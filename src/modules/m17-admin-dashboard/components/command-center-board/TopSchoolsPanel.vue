@@ -4,6 +4,7 @@ import { formatCount } from '@/lib/number'
 
 import type { CcTopSchool } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
+import { shortSchool } from '../command-center/cc-format'
 import { rankColor, S2_COPY } from './board-copy'
 import BoardPanel from './BoardPanel.vue'
 
@@ -32,7 +33,8 @@ const paths = ccPaths(props.basePath)
           variant="link"
           color="neutral"
           class="h-auto min-w-0 flex-1 justify-start p-0 text-start"
-          :label="s.schoolName"
+          :label="shortSchool(s.schoolName)"
+          :title="s.schoolName"
           data-testid="cc-top-school-link"
         />
         <span class="tabular shrink-0 text-body text-muted" data-testid="cc-top-school-count"

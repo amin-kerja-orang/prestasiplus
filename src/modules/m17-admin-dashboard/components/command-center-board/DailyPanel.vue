@@ -5,6 +5,7 @@
  */
 import { DsIconChip } from '@/ds'
 
+import { accentFor } from '../command-center/cc-format'
 import { S3_COPY } from './board-copy'
 import type { LoadStatus } from './composables'
 
@@ -24,7 +25,7 @@ withDefaults(
   <UCard class="min-w-0" :data-testid="testid">
     <template #header>
       <div class="flex min-w-0 items-center gap-2">
-        <DsIconChip :icon="icon" size="sm" />
+        <DsIconChip :icon="icon" :accent="accentFor(icon)" size="sm" />
         <h2 class="min-w-0 text-subheading text-highlighted" data-testid="daily-panel-title">
           {{ heading ?? title }}
         </h2>
