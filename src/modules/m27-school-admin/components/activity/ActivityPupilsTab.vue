@@ -9,11 +9,9 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsDataTable, type CardField } from '@/ds'
+import { DsDataTable, DsPillNav, DsStatRow, type CardField, type PillItem, type StatItem } from '@/ds'
 
 import type { SchoolActivityReport } from '../../api/school-admin'
-import PillNav, { type PillItem } from '../shared/PillNav.vue'
-import StatRow, { type StatItem } from '../shared/StatRow.vue'
 import { accuracy, count, duration, lastLogin, matches, NO_DATA } from './activity-format'
 
 const props = defineProps<{ report: SchoolActivityReport }>()
@@ -79,20 +77,20 @@ const cardFields: CardField[] = [
 ]
 
 const tiles = computed<StatItem[]>(() => [
-  { key: 'total', label: 'Jumlah Murid', value: count(t.value.total), icon: 'i-ph-graduation-cap' },
+  { key: 'total', label: 'Jumlah Murid', value: count(t.value.total), icon: 'graduation-cap', accent: 'action' },
   {
     key: 'practised',
     label: 'Pernah Latihan',
     value: count(t.value.practised),
-    icon: 'i-ph-clipboard-text',
+    icon: 'clipboard-text', accent: 'win',
   },
-  { key: 'sessions', label: 'Jumlah Sesi', value: count(t.value.sessions), icon: 'i-ph-list-numbers' },
+  { key: 'sessions', label: 'Jumlah Sesi', value: count(t.value.sessions), icon: 'list-numbers', accent: 'heat' },
   // "no attempts" is not "averaging zero" (S1 rule): the dash without a session (INFERRED)
   {
     key: 'accuracy',
     label: 'Purata Ketepatan',
     value: t.value.sessions > 0 ? accuracy(t.value.accuracy) : NO_DATA,
-    icon: 'i-ph-target',
+    icon: 'target', accent: 'friend',
   },
 ])
 </script>
@@ -103,14 +101,13 @@ const tiles = computed<StatItem[]>(() => [
       Senarai Murid ({{ count(t.total) }}) — Top 200
     </h2>
 
-    <StatRow :items="tiles" prefix="la-murid-tile" part-prefix="la-tile" nav-id="la-murid-tiles" />
+    <DsStatRow :items="tiles" prefix="la-murid-tile" part-prefix="la-tile" data-testid="la-murid-tiles" :cols="4" />
 
     <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <PillNav
+      <DsPillNav
         :items="PILLS"
         :active="filter"
-        nav-id="la-murid-pills"
-        prefix="la-murid-pill"
+        testid-prefix="la-murid-pill" data-testid="la-murid-pills"
         label="Tapis murid"
         @select="filter = $event"
       />

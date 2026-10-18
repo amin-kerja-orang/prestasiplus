@@ -4,13 +4,15 @@
  * the `credential` of the create response in component memory only; it is never persisted or logged, and a reload
  * of the page shows nothing.
  */
+import { DsPanel } from '@/ds'
+
 import type { CreatePupilResult } from '../../api/school-admin'
 
 defineProps<{ credential: CreatePupilResult['credential'] }>()
 </script>
 
 <template>
-  <UCard data-testid="pupil-credential">
+  <DsPanel data-testid="pupil-credential">
     <UAlert
       color="warning"
       variant="subtle"
@@ -36,5 +38,5 @@ defineProps<{ credential: CreatePupilResult['credential'] }>()
         {{ credential.password }}
       </dd>
     </dl>
-  </UCard>
+  </DsPanel>
 </template>

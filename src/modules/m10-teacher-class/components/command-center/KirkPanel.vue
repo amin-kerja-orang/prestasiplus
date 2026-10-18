@@ -33,7 +33,7 @@ const rows = computed(() => {
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-flask" title="Kirkpatrick" testid="cc-panel-kirk">
+  <BoardPanel icon="flask" accent="heat" title="Kirkpatrick" testid="cc-panel-kirk">
     <ul class="flex flex-col gap-1">
       <li v-for="r in rows" :key="r.id" class="min-w-0">
         <UButton

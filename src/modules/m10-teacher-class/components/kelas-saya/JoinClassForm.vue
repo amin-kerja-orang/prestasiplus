@@ -5,6 +5,7 @@
  * script, so a stored code longer than 6 characters (e.g. "DEMO-4S") still fits. "Sertai" calls
  * #74; the response message of a refusal (404 / 409) is shown and the page stays (FR-M10-39).
  */
+import { DsPanel } from '@/ds'
 import { ref, watch } from 'vue'
 
 import { joinClass } from '../../api/guru'
@@ -45,7 +46,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <UCard data-testid="join-card">
+  <DsPanel data-testid="join-card">
     <form class="flex min-w-0 flex-col gap-3" data-testid="join-form" @submit.prevent="submit">
       <label for="class_code" class="flex items-center gap-2 text-label text-highlighted">
         <UIcon name="i-ph-key-duotone" class="size-5" aria-hidden="true" />
@@ -96,5 +97,5 @@ async function submit(): Promise<void> {
       class="mt-3"
       data-testid="join-success"
     />
-  </UCard>
+  </DsPanel>
 </template>

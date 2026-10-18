@@ -7,15 +7,15 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
+import { DsStatRow } from '@/ds'
 
 import { fetchCommandCenterDrill } from '../../api/command-center'
 import type { CcDrillType } from '../../api/command-center-types'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
-import { useOpenTab } from './composables'
+import { statItems, useOpenTab } from './composables'
 import { plain, S2_COPY, studentPath } from './copy'
 import { drillTable } from './drill-table'
-import StatCards from './StatCards.vue'
 
 const props = defineProps<{ type: CcDrillType; filter?: string; label: string }>()
 defineEmits<{ close: [] }>()
@@ -61,7 +61,7 @@ const errorText = computed(() => (error.value ? `Ralat: ${error.value.message}` 
         <p v-if="data.vsLabel" class="text-label text-toned" data-testid="cc-drill-vs-label">
           {{ data.vsLabel }}
         </p>
-        <StatCards :cards="vsCards" />
+        <DsStatRow :items="statItems(vsCards)" prefix="cc-modal-card" :cols="4" data-testid="cc-modal-cards" />
       </template>
       <CcTable
         v-if="table && table.rows.length"

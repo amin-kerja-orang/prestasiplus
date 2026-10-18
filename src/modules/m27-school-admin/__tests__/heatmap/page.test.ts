@@ -110,10 +110,10 @@ describe('header, breadcrumb and card (FR-M27-44, 58)', () => {
 
   it('shows the breadcrumb link, a separator and the bold title as text', async () => {
     const w = await mountPage(heatmap())
-    const back = w.get('[data-testid="dh-crumb-back"]')
-    expect(back.text()).toBe('← Dashboard Sekolah')
+    const back = w.get('[data-testid="dh-breadcrumb"] a')
+    expect(back.text()).toBe('Dashboard Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
-    const current = w.get('[data-testid="dh-crumb-current"]')
+    const current = w.get('[data-testid="dh-breadcrumb"] [aria-current="page"]')
     expect(current.text()).toBe('DSKP Heatmap')
     expect(current.element.tagName).not.toBe('A')
     expect(current.classes()).toContain('text-highlighted')

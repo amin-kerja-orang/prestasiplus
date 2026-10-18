@@ -19,7 +19,22 @@ import { isApiError, type ListResult } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash, useSession } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, DsStatTile, useConfirm, type CardField } from '@/ds'
+import {
+  DsBackLink,
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsFormField,
+  DsIdentity,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsStatTile,
+  DsStatusBadge,
+  useConfirm,
+  type CardField,
+} from '@/ds'
 import { formatDateKey } from '@/lib/time'
 import { clock } from '@/lib/time/clock'
 import { saveBlob } from '@/lib/save-blob'
@@ -34,7 +49,6 @@ import {
   type SchoolTeacherRow,
   type SchoolUserListMeta,
 } from '../../api/school-admin'
-import NativeSelect from '../native/NativeSelect.vue'
 import ImpersonateButton from './ImpersonateButton.vue'
 import UserRowActions from './UserRowActions.vue'
 import {
@@ -303,17 +317,7 @@ function openRow(row: Item): void {
 
 <template>
   <DsPage :data-testid="`${cfg.testid}-page`">
-    <div>
-      <UButton
-        :to="DASHBOARD_PATH"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        class="min-h-11"
-        data-testid="user-crumb-back"
-        >Dashboard Sekolah</UButton
-      >
-    </div>
+    <DsBackLink :to="DASHBOARD_PATH" label="Dashboard Sekolah" data-testid="user-crumb-back" />
 
     <!-- FR-M27-88 / 99: one count tile, unaffected by the filters. -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" data-testid="user-count-card">
@@ -322,7 +326,8 @@ function openRow(row: Item): void {
         v-else
         :value="formatCount(data.meta.counts?.total ?? 0)"
         :unit="cfg.cardLabel"
-        :icon="isPupil ? 'i-ph-graduation-cap' : 'i-ph-chalkboard-teacher'"
+        :icon="isPupil ? 'graduation-cap' : 'chalkboard-teacher'"
+        :accent="isPupil ? 'action' : 'friend'"
       />
     </section>
 
@@ -368,7 +373,7 @@ function openRow(row: Item): void {
       @reset="resetFilter"
     >
       <template #search>
-        <UFormField label="Cari" name="search" class="min-w-0 grow">
+        <DsFormField label="Cari" name="search" class="min-w-0 grow">
           <UInput
             v-model="search"
             type="text"
@@ -378,10 +383,10 @@ function openRow(row: Item): void {
             class="w-full"
             data-testid="user-search"
           />
-        </UFormField>
+        </DsFormField>
       </template>
-      <UFormField label="Status" name="is_active" class="min-w-40">
-        <NativeSelect
+      <DsFormField label="Status" native for="user-status" class="min-w-40">
+        <DsNativeSelect
           id="user-status"
           v-model="status"
           name="is_active"
@@ -390,28 +395,25 @@ function openRow(row: Item): void {
           <option value="">Semua</option>
           <option value="1">Aktif</option>
           <option value="0">Tidak Aktif</option>
-        </NativeSelect>
-      </UFormField>
+        </DsNativeSelect>
+      </DsFormField>
     </DsFilterBar>
 
-    <UAlert
+    <DsLoadError
       v-if="error && !refused"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle"
-      :title="errorLines(error).join(' ')"
-      role="alert"
-      data-testid="user-error"
+      :message="errorLines(error).join(' ')"
+      testid="user-error"
+      @retry="reload"
     />
 
     <template v-else-if="!refused">
-      <UCard v-if="!firstLoad && rowCount === 0" data-testid="user-empty">
+      <DsPanel v-if="!firstLoad && rowCount === 0" data-testid="user-empty">
         <DsEmptyState
           title="Tiada pengguna dijumpai"
           description="Cuba ubah kriteria carian anda"
           icon="i-ph-users"
         />
-      </UCard>
+      </DsPanel>
       <DsDataTable
         v-else
         :data="items"
@@ -431,24 +433,23 @@ function openRow(row: Item): void {
           <span data-testid="user-index">{{ row.original.index }}</span>
         </template>
         <template #name-cell="{ row }">
-          <div class="flex min-w-0 items-center gap-2" data-testid="user-row" :data-user-id="row.original.id">
-            <UAvatar
-              :text="row.original.initials"
-              size="sm"
-              aria-hidden="true"
-              data-testid="user-avatar"
-            />
-            <RouterLink
-              v-if="row.original.canEdit"
-              :to="row.original.editTo"
-              class="inline-flex min-h-11 min-w-0 items-center  text-label text-highlighted"
-              data-testid="user-name"
-              >{{ row.original.name }}</RouterLink
-            >
-            <span v-else class="min-w-0  text-label text-highlighted" data-testid="user-name">{{
-              row.original.name
-            }}</span>
-          </div>
+          <DsIdentity
+            :name="row.original.name"
+            :initials="row.original.initials"
+            data-testid="user-row"
+            :data-user-id="row.original.id"
+          >
+            <template #name>
+              <RouterLink
+                v-if="row.original.canEdit"
+                :to="row.original.editTo"
+                class="inline-flex min-h-11 min-w-0 items-center"
+                data-testid="user-name"
+                >{{ row.original.name }}</RouterLink
+              >
+              <span v-else data-testid="user-name">{{ row.original.name }}</span>
+            </template>
+          </DsIdentity>
         </template>
         <template #email-cell="{ row }">
           <span class="break-all" data-testid="user-email">{{ row.original.email }}</span>
@@ -468,10 +469,9 @@ function openRow(row: Item): void {
           }}</span>
         </template>
         <template #isActive-cell="{ row }">
-          <UBadge
+          <DsStatusBadge
             v-if="isPupil"
-            :color="row.original.isActive ? 'success' : 'error'"
-            variant="soft"
+            :status="row.original.isActive ? 'active' : 'inactive'"
             :label="row.original.isActive ? 'Aktif' : 'Tidak'"
             data-testid="user-status"
           />
@@ -505,10 +505,9 @@ function openRow(row: Item): void {
         </template>
         <template #card-actions="{ row }">
           <div class="flex flex-col items-end gap-2">
-            <UBadge
+            <DsStatusBadge
               v-if="isPupil"
-              :color="row.isActive ? 'success' : 'error'"
-              variant="soft"
+              :status="row.isActive ? 'active' : 'inactive'"
               :label="row.isActive ? 'Aktif' : 'Tidak'"
             />
             <UButton

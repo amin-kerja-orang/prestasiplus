@@ -9,7 +9,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDataTable, DsEmptyState, type CardField } from '@/ds'
+import { DsDataTable, DsEmptyState, DsPanel, DsStatusBadge, type CardField } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { SchoolClassRow } from '../../api/school-admin'
@@ -76,13 +76,13 @@ function open(row: Item): void {
 </script>
 
 <template>
-  <UCard v-if="rows.length === 0" data-testid="kl-empty">
+  <DsPanel v-if="rows.length === 0" data-testid="kl-empty">
     <DsEmptyState
       title="Tiada kelas dijumpai"
       description="Sila cipta kelas terlebih dahulu"
       icon="i-ph-chalkboard"
     />
-  </UCard>
+  </DsPanel>
   <DsDataTable
     v-else
     :data="items"
@@ -108,10 +108,9 @@ function open(row: Item): void {
           data-testid="kl-name"
           >{{ row.original.name }}</RouterLink
         >
-        <UBadge
+        <DsStatusBadge
           v-if="!row.original.isActive"
-          color="error"
-          variant="soft"
+          status="inactive"
           label="Tidak Aktif"
           data-testid="kl-inactive"
         />

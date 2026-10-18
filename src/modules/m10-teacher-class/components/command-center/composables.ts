@@ -6,6 +6,7 @@ import { onScopeDispose, ref, shallowRef, watch, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useIntervalWhileVisible } from '@/composables'
+import type { StatItem } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { formatMyt } from '@/lib/time'
 
@@ -118,4 +119,9 @@ export function useOpenTab(): (path: string) => void {
   return (path) => {
     window.open(router.resolve(path).href, '_blank', 'noopener')
   }
+}
+
+/** Summary tiles of the S2 modals as `DsStatRow` items (key = position, so duplicate labels stay unique). */
+export function statItems(cards: { label: string; value: string }[]): StatItem[] {
+  return cards.map((c, i) => ({ key: String(i), label: c.label, value: c.value }))
 }

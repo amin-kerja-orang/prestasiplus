@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart } from '@/ds'
+import { DsChart, DsPanel } from '@/ds'
 
 import type { MonthlyReport } from '../../api/school-admin'
 import { count, dec1 } from './monthly-format'
@@ -20,14 +20,14 @@ const series = computed(() => [
 </script>
 
 <template>
-  <UCard data-testid="lb-subjects">
+  <DsPanel data-testid="lb-subjects">
     <div class="flex flex-col gap-4">
       <h2 class="text-subheading text-highlighted" data-testid="lb-subjects-title">
         Prestasi Mengikut Subjek
       </h2>
 
       <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-        <UCard v-if="subjects.strongest" variant="soft" data-testid="lb-strongest">
+        <DsPanel v-if="subjects.strongest" tone="inset" data-testid="lb-strongest">
           <UBadge
             color="success"
             variant="soft"
@@ -41,8 +41,8 @@ const series = computed(() => [
             {{ dec1(subjects.strongest.accuracy) }}% ({{ count(subjects.strongest.answers) }}
             soalan)
           </p>
-        </UCard>
-        <UCard v-if="subjects.weakest" variant="soft" data-testid="lb-weakest">
+        </DsPanel>
+        <DsPanel v-if="subjects.weakest" tone="inset" data-testid="lb-weakest">
           <UBadge
             color="error"
             variant="soft"
@@ -55,7 +55,7 @@ const series = computed(() => [
           <p class="tabular text-body text-muted" data-testid="lb-weakest-figure">
             {{ dec1(subjects.weakest.accuracy) }}% ({{ count(subjects.weakest.answers) }} soalan)
           </p>
-        </UCard>
+        </DsPanel>
       </div>
 
       <DsChart
@@ -86,5 +86,5 @@ const series = computed(() => [
         </li>
       </ul>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

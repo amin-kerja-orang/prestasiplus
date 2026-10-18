@@ -16,7 +16,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash, useSession } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadSchoolRiskCsv, fetchSchoolRisk } from '../api/amaran'
@@ -37,7 +37,7 @@ const { user } = useSession()
 const schoolId = computed(() => user.value?.schoolId ?? null)
 const level = computed(() => normaliseLevel(route.query.tingkatan))
 
-const { data, error, loading } = useApi(
+const { data, error, loading, reload } = useApi(
   async (signal) => {
     if (schoolId.value === null) return null
     return fetchSchoolRisk(schoolId.value, { tingkatan: level.value, signal })
@@ -90,14 +90,11 @@ async function download(): Promise<void> {
       <AmaranSubjectCard v-if="data.weakness.length > 0" :rows="data.weakness" />
       <AmaranPupilTable :rows="data.pupils" />
     </template>
-    <UAlert
+    <DsLoadError
       v-else-if="error && !refused"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle"
-      :description="error.message"
-      role="alert"
-      data-testid="am-error"
+      :message="error.message"
+      testid="am-error"
+      @retry="reload"
     />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="am-loading">
       <USkeleton class="h-24 w-full" />

@@ -6,14 +6,14 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
+import { DsStatRow } from '@/ds'
 
 import { fetchCommandCenterPredictive } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
-import { useOpenTab } from './composables'
+import { statItems, useOpenTab } from './composables'
 import { accuracyTone, GRADES, plain, riskLabel, signedPct, studentPath } from './copy'
 import type { DrillRow } from './drill-table'
-import StatCards from './StatCards.vue'
 
 defineEmits<{ close: [] }>()
 
@@ -82,7 +82,7 @@ const rows = computed<DrillRow[]>(() =>
       Menganalisis data prestasi semua pelajar...
     </p>
     <template v-else>
-      <StatCards :cards="cards" />
+      <DsStatRow :items="statItems(cards)" prefix="cc-modal-card" :cols="4" data-testid="cc-modal-cards" />
       <ul class="flex flex-wrap gap-2" data-testid="cc-grade-chips">
         <li v-for="c in chips" :key="c">
           <UBadge color="neutral" variant="soft" size="lg" data-testid="cc-grade-chip">{{

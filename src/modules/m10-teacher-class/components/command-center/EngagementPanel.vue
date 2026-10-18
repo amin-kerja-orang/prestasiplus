@@ -14,7 +14,7 @@ const share = (n: number) => (total.value === 0 ? 0 : Math.round((n / total.valu
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-users-three" title="Engagement Pelajar" testid="cc-panel-engagement">
+  <BoardPanel icon="users-three" accent="friend" title="Engagement Pelajar" testid="cc-panel-engagement">
     <p class="mb-2 text-end text-body text-muted" data-testid="cc-engagement-total">
       Jumlah: <b class="tabular text-highlighted">{{ total }}</b> pelajar
     </p>

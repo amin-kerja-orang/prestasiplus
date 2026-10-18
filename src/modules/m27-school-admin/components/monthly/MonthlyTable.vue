@@ -8,7 +8,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsDataTable, type CardField } from '@/ds'
+import { DsDataTable, DsEmptyState, DsPanel, type CardField } from '@/ds'
 
 import type { MonthlyReport } from '../../api/school-admin'
 import { count, dec1, NO_DATA, pct1 } from './monthly-format'
@@ -73,12 +73,13 @@ const cardFields: CardField[] = [
         12 bulan terakhir — pecahan prestasi mengikut bulan
       </p>
     </div>
-    <UCard v-if="months.length === 0" data-testid="lb-table-empty">
-      <p class="py-4 text-center">
-        <span class="block text-label text-highlighted">Tiada data</span>
-        <span class="block text-body text-muted">Tiada aktiviti direkodkan buat masa ini</span>
-      </p>
-    </UCard>
+    <DsPanel v-if="months.length === 0" data-testid="lb-table-empty">
+      <DsEmptyState
+        title="Tiada data"
+        description="Tiada aktiviti direkodkan buat masa ini"
+        icon="chart-bar"
+      />
+    </DsPanel>
     <DsDataTable
       v-else
       :data="rows"

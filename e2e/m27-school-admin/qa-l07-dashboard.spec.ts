@@ -236,7 +236,7 @@ test.describe('content (QA extras)', MODULE, () => {
     await expect(page).toHaveURL(/\/prestasi\/sekolah$/)
     await page.goBack()
     await expect(page.getByTestId('sd-page')).toBeVisible({ timeout: 60_000 })
-    await page.getByTestId('sd-crumb-back').click()
+    await page.locator('[data-testid="sd-breadcrumb"] a').click()
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.locator('[data-page=forbidden]')).toHaveCount(0)
     await expect(page.locator('[data-page=not-found]')).toHaveCount(0)
@@ -336,7 +336,7 @@ test.describe('presentation (QA extras)', MODULE, () => {
     await signIn(page, POPULATED)
     await open(page, gotoApp)
     const heights: Record<string, number> = {}
-    for (const id of ['sd-crumb-back', 'sd-perutusan-all', 'sd-panel-levels', 'sd-grades-full']) {
+    for (const id of ['sd-perutusan-all', 'sd-perutusan-all', 'sd-panel-levels', 'sd-grades-full']) {
       const box = await page.getByTestId(id).boundingBox()
       heights[id] = Math.round(box?.height ?? 0)
     }

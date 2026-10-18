@@ -8,7 +8,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsDataTable, type CardField } from '@/ds'
+import { DsDataTable, DsStatusBadge, type CardField } from '@/ds'
 
 import type { PupilRiskView, RiskStatus } from '../../api/amaran'
 import { STATUS_LABEL } from './amaran-format'
@@ -93,21 +93,13 @@ const cardFields: CardField[] = [
         <span class="text-label" data-testid="am-score">{{ row.original.score }}</span>
       </template>
       <template #status-cell="{ row }">
-        <UBadge
-          :color="
+        <DsStatusBadge
+          :status="
             row.original.status === 'high'
-              ? 'error'
+              ? 'risk-high'
               : row.original.status === 'watch'
-                ? 'warning'
-                : 'success'
-          "
-          variant="soft"
-          :icon="
-            row.original.status === 'high'
-              ? 'i-ph-warning-octagon'
-              : row.original.status === 'watch'
-                ? 'i-ph-warning'
-                : 'i-ph-check-circle'
+                ? 'risk-mid'
+                : 'risk-low'
           "
           :label="row.original.statusLabel"
           :data-status="row.original.status"

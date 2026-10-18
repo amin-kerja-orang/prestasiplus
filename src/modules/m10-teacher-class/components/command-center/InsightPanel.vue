@@ -8,7 +8,7 @@ defineProps<{ d: CcLiveData }>()
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-sparkle" title="ALESA AI" testid="cc-panel-insight">
+  <BoardPanel icon="sparkle" accent="trial" title="ALESA AI" testid="cc-panel-insight">
     <p class="bg-soft p-3 text-body text-default" data-testid="cc-insight">
       {{ insightText(d) }}
     </p>

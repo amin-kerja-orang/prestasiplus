@@ -16,16 +16,17 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsPage } from '@/ds'
+import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
 
 import { fetchMonthlyReport } from '../api/school-admin'
-import ReportCrumb from '../components/shared/ReportCrumb.vue'
 import MonthlyCards from '../components/monthly/MonthlyCards.vue'
 import MonthlyTable from '../components/monthly/MonthlyTable.vue'
 import { generatedAtLabel, monthLabel } from '../components/monthly/monthly-format'
 import SubjectPerformance from '../components/monthly/SubjectPerformance.vue'
 
 const TITLE = 'Laporan Bulanan'
+
+const crumbs = [{ label: 'Dashboard Sekolah', to: '/admin-sekolah' }, { label: TITLE }]
 
 const route = useRoute()
 const pageMeta = usePageMeta()
@@ -35,7 +36,7 @@ const bulan = computed(() => {
   return typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : null
 })
 
-const { data, error, loading } = useApi(
+const { data, error, loading, reload } = useApi(
   (signal) => fetchMonthlyReport({ bulan: bulan.value, signal }),
   [bulan],
 )
@@ -67,8 +68,10 @@ function print() {
 
 <template>
   <DsPage data-testid="lb-page">
+    <template #breadcrumb>
+      <DsBreadcrumb v-if="data" :items="crumbs" data-testid="lb-breadcrumb" />
+    </template>
     <template v-if="data">
-      <ReportCrumb prefix="lb" back-label="← Dashboard Sekolah" back-to="/admin-sekolah" :title="TITLE" />
 
       <div
         class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1"
@@ -125,14 +128,11 @@ function print() {
         />
       </div>
     </template>
-    <UAlert
+    <DsLoadError
       v-else-if="error && !refused"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle"
-      :description="error.message"
-      role="alert"
-      data-testid="lb-error"
+      :message="error.message"
+      testid="lb-error"
+      @retry="reload"
     />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="lb-loading">
       <USkeleton class="h-24 w-full" />

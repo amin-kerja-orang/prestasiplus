@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 
 import type { SchoolUsage } from '../../api/school-admin'
-import StatRow, { type StatItem } from '../shared/StatRow.vue'
+import { DsStatRow, type StatItem } from '@/ds'
 import { accuracy, count, wholePercent } from './usage-format'
 
 const props = defineProps<{ tiles: SchoolUsage['tiles'] }>()
@@ -15,39 +15,43 @@ const props = defineProps<{ tiles: SchoolUsage['tiles'] }>()
 const items = computed<StatItem[]>(() => {
   const t = props.tiles
   return [
-    { key: 'pupils', label: 'Pelajar', value: count(t.pupils), icon: 'i-ph-graduation-cap' },
-    { key: 'teachers', label: 'Guru', value: count(t.teachers), icon: 'i-ph-chalkboard-teacher' },
+    { key: 'pupils', label: 'Pelajar', value: count(t.pupils), icon: 'graduation-cap', accent: 'action' },
+    { key: 'teachers', label: 'Guru', value: count(t.teachers), icon: 'chalkboard-teacher', accent: 'friend' },
     {
       key: 'active',
       label: 'Pelajar Aktif',
       value: count(t.activePupils),
       sub: `daripada ${count(t.pupils)}`,
-      icon: 'i-ph-user-check',
+      icon: 'user-check',
+      accent: 'win',
     },
     {
       key: 'participation',
       label: 'Penglibatan',
       value: wholePercent(t.participationPct),
       sub: 'daripada pelajar daftar',
-      icon: 'i-ph-chart-pie',
+      icon: 'chart-pie',
+      accent: 'heat',
     },
     {
       key: 'sessions',
       label: 'Sesi Latihan',
       value: count(t.sessions),
-      icon: 'i-ph-clipboard-text',
+      icon: 'clipboard-text',
+      accent: 'trial',
     },
-    { key: 'answers', label: 'Soalan Dijawab', value: count(t.answers), icon: 'i-ph-check-circle' },
+    { key: 'answers', label: 'Soalan Dijawab', value: count(t.answers), icon: 'check-circle', accent: 'win' },
     {
       key: 'accuracy',
       label: 'Purata Ketepatan',
       value: accuracy(t.accuracy),
-      icon: 'i-ph-target',
+      icon: 'target',
+      accent: 'heat',
     },
   ]
 })
 </script>
 
 <template>
-  <StatRow :items="items" prefix="su-tile" nav-id="su-tiles" />
+  <DsStatRow :items="items" prefix="su-tile" part-prefix="su-tile" data-testid="su-tiles" :cols="4" />
 </template>

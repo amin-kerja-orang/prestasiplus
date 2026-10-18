@@ -8,7 +8,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart, DsIconChip } from '@/ds'
+import { DsChart, DsIconChip, DsPanel, type DsAccent } from '@/ds'
 
 import type { SchoolActivityReport } from '../../api/school-admin'
 import { count, wholePercent } from './activity-format'
@@ -37,6 +37,7 @@ interface Card {
   key: string
   label: string
   icon: string
+  accent: DsAccent
   pct?: string
   value: string
   of?: string
@@ -47,7 +48,8 @@ const cards = computed<Card[]>(() => [
   {
     key: 'pupils-logged',
     label: 'Murid Pernah Login',
-    icon: 'i-ph-graduation-cap',
+    icon: 'graduation-cap',
+    accent: 'action',
     pct: wholePercent(o.value.pupilsLogged, o.value.pupils),
     value: count(o.value.pupilsLogged),
     of: `/ ${count(o.value.pupils)}`,
@@ -57,7 +59,8 @@ const cards = computed<Card[]>(() => [
   {
     key: 'teachers-logged',
     label: 'Cikgu Pernah Login',
-    icon: 'i-ph-chalkboard-teacher',
+    icon: 'chalkboard-teacher',
+    accent: 'friend',
     pct: wholePercent(o.value.teachersLogged, o.value.teachers),
     value: count(o.value.teachersLogged),
     of: `/ ${count(o.value.teachers)}`,
@@ -67,7 +70,8 @@ const cards = computed<Card[]>(() => [
   {
     key: 'practised',
     label: 'Murid Buat Latihan',
-    icon: 'i-ph-clipboard-text',
+    icon: 'clipboard-text',
+    accent: 'win',
     pct: wholePercent(o.value.practised, o.value.pupils),
     value: count(o.value.practised),
     of: `/ ${count(o.value.pupils)}`,
@@ -75,7 +79,8 @@ const cards = computed<Card[]>(() => [
   {
     key: 'activity',
     label: 'Jumlah Aktiviti',
-    icon: 'i-ph-chart-line-up',
+    icon: 'chart-line-up',
+    accent: 'heat',
     value: count(o.value.activity),
     note: `${String(props.report.range)} hari lepas`,
   },
@@ -86,12 +91,12 @@ const cards = computed<Card[]>(() => [
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="la-overview">
     <ul class="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4" data-testid="la-cards">
       <li v-for="c in cards" :key="c.key" class="min-w-0">
-        <UCard
+        <DsPanel
           class="h-full"
-          :ui="{ body: 'flex min-w-0 flex-col items-start gap-2 p-3 sm:p-4' }"
           :data-testid="`la-card-${c.key}`"
         >
-          <DsIconChip :icon="c.icon" />
+          <div class="flex min-w-0 flex-col items-start gap-2">
+          <DsIconChip :icon="c.icon" :accent="c.accent" />
           <p class="text-caption break-words text-muted" data-testid="la-card-label">
             {{ c.label }}
           </p>
@@ -115,11 +120,12 @@ const cards = computed<Card[]>(() => [
               c.note
             }}
           </p>
-        </UCard>
+          </div>
+        </DsPanel>
       </li>
     </ul>
 
-    <UCard data-testid="la-trend">
+    <DsPanel data-testid="la-trend">
       <div class="flex min-w-0 flex-col gap-3">
         <h2 class="text-subheading text-highlighted" data-testid="la-trend-title">Trend Aktiviti</h2>
         <DsChart
@@ -131,10 +137,10 @@ const cards = computed<Card[]>(() => [
           data-testid="la-trend-chart"
         />
       </div>
-    </UCard>
+    </DsPanel>
 
     <div class="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-3">
-      <UCard data-testid="la-breakdown">
+      <DsPanel data-testid="la-breakdown">
         <h2 class="text-subheading text-highlighted">Pecahan Aktiviti</h2>
         <DsChart
           class="mt-3"
@@ -158,9 +164,9 @@ const cards = computed<Card[]>(() => [
             }}</span>
           </li>
         </ul>
-      </UCard>
+      </DsPanel>
 
-      <UCard data-testid="la-top">
+      <DsPanel data-testid="la-top">
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
           <UIcon name="i-ph-trophy" class="size-5 text-primary" aria-hidden="true" />Pelajar Paling
           Aktif
@@ -186,9 +192,9 @@ const cards = computed<Card[]>(() => [
             }}</span>
           </li>
         </ol>
-      </UCard>
+      </DsPanel>
 
-      <UCard data-testid="la-never">
+      <DsPanel data-testid="la-never">
         <h2 class="text-subheading text-highlighted">Cikgu Belum Login</h2>
         <ul class="mt-3 flex flex-col text-body">
           <li
@@ -205,7 +211,7 @@ const cards = computed<Card[]>(() => [
             </p>
           </li>
         </ul>
-      </UCard>
+      </DsPanel>
     </div>
   </div>
 </template>

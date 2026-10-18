@@ -9,11 +9,9 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsDataTable, type CardField } from '@/ds'
+import { DsDataTable, DsPillNav, DsStatRow, DsStatusBadge, type CardField, type PillItem, type StatItem } from '@/ds'
 
 import type { SchoolActivityReport } from '../../api/school-admin'
-import PillNav, { type PillItem } from '../shared/PillNav.vue'
-import StatRow, { type StatItem } from '../shared/StatRow.vue'
 import { count, lastLogin, matches } from './activity-format'
 
 const props = defineProps<{ report: SchoolActivityReport }>()
@@ -92,16 +90,16 @@ const tiles = computed<StatItem[]>(() => [
     key: 'total',
     label: 'Jumlah Guru',
     value: count(t.value.total),
-    icon: 'i-ph-chalkboard-teacher',
+    icon: 'chalkboard-teacher', accent: 'action',
   },
-  { key: 'logged', label: 'Pernah Login', value: count(t.value.logged), icon: 'i-ph-sign-in' },
+  { key: 'logged', label: 'Pernah Login', value: count(t.value.logged), icon: 'sign-in', accent: 'win' },
   {
     key: 'questions',
     label: 'Jumlah Soalan',
     value: count(t.value.questions),
-    icon: 'i-ph-question',
+    icon: 'question', accent: 'heat',
   },
-  { key: 'coins', label: 'Jumlah Syiling', value: count(t.value.coins), icon: 'i-ph-coins' },
+  { key: 'coins', label: 'Jumlah Syiling', value: count(t.value.coins), icon: 'coins', accent: 'friend' },
 ])
 </script>
 
@@ -111,14 +109,13 @@ const tiles = computed<StatItem[]>(() => [
       Senarai Guru ({{ count(t.total) }})
     </h2>
 
-    <StatRow :items="tiles" prefix="la-guru-tile" part-prefix="la-tile" nav-id="la-guru-tiles" />
+    <DsStatRow :items="tiles" prefix="la-guru-tile" part-prefix="la-tile" data-testid="la-guru-tiles" :cols="4" />
 
     <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <PillNav
+      <DsPillNav
         :items="pills"
         :active="filter"
-        nav-id="la-guru-pills"
-        prefix="la-guru-pill"
+        testid-prefix="la-guru-pill" data-testid="la-guru-pills"
         label="Tapis guru"
         @select="filter = $event"
       />
@@ -149,10 +146,8 @@ const tiles = computed<StatItem[]>(() => [
         <p class="text-caption text-muted" data-testid="la-guru-email">{{ row.original.email }}</p>
       </template>
       <template #login-cell="{ row }">
-        <UBadge
-          :color="row.original.loggedIn ? 'success' : 'neutral'"
-          variant="soft"
-          :icon="row.original.loggedIn ? 'i-ph-check-circle' : 'i-ph-minus-circle'"
+        <DsStatusBadge
+          :status="row.original.loggedIn ? 'active' : 'inactive'"
           :label="row.original.login"
           data-testid="la-guru-login"
         />

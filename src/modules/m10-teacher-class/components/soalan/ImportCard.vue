@@ -8,13 +8,12 @@
 import { ref } from 'vue'
 
 import { isApiError } from '@/api'
-import { DsIconChip } from '@/ds'
+import { DsFileField, DsFormField, DsIconChip, DsPanel } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadQuestionTemplate, importQuestions } from '../../api/guru'
 import type { ImportResult } from '../../api/types'
 import { COPY } from './lib'
-import NativeFile from '../native/NativeFile.vue'
 
 const emit = defineEmits<{ imported: [result: ImportResult] }>()
 
@@ -23,7 +22,6 @@ const file = ref<File | null>(null)
 const busy = ref(false)
 const errors = ref<string[]>([])
 const result = ref<ImportResult | null>(null)
-const input = ref<{ el: HTMLInputElement | null } | null>(null)
 
 async function template(): Promise<void> {
   errors.value = []
@@ -44,7 +42,6 @@ async function submit(): Promise<void> {
     const res = await importQuestions(file.value)
     result.value = res
     file.value = null
-    if (input.value?.el) input.value.el.value = ''
     emit('imported', res)
   } catch (err) {
     errors.value = isApiError(err) && err.fields ? Object.values(err.fields) : [COPY.saveFailed]
@@ -55,7 +52,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <UCard data-testid="import-card">
+  <DsPanel data-testid="import-card">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex min-w-0 items-center gap-3">
         <DsIconChip icon="i-ph-file-csv-duotone" size="lg" />
@@ -124,17 +121,17 @@ async function submit(): Promise<void> {
       data-testid="import-form"
       @submit.prevent="submit"
     >
-      <UFormField label="Pilih Fail CSV" name="csv-file">
-        <NativeFile
-          id="csv-file"
-          ref="input"
+      <DsFormField label="Pilih Fail CSV" name="csv-file">
+        <DsFileField
+          :model-value="file"
           name="csv_file"
           accept=".csv,.txt"
+          preview="none"
           required
           data-testid="import-file"
-          @change="file = ($event.target as HTMLInputElement).files?.[0] ?? null"
+          @update:model-value="file = Array.isArray($event) ? ($event[0] ?? null) : $event"
         />
-      </UFormField>
+      </DsFormField>
       <UButton
         type="submit"
         :loading="busy"
@@ -144,7 +141,7 @@ async function submit(): Promise<void> {
         data-testid="import-submit"
         >Import</UButton
       >
-      <UCard variant="subtle" :ui="{ body: 'p-3 sm:p-3' }" data-testid="import-guide">
+      <DsPanel tone="inset" data-testid="import-guide">
         <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
           <UIcon name="i-ph-info-duotone" class="size-4" />
           Panduan:
@@ -157,7 +154,7 @@ async function submit(): Promise<void> {
           <li>Soalan akan dihantar sebagai "Menunggu Semakan" untuk kelulusan admin</li>
           <li>Baris yang ada ralat akan dilaporkan — soalan sah tetap diimport</li>
         </ul>
-      </UCard>
+      </DsPanel>
     </form>
-  </UCard>
+  </DsPanel>
 </template>

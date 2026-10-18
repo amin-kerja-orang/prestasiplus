@@ -9,7 +9,7 @@
 import { computed } from 'vue'
 
 import type { HeatmapLevelCode } from '../../api/school-admin'
-import PillNav, { type PillItem } from '../shared/PillNav.vue'
+import { DsPanel, DsPillNav, type PillItem } from '@/ds'
 
 const props = defineProps<{
   subjects: { id: number; name: string }[]
@@ -46,7 +46,7 @@ function onChange(value: unknown) {
 </script>
 
 <template>
-  <UCard data-testid="dh-filters">
+  <DsPanel data-testid="dh-filters">
     <form class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between" @submit.prevent>
       <UFormField label="Subjek" name="subjectId" class="min-w-0 sm:w-80">
         <USelect
@@ -59,13 +59,13 @@ function onChange(value: unknown) {
           @update:model-value="onChange"
         />
       </UFormField>
-      <PillNav
+      <DsPillNav
         :items="levelItems"
         :active="level"
-        nav-id="dh-levels"
-        prefix="dh-level"
+        testid-prefix="dh-level"
         label="Tingkatan"
+        data-testid="dh-levels"
       />
     </form>
-  </UCard>
+  </DsPanel>
 </template>

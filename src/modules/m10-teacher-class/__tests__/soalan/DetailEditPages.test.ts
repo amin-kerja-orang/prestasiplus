@@ -9,6 +9,7 @@ import { ApiError } from '@/api'
 import { useRouteOutcome } from '@/app/router/outcome'
 import { useFlashStore } from '@/stores/flash'
 
+import { pickFiles } from './pick-file'
 import SumbangSoalanDetailPage from '../../pages/SumbangSoalanDetailPage.vue'
 import SumbangSoalanEditPage from '../../pages/SumbangSoalanEditPage.vue'
 import { detail, makeRouter } from './fixtures'
@@ -100,7 +101,7 @@ describe('S24 edit', () => {
         .map((o) => o.text()),
     ).toEqual(['-- Pilih --', 'Mudah', 'Sederhana', 'Sukar'])
     expect((t(w, 'e-difficulty').element as HTMLSelectElement).value).toBe('4')
-    expect((t(w, 'e-correct-2').element as HTMLInputElement).checked).toBe(true)
+    expect(w.findAll('[data-testid="e-correct"] [role="radio"]')[2]!.attributes('aria-checked')).toBe('true')
     expect((t(w, 'e-option-1').element as HTMLTextAreaElement).value).toBe('Dua')
     expect((t(w, 'e-explanation').element as HTMLTextAreaElement).value).toBe('Kerana tiga.')
     expect(t(w, 'form-cancel').attributes('href')).toBe('/guru/soalan/522425')
@@ -123,7 +124,7 @@ describe('S24 edit', () => {
     const w = await mountPage(SumbangSoalanEditPage)
     await t(w, 'e-explanation').setValue('Penjelasan baharu')
     await t(w, 'e-difficulty').setValue('3')
-    await t(w, 'e-correct-0').setValue(true)
+    await w.findAll('[data-testid="e-correct"] [role="radio"]')[0]!.trigger('click')
     await t(w, 'edit-form').trigger('submit')
     await flushPromises()
     expect(guru.updateContributedQuestion).toHaveBeenCalledWith(
@@ -150,9 +151,7 @@ describe('S24 edit', () => {
     guru.updateContributedQuestion.mockResolvedValue(detail())
     const w = await mountPage(SumbangSoalanEditPage)
     const png = new File(['x'], 'rajah.png', { type: 'image/png' })
-    const input = t(w, 'e-image')
-    Object.defineProperty(input.element, 'files', { value: [png], configurable: true })
-    await input.trigger('change')
+    await pickFiles(w, 'e-image', [png])
     await t(w, 'edit-form').trigger('submit')
     await flushPromises()
     expect(guru.updateContributedQuestion).toHaveBeenCalledTimes(1)

@@ -146,10 +146,10 @@ describe('header and Perutusan card (FR-M27-03, 12…17)', () => {
 describe('breadcrumb and banner (FR-M27-18…21)', () => {
   it('renders "← Papan Pemuka" as a link to /dashboard and the bold current page as text', async () => {
     const w = await mountPage(dashboard())
-    const back = w.get('[data-testid="sd-crumb-back"]')
-    expect(back.text()).toBe('← Papan Pemuka')
+    const back = w.get('[data-testid="sd-breadcrumb"] a')
+    expect(back.text()).toBe('Papan Pemuka')
     expect(back.attributes('href')).toBe('/dashboard')
-    const current = w.get('[data-testid="sd-crumb-current"]')
+    const current = w.get('[data-testid="sd-breadcrumb"] [aria-current="page"]')
     expect(current.text()).toBe('Dashboard Sekolah')
     expect(current.element.tagName).not.toBe('A')
     expect(current.classes()).toContain('text-highlighted')

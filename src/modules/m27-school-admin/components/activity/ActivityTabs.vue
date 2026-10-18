@@ -5,8 +5,7 @@
  */
 import { computed } from 'vue'
 
-import PillNav, { type PillItem } from '../shared/PillNav.vue'
-
+import { DsPillNav, type PillItem } from '@/ds'
 export type ActivityTab = 'overview' | 'guru' | 'murid'
 
 const props = defineProps<{ active: ActivityTab; teachers: number; pupils: number }>()
@@ -28,11 +27,10 @@ const items = computed<PillItem<ActivityTab>[]>(() => [
 </script>
 
 <template>
-  <PillNav
+  <DsPillNav
     :items="items"
     :active="active"
-    nav-id="la-tabs"
-    prefix="la-tab"
+    testid-prefix="la-tab" data-testid="la-tabs"
     label="Bahagian laporan"
     @select="emit('select', $event)"
   />

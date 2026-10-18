@@ -10,7 +10,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsChart } from '@/ds'
+import { DsChart, DsDataTable, DsPanel, type CardField } from '@/ds'
 
 import type { SchoolUsage } from '../../api/school-admin'
 import { accuracy, count, USAGE_PATH } from './usage-format'
@@ -39,12 +39,17 @@ const columns: TableColumn<Row>[] = [
   { id: 'accuracy', accessorKey: 'accuracy', header: 'Ketepatan Purata' },
 ]
 
+const cardFields: CardField[] = [
+  { key: 'sessions', label: 'Sesi' },
+  { key: 'accuracy', label: 'Ketepatan Purata' },
+]
+
 const labels = computed(() => props.modes.map((m) => m.label))
 const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.sessions) }])
 </script>
 
 <template>
-  <UCard v-if="modes.length > 0" data-testid="su-modes">
+  <DsPanel v-if="modes.length > 0" data-testid="su-modes">
     <div class="flex flex-col gap-4">
       <h2 class="text-subheading text-highlighted" data-testid="su-modes-title">
         Mengikut Mod Latihan
@@ -56,12 +61,15 @@ const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.s
         :labels="labels"
         :series="series"
       />
-      <div class="max-w-full overflow-x-auto" data-testid="su-modes-scroll">
-        <UTable
+      <div class="max-w-full" data-testid="su-modes-scroll">
+        <DsDataTable
           :data="rows"
           :columns="columns"
+          variant="bare"
           caption="Sesi dan ketepatan mengikut mod latihan"
-          :ui="{ th: 'text-overline text-muted', td: 'tabular', tr: 'even:bg-soft' }"
+          card-title="label"
+          :card-fields="cardFields"
+          :page-size="Math.max(1, rows.length)"
           data-testid="su-modes-table"
         >
           <template #label-cell="{ row }">
@@ -75,12 +83,12 @@ const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.s
           <template #accuracy-cell="{ row }">
             <span data-testid="su-mode-accuracy">{{ row.original.accuracy }}</span>
           </template>
-        </UTable>
+        </DsDataTable>
       </div>
     </div>
-  </UCard>
+  </DsPanel>
 
-  <UCard v-else data-testid="su-empty">
+  <DsPanel v-else data-testid="su-empty">
     <div class="flex flex-col items-center gap-2 py-6 text-center">
       <UIcon name="i-ph-chart-bar" class="size-8 text-dimmed" aria-hidden="true" />
       <p class="text-subheading text-highlighted" data-testid="su-empty-title">
@@ -106,5 +114,5 @@ const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.s
         Tiada aktiviti latihan dalam tempoh {{ label }} yang lepas.
       </p>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

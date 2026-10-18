@@ -96,7 +96,8 @@ onBeforeUnmount(() => {
           label="Pelajar Berdaftar"
           :value="students"
           :sub="`${d.activeStudents} aktif menjawab`"
-          icon="i-ph-student"
+          icon="student"
+          accent="action"
           testid="cc-kpi-students"
           @click="openDrill({ type: 'students', label: 'Pelajar Berdaftar' })"
         />
@@ -104,7 +105,8 @@ onBeforeUnmount(() => {
           label="Soalan Dijawab"
           :value="answered"
           sub="sepanjang masa"
-          icon="i-ph-clipboard-text"
+          icon="clipboard-text"
+          accent="win"
           testid="cc-kpi-answered"
           @click="openDrill({ type: 'today', label: 'Soalan Dijawab' })"
         />
@@ -112,7 +114,8 @@ onBeforeUnmount(() => {
           label="Ketepatan Purata"
           :value="`${String(d.accuracy)}%`"
           sub="keseluruhan sekolah"
-          icon="i-ph-target"
+          icon="target"
+          accent="heat"
           testid="cc-kpi-accuracy"
           @click="openDrill({ type: 'subjects', label: 'Ketepatan Purata' })"
         />
@@ -120,7 +123,8 @@ onBeforeUnmount(() => {
           label="GPS Sekolah"
           :value="gpsText(d.gpsOverall)"
           sub="purata GPS"
-          icon="i-ph-chart-bar"
+          icon="chart-bar"
+          accent="trial"
           testid="cc-kpi-gps"
           @click="openDrill({ type: 'gps', label: 'GPS Sekolah' })"
         />

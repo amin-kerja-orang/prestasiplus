@@ -5,7 +5,7 @@
  * quiz `/set-soalan-saya/:id/jawab`.
  */
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsEmptyState, DsPage, DsPanel, DsLoadError } from '@/ds'
 
 import { fetchMyQuestionSets } from '../api/guru'
 import { SET_COPY } from '../components/set-soalan-saya/copy'
@@ -16,17 +16,14 @@ const { data, error, loading, reload } = useApi((signal) => fetchMyQuestionSets(
 
 <template>
   <DsPage data-testid="set-soalan-page">
-    <div v-if="error" class="flex max-w-xl min-w-0 flex-col gap-3" data-testid="sets-error">
-      <UAlert
-        color="error"
-        variant="soft"
-        icon="i-ph-warning-circle-duotone"
-        :title="SET_COPY.loadFailed"
-      />
-      <UButton size="lg" class="min-h-11 self-start" data-testid="sets-retry" @click="reload">{{
-        SET_COPY.retry
-      }}</UButton>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="SET_COPY.loadFailed"
+      :retry-label="SET_COPY.retry"
+      class="max-w-xl"
+      testid="sets-error"
+      @retry="reload"
+    />
 
     <div
       v-else-if="loading && !data"
@@ -36,13 +33,13 @@ const { data, error, loading, reload } = useApi((signal) => fetchMyQuestionSets(
       <UProgress animation="carousel" class="w-full max-w-xs" aria-label="Memuatkan" />
     </div>
 
-    <UCard v-else-if="data && data.data.length === 0" data-testid="sets-empty">
+    <DsPanel v-else-if="data && data.data.length === 0" data-testid="sets-empty">
       <DsEmptyState
         :title="SET_COPY.emptyTitle"
         :description="SET_COPY.emptyText"
         icon="i-ph-clipboard-text-duotone"
       />
-    </UCard>
+    </DsPanel>
 
     <ul v-else-if="data" class="grid min-w-0 grid-cols-1 gap-3" data-testid="sets-list">
       <QuestionSetRow v-for="item in data.data" :key="item.id" :item="item" />

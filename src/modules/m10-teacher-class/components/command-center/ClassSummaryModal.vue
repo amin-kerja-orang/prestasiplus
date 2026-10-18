@@ -6,14 +6,14 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
+import { DsStatRow } from '@/ds'
 
 import { fetchCommandCenterLiveData } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
-import { useOpenTab } from './composables'
+import { statItems, useOpenTab } from './composables'
 import { accuracyTone, classPath } from './copy'
 import type { DrillRow } from './drill-table'
-import StatCards from './StatCards.vue'
 
 defineEmits<{ close: [] }>()
 
@@ -50,7 +50,7 @@ const rows = computed<DrillRow[]>(() =>
       Menganalisis prestasi guru...
     </p>
     <template v-else>
-      <StatCards :cards="cards" :cols="3" />
+      <DsStatRow :items="statItems(cards)" prefix="cc-modal-card" :cols="3" data-testid="cc-modal-cards" />
       <CcTable
         :headers="HEADERS"
         :rows="rows"

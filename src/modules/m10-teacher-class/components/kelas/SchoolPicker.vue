@@ -4,6 +4,7 @@
  * (`GET /api/schools/search?q=&limit=15`), a progress bar while searching, results "{nama}" +
  * "{daerah}, {negeri}", "Tiada sekolah dijumpai", and a selected card with a clear button.
  */
+import { DsPanel } from '@/ds'
 import { ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
@@ -29,14 +30,14 @@ function clear(): void {
 </script>
 
 <template>
-  <UCard data-testid="school-picker">
+  <DsPanel data-testid="school-picker">
     <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
       <UIcon name="i-ph-buildings-duotone" class="size-5 text-primary" />{{
         KELAS_COPY.chooseSchool
       }}
     </h2>
 
-    <UCard v-if="selected" variant="subtle" data-testid="school-selected">
+    <DsPanel v-if="selected" tone="inset" data-testid="school-selected">
       <div class="flex items-center justify-between gap-3">
         <div class="min-w-0">
           <p class="text-label break-words text-highlighted" data-testid="school-selected-name">
@@ -55,7 +56,7 @@ function clear(): void {
           @click="clear"
         />
       </div>
-    </UCard>
+    </DsPanel>
 
     <div v-else ref="root" class="flex flex-col gap-2">
       <UInput
@@ -72,10 +73,9 @@ function clear(): void {
       />
       <UProgress v-if="searching" animation="carousel" size="xs" data-testid="school-spinner" />
 
-      <UCard
+      <DsPanel
         v-if="open && term.length >= 2 && !searching"
-        variant="subtle"
-        :ui="{ body: 'p-1 sm:p-1' }"
+        tone="inset"
         data-testid="school-results"
       >
         <UButton
@@ -105,7 +105,7 @@ function clear(): void {
         >
           <UIcon name="i-ph-magnifying-glass-duotone" class="size-4" />{{ KELAS_COPY.schoolNone }}
         </p>
-      </UCard>
+      </DsPanel>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

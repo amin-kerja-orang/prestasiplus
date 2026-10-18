@@ -9,7 +9,7 @@ const emit = defineEmits<{ drill: [req: DrillRequest] }>()
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-smiley" title="Mood Pelajar" testid="cc-panel-mood">
+  <BoardPanel icon="smiley" accent="friend" title="Mood Pelajar" testid="cc-panel-mood">
     <ul class="grid grid-cols-2 gap-2">
       <li v-for="m in MOODS" :key="m.key" class="min-w-0">
         <UButton

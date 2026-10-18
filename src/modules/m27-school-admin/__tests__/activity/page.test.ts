@@ -199,10 +199,10 @@ describe('header, breadcrumb, pills, tabs (FR-M27-44, 66, 67; AC 13.1, 13.4, 19.
 
   it('renders "← Dashboard Sekolah" as a link and the bold title as text', async () => {
     const w = await mountPage(report())
-    const back = w.get('[data-testid="la-crumb-back"]')
-    expect(back.text()).toBe('← Dashboard Sekolah')
+    const back = w.get('[data-testid="la-breadcrumb"] a')
+    expect(back.text()).toBe('Dashboard Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
-    const cur = w.get('[data-testid="la-crumb-current"]')
+    const cur = w.get('[data-testid="la-breadcrumb"] [aria-current="page"]')
     expect(cur.text()).toBe('Laporan Aktiviti')
     expect(cur.element.tagName).not.toBe('A')
     expect(cur.classes()).toContain('text-highlighted')

@@ -14,7 +14,7 @@ const change = computed(() => weekChangeText(props.d.weekChange))
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-chart-line-up" title="Aktiviti Hari Ini" testid="cc-panel-activity">
+  <BoardPanel icon="chart-line-up" accent="win" title="Aktiviti Hari Ini" testid="cc-panel-activity">
     <UButton
       color="neutral"
       variant="ghost"

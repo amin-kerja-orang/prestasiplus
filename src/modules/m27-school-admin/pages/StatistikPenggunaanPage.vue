@@ -15,22 +15,23 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsPage } from '@/ds'
+import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
 
 import { fetchSchoolUsage } from '../api/school-admin'
-import UsageBreadcrumb from '../components/usage/UsageBreadcrumb.vue'
 import UsageModeCard from '../components/usage/UsageModeCard.vue'
 import UsagePeriodPills from '../components/usage/UsagePeriodPills.vue'
 import UsageTiles from '../components/usage/UsageTiles.vue'
-import { normalisePeriod } from '../components/usage/usage-format'
+import { DASHBOARD_PATH, normalisePeriod } from '../components/usage/usage-format'
 
 const TITLE = 'Statistik Penggunaan'
+
+const crumbs = [{ label: 'Dashboard Sekolah', to: DASHBOARD_PATH }, { label: TITLE }]
 
 const route = useRoute()
 const pageMeta = usePageMeta()
 const period = computed(() => normalisePeriod(route.query.period))
 
-const { data, error, loading } = useApi(
+const { data, error, loading, reload } = useApi(
   (signal) => fetchSchoolUsage({ period: period.value, signal }),
   [period],
 )
@@ -56,8 +57,10 @@ watch(
 
 <template>
   <DsPage data-testid="su-page" :data-period="data?.period">
+    <template #breadcrumb>
+      <DsBreadcrumb v-if="data" :items="crumbs" data-testid="su-breadcrumb" />
+    </template>
     <template v-if="data">
-      <UsageBreadcrumb :title="TITLE" />
       <UsagePeriodPills :active="period" />
       <UsageTiles :tiles="data.tiles" />
       <UsageModeCard :modes="data.modes" :period="data.period" :label="data.label" />
@@ -69,14 +72,11 @@ watch(
         Ketepatan dipaparkan sebagai “—” kerana belum ada sesi latihan direkodkan dalam skop ini.
       </p>
     </template>
-    <UAlert
+    <DsLoadError
       v-else-if="error && !refused"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle"
-      :description="error.message"
-      role="alert"
-      data-testid="su-error"
+      :message="error.message"
+      testid="su-error"
+      @retry="reload"
     />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="su-loading">
       <USkeleton class="h-24 w-full" />

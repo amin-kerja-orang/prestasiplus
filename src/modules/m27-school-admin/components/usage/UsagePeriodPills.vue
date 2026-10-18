@@ -5,8 +5,9 @@
  */
 import { computed } from 'vue'
 
+import { DsPillNav, type PillItem } from '@/ds'
+
 import type { UsagePeriod } from '../../api/school-admin'
-import PillNav, { type PillItem } from '../shared/PillNav.vue'
 import { PERIODS, USAGE_PATH } from './usage-format'
 
 defineProps<{ active: UsagePeriod }>()
@@ -21,5 +22,11 @@ const items = computed<PillItem<UsagePeriod>[]>(() =>
 </script>
 
 <template>
-  <PillNav :items="items" :active="active" nav-id="su-pills" prefix="su-pill" label="Tempoh" />
+  <DsPillNav
+    :items="items"
+    :active="active"
+    testid-prefix="su-pill"
+    label="Tempoh"
+    data-testid="su-pills"
+  />
 </template>

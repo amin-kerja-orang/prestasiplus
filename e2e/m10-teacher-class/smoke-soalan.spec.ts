@@ -58,7 +58,7 @@ async function fillMcq(page: Page, text: string, difficulty: string): Promise<vo
   for (const [i, v] of ['Pilihan satu', 'Pilihan dua', 'Pilihan tiga', 'Pilihan empat'].entries()) {
     await page.getByTestId(`q-option-${String(i)}`).fill(v)
   }
-  await page.getByTestId('q-correct-1').check()
+  await page.locator('[data-testid="q-correct"] [role="radio"]').nth(1).click()
 }
 
 // --- S21 -----------------------------------------------------------------------------------------
@@ -195,7 +195,7 @@ test.describe('S21 as the admin', MODULE, () => {
     await expect(page.getByTestId('edit-source')).toContainText('Sumber Asal')
     // The seed difficulty of 522425 is not the observed 4 (reported to M04): only the structure is asserted.
     await expect(page.getByTestId('e-difficulty').locator('option')).toHaveCount(4)
-    await expect(page.locator('[data-testid^="e-correct-"]:checked')).toHaveCount(1)
+    await expect(page.locator('[data-testid="e-correct"] [role="radio"][aria-checked="true"]')).toHaveCount(1)
     await expect(page.getByTestId('e-text')).toHaveAttribute('required', '')
     await expect(page.getByText('JPG, PNG, max 5MB.')).toBeVisible()
     await expect(page.getByTestId('form-cancel')).toHaveAttribute('href', '/guru/soalan/522425')
@@ -486,7 +486,7 @@ test.describe('S21 as the teacher', MODULE, () => {
       const secondId = await second.getAttribute('data-question-id')
       await gotoApp(`/guru/soalan/${String(secondId)}/edit`)
       await expect(page.getByTestId('e-difficulty')).toHaveValue('3')
-      await expect(page.getByTestId('e-correct-1')).toBeChecked()
+      await expect(page.locator('[data-testid="e-correct"] [role="radio"]').nth(1)).toBeChecked()
       await page.getByTestId('e-explanation').fill('Penjelasan baharu')
       await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(new RegExp(`/guru/soalan/${String(secondId)}$`))
@@ -597,7 +597,7 @@ test.describe('S21-S24 observed anchors', MODULE, () => {
     await gotoApp('/guru/soalan/522425/edit')
     await expect(page.getByTestId('edit-source')).toContainText('textbook_content_rebuild')
     await expect(page.getByTestId('e-difficulty')).toHaveValue('4')
-    await expect(page.getByTestId('e-correct-2')).toBeChecked()
+    await expect(page.locator('[data-testid="e-correct"] [role="radio"]').nth(2)).toBeChecked()
   })
 
   test('teacher own question is 700302', async ({ page, loginAs, gotoApp }) => {

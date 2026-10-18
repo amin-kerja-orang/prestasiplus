@@ -13,7 +13,7 @@ const openTab = useOpenTab()
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-trophy" title="Leaderboard Minggu Ini" testid="cc-panel-leaderboard">
+  <BoardPanel icon="trophy" accent="win" title="Leaderboard Minggu Ini" testid="cc-panel-leaderboard">
     <p v-if="rows.length === 0" class="text-body text-muted" data-testid="cc-leaderboard-empty">
       {{ S2_COPY.noWeek }}
     </p>

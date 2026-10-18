@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 
 import type { MonthlyReport } from '../../api/school-admin'
-import StatRow, { type StatItem } from '../shared/StatRow.vue'
+import { DsStatRow, type StatItem } from '@/ds'
 import { count, pct0, pct1 } from './monthly-format'
 
 const props = defineProps<{ cards: MonthlyReport['cards'] }>()
@@ -17,25 +17,28 @@ const items = computed<StatItem[]>(() => [
     label: 'Penglibatan',
     value: pct0(props.cards.participationPct),
     sub: `${count(props.cards.active)} aktif / ${count(props.cards.registered)} daftar`,
-    icon: 'i-ph-users-three',
+    icon: 'users-three',
+    accent: 'action',
   },
   {
     key: 'answers',
     label: 'Soalan Dijawab',
     value: count(props.cards.answers),
     sub: `${count(props.cards.perPupil)} soalan/pelajar`,
-    icon: 'i-ph-check-circle',
+    icon: 'check-circle',
+    accent: 'win',
   },
-  { key: 'accuracy', label: 'Ketepatan', value: pct1(props.cards.accuracy), icon: 'i-ph-target' },
+  { key: 'accuracy', label: 'Ketepatan', value: pct1(props.cards.accuracy), icon: 'target', accent: 'heat' },
   {
     key: 'sessions',
     label: 'Sesi Latihan',
     value: count(props.cards.sessions),
-    icon: 'i-ph-clipboard-text',
+    icon: 'clipboard-text',
+    accent: 'trial',
   },
 ])
 </script>
 
 <template>
-  <StatRow :items="items" prefix="lb-card" nav-id="lb-cards" />
+  <DsStatRow :items="items" prefix="lb-card" part-prefix="lb-card" data-testid="lb-cards" :cols="4" />
 </template>

@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useApi, useFlash, usePrototypeScope } from '@/composables'
-import { DsPage, useConfirm } from '@/ds'
+import { DsPage, useConfirm, DsPanel, DsLoadError } from '@/ds'
 
 import {
   deleteContributedQuestion,
@@ -84,24 +84,13 @@ const retry = (): void => {
 
 <template>
   <DsPage data-testid="soalan-page">
-    <UCard v-if="summary.error.value" data-testid="soalan-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning-circle-duotone"
-        :title="COPY.loadFailed"
-        role="alert"
-      />
-      <UButton
-        type="button"
-        color="neutral"
-        variant="soft"
-        class="mt-3 min-h-11"
-        data-testid="soalan-retry"
-        @click="retry"
-        >{{ COPY.retry }}</UButton
-      >
-    </UCard>
+    <DsLoadError
+      v-if="summary.error.value"
+      :message="COPY.loadFailed"
+      :retry-label="COPY.retry"
+      testid="soalan-error"
+      @retry="retry"
+    />
     <div
       v-else-if="!summary.data.value"
       class="grid grid-cols-2 gap-3 md:grid-cols-4"
@@ -140,25 +129,23 @@ const retry = (): void => {
         </template>
       </UAlert>
 
-      <UCard v-if="list.error.value" data-testid="soalan-list-error">
-        <UAlert
-          color="error"
-          variant="subtle"
-          icon="i-ph-warning-circle-duotone"
-          :title="COPY.loadFailed"
-          role="alert"
-        />
-      </UCard>
+      <DsLoadError
+        v-if="list.error.value"
+        :message="COPY.loadFailed"
+        :retry-label="COPY.retry"
+        testid="soalan-list-error"
+        @retry="list.reload"
+      />
       <div v-else-if="!list.data.value" class="flex flex-col gap-3" aria-busy="true">
         <USkeleton v-for="n in 3" :key="n" class="h-20 w-full" />
       </div>
       <template v-else>
-        <UCard v-if="list.data.value.data.length === 0 && page === 1" data-testid="soalan-empty">
+        <DsPanel v-if="list.data.value.data.length === 0 && page === 1" data-testid="soalan-empty">
           <div class="flex flex-col items-center gap-2 py-6 text-center">
             <UIcon name="i-ph-note-pencil-duotone" class="size-12 text-dimmed" />
             <p class="text-body text-muted">{{ COPY.listEmpty }}</p>
           </div>
-        </UCard>
+        </DsPanel>
         <ul v-else class="grid min-w-0 grid-cols-1 gap-3" data-testid="soalan-list">
           <QuestionCard
             v-for="q in list.data.value.data"

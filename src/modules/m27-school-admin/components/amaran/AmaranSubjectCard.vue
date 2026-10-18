@@ -3,6 +3,8 @@
  * S4 card "Analisis Risiko Mengikut Subjek" (FR-M27-77; restyle spec AS-49): one row per subject with the
  * name, the text "{weak}/{total} pelajar lemah ({pct}%)" and a `UProgress` of the weak share.
  */
+
+import { DsPanel } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { SubjectRiskRow } from '../../api/amaran'
@@ -11,7 +13,7 @@ defineProps<{ rows: SubjectRiskRow[] }>()
 </script>
 
 <template>
-  <UCard data-testid="am-subjects">
+  <DsPanel data-testid="am-subjects">
     <h2 class="text-subheading text-highlighted">Analisis Risiko Mengikut Subjek</h2>
     <ul class="mt-3 flex flex-col gap-3">
       <li
@@ -37,5 +39,5 @@ defineProps<{ rows: SubjectRiskRow[] }>()
         />
       </li>
     </ul>
-  </UCard>
+  </DsPanel>
 </template>

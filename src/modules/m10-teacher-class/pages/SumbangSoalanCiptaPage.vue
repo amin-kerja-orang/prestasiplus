@@ -9,7 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsPage } from '@/ds'
 
 import { createContributedQuestion } from '../api/guru'
 import type { CreateQuestionRequest } from '../api/types'
@@ -52,17 +52,7 @@ async function save(
 
 <template>
   <DsPage class="max-w-4xl" data-testid="soalan-cipta-page">
-    <div>
-      <UButton
-        to="/guru/soalan"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        class="min-h-11"
-        data-testid="back-link"
-        >Kembali ke Senarai Soalan</UButton
-      >
-    </div>
+    <DsBackLink to="/guru/soalan" label="Kembali ke Senarai Soalan" data-testid="back-link" />
     <QuestionForm :saving="saving" :general="general" :fields="fields" @submit="save" />
   </DsPage>
 </template>

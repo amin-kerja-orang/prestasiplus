@@ -13,14 +13,19 @@ import { useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import {
+  DsBackLink,
+  DsFileField,
+  DsFormField,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+} from '@/ds'
 
 import { fetchContributedQuestion, updateContributedQuestion } from '../api/guru'
 import type { ContributedQuestionDetail, UpdateQuestionRequest } from '../api/types'
-import { COPY, EDIT_DIFFICULTIES, OPTION_LETTERS } from '../components/soalan/lib'
-import NativeFile from '../components/native/NativeFile.vue'
-import NativeRadio from '../components/native/NativeRadio.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
+import { COPY, correctItems, EDIT_DIFFICULTIES, OPTION_LETTERS } from '../components/soalan/lib'
 
 const props = defineProps<{ id: number }>()
 
@@ -36,6 +41,8 @@ const notFound = computed(() => isApiError(error.value) && error.value.status ==
 watch(notFound, (is404) => {
   if (is404) setRouteOutcome(404)
 })
+
+const CORRECT_ITEMS = correctItems()
 
 const form = reactive({
   questionText: '',
@@ -98,41 +105,20 @@ async function save(): Promise<void> {
 
 <template>
   <DsPage class="max-w-3xl" data-testid="soalan-edit-page">
-    <UCard v-if="error && !notFound" data-testid="edit-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning-circle-duotone"
-        :title="COPY.loadFailed"
-        role="alert"
-      />
-      <UButton
-        type="button"
-        color="neutral"
-        variant="soft"
-        class="mt-3 min-h-11"
-        data-testid="edit-retry"
-        @click="reload"
-        >{{ COPY.retry }}</UButton
-      >
-    </UCard>
+    <DsLoadError
+      v-if="error && !notFound"
+      :message="COPY.loadFailed"
+      :retry-label="COPY.retry"
+      testid="edit-error"
+      @retry="reload"
+    />
     <div v-else-if="!data && !notFound" class="flex flex-col gap-3" aria-busy="true">
       <USkeleton class="h-10 w-full" />
       <USkeleton class="h-48 w-full" />
     </div>
 
     <template v-else-if="data">
-      <div>
-        <UButton
-          :to="back"
-          color="neutral"
-          variant="ghost"
-          icon="i-ph-arrow-left"
-          class="min-h-11"
-          data-testid="edit-back"
-          >Kembali</UButton
-        >
-      </div>
+      <DsBackLink :to="back" data-testid="edit-back" />
 
       <form
         method="post"
@@ -154,13 +140,13 @@ async function save(): Promise<void> {
           </template>
         </UAlert>
 
-        <UCard data-testid="edit-source">
+        <DsPanel data-testid="edit-source">
           <p class="text-overline text-muted">Sumber Asal</p>
           <p class="mt-1 text-body break-all text-default">{{ data.source ?? '' }}</p>
-        </UCard>
+        </DsPanel>
 
-        <UCard>
-          <UFormField label="Soalan *" name="e-text" :error="fields.questionText">
+        <DsPanel>
+          <DsFormField label="Soalan *" name="e-text" :error="fields.questionText">
             <UTextarea
               id="e-text"
               v-model="form.questionText"
@@ -170,29 +156,30 @@ async function save(): Promise<void> {
               class="w-full"
               data-testid="e-text"
             />
-          </UFormField>
-        </UCard>
+          </DsFormField>
+        </DsPanel>
 
-        <UCard>
-          <UFormField
+        <DsPanel>
+          <DsFormField
             label="Tambah Gambarajah (optional)"
             name="e-image"
             help="JPG, PNG, max 5MB."
             :error="fields.image"
           >
-            <NativeFile
-              id="e-image"
+            <DsFileField
+              :model-value="image"
               name="image"
               accept="image/jpeg,image/png"
+              :max-size-mb="5"
               data-testid="e-image"
-              @change="image = ($event.target as HTMLInputElement).files?.[0] ?? null"
+              @update:model-value="image = Array.isArray($event) ? ($event[0] ?? null) : $event"
             />
-          </UFormField>
-        </UCard>
+          </DsFormField>
+        </DsPanel>
 
-        <UCard>
-          <UFormField label="Tahap Kesukaran" name="e-difficulty" :error="fields.difficultyLevel">
-            <NativeSelect
+        <DsPanel>
+          <DsFormField label="Tahap Kesukaran" name="e-difficulty" :error="fields.difficultyLevel">
+            <DsNativeSelect
               id="e-difficulty"
               v-model="form.difficulty"
               name="difficulty_level"
@@ -202,28 +189,24 @@ async function save(): Promise<void> {
               <option v-for="d in EDIT_DIFFICULTIES" :key="d.value" :value="String(d.value)">
                 {{ d.label }}
               </option>
-            </NativeSelect>
-          </UFormField>
-        </UCard>
+            </DsNativeSelect>
+          </DsFormField>
+        </DsPanel>
 
-        <UCard v-if="isMcq" data-testid="edit-options">
+        <DsPanel v-if="isMcq" data-testid="edit-options">
           <p class="mb-3 text-label text-highlighted">Pilihan Jawapan *</p>
+          <URadioGroup
+            id="e-correct"
+            v-model="form.correct"
+            legend="Jawapan betul"
+            orientation="horizontal"
+            :items="CORRECT_ITEMS"
+            class="mb-3"
+            data-testid="e-correct"
+          />
           <div class="flex min-w-0 flex-col gap-3">
-            <UCard
-              v-for="(letter, i) in OPTION_LETTERS"
-              :key="letter"
-              variant="subtle"
-              :ui="{ body: 'flex min-w-0 items-start gap-3 p-3 sm:p-3' }"
-            >
-              <label class="inline-flex size-11 shrink-0 items-center justify-center">
-                <NativeRadio
-                  v-model="form.correct"
-                  name="correct_option"
-                  :value="i"
-                  :aria-label="`Jawapan betul ${letter}`"
-                  :data-testid="`e-correct-${String(i)}`"
-                />
-              </label>
+            <DsPanel v-for="(letter, i) in OPTION_LETTERS" :key="letter" tone="inset">
+<div class="flex min-w-0 items-start gap-3">
               <span class="mt-3 w-6 shrink-0 text-label text-highlighted">{{ letter }})</span>
               <UTextarea
                 v-model="form.options[i]"
@@ -242,7 +225,8 @@ async function save(): Promise<void> {
                 class="mt-2 shrink-0"
                 >Betul</UBadge
               >
-            </UCard>
+            </div>
+</DsPanel>
           </div>
           <p v-if="fields.options" class="mt-2 text-caption text-error">{{ fields.options }}</p>
           <p v-if="fields.correctOptionId" class="mt-2 text-caption text-error">
@@ -251,10 +235,10 @@ async function save(): Promise<void> {
           <p class="mt-3 text-caption text-muted">
             Pilih radio button untuk tandakan jawapan betul
           </p>
-        </UCard>
+        </DsPanel>
 
-        <UCard>
-          <UFormField label="Penerangan (optional)" name="e-explanation">
+        <DsPanel>
+          <DsFormField label="Penerangan (optional)" name="e-explanation">
             <UTextarea
               id="e-explanation"
               v-model="form.explanation"
@@ -263,8 +247,8 @@ async function save(): Promise<void> {
               class="w-full"
               data-testid="e-explanation"
             />
-          </UFormField>
-        </UCard>
+          </DsFormField>
+        </DsPanel>
 
         <div class="flex flex-wrap items-center gap-3">
           <UButton

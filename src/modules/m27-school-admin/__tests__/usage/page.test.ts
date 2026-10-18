@@ -126,10 +126,10 @@ describe('header, breadcrumb and pills (FR-M27-44, 51; AC 13.1, 13.4, 15.1, 15.3
 
   it('renders "← Dashboard Sekolah" as a link to /admin-sekolah and the bold title as text', async () => {
     const w = await mountPage(usage())
-    const back = w.get('[data-testid="su-crumb-back"]')
-    expect(back.text()).toBe('← Dashboard Sekolah')
+    const back = w.get('[data-testid="su-breadcrumb"] a')
+    expect(back.text()).toBe('Dashboard Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
-    const current = w.get('[data-testid="su-crumb-current"]')
+    const current = w.get('[data-testid="su-breadcrumb"] [aria-current="page"]')
     expect(current.text()).toBe('Statistik Penggunaan')
     expect(current.element.tagName).not.toBe('A')
     expect(current.classes()).toContain('text-highlighted')
@@ -245,9 +245,9 @@ describe('Mengikut Mod Latihan (FR-M27-54; AC 16.1)', () => {
     expect(has(w, 'su-empty')).toBe(false)
   })
 
-  it('keeps the table inside a scrolling wrapper', async () => {
+  it('keeps the table inside its own wrapper (DsDataTable scrolls inside itself)', async () => {
     const w = await mountPage(usage())
-    expect(w.get('[data-testid="su-modes-scroll"]').classes()).toContain('overflow-x-auto')
+    expect(w.find('[data-testid="su-modes-scroll"] [data-testid="su-modes-table"]').exists()).toBe(true)
   })
 })
 

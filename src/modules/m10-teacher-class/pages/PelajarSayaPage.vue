@@ -8,7 +8,17 @@ import { computed, ref } from 'vue'
 
 import { ApiError } from '@/api'
 import { useApi, useDebouncedRef, useFlash, usePrototypeScope } from '@/composables'
-import { DsIconChip, DsPage, useConfirm } from '@/ds'
+import {
+  DsEmptyState,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsPillNav,
+  DsStatTile,
+  useConfirm,
+  type PillItem,
+} from '@/ds'
 
 import {
   addStudentToClass,
@@ -18,7 +28,6 @@ import {
 } from '../api/guru'
 import type { StudentTab } from '../api/types'
 import { PELAJAR_COPY } from '../components/pelajar/copy'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import StudentRow from '../components/pelajar/StudentRow.vue'
 
 const flash = useFlash()
@@ -40,6 +49,11 @@ const school = useApi(
       : null,
   [tab, searchApplied],
 )
+
+const tabs = computed<PillItem<StudentTab>[]>(() => [
+  { key: 'school', label: PELAJAR_COPY.tabSchool, icon: 'i-ph-buildings' },
+  { key: 'mine', label: `${PELAJAR_COPY.tabMine} (${String(count.value)})`, icon: 'i-ph-user-check' },
+])
 
 const ownClasses = computed(() => (classes.data.value?.data ?? []).filter((c) => c.isActive))
 const mineRows = computed(() => mine.data.value?.data ?? [])
@@ -104,64 +118,40 @@ async function remove(studentId: number, classId: number): Promise<void> {
 
 <template>
   <DsPage data-testid="pelajar-page">
-    <UCard>
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex min-w-0 items-center gap-3">
-          <DsIconChip icon="i-ph-users-three-duotone" size="lg" />
-          <div class="min-w-0">
-            <p class="tabular text-title text-highlighted" data-testid="pelajar-count">
-              {{ count }}
-            </p>
-            <p class="text-body text-muted">{{ PELAJAR_COPY.counterLabel }}</p>
-          </div>
-        </div>
-        <UButton
-          to="/guru/pelajar/cipta"
-          icon="i-ph-user-plus-duotone"
-          class="min-h-11 shrink-0"
-          data-testid="pelajar-create"
-          >Cipta<span class="hidden sm:inline">&nbsp;Pelajar</span></UButton
-        >
-      </div>
-    </UCard>
-
-    <UFieldGroup class="w-full sm:w-fit" data-testid="pelajar-tabs">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <DsStatTile
+        class="min-w-56"
+        :value="count"
+        :unit="PELAJAR_COPY.counterLabel"
+        icon="users-three"
+        accent="win"
+        part-prefix="pelajar"
+        data-testid="pelajar-counter"
+      />
       <UButton
-        type="button"
-        :color="tab === 'school' ? 'primary' : 'neutral'"
-        :variant="tab === 'school' ? 'solid' : 'soft'"
-        icon="i-ph-buildings-duotone"
-        class="min-h-11 grow justify-center"
-        :aria-pressed="tab === 'school'"
-        data-testid="tab-school"
-        @click="tab = 'school'"
-        >{{ PELAJAR_COPY.tabSchool }}</UButton
+        to="/guru/pelajar/cipta"
+        icon="i-ph-user-plus"
+        class="min-h-11 shrink-0"
+        data-testid="pelajar-create"
+        >Cipta<span class="hidden sm:inline">&nbsp;Pelajar</span></UButton
       >
-      <UButton
-        type="button"
-        :color="tab === 'mine' ? 'primary' : 'neutral'"
-        :variant="tab === 'mine' ? 'solid' : 'soft'"
-        icon="i-ph-user-check-duotone"
-        class="min-h-11 grow justify-center"
-        :aria-pressed="tab === 'mine'"
-        data-testid="tab-mine"
-        @click="tab = 'mine'"
-      >
-        {{ PELAJAR_COPY.tabMine }}
-        <UBadge color="neutral" variant="subtle" data-testid="tab-mine-count">{{ count }}</UBadge>
-      </UButton>
-    </UFieldGroup>
+    </div>
 
-    <UAlert
+    <DsPillNav
+      :items="tabs"
+      :active="tab"
+      :label="PELAJAR_COPY.tabsLabel"
+      testid-prefix="tab"
+      data-testid="pelajar-tabs"
+      @select="tab = $event"
+    />
+
+    <DsLoadError
       v-if="loadError"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle-duotone"
-      :title="PELAJAR_COPY.loadFailed"
-      :actions="[
-        { label: 'Cuba Lagi', color: 'neutral', variant: 'soft', onClick: () => reloadAll() },
-      ]"
-      role="alert"
+      :message="PELAJAR_COPY.loadFailed"
+      retry-label="Cuba Lagi"
+      testid="pelajar-error"
+      @retry="reloadAll"
     />
 
     <!-- Pelajar Saya -->
@@ -174,20 +164,23 @@ async function remove(studentId: number, classId: number): Promise<void> {
       >
         <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
       </div>
-      <UCard v-else-if="mineRows.length === 0" data-testid="pelajar-empty">
-        <div class="flex flex-col items-center gap-2 py-6 text-center">
-          <UIcon name="i-ph-graduation-cap-duotone" class="size-12 text-dimmed" />
-          <h2 class="text-subheading text-highlighted">{{ PELAJAR_COPY.emptyTitle }}</h2>
-          <p class="text-body text-muted">{{ PELAJAR_COPY.emptyBody }}</p>
-          <UButton
-            to="/guru/kelas/cipta"
-            icon="i-ph-plus"
-            class="mt-3 min-h-11"
-            data-testid="pelajar-empty-create"
-            >{{ PELAJAR_COPY.createClass }}</UButton
-          >
-        </div>
-      </UCard>
+      <DsPanel v-else-if="mineRows.length === 0" data-testid="pelajar-empty">
+        <DsEmptyState
+          :title="PELAJAR_COPY.emptyTitle"
+          :description="PELAJAR_COPY.emptyBody"
+          icon="graduation-cap"
+        >
+          <template #actions>
+            <UButton
+              to="/guru/kelas/cipta"
+              icon="i-ph-plus"
+              class="min-h-11"
+              data-testid="pelajar-empty-create"
+              >{{ PELAJAR_COPY.createClass }}</UButton
+            >
+          </template>
+        </DsEmptyState>
+      </DsPanel>
       <ul v-else class="flex flex-col gap-2" data-testid="pelajar-mine-list">
         <StudentRow
           v-for="s in mineRows"
@@ -203,14 +196,14 @@ async function remove(studentId: number, classId: number): Promise<void> {
 
     <!-- Pelajar Sekolah -->
     <template v-else>
-      <UCard data-testid="pelajar-add-bar">
+      <DsPanel data-testid="pelajar-add-bar">
         <div class="flex flex-wrap items-center gap-3">
           <label for="pelajar-target" class="flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-plus-circle-duotone" class="size-4 text-primary" />{{
               PELAJAR_COPY.addTo
             }}
           </label>
-          <NativeSelect
+          <DsNativeSelect
             id="pelajar-target"
             v-model="targetClass"
             class="min-w-0 grow"
@@ -218,25 +211,27 @@ async function remove(studentId: number, classId: number): Promise<void> {
           >
             <option value="">{{ PELAJAR_COPY.chooseClass }}</option>
             <option v-for="c in ownClasses" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
-          </NativeSelect>
+          </DsNativeSelect>
         </div>
-      </UCard>
+      </DsPanel>
 
-      <UCard v-if="school.data.value && !schoolSet" data-testid="pelajar-no-school">
-        <div class="flex flex-col items-center gap-2 py-6 text-center">
-          <UIcon name="i-ph-buildings-duotone" class="size-12 text-dimmed" />
-          <h2 class="text-subheading text-highlighted">{{ PELAJAR_COPY.noSchoolTitle }}</h2>
-          <p class="max-w-prose text-body text-muted">{{ PELAJAR_COPY.noSchoolBody }}</p>
-          <UButton
-            v-if="allows('/guru/profil/edit')"
-            to="/guru/profil/edit"
-            icon="i-ph-user-gear-duotone"
-            class="mt-3 min-h-11"
-            data-testid="pelajar-profile-link"
-            >{{ PELAJAR_COPY.profileSettings }}</UButton
-          >
-        </div>
-      </UCard>
+      <DsPanel v-if="school.data.value && !schoolSet" data-testid="pelajar-no-school">
+        <DsEmptyState
+          :title="PELAJAR_COPY.noSchoolTitle"
+          :description="PELAJAR_COPY.noSchoolBody"
+          icon="buildings"
+        >
+          <template v-if="allows('/guru/profil/edit')" #actions>
+            <UButton
+              to="/guru/profil/edit"
+              icon="i-ph-user-gear"
+              class="min-h-11"
+              data-testid="pelajar-profile-link"
+              >{{ PELAJAR_COPY.profileSettings }}</UButton
+            >
+          </template>
+        </DsEmptyState>
+      </DsPanel>
       <template v-else-if="school.data.value">
         <UInput
           v-model="search"
@@ -247,9 +242,9 @@ async function remove(studentId: number, classId: number): Promise<void> {
           class="w-full"
           data-testid="pelajar-search"
         />
-        <UCard v-if="schoolRows.length === 0" data-testid="pelajar-school-empty">
-          <p class="py-4 text-center text-body text-muted">{{ PELAJAR_COPY.schoolEmpty }}</p>
-        </UCard>
+        <DsPanel v-if="schoolRows.length === 0" data-testid="pelajar-school-empty">
+          <DsEmptyState :title="PELAJAR_COPY.schoolEmpty" icon="graduation-cap" size="sm" />
+        </DsPanel>
         <ul v-else class="flex flex-col gap-2" data-testid="pelajar-school-list">
           <StudentRow
             v-for="s in schoolRows"

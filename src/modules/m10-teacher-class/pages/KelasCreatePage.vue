@@ -9,14 +9,13 @@ import { useRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsFormField, DsNativeSelect, DsPage, DsPanel } from '@/ds'
 import type { SchoolSummary } from '@/modules/m02-users-schools'
 
 import { createGuruClass } from '../api/guru'
 import type { EducationLevelSlug } from '../api/types'
 import { KELAS_COPY, tilesForSchoolType } from '../components/kelas/copy'
 import SchoolPicker from '../components/kelas/SchoolPicker.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import { fetchSubjectOptions } from '../components/kelas/subjects'
 
 const router = useRouter()
@@ -71,17 +70,7 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPage class="max-w-4xl" data-testid="kelas-create-page">
-    <div>
-      <UButton
-        to="/guru/kelas"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        class="min-h-11"
-        data-testid="kelas-back"
-        >{{ KELAS_COPY.back }}</UButton
-      >
-    </div>
+    <DsBackLink to="/guru/kelas" :label="KELAS_COPY.back" data-testid="kelas-back" />
 
     <form class="flex flex-col gap-4" data-testid="kelas-form" @submit.prevent="submit">
       <UAlert
@@ -95,13 +84,13 @@ async function submit(): Promise<void> {
 
       <SchoolPicker @select="school = $event" />
 
-      <UCard>
+      <DsPanel>
         <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
           <UIcon name="i-ph-laptop-duotone" class="size-5 text-primary" />{{ KELAS_COPY.info }}
         </h2>
 
         <div class="flex flex-col gap-4">
-          <UFormField
+          <DsFormField
             :label="`${KELAS_COPY.name} *`"
             name="kelas-name"
             :help="KELAS_COPY.nameHelp"
@@ -117,14 +106,14 @@ async function submit(): Promise<void> {
               class="w-full"
               data-testid="kelas-name"
             />
-          </UFormField>
+          </DsFormField>
 
-          <UFormField
+          <DsFormField
             :label="`${KELAS_COPY.subject} *`"
             name="kelas-subject"
             :error="fields.subjectId"
           >
-            <NativeSelect
+            <DsNativeSelect
               id="kelas-subject"
               v-model="subjectId"
               required
@@ -134,8 +123,8 @@ async function submit(): Promise<void> {
               <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">
                 {{ s.name }}
               </option>
-            </NativeSelect>
-          </UFormField>
+            </DsNativeSelect>
+          </DsFormField>
 
           <URadioGroup
             :model-value="level || undefined"
@@ -153,7 +142,7 @@ async function submit(): Promise<void> {
             {{ fields.educationLevel }}
           </p>
 
-          <UFormField :label="KELAS_COPY.description" name="kelas-description">
+          <DsFormField :label="KELAS_COPY.description" name="kelas-description">
             <UTextarea
               id="kelas-description"
               v-model="description"
@@ -163,9 +152,9 @@ async function submit(): Promise<void> {
               class="w-full"
               data-testid="kelas-description"
             />
-          </UFormField>
+          </DsFormField>
         </div>
-      </UCard>
+      </DsPanel>
 
       <UButton
         type="submit"

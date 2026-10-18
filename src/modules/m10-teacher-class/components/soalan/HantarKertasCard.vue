@@ -8,13 +8,11 @@
 import { ref } from 'vue'
 
 import { isApiError } from '@/api'
-import { DsIconChip } from '@/ds'
+import { DsFileField, DsFormField, DsIconChip, DsNativeSelect, DsPanel } from '@/ds'
 
 import { submitQuestionPaper } from '../../api/guru'
 import type { PaperType, QuestionPaperRequest } from '../../api/types'
 import { COPY, fileKind, megabytes } from './lib'
-import NativeFile from '../native/NativeFile.vue'
-import NativeSelect from '../native/NativeSelect.vue'
 
 const TYPES = [
   'Soalan Umum',
@@ -38,8 +36,8 @@ const busy = ref(false)
 const errors = ref<string[]>([])
 const sent = ref<string | null>(null)
 
-function onFiles(event: Event): void {
-  files.value = [...((event.target as HTMLInputElement).files ?? [])]
+function onFiles(value: File | File[] | null): void {
+  files.value = value === null ? [] : Array.isArray(value) ? value : [value]
 }
 
 async function submit(): Promise<void> {
@@ -75,7 +73,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <UCard data-testid="paper-card">
+  <DsPanel data-testid="paper-card">
     <div class="flex items-center gap-3">
       <DsIconChip icon="i-ph-paper-plane-tilt-duotone" size="lg" />
       <div class="min-w-0">
@@ -85,7 +83,7 @@ async function submit(): Promise<void> {
     </div>
 
     <div class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
-      <UCard variant="subtle" :ui="{ body: 'p-3 sm:p-3' }" data-testid="paper-types">
+      <DsPanel tone="inset" data-testid="paper-types">
         <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
           <UIcon name="i-ph-info-duotone" class="size-4 text-primary" />
           Jenis Soalan Yang Diterima
@@ -96,8 +94,8 @@ async function submit(): Promise<void> {
             {{ t }}
           </li>
         </ul>
-      </UCard>
-      <UCard variant="subtle" :ui="{ body: 'p-3 sm:p-3' }" data-testid="paper-conditions">
+      </DsPanel>
+      <DsPanel tone="inset" data-testid="paper-conditions">
         <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
           <UIcon name="i-ph-warning-duotone" class="size-4 text-warning" />
           Syarat Fail Yang Dihantar
@@ -108,17 +106,17 @@ async function submit(): Promise<void> {
           <li><strong>Skema jawapan WAJIB</strong> disertakan bersama soalan</li>
           <li>Maksimum <strong>5 fail</strong>, saiz maksimum <strong>20MB</strong> setiap fail</li>
         </ul>
-      </UCard>
+      </DsPanel>
     </div>
 
     <ol class="mt-4 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3" data-testid="paper-steps">
       <li v-for="s in STEPS" :key="s.n" class="min-w-0">
-        <UCard variant="subtle" :ui="{ body: 'p-3 sm:p-3' }">
+        <DsPanel tone="inset">
           <div class="text-center">
             <p class="text-label text-highlighted">{{ s.n }}</p>
             <p class="text-body text-muted">{{ s.text }}</p>
           </div>
-        </UCard>
+        </DsPanel>
       </li>
     </ol>
 
@@ -151,8 +149,8 @@ async function submit(): Promise<void> {
       data-testid="paper-form"
       @submit.prevent="submit"
     >
-      <UFormField label="Jenis Soalan *" name="paper-jenis" class="min-w-0">
-        <NativeSelect
+      <DsFormField label="Jenis Soalan *" name="paper-jenis" class="min-w-0">
+        <DsNativeSelect
           id="paper-jenis"
           v-model="jenis"
           name="jenis_soalan"
@@ -162,9 +160,9 @@ async function submit(): Promise<void> {
           <option value="">-- Pilih Jenis --</option>
           <option v-for="t in TYPES" :key="t" :value="t">{{ t }}</option>
           <option value="Lain-lain">Lain-lain</option>
-        </NativeSelect>
-      </UFormField>
-      <UFormField label="Matapelajaran *" name="paper-subject" class="min-w-0">
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField label="Matapelajaran *" name="paper-subject" class="min-w-0">
         <UInput
           id="paper-subject"
           type="text"
@@ -175,9 +173,9 @@ async function submit(): Promise<void> {
           class="w-full"
           data-testid="paper-subject"
         />
-      </UFormField>
-      <UFormField label="Tingkatan" name="paper-tingkatan" class="min-w-0">
-        <NativeSelect
+      </DsFormField>
+      <DsFormField label="Tingkatan" name="paper-tingkatan" class="min-w-0">
+        <DsNativeSelect
           id="paper-tingkatan"
           v-model="tingkatanSel"
           name="tingkatan"
@@ -185,9 +183,9 @@ async function submit(): Promise<void> {
         >
           <option value="">-- Semua / Tidak Pasti --</option>
           <option v-for="n in 5" :key="n" :value="String(n)">Tingkatan {{ n }}</option>
-        </NativeSelect>
-      </UFormField>
-      <UFormField label="Tahun" name="paper-tahun" class="min-w-0">
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField label="Tahun" name="paper-tahun" class="min-w-0">
         <UInput
           id="paper-tahun"
           type="number"
@@ -198,8 +196,8 @@ async function submit(): Promise<void> {
           class="w-full"
           data-testid="paper-tahun"
         />
-      </UFormField>
-      <UFormField label="Disediakan Oleh" name="paper-oleh" class="min-w-0 md:col-span-2">
+      </DsFormField>
+      <DsFormField label="Disediakan Oleh" name="paper-oleh" class="min-w-0 md:col-span-2">
         <UInput
           id="paper-oleh"
           type="text"
@@ -209,8 +207,8 @@ async function submit(): Promise<void> {
           class="w-full"
           data-testid="paper-oleh"
         />
-      </UFormField>
-      <UFormField label="Catatan Tambahan" name="paper-catatan" class="min-w-0 md:col-span-2">
+      </DsFormField>
+      <DsFormField label="Catatan Tambahan" name="paper-catatan" class="min-w-0 md:col-span-2">
         <UTextarea
           id="paper-catatan"
           name="catatan"
@@ -220,27 +218,20 @@ async function submit(): Promise<void> {
           class="w-full"
           data-testid="paper-catatan"
         />
-      </UFormField>
+      </DsFormField>
       <div class="min-w-0 md:col-span-2">
-        <label for="paper-files" class="mb-2 block text-label text-highlighted"
-          >Fail Soalan + Skema *</label
-        >
-        <label
-          for="paper-files"
-          class="flex min-h-11 items-center justify-center px-4 py-4 text-center text-body text-muted hover:text-default"
-          data-testid="paper-drop"
-        >
-          Klik untuk pilih fail PDF (teks), DOCX, XLSX — maks 5 fail, 20MB setiap fail
-        </label>
-        <NativeFile
-          id="paper-files"
-          hidden
+        <p class="mb-2 text-label text-highlighted">Fail Soalan + Skema *</p>
+        <DsFileField
+          :model-value="files"
           name="files[]"
           multiple
           required
           accept=".pdf,.doc,.docx,.xls,.xlsx"
+          :max-size-mb="20"
+          preview="none"
+          label="Klik untuk pilih fail PDF (teks), DOCX, XLSX — maks 5 fail, 20MB setiap fail"
           data-testid="paper-files"
-          @change="onFiles"
+          @update:model-value="onFiles"
         />
         <ul v-if="files.length" class="mt-2 flex flex-col gap-1" data-testid="paper-file-list">
           <li
@@ -279,5 +270,5 @@ async function submit(): Promise<void> {
         >
       </div>
     </form>
-  </UCard>
+  </DsPanel>
 </template>

@@ -174,7 +174,11 @@
     { "glob": "src/modules/m06-spm/pages/**", "level": "page" },
     { "glob": "src/modules/m06-spm/components/**", "level": "page" },
     { "glob": "src/modules/m02-users-schools/pages/UserPackagesPage.vue", "level": "page" },
-    { "glob": "src/modules/m22-support-tickets/pages/**", "level": "page" }
+    { "glob": "src/modules/m22-support-tickets/pages/**", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/pages/**", "level": "page" },
+    { "glob": "src/modules/m10-teacher-class/components/**", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/pages/**", "level": "page" },
+    { "glob": "src/modules/m27-school-admin/components/**", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

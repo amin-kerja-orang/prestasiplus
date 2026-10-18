@@ -5,8 +5,20 @@
  * the row has an add button (#16) for the class chosen in the "Tambah pelajar ke:" bar. A card at
  * every width (layers, no lines); the name links to the student's prestasi page.
  */
+import { DsIdentity, DsPanel, DsStatusBadge } from '@/ds'
+
 import type { GuruStudent } from '../../api/types'
 import { PELAJAR_COPY } from './copy'
+
+/** Two-letter avatar initials of a name. */
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p.charAt(0).toUpperCase())
+    .join('')
+}
 
 defineProps<{
   student: GuruStudent
@@ -24,17 +36,19 @@ defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: num
 
 <template>
   <li class="min-w-0" data-testid="student-row" :data-student-id="student.id">
-    <UCard :ui="{ body: 'p-3 sm:p-3' }">
+    <DsPanel>
       <div class="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div class="flex min-w-0 flex-1 items-center gap-3">
-          <UAvatar :alt="student.name" size="md" />
           <div class="min-w-0 flex-1">
-            <p class="text-label break-words text-highlighted" data-testid="student-name">
-              {{ student.name }}
-            </p>
-            <p v-if="student.levelName" class="text-caption text-muted" data-testid="student-level">
-              {{ student.levelName }}
-            </p>
+            <DsIdentity
+              :name="student.name"
+              :sub="student.levelName ?? undefined"
+              :initials="initialsOf(student.name)"
+            >
+              <template #name
+                ><span data-testid="student-name">{{ student.name }}</span></template
+              >
+            </DsIdentity>
             <ul v-if="student.classNames.length > 0" class="mt-2 flex flex-wrap items-center gap-2">
               <li
                 v-for="cls in student.classNames"
@@ -60,14 +74,12 @@ defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: num
           </div>
         </div>
         <template v-if="mode === 'school'">
-          <UBadge
+          <DsStatusBadge
             v-if="alreadyIn"
-            color="success"
-            variant="subtle"
-            icon="i-ph-check-circle-duotone"
+            status="active"
+            :label="PELAJAR_COPY.inClass"
             data-testid="student-in-class"
-            >{{ PELAJAR_COPY.inClass }}</UBadge
-          >
+          />
           <UButton
             v-else
             type="button"
@@ -80,6 +92,6 @@ defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: num
           >
         </template>
       </div>
-    </UCard>
+    </DsPanel>
   </li>
 </template>

@@ -18,7 +18,16 @@ import { useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import {
+  DsBackLink,
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatusBadge,
+} from '@/ds'
 
 import {
   fetchSchoolPupil,
@@ -38,7 +47,7 @@ const flash = useFlash()
 const listPath = computed(() => ROLE_CONFIG[props.role].listPath)
 const isPupil = computed(() => props.role === 'student')
 
-const { data: loaded, error: loadError } = useApi(
+const { data: loaded, error: loadError, reload } = useApi(
   (signal) =>
     props.role === 'student'
       ? fetchSchoolPupil(props.id, { signal })
@@ -117,38 +126,28 @@ async function submit(): Promise<void> {
   <DsPage class="max-w-4xl" :data-testid="isPupil ? 'sp-edit-page' : 'sg-edit-page'">
     <!-- A failed load other than 404 / 403: the server message and the way back (no M27 copy, FR-M27-48). -->
     <div v-if="shownError" class="flex flex-col gap-3" data-testid="user-load-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning-circle"
-        :title="errorLines(shownError).join(' ')"
-        role="alert"
-      />
-      <div>
-        <UButton
-          :to="listPath"
-          color="neutral"
-          variant="soft"
-          size="lg"
-          icon="i-ph-arrow-left"
-          class="min-h-11"
-          data-testid="user-back"
-          >Batal</UButton
-        >
-      </div>
+      <DsLoadError :message="errorLines(shownError).join(' ')" @retry="reload" />
+      <DsBackLink :to="listPath" label="Batal" data-testid="user-back" />
     </div>
 
-    <UCard v-else-if="loaded === null" data-testid="user-form-skeleton">
+    <DsPanel v-else-if="loaded === null" data-testid="user-form-skeleton">
       <div class="flex flex-col gap-6">
         <USkeleton class="h-14 w-full" />
         <USkeleton v-for="n in 3" :key="n" class="h-11 w-full" />
       </div>
-    </UCard>
+    </DsPanel>
 
-    <form v-else method="post" novalidate data-testid="user-form" @submit.prevent="submit">
-      <UCard>
-        <!-- FR-M27-94: profile card -->
-        <div class="mb-4 flex items-center gap-4" data-testid="user-profile">
+    <form
+      v-else
+      method="post"
+      novalidate
+      class="flex min-w-0 flex-col gap-6"
+      data-testid="user-form"
+      @submit.prevent="submit"
+    >
+      <!-- FR-M27-94: profile card -->
+      <DsPanel data-testid="user-profile">
+        <div class="flex items-center gap-4">
           <UAvatar
             :alt="loaded.name"
             size="3xl"
@@ -174,157 +173,133 @@ async function submit(): Promise<void> {
             </p>
           </div>
         </div>
+      </DsPanel>
 
-        <div ref="alertBox" class="empty:hidden">
-          <UAlert
-            v-if="errors.length"
-            color="error"
-            variant="subtle"
-            icon="i-ph-warning-circle"
-            class="mb-4"
-            role="alert"
-            data-testid="user-form-alert"
-          >
-            <template #description>
-              <ul class="flex flex-col gap-1">
-                <li v-for="line in errors" :key="line">{{ line }}</li>
-              </ul>
-            </template>
-          </UAlert>
-        </div>
+      <div ref="alertBox" class="empty:hidden">
+        <UAlert
+          v-if="errors.length"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          role="alert"
+          data-testid="user-form-alert"
+        >
+          <template #description>
+            <ul class="flex flex-col gap-1">
+              <li v-for="line in errors" :key="line">{{ line }}</li>
+            </ul>
+          </template>
+        </UAlert>
+      </div>
 
-        <div class="grid grid-cols-1 gap-x-6 gap-y-6 md:grid-cols-2">
-          <UFormField label="Nama *" name="user-name">
-            <UInput
-              id="user-name"
-              v-model="form.name"
-              type="text"
-              name="name"
-              icon="i-ph-user"
-              class="w-full"
-              data-testid="user-name"
-            />
-          </UFormField>
+      <DsFormSection title="Maklumat Pengguna" icon="user-circle" accent="action" :columns="2">
+        <DsFormField label="Nama" required name="user-name">
+          <UInput
+            id="user-name"
+            v-model="form.name"
+            type="text"
+            name="name"
+            icon="i-ph-user"
+            class="w-full"
+            data-testid="user-name"
+          />
+        </DsFormField>
 
-          <UFormField label="Emel *" name="user-email">
-            <UInput
-              id="user-email"
-              v-model="form.email"
-              type="email"
-              name="email"
-              icon="i-ph-envelope-simple"
-              class="w-full"
-              data-testid="user-email"
-            />
-          </UFormField>
+        <DsFormField label="Emel" required name="user-email">
+          <UInput
+            id="user-email"
+            v-model="form.email"
+            type="email"
+            name="email"
+            icon="i-ph-envelope-simple"
+            class="w-full"
+            data-testid="user-email"
+          />
+        </DsFormField>
 
-          <UFormField label="No. Telefon (Pilihan)" name="user-phone">
-            <UInput
-              id="user-phone"
-              v-model="form.phone"
-              type="tel"
-              name="phone"
-              maxlength="14"
-              icon="i-ph-phone"
-              placeholder="Cth: 0191234567"
-              class="w-full"
-              data-testid="user-phone"
-            />
-          </UFormField>
+        <DsFormField label="No. Telefon (Pilihan)" name="user-phone">
+          <UInput
+            id="user-phone"
+            v-model="form.phone"
+            type="tel"
+            name="phone"
+            maxlength="14"
+            icon="i-ph-phone"
+            placeholder="Cth: 0191234567"
+            class="w-full"
+            data-testid="user-phone"
+          />
+        </DsFormField>
 
-          <!-- FR-M27-94: the read-only status line of S9 (pupil activation is not the school admin's). -->
-          <UFormField v-if="isPupil" label="Status" data-testid="user-status-line">
-            <p class="flex min-h-11 items-center">
-              <UBadge color="success" variant="soft" label="Aktif" data-testid="user-status-value" />
-            </p>
-          </UFormField>
+        <!-- FR-M27-94: the read-only status line of S9 (pupil activation is not the school admin's). -->
+        <DsFormField v-if="isPupil" label="Status" data-testid="user-status-line">
+          <p class="flex min-h-11 items-center">
+            <DsStatusBadge status="active" data-testid="user-status-value" />
+          </p>
+        </DsFormField>
+      </DsFormSection>
 
-          <!-- FR-M27-95 / 104: "Reset Kata Laluan" -->
-          <div class="flex flex-col gap-3 md:col-span-2">
-            <UButton
-              type="button"
-              color="neutral"
-              variant="soft"
-              size="lg"
-              block
-              icon="i-ph-key"
-              :trailing-icon="passwordOpen ? 'i-ph-caret-up' : 'i-ph-caret-down'"
-              :aria-expanded="passwordOpen"
-              class="min-h-11 justify-start"
-              data-testid="user-password-toggle"
-              @click="passwordOpen = !passwordOpen"
-            >
-              <span class="flex min-w-0 flex-1 flex-col items-start text-start">
-                <span class="text-label">Reset Kata Laluan</span>
-                <span class="text-caption text-muted">
-                  Klik untuk buka bahagian reset kata laluan
-                </span>
-              </span>
-            </UButton>
-            <UCard
-              v-show="passwordOpen"
-              variant="soft"
-              :ui="{ body: 'grid grid-cols-1 gap-4 p-4 sm:p-4 md:grid-cols-2' }"
-              data-testid="user-password-panel"
-            >
-              <UFormField label="Kata Laluan Baru" name="user-new-password">
-                <UInput
-                  id="user-new-password"
-                  v-model="form.newPassword"
-                  type="password"
-                  name="new_password"
-                  autocomplete="new-password"
-                  icon="i-ph-lock-simple"
-                  placeholder="Minimum 6 aksara"
-                  class="w-full"
-                  data-testid="user-new-password"
-                />
-              </UFormField>
-              <UFormField label="Sahkan Kata Laluan Baru" name="user-new-password-confirm">
-                <UInput
-                  id="user-new-password-confirm"
-                  v-model="form.newPasswordConfirmation"
-                  type="password"
-                  name="new_password_confirmation"
-                  autocomplete="new-password"
-                  icon="i-ph-lock-simple"
-                  placeholder="Taip semula kata laluan baru"
-                  class="w-full"
-                  data-testid="user-new-password-confirm"
-                />
-              </UFormField>
-              <p class="flex items-start gap-2 text-caption text-muted md:col-span-2">
-                <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" aria-hidden="true" />
-                Kosongkan jika tidak mahu tukar kata laluan. Kata laluan baru akan berkuat kuasa
-                serta-merta.
-              </p>
-            </UCard>
-          </div>
-        </div>
-
-        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <!-- FR-M27-95 / 104: "Reset Kata Laluan" -->
+      <DsFormSection
+        title="Reset Kata Laluan"
+        icon="key"
+        accent="heat"
+        description="Klik untuk buka bahagian reset kata laluan"
+        :columns="2"
+      >
+        <template #actions>
           <UButton
-            :to="listPath"
+            type="button"
             color="neutral"
-            variant="ghost"
-            size="lg"
-            icon="i-ph-arrow-left"
-            class="min-h-11 justify-center"
-            data-testid="user-cancel"
-            >Batal</UButton
-          >
-          <UButton
-            type="submit"
-            size="lg"
-            :loading="saving"
-            :disabled="saving"
-            :icon="saving ? undefined : 'i-ph-floppy-disk'"
-            class="min-h-11 justify-center"
-            data-testid="user-submit"
-            >Kemaskini</UButton
-          >
+            variant="soft"
+            :trailing-icon="passwordOpen ? 'i-ph-caret-up' : 'i-ph-caret-down'"
+            :aria-expanded="passwordOpen"
+            :label="passwordOpen ? 'Tutup' : 'Buka'"
+            class="min-h-11"
+            data-testid="user-password-toggle"
+            @click="passwordOpen = !passwordOpen"
+          />
+        </template>
+        <div
+          v-show="passwordOpen"
+          class="grid min-w-0 gap-6 sm:col-span-2 sm:grid-cols-2"
+          data-testid="user-password-panel"
+        >
+          <DsFormField label="Kata Laluan Baru" name="user-new-password">
+            <UInput
+              id="user-new-password"
+              v-model="form.newPassword"
+              type="password"
+              name="new_password"
+              autocomplete="new-password"
+              icon="i-ph-lock-simple"
+              placeholder="Minimum 6 aksara"
+              class="w-full"
+              data-testid="user-new-password"
+            />
+          </DsFormField>
+          <DsFormField label="Sahkan Kata Laluan Baru" name="user-new-password-confirm">
+            <UInput
+              id="user-new-password-confirm"
+              v-model="form.newPasswordConfirmation"
+              type="password"
+              name="new_password_confirmation"
+              autocomplete="new-password"
+              icon="i-ph-lock-simple"
+              placeholder="Taip semula kata laluan baru"
+              class="w-full"
+              data-testid="user-new-password-confirm"
+            />
+          </DsFormField>
+          <p class="flex items-start gap-2 text-caption text-muted sm:col-span-2">
+            <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" aria-hidden="true" />
+            Kosongkan jika tidak mahu tukar kata laluan. Kata laluan baru akan berkuat kuasa
+            serta-merta.
+          </p>
         </div>
-      </UCard>
+      </DsFormSection>
+
+      <DsFormBar :cancel-to="listPath" submit-label="Kemaskini" :saving="saving" />
     </form>
   </DsPage>
 </template>

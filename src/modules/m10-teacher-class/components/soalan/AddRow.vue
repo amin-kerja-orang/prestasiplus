@@ -6,9 +6,9 @@
  * nothing when a field is empty (live) and closes the panel through `close()` after a success.
  * The select stays a native `<select>` (native validation and keyboard, cascading option lists).
  */
+import { DsPanel, DsNativeSelect } from '@/ds'
 import { reactive, ref } from 'vue'
 
-import NativeSelect from '../native/NativeSelect.vue'
 import type { PanelField, SelectOption } from './lib'
 
 const props = defineProps<{
@@ -48,10 +48,10 @@ defineExpose({ done })
   <div class="min-w-0" :data-testid="testid">
     <label :for="id" class="mb-2 block text-label text-highlighted">{{ label }}</label>
     <div class="flex min-w-0 items-center gap-2">
-      <NativeSelect :id="id" v-model="model" :disabled="disabled" :data-testid="`${testid}-select`">
+      <DsNativeSelect :id="id" v-model="model" :disabled="disabled" :data-testid="`${testid}-select`">
         <option value="">{{ placeholder }}</option>
         <option v-for="o in options" :key="o.value" :value="o.value">{{ o.label }}</option>
-      </NativeSelect>
+      </DsNativeSelect>
       <UButton
         type="button"
         color="neutral"
@@ -65,13 +65,8 @@ defineExpose({ done })
         @click="open = !open"
       />
     </div>
-    <UCard
-      v-show="open"
-      variant="subtle"
-      class="mt-2"
-      :ui="{ body: 'flex min-w-0 flex-col gap-2 p-3 sm:p-3' }"
-      :data-testid="`${testid}-panel`"
-    >
+    <DsPanel v-show="open" tone="inset" class="mt-2" :data-testid="`${testid}-panel`">
+<div class="flex min-w-0 flex-col gap-2">
       <p class="text-label text-highlighted">{{ panelTitle }}</p>
       <div class="flex min-w-0 flex-wrap gap-2">
         <UInput
@@ -101,6 +96,7 @@ defineExpose({ done })
           >Batal</UButton
         >
       </div>
-    </UCard>
+    </div>
+</DsPanel>
   </div>
 </template>

@@ -10,7 +10,7 @@ const openTab = useOpenTab()
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-lightning" title="Live Feed" testid="cc-panel-feed">
+  <BoardPanel icon="lightning" accent="action" title="Live Feed" testid="cc-panel-feed">
     <p v-if="feed.length === 0" class="text-body text-muted" data-testid="cc-feed-empty">
       {{ S2_COPY.noActivity }}
     </p>

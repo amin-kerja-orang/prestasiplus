@@ -15,23 +15,32 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+} from '@/ds'
 
 import {
   createSchoolPupil,
   fetchSchoolPupilFormOptions,
   type CreatePupilResult,
 } from '../api/school-admin'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import LockedSchoolLabel from '../components/users/LockedSchoolLabel.vue'
 import PupilCredentialBlock from '../components/users/PupilCredentialBlock.vue'
 import { errorLines, PUPIL_LIST_PATH } from '../components/users/users-format'
 
 const flash = useFlash()
 
-const { data: options, error: loadError } = useApi((signal) =>
-  fetchSchoolPupilFormOptions({ signal }),
-)
+const {
+  data: options,
+  error: loadError,
+  reload: reloadOptions,
+} = useApi((signal) => fetchSchoolPupilFormOptions({ signal }))
 const refused = computed(() => isApiError(loadError.value) && loadError.value.status === 403)
 watch(
   refused,
@@ -79,127 +88,109 @@ async function submit(): Promise<void> {
   <DsPage class="max-w-2xl" data-testid="sp-create-page">
     <PupilCredentialBlock v-if="credential" :credential="credential" />
 
-    <UAlert
+    <DsLoadError
       v-if="loadError && !refused"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle"
-      :title="errorLines(loadError).join(' ')"
-      role="alert"
-      data-testid="user-load-error"
+      :message="errorLines(loadError).join(' ')"
+      testid="user-load-error"
+      @retry="reloadOptions"
     />
 
-    <UCard v-else-if="!options" data-testid="user-form-skeleton">
+    <DsPanel v-else-if="!options" data-testid="user-form-skeleton">
       <div class="flex flex-col gap-6">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
       </div>
-    </UCard>
+    </DsPanel>
 
-    <form v-else method="post" novalidate data-testid="user-form" @submit.prevent="submit">
-      <UCard>
-        <div ref="alertBox" class="empty:hidden">
-          <UAlert
-            v-if="errors.length"
-            color="error"
-            variant="subtle"
-            icon="i-ph-warning-circle"
-            class="mb-4"
-            role="alert"
-            data-testid="user-form-alert"
-          >
-            <template #description>
-              <ul class="flex flex-col gap-1">
-                <li v-for="line in errors" :key="line">{{ line }}</li>
-              </ul>
-            </template>
-          </UAlert>
-        </div>
-
-        <div class="flex flex-col gap-6">
-          <UFormField label="Nama penuh *" name="pupil-name">
-            <UInput
-              id="pupil-name"
-              v-model="form.name"
-              type="text"
-              name="name"
-              icon="i-ph-user"
-              class="w-full"
-              data-testid="pupil-name"
-            />
-          </UFormField>
-
-          <LockedSchoolLabel :school="options.school" />
-
-          <UFormField label="Kelas" name="pupil-class">
-            <NativeSelect
-              id="pupil-class"
-              v-model="form.classId"
-              name="classId"
-              data-testid="pupil-class"
-            >
-              <option value="">Tiada kelas</option>
-              <option v-for="c in options.classes" :key="c.id" :value="String(c.id)">
-                {{ c.name }}
-              </option>
-            </NativeSelect>
-          </UFormField>
-
-          <UFormField label="Emel *" name="pupil-email">
-            <UInput
-              id="pupil-email"
-              v-model="form.email"
-              type="email"
-              name="email"
-              icon="i-ph-envelope-simple"
-              class="w-full"
-              data-testid="pupil-email"
-            />
-          </UFormField>
-
-          <UFormField label="Kata laluan" name="pupil-password">
-            <UInput
-              id="pupil-password"
-              v-model="form.password"
-              type="password"
-              name="password"
-              autocomplete="new-password"
-              icon="i-ph-key"
-              :placeholder="options.passwordPlaceholder"
-              class="w-full"
-              data-testid="pupil-password"
-            />
-            <template #help>
-              <span data-testid="pupil-password-hint">{{ options.passwordHint }}</span>
-            </template>
-          </UFormField>
-        </div>
-
-        <div
-          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between"
-          data-testid="user-form-footer"
+    <form
+      v-else
+      method="post"
+      novalidate
+      class="flex min-w-0 flex-col gap-6"
+      data-testid="user-form"
+      @submit.prevent="submit"
+    >
+      <div ref="alertBox" class="empty:hidden">
+        <UAlert
+          v-if="errors.length"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          role="alert"
+          data-testid="user-form-alert"
         >
-          <UButton
-            :to="PUPIL_LIST_PATH"
-            color="neutral"
-            variant="ghost"
-            size="lg"
-            icon="i-ph-arrow-left"
-            class="min-h-11 justify-center"
-            data-testid="user-cancel"
-            >Batal</UButton
+          <template #description>
+            <ul class="flex flex-col gap-1">
+              <li v-for="line in errors" :key="line">{{ line }}</li>
+            </ul>
+          </template>
+        </UAlert>
+      </div>
+
+      <DsFormSection title="Maklumat Pelajar" icon="graduation-cap" accent="action">
+        <DsFormField label="Nama penuh" required name="pupil-name">
+          <UInput
+            id="pupil-name"
+            v-model="form.name"
+            type="text"
+            name="name"
+            icon="i-ph-user"
+            class="w-full"
+            data-testid="pupil-name"
+          />
+        </DsFormField>
+
+        <LockedSchoolLabel :school="options.school" />
+
+        <DsFormField label="Kelas" native for="pupil-class">
+          <DsNativeSelect
+            id="pupil-class"
+            v-model="form.classId"
+            name="classId"
+            data-testid="pupil-class"
           >
-          <UButton
-            type="submit"
-            size="lg"
-            :loading="saving"
-            :disabled="saving"
-            :icon="saving ? undefined : 'i-ph-user-plus'"
-            class="min-h-11 justify-center"
-            data-testid="user-submit"
-            >Cipta Pelajar</UButton
-          >
-        </div>
-      </UCard>
+            <option value="">Tiada kelas</option>
+            <option v-for="c in options.classes" :key="c.id" :value="String(c.id)">
+              {{ c.name }}
+            </option>
+          </DsNativeSelect>
+        </DsFormField>
+
+        <DsFormField label="Emel" required name="pupil-email">
+          <UInput
+            id="pupil-email"
+            v-model="form.email"
+            type="email"
+            name="email"
+            icon="i-ph-envelope-simple"
+            class="w-full"
+            data-testid="pupil-email"
+          />
+        </DsFormField>
+
+        <DsFormField label="Kata laluan" native for="pupil-password">
+          <UInput
+            id="pupil-password"
+            v-model="form.password"
+            type="password"
+            name="password"
+            autocomplete="new-password"
+            icon="i-ph-key"
+            :placeholder="options.passwordPlaceholder"
+            class="w-full"
+            data-testid="pupil-password"
+          />
+          <p class="text-caption text-muted" data-testid="pupil-password-hint">
+            {{ options.passwordHint }}
+          </p>
+        </DsFormField>
+      </DsFormSection>
+
+      <DsFormBar
+        :cancel-to="PUPIL_LIST_PATH"
+        submit-label="Cipta Pelajar"
+        submit-icon="i-ph-user-plus"
+        :saving="saving"
+      />
     </form>
   </DsPage>
 </template>

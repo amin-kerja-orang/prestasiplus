@@ -111,7 +111,7 @@ describe('S1 GuruDashboardPage', () => {
       return [
         c.get('[data-ds="stat-tile"] span.text-caption').text(),
         c.get('[data-ds="stat-tile"] span.tabular').text(),
-        c.get('[data-testid="stat-caption"]').text(),
+        c.get('[data-ds="stat-tile-sub"]').text(),
       ]
     })
     expect(cards).toEqual([
@@ -200,7 +200,7 @@ describe('S1 GuruDashboardPage', () => {
     api.fetchGuruDashboard.mockRejectedValueOnce(new Error('x'))
     const f = await mountPage()
     expect(f.find('[data-testid="dashboard-error"]').exists()).toBe(true)
-    await f.get('[data-testid="dashboard-retry"]').trigger('click')
+    await f.get('[data-testid="dashboard-error"] button').trigger('click')
     await flushPromises()
     expect(f.find('[data-testid="dashboard-error"]').exists()).toBe(false)
     expect(f.find('[data-testid="checklist-card"]').exists()).toBe(true)

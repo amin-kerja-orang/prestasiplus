@@ -5,7 +5,7 @@
  * links download a file (contract #63; live answers 200 with the file) and "Cipta Set" / "Senarai Set"
  * go to S26 / S25.
  */
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadAudioKbatTemplate } from '../../api/guru'
@@ -22,7 +22,7 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
 
 <template>
   <div class="flex min-w-0 flex-col gap-4">
-    <UCard data-testid="audio-kbat-card">
+    <DsPanel data-testid="audio-kbat-card">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex min-w-0 items-start gap-3">
           <DsIconChip icon="i-ph-headphones-duotone" size="lg" />
@@ -78,9 +78,9 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
           >
         </div>
       </div>
-    </UCard>
+    </DsPanel>
 
-    <UCard data-testid="ai-card">
+    <DsPanel data-testid="ai-card">
       <div class="flex min-w-0 items-center gap-3">
         <DsIconChip icon="i-ph-sparkle-duotone" size="lg" />
         <div class="min-w-0">
@@ -88,6 +88,6 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
           <p class="text-body text-muted">Upload dokumen DOCX/PDF, AI extract soalan automatik</p>
         </div>
       </div>
-    </UCard>
+    </DsPanel>
   </div>
 </template>

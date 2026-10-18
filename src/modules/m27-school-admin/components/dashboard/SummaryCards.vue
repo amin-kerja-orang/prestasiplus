@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 
 import type { SchoolDashboard } from '../../api/dashboard'
-import StatRow, { type StatItem } from '../shared/StatRow.vue'
+import { DsStatRow, type StatItem } from '@/ds'
 import { count } from './dashboard-format'
 
 const props = defineProps<{ cards: SchoolDashboard['cards'] }>()
@@ -19,25 +19,28 @@ const items = computed<StatItem[]>(() => {
       key: 'pupils',
       label: 'Jumlah Pelajar',
       value: count(props.cards.pupils),
-      icon: 'i-ph-graduation-cap',
+      icon: 'graduation-cap',
+      accent: 'action',
     },
     {
       key: 'teachers',
       label: 'Jumlah Guru',
       value: count(props.cards.teachers),
-      icon: 'i-ph-chalkboard-teacher',
+      icon: 'chalkboard-teacher',
+      accent: 'friend',
     },
     {
       key: 'classes',
       label: 'Kelas Aktif',
       value: count(props.cards.activeClasses),
-      icon: 'i-ph-door-open',
+      icon: 'door-open',
+      accent: 'win',
     },
     {
       key: 'subscription',
       label: 'Langganan',
       value: props.cards.subscription.label,
-      icon: 'i-ph-identification-card',
+      icon: 'identification-card',
       accent: subscribed ? 'action' : 'trial',
     },
   ]
@@ -45,5 +48,5 @@ const items = computed<StatItem[]>(() => {
 </script>
 
 <template>
-  <StatRow :items="items" prefix="sd-card" nav-id="sd-cards" />
+  <DsStatRow :items="items" prefix="sd-card" part-prefix="sd-card" data-testid="sd-cards" :cols="4" />
 </template>

@@ -49,6 +49,8 @@ const props = withDefaults(
     delta?: StatDelta
     /** Skeleton in place of the content. */
     loading?: boolean
+    /** Test-id prefix of the parts (`<prefix>-value`, `-label`, `-sub`) for tests that read the figures. */
+    partPrefix?: string
   }>(),
   {
     sub: undefined,
@@ -62,8 +64,13 @@ const props = withDefaults(
     to: undefined,
     delta: undefined,
     loading: false,
+    partPrefix: undefined,
   },
 )
+
+function part(name: 'value' | 'label' | 'sub'): string | undefined {
+  return props.partPrefix ? `${props.partPrefix}-${name}` : undefined
+}
 
 const personality = usePersonality()
 // Decided once per tile at mount; non-reactive on purpose (the entry is a one-shot).
@@ -98,9 +105,10 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
         <span
           class="tabular truncate font-display text-heading leading-tight font-extrabold"
           :class="valueClass"
+          :data-testid="part('value')"
           >{{ value }}</span
         >
-        <span class="truncate text-label font-semibold text-muted">{{ unit }}</span>
+        <span class="truncate text-label font-semibold text-muted" :data-testid="part('label')">{{ unit }}</span>
       </div>
     </template>
   </component>
@@ -127,14 +135,16 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
       <span
         class="tabular font-display font-extrabold"
         :class="[valueClass, roomy ? 'text-title' : 'text-heading']"
+        :data-testid="part('value')"
         >{{ value }}</span
       >
       <span
         class="text-muted"
         :class="roomy ? 'text-body font-medium' : '-mt-1 text-caption font-semibold'"
+        :data-testid="part('label')"
         >{{ unit }}</span
       >
-      <span v-if="sub" class="text-caption text-muted" data-ds="stat-tile-sub">{{ sub }}</span>
+      <span v-if="sub" class="text-caption text-muted" data-ds="stat-tile-sub" :data-testid="part('sub')">{{ sub }}</span>
       <span
         v-if="delta"
         class="tabular inline-flex items-center gap-1 text-caption font-semibold"

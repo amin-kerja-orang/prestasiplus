@@ -143,10 +143,12 @@ describe('route and header (FR-M27-38, 40, 44)', () => {
       title: 'Laporan Bulanan',
       subtitle: 'SMK Contoh Ujian',
     })
-    expect(text(w, 'lb-crumb-back')).toBe('← Dashboard Sekolah')
-    expect(w.get('[data-testid="lb-crumb-back"]').attributes('href')).toBe('/admin-sekolah')
-    expect(text(w, 'lb-crumb-current')).toBe('Laporan Bulanan')
-    expect(w.get('[data-testid="lb-crumb-current"]').element.tagName).not.toBe('A')
+    const back = w.get('[data-testid="lb-breadcrumb"] a')
+    expect(back.text()).toBe('Dashboard Sekolah')
+    expect(back.attributes('href')).toBe('/admin-sekolah')
+    const cur = w.get('[data-testid="lb-breadcrumb"] [aria-current="page"]')
+    expect(cur.text()).toBe('Laporan Bulanan')
+    expect(cur.element.tagName).not.toBe('A')
   })
 })
 

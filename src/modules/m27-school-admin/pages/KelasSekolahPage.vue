@@ -17,7 +17,7 @@ import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { useSession } from '@/composables/useSession'
-import { DsPage, DsStatTile } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage, DsStatTile } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchSchoolClasses } from '../api/school-admin'
@@ -42,7 +42,7 @@ const pageNo = computed(() => {
   return Number.isInteger(n) && n >= 1 ? n : 1
 })
 
-const { data, error, loading } = useApi(
+const { data, error, loading, reload } = useApi(
   (signal) =>
     fetchSchoolClasses({
       level: level.value || null,
@@ -93,24 +93,15 @@ function goPage(page: number) {
 <template>
   <DsPage data-testid="kl-page">
     <template v-if="data">
-      <div>
-        <UButton
-          to="/admin-sekolah"
-          color="neutral"
-          variant="ghost"
-          icon="i-ph-arrow-left"
-          class="min-h-11"
-          data-testid="kl-crumb-back"
-          >Dashboard Sekolah</UButton
-        >
-      </div>
+      <DsBackLink to="/admin-sekolah" label="Dashboard Sekolah" data-testid="kl-crumb-back" />
 
       <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="sm:w-64" data-testid="kl-tile">
           <DsStatTile
             :value="formatCount(data.tiles.activeClasses)"
             unit="Kelas Aktif"
-            icon="i-ph-chalkboard"
+            icon="chalkboard"
+            accent="win"
           />
         </div>
         <p class="text-body text-muted" data-testid="kl-displayed">
@@ -129,14 +120,11 @@ function goPage(page: number) {
         @page="goPage"
       />
     </template>
-    <UAlert
+    <DsLoadError
       v-else-if="error && !refused"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle"
-      :title="error.message"
-      role="alert"
-      data-testid="kl-error"
+      :message="error.message"
+      testid="kl-error"
+      @retry="reload"
     />
     <div v-else-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="kl-loading">
       <USkeleton class="h-24 w-full" />

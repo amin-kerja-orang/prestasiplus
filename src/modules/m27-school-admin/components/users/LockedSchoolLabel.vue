@@ -4,6 +4,8 @@
  * "{code} · {district} · {state}" without empty parts. No search, no input: the school is the session school.
  * Locked-field treatment: muted surface, lock icon, no focus ring.
  */
+import { DsFormField, DsPanel } from '@/ds'
+
 import type { SchoolInfo } from '../../api/school-admin'
 import { schoolMeta } from './users-format'
 
@@ -11,8 +13,9 @@ defineProps<{ school: Pick<SchoolInfo, 'name' | 'code' | 'district' | 'state'> }
 </script>
 
 <template>
-  <UFormField label="Sekolah" data-testid="user-school">
-    <UCard variant="soft" :ui="{ body: 'flex min-h-11 items-center gap-3 p-3 sm:p-3' }">
+  <DsFormField label="Sekolah" data-testid="user-school">
+    <DsPanel tone="inset">
+<div class="flex min-h-11 items-center gap-3">
       <UIcon name="i-ph-buildings" class="size-5 shrink-0 text-muted" aria-hidden="true" />
       <div class="min-w-0 flex-1">
         <p class="break-words text-label text-highlighted" data-testid="user-school-name">
@@ -23,6 +26,7 @@ defineProps<{ school: Pick<SchoolInfo, 'name' | 'code' | 'district' | 'state'> }
         </p>
       </div>
       <UIcon name="i-ph-lock-simple" class="size-5 shrink-0 text-dimmed" aria-hidden="true" />
-    </UCard>
-  </UFormField>
+    </div>
+</DsPanel>
+  </DsFormField>
 </template>

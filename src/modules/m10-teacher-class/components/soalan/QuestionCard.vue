@@ -4,6 +4,7 @@
  * the question, options "A." … "D." (correct highlighted), "Penjelasan", footer "#{id}", source and
  * "Aktif", and the actions "Edit" (→ S24) and "Padam" (the owner confirms and deletes).
  */
+import { DsPanel } from '@/ds'
 import { ref } from 'vue'
 
 import { formatDateEn } from '@/lib/time'
@@ -19,7 +20,7 @@ const open = ref(false)
 
 <template>
   <li class="min-w-0" :data-question-id="question.id" data-testid="question-card">
-    <UCard>
+    <DsPanel>
       <UButton
         type="button"
         color="neutral"
@@ -83,7 +84,8 @@ const open = ref(false)
             :data-correct="question.correctAnswer === i ? 'true' : 'false'"
             data-testid="question-option"
           >
-            <UCard variant="subtle" :ui="{ body: 'flex min-w-0 items-start gap-2 p-3 sm:p-3' }">
+            <DsPanel tone="inset">
+<div class="flex min-w-0 items-start gap-2">
               <span class="min-w-0 grow text-body break-words text-default"
                 ><strong>{{ OPTION_LETTERS[i] }}.</strong> {{ opt }}</span
               >
@@ -94,13 +96,13 @@ const open = ref(false)
                 icon="i-ph-check-circle-duotone"
                 >Betul</UBadge
               >
-            </UCard>
+            </div>
+</DsPanel>
           </li>
         </ul>
-        <UCard
+        <DsPanel
           v-if="question.explanation"
-          variant="subtle"
-          :ui="{ body: 'p-3 sm:p-3' }"
+          tone="inset"
           data-testid="question-explanation"
         >
           <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
@@ -108,7 +110,7 @@ const open = ref(false)
             Penjelasan
           </p>
           <p class="text-body break-words text-default">{{ question.explanation }}</p>
-        </UCard>
+        </DsPanel>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-3 text-caption text-muted">
             <span class="inline-flex items-center gap-1" data-testid="question-id">
@@ -149,6 +151,6 @@ const open = ref(false)
           </div>
         </div>
       </div>
-    </UCard>
+    </DsPanel>
   </li>
 </template>

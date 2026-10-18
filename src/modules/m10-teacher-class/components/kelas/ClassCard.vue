@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** One class card (PROPOSED, FR-M10-29): name, subject, level, "{n} pelajar", join code, QR button. */
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import type { GuruClass } from '../../api/types'
 import { KELAS_COPY } from './copy'
@@ -11,7 +11,7 @@ defineEmits<{ qr: [id: number] }>()
 
 <template>
   <li class="min-w-0" data-testid="class-card" :data-class-id="item.id">
-    <UCard class="h-full">
+    <DsPanel class="h-full">
       <div class="flex items-start gap-3">
         <DsIconChip icon="i-ph-chalkboard-teacher-duotone" />
         <div class="flex min-w-0 grow flex-col gap-1">
@@ -47,6 +47,6 @@ defineEmits<{ qr: [id: number] }>()
       >
         {{ KELAS_COPY.qrButton }}
       </UButton>
-    </UCard>
+    </DsPanel>
   </li>
 </template>

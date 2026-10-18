@@ -8,7 +8,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsEmptyState, DsPage, DsPanel, DsLoadError } from '@/ds'
 
 import { fetchJoinedClasses } from '../api/guru'
 import { KELAS_COPY } from '../components/kelas-saya/copy'
@@ -29,17 +29,14 @@ const { data, error, loading, reload } = useApi((signal) => fetchJoinedClasses({
   <DsPage data-testid="kelas-saya-page">
     <JoinClassForm :initial-code="kod" @joined="reload" />
 
-    <div v-if="error" class="flex max-w-xl min-w-0 flex-col gap-3" data-testid="classes-error">
-      <UAlert
-        color="error"
-        variant="soft"
-        icon="i-ph-warning-circle-duotone"
-        :title="KELAS_COPY.loadFailed"
-      />
-      <UButton size="lg" class="min-h-11 self-start" data-testid="classes-retry" @click="reload">{{
-        KELAS_COPY.retry
-      }}</UButton>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="KELAS_COPY.loadFailed"
+      :retry-label="KELAS_COPY.retry"
+      class="max-w-xl"
+      testid="classes-error"
+      @retry="reload"
+    />
 
     <div
       v-else-if="loading && !data"
@@ -49,13 +46,13 @@ const { data, error, loading, reload } = useApi((signal) => fetchJoinedClasses({
       <UProgress animation="carousel" class="w-full max-w-xs" aria-label="Memuatkan" />
     </div>
 
-    <UCard v-else-if="data && data.data.length === 0" data-testid="classes-empty">
+    <DsPanel v-else-if="data && data.data.length === 0" data-testid="classes-empty">
       <DsEmptyState
         :title="KELAS_COPY.emptyTitle"
         :description="KELAS_COPY.emptyText"
         icon="i-ph-chalkboard-teacher-duotone"
       />
-    </UCard>
+    </DsPanel>
 
     <ul
       v-else-if="data"

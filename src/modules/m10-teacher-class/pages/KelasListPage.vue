@@ -6,7 +6,7 @@
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsPanel, DsLoadError } from '@/ds'
 
 import { fetchGuruClasses } from '../api/guru'
 import ClassCard from '../components/kelas/ClassCard.vue'
@@ -35,16 +35,12 @@ const qrClassId = ref<number | null>(null)
       {{ activeCount }} kelas aktif
     </p>
 
-    <UAlert
+    <DsLoadError
       v-if="error"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle-duotone"
-      :title="KELAS_COPY.loadFailed"
-      :actions="[
-        { label: 'Cuba Lagi', color: 'neutral', variant: 'soft', onClick: () => reload() },
-      ]"
-      role="alert"
+      :message="KELAS_COPY.loadFailed"
+      retry-label="Cuba Lagi"
+      testid="kelas-error"
+      @retry="reload"
     />
     <div
       v-else-if="!data"
@@ -55,7 +51,7 @@ const qrClassId = ref<number | null>(null)
       <USkeleton v-for="n in 3" :key="n" class="h-40 w-full" />
     </div>
 
-    <UCard v-else-if="classes.length === 0" data-testid="kelas-empty">
+    <DsPanel v-else-if="classes.length === 0" data-testid="kelas-empty">
       <div class="flex flex-col items-center gap-2 py-6 text-center">
         <UIcon name="i-ph-chalkboard-teacher-duotone" class="size-12 text-dimmed" />
         <h2 class="text-subheading text-highlighted">{{ KELAS_COPY.emptyTitle }}</h2>
@@ -68,7 +64,7 @@ const qrClassId = ref<number | null>(null)
           >{{ KELAS_COPY.createShort }}</UButton
         >
       </div>
-    </UCard>
+    </DsPanel>
 
     <ul
       v-else

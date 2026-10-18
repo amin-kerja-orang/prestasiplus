@@ -34,8 +34,10 @@ const props = withDefaults(
     /** Horizontal tiles (chip beside value) for dense admin list pages. */
     compact?: boolean
     loading?: boolean
+    /** Test-id prefix of the tile parts (`-value`, `-label`, `-sub`). */
+    partPrefix?: string
   }>(),
-  { prefix: undefined, cols: 'auto', roomy: false, compact: false, loading: false },
+  { partPrefix: undefined, prefix: undefined, cols: 'auto', roomy: false, compact: false, loading: false },
 )
 
 const GRID: Record<string, string> = {
@@ -77,6 +79,7 @@ function id(key: string): string | undefined {
         :roomy="roomy"
         :compact="compact"
         :loading="loading"
+        :part-prefix="partPrefix"
       />
     </li>
   </ul>

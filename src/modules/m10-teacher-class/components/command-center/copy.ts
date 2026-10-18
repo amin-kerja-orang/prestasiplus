@@ -3,6 +3,7 @@
  * Exact BM strings of the live script; strings marked PROPOSED are not observed on live.
  */
 
+import type { DsStatus } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type {
@@ -171,7 +172,14 @@ const RISK: Record<AnyRisk, { label: string; color: RiskColor }> = {
   medium: { label: 'SEDERHANA', color: 'info' },
   rendah: { label: 'RENDAH', color: 'success' },
 }
-export const riskColor = (risk: AnyRisk): RiskColor => RISK[risk].color
+/** The `DsStatusBadge` status of a risk level (the word stays the live label). */
+const RISK_STATUS: Record<RiskColor, DsStatus> = {
+  error: 'risk-high',
+  warning: 'risk-mid',
+  info: 'in-progress',
+  success: 'risk-low',
+}
+export const riskStatus = (risk: AnyRisk): DsStatus => RISK_STATUS[RISK[risk].color]
 export const riskLabel = (risk: AnyRisk) => RISK[risk].label
 
 /** The signed percent of a predictive trend ("+8%", "-3%", "0%"). */

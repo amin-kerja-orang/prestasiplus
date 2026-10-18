@@ -10,7 +10,7 @@ const openTab = useOpenTab()
 </script>
 
 <template>
-  <BoardPanel icon="i-ph-chalkboard-teacher" title="Kelas Saya" testid="cc-panel-classes">
+  <BoardPanel icon="chalkboard-teacher" accent="action" title="Kelas Saya" testid="cc-panel-classes">
     <p v-if="classes.length === 0" class="text-body text-muted" data-testid="cc-classes-empty">
       {{ S2_COPY.noData }}
     </p>

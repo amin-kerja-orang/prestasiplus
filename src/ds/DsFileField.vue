@@ -20,6 +20,10 @@ const props = withDefaults(
     required?: boolean
     disabled?: boolean
     name?: string
+    /** `area` = drop zone (default); `button` = one compact button (per-row pickers). */
+    variant?: 'area' | 'button'
+    /** Phosphor class of the button variant. */
+    icon?: string
   }>(),
   {
     accept: undefined,
@@ -31,6 +35,8 @@ const props = withDefaults(
     required: false,
     disabled: false,
     name: undefined,
+    variant: 'area',
+    icon: undefined,
   },
 )
 
@@ -68,6 +74,8 @@ function onUpdate(value: File | File[] | null | undefined): void {
       :required="required"
       :disabled="disabled"
       :name="name"
+      :variant="variant"
+      :icon="icon"
       :preview="preview === 'image'"
       :file-image="preview === 'image'"
       @update:model-value="onUpdate"

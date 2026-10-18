@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** One joined class (PROPOSED card, FN-M10-3.4.3): class name, subject, teacher, level. */
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import type { JoinedClass } from '../../api/types'
 
@@ -9,7 +9,7 @@ defineProps<{ item: JoinedClass }>()
 
 <template>
   <li class="min-w-0" data-testid="joined-class">
-    <UCard>
+    <DsPanel>
       <div class="flex min-w-0 items-start gap-3">
         <DsIconChip icon="i-ph-chalkboard-teacher-duotone" accent="action" size="lg" />
         <div class="flex min-w-0 flex-col gap-2">
@@ -44,6 +44,6 @@ defineProps<{ item: JoinedClass }>()
           </ul>
         </div>
       </div>
-    </UCard>
+    </DsPanel>
   </li>
 </template>

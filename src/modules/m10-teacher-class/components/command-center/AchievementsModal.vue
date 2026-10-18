@@ -7,15 +7,15 @@
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables'
+import { DsStatRow } from '@/ds'
 
 import { fetchCommandCenterAchievements } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
-import { useOpenTab } from './composables'
+import { statItems, useOpenTab } from './composables'
 import { rarityOf, studentPath } from './copy'
 import type { DrillRow } from './drill-table'
 import HoldersModal from './HoldersModal.vue'
-import StatCards from './StatCards.vue'
 
 defineEmits<{ close: [] }>()
 
@@ -50,7 +50,7 @@ const collectors = computed<DrillRow[]>(() =>
       Mengimbas pencapaian semua pelajar...
     </p>
     <template v-else>
-      <StatCards :cards="cards" :cols="3" />
+      <DsStatRow :items="statItems(cards)" prefix="cc-modal-card" :cols="3" data-testid="cc-modal-cards" />
 
       <h4 class="text-subheading text-highlighted">Senarai Lencana</h4>
       <ul class="flex flex-wrap gap-2" data-testid="cc-badge-chips">

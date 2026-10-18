@@ -4,6 +4,8 @@
  * the heading, "Lihat semua →" to the M09 list, and up to 3 plain-text rows (initials chip, title,
  * "{role label} · {relative time}"). No rows: the list is hidden and no sentence is shown (FR-M27-16).
  */
+
+import { DsPanel } from '@/ds'
 import { usePrototypeScope } from '@/composables'
 import { diffForHumans } from '@/lib/time'
 
@@ -17,7 +19,7 @@ const { allows } = usePrototypeScope()
 </script>
 
 <template>
-  <UCard data-testid="sd-perutusan">
+  <DsPanel data-testid="sd-perutusan">
     <div class="flex items-center justify-between gap-3">
       <h2 class="flex min-w-0 items-center gap-2 text-subheading text-highlighted">
         <UIcon name="i-ph-megaphone-duotone" class="size-5 shrink-0 text-info" aria-hidden="true" />
@@ -55,5 +57,5 @@ const { allows } = usePrototypeScope()
         </div>
       </li>
     </ul>
-  </UCard>
+  </DsPanel>
 </template>

@@ -4,6 +4,7 @@ export const PELAJAR_COPY = {
   create: 'Cipta Pelajar',
   tabSchool: 'Pelajar Sekolah',
   tabMine: 'Pelajar Saya',
+  tabsLabel: 'Senarai pelajar',
   emptyTitle: 'Belum ada pelajar dalam kelas anda',
   emptyBody: 'Buat kelas dan tambah pelajar dari senarai sekolah.',
   createClass: 'Cipta Kelas',

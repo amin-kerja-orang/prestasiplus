@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsStatTile } from '@/ds'
+import { DsPanel, DsStatRow, type StatItem } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { Contributions } from '../../api/types'
@@ -27,46 +27,21 @@ const tierIcon = (icon: string): string =>
   TIER_ICONS[icon.split(' ').find((p) => p.startsWith('fa-') && p in TIER_ICONS) ?? ''] ??
   'i-ph-medal-duotone'
 
+/** The four stat tiles, each with its own categorical accent. */
+const stats = computed<StatItem[]>(() => [
+  { key: 'total', label: '📝 Jumlah', value: props.summary.stats.total, icon: 'note-pencil', accent: 'action' },
+  { key: 'approved', label: '✅ Diluluskan', value: props.summary.stats.approved, icon: 'check-circle', accent: 'win' },
+  { key: 'pending', label: '⏳ Menunggu', value: props.summary.stats.pending, icon: 'hourglass', accent: 'heat' },
+  { key: 'used', label: '📊 Digunakan', value: props.summary.stats.used, icon: 'chart-bar', accent: 'trial' },
+])
+
 /** FR-M10-93: all chips by count descending ("Lain" takes its count position, stable for ties). */
 const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count - a.count))
 </script>
 
 <template>
   <div class="flex min-w-0 flex-col gap-4" data-testid="contribution-summary">
-    <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="stat-cards">
-      <div data-testid="stat-total">
-        <DsStatTile
-          :value="summary.stats.total"
-          unit="📝 Jumlah"
-          icon="i-ph-note-pencil-duotone"
-          data-testid="stat-total-value"
-        />
-      </div>
-      <div data-testid="stat-approved">
-        <DsStatTile
-          :value="summary.stats.approved"
-          unit="✅ Diluluskan"
-          icon="i-ph-check-circle-duotone"
-          data-testid="stat-approved-value"
-        />
-      </div>
-      <div data-testid="stat-pending">
-        <DsStatTile
-          :value="summary.stats.pending"
-          unit="⏳ Menunggu"
-          icon="i-ph-hourglass-duotone"
-          data-testid="stat-pending-value"
-        />
-      </div>
-      <div data-testid="stat-used">
-        <DsStatTile
-          :value="summary.stats.used"
-          unit="📊 Digunakan"
-          icon="i-ph-chart-bar-duotone"
-          data-testid="stat-used-value"
-        />
-      </div>
-    </div>
+    <DsStatRow :items="stats" prefix="stat" :cols="4" data-testid="stat-cards" />
 
     <UAlert
       color="neutral"
@@ -82,7 +57,7 @@ const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count
       </template>
     </UAlert>
 
-    <UCard data-testid="tiers-card">
+    <DsPanel data-testid="tiers-card">
       <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
         <UIcon name="i-ph-medal-duotone" class="size-5 text-primary" />
         Pencapaian Badge Penyumbang
@@ -111,9 +86,9 @@ const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count
         Sasaran seterusnya: <strong class="text-highlighted">{{ summary.nextTier.name }}</strong> —
         {{ formatCount(summary.nextTier.threshold) }} soalan
       </p>
-    </UCard>
+    </DsPanel>
 
-    <UCard data-testid="breakdown-card">
+    <DsPanel data-testid="breakdown-card">
       <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
         <UIcon name="i-ph-chart-pie-duotone" class="size-5 text-primary" />
         Pecahan Subjek
@@ -125,6 +100,6 @@ const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count
           >
         </li>
       </ul>
-    </UCard>
+    </DsPanel>
   </div>
 </template>

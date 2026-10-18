@@ -2,7 +2,7 @@
 /** FN-M10-2.1.2: "Checklist Guru" (FR-M10-09, BR-M10-05). */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 import { usePrototypeScope } from '@/composables'
 
 import type { GuruDashboard } from '../../api/types'
@@ -17,7 +17,7 @@ const ICONS = ['i-ph-laptop-duotone', 'i-ph-users-three-duotone', 'i-ph-rocket-l
 </script>
 
 <template>
-  <UCard data-testid="checklist-card">
+  <DsPanel data-testid="checklist-card">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
@@ -46,7 +46,7 @@ const ICONS = ['i-ph-laptop-duotone', 'i-ph-users-three-duotone', 'i-ph-rocket-l
         :data-done="checklist[row.key]"
         data-testid="checklist-row"
       >
-        <UCard variant="subtle" :ui="{ body: 'p-2 sm:p-2' }">
+        <DsPanel tone="inset">
           <div class="flex min-w-0 items-center gap-3">
             <DsIconChip :icon="checklist[row.key] ? 'i-ph-check-circle-duotone' : ICONS[i]!" />
             <div class="min-w-0 flex-1">
@@ -64,8 +64,8 @@ const ICONS = ['i-ph-laptop-duotone', 'i-ph-users-three-duotone', 'i-ph-rocket-l
               >{{ DASH_COPY.view }}</UButton
             >
           </div>
-        </UCard>
+        </DsPanel>
       </li>
     </ul>
-  </UCard>
+  </DsPanel>
 </template>

@@ -7,27 +7,27 @@
  * its chip (FR-M27-21).
  */
 import { usePrototypeScope } from '@/composables'
-import { DsIconChip } from '@/ds'
+import { computed } from 'vue'
+
+import { DsBreadcrumb, DsIconChip, DsPanel } from '@/ds'
 
 import type { SchoolDashboard } from '../../api/dashboard'
-import ReportCrumb from '../shared/ReportCrumb.vue'
 import { PATHS } from './dashboard-format'
 
 defineProps<{ school: SchoolDashboard['school']; roleLabel: string }>()
 const { allows } = usePrototypeScope()
+
+// Prototype scope (D43): the school admin has no 'Papan Pemuka' (`/dashboard`) in the matrix.
+const crumbs = computed(() => [
+  ...(allows(PATHS.home) ? [{ label: 'Papan Pemuka', to: PATHS.home }] : []),
+  { label: 'Dashboard Sekolah' },
+])
 </script>
 
 <template>
-  <!-- Prototype scope (D43): the school admin has no "Papan Pemuka" (`/dashboard`) in the matrix. -->
-  <ReportCrumb
-    prefix="sd"
-    back-label="← Papan Pemuka"
-    :back-to="PATHS.home"
-    :hide-back="!allows(PATHS.home)"
-    title="Dashboard Sekolah"
-  />
+  <DsBreadcrumb :items="crumbs" data-testid="sd-breadcrumb" />
 
-  <UCard data-testid="sd-banner">
+  <DsPanel data-testid="sd-banner">
     <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
       <DsIconChip icon="i-ph-buildings-duotone" size="lg" data-testid="sd-banner-icon" />
       <div class="flex min-w-0 flex-col gap-1">
@@ -48,5 +48,5 @@ const { allows } = usePrototypeScope()
         </ul>
       </div>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

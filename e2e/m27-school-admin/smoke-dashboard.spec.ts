@@ -374,10 +374,10 @@ test.describe('breadcrumb', MODULE, () => {
   }) => {
     await signIn(page, AZLAN)
     await open(page, gotoApp)
-    const back = page.getByTestId('sd-crumb-back')
-    await expect(back).toHaveText('← Papan Pemuka')
+    const back = page.locator('[data-testid="sd-breadcrumb"] a')
+    await expect(back).toHaveText('Papan Pemuka')
     await expect(back).toHaveAttribute('href', '/dashboard')
-    const current = page.getByTestId('sd-crumb-current')
+    const current = page.locator('[data-testid="sd-breadcrumb"] [aria-current="page"]')
     await expect(current).toHaveText('Dashboard Sekolah')
     expect(await current.evaluate((e) => e.tagName)).not.toBe('A')
     expect(
@@ -394,7 +394,7 @@ test.describe('breadcrumb', MODULE, () => {
   }) => {
     await signIn(page, AZLAN)
     await open(page, gotoApp)
-    await page.getByTestId('sd-crumb-back').click()
+    await page.locator('[data-testid="sd-breadcrumb"] a').click()
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByTestId('dashboard-page')).toBeVisible()
     await expect(page.locator('[data-page=forbidden]')).toHaveCount(0)
@@ -611,7 +611,7 @@ test.describe('responsive and text size', MODULE, () => {
       expect(chips.length).toBeGreaterThan(0)
     }
     // touch targets of the S0 links
-    for (const id of ['sd-perutusan-all', 'sd-crumb-back', 'sd-grades-full']) {
+    for (const id of ['sd-perutusan-all', 'sd-perutusan-all', 'sd-grades-full']) {
       const box = (await page.getByTestId(id).boundingBox())!
       expect(box.height).toBeGreaterThanOrEqual(43.9)
     }

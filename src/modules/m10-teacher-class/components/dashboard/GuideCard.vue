@@ -2,7 +2,7 @@
 /** FN-M10-2.1.1: dismissible "Mula Di Sini" guide and its pill (FR-M10-08). */
 import { ref } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import { DASH_COPY } from './copy'
 import { readGuideHidden, writeGuideHidden } from './lib'
@@ -27,7 +27,7 @@ function set(value: boolean): void {
       @click="set(false)"
       >{{ DASH_COPY.showGuide }}</UButton
     >
-    <UCard v-else data-testid="guide-card">
+    <DsPanel v-else data-testid="guide-card">
       <div class="flex items-start justify-between gap-3">
         <div class="flex min-w-0 items-center gap-3">
           <DsIconChip icon="i-ph-rocket-launch-duotone" />
@@ -54,7 +54,7 @@ function set(value: boolean): void {
           class="min-w-0"
           data-testid="guide-step"
         >
-          <UCard variant="subtle" class="h-full"
+          <DsPanel tone="inset" class="h-full"
             ><div class="flex min-w-0 flex-col items-start gap-1">
               <UBadge color="primary" variant="subtle">{{ i + 1 }}</UBadge>
               <p class="text-label text-highlighted">{{ s.title }}</p>
@@ -62,7 +62,7 @@ function set(value: boolean): void {
               <UButton :to="s.to" variant="link" class="px-0" data-testid="guide-link">{{
                 s.link
               }}</UButton>
-            </div></UCard
+            </div></DsPanel
           >
         </li>
       </ol>
@@ -72,6 +72,6 @@ function set(value: boolean): void {
           ><strong>{{ DASH_COPY.tipLabel }}</strong> {{ DASH_COPY.tipText }}</span
         >
       </p>
-    </UCard>
+    </DsPanel>
   </div>
 </template>

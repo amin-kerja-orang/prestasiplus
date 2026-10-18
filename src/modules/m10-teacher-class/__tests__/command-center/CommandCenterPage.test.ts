@@ -63,7 +63,7 @@ const q = (sel: string) => Array.from(document.body.querySelectorAll(sel)).map(w
 const t = (id: string) => q(`[data-testid="${id}"]`)[0] ?? wrapper!.find(`[data-testid="${id}"]`)
 const all = (id: string) => q(`[data-testid="${id}"]`)
 const cards = () =>
-  all('cc-modal-card').map((c) =>
+  q('[data-testid^="cc-modal-card-"]').map((c) =>
     Array.from(c.element.querySelectorAll('span'))
       .map((s) => s.textContent)
       .join(' '),

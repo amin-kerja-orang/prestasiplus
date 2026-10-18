@@ -9,7 +9,7 @@ import { computed } from 'vue'
 import { formatCount } from '@/lib/number'
 
 import type { RiskTallyView } from '../../api/amaran'
-import StatRow, { type StatItem } from '../shared/StatRow.vue'
+import { DsStatRow, type StatItem } from '@/ds'
 
 const props = defineProps<{ tally: RiskTallyView }>()
 
@@ -18,32 +18,33 @@ const items = computed<StatItem[]>(() => [
     key: 'total',
     label: 'Jumlah Pelajar',
     value: formatCount(props.tally.total),
-    icon: 'i-ph-users-three',
+    icon: 'users-three',
+    accent: 'action',
   },
   {
     key: 'green',
     label: 'On Track',
     value: formatCount(props.tally.green),
-    icon: 'i-ph-check-circle',
+    icon: 'check-circle',
     tone: 'success',
   },
   {
     key: 'yellow',
     label: 'Perlu Perhatian',
     value: formatCount(props.tally.yellow),
-    icon: 'i-ph-warning',
+    icon: 'warning',
     tone: 'warning',
   },
   {
     key: 'red',
     label: 'Berisiko Tinggi',
     value: formatCount(props.tally.red),
-    icon: 'i-ph-warning-octagon',
+    icon: 'warning-octagon',
     tone: 'error',
   },
 ])
 </script>
 
 <template>
-  <StatRow :items="items" prefix="am-tile" nav-id="am-tiles" />
+  <DsStatRow :items="items" prefix="am-tile" part-prefix="am-tile" data-testid="am-tiles" :cols="4" />
 </template>

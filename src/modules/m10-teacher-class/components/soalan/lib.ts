@@ -57,6 +57,15 @@ export const SCRIPTS: readonly { value: ScriptType; label: string }[] = [
 
 export const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const
 
+/** `URadioGroup` items of the MCQ "Jawapan betul" group; the group `id` gives each radio the id `<id>:<index>`. */
+export const correctItems = () => OPTION_LETTERS.map((letter, i) => ({ label: letter, value: i }))
+
+/** `URadioGroup` items of the true / false answer. */
+export const TF_ITEMS = [
+  { label: 'Betul', value: 'true' },
+  { label: 'Salah', value: 'false' },
+]
+
 /** `arab` / `jawi` write right to left; `mixed` stays left to right (R-M04-07). */
 export const isRtlScript = (script: ScriptType): boolean => script === 'arab' || script === 'jawi'
 

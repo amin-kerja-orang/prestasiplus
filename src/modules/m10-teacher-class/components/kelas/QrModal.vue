@@ -6,7 +6,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { DsDialog } from '@/ds'
+import { DsDialog, DsFormField } from '@/ds'
 
 import { fetchClassQrData } from '../../api/guru'
 import type { ClassQrData } from '../../api/types'
@@ -76,7 +76,7 @@ const print = (): void => window.print()
         <QrCanvas v-if="data" :text="data.joinUrl" />
         <USkeleton v-else class="size-48" data-testid="qr-spinner" />
       </div>
-      <UFormField :label="KELAS_COPY.joinLink" name="qr-join-url">
+      <DsFormField :label="KELAS_COPY.joinLink" name="qr-join-url">
         <div class="flex gap-2">
           <UInput
             id="qr-join-url"
@@ -97,7 +97,7 @@ const print = (): void => window.print()
             @click="copy"
           />
         </div>
-      </UFormField>
+      </DsFormField>
     </div>
     <template #footer>
       <UButton

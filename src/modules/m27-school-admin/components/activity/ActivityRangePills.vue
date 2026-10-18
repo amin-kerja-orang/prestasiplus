@@ -5,7 +5,8 @@
  */
 import { computed } from 'vue'
 
-import PillNav, { type PillItem } from '../shared/PillNav.vue'
+import { DsPillNav, type PillItem } from '@/ds'
+
 import { ACTIVITY_PATH, RANGES, type ActivityRange } from './activity-format'
 
 defineProps<{ active: ActivityRange }>()
@@ -24,6 +25,12 @@ const items = computed<PillItem<ActivityRange>[]>(() =>
     <span class="inline-flex items-center gap-1 text-label text-muted">
       <UIcon name="i-ph-calendar-dots" class="size-5" aria-hidden="true" />Tempoh:
     </span>
-    <PillNav :items="items" :active="active" nav-id="la-pills-nav" prefix="la-pill" label="Tempoh" />
+    <DsPillNav
+      :items="items"
+      :active="active"
+      testid-prefix="la-pill"
+      label="Tempoh"
+      data-testid="la-pills-nav"
+    />
   </div>
 </template>

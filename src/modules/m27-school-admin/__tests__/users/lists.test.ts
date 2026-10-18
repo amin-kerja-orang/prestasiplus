@@ -153,7 +153,7 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     const { wrapper: w } = await mountPupils()
     const row = w.findAll('tbody tr')[0]!
     expect(row.get('[data-testid="user-index"]').text()).toBe('1')
-    expect(row.get('[data-testid="user-avatar"]').text()).toBe('MC')
+    expect(row.get('[data-ds="identity"]').text()).toContain('MC')
     const name = row.get('[data-testid="user-name"]')
     expect(name.element.tagName).toBe('A')
     expect(name.attributes('href')).toBe('/admin-sekolah/pelajar/3001')

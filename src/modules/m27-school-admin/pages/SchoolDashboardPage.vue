@@ -14,7 +14,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 
 import { fetchSchoolDashboard } from '../api/dashboard'
 import PerformanceSummary from '../components/dashboard/PerformanceSummary.vue'
@@ -23,7 +23,7 @@ import SchoolBanner from '../components/dashboard/SchoolBanner.vue'
 import SummaryCards from '../components/dashboard/SummaryCards.vue'
 
 const pageMeta = usePageMeta()
-const { data, error, loading } = useApi((signal) => fetchSchoolDashboard({ signal }))
+const { data, error, loading, reload } = useApi((signal) => fetchSchoolDashboard({ signal }))
 
 const refused = computed(() => isApiError(error.value) && error.value.status === 403)
 watch(
@@ -52,14 +52,11 @@ watch(
       <SummaryCards :cards="data.cards" />
       <PerformanceSummary :performance="data.performance" />
     </template>
-    <UAlert
+    <DsLoadError
       v-else-if="error && !refused"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle"
-      :description="error.message"
-      role="alert"
-      data-testid="sd-error"
+      :message="error.message"
+      testid="sd-error"
+      @retry="reload"
     />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="sd-loading">
       <USkeleton class="h-24 w-full" />

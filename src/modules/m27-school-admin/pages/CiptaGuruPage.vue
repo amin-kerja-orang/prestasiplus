@@ -12,7 +12,7 @@ import { nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useFlash, useSession } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsFormBar, DsFormField, DsFormSection, DsPage, DsPanel } from '@/ds'
 
 import { createSchoolTeacher } from '../api/school-admin'
 import LockedSchoolLabel from '../components/users/LockedSchoolLabel.vue'
@@ -55,139 +55,123 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPage class="max-w-4xl" data-testid="sg-create-page">
-    <form method="post" novalidate data-testid="user-form" @submit.prevent="submit">
-      <UCard>
-        <div class="mb-4 flex items-center gap-3">
-          <UIcon name="i-ph-user-plus-duotone" class="size-8 shrink-0 text-primary" aria-hidden="true" />
-          <div class="min-w-0">
-            <h2 class="text-subheading text-highlighted">Borang Pendaftaran Pengguna</h2>
-            <p class="text-body text-muted">Isi maklumat untuk mendaftarkan pengguna baru</p>
-          </div>
-        </div>
-
-        <div ref="alertBox" class="empty:hidden">
-          <UAlert
-            v-if="errors.length"
-            color="error"
-            variant="subtle"
-            icon="i-ph-warning-circle"
-            class="mb-4"
-            role="alert"
-            data-testid="user-form-alert"
-          >
-            <template #description>
-              <ul class="flex flex-col gap-1">
-                <li v-for="line in errors" :key="line">{{ line }}</li>
-              </ul>
-            </template>
-          </UAlert>
-        </div>
-
-        <div class="grid grid-cols-1 gap-x-6 gap-y-6 md:grid-cols-2">
-          <UFormField label="Peranan">
-            <UCard variant="soft" :ui="{ body: 'flex min-h-11 items-center p-3 sm:p-3' }">
-              <p class="text-label text-highlighted" data-testid="user-role">Guru</p>
-            </UCard>
-          </UFormField>
-
-          <LockedSchoolLabel v-if="me?.school" :school="me.school" />
-
-          <UFormField label="Nama *" name="user-name">
-            <UInput
-              id="user-name"
-              v-model="form.name"
-              type="text"
-              name="name"
-              icon="i-ph-user"
-              placeholder="Nama penuh"
-              class="w-full"
-              data-testid="user-name"
-            />
-          </UFormField>
-
-          <UFormField label="Emel *" name="user-email">
-            <UInput
-              id="user-email"
-              v-model="form.email"
-              type="email"
-              name="email"
-              icon="i-ph-envelope-simple"
-              placeholder="contoh@email.com"
-              class="w-full"
-              data-testid="user-email"
-            />
-          </UFormField>
-
-          <UFormField label="No. Telefon (Pilihan)" name="user-phone">
-            <UInput
-              id="user-phone"
-              v-model="form.phone"
-              type="tel"
-              name="phone"
-              maxlength="14"
-              inputmode="tel"
-              icon="i-ph-phone"
-              placeholder="Cth: 0191234567"
-              class="w-full"
-              data-testid="user-phone"
-            />
-          </UFormField>
-
-          <UFormField label="Kata Laluan *" name="user-password">
-            <UInput
-              id="user-password"
-              v-model="form.password"
-              type="password"
-              name="password"
-              autocomplete="new-password"
-              icon="i-ph-lock-simple"
-              placeholder="Minimum 6 aksara"
-              class="w-full"
-              data-testid="user-password"
-            />
-          </UFormField>
-
-          <UFormField label="Sahkan Kata Laluan *" name="user-password-confirm">
-            <UInput
-              id="user-password-confirm"
-              v-model="form.passwordConfirmation"
-              type="password"
-              name="password_confirmation"
-              autocomplete="new-password"
-              icon="i-ph-lock-simple"
-              placeholder="Taip semula kata laluan"
-              class="w-full"
-              data-testid="user-password-confirm"
-            />
-          </UFormField>
-        </div>
-
-        <div
-          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between"
-          data-testid="user-form-footer"
+    <form
+      method="post"
+      novalidate
+      class="flex min-w-0 flex-col gap-6"
+      data-testid="user-form"
+      @submit.prevent="submit"
+    >
+      <div ref="alertBox" class="empty:hidden">
+        <UAlert
+          v-if="errors.length"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          role="alert"
+          data-testid="user-form-alert"
         >
-          <UButton
-            :to="TEACHER_LIST_PATH"
-            color="neutral"
-            variant="ghost"
-            size="lg"
-            icon="i-ph-arrow-left"
-            class="min-h-11 justify-center"
-            data-testid="user-cancel"
-            >Batal</UButton
-          >
-          <UButton
-            type="submit"
-            size="lg"
-            :loading="saving"
-            :disabled="saving"
-            :icon="saving ? undefined : 'i-ph-user-plus'"
-            class="min-h-11 justify-center"
-            data-testid="user-submit"
-            >Daftar Pengguna</UButton
-          >
-        </div>
-      </UCard>
+          <template #description>
+            <ul class="flex flex-col gap-1">
+              <li v-for="line in errors" :key="line">{{ line }}</li>
+            </ul>
+          </template>
+        </UAlert>
+      </div>
+
+      <DsFormSection
+        title="Borang Pendaftaran Pengguna"
+        description="Isi maklumat untuk mendaftarkan pengguna baru"
+        icon="user-plus"
+        accent="action"
+        :columns="2"
+      >
+        <DsFormField label="Peranan">
+          <DsPanel tone="inset">
+<div class="flex min-h-11 items-center">
+            <p class="text-label text-highlighted" data-testid="user-role">Guru</p>
+          </div>
+</DsPanel>
+        </DsFormField>
+
+        <LockedSchoolLabel v-if="me?.school" :school="me.school" />
+
+        <DsFormField label="Nama" required name="user-name">
+          <UInput
+            id="user-name"
+            v-model="form.name"
+            type="text"
+            name="name"
+            icon="i-ph-user"
+            placeholder="Nama penuh"
+            class="w-full"
+            data-testid="user-name"
+          />
+        </DsFormField>
+
+        <DsFormField label="Emel" required name="user-email">
+          <UInput
+            id="user-email"
+            v-model="form.email"
+            type="email"
+            name="email"
+            icon="i-ph-envelope-simple"
+            placeholder="contoh@email.com"
+            class="w-full"
+            data-testid="user-email"
+          />
+        </DsFormField>
+
+        <DsFormField label="No. Telefon (Pilihan)" name="user-phone">
+          <UInput
+            id="user-phone"
+            v-model="form.phone"
+            type="tel"
+            name="phone"
+            maxlength="14"
+            inputmode="tel"
+            icon="i-ph-phone"
+            placeholder="Cth: 0191234567"
+            class="w-full"
+            data-testid="user-phone"
+          />
+        </DsFormField>
+
+        <DsFormField label="Kata Laluan" required name="user-password">
+          <UInput
+            id="user-password"
+            v-model="form.password"
+            type="password"
+            name="password"
+            autocomplete="new-password"
+            icon="i-ph-lock-simple"
+            placeholder="Minimum 6 aksara"
+            class="w-full"
+            data-testid="user-password"
+          />
+        </DsFormField>
+
+        <DsFormField label="Sahkan Kata Laluan" required name="user-password-confirm">
+          <UInput
+            id="user-password-confirm"
+            v-model="form.passwordConfirmation"
+            type="password"
+            name="password_confirmation"
+            autocomplete="new-password"
+            icon="i-ph-lock-simple"
+            placeholder="Taip semula kata laluan"
+            class="w-full"
+            data-testid="user-password-confirm"
+          />
+        </DsFormField>
+      </DsFormSection>
+
+      <DsFormBar
+        :cancel-to="TEACHER_LIST_PATH"
+        submit-label="Daftar Pengguna"
+        submit-icon="i-ph-user-plus"
+        :saving="saving"
+      />
     </form>
   </DsPage>
 </template>

@@ -6,6 +6,7 @@ import { ApiError } from '@/api'
 
 import HantarKertasCard from '../../components/soalan/HantarKertasCard.vue'
 import { COPY } from '../../components/soalan/lib'
+import { pickFiles } from './pick-file'
 
 const guru = vi.hoisted(() => ({ submitQuestionPaper: vi.fn() }))
 vi.mock('../../api/guru', () => guru)
@@ -16,12 +17,7 @@ async function fillAndSubmit(w: VueWrapper): Promise<void> {
   await t(w, 'paper-jenis').setValue('Trial Paper')
   await t(w, 'paper-subject').setValue('Kimia')
   await t(w, 'paper-tahun').setValue('2024')
-  const input = t(w, 'paper-files')
-  Object.defineProperty(input.element, 'files', {
-    value: [new File(['x'], 'kertas.pdf'), new File(['y'], 'skema.docx')],
-    configurable: true,
-  })
-  await input.trigger('change')
+  await pickFiles(w, 'paper-files', [new File(['x'], 'kertas.pdf'), new File(['y'], 'skema.docx')], true)
   await t(w, 'paper-form').trigger('submit')
   await flushPromises()
 }

@@ -92,7 +92,7 @@ const invalid = computed(() => Boolean(props.error))
     <template v-if="$slots['label-extra']" #label>
       {{ label }}<slot name="label-extra" />
     </template>
-    <template #error="{ error: msg }">
+    <template v-if="error" #error="{ error: msg }">
       <span class="flex items-start gap-1" role="alert" data-testid="field-error">
         <UIcon name="i-ph-warning-circle" class="mt-px size-4 shrink-0" aria-hidden="true" />
         <span>{{ msg }}</span>

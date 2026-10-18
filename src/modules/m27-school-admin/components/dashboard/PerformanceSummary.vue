@@ -8,7 +8,7 @@
  */
 import { RouterLink } from 'vue-router'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import type { SchoolDashboard } from '../../api/dashboard'
 import GradeList from './GradeList.vue'
@@ -19,7 +19,7 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
 </script>
 
 <template>
-  <UCard data-testid="sd-performance">
+  <DsPanel data-testid="sd-performance">
     <div class="flex min-w-0 items-center gap-3">
       <DsIconChip icon="i-ph-chart-bar-duotone" size="lg" />
       <div class="min-w-0">
@@ -36,7 +36,7 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
       class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
       data-testid="sd-panels"
     >
-      <UCard variant="soft" :ui="{ body: 'flex h-full min-w-0 flex-col gap-1 p-4' }" data-testid="sd-panel-gps">
+      <DsPanel tone="inset" data-testid="sd-panel-gps">
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">GPS Sekolah</p>
           <p
@@ -62,9 +62,9 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
             {{ count(performance.gps.entries) }} entri headcount
           </p>
         </div>
-      </UCard>
+      </DsPanel>
 
-      <UCard v-if="performance.risk" variant="soft" :ui="{ body: 'flex h-full min-w-0 flex-col gap-1 p-4' }" data-testid="sd-panel-risk">
+      <DsPanel v-if="performance.risk" tone="inset" data-testid="sd-panel-risk">
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">Amaran Awal</p>
           <div class="mt-1 flex items-start justify-center gap-4">
@@ -91,9 +91,9 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
             {{ count(performance.risk.total) }} murid dinilai
           </p>
         </div>
-      </UCard>
+      </DsPanel>
 
-      <UCard variant="soft" :ui="{ body: 'flex h-full min-w-0 flex-col gap-1 p-4' }" data-testid="sd-panel-practice">
+      <DsPanel tone="inset" data-testid="sd-panel-practice">
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">Latihan</p>
           <p class="tabular text-display text-highlighted" data-testid="sd-practice-accuracy">
@@ -105,10 +105,10 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
             {{ count(performance.practice.questions) }} soalan
           </p>
         </div>
-      </UCard>
+      </DsPanel>
 
       <RouterLink :to="PATHS.levels" class="block min-w-0" data-testid="sd-panel-levels">
-        <UCard variant="soft" :ui="{ body: 'flex h-full min-w-0 flex-col gap-1 p-4' }" class="h-full hover:bg-elevated">
+        <DsPanel tone="inset" class="h-full hover:bg-elevated">
           <p class="text-center text-overline text-muted">Tingkatan</p>
           <div
             v-for="level in performance.levels"
@@ -141,12 +141,12 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
             />
           </div>
           <p class="mt-3 text-center text-caption text-muted">Click untuk detail</p>
-        </UCard>
+        </DsPanel>
       </RouterLink>
     </div>
 
     <div class="mt-6">
       <GradeList :distribution="performance.distribution" :total="performance.total" />
     </div>
-  </UCard>
+  </DsPanel>
 </template>

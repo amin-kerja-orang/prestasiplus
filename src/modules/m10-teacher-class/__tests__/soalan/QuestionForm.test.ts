@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import QuestionForm from '../../components/soalan/QuestionForm.vue'
 import { makeRouter } from './fixtures'
+import { pickFiles } from './pick-file'
 
 const guru = vi.hoisted(() => ({
   fetchChapters: vi.fn(),
@@ -97,7 +98,7 @@ describe('S22 form fields', () => {
         .map((o) => o.text()),
     ).toEqual(['Rumi (Latin)', 'Arab', 'Jawi', 'Campuran (Rumi + Arab/Jawi)'])
     expect(t(w, 'q-text').attributes('maxlength')).toBe('2000')
-    expect((t(w, 'q-correct-0').element as HTMLInputElement).checked).toBe(true)
+    expect(w.findAll('[data-testid="q-correct"] [role="radio"]')[0]!.attributes('aria-checked')).toBe('true')
     expect(t(w, 'q-option-0').attributes('placeholder')).toBe('Pilihan A')
     expect(t(w, 'q-option-3').attributes('maxlength')).toBe('500')
   })
@@ -272,7 +273,7 @@ describe('S22 submit', () => {
     await t(w, 'q-difficulty').setValue('medium')
     await t(w, 'q-text').setValue('Soalan baharu?')
     for (const i of [0, 1, 2, 3]) await t(w, `q-option-${String(i)}`).setValue(`P${String(i)}`)
-    await t(w, 'q-correct-3').setValue(true)
+    await w.findAll('[data-testid="q-correct"] [role="radio"]')[3]!.trigger('click')
     await w.find('form').trigger('submit')
     const [body, image, optionImages] = w.emitted('submit')![0] as [
       Record<string, unknown>,
@@ -298,17 +299,13 @@ describe('S22 submit', () => {
     expect(t(w, 'form-submit').text()).toBe('Hantar untuk Semakan')
   })
 
-  it('previews a chosen question image and removes it', async () => {
+  it('takes a chosen question image into the model and drops it again', async () => {
     const w = await mountForm()
-    const input = t(w, 'q-image-input')
-    Object.defineProperty(input.element, 'files', {
-      value: [new File(['x'], 'rajah.png', { type: 'image/png' })],
-      configurable: true,
-    })
-    await input.trigger('change')
-    await vi.waitFor(() => expect(t(w, 'q-image-preview').exists()).toBe(true))
-    await t(w, 'q-image-remove').trigger('click')
-    await flushPromises()
-    expect(t(w, 'q-image-preview').exists()).toBe(false)
+    const upload = () =>
+      w.findAllComponents({ name: 'FileUpload' }).find((c) => t(w, 'q-image-input').element.contains(c.element))!
+    await pickFiles(w, 'q-image-input', [new File(['x'], 'rajah.png', { type: 'image/png' })])
+    expect((upload().props('modelValue') as File).name).toBe('rajah.png')
+    await pickFiles(w, 'q-image-input', [])
+    expect(upload().props('modelValue')).toBeNull()
   })
 })

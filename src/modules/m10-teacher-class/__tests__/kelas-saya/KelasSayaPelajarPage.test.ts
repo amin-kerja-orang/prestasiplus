@@ -90,7 +90,7 @@ describe('S33 Kelas Saya (student)', () => {
     const w = await mountPage()
     expect(t(w, 'classes-error').text()).toContain('Ralat memuatkan data. Sila cuba semula.')
     api.fetchJoinedClasses.mockResolvedValueOnce(list([]))
-    await t(w, 'classes-retry').trigger('click')
+    await w.get('[data-testid="classes-error"] button').trigger('click')
     await flushPromises()
     expect(w.find('[data-testid="classes-empty"]').exists()).toBe(true)
   })

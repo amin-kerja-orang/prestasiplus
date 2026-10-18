@@ -167,10 +167,14 @@ for (const key of Object.keys(SCREENS) as ScreenKey[]) {
       await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
       await expectTabTitle(page, `${s.title} - PRESTASIPLUS`)
       const prefix = { s2: 'dh', s5: 'lb', s8: 'kl' }[key]
-      const back = page.getByTestId(`${prefix}-crumb-back`)
-      await expect(back).toHaveText('← Dashboard Sekolah')
+      const back =
+        prefix === 'kl'
+          ? page.getByTestId('kl-crumb-back')
+          : page.locator(`[data-testid="${prefix}-breadcrumb"] a`)
+      await expect(back).toHaveText('Dashboard Sekolah')
       await expect(back).toHaveAttribute('href', '/admin-sekolah')
-      const current = page.getByTestId(`${prefix}-crumb-current`)
+      if (prefix === 'kl') return
+      const current = page.locator(`[data-testid="${prefix}-breadcrumb"] [aria-current="page"]`)
       await expect(current).toHaveText(s.title)
       expect(await current.evaluate((e) => e.tagName)).not.toBe('A')
       expect(

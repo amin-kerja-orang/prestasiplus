@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import type { StudentQuestionSet } from '../../api/types'
 import { SET_COPY } from './copy'
@@ -18,7 +18,7 @@ const time = computed(() => timeLimitLabel(props.item.timeLimitMinutes))
 
 <template>
   <li class="min-w-0" data-testid="set-row">
-    <UCard>
+    <DsPanel>
       <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
           <DsIconChip icon="i-ph-clipboard-text-duotone" accent="action" size="lg" />
@@ -67,6 +67,6 @@ const time = computed(() => timeLimitLabel(props.item.timeLimitMinutes))
           >{{ SET_COPY.start }}</UButton
         >
       </div>
-    </UCard>
+    </DsPanel>
   </li>
 </template>

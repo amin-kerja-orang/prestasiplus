@@ -10,6 +10,7 @@ import { useFlashStore } from '@/stores/flash'
 import { COPY } from '../../components/soalan/lib'
 import SumbangSoalanCiptaPage from '../../pages/SumbangSoalanCiptaPage.vue'
 import { detail, makeRouter } from './fixtures'
+import { pickFiles } from './pick-file'
 
 const guru = vi.hoisted(() => ({
   createContributedQuestion: vi.fn(),
@@ -85,12 +86,8 @@ describe('S22 save path', () => {
     await fill(w)
     const png = new File(['x'], 'a.png', { type: 'image/png' })
     const rajah = new File(['y'], 'rajah.png', { type: 'image/png' })
-    const optionInput = t(w, 'q-option-image-1-input')
-    Object.defineProperty(optionInput.element, 'files', { value: [png], configurable: true })
-    await optionInput.trigger('change')
-    const questionInput = t(w, 'q-image-input')
-    Object.defineProperty(questionInput.element, 'files', { value: [rajah], configurable: true })
-    await questionInput.trigger('change')
+    await pickFiles(w, 'q-option-image-1-input', [png])
+    await pickFiles(w, 'q-image-input', [rajah])
     await w.find('form').trigger('submit')
     await flushPromises()
     const images = guru.createContributedQuestion.mock.calls[0]![1] as unknown as {

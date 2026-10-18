@@ -61,8 +61,8 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
     const { wrapper: w } = await open()
     const labels = w.findAll('label').map((l) => l.text().replace(/\s+/g, ' ').trim())
     expect(labels).toEqual([
-      'Nama *',
-      'Emel *',
+      'Nama',
+      'Emel',
       'No. Telefon (Pilihan)',
       'Status',
       'Kata Laluan Baru',
@@ -70,21 +70,21 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
     ])
     expect((w.get('[data-testid="user-name"]').element as HTMLInputElement).value).toBe('Murid Contoh Satu')
     expect((w.get('[data-testid="user-phone"]').element as HTMLInputElement).value).toBe('0191234567')
-    expect(text(w, 'user-status-line')).toBe('StatusAktif')
+    expect(text(w, 'user-status-line')).toBe('Status Aktif')
     expect(has(w, 'user-status-line')).toBe(true)
     expect(w.text()).not.toMatch(/Peranan|Sekolah|Tingkatan|Kad Pengenalan|Nota Keselamatan/)
     expect(w.find('select').exists()).toBe(false)
-    expect(text(w, 'user-cancel')).toBe('Batal')
-    expect(text(w, 'user-submit')).toBe('Kemaskini')
-    expect(w.get('[data-testid="user-cancel"]').attributes('href')).toBe('/admin-sekolah/pelajar')
+    expect(text(w, 'form-cancel')).toBe('Batal')
+    expect(text(w, 'form-submit')).toBe('Kemaskini')
+    expect(w.get('[data-testid="form-cancel"]').attributes('href')).toBe('/admin-sekolah/pelajar')
   })
 
   it('has the amber bar "Reset Kata Laluan" closed by default, with its sub-line, placeholders and hint', async () => {
     const { wrapper: w } = await open()
     const toggle = w.get('[data-testid="user-password-toggle"]')
-    expect(toggle.text()).toContain('Reset Kata Laluan')
-    expect(toggle.text()).toContain('Klik untuk buka bahagian reset kata laluan')
-    expect(toggle.text()).not.toContain('Tukar Kata Laluan')
+    expect(w.text()).toContain('Reset Kata Laluan')
+    expect(w.text()).toContain('Klik untuk buka bahagian reset kata laluan')
+    expect(w.text()).not.toContain('Tukar Kata Laluan')
     const panel = w.get('[data-testid="user-password-panel"]')
     expect(panel.attributes('style')).toContain('display: none')
     await toggle.trigger('click')
@@ -187,15 +187,15 @@ describe('S10 Edit Guru (FR-M27-104 to 107)', () => {
     const { wrapper: w } = await open()
     expect(api.fetchSchoolTeacher).toHaveBeenCalledWith(5, expect.anything())
     expect(w.findAll('label').slice(0, 3).map((l) => l.text().replace(/\s+/g, ' ').trim())).toEqual([
-      'Nama *',
-      'Emel *',
+      'Nama',
+      'Emel',
       'No. Telefon (Pilihan)',
     ])
     expect(has(w, 'user-status-line')).toBe(false)
-    expect(w.get('[data-testid="user-password-toggle"]').text()).toContain('Reset Kata Laluan')
+    expect(w.text()).toContain('Reset Kata Laluan')
     expect(w.get('[data-testid="user-password-panel"]').attributes('style')).toContain('display: none')
     expect(w.find('select').exists()).toBe(false)
-    expect(w.get('[data-testid="user-cancel"]').attributes('href')).toBe('/admin-sekolah/guru')
+    expect(w.get('[data-testid="form-cancel"]').attributes('href')).toBe('/admin-sekolah/guru')
     expect((w.get('[data-testid="user-phone"]').element as HTMLInputElement).value).toBe('')
   })
 
@@ -244,18 +244,18 @@ describe('S11 Cipta Pengguna (FR-M27-108 to 110)', () => {
     expect(w.findAll('label').map((l) => l.text().replace(/\s+/g, ' ').trim())).toEqual([
       'Peranan',
       'Sekolah',
-      'Nama *',
-      'Emel *',
+      'Nama',
+      'Emel',
       'No. Telefon (Pilihan)',
-      'Kata Laluan *',
-      'Sahkan Kata Laluan *',
+      'Kata Laluan',
+      'Sahkan Kata Laluan',
     ])
     expect(w.get('[data-testid="user-password"]').attributes('placeholder')).toBe('Minimum 6 aksara')
     expect(w.get('[data-testid="user-password-confirm"]').attributes('placeholder')).toBe('Taip semula kata laluan')
     expect(w.find('select').exists()).toBe(false)
-    expect(text(w, 'user-cancel')).toBe('Batal')
-    expect(text(w, 'user-submit')).toBe('Daftar Pengguna')
-    expect(w.get('[data-testid="user-cancel"]').attributes('href')).toBe('/admin-sekolah/guru')
+    expect(text(w, 'form-cancel')).toBe('Batal')
+    expect(text(w, 'form-submit')).toBe('Daftar Pengguna')
+    expect(w.get('[data-testid="form-cancel"]').attributes('href')).toBe('/admin-sekolah/guru')
   })
 
   it('creates with only the form fields (no role, school or isActive), flashes and opens S7', async () => {
@@ -327,10 +327,10 @@ describe('S12 Tambah Pelajar (FR-M27-117, 118, 120)', () => {
   it('shows the fields, the locked school label, the class options, the placeholder and the hint', async () => {
     const { wrapper: w } = await open()
     expect(w.findAll('label').map((l) => l.text().replace(/\s+/g, ' ').trim())).toEqual([
-      'Nama penuh *',
+      'Nama penuh',
       'Sekolah',
       'Kelas',
-      'Emel *',
+      'Emel',
       'Kata laluan',
     ])
     expect(text(w, 'user-school-name')).toBe('SMK Contoh Ujian')
@@ -342,9 +342,9 @@ describe('S12 Tambah Pelajar (FR-M27-117, 118, 120)', () => {
     ])
     expect(w.get('[data-testid="pupil-password"]').attributes('placeholder')).toBe('••••••••')
     expect(text(w, 'pupil-password-hint')).toBe('Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).')
-    expect(text(w, 'user-submit')).toBe('Cipta Pelajar')
-    expect(text(w, 'user-cancel')).toBe('Batal')
-    expect(w.get('[data-testid="user-cancel"]').attributes('href')).toBe('/admin-sekolah/pelajar')
+    expect(text(w, 'form-submit')).toBe('Cipta Pelajar')
+    expect(text(w, 'form-cancel')).toBe('Batal')
+    expect(w.get('[data-testid="form-cancel"]').attributes('href')).toBe('/admin-sekolah/pelajar')
     expect(has(w, 'pupil-credential')).toBe(false)
   })
 

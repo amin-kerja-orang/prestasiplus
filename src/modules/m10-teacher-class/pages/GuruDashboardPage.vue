@@ -4,10 +4,19 @@
  * stat cards, "Tindakan Hari Ini", "Peer Tutor Matching", "Tindakan Pantas", "Kelas Saya" and
  * "Penghantaran Terkini" from `GET /api/guru/dashboard`.
  */
-import { watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 
 import { useApi, usePageMeta, usePrototypeScope } from '@/composables'
-import { DsIconChip, DsPage } from '@/ds'
+import {
+  DsEmptyState,
+  DsIconChip,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  type DsAccent,
+  type StatItem,
+} from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { fetchGuruDashboard } from '../api/guru'
@@ -15,7 +24,6 @@ import ChecklistCard from '../components/dashboard/ChecklistCard.vue'
 import { DASH_COPY } from '../components/dashboard/copy'
 import GuideCard from '../components/dashboard/GuideCard.vue'
 import { welcomeSubtitle } from '../components/dashboard/lib'
-import StatCards from '../components/dashboard/StatCards.vue'
 import TodayPanel from '../components/dashboard/TodayPanel.vue'
 
 const session = useSessionStore()
@@ -28,37 +36,61 @@ watchEffect(() => {
   if (name) setHeader({ title: 'Dashboard Guru', subtitle: welcomeSubtitle(name) })
 })
 
-const QUICK_ICONS = [
-  'i-ph-plus-circle-duotone',
-  'i-ph-pen-nib-duotone',
-  'i-ph-graduation-cap-duotone',
-  'i-ph-identification-card-duotone',
-]
+/** FN-M10-2.1.3: four stat tiles, each with its own categorical accent (FR-M10-10, BR-M10-06). */
+const stats = computed<StatItem[]>(() => {
+  const s = data.value?.stats
+  if (!s) return []
+  return [
+    {
+      key: 'classes',
+      label: DASH_COPY.statActiveClasses,
+      value: s.activeClasses,
+      sub: `${String(s.totalClasses)} jumlah kelas`,
+      icon: 'chalkboard-teacher',
+      accent: 'action',
+    },
+    {
+      key: 'students',
+      label: DASH_COPY.statStudents,
+      value: s.students,
+      sub: DASH_COPY.statStudentsCaption,
+      icon: 'student',
+      accent: 'win',
+    },
+    {
+      key: 'questions',
+      label: DASH_COPY.statQuestions,
+      value: s.questions,
+      sub: `✅ ${String(s.questionsApproved)} diluluskan`,
+      icon: 'clipboard-text',
+      accent: 'heat',
+    },
+    {
+      key: 'assignments',
+      label: DASH_COPY.statAssignments,
+      value: s.assignments,
+      sub: DASH_COPY.statAssignmentsCaption,
+      icon: 'chart-bar',
+      accent: 'trial',
+    },
+  ]
+})
+
+const QUICK_ICONS = ['plus-circle', 'pen-nib', 'graduation-cap', 'identification-card']
+const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
 </script>
 
 <template>
   <DsPage data-testid="guru-dashboard">
     <GuideCard />
 
-    <UCard v-if="error" data-testid="dashboard-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning-circle-duotone"
-        :title="DASH_COPY.loadFailed"
-        role="alert"
-      />
-      <UButton
-        type="button"
-        color="neutral"
-        variant="soft"
-        class="mt-3"
-        data-testid="dashboard-retry"
-        @click="reload"
-      >
-        {{ DASH_COPY.retry }}
-      </UButton>
-    </UCard>
+    <DsLoadError
+      v-if="error"
+      :message="DASH_COPY.loadFailed"
+      :retry-label="DASH_COPY.retry"
+      testid="dashboard-error"
+      @retry="reload"
+    />
 
     <div
       v-else-if="!data"
@@ -70,47 +102,45 @@ const QUICK_ICONS = [
     </div>
 
     <template v-else>
-      <StatCards :stats="data.stats" />
+      <DsStatRow :items="stats" prefix="stat" part-prefix="stat" data-testid="stat-cards" :cols="4" />
       <div class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-12 xl:items-start">
         <div class="flex min-w-0 flex-col gap-4 xl:col-span-8">
           <TodayPanel :today="data.today" />
 
-          <UCard data-testid="peer-card">
+          <DsPanel data-testid="peer-card">
             <p class="text-overline text-muted">{{ DASH_COPY.peerLabel }}</p>
             <h2 class="text-subheading text-highlighted">{{ DASH_COPY.peerTitle }}</h2>
             <p class="mt-1 text-body text-muted">{{ DASH_COPY.peerText }}</p>
             <p class="mt-4 text-body text-muted" data-testid="peer-empty">
               {{ DASH_COPY.peerEmpty }}
             </p>
-          </UCard>
+          </DsPanel>
 
-          <UCard data-testid="submissions-card">
-            <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-              <UIcon name="i-ph-clock-duotone" class="size-5 text-primary" />{{
-                DASH_COPY.submissionsTitle
-              }}
-            </h2>
-            <div
-              class="flex flex-col items-center gap-2 py-8 text-center"
+          <DsPanel
+            :title="DASH_COPY.submissionsTitle"
+            icon="clock"
+            accent="heat"
+            data-testid="submissions-card"
+          >
+            <DsEmptyState
+              :title="DASH_COPY.submissionsEmpty"
+              :description="DASH_COPY.submissionsHint"
+              icon="tray"
               data-testid="submissions-empty"
-            >
-              <UIcon name="i-ph-tray-duotone" class="size-10 text-dimmed" />
-              <p class="text-body text-muted">{{ DASH_COPY.submissionsEmpty }}</p>
-              <p class="text-caption text-muted">{{ DASH_COPY.submissionsHint }}</p>
-            </div>
-          </UCard>
+            />
+          </DsPanel>
         </div>
 
         <div class="flex min-w-0 flex-col gap-4 xl:col-span-4">
           <ChecklistCard :checklist="data.checklist" />
 
-          <UCard data-testid="quick-card">
-            <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-              <UIcon name="i-ph-lightning-duotone" class="size-5 text-primary" />{{
-                DASH_COPY.quickTitle
-              }}
-            </h2>
-            <div class="mt-3 flex flex-col gap-2">
+          <DsPanel
+            :title="DASH_COPY.quickTitle"
+            icon="lightning"
+            accent="win"
+            data-testid="quick-card"
+          >
+            <div class="flex flex-col gap-2">
               <template v-for="(q, i) in DASH_COPY.quick" :key="q.to">
                 <!-- Prototype scope (D43): tiles that lead outside the matrix are not shown. -->
                 <UButton
@@ -122,7 +152,7 @@ const QUICK_ICONS = [
                   class="h-auto min-h-11 justify-start p-3"
                   data-testid="quick-tile"
                 >
-                  <DsIconChip :icon="QUICK_ICONS[i]!" />
+                  <DsIconChip :icon="QUICK_ICONS[i]!" :accent="QUICK_ACCENTS[i]" />
                   <span class="min-w-0">
                     <span class="block text-label text-highlighted">{{ q.title }}</span>
                     <span class="block text-caption text-muted">{{ q.text }}</span>
@@ -130,19 +160,19 @@ const QUICK_ICONS = [
                 </UButton>
               </template>
             </div>
-          </UCard>
+          </DsPanel>
 
-          <UCard data-testid="classes-card">
-            <div class="flex items-center justify-between gap-2">
-              <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon name="i-ph-chalkboard-teacher-duotone" class="size-5 text-primary" />{{
-                  DASH_COPY.classesTitle
-                }}
-              </h2>
+          <DsPanel
+            :title="DASH_COPY.classesTitle"
+            icon="chalkboard-teacher"
+            accent="action"
+            data-testid="classes-card"
+          >
+            <template #actions>
               <UButton to="/guru/kelas" variant="link" size="sm" data-testid="classes-all">{{
                 DASH_COPY.all
               }}</UButton>
-            </div>
+            </template>
             <p
               v-if="data.classes.length === 0"
               class="py-8 text-center text-body text-muted"
@@ -156,7 +186,7 @@ const QUICK_ICONS = [
                 {{ c.name }} · {{ c.studentCount }} pelajar
               </li>
             </ul>
-          </UCard>
+          </DsPanel>
         </div>
       </div>
     </template>

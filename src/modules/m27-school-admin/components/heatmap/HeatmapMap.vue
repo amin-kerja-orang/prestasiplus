@@ -9,7 +9,7 @@
  */
 import { computed } from 'vue'
 
-import { DsHeatGrid, type HeatRow } from '@/ds'
+import { DsHeatGrid, DsPanel, type HeatRow } from '@/ds'
 
 import type { HeatmapBidang, HeatmapSp } from '../../api/school-admin'
 import { LEGEND, tileTitle } from './dskp-status'
@@ -52,7 +52,7 @@ function titleOf(rowId: string, column: number): string {
 </script>
 
 <template>
-  <UCard data-testid="dh-card">
+  <DsPanel data-testid="dh-card">
     <div class="flex min-w-0 flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted" data-testid="dh-heading">
         <UIcon name="i-ph-map-trifold" class="size-5 shrink-0 text-primary" aria-hidden="true" />Peta
@@ -86,5 +86,5 @@ function titleOf(rowId: string, column: number): string {
         <li v-for="l in LEGEND" :key="l.status">{{ l.label }}</li>
       </ul>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

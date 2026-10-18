@@ -7,14 +7,13 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsDrillTable } from '@/ds'
+import { DsDrillTable, DsStatRow, DsStatusBadge } from '@/ds'
 
 import { fetchCommandCenterEvaluation } from '../../api/command-center'
 import type { CcEvaluation } from '../../api/command-center-types'
 import CcDialog from './CcDialog.vue'
-import { useOpenTab } from './composables'
-import { riskColor, riskLabel, studentPath } from './copy'
-import StatCards from './StatCards.vue'
+import { statItems, useOpenTab } from './composables'
+import { riskLabel, riskStatus, studentPath } from './copy'
 
 /** One student of the alert list; a mapped alias so the DS table gets an index signature. */
 type Row = { [K in keyof CcEvaluation['alerts'][number]]: CcEvaluation['alerts'][number][K] }
@@ -53,7 +52,7 @@ const columns: TableColumn<Row>[] = [
       Menilai semua pelajar...
     </p>
     <template v-else>
-      <StatCards :cards="cards" :cols="5" />
+      <DsStatRow :items="statItems(cards)" prefix="cc-modal-card" :cols="5" data-testid="cc-modal-cards" />
       <p
         v-if="data.alerts.length === 0"
         class="text-body text-highlighted"
@@ -69,13 +68,11 @@ const columns: TableColumn<Row>[] = [
           @drill="(a: Row) => openTab(studentPath(a.studentId))"
         >
           <template #risk-cell="{ row }">
-            <UBadge
-              :color="riskColor(row.original.riskLevel)"
-              variant="soft"
-              icon="i-ph-warning"
+            <DsStatusBadge
+              :status="riskStatus(row.original.riskLevel)"
+              :label="riskLabel(row.original.riskLevel)"
               data-testid="cc-risk"
-              >{{ riskLabel(row.original.riskLevel) }}</UBadge
-            >
+            />
           </template>
           <template #name-cell="{ row }">
             <UButton

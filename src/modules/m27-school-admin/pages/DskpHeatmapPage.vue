@@ -15,14 +15,15 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsPage } from '@/ds'
+import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
 
 import { fetchSchoolDskpHeatmap } from '../api/school-admin'
-import ReportCrumb from '../components/shared/ReportCrumb.vue'
 import HeatmapFilters from '../components/heatmap/HeatmapFilters.vue'
 import HeatmapMap from '../components/heatmap/HeatmapMap.vue'
 
 const TITLE = 'DSKP Heatmap'
+
+const crumbs = [{ label: 'Dashboard Sekolah', to: '/admin-sekolah' }, { label: TITLE }]
 
 const route = useRoute()
 const router = useRouter()
@@ -40,7 +41,7 @@ const requested = computed(() =>
     : null,
 )
 
-const { data, error, loading } = useApi(
+const { data, error, loading, reload } = useApi(
   (signal) =>
     fetchSchoolDskpHeatmap({
       subjectId: requested.value,
@@ -95,8 +96,10 @@ function pickSubject(id: number) {
 
 <template>
   <DsPage data-testid="dh-page">
+    <template #breadcrumb>
+      <DsBreadcrumb v-if="data" :items="crumbs" data-testid="dh-breadcrumb" />
+    </template>
     <template v-if="data">
-      <ReportCrumb prefix="dh" back-label="← Dashboard Sekolah" back-to="/admin-sekolah" :title="TITLE" />
       <HeatmapFilters
         :subjects="data.subjects"
         :subject-id="selectValue"
@@ -109,14 +112,11 @@ function pickSubject(id: number) {
         :empty="empty"
       />
     </template>
-    <UAlert
+    <DsLoadError
       v-else-if="error && !refused"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle"
-      :description="error.message"
-      role="alert"
-      data-testid="dh-error"
+      :message="error.message"
+      testid="dh-error"
+      @retry="reload"
     />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="dh-loading">
       <USkeleton class="h-24 w-full" />

@@ -16,19 +16,20 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsPage } from '@/ds'
+import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
 import { useSession } from '@/composables/useSession'
 
 import { fetchSchoolActivityReport } from '../api/school-admin'
-import ActivityBreadcrumb from '../components/activity/ActivityBreadcrumb.vue'
 import ActivityOverview from '../components/activity/ActivityOverview.vue'
 import ActivityPupilsTab from '../components/activity/ActivityPupilsTab.vue'
 import ActivityRangePills from '../components/activity/ActivityRangePills.vue'
 import ActivityTabs, { type ActivityTab } from '../components/activity/ActivityTabs.vue'
 import ActivityTeachersTab from '../components/activity/ActivityTeachersTab.vue'
-import { normaliseRange } from '../components/activity/activity-format'
+import { DASHBOARD_PATH, normaliseRange } from '../components/activity/activity-format'
 
 const TITLE = 'Laporan Aktiviti'
+
+const crumbs = [{ label: 'Dashboard Sekolah', to: DASHBOARD_PATH }, { label: TITLE }]
 
 const route = useRoute()
 const pageMeta = usePageMeta()
@@ -36,7 +37,7 @@ const { user } = useSession()
 const range = computed(() => normaliseRange(route.query.range))
 const tab = ref<ActivityTab>('overview')
 
-const { data, error, loading } = useApi(
+const { data, error, loading, reload } = useApi(
   (signal) => fetchSchoolActivityReport({ range: range.value, signal }),
   [range],
 )
@@ -67,8 +68,10 @@ watch(
 
 <template>
   <DsPage data-testid="la-page" :data-range="data?.range">
+    <template #breadcrumb>
+      <DsBreadcrumb v-if="data" :items="crumbs" data-testid="la-breadcrumb" />
+    </template>
     <template v-if="data">
-      <ActivityBreadcrumb :title="TITLE" />
       <ActivityRangePills :active="range" />
       <ActivityTabs
         :active="tab"
@@ -80,14 +83,11 @@ watch(
       <ActivityTeachersTab v-else-if="tab === 'guru'" :report="data" />
       <ActivityPupilsTab v-else :report="data" />
     </template>
-    <UAlert
+    <DsLoadError
       v-else-if="error && !refused"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning-circle"
-      :description="error.message"
-      role="alert"
-      data-testid="la-error"
+      :message="error.message"
+      testid="la-error"
+      @retry="reload"
     />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="la-loading">
       <USkeleton class="h-24 w-full" />

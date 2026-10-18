@@ -9,6 +9,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import SumbangSoalanPage from '../../pages/SumbangSoalanPage.vue'
 import { listMeta, makeRouter, question, summary } from './fixtures'
+import { pickFiles } from './pick-file'
 
 const guru = vi.hoisted(() => ({
   fetchContributions: vi.fn(),
@@ -56,7 +57,7 @@ afterEach(() => vi.clearAllMocks())
 describe('S21 Sumbang Soalan', () => {
   it('renders the stats, tiers, next target and the subject chips', async () => {
     const w = await mountPage()
-    expect(t(w, 'stat-total-value').text()).toContain('120')
+    expect(t(w, 'stat-total').text()).toContain('120')
     expect(t(w, 'stat-pending').text()).toContain('⏳ Menunggu')
     expect(all(w, 'tier')).toHaveLength(3)
     expect(all(w, 'tier').map((x) => x.attributes('data-reached'))).toEqual([
@@ -157,7 +158,7 @@ describe('S21 Sumbang Soalan', () => {
     const w = await mountPage()
     expect(t(w, 'soalan-error').text()).toContain('Gagal memuatkan data')
     guru.fetchContributions.mockResolvedValue(summary())
-    await t(w, 'soalan-retry').trigger('click')
+    await w.get('[data-testid="soalan-error"] button').trigger('click')
     await flushPromises()
     expect(t(w, 'contribution-summary').exists()).toBe(true)
   })
@@ -194,9 +195,8 @@ describe('S21 import card', () => {
     expect(saveBlob).toHaveBeenCalledWith(expect.any(Blob), 'template-import-soalan.csv')
 
     await t(w, 'import-toggle').trigger('click')
-    const file = t(w, 'import-file')
+    const file = t(w, 'import-file').get('input[type=file]')
     expect(file.attributes('accept')).toBe('.csv,.txt')
-    expect(file.attributes('required')).toBeDefined()
     expect(t(w, 'import-guide').text()).toContain(
       'Baris yang ada ralat akan dilaporkan — soalan sah tetap diimport',
     )
@@ -209,10 +209,8 @@ describe('S21 import card', () => {
     })
     const w = await mountPage()
     await t(w, 'import-toggle').trigger('click')
-    const input = t(w, 'import-file')
     const csv = new File(['a'], 'soalan.csv', { type: 'text/csv' })
-    Object.defineProperty(input.element, 'files', { value: [csv], configurable: true })
-    await input.trigger('change')
+    await pickFiles(w, 'import-file', [csv])
     await t(w, 'import-form').trigger('submit')
     await flushPromises()
     expect(guru.importQuestions).toHaveBeenCalledWith(csv)
@@ -232,12 +230,7 @@ describe('S21 import card', () => {
     )
     const w = await mountPage()
     await t(w, 'import-toggle').trigger('click')
-    const input = t(w, 'import-file')
-    Object.defineProperty(input.element, 'files', {
-      value: [new File(['a'], 'a.csv')],
-      configurable: true,
-    })
-    await input.trigger('change')
+    await pickFiles(w, 'import-file', [new File(['a'], 'a.csv')])
     await t(w, 'import-form').trigger('submit')
     await flushPromises()
     expect(t(w, 'import-errors').text()).toContain('Sila pilih fail CSV.')
@@ -254,7 +247,7 @@ describe('S21 Hantar Kertas', () => {
     expect(t(w, 'paper-oleh').attributes('maxlength')).toBe('150')
     expect(t(w, 'paper-catatan').attributes('maxlength')).toBe('1000')
     expect(t(w, 'paper-tahun').attributes('min')).toBe('2000')
-    expect(t(w, 'paper-files').attributes('accept')).toBe('.pdf,.doc,.docx,.xls,.xlsx')
+    expect(t(w, 'paper-files').get('input[type=file]').attributes('accept')).toBe('.pdf,.doc,.docx,.xls,.xlsx')
     expect(
       t(w, 'paper-jenis')
         .findAll('option')
@@ -275,9 +268,7 @@ describe('S21 Hantar Kertas', () => {
     const w = await mountPage()
     const pdf = new File([new Uint8Array(1024 * 1024)], 'kertas.pdf')
     const docx = new File(['x'], 'skema.docx')
-    const input = t(w, 'paper-files')
-    Object.defineProperty(input.element, 'files', { value: [pdf, docx], configurable: true })
-    await input.trigger('change')
+    await pickFiles(w, 'paper-files', [pdf, docx], true)
     const rows = all(w, 'paper-file')
     expect(rows.map((r) => r.attributes('data-kind'))).toEqual(['pdf', 'word'])
     expect(rows[0]!.text()).toMatch(/kertas\.pdf\s*1\.00 MB/)

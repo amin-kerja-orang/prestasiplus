@@ -48,7 +48,7 @@ watch(() => props.text, draw)
     ref="canvas"
     :width="SIZE"
     :height="SIZE"
-    class="h-48 w-48 rounded-lg"
+    class="h-48 w-48"
     data-testid="qr-canvas"
   />
 </template>

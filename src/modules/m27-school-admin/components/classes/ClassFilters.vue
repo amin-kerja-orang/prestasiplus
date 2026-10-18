@@ -7,9 +7,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { useDebounce } from '@/composables'
-import { DsFilterBar } from '@/ds'
-
-import NativeSelect from '../native/NativeSelect.vue'
+import { DsFilterBar, DsFormField, DsNativeSelect } from '@/ds'
 
 const props = defineProps<{
   levels: { code: string; label: string }[]
@@ -53,7 +51,7 @@ function onReset() {
 <template>
   <DsFilterBar :active-count="activeCount" data-testid="kl-filters" @apply="onSubmit" @reset="onReset">
     <template #search>
-      <UFormField label="Cari" name="search" class="min-w-0 grow">
+      <DsFormField label="Cari" name="search" class="min-w-0 grow">
         <UInput
           id="kl-search"
           v-model="searchValue"
@@ -66,10 +64,10 @@ function onReset() {
           data-testid="kl-search"
           @input="applyLater"
         />
-      </UFormField>
+      </DsFormField>
     </template>
-    <UFormField label="Tingkatan / Darjah" name="level" class="min-w-48">
-      <NativeSelect
+    <DsFormField label="Tingkatan / Darjah" native for="kl-level" class="min-w-48">
+      <DsNativeSelect
         id="kl-level"
         v-model="levelValue"
         name="level"
@@ -78,7 +76,7 @@ function onReset() {
       >
         <option value="">Semua</option>
         <option v-for="l in levels" :key="l.code" :value="l.code">{{ l.label }}</option>
-      </NativeSelect>
-    </UFormField>
+      </DsNativeSelect>
+    </DsFormField>
   </DsFilterBar>
 </template>

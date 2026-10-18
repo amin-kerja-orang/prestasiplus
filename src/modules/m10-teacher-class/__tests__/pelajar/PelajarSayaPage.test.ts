@@ -84,12 +84,12 @@ afterEach(() => {
 describe('S6 PelajarSayaPage', () => {
   it('shows the counter, the link, the tabs with the badge, and the mine rows by default', async () => {
     const w = await mountPage()
-    expect(w.get('[data-testid="pelajar-count"]').text()).toBe('2')
+    expect(w.get('[data-testid="pelajar-value"]').text()).toBe('2')
     expect(w.text()).toContain('Pelajar dalam kelas saya')
     expect(w.get('[data-testid="pelajar-create"]').attributes('href')).toBe('/guru/pelajar/cipta')
     expect(w.get('[data-testid="pelajar-create"]').text()).toContain('Cipta')
     const tabs = w.findAll('[data-testid="pelajar-tabs"] button')
-    expect(tabs.map((t) => t.text())).toEqual(['Pelajar Sekolah', 'Pelajar Saya 2'])
+    expect(tabs.map((t) => t.text())).toEqual(['Pelajar Sekolah', 'Pelajar Saya (2)'])
     expect(w.findAll('[data-testid="student-row"]')).toHaveLength(2)
     expect(w.findAll('[data-testid="student-name"]')[0]?.text()).toBe('Murid Demo 01')
   })

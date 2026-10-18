@@ -9,11 +9,18 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
-import { DsPage, DsStatTile } from '@/ds'
+import {
+  DsArt3D,
+  DsBackLink,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  type StatItem,
+} from '@/ds'
 
 import { fetchContributedQuestion } from '../api/guru'
 import { COPY, isLoadableImage, OPTION_LETTERS } from '../components/soalan/lib'
-import PreviewImage from '../components/native/PreviewImage.vue'
 
 const props = defineProps<{ id: number }>()
 
@@ -21,6 +28,16 @@ const { data, error, reload } = useApi(
   (signal) => fetchContributedQuestion(props.id, { signal }),
   () => props.id,
 )
+
+const usageStats = computed<StatItem[]>(() => {
+  const u = data.value?.usage
+  if (!u) return []
+  return [
+    { key: 'attempts', label: 'Kali Digunakan', value: u.attempts, icon: 'repeat', accent: 'action' },
+    { key: 'correct', label: 'Jawab Betul', value: u.correct, icon: 'check-circle', accent: 'win' },
+    { key: 'accuracy', label: 'Ketepatan', value: `${String(u.accuracy)}%`, icon: 'target', accent: 'heat' },
+  ]
+})
 
 const notFound = computed(() => isApiError(error.value) && error.value.status === 404)
 watch(notFound, (is404) => {
@@ -30,24 +47,13 @@ watch(notFound, (is404) => {
 
 <template>
   <DsPage class="max-w-3xl" data-testid="soalan-detail-page">
-    <UCard v-if="error && !notFound" data-testid="detail-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning-circle-duotone"
-        :title="COPY.loadFailed"
-        role="alert"
-      />
-      <UButton
-        type="button"
-        color="neutral"
-        variant="soft"
-        class="mt-3 min-h-11"
-        data-testid="detail-retry"
-        @click="reload"
-        >{{ COPY.retry }}</UButton
-      >
-    </UCard>
+    <DsLoadError
+      v-if="error && !notFound"
+      :message="COPY.loadFailed"
+      :retry-label="COPY.retry"
+      testid="detail-error"
+      @retry="reload"
+    />
     <div v-else-if="!data && !notFound" class="flex flex-col gap-3" aria-busy="true">
       <USkeleton class="h-10 w-full" />
       <USkeleton class="h-48 w-full" />
@@ -55,15 +61,7 @@ watch(notFound, (is404) => {
 
     <template v-else-if="data">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <UButton
-          to="/guru/soalan"
-          color="neutral"
-          variant="ghost"
-          icon="i-ph-arrow-left"
-          class="min-h-11"
-          data-testid="detail-back"
-          >Kembali</UButton
-        >
+        <DsBackLink to="/guru/soalan" data-testid="detail-back" />
         <UButton
           :to="`/guru/soalan/${String(data.id)}/edit`"
           icon="i-ph-pencil-simple-duotone"
@@ -73,7 +71,7 @@ watch(notFound, (is404) => {
         >
       </div>
 
-      <UCard data-testid="detail-card">
+      <DsPanel data-testid="detail-card">
         <div class="mb-3 flex flex-wrap gap-2">
           <UBadge color="neutral" variant="subtle" data-testid="detail-subject">{{
             data.subjectName
@@ -94,11 +92,12 @@ watch(notFound, (is404) => {
         >
           {{ data.questionText }}
         </p>
-        <PreviewImage
+        <DsArt3D
           v-if="isLoadableImage(data.questionImage)"
+          variant="plain"
           :src="data.questionImage"
           alt="Imej soalan"
-          class="mt-3"
+          class="mt-3 max-h-64 object-contain"
         />
         <ul v-if="data.options" class="mt-4 flex flex-col gap-2">
           <li
@@ -108,10 +107,8 @@ watch(notFound, (is404) => {
             :data-correct="data.correctAnswer === i ? 'true' : 'false'"
             data-testid="detail-option"
           >
-            <UCard
-              variant="subtle"
-              :ui="{ body: 'flex min-w-0 items-center justify-between gap-2 p-3 sm:p-3' }"
-            >
+            <DsPanel tone="inset">
+<div class="flex min-w-0 items-center justify-between gap-2">
               <span class="min-w-0 text-body break-words text-default"
                 ><strong>{{ OPTION_LETTERS[i] }})</strong> {{ opt }}</span
               >
@@ -122,43 +119,22 @@ watch(notFound, (is404) => {
                 icon="i-ph-check-circle-duotone"
                 >Betul</UBadge
               >
-            </UCard>
+            </div>
+</DsPanel>
           </li>
         </ul>
-      </UCard>
+      </DsPanel>
 
-      <UCard v-if="data.explanation" data-testid="detail-explanation">
+      <DsPanel v-if="data.explanation" data-testid="detail-explanation">
         <h2 class="mb-1 text-subheading text-highlighted">Penerangan</h2>
         <p class="min-w-0 text-body break-words whitespace-pre-wrap text-default">
           {{ data.explanation }}
         </p>
-      </UCard>
+      </DsPanel>
 
       <section data-testid="detail-stats">
         <h2 class="mb-3 text-subheading text-highlighted">Statistik</h2>
-        <div class="grid grid-cols-3 gap-3">
-          <div data-testid="stat-attempts">
-            <DsStatTile
-              :value="data.usage.attempts"
-              unit="Kali Digunakan"
-              icon="i-ph-repeat-duotone"
-            />
-          </div>
-          <div data-testid="stat-correct">
-            <DsStatTile
-              :value="data.usage.correct"
-              unit="Jawab Betul"
-              icon="i-ph-check-circle-duotone"
-            />
-          </div>
-          <div data-testid="stat-accuracy">
-            <DsStatTile
-              :value="`${data.usage.accuracy}%`"
-              unit="Ketepatan"
-              icon="i-ph-target-duotone"
-            />
-          </div>
-        </div>
+        <DsStatRow :items="usageStats" prefix="stat" :cols="3" />
       </section>
     </template>
   </DsPage>

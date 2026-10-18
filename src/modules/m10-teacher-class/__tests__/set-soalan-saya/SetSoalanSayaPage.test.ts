@@ -64,7 +64,7 @@ describe('S34 Set Soalan Guru (student)', () => {
     const w = await mountPage()
     expect(w.get('[data-testid="sets-error"]').text()).toContain('Ralat memuatkan data')
     api.fetchMyQuestionSets.mockResolvedValueOnce(list([SET]))
-    await w.get('[data-testid="sets-retry"]').trigger('click')
+    await w.get('[data-testid="sets-error"] button').trigger('click')
     await flushPromises()
     expect(w.findAll('[data-testid="set-row"]')).toHaveLength(1)
   })

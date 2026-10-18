@@ -5,8 +5,9 @@
  */
 import { computed } from 'vue'
 
+import { DsPillNav, type PillItem } from '@/ds'
+
 import type { LevelFilter } from '../../api/amaran'
-import PillNav, { type PillItem } from '../shared/PillNav.vue'
 import { AMARAN_PATH, LEVEL_PILLS } from './amaran-format'
 
 const props = defineProps<{ active: LevelFilter | null }>()
@@ -21,11 +22,11 @@ const items = computed<PillItem<string>[]>(() =>
 </script>
 
 <template>
-  <PillNav
+  <DsPillNav
     :items="items"
     :active="props.active ?? 'all'"
-    nav-id="am-pills"
-    prefix="am-pill"
+    testid-prefix="am-pill"
     label="Tingkatan"
+    data-testid="am-pills"
   />
 </template>
