@@ -125,7 +125,7 @@ const accountItems = computed(() => [
       >
       <UDashboardGroup
         storage="local"
-        storage-key="pentadbiran-dashboard"
+        storage-key="pentadbiran-dashboard-v2"
         class="overflow-clip bg-muted"
       >
         <UDashboardSidebar
@@ -133,9 +133,9 @@ const accountItems = computed(() => [
           v-model:open="sidebarOpen"
           collapsible
           resizable
-          :min-size="14"
-          :default-size="17"
-          :max-size="26"
+          :min-size="16"
+          :default-size="21"
+          :max-size="30"
           :collapsed-size="4"
           :ui="{
             root: 'bg-default',
@@ -167,7 +167,9 @@ const accountItems = computed(() => [
               aria-label="Menu utama"
               data-testid="pentadbiran-nav"
             :ui="{
-                link: 'min-h-11 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/15 aria-[current=page]:font-semibold aria-[current=page]:text-highlighted',
+                linkLabel: 'whitespace-normal break-words text-start leading-snug',
+                linkTrailing: 'shrink-0',
+                link: 'min-h-11 h-auto py-1.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/15 aria-[current=page]:font-semibold aria-[current=page]:text-highlighted',
               }"
             >
               <template #item-leading="{ item }">
@@ -178,6 +180,9 @@ const accountItems = computed(() => [
                   ><UIcon :name="item.icon" class="size-[18px]"
                 /></span>
               </template>
+              <template #item-label="{ item }"
+                ><span :title="item.label">{{ item.label }}</span></template
+              >
             </UNavigationMenu>
           </template>
 
@@ -199,10 +204,12 @@ const accountItems = computed(() => [
                   >{{ initials }}</span
                 >
                 <span v-if="!collapsed" class="min-w-0 flex-1">
-                  <span class="block truncate text-label font-semibold text-highlighted">{{
-                    name || 'Akaun'
-                  }}</span>
-                  <span class="block truncate text-caption text-muted">{{ SCOPE_CHIP }}</span>
+                  <span
+                    class="block break-words text-label font-semibold text-highlighted"
+                    :title="name || 'Akaun'"
+                    >{{ name || 'Akaun' }}</span
+                  >
+                  <span class="block break-words text-caption text-muted">{{ SCOPE_CHIP }}</span>
                 </span>
                 <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
               </button>
@@ -216,6 +223,8 @@ const accountItems = computed(() => [
         >
           <template #header>
             <UDashboardNavbar
+              :toggle="false"
+              :as="{ title: 'div' }"
               :ui="{ root: 'h-16 bg-default shadow-bar', title: 'min-w-0' }"
               data-testid="pentadbiran-header"
             >
@@ -238,7 +247,11 @@ const accountItems = computed(() => [
                   <span v-if="crumb" class="hidden truncate text-caption text-muted sm:block">{{
                     crumb
                   }}</span>
-                  <h1 class="truncate text-subheading font-bold text-highlighted">{{ title }}</h1>
+                  <h1
+                    class="line-clamp-2 text-label font-bold break-words text-highlighted sm:text-subheading"
+                  >
+                    {{ title }}
+                  </h1>
                 </div>
               </template>
               <template #right>

@@ -80,3 +80,9 @@ Hidden items: 70
 | SY-02 | Kawalan Ciri | Sistem | .my (Blade admin) | Not built |
 | SY-03 | Prestasi Sistem | Sistem | .my (Blade admin) | Not built |
 | SY-04 | Log Audit | Sistem | .my (Blade admin), filament | Not built |
+
+## Student menu: hidden items (v2-shells, QA M-07)
+
+| Menu item | Route | Reason | Status |
+|---|---|---|---|
+| Analisa Item | /analisa-item | The route redirects a student to /dashboard (no student screen). Hidden from the student menu in `src/shells/nav/user-nav.ts` (`STUDENT_HIDDEN_IDS`); teacher and school admin keep it. | Not built for student |

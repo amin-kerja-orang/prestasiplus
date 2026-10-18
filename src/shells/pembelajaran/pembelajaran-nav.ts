@@ -56,6 +56,14 @@ const TEACHER_TABS: readonly { label: string; navId: string; live?: boolean }[] 
   { label: 'Penilaian', navId: 't-prestasi' },
 ]
 
+/** School-admin tabs (the user-nav bottom bar has none for this role). */
+const SCHOOL_TABS: readonly { label: string; navId: string; icon: string; live?: boolean }[] = [
+  { label: 'Dashboard', navId: 'sa-dashboard', icon: 'house' },
+  { label: 'Command Center', navId: 'sa-command-center', icon: 'chart-line-up', live: true },
+  { label: 'Prestasi', navId: 'sa-prestasi', icon: 'pencil-simple-line' },
+  { label: 'Pelajar', navId: 'sa-senarai-pelajar', icon: 'chalkboard-teacher' },
+]
+
 export function iconFor(id: string): string | null {
   return ICON_BY_ID[id] ?? null
 }
@@ -82,6 +90,22 @@ export function pembelajaranTabs(role: Role | null): PembelajaranTab[] {
         label: spec.label,
         to: item.to,
         icon: ICON_BY_ID[item.id] ?? 'house',
+        ...(spec.live ? { live: true } : {}),
+      })
+    }
+    return tabs
+  }
+  if (role === 'school_admin') {
+    const items = allItems(navFor(role, 'sidebar'))
+    const tabs: PembelajaranTab[] = []
+    for (const spec of SCHOOL_TABS) {
+      const item = items.find((i) => i.id === spec.navId)
+      if (!item) continue
+      tabs.push({
+        id: item.id,
+        label: spec.label,
+        to: item.to,
+        icon: spec.icon,
         ...(spec.live ? { live: true } : {}),
       })
     }
@@ -228,7 +252,8 @@ export function buildLearnNav(
   const groups: NavigationMenuItem[][] = []
   let cur: NavigationMenuItem[] = []
   const flush = (): void => {
-    if (cur.length > 0) groups.push(cur)
+    // A heading with nothing under it (the next heading follows at once) is not shown.
+    if (cur.some((i) => i.type !== 'label')) groups.push(cur)
     cur = []
   }
   for (const entry of entries) {

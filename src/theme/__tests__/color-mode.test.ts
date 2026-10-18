@@ -15,8 +15,8 @@ import {
 } from '../color-mode'
 
 describe('pure helpers', () => {
-  it('defaults: learner dark, staff follows the system', () => {
-    expect(defaultPreference('learner')).toBe('dark')
+  it('defaults: every portal follows the system', () => {
+    expect(defaultPreference('learner')).toBe('system')
     expect(defaultPreference('staff')).toBe('system')
   })
 
@@ -86,7 +86,8 @@ describe('useThemeMode', () => {
     root.removeAttribute('data-personality')
   })
 
-  it('learner is dark by default and marks <html>; unmount restores legacy state', async () => {
+  it('learner follows the OS by default and marks <html>; unmount restores legacy state', async () => {
+    mockSystemScheme(true)
     mountPortal('learner')
     await nextTick()
     expect(root.classList.contains('dark')).toBe(true)
@@ -116,6 +117,7 @@ describe('useThemeMode', () => {
   })
 
   it('toggle stores the choice under pp.theme and flips .dark', async () => {
+    mockSystemScheme(true)
     const api = mountPortal('learner')
     await nextTick()
     api.toggle()
@@ -150,10 +152,11 @@ describe('useThemeMode', () => {
     personality.value = 'learner'
     await nextTick()
     expect(root.dataset.personality).toBe('learner')
-    expect(root.classList.contains('dark')).toBe(true)
+    expect(root.classList.contains('dark')).toBe(false)
   })
 
   it('overlapping layouts: unmounting the older one keeps the newer personality', async () => {
+    mockSystemScheme(true)
     mountPortal('staff')
     mountPortal('learner')
     await nextTick()

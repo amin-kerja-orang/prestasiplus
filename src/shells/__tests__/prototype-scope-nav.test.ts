@@ -55,8 +55,10 @@ describe('navFor with the prototype scope on', () => {
     for (const label of ['Dashboard', 'Latih Tubi', 'Kedai Hadiah 🎁', 'Jemput Ibu Bapa', 'SPM']) {
       expect(shown).toContain(label)
     }
-    // 37 matrix labels + the four section A links in the menu (Log Keluar is the footer control).
-    expect(shown).toHaveLength(37 + 4)
+    // 37 matrix labels minus "Analisa Item" (no student screen, QA M-07) + the four section A
+    // links in the menu (Log Keluar is the footer control).
+    expect(shown).not.toContain('Analisa Item')
+    expect(shown).toHaveLength(37 - 1 + 4)
     for (const label of [
       'Target SPM',
       'Misi Harian',

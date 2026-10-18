@@ -54,8 +54,6 @@ watch(
 
 <template>
   <div class="flex min-w-0 flex-col gap-6" data-testid="dashboard-page">
-    <h1 class="sr-only">Dashboard</h1>
-
     <div v-if="data" class="flex min-w-0 flex-col gap-6" data-testid="dashboard-main">
       <HomeGreeting
         :period="data.greetingPeriod"

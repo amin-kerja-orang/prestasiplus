@@ -5,7 +5,7 @@
  * legacy pages dark.
  *
  * - Storage key `pp.theme`: `'light' | 'dark' | 'system'`. Absent = the portal default
- *   (learner: dark, staff: system). Changes made in another tab are picked up (`storage` event).
+ *   (every portal: system). Changes made in another tab are picked up (`storage` event).
  * - `data-personality`, `.dark` and `color-scheme` are put on <html> only while at least one
  *   portal layout has called `useThemeMode` (so teleported modals, toasts and drawers inherit the
  *   tokens). Mounted layouts form a stack: the most recently mounted one decides the personality,
@@ -36,7 +36,9 @@ export const THEME_STORAGE_KEY = 'pp.theme'
 
 /** Default preference per portal (design system section 1.1). */
 export function defaultPreference(personality: Personality): ThemePreference {
-  return personality === 'learner' ? 'dark' : 'system'
+  void personality
+  // Every portal follows the OS on the first visit; the user's toggle choice is stored after that.
+  return 'system'
 }
 
 function isPreference(value: unknown): value is ThemePreference {

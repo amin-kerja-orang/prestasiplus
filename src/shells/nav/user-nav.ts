@@ -699,6 +699,11 @@ const SCOPE_DUPLICATE_IDS: ReadonlySet<string> = new Set(['cikgu-alesa-chat'])
 
 /** The "Tetapan Peribadi" entry lives in the Pusat AI block on live; scope mode moves it. */
 const SETTINGS_ID = 'tetapan-peribadi'
+/**
+ * Student menu items with no student screen (the route redirects to /dashboard): hidden, recorded
+ * in `docs/requirements/v2-pentadbiran-backlog.md` (student hidden items).
+ */
+const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set(['analisa-item'])
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
 const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
 
@@ -718,7 +723,9 @@ function scopeEntries(
   const kept: NavEntry[] = []
   for (const entry of entries) {
     if (entry.kind === 'item') {
-      if (!SCOPE_DUPLICATE_IDS.has(entry.id) && isPathAllowed(role, entry.to)) kept.push(entry)
+      if (SCOPE_DUPLICATE_IDS.has(entry.id)) continue
+      if (role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)) continue
+      if (isPathAllowed(role, entry.to)) kept.push(entry)
     } else if (entry.kind === 'group') {
       const children = entry.children.filter((child) => isPathAllowed(role, child.to))
       if (children.length > 0) kept.push({ ...entry, children })

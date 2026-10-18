@@ -62,8 +62,8 @@ const toast = useToast()
 const learner = computed(() => role.value === 'student')
 const personality = computed<Personality>(() => (learner.value ? 'learner' : 'staff'))
 const theme = useThemeMode(personality)
-// Staff pages let the navbar print the h1; learner pages keep their own headings.
-if (role.value !== 'student') provideShellTitle()
+// One rule for every role: the navbar prints the page title (h1); DsPageHeader leaves its own out.
+provideShellTitle()
 
 const { friend, friendName, pickerOpen, choose, openPicker } = useFriend()
 const { summary, refresh: refreshSummary } = useGamificationSummary()
@@ -191,9 +191,12 @@ const lagiGroups = computed(() => [
 /** Active row: filled gradient pill for the learner, tonal row for staff. */
 const navUi = computed(() => ({
   link: learner.value
-    ? 'min-h-11 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:font-semibold'
-    : 'min-h-11 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/10 aria-[current=page]:font-semibold',
+    ? 'min-h-11 h-auto py-1.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:font-semibold'
+    : 'min-h-11 h-auto py-1.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/10 aria-[current=page]:font-semibold',
   linkLeadingIcon: 'size-4',
+  // Long labels wrap to a second line instead of being clipped; badges keep their own space.
+  linkLabel: 'whitespace-normal break-words text-start leading-snug',
+  linkTrailing: 'shrink-0',
   label: "flex items-center gap-2 px-3 pt-4 pb-1 text-overline text-highlighted before:size-1.5 before:rounded-full before:bg-primary before:content-['']",
 }))
 
@@ -226,7 +229,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
 
       <UDashboardGroup
         storage="local"
-        storage-key="pembelajaran-dashboard"
+        storage-key="pembelajaran-dashboard-v2"
         class="overflow-clip bg-muted"
       >
         <!-- Sidebar (>= lg): full height, collapses to an icon rail -->
@@ -235,9 +238,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
           v-model:open="sidebarOpen"
           collapsible
           resizable
-          :min-size="14"
-          :default-size="17"
-          :max-size="26"
+          :min-size="16"
+          :default-size="21"
+          :max-size="30"
           :collapsed-size="4"
           :ui="{
             root: 'bg-default',
@@ -282,6 +285,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   ><UIcon v-if="item.icon" :name="item.icon" class="size-[18px]"
                 /></span>
               </template>
+              <template #item-label="{ item }"
+                ><span :title="item.label">{{ item.label }}</span></template
+              >
             </UNavigationMenu>
           </template>
 
@@ -303,12 +309,17 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   >{{ initials }}</span
                 >
                 <span v-if="!collapsed" class="min-w-0 flex-1">
-                  <span class="block truncate text-label font-semibold text-highlighted">{{
-                    name || 'Akaun'
-                  }}</span>
-                  <span v-if="schoolName" class="block truncate text-caption text-muted">{{
-                    schoolName
-                  }}</span>
+                  <span
+                    class="block break-words text-label font-semibold text-highlighted"
+                    :title="name || 'Akaun'"
+                    >{{ name || 'Akaun' }}</span
+                  >
+                  <span
+                    v-if="schoolName"
+                    class="block break-words text-caption text-muted"
+                    :title="schoolName"
+                    >{{ schoolName }}</span
+                  >
                 </span>
                 <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
               </button>
@@ -322,6 +333,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
         >
           <template #header>
             <UDashboardNavbar
+              :toggle="false"
+              :as="{ title: 'div' }"
               :ui="{
                 root: 'h-16 bg-default pt-[env(safe-area-inset-top)] shadow-bar',
                 title: 'min-w-0',
@@ -344,14 +357,16 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 /></RouterLink>
               </template>
               <template #title>
-                <div class="hidden min-w-0 flex-col leading-tight lg:flex">
-                  <span v-if="crumb" class="truncate text-caption text-muted">{{ crumb }}</span>
-                  <h1 v-if="!learner" class="truncate text-subheading font-bold text-highlighted">
+                <div class="flex min-w-0 flex-col leading-tight">
+                  <span v-if="crumb" class="hidden truncate text-caption text-muted lg:block">{{
+                    crumb
+                  }}</span>
+                  <h1
+                    v-if="title"
+                    class="line-clamp-2 text-label font-bold break-words text-highlighted sm:text-subheading"
+                  >
                     {{ title }}
                   </h1>
-                  <p v-else class="truncate text-subheading font-bold text-highlighted">
-                    {{ title }}
-                  </p>
                 </div>
               </template>
               <template #right>
@@ -482,9 +497,11 @@ const chipClass = (chip: unknown, active: boolean): string =>
               :data-nav-id="`tab-${tab.id}`"
             >
               <DsIcon :name="tab.icon" class="size-6" />
-              <span class="max-w-full text-center leading-tight break-words" :title="tab.label">{{
-                tab.label
-              }}</span>
+              <span
+                class="max-w-full text-center text-[0.6875rem] leading-tight break-normal sm:text-caption"
+                :title="tab.label"
+                >{{ tab.label }}</span
+              >
               <span
                 v-if="tab.live"
                 class="absolute end-3 top-1.5 size-2 rounded-full bg-error"
@@ -522,8 +539,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
               >{{ initials }}</span
             >
             <span class="min-w-0">
-              <span class="block truncate text-label font-semibold text-highlighted">{{ name }}</span>
-              <span v-if="schoolName" class="block truncate text-caption text-muted">{{
+              <span class="block break-words text-label font-semibold text-highlighted">{{ name }}</span>
+              <span v-if="schoolName" class="block break-words text-caption text-muted">{{
                 schoolName
               }}</span>
             </span>
@@ -543,6 +560,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 ><UIcon v-if="item.icon" :name="item.icon" class="size-[18px]"
               /></span>
             </template>
+            <template #item-label="{ item }"
+              ><span :title="item.label">{{ item.label }}</span></template
+            >
           </UNavigationMenu>
         </template>
       </USlideover>
