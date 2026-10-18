@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Dashboard Guru - PRESTASIPLUS',
       header: { title: 'Dashboard Guru', subtitle: 'Selamat datang 👩‍🏫' },
       module: 'M10',
+      v2: true,
     },
   },
 ]

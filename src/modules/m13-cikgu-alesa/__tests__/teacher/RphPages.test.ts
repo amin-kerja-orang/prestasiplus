@@ -58,13 +58,20 @@ describe('S2 RPH list', () => {
   it('renders rows with the PROPOSED layout and "Lihat" links', async () => {
     api.fetchRphList.mockResolvedValue({
       data: [
-        { id: 13101, lessonDate: '2026-09-28', subjectName: 'Kimia', level: 'T5', tajuk: 'Elektrolisis', status: 'generated' },
+        {
+          id: 13101,
+          lessonDate: '2026-09-28',
+          subjectName: 'Kimia',
+          level: 'T5',
+          tajuk: 'Elektrolisis',
+          status: 'generated',
+        },
       ],
       meta: listMeta(1),
     })
     const m = await mountAt(RphListPage, '/cikgu/rph')
     wrapper = m.wrapper
-    const cells = wrapper.get('[data-testid="rph-row"]').findAll('td')
+    const cells = wrapper.get('tbody tr').findAll('td')
     expect(cells.map((c) => c.text())).toEqual([
       '28/09/2026',
       'Kimia / T5',
@@ -75,13 +82,13 @@ describe('S2 RPH list', () => {
     expect(cells[4]!.get('a').attributes('href')).toBe('/cikgu/rph/13101')
   })
 
-  it('reads ?page= and shows the pager with an empty table beyond the last page', async () => {
-    api.fetchRphList.mockResolvedValue({ data: [], meta: listMeta(0, 2) })
+  it('reads ?page= and shows the BM pager summary', async () => {
+    api.fetchRphList.mockResolvedValue({ data: [], meta: listMeta(45, 2) })
     const m = await mountAt(RphListPage, '/cikgu/rph?page=2')
     wrapper = m.wrapper
     expect(api.fetchRphList).toHaveBeenCalledWith(2, expect.anything())
     expect(wrapper.find('nav').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Showing 0 of 0 results')
+    expect(wrapper.text()).toContain('Menunjukkan 21-40 daripada 45 hasil')
   })
 
   it('shows an error with a retry button', async () => {
@@ -131,20 +138,30 @@ describe('S3 RPH form', () => {
     expect(wrapper.get<HTMLInputElement>('#duration_minutes').element.value).toBe('60')
     expect(wrapper.get('#duration_minutes').attributes('min')).toBe('15')
     expect(wrapper.get('#duration_minutes').attributes('max')).toBe('240')
-    expect(wrapper.get<HTMLInputElement>('#lesson_date').element.value).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(wrapper.get<HTMLInputElement>('#lesson_date').element.value).toMatch(
+      /^\d{4}-\d{2}-\d{2}$/,
+    )
     expect(wrapper.get('#pengajaran_keperluan').attributes('maxlength')).toBe('500')
-    expect(wrapper.get('[data-testid="rph-info"]').text()).toContain('📌 Apa yang Cikgu Alesa akan jana:')
+    expect(wrapper.get('[data-testid="rph-info"]').text()).toContain(
+      '📌 Apa yang Cikgu Alesa akan jana:',
+    )
     expect(wrapper.findAll('[data-testid="rph-info"] li')).toHaveLength(4)
     expect(wrapper.text()).toContain('⏱️ Proses ambil masa 10-30 saat. Sila tunggu.')
-    expect(wrapper.get('[data-testid="rph-cancel"]').attributes('href')).toBe('/cikgu/rph')
-    expect(wrapper.get('#submit-label').text()).toBe('Jana RPH dengan Cikgu Alesa')
+    expect(wrapper.get('[data-testid="form-cancel"]').attributes('href')).toBe('/cikgu/rph')
+    expect(wrapper.get('[data-testid="form-submit"]').text()).toBe('Jana RPH dengan Cikgu Alesa')
     // empty form: the text fields are invalid (jsdom does not evaluate the placeholder option of a required select; the browser does, E2E-M13-35)
     expect((form.element as HTMLFormElement).querySelectorAll(':invalid')).toHaveLength(2)
   })
 
   it('teacher with classes: the select fills subject, level and class', async () => {
     api.fetchCikguClasses.mockResolvedValue([
-      { id: 2001, name: '5 MARIKH - Kimia', subjectName: 'Kimia', educationLevel: 'tingkatan-5', levelLabel: 'Tingkatan 5' },
+      {
+        id: 2001,
+        name: '5 MARIKH - Kimia',
+        subjectName: 'Kimia',
+        educationLevel: 'tingkatan-5',
+        levelLabel: 'Tingkatan 5',
+      },
     ])
     api.fetchCikguSubjects.mockResolvedValue(subjects)
     const m = await mountAt(RphFormPage, '/cikgu/rph/baharu')
@@ -171,10 +188,9 @@ describe('S3 RPH form', () => {
     await wrapper.get('#level').setValue('T4')
     await wrapper.get('#tajuk').setValue('Pecahan Setara')
     await wrapper.get('#rph-create-form').trigger('submit')
-    const btn = wrapper.get<HTMLButtonElement>('#submit-btn')
+    const btn = wrapper.get<HTMLButtonElement>('[data-testid="form-submit"]')
     expect(btn.element.disabled).toBe(true)
-    expect(btn.classes()).toContain('opacity-60')
-    expect(wrapper.get('#submit-label').text()).toBe('Cikgu Alesa sedang jana RPH…')
+    expect(btn.text()).toBe('Cikgu Alesa sedang jana RPH…')
     expect(api.createRph).toHaveBeenCalledWith(
       expect.objectContaining({
         subjectName: 'Matematik',
@@ -194,13 +210,20 @@ describe('S3 RPH form', () => {
     api.fetchCikguClasses.mockResolvedValue([])
     api.fetchCikguSubjects.mockResolvedValue(subjects)
     api.createRph.mockRejectedValueOnce(
-      new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Tidak sah', fields: { tajuk: 'Tajuk wajib.' } }),
+      new ApiError({
+        status: 422,
+        code: 'VALIDATION_ERROR',
+        message: 'Tidak sah',
+        fields: { tajuk: 'Tajuk wajib.' },
+      }),
     )
     const m = await mountAt(RphFormPage, '/cikgu/rph/baharu')
     wrapper = m.wrapper
     await wrapper.get('#rph-create-form').trigger('submit')
     await flushPromises()
-    expect(wrapper.get<HTMLButtonElement>('#submit-btn').element.disabled).toBe(false)
+    expect(wrapper.get<HTMLButtonElement>('[data-testid="form-submit"]').element.disabled).toBe(
+      false,
+    )
     expect(wrapper.text()).toContain('Tajuk wajib.')
     expect(m.router.currentRoute.value.path).toBe('/cikgu/rph/baharu')
   })

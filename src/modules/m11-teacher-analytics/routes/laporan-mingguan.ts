@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Belum Tersedia dalam Prototaip | PRESTASIPLUS',
       header: { title: 'Laporan Mingguan' },
       module: 'M11',
+      v2: true,
     },
   },
 ]

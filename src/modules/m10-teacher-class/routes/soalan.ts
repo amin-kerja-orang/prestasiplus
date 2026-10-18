@@ -17,6 +17,7 @@ const base = {
   access: 'auth' as const,
   roles: ['teacher', 'admin'] as const,
   module: 'M10' as const,
+  v2: true as const,
 }
 
 const routes: RouteRecordRaw[] = [

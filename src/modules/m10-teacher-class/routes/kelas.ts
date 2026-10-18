@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kelas Saya - Portal Guru',
       header: { title: 'Portal Guru', subtitle: 'Urus kelas dan tugasan anda 🏫' },
       module: 'M10',
+      v2: true,
     },
   },
   {
@@ -33,6 +34,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Cipta Kelas - Portal Guru',
       header: { title: 'Cipta Kelas Baru', subtitle: 'Isi butiran kelas anda' },
       module: 'M10',
+      v2: true,
     },
   },
 ]

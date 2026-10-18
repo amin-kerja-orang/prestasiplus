@@ -5,12 +5,11 @@
  * stores the essay in `sessionStorage.cikgu_pending_essay` and opens S1 with the hand-off query. The
  * form has no action and no control has a `name`; Enter does nothing (no submit button).
  */
-import { Bot } from '@lucide/vue'
 import { computed, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { alertNative } from '@/components/overlay/native-dialogs'
-import { FORM_INPUT_CLASS, FORM_SELECT_CLASS } from '@/components/form'
+import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 
 import { RUBRICS } from '../api'
 import { PENDING_ESSAY_KEY } from '../components/chat/chat-lib'
@@ -49,104 +48,109 @@ function submitToChat(): void {
     })}`,
   )
 }
-
-const LABEL = 'mb-1 block text-sm font-semibold text-slate-700'
-const BTN =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-center text-sm font-semibold'
 </script>
 
 <template>
-  <div class="mx-auto min-w-0 max-w-3xl space-y-4" data-testid="essay-form-page">
-    <RouterLink
-      to="/cikgu/essay"
-      class="inline-flex min-h-11 items-center text-sm font-medium text-purple-600 hover:underline"
-      data-testid="essay-back"
-      >{{ C.back }}</RouterLink
-    >
+  <DsPage class="max-w-4xl" :title="C.formTitle" data-testid="essay-form-page">
+    <template #breadcrumb>
+      <div>
+        <UButton
+          to="/cikgu/essay"
+          color="neutral"
+          variant="ghost"
+          class="min-h-11"
+          data-testid="essay-back"
+          >{{ C.back }}</UButton
+        >
+      </div>
+    </template>
+    <template #subtitle>
+      {{ C.intro }} Klik <strong>{{ C.introBold }}</strong> {{ C.introAfter }}
+    </template>
 
-    <section class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-      <h1 class="font-heading text-xl font-bold text-slate-800">{{ C.formTitle }}</h1>
-      <p class="mt-1 mb-4 text-sm text-slate-500">
-        {{ C.intro }} Klik <strong>{{ C.introBold }}</strong> {{ C.introAfter }}
-      </p>
-
-      <form id="essay-form" class="space-y-4" @submit.prevent>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div class="min-w-0">
-            <label for="rubric_key" :class="LABEL">{{ C.rubric }}</label>
-            <select id="rubric_key" v-model="rubric" :class="FORM_SELECT_CLASS">
+    <form id="essay-form" class="flex flex-col gap-6" @submit.prevent>
+      <DsFormSection
+        title="Maklumat Karangan"
+        description="Rubric, subjek, tahap, nama pelajar dan tajuk."
+        icon="i-ph-pen-nib"
+        :columns="2"
+      >
+        <DsFormField native for="rubric_key" :label="C.rubric">
+          <template #default="{ id }">
+            <DsNativeSelect :id="id" v-model="rubric">
               <option v-for="r in RUBRICS" :key="r.key" :value="r.key">{{ r.label }}</option>
-            </select>
-          </div>
-          <div class="min-w-0">
-            <label for="subject_name" :class="LABEL">{{ C.subject }}</label>
-            <input
-              id="subject_name"
+            </DsNativeSelect>
+          </template>
+        </DsFormField>
+        <DsFormField native for="subject_name" :label="C.subject">
+          <template #default="{ id }">
+            <UInput
+              :id="id"
               v-model="subject"
               type="text"
               :placeholder="C.subjectPh"
-              :class="FORM_INPUT_CLASS"
+              class="w-full"
             />
-          </div>
-          <div class="min-w-0">
-            <label for="level" :class="LABEL">{{ C.level }}</label>
-            <input
-              id="level"
-              v-model="level"
-              type="text"
-              :placeholder="C.levelPh"
-              :class="FORM_INPUT_CLASS"
-            />
-          </div>
+          </template>
+        </DsFormField>
+        <DsFormField native for="level" :label="C.level">
+          <template #default="{ id }">
+            <UInput :id="id" v-model="level" type="text" :placeholder="C.levelPh" class="w-full" />
+          </template>
+        </DsFormField>
+        <DsFormField native for="student_name" :label="C.student">
+          <template #default="{ id }">
+            <UInput :id="id" v-model="student" type="text" class="w-full" />
+          </template>
+        </DsFormField>
+        <div class="sm:col-span-2">
+          <DsFormField native for="essay_title" :label="C.essayTitle">
+            <template #default="{ id }">
+              <UInput :id="id" v-model="title" type="text" class="w-full" />
+            </template>
+          </DsFormField>
         </div>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div class="min-w-0">
-            <label for="student_name" :class="LABEL">{{ C.student }}</label>
-            <input id="student_name" v-model="student" type="text" :class="FORM_INPUT_CLASS" />
-          </div>
-          <div class="min-w-0">
-            <label for="essay_title" :class="LABEL">{{ C.essayTitle }}</label>
-            <input id="essay_title" v-model="title" type="text" :class="FORM_INPUT_CLASS" />
-          </div>
-        </div>
-        <div class="min-w-0">
-          <label for="essay_text" :class="LABEL">{{ C.essayText }}</label>
-          <textarea
-            id="essay_text"
-            v-model="essay"
-            rows="14"
-            required
-            minlength="50"
-            :placeholder="C.essayPh"
-            :class="[FORM_INPUT_CLASS, 'font-mono text-sm']"
-          />
-          <p id="word-counter" class="mt-1 text-xs text-slate-400">{{ words }} perkataan</p>
-        </div>
+      </DsFormSection>
 
-        <div
-          class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
-          data-testid="essay-amber"
-        >
+      <DsFormSection
+        title="Teks Karangan"
+        description="Salin dan tampal karangan pelajar (minimum 50 aksara)."
+        icon="i-ph-article"
+      >
+        <DsFormField native for="essay_text" :label="C.essayText">
+          <template #default="{ id }">
+            <UTextarea
+              :id="id"
+              v-model="essay"
+              :rows="14"
+              required
+              minlength="50"
+              :placeholder="C.essayPh"
+              class="w-full"
+            />
+            <p id="word-counter" class="text-caption text-muted">{{ words }} perkataan</p>
+          </template>
+        </DsFormField>
+      </DsFormSection>
+
+      <UAlert color="warning" variant="subtle" icon="i-ph-info-duotone" data-testid="essay-amber">
+        <template #description>
           <strong>{{ C.amberBold }}</strong> {{ C.amber }}
-        </div>
+        </template>
+      </UAlert>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <button
+      <DsFormBar :cancel-label="C.cancel" cancel-to="/cikgu/essay">
+        <template #submit>
+          <UButton
             id="essay-submit"
             type="button"
-            :class="[BTN, 'bg-purple-500 text-white hover:bg-purple-600']"
+            icon="i-ph-robot"
+            class="min-h-11"
+            :label="C.submit"
             @click="submitToChat"
-          >
-            <Bot class="h-4 w-4 shrink-0" />{{ C.submit }}
-          </button>
-          <RouterLink
-            to="/cikgu/essay"
-            :class="[BTN, 'bg-slate-200 text-slate-700 hover:bg-slate-300']"
-            data-testid="essay-cancel"
-            >{{ C.cancel }}</RouterLink
-          >
-        </div>
-      </form>
-    </section>
-  </div>
+          />
+        </template>
+      </DsFormBar>
+    </form>
+  </DsPage>
 </template>
