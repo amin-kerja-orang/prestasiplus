@@ -1,3 +1,5 @@
+import { learnIconNames } from './learn-icons.ts'
+
 /**
  * Phosphor base names that `DsIcon` may build at run time (`i-ph-<name>`, `i-ph-<name>-duotone`,
  * `i-ph-<name>-bold`). The icon bundler only finds literal `i-ph-*` strings, so every base name
@@ -61,3 +63,12 @@ export const dsIconWeightSuffix: Record<DsIconWeight, string> = {
 export const dsIconClasses: string[] = dsIconBaseNames.flatMap((name) =>
   dsIconWeights.map((w) => `i-ph-${name}${dsIconWeightSuffix[w]}`),
 )
+
+/**
+ * Pembelajaran menu glyphs (`learn-icons.ts`): only the two weights the menu uses (learner Duotone,
+ * staff Regular), so the offline bundle stays under the Nuxt Icon size limit.
+ */
+export const learnIconClasses: string[] = learnIconNames.flatMap((name) => [
+  `i-ph-${name}`,
+  `i-ph-${name}-duotone`,
+])

@@ -4,6 +4,10 @@
  * (`navFor`, `userBottomNavFor`, `userDrawerAccountFor`), which already applies the role filter
  * and the prototype scope (D43). The tab bar only chooses which of those entries become tabs.
  */
+import type { NavigationMenuItem } from '@nuxt/ui'
+
+import { isPathAllowed } from '@/app/prototype-scope'
+import { FALLBACK_PH, FA_TO_PH } from '@/theme/learn-icons'
 import {
   bottomNavActive,
   isActivePath,
@@ -121,4 +125,150 @@ export function drawerEntries(role: Role | null): NavEntry[] {
 /** Account links (Profil Saya, Tetapan, Panduan) for the "Lagi" panel; the logout is separate. */
 export function accountItems(role: Role | null): NavItem[] {
   return userDrawerAccountFor(role).filter((i) => i.to !== '/logout')
+}
+
+// ---------------------------------------------------------------------------------------------
+// Nuxt UI navigation data (sidebar and "Lagi" sheet)
+
+/** Phosphor base name of a menu item: explicit override, else mapped from its Font Awesome class. */
+export function phIconFor(item: NavItem): string {
+  return ICON_BY_ID[item.id] ?? FA_TO_PH[item.fa] ?? FALLBACK_PH
+}
+
+/** `i-ph-*` class for a base name: learner Duotone, staff Regular (design-system 10.1). */
+export function phClass(name: string, learner: boolean): string {
+  return `i-ph-${name}${learner ? '-duotone' : ''}`
+}
+
+export interface LearnNavOptions {
+  learner: boolean
+  currentPath: string
+}
+
+/** The single item that is current on `currentPath`: the longest matching `to` wins. */
+export function currentItem(entries: readonly NavEntry[], currentPath: string): NavItem | undefined {
+  let best: NavItem | undefined
+  for (const item of flatItems(entries)) {
+    if (!itemActive(item, currentPath)) continue
+    if (!best || item.to.length > best.to.length) best = item
+  }
+  return best
+}
+
+export function flatItems(entries: readonly NavEntry[]): NavItem[] {
+  return allItems(entries)
+}
+
+/** The heading (section / sub-heading / group) that contains an item, for the breadcrumb. */
+export function sectionOf(entries: readonly NavEntry[], itemId: string): string {
+  let heading = ''
+  for (const entry of entries) {
+    if (entry.kind === 'section' || entry.kind === 'subheading') heading = entry.label
+    else if (entry.kind === 'item' && entry.id === itemId) return heading
+    else if (entry.kind === 'group' && entry.children.some((c) => c.id === itemId)) {
+      return heading ? `${heading} · ${entry.label}` : entry.label
+    }
+  }
+  return ''
+}
+
+function leaf(item: NavItem, opts: LearnNavOptions, activeId: string | undefined): NavigationMenuItem {
+  return {
+    label: item.label,
+    icon: phClass(phIconFor(item), opts.learner),
+    to: item.to,
+    target: item.target,
+    active: item.id === activeId,
+    value: item.id,
+    ...(item.badge ? { badge: item.badge.text } : {}),
+  }
+}
+
+/**
+ * Menu entries as `UNavigationMenu` groups (array of arrays). Every section or sub-heading starts a
+ * new group headed by a label row; the entries before the first heading form an unlabeled group.
+ * A collapsible group (Kirkpatrick) becomes a trigger with its items below.
+ */
+export function buildLearnNav(
+  entries: readonly NavEntry[],
+  opts: LearnNavOptions,
+): NavigationMenuItem[][] {
+  const activeId = currentItem(entries, opts.currentPath)?.id
+  const groups: NavigationMenuItem[][] = []
+  let cur: NavigationMenuItem[] = []
+  const flush = (): void => {
+    if (cur.length > 0) groups.push(cur)
+    cur = []
+  }
+  for (const entry of entries) {
+    if (entry.kind === 'section' || entry.kind === 'subheading') {
+      flush()
+      cur.push({ label: entry.label, type: 'label' })
+    } else if (entry.kind === 'item') {
+      cur.push(leaf(entry, opts, activeId))
+    } else {
+      cur.push({
+        label: entry.label,
+        icon: phClass(FA_TO_PH[entry.fa] ?? FALLBACK_PH, opts.learner),
+        type: 'trigger',
+        defaultOpen: entry.children.some((c) => c.id === activeId),
+        children: entry.children.map((c) => leaf(c, opts, activeId)),
+      })
+    }
+  }
+  flush()
+  return groups
+}
+
+/** Flat Ctrl+K groups over the same entries: one group per heading. */
+export function buildLearnSearch(entries: readonly NavEntry[], opts: LearnNavOptions) {
+  const out: { id: string; label: string; items: Record<string, unknown>[] }[] = []
+  let heading = 'Menu'
+  let cur: Record<string, unknown>[] = []
+  const flush = (): void => {
+    if (cur.length > 0) out.push({ id: `${out.length}-${heading}`, label: heading, items: cur })
+    cur = []
+  }
+  const push = (item: NavItem, prefix = ''): void => {
+    cur.push({
+      id: item.id,
+      label: item.label,
+      suffix: prefix || undefined,
+      icon: phClass(phIconFor(item), opts.learner),
+      to: item.to,
+      target: item.target,
+    })
+  }
+  for (const entry of entries) {
+    if (entry.kind === 'section' || entry.kind === 'subheading') {
+      flush()
+      heading = entry.label
+    } else if (entry.kind === 'item') push(entry)
+    else for (const c of entry.children) push(c, entry.label)
+  }
+  flush()
+  return out
+}
+
+// ---------------------------------------------------------------------------------------------
+// Account menu (role-access-matrix section A)
+
+export interface AccountLink {
+  id: string
+  label: string
+  to: string
+  /** Phosphor base name. */
+  icon: string
+}
+
+const ACCOUNT_LINKS: readonly AccountLink[] = [
+  { id: 'profil', label: 'Profil Saya', to: '/profile', icon: 'user-circle' },
+  { id: 'tetapan', label: 'Tetapan Peribadi', to: '/tetapan', icon: 'gear' },
+  { id: 'panduan', label: 'Panduan', to: '/pusat-tuisyen/panduan', icon: 'book' },
+  { id: 'tiket', label: 'Tiket Bantuan', to: '/pusat-tuisyen/tiket', icon: 'lifebuoy' },
+]
+
+/** Section A links the role may open (prototype scope); Log Keluar is added by the layout. */
+export function accountLinks(role: Role | null): AccountLink[] {
+  return ACCOUNT_LINKS.filter((l) => isPathAllowed(role, l.to))
 }
