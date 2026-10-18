@@ -142,6 +142,7 @@ async function submit(): Promise<void> {
             :legend="`${KELAS_COPY.level} *`"
             :items="tiles.map((t) => ({ label: t.label, value: t.slug }))"
             variant="card"
+            :ui="{ item: 'bg-elevated' }"
             orientation="horizontal"
             name="education_level"
             class="min-w-0"

@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Pelajar Saya - PRESTASIPLUS',
       header: { title: 'Pelajar', subtitle: 'Urus pelajar dalam kelas anda' },
       module: 'M10',
+      v2: true,
     },
   },
   { path: '/guru/pelajar/cipta', redirect: '/guru/pelajar' },

@@ -33,7 +33,9 @@ describe('S4 essay list', () => {
     const m = await mountAt(EssayListPage, '/cikgu/essay')
     wrapper = m.wrapper
     expect(wrapper.get('h1').text()).toBe('📝 Marking Karangan AI')
-    expect(wrapper.text()).toContain('Karangan yang dimark oleh Cikgu Alesa berdasarkan rubric SPM/PT3.')
+    expect(wrapper.text()).toContain(
+      'Karangan yang dimark oleh Cikgu Alesa berdasarkan rubric SPM/PT3.',
+    )
     const cta = wrapper.get('[data-testid="essay-create"]')
     expect(cta.text()).toBe('Mark Karangan Baharu')
     expect(cta.attributes('href')).toBe('/cikgu/essay/baharu')
@@ -44,8 +46,6 @@ describe('S4 essay list', () => {
       'Markah',
       'Tindakan',
     ])
-    expect(wrapper.findAll('th')[3]!.classes()).toContain('text-center')
-    expect(wrapper.findAll('th')[4]!.classes()).toContain('text-right')
     expect(wrapper.get('[data-testid="essay-empty"]').text()).toBe(
       'Belum ada karangan dimark. Klik "Mark Karangan Baharu" untuk mula.',
     )
@@ -54,14 +54,32 @@ describe('S4 essay list', () => {
   it('rows: student, subject / rubric without marks, title, marks, link; empty text is "-"', async () => {
     api.fetchEssayList.mockResolvedValue({
       data: [
-        { id: 13202, studentName: 'Murid Demo 02', subjectName: 'Sejarah', rubricKey: 'sejarah_essay', essayTitle: 'Semangat Patriotisme', marks: 14, maxMarks: 20, createdAt: 'x' },
-        { id: 13203, studentName: null, subjectName: 'Bahasa Melayu', rubricKey: 'spm_bm_karangan', essayTitle: '', marks: 35, maxMarks: 50, createdAt: 'x' },
+        {
+          id: 13202,
+          studentName: 'Murid Demo 02',
+          subjectName: 'Sejarah',
+          rubricKey: 'sejarah_essay',
+          essayTitle: 'Semangat Patriotisme',
+          marks: 14,
+          maxMarks: 20,
+          createdAt: 'x',
+        },
+        {
+          id: 13203,
+          studentName: null,
+          subjectName: 'Bahasa Melayu',
+          rubricKey: 'spm_bm_karangan',
+          essayTitle: '',
+          marks: 35,
+          maxMarks: 50,
+          createdAt: 'x',
+        },
       ],
       meta: listMeta(2),
     })
     const m = await mountAt(EssayListPage, '/cikgu/essay')
     wrapper = m.wrapper
-    const rows = wrapper.findAll('[data-testid="essay-row"]')
+    const rows = wrapper.findAll('tbody tr')
     expect(rows[0]!.findAll('td').map((c) => c.text())).toEqual([
       'Murid Demo 02',
       'Sejarah / Sejarah — Karangan Esei',
@@ -97,13 +115,14 @@ describe('S5 essay form', () => {
     expect(text.attributes('rows')).toBe('14')
     expect(text.attributes('minlength')).toBe('50')
     expect(text.attributes('required')).toBeDefined()
-    expect(text.classes()).toEqual(expect.arrayContaining(['font-mono', 'text-sm']))
     expect(text.attributes('placeholder')).toBe('Salin & tampal karangan pelajar di sini…')
     expect(wrapper.get('#word-counter').text()).toBe('0 perkataan')
-    expect(wrapper.get('[data-testid="essay-amber"]').text()).toContain('Apa yang berlaku selepas klik:')
+    expect(wrapper.get('[data-testid="essay-amber"]').text()).toContain(
+      'Apa yang berlaku selepas klik:',
+    )
     expect(wrapper.get('#essay-submit').attributes('type')).toBe('button')
     expect(wrapper.get('#essay-submit').text()).toBe('Hantar ke Cikgu Alesa')
-    expect(wrapper.get('[data-testid="essay-cancel"]').attributes('href')).toBe('/cikgu/essay')
+    expect(wrapper.get('[data-testid="form-cancel"]').attributes('href')).toBe('/cikgu/essay')
   })
 
   it('the counter follows the \\S+ runs', async () => {

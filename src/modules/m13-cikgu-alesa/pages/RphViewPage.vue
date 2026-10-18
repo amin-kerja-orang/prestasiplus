@@ -4,11 +4,11 @@
  * foreign or unknown id is the standard 404. Content is text with its line breaks kept.
  */
 import { computed, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
+import { DsPage, DsPanel } from '@/ds'
 
 import { fetchRph } from '../api'
 import { RPH_COPY as C } from '../components/teacher/copy'
@@ -17,7 +17,10 @@ import PageState from '../components/teacher/PageState.vue'
 
 const props = defineProps<{ id: number }>()
 
-const { data, error, reload } = useApi((signal) => fetchRph(props.id, { signal }), () => props.id)
+const { data, error, reload } = useApi(
+  (signal) => fetchRph(props.id, { signal }),
+  () => props.id,
+)
 
 const notFound = computed(() => isApiError(error.value) && error.value.status === 404)
 watch(notFound, (is404) => {
@@ -26,13 +29,17 @@ watch(notFound, (is404) => {
 </script>
 
 <template>
-  <div class="mx-auto min-w-0 max-w-3xl space-y-4" data-testid="rph-view-page">
-    <RouterLink
-      to="/cikgu/rph"
-      class="inline-flex min-h-11 items-center text-sm font-medium text-purple-600 hover:underline"
-      data-testid="rph-back"
-      >{{ C.back }}</RouterLink
-    >
+  <DsPage class="max-w-4xl" data-testid="rph-view-page">
+    <div>
+      <UButton
+        to="/cikgu/rph"
+        color="neutral"
+        variant="ghost"
+        class="min-h-11"
+        data-testid="rph-back"
+        >{{ C.back }}</UButton
+      >
+    </div>
     <PageState
       :loaded="data !== null || notFound"
       :error="error !== null && !notFound"
@@ -40,43 +47,41 @@ watch(notFound, (is404) => {
       :retry-label="C.retry"
       @retry="reload"
     >
-      <section v-if="data" class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-        <h1 class="font-heading text-2xl font-bold text-slate-800">{{ C.title }}</h1>
-        <dl class="mt-4 space-y-3 text-sm">
-          <div>
-            <dt class="text-xs font-bold tracking-wide text-slate-500 uppercase">
-              {{ C.viewLabels.date }}
-            </dt>
-            <dd class="text-slate-800" data-testid="rph-view-date">{{ dmy(data.lessonDate) }}</dd>
+      <DsPanel v-if="data" class="flex flex-col gap-4">
+        <h1 class="text-heading text-highlighted">{{ C.title }}</h1>
+        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="min-w-0">
+            <dt class="text-overline text-muted">{{ C.viewLabels.date }}</dt>
+            <dd class="text-body text-highlighted" data-testid="rph-view-date">
+              {{ dmy(data.lessonDate) }}
+            </dd>
           </div>
-          <div>
-            <dt class="text-xs font-bold tracking-wide text-slate-500 uppercase">
-              {{ C.viewLabels.subject }}
-            </dt>
-            <dd class="text-slate-800" data-testid="rph-view-subject">
+          <div class="min-w-0">
+            <dt class="text-overline text-muted">{{ C.viewLabels.subject }}</dt>
+            <dd class="text-body text-highlighted" data-testid="rph-view-subject">
               {{ data.subjectName }} / {{ data.level }}
             </dd>
           </div>
-          <div>
-            <dt class="text-xs font-bold tracking-wide text-slate-500 uppercase">
-              {{ C.viewLabels.tajuk }}
-            </dt>
-            <dd class="break-words text-slate-800" data-testid="rph-view-tajuk">{{ data.tajuk }}</dd>
+          <div class="min-w-0">
+            <dt class="text-overline text-muted">{{ C.viewLabels.tajuk }}</dt>
+            <dd class="text-body break-words text-highlighted" data-testid="rph-view-tajuk">
+              {{ data.tajuk }}
+            </dd>
           </div>
-          <div>
-            <dt class="text-xs font-bold tracking-wide text-slate-500 uppercase">
-              {{ C.viewLabels.status }}
-            </dt>
-            <dd class="text-slate-800" data-testid="rph-view-status">{{ C.statusGenerated }}</dd>
+          <div class="min-w-0">
+            <dt class="text-overline text-muted">{{ C.viewLabels.status }}</dt>
+            <dd class="text-body text-highlighted" data-testid="rph-view-status">
+              {{ C.statusGenerated }}
+            </dd>
           </div>
         </dl>
         <div
-          class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm break-words whitespace-pre-line text-slate-700"
+          class="rounded-card bg-soft p-4 text-body break-words whitespace-pre-line text-default"
           data-testid="rph-view-content"
         >
           {{ data.content }}
         </div>
-      </section>
+      </DsPanel>
     </PageState>
-  </div>
+  </DsPage>
 </template>

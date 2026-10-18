@@ -18,6 +18,7 @@ function meta(title: string, header: string): RouteMeta {
     title,
     header: { title: header, subtitle: 'Selamat datang kembali' },
     module: 'M13',
+    v2: true,
   }
 }
 

@@ -4,13 +4,11 @@
  * `novalidate`, no custom messages); on a valid submit the button is busy until #3 answers, then the
  * browser goes to V1. The class select appears only for a viewer who owns classes (PROPOSED).
  */
-import { Bot } from '@lucide/vue'
-import { computed, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS, FORM_SELECT_CLASS, FORM_TEXTAREA_CLASS } from '@/components/form'
 import { useApi } from '@/composables'
+import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 import { clock, formatDateKey } from '@/lib/time'
 
 import { createRph, fetchCikguClasses, fetchCikguSubjects, LEVELS } from '../api'
@@ -24,6 +22,7 @@ const { data: subjects } = useApi((signal) => fetchCikguSubjects({ signal }))
 
 const classLoaded = computed(() => classes.value !== null)
 const ownClasses = computed(() => classes.value ?? [])
+const noClass = computed(() => classLoaded.value && ownClasses.value.length === 0)
 const subjectNames = computed(() =>
   (subjects.value ?? []).map((s) => s.name).sort((a, b) => a.localeCompare(b, 'ms')),
 )
@@ -50,6 +49,7 @@ function applyClassDefaults(): void {
   level.value = levelCodeOfSlug(picked.educationLevel)
   className.value = picked.name
 }
+watch(classPick, applyClassDefaults)
 
 function optional(value: string): string | null {
   const t = value.trim()
@@ -80,217 +80,209 @@ async function onSubmit(): Promise<void> {
     busy.value = false
   }
 }
-
-const LABEL = 'mb-1 block text-sm font-semibold text-slate-700'
-const BTN =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-center text-sm font-semibold'
 </script>
 
 <template>
-  <div class="mx-auto min-w-0 max-w-3xl space-y-4" data-testid="rph-form-page">
-    <RouterLink
-      to="/cikgu/rph"
-      class="inline-flex min-h-11 items-center text-sm font-medium text-purple-600 hover:underline"
-      data-testid="rph-back"
-      >{{ C.back }}</RouterLink
-    >
-
-    <section class="min-w-0 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-      <div class="mb-4 flex items-center gap-3">
-        <span
-          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-purple-500 to-pink-500 text-white"
+  <DsPage
+    class="max-w-4xl"
+    :title="C.formTitle"
+    :subtitle="noClass ? C.noClass : undefined"
+    :subtitle-testid="noClass ? 'rph-no-class' : undefined"
+    data-testid="rph-form-page"
+  >
+    <template #breadcrumb>
+      <div>
+        <UButton
+          to="/cikgu/rph"
+          color="neutral"
+          variant="ghost"
+          class="min-h-11"
+          data-testid="rph-back"
+          >{{ C.back }}</UButton
         >
-          <Bot class="h-5 w-5" />
-        </span>
-        <div class="min-w-0">
-          <h1 class="font-heading text-xl font-bold text-slate-800">{{ C.formTitle }}</h1>
-          <p
-            v-if="classLoaded && ownClasses.length === 0"
-            class="text-sm text-slate-500"
-            data-testid="rph-no-class"
-          >
-            {{ C.noClass }}
-          </p>
-        </div>
       </div>
+    </template>
 
-      <AlertBox v-if="errors.length > 0" :messages="errors" class="mb-4" />
+    <form id="rph-create-form" class="flex flex-col gap-6" @submit.prevent="onSubmit">
+      <UAlert
+        v-if="errors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle-duotone"
+        :title="errors.join(' ')"
+        role="alert"
+        data-testid="rph-errors"
+      />
 
-      <form id="rph-create-form" class="space-y-4" @submit.prevent="onSubmit">
-        <div v-if="ownClasses.length > 0">
-          <label for="rph-class-pick" :class="LABEL">{{ C.classLabel }}</label>
-          <select
-            id="rph-class-pick"
-            v-model="classPick"
-            :class="FORM_SELECT_CLASS"
-            data-testid="rph-class-pick"
-            @change="applyClassDefaults"
-          >
-            <option value="">{{ C.classPlaceholder }}</option>
-            <option
-              v-for="c in ownClasses"
-              :key="c.id"
-              :value="String(c.id)"
-              :data-subject="c.subjectName ?? ''"
-              :data-level="levelCodeOfSlug(c.educationLevel)"
-              :data-class="c.name"
-            >
-              {{ c.name }}
-            </option>
-          </select>
-        </div>
+      <DsFormSection
+        title="Butiran Pengajaran"
+        description="Subjek, tahap dan tajuk untuk RPH yang akan dijana."
+        icon="i-ph-robot"
+        :columns="2"
+      >
+        <DsFormField v-if="ownClasses.length > 0" native for="rph-class-pick" :label="C.classLabel">
+          <template #default="{ id }">
+            <DsNativeSelect :id="id" v-model="classPick" data-testid="rph-class-pick">
+              <option value="">{{ C.classPlaceholder }}</option>
+              <option
+                v-for="c in ownClasses"
+                :key="c.id"
+                :value="String(c.id)"
+                :data-subject="c.subjectName ?? ''"
+                :data-level="levelCodeOfSlug(c.educationLevel)"
+                :data-class="c.name"
+              >
+                {{ c.name }}
+              </option>
+            </DsNativeSelect>
+          </template>
+        </DsFormField>
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div class="min-w-0">
-            <label for="subject_name" :class="LABEL">Subjek <span class="text-red-500">*</span></label>
-            <input
-              id="subject_name"
+        <DsFormField native for="subject_name" label="Subjek" required>
+          <template #default="{ id }">
+            <UInput
+              :id="id"
               v-model="subjectName"
               name="subject_name"
               type="text"
               list="subject-list"
               required
               placeholder="cth: Matematik, Sains, Bahasa Melayu"
-              :class="FORM_INPUT_CLASS"
+              class="w-full"
             />
             <datalist id="subject-list">
               <option v-for="n in subjectNames" :key="n" :value="n" />
             </datalist>
-          </div>
-          <div class="min-w-0">
-            <label for="level" :class="LABEL"
-              >Tingkatan / Tahun <span class="text-red-500">*</span></label
-            >
-            <select id="level" v-model="level" name="level" required :class="FORM_SELECT_CLASS">
+          </template>
+        </DsFormField>
+
+        <DsFormField native for="level" label="Tingkatan / Tahun" required>
+          <template #default="{ id }">
+            <DsNativeSelect :id="id" v-model="level" name="level" required>
               <option value="">— Pilih —</option>
               <option v-for="l in LEVELS" :key="l.code" :value="l.code">{{ l.label }}</option>
-            </select>
-          </div>
-        </div>
+            </DsNativeSelect>
+          </template>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="tajuk" :class="LABEL"
-            >Tajuk Pengajaran <span class="text-red-500">*</span></label
-          >
-          <input
-            id="tajuk"
-            v-model="tajuk"
-            name="tajuk"
-            type="text"
-            required
-            maxlength="200"
-            placeholder="cth: Pecahan Setara, Sel Sebagai Unit Asas Hidupan, Persamaan Kuadratik"
-            :class="FORM_INPUT_CLASS"
-          />
+        <div class="sm:col-span-2">
+          <DsFormField native for="tajuk" label="Tajuk Pengajaran" required>
+            <template #default="{ id }">
+              <UInput
+                :id="id"
+                v-model="tajuk"
+                name="tajuk"
+                type="text"
+                required
+                maxlength="200"
+                placeholder="cth: Pecahan Setara, Sel Sebagai Unit Asas Hidupan, Persamaan Kuadratik"
+                class="w-full"
+              />
+            </template>
+          </DsFormField>
         </div>
+      </DsFormSection>
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div class="min-w-0">
-            <label for="class_name" :class="LABEL">Kelas</label>
-            <input
-              id="class_name"
+      <DsFormSection
+        title="Jadual dan Keperluan"
+        description="Kelas, tarikh, tempoh dan keperluan khas."
+        icon="i-ph-calendar-blank"
+        :columns="2"
+      >
+        <DsFormField native for="class_name" label="Kelas">
+          <template #default="{ id }">
+            <UInput
+              :id="id"
               v-model="className"
               name="class_name"
               type="text"
               placeholder="cth: 4 Bestari"
-              :class="FORM_INPUT_CLASS"
+              class="w-full"
             />
-          </div>
-          <div class="min-w-0">
-            <label for="lesson_date" :class="LABEL">Tarikh</label>
-            <input
-              id="lesson_date"
-              v-model="lessonDate"
-              name="lesson_date"
-              type="date"
-              :class="FORM_INPUT_CLASS"
-            />
-          </div>
-          <div class="min-w-0">
-            <label for="duration_minutes" :class="LABEL">Tempoh (minit)</label>
-            <input
-              id="duration_minutes"
+          </template>
+        </DsFormField>
+        <DsFormField native for="lesson_date" label="Tarikh">
+          <template #default="{ id }">
+            <UInput :id="id" v-model="lessonDate" name="lesson_date" type="date" class="w-full" />
+          </template>
+        </DsFormField>
+        <DsFormField native for="duration_minutes" label="Tempoh (minit)">
+          <template #default="{ id }">
+            <UInput
+              :id="id"
               v-model.number="duration"
               name="duration_minutes"
               type="number"
               min="15"
               max="240"
-              :class="FORM_INPUT_CLASS"
+              class="w-full"
             />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div class="min-w-0">
-            <label for="time_slot" :class="LABEL">Masa Slot</label>
-            <input
-              id="time_slot"
+          </template>
+        </DsFormField>
+        <DsFormField native for="time_slot" label="Masa Slot">
+          <template #default="{ id }">
+            <UInput
+              :id="id"
               v-model="timeSlot"
               name="time_slot"
               type="text"
               placeholder="cth: 8.00-9.00 pagi"
-              :class="FORM_INPUT_CLASS"
+              class="w-full"
             />
-          </div>
-          <div class="min-w-0">
-            <label for="tema" :class="LABEL">Tema (opsyenal)</label>
-            <input
-              id="tema"
+          </template>
+        </DsFormField>
+        <DsFormField native for="tema" label="Tema (opsyenal)">
+          <template #default="{ id }">
+            <UInput
+              :id="id"
               v-model="tema"
               name="tema"
               type="text"
               placeholder="cth: Nombor & Operasi"
-              :class="FORM_INPUT_CLASS"
+              class="w-full"
             />
-          </div>
+          </template>
+        </DsFormField>
+        <div class="sm:col-span-2">
+          <DsFormField native for="pengajaran_keperluan" label="Keperluan Khas (opsyenal)">
+            <template #default="{ id }">
+              <UTextarea
+                :id="id"
+                v-model="keperluan"
+                name="pengajaran_keperluan"
+                :rows="2"
+                maxlength="500"
+                placeholder="cth: Kelas mixed-ability. Atau: 5 minit set induksi je sebab masa pendek."
+                class="w-full"
+              />
+            </template>
+          </DsFormField>
         </div>
+      </DsFormSection>
 
-        <div class="min-w-0">
-          <label for="pengajaran_keperluan" :class="LABEL">Keperluan Khas (opsyenal)</label>
-          <textarea
-            id="pengajaran_keperluan"
-            v-model="keperluan"
-            name="pengajaran_keperluan"
-            rows="2"
-            maxlength="500"
-            placeholder="cth: Kelas mixed-ability. Atau: 5 minit set induksi je sebab masa pendek."
-            :class="FORM_TEXTAREA_CLASS"
-          />
-        </div>
-
-        <div
-          class="rounded-xl border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900"
-          data-testid="rph-info"
-        >
-          <p class="font-semibold">{{ C.infoTitle }}</p>
+      <UAlert
+        color="info"
+        variant="subtle"
+        icon="i-ph-info-duotone"
+        :title="C.infoTitle"
+        data-testid="rph-info"
+      >
+        <template #description>
           <ul class="mt-1 list-disc space-y-0.5 pl-5">
             <li v-for="b in C.infoBullets" :key="b">{{ b }}</li>
           </ul>
-        </div>
+        </template>
+      </UAlert>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <button
-            id="submit-btn"
-            type="submit"
-            :disabled="busy"
-            :class="[
-              BTN,
-              'bg-linear-to-r from-purple-500 to-pink-500 text-white hover:opacity-90',
-              busy && 'opacity-60',
-            ]"
-          >
-            <Bot class="h-4 w-4 shrink-0" />
-            <span id="submit-label">{{ busy ? C.busy : C.submit }}</span>
-          </button>
-          <RouterLink
-            to="/cikgu/rph"
-            :class="[BTN, 'bg-slate-200 text-slate-700 hover:bg-slate-300']"
-            data-testid="rph-cancel"
-            >{{ C.cancel }}</RouterLink
-          >
-          <p class="text-xs text-slate-400">{{ C.note }}</p>
-        </div>
-      </form>
-    </section>
-  </div>
+      <DsFormBar
+        :submit-label="busy ? C.busy : C.submit"
+        submit-icon="i-ph-robot"
+        :cancel-label="C.cancel"
+        cancel-to="/cikgu/rph"
+        :saving="busy"
+      >
+        <template #status>{{ C.note }}</template>
+      </DsFormBar>
+    </form>
+  </DsPage>
 </template>
