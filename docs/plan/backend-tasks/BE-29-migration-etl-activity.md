@@ -53,6 +53,10 @@ npm run be:test -- apps/api/test/migration/activity
 npm run be:verify
 ```
 
+## Programme update (2026-10-19)
+
+- Programme update: same conventions as BE-28. Implement the matrix rows marked BE-29 (plan section 14.7). `ai_usage_logs` is loaded only if BE-36 has merged.
+
 ## Prompt for Claude Code
 
 ```text

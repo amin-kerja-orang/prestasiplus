@@ -1,6 +1,8 @@
-# Backend task cards (BE-01 to BE-33)
+# Backend task cards (BE-01 to BE-40)
 
 One card per task. Each card is self-contained: goal, inputs (exact paths), outputs, endpoints, tables, testable acceptance criteria, test commands, dependencies, size, and a **Prompt for Claude Code** block to paste as-is. Read [../../architecture/v2-backend-plan.md](../../architecture/v2-backend-plan.md) once before the first card. Sizes: S up to 0.5 day, M 1 to 2 days, L 3 to 5 days (one developer or one agent session).
+
+Programme view: status per card is in [../backend-tracker.md](../backend-tracker.md); lanes, order and sync points are in [../sessions.md](../sessions.md); paste-ready agent prompts per lane are in [../agent-kickoff/](../agent-kickoff/README.md). BE-34 to BE-40 were added on 2026-10-19 (migration-first design and the D52 SPM intake / paper builder).
 
 Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak attempts / teacher / reports / economy, 4 aggregates and integration, M = migration stream (independent of the API lanes, blocked only by OD-2 and OD-10).
 
@@ -35,14 +37,21 @@ Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak att
 | [BE-31](BE-31-conformance-suite.md) | Conformance suite + OpenAPI breaking-change gate | M | starts after BE-03, grows | BE-03 | all domain cards |
 | [BE-32](BE-32-http-switch-e2e.md) | Compose stack, nginx proxy, e2e against real API (joint with lead) | M | 4 | BE-03, BE-07, BE-31 (+ lead V2-T31) | domain cards |
 | [BE-33](BE-33-hardening-release.md) | Security hardening, ops runbook | M | 4 | BE-32 | BE-30 |
-| [BE-27](BE-27-migration-staging-profiling.md) | .cloud staging loader + profiling (read-only) | M | M | BE-02 + OD-2 | every API card |
+| [BE-27](BE-27-migration-staging-profiling.md) | .cloud staging loader + profiling (read-only) | M | M | BE-02, BE-34 + OD-2 | every API card |
 | [BE-28](BE-28-migration-etl-core.md) | ETL: reference data, identity, classes | L | M | BE-27, BE-05, BE-08, BE-17, BE-25 + OD-10 | API cards |
 | [BE-29](BE-29-migration-etl-activity.md) | ETL: activity, wallet, content (snapshot approach) | L | M | BE-28, BE-11, BE-12, BE-16, BE-23, BE-24 | API cards |
-| [BE-30](BE-30-migration-reconcile-rehearsal.md) | Reconciliation, rehearsal, cutover scripts | M | M | BE-29 | BE-33 |
+| [BE-30](BE-30-migration-reconcile-rehearsal.md) | Reconciliation, rehearsal, cutover scripts | M | M | BE-29, BE-35 | BE-33 |
+| [BE-34](BE-34-migration-kit.md) | Migration kit: legacy-column lint, ETL control tables, upsert helper, dry-run runner | M | 0/1 | BE-02 | BE-03, BE-04, BE-05 |
+| [BE-35](BE-35-anonymiser-fixtures.md) | Anonymiser tool + synthetic .cloud fixture generator | M | M | BE-27 | API cards, BE-28 |
+| [BE-36](BE-36-ai-extraction-service.md) | AI extraction service (provider adapters, redaction, cost log, budget) | M | 1/2 | BE-03 | BE-04, BE-05, BE-08, BE-37 |
+| [BE-37](BE-37-intake-files-ocr.md) | Intake files, page images, figure crops, server OCR, job runner | L | 2 | BE-04 | BE-36, BE-08, BE-09 |
+| [BE-38](BE-38-intake-workflow.md) | Intake batches, review workflow, accept-to-Draf, duplicates | L | 3 | BE-09, BE-10, BE-36, BE-37 | BE-39, BE-12, BE-16 |
+| [BE-39](BE-39-paper-builder-blueprints.md) | Paper builder + blueprint admin (write side of M28 papers) | L | 3 | BE-15, BE-10 | BE-38, BE-16 |
+| [BE-40](BE-40-intake-dashboard-ai-usage.md) | Intake dashboard, AI usage and budget endpoints | S | 4 | BE-36, BE-38 | BE-20, BE-21, BE-22 |
 
-Totals: 33 cards. Sizes: S 2, M 19, L 12.
+Totals: 40 cards. Sizes: S 3, M 22, L 15.
 
-## Parallel lanes (suggested for one collaborator with several Claude Code sessions, or two collaborators)
+## Parallel lanes (superseded by [../sessions.md](../sessions.md): six lanes plus the lead lane; the list below is the original one-collaborator view)
 
 1. **Critical path:** BE-01, BE-02, BE-03, then BE-05, BE-09 (via BE-08), BE-12, BE-13, BE-19, then the wave 4 reports.
 2. **Bijak lane (starts at BE-01):** BE-14, then BE-15 (after BE-09), BE-16.
@@ -91,4 +100,6 @@ npm run be:verify -> ...
 - [ ] No secrets, no real names, no personal data in code, seeds, logs, fixtures
 - [ ] Scope/role tests included
 - [ ] Definition of Done (plan section 10) met
+- [ ] Migration-first checklist (plan section 14.9) done; mapping-matrix row added/updated
+- [ ] My row(s) in `docs/plan/backend-tracker.md` updated (status, branch, PR, notes)
 ```

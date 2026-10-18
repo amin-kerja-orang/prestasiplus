@@ -54,6 +54,10 @@ npm run be:test -- apps/api/test/migration/staging
 npm run be:verify
 ```
 
+## Programme update (2026-10-19)
+
+- Programme update: depends on BE-34 (ETL control tables, `legacy_*` convention). Staging DDL must be loadable from both anonymised dumps (BE-35) and synthetic fixtures; support a second source `staging_my` as an empty extension point (OD-13).
+
 ## Prompt for Claude Code
 
 ```text

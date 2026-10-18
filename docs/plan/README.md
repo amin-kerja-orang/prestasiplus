@@ -1,5 +1,17 @@
 # Backend collaboration: start here
 
+## Programme files (multi-PC, multi-session)
+
+| Need | File |
+|---|---|
+| Status of every card (40), owners, branches, PRs | [backend-tracker.md](backend-tracker.md) |
+| Lanes (PC-1 to PC-6 + lead), order, sync points S0 to S10, Gantt, file ownership, GitHub flow, sessions | [sessions.md](sessions.md) |
+| Paste-ready Claude Code prompt per lane, and how to start a new PC | [agent-kickoff/README.md](agent-kickoff/README.md) |
+| Task cards BE-01 to BE-40 | [backend-tasks/README.md](backend-tasks/README.md) |
+| Design: migration-first (section 14), SPM intake and AI (section 15), open decisions OD-1 to OD-20 | [../architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md) |
+
+If you are one of several people or PCs, read [sessions.md](sessions.md) and your lane prompt instead of section 3 below ("pick the first task"); the sections here still apply.
+
 You are building the **v2 backend** (NestJS + PostgreSQL) of PrestasiPlus while the lead keeps building the Vue frontend on another PC. You work with **Claude Code**; every task card has a prompt you can paste. Nothing here assumes you saw any earlier conversation.
 
 ## 1. Read (30 minutes, once)
@@ -80,4 +92,4 @@ Contract changes touching `common`, `session`, `auth` or `access` folders need t
 
 ## 7. Open decisions waiting for the user
 
-Listed in plan section 13 (OD-1 to OD-12). The ones that can block you early: OD-1 (repo access), OD-3 (confirm stack), OD-5 (BE-14), OD-2 and OD-10 (only the migration cards). If a card needs an answer that is missing, take another card and note it in the PR.
+Listed in plan section 13 (OD-1 to OD-20). The ones that can block you early: OD-1 (repo access), OD-3 (confirm stack), OD-5 (BE-14), OD-2 and OD-10 (only the migration cards). If a card needs an answer that is missing, take another card and note it in the PR.

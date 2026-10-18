@@ -51,6 +51,10 @@ npm run be:test -- apps/api/test/seed
 npm run be:verify
 ```
 
+## Programme update (2026-10-19)
+
+- Programme update: may seed one finished intake batch (mock provider output) and one built paper once BE-38/BE-39 exist; not a dependency.
+
 ## Prompt for Claude Code
 
 ```text

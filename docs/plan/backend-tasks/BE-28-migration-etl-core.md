@@ -23,7 +23,7 @@ Transform and load the first groups of `v2-data-migration.md` section 6.1 from `
 ## Outputs
 
 - `apps/api/src/migration/transform/{reference,users,classes,subscriptions}.ts`: one module per group with an explicit **mapping table per enum column** (values from the profile report; unknown values go to `migration_rejects`, never guessed)
-- `apps/api/src/migration/load/**`: batched `COPY`/insert, per-table checkpoint in `migration_runs`, idempotent upsert by `legacy_cloud_id`
+- `apps/api/src/migration/load/**`: batched `COPY`/insert, per-table checkpoint in `migration_runs`, idempotent upsert by `legacy_source` + `legacy_id`
 - `apps/api/prisma/schema/migration.prisma` + migration: `migration_runs`, `migration_rejects`, `migration_id_map`
 - CLI: `migrate:core --dry-run | --apply`
 - Reconciliation report: source count, loaded, rejected, per table
@@ -55,6 +55,10 @@ npm run be:test -- apps/api/test/migration/core
 npm run be:verify
 npm run migrate:core -- --dry-run     # against fixtures only
 ```
+
+## Programme update (2026-10-19)
+
+- Programme update: use `legacy_source` + `legacy_id` (text) instead of `legacy_cloud_id`, and the `etl_runs`, `etl_checkpoints`, `etl_id_map`, `etl_rejects`, `etl_recon` tables of BE-34 instead of defining `migration_*` tables. Implement the matrix rows marked BE-28 in plan section 14.7.
 
 ## Prompt for Claude Code
 

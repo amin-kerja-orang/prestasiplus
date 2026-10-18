@@ -62,6 +62,10 @@ npm audit --omit=dev
 docker build -f docker/api/Dockerfile -t pretasiplus-api:local . && docker run --rm --read-only --tmpfs /tmp pretasiplus-api:local node -v
 ```
 
+## Programme update (2026-10-19)
+
+- Programme update: review upload handling (magic bytes, page caps, PDF parsing without script execution), AI key handling and logging, SSRF protection on `AI_BASE_URL`, redaction canary test, and the migration data-handling rules (dumps, `.migration-out/`).
+
 ## Prompt for Claude Code
 
 ```text

@@ -55,6 +55,12 @@ npm run be:test -- apps/api/test/subscriptions
 npm run be:verify
 ```
 
+## Migration-first (plan section 14)
+
+- Every new table that could receive .cloud rows carries `legacy_source`, `legacy_id` and `unique (legacy_source, legacy_id)`, and is added to `apps/api/prisma/migratable-models.json`. Not in the contract.
+- Enums are `text` + `check` (English codes); anything the source may lack is nullable or has a documented default.
+- Add or update this entity's row in the mapping matrix (plan section 14.7) in the same PR; seeds must not set `legacy_*` and must be idempotent.
+
 ## Prompt for Claude Code
 
 ```text

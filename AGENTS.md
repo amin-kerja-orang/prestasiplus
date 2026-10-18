@@ -119,7 +119,17 @@ Several sessions may work in one checkout.
   issues, PRs or summaries. Live sites are read-only.
 - Demo accounts in README use the demo password only.
 
-## 8. How to pick up a task
+## 8. Backend programme (v2-backend)
+
+The NestJS + PostgreSQL backend is built by several PCs and Claude Code sessions in parallel lanes, from the plan [docs/architecture/v2-backend-plan.md](docs/architecture/v2-backend-plan.md) (section 14 migration-first, section 15 SPM question intake and provider-agnostic AI, D52).
+
+- **Every backend agent reads [docs/plan/AGENT-SYNC.md](docs/plan/AGENT-SYNC.md) first:** the LEAD (owner's PC and session) is the central guide; how to pick and claim a card, commit and push hourly and at session end.
+- Status of all 40 cards (BE-01 to BE-40): [docs/plan/backend-tracker.md](docs/plan/backend-tracker.md). Backend sessions edit only their own rows; `docs/TRACKER.md` stays lead-only.
+- Lanes, order, sync points, Gantt, file-ownership map and the GitHub flow: [docs/plan/sessions.md](docs/plan/sessions.md).
+- Paste-ready agent prompts per lane and how to start a PC: [docs/plan/agent-kickoff/](docs/plan/agent-kickoff/README.md). Task cards: [docs/plan/backend-tasks/](docs/plan/backend-tasks/README.md).
+- Backend agents: branch `be/<card-id>-<slug>` from `feature/v2-backend`, PR into it, contract first, work only in your lane's folders, never `src/**`, `e2e/**` or `docs/TRACKER.md`, no secrets and no access to the old systems' databases (the lead supplies anonymised dumps out-of-band).
+
+## 9. How to pick up a task
 
 1. Read [docs/TRACKER.md](docs/TRACKER.md): sections 0 (next actions), 2 (summary), 3 (module board), the decisions table.
 2. Find your module/slice on the board and open its docs: URS/SRS in `docs/requirements/`, discovery in
@@ -127,5 +137,5 @@ Several sessions may work in one checkout.
 3. For v2 work also read the v2 docs listed in [docs/README.md](docs/README.md) and decisions D28–D32.
 4. Confirm the change track (section 4), branch from the feature branch, implement, and run `npm run verify`.
 5. Update the module doc if behaviour changed; report what you did with evidence (command output, test results).
-6. For backend tasks assigned via GitHub issues: reference the task ID, follow the API contract and data model in
+6. For backend tasks (see section 8 first; claim the card in the backend tracker) or tasks assigned via GitHub issues: reference the task ID, follow the API contract and data model in
    `docs/architecture/`, and use the mock contracts in `src/mock/` as the behavioural reference until replaced.

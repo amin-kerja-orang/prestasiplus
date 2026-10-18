@@ -1,0 +1,94 @@
+# Backend tracker (v2-backend)
+
+Single source of truth for the **state of every backend card**. The lead's project tracker (`docs/TRACKER.md`) stays lead-only; this file is the one the backend sessions edit. Cards: [backend-tasks/](backend-tasks/README.md). Lanes, order and sync points: [sessions.md](sessions.md). Agent prompts: [agent-kickoff/](agent-kickoff/README.md). Design: [../architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md).
+
+- Last updated: 2026-10-19 (initial; all cards `todo`).
+- Priority: **P0** blocks other lanes or the learning loop; **P1** needed for release B1; **P2** later in B1 or release gates.
+- Status: `todo` / `in-progress` / `review` / `done` / `blocked`.
+- Owner: the PC and session that holds the card, written as `PC-2/S3` (see sessions.md for session ids). Empty (`-`) until someone starts.
+- A card is `done` only after the lead squash-merged its PR into `feature/v2-backend`.
+
+## Summary
+
+| Priority | Cards | Of which done |
+|---|---|---|
+| P0 | 13 | 0 |
+| P1 | 20 | 0 |
+| P2 | 7 | 0 |
+| **Total** | **40** | **0** |
+
+(The lead refreshes this table when merging; sessions do not need to.)
+
+## Cards
+
+| ID | Title | Lane | Priority | Depends on | Size | Status | Owner (PC/session) | Branch | PR | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| BE-01 | Scaffold the NestJS app and backend CI | PC-1 | P0 | none | M | todo | - | `be/BE-01-scaffold-ci` | - | Sync S1 (workspace + CI). Writes ADR-0020. Needs OD-1, OD-3. |
+| BE-02 | PostgreSQL service, Prisma setup and test harness | PC-1 | P0 | BE-01 | M | todo | - | `be/BE-02-db-orm` | - | Sync S2. Conventions: plan 14.2. |
+| BE-03 | Authentication, session, roles, scope and Mod Pelajar | PC-1 | P0 | BE-02 | L | todo | - | `be/BE-03-auth-session` | - | Sync S3 (auth, scope). Security review. Users table already has legacy columns. |
+| BE-04 | File storage service and upload handling | PC-1 | P0 | BE-03 | S | todo | - | `be/BE-04-file-storage` | - | Sync S4. Security review (uploads). Also derived files for BE-37. |
+| BE-05 | Users and schools (M02): admin CRUD, search, import | PC-1 | P0 | BE-03 | L | todo | - | `be/BE-05-users-schools` | - | Sync S5. Security review (IC, passwords). Unblocks BE-17, BE-25. |
+| BE-06 | Account basics (M01): register, password reset, profile, settings, notifications | PC-1 | P1 | BE-03, BE-04, BE-05 | M | todo | - | `be/BE-06-account-notifications` | - | Reset e-mail logged, not sent. |
+| BE-07 | Seed: core population (schools, users, roles) for the PoC profile | PC-1 | P0 | BE-05 | S | todo | - | `be/BE-07-seed-core-accounts` | - | Demo accounts only (Demo1234). |
+| BE-08 | Curriculum (M03): levels, subjects, chapters, topics, DSKP tree | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-08-curriculum` | - | Sync S5. Unblocks BE-09. |
+| BE-09 | Question bank core (M04): schema, repository, question CRUD and eligibility | PC-2 | P0 | BE-08 | L | todo | - | `be/BE-09-question-bank-core` | - | Sync S6 (question schema). Unblocks BE-10, BE-12, BE-15. |
+| BE-10 | Question workflow: reports, submissions, imports, quality, DSKP source | PC-5 | P1 | BE-09 | M | todo | - | `be/BE-10-question-workflow` | - | Lane PC-5. PDF/AI import is BE-38. Code in modules/questions/workflow/. |
+| BE-11 | Wallet, ledger and streak core (M14 core) | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-11-wallet-streak-core` | - | Needed by BE-12, BE-16, BE-23. |
+| BE-12 | Practice sessions and answer log (M05 write path) | PC-2 | P0 | BE-09, BE-11, BE-25 | L | todo | - | `be/BE-12-practice-sessions` | - | Sync S7. Needs BE-25 (PC-1) and BE-11. |
+| BE-13 | Practice read models: dashboard, subjects, mastery, revision, targets | PC-2 | P1 | BE-12 | M | todo | - | `be/BE-13-practice-reads` | - |  |
+| BE-14 | Shared exam engine package `@pp/exam-core` (marking, math expressions, blueprint) | PC-3 | P1 | BE-01 | M | todo | - | `be/BE-14-exam-core-package` | - | Needs OD-5 and one coordinated PR touching src/modules/m28-bijak-spm/domain (lead approves). |
+| BE-15 | Bijak SPM: papers, sections, blueprints, paper generation (read side) | PC-3 | P1 | BE-09, BE-14 | M | todo | - | `be/BE-15-bijak-papers` | - | Read side. Tables must serve BE-39. |
+| BE-16 | Bijak SPM: attempts, autosave, timer, marking, results, history | PC-3 | P1 | BE-15, BE-14, BE-04, BE-11 | L | todo | - | `be/BE-16-bijak-attempts` | - | Security review (photos). Server timer. |
+| BE-17 | Classes and teacher basics (M10 part A) | PC-6 | P1 | BE-05, BE-08 | M | todo | - | `be/BE-17-classes-teacher` | - |  |
+| BE-18 | Teacher missions, remedial tests, question sets and DSKP picks (M10 part B) | PC-6 | P1 | BE-17, BE-09, BE-12 | M | todo | - | `be/BE-18-missions-remedial-sets` | - |  |
+| BE-19 | Student performance read models (M08) | PC-6 | P1 | BE-12, BE-17 | L | todo | - | `be/BE-19-student-performance` | - |  |
+| BE-20 | Teacher analytics, monitoring and Kirkpatrick (M11, M12) | PC-6 | P2 | BE-19 | L | todo | - | `be/BE-20-teacher-analytics-kirkpatrick` | - |  |
+| BE-21 | School admin (M27): dashboards, reports, staff and student management | PC-6 | P1 | BE-05, BE-17, BE-19 | L | todo | - | `be/BE-21-school-admin` | - | Security review (school scope). |
+| BE-22 | Command Center and admin dashboard aggregates (M17, M10 Command Center) | PC-6 | P1 | BE-17, BE-19 | L | todo | - | `be/BE-22-command-center-admin` | - | Admin aggregates; Command Center. |
+| BE-23 | Gamification economy and rewards shop (M14 rest, M15) | PC-2 | P2 | BE-11, BE-12 | L | todo | - | `be/BE-23-gamification-shop` | - |  |
+| BE-24 | Content and support tickets (M09, M22) | PC-1 | P1 | BE-03, BE-04 | M | todo | - | `be/BE-24-content-support` | - |  |
+| BE-25 | School subscriptions, packages, parent invites, complimentary students (M02 rest) | PC-1 | P0 | BE-05 | M | todo | - | `be/BE-25-subscriptions-parents` | - | Needed by BE-12; do before BE-07/06. |
+| BE-26 | Seed: PoC data profile across all carded domains | PC-6 | P2 | BE-07, BE-12, BE-16, BE-17, BE-19, BE-23 | M | todo | - | `be/BE-26-seed-poc-profile` | - | May include intake/builder seed once BE-38/39 exist. |
+| BE-27 | .cloud migration: staging schema, loader and profiling report (read-only source) | PC-4 | P1 | BE-02, BE-34 | M | todo | - | `be/BE-27-migration-staging-profiling` | - | Needs OD-2 for real data; fixtures meanwhile. Security review. |
+| BE-28 | .cloud migration: ETL for reference data, identity and classes | PC-4 | P1 | BE-27, BE-05, BE-08, BE-17, BE-25 | L | todo | - | `be/BE-28-migration-etl-core` | - | Needs OD-10. Security review. |
+| BE-29 | .cloud migration: ETL for activity, wallet, content and operations | PC-4 | P2 | BE-28, BE-11, BE-12, BE-16, BE-23, BE-24 | L | todo | - | `be/BE-29-migration-etl-activity` | - | Needs OD-10. |
+| BE-30 | .cloud migration: reconciliation, rehearsal and cutover scripts | PC-4 | P2 | BE-29, BE-35 | M | todo | - | `be/BE-30-migration-reconcile-rehearsal` | - | Go/no-go gate for rehearsal. |
+| BE-31 | Contract conformance suite and OpenAPI breaking-change gate | PC-6 | P0 | BE-03 | M | todo | - | `be/BE-31-conformance-suite` | - | Starts as skeleton; grows with every domain. Idle-time card for PC-6. |
+| BE-32 | Compose stack, nginx proxy, Vite dev proxy and Playwright e2e against the real API | PC-1 + LEAD | P1 | BE-03, BE-07, BE-31 | M | todo | - | `be/BE-32-http-switch-e2e` | - | Joint with LEAD (V2-T31 hybrid transport). Raise nginx body size for uploads. |
+| BE-33 | Security hardening, observability and release readiness | PC-1 | P2 | BE-32, BE-16, BE-38, BE-39 | M | todo | - | `be/BE-33-hardening-release` | - | Final security pass: uploads, AI keys, SSRF, migration data handling. Release gate. |
+| BE-34 | Migration kit: legacy-column convention, ETL control tables, upsert helper, dry-run runner | PC-4 | P0 | BE-02 | M | todo | - | `be/BE-34-migration-kit` | - | Parallel with BE-03. Blocks BE-27/28. |
+| BE-35 | Anonymiser tool and synthetic .cloud fixture generator | PC-4 | P1 | BE-27 | M | todo | - | `be/BE-35-anonymiser-fixtures` | - | Lead runs the anonymiser (OD-18). Security review. |
+| BE-36 | AI extraction service: provider adapters, redaction, rate limit, cost log, budget cap | PC-5 | P1 | BE-03 | M | todo | - | `be/BE-36-ai-extraction-service` | - | D52. Security review. Mock provider default. |
+| BE-37 | Intake files, page images, figure crops, server OCR and job runner | PC-5 | P1 | BE-04 | L | todo | - | `be/BE-37-intake-files-ocr` | - | D52. Security review (untrusted PDFs). |
+| BE-38 | Intake batches, extraction orchestration, review workflow, accept-to-Draf, duplicates | PC-5 | P1 | BE-09, BE-10, BE-36, BE-37 | L | todo | - | `be/BE-38-intake-workflow` | - | D52. Security review. Needs OD-20 paths. |
+| BE-39 | Paper builder and blueprint admin (write side of M28 papers) | PC-3 | P1 | BE-15, BE-10 | L | todo | - | `be/BE-39-paper-builder-blueprints` | - | D52. Needs BE-10 (PC-5) and BE-15. |
+| BE-40 | Intake dashboard, AI usage and budget endpoints | PC-5 | P2 | BE-36, BE-38 | S | todo | - | `be/BE-40-intake-dashboard-ai-usage` | - | D52. Admin only. |
+
+## Lead tasks (not BE cards)
+
+| ID | Task | Needed by | Status |
+|---|---|---|---|
+| L0 | Create and push `feature/v2-backend`, protect it (OD-12), invite collaborators (OD-1), answer OD-1/3/5/19/20 (sync point S0) | everything | todo |
+| L1 | V2-T31: `hybrid` API mode, `credentials: 'include'`, CSRF header, 401 handling in `HttpTransport` | BE-32 | todo |
+| L2 | Produce the anonymised dump on the lead PC with the BE-35 tool; share out-of-band (OD-18) | BE-28 to BE-30 rehearsal | todo |
+| L3 | Merge `feature/student-prototype` into `feature/v2-backend` at S3, S6, S8 and after each frontend milestone; announce in the change log | all lanes rebase | todo |
+| L4 | Review and squash-merge PRs; contract PRs first; security review (`security-engineer`) for cards marked in Notes | all | todo |
+| L5 | Per domain after merge: "switch Mnn to http" frontend PR | BE-32 and cut-over | todo |
+
+## How to update this file
+
+1. **When you start a card:** in the PR for that card (open it as a draft early), set your row to `in-progress`, fill Owner (`PC-2/S3`), and Branch if it differs from the planned name. Commit this edit on your own `be/<id>-<slug>` branch.
+2. **When you open the PR for review:** set `review`, fill PR (`#123`), and put anything the next person needs in Notes (max one line; details go in the PR).
+3. **When blocked:** set `blocked`, say on what (`waits BE-09`, `OD-20`) in Notes, open a GitHub issue labelled `blocked` or `question`, and take the next card in your lane list that is unblocked.
+4. **Only edit your own rows.** Never touch another lane's rows, the Summary table or the Lead tasks table (the lead does). One row = one line; do not reflow the table.
+5. **The lead merges:** the squash-merge of your PR brings your row edit in; the lead sets `done` after the merge, refreshes the Summary and appends a Change log line. If two PRs conflict on this file, keep both sides' row edits (rows are independent lines) and re-check the table renders.
+6. Rebase daily (`git fetch origin && git rebase origin/feature/v2-backend`) so the table you edit is current.
+7. Do not record dates of work in the table; the Change log carries dates.
+
+## Change log
+
+Newest first. The lead appends a line when a card merges, a decision is made or a sync point is reached. Sessions may add a line only for a blocker or a decision request that is not already in an issue.
+
+| Date | Entry |
+|---|---|
+| 2026-10-19 | Programme created: 40 cards (BE-34 to BE-40 added: migration kit, anonymiser + fixtures, AI extraction service, intake files + OCR, intake workflow, paper builder, intake dashboard), tracker, sessions plan and agent kickoff prompts written. All cards `todo`. Waiting for sync point S0. |

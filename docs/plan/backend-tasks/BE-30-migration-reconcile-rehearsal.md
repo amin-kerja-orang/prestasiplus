@@ -50,6 +50,10 @@ npm run be:test -- apps/api/test/migration
 npm run be:verify
 ```
 
+## Programme update (2026-10-19)
+
+- Programme update: reconciliation is the per-entity contract of plan section 14.6 (counts, sums, distinct sets, sample parity, accepted drift); also uses the BE-35 fixtures for CI and the anonymised dump for the rehearsal.
+
 ## Prompt for Claude Code
 
 ```text

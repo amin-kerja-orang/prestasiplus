@@ -35,7 +35,7 @@ None new. `GET /api/health` gains `db: 'up'` (`select 1`); with the DB down it r
 
 ## DB tables
 
-None yet (only extensions and Prisma's `_prisma_migrations`). Encode the conventions of plan section 5 as helpers or a lint script: identity `bigint` PKs, `created_at`/`updated_at timestamptz`, `legacy_cloud_id bigint unique null` on migrated tables, `is_test boolean default false` where required, English enum codes.
+None yet (only extensions and Prisma's `_prisma_migrations`). Encode the conventions of plan section 5 as helpers or a lint script: identity `bigint` PKs, `created_at`/`updated_at timestamptz`, `legacy_source text null` + `legacy_id text null` with `unique (legacy_source, legacy_id)` on migratable tables (plan section 14.2; the lint script is BE-34), `is_test boolean default false` where required, English enum codes.
 
 ## Acceptance criteria
 

@@ -55,6 +55,10 @@ npm run verify
 docker compose down
 ```
 
+## Programme update (2026-10-19)
+
+- Programme update: nginx `client_max_body_size` and proxy read timeouts must fit `INTAKE_MAX_FILE_MB` uploads and polling; add the intake/builder specs to the `@api` set when the lead has them.
+
 ## Prompt for Claude Code
 
 ```text

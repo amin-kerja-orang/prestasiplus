@@ -59,6 +59,16 @@ npm run be:test -- apps/api/test/exam-papers
 npm run be:verify
 ```
 
+## Migration-first (plan section 14)
+
+- Every new table that could receive .cloud rows carries `legacy_source`, `legacy_id` and `unique (legacy_source, legacy_id)`, and is added to `apps/api/prisma/migratable-models.json`. Not in the contract.
+- Enums are `text` + `check` (English codes); anything the source may lack is nullable or has a documented default.
+- Add or update this entity's row in the mapping matrix (plan section 14.7) in the same PR; seeds must not set `legacy_*` and must be idempotent.
+
+## Programme update (2026-10-19)
+
+- Programme update (D52): this card is the read side. Paper/blueprint writes (builder, publish, blueprint admin) are BE-39; design the tables so BE-39 only adds endpoints and a draft status, not new tables for the same concepts.
+
 ## Prompt for Claude Code
 
 ```text

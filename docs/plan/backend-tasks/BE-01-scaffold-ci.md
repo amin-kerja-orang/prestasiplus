@@ -27,7 +27,7 @@ Create `apps/api` (NestJS 11, TypeScript strict, ESM) as an npm workspace packag
 - `compose.yaml`: uncomment and adapt the `api` service (its `depends_on: db` is activated in BE-02)
 - `.env.api.example` (placeholders only); `.gitignore` additions for `.env.api` and `.env.db`
 - `.github/workflows/api.yml` (path-filtered: `apps/api/**`, `packages/**`, `docker/api/**`, `compose.yaml`): `npm ci`, `contract:check`, lint, typecheck, test, docker build, secret scan (gitleaks)
-- `docs/adr/0019-backend-stack.md` (confirmed versions and the choices of plan section 3)
+- `docs/adr/0020-backend-stack.md` (confirmed versions and the choices of plan section 3)
 - `docs/architecture/v2-backend-deviations.md` (empty log with a header)
 
 ## Endpoints
@@ -65,6 +65,12 @@ npm run be:verify
 npm run typecheck && npm test        # the frontend must stay green
 docker build -f docker/api/Dockerfile -t pretasiplus-api:local .
 ```
+
+## Programme update (2026-10-19)
+
+- Create the append-only registries other lanes extend, one line per addition: `apps/api/src/modules/index.ts` (module registry imported by `app.module.ts`), `apps/api/prisma/seed/index.ts` (seed registry), and commented per-lane blocks in `.env.api.example`. Also create `apps/api/test/conformance/` as an empty folder with a README (BE-31 fills it). See [../sessions.md](../sessions.md) section 5.
+- The backend stack ADR is `docs/adr/0020-backend-stack.md` (0019 is the frontend SPM intake ADR).
+- Add the tracker rule to the PR template check: the card row in `docs/plan/backend-tracker.md` is updated in the PR.
 
 ## Prompt for Claude Code
 

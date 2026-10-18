@@ -60,6 +60,16 @@ npm run be:test -- apps/api/test/question-workflow
 npm run be:verify
 ```
 
+## Migration-first (plan section 14)
+
+- Every new table that could receive .cloud rows carries `legacy_source`, `legacy_id` and `unique (legacy_source, legacy_id)`, and is added to `apps/api/prisma/migratable-models.json`. Not in the contract.
+- Enums are `text` + `check` (English codes); anything the source may lack is nullable or has a documented default.
+- Add or update this entity's row in the mapping matrix (plan section 14.7) in the same PR; seeds must not set `legacy_*` and must be idempotent.
+
+## Programme update (2026-10-19)
+
+- Programme update (D52): PDF and AI imports belong to BE-38. Keep Excel import, lifecycle, reports and quality gates here; do not create a PDF/OCR `question_imports` pipeline. Put workflow code under `apps/api/src/modules/questions/workflow/**` and its tables in a separate Prisma file `apps/api/prisma/schema/questions-workflow.prisma` (both owned by lane PC-5), so this card never edits PC-2's `questions.prisma`.
+
 ## Prompt for Claude Code
 
 ```text

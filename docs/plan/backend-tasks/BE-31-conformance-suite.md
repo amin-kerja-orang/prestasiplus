@@ -50,6 +50,10 @@ npm run contract:check
 npm run be:verify
 ```
 
+## Programme update (2026-10-19)
+
+- Programme update: add scenarios for intake (upload, batch status, accept, forbidden roles) and the paper builder as BE-37..BE-39 merge; add a check that no response contains `legacy_*` keys.
+
 ## Prompt for Claude Code
 
 ```text
