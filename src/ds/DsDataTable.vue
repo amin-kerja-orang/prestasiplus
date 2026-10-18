@@ -13,7 +13,9 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, watch } from 'vue'
 
 import { dsCopy, fillCopy } from './copy'
+import { warnDeprecated } from './deprecate'
 import DsEmptyState from './DsEmptyState.vue'
+import type { DsTableDensity } from './types'
 import { useMedia } from './useMedia'
 
 export interface CardField {
@@ -34,7 +36,7 @@ const props = withDefaults(
     /** `fixed` = `table-fixed` full width (the caller sets column widths); `auto` scrolls inside its container when wider. */
     layout?: 'auto' | 'fixed'
     /** `tight` = 4px less cell padding for tables with many columns. */
-    density?: 'cozy' | 'tight'
+    density?: DsTableDensity
     stickyHeader?: boolean
     /** Default: on for `variant="card"`. */
     stickyFirstColumn?: boolean
@@ -60,7 +62,7 @@ const props = withDefaults(
     sortLabel?: string
     /** Adds a checkbox column (and card checkbox); v-model:selection holds the chosen rows. */
     selectable?: boolean
-    /** Tighter horizontal cell padding (px-2) for wide tables with many columns. */
+    /** @deprecated use `density="compact"` (tighter cell padding for wide tables). */
     compactCells?: boolean
   }>(),
   {
@@ -100,7 +102,9 @@ const kind = computed(() => props.variant)
 const fixed = computed(() => props.layout === 'fixed')
 const bare = computed(() => kind.value === 'bare')
 const flush = computed(() => kind.value === 'flush')
-const tight = computed(() => props.density === 'tight')
+if (props.compactCells) warnDeprecated('DsDataTable', 'compactCells', 'density="compact"')
+const cellPad = computed<DsTableDensity>(() => (props.compactCells ? 'compact' : props.density))
+const tight = computed(() => cellPad.value === 'tight')
 const title = computed(() => props.emptyTitle)
 
 const count = computed(() => props.total ?? props.data.length)
@@ -141,7 +145,7 @@ const tableUi = computed(() => {
   const sticky = flush.value || bare.value || props.stickyHeader
   const th = [
     'text-th whitespace-nowrap text-muted',
-    props.compactCells ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3',
+    cellPad.value === 'compact' ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3',
     sticky ? `sticky top-0 z-10 ${bare.value ? 'bg-elevated' : 'bg-default shadow-bar'}` : '',
   ].join(' ')
   return {
@@ -151,7 +155,7 @@ const tableUi = computed(() => {
     th,
     td: [
       'tabular align-middle text-body font-normal',
-      props.compactCells ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3',
+      cellPad.value === 'compact' ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3',
       fixed.value ? 'whitespace-normal' : '',
     ].join(' '),
     tr: bare.value

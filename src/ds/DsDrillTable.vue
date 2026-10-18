@@ -6,22 +6,29 @@
  */
 import type { TableColumn } from '@nuxt/ui'
 
+import DsLoadError from './DsLoadError.vue'
+
 defineProps<{
   data: T[]
   columns: TableColumn<T>[]
   /** Visually hidden table caption (BM). */
   caption?: string
   loading?: boolean
+  /** Failed to load: a retryable error replaces the table. */
+  error?: boolean
+  errorMessage?: string
   /** Text when `data` is empty (BM). */
   emptyLabel?: string
 }>()
 
-const emit = defineEmits<{ drill: [row: T] }>()
+const emit = defineEmits<{ drill: [row: T]; retry: [] }>()
 </script>
 
 <template>
-  <div class="max-w-full overflow-x-auto" data-ds="drill-table">
+  <div class="max-w-full overflow-x-auto" :aria-busy="loading ? 'true' : undefined" data-ds="drill-table">
+    <DsLoadError v-if="error" :message="errorMessage" variant="inline" @retry="emit('retry')" />
     <UTable
+      v-else
       :data="data"
       :columns="columns"
       :loading="loading"

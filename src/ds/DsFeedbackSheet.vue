@@ -6,11 +6,15 @@
  * line) is a polite `role="status"` region, never the button. No
  * celebration on a wrong answer: the "bad" tone only shows an x glyph and the text from the caller.
  */
+import { computed } from 'vue'
+
 import DsArt3D from './DsArt3D.vue'
+import { warnDeprecated } from './deprecate'
 
-type FeedbackTone = 'good' | 'bad'
+/** `good` / `bad` are deprecated aliases of `success` / `error`. */
+type FeedbackTone = 'success' | 'error' | 'good' | 'bad'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     tone: FeedbackTone
     title: string
@@ -29,6 +33,11 @@ withDefaults(
 )
 
 defineEmits<{ continue: [] }>()
+
+if (props.tone === 'good' || props.tone === 'bad') {
+  warnDeprecated('DsFeedbackSheet', 'tone good/bad', 'tone success/error')
+}
+const good = computed(() => props.tone === 'success' || props.tone === 'good')
 </script>
 
 <template>
@@ -39,7 +48,7 @@ defineEmits<{ continue: [] }>()
   >
     <span
       class="pointer-events-none absolute inset-0"
-      :class="tone === 'good' ? 'bg-success/16' : 'bg-error/14'"
+      :class="good ? 'bg-success/16' : 'bg-error/14'"
       aria-hidden="true"
     />
     <div class="relative flex flex-col gap-3">
@@ -50,12 +59,12 @@ defineEmits<{ continue: [] }>()
         >
           <span
             class="inline-grid size-6.5 shrink-0 place-items-center rounded-full text-on-sem"
-            :class="tone === 'good' ? 'bg-success' : 'bg-error'"
+            :class="good ? 'bg-success' : 'bg-error'"
             aria-hidden="true"
           >
             <UIcon
-              :data-glyph="tone === 'good' ? 'check' : 'x'"
-              :name="tone === 'good' ? 'i-ph-check-bold' : 'i-ph-x-bold'"
+              :data-glyph="good ? 'check' : 'x'"
+              :name="good ? 'i-ph-check-bold' : 'i-ph-x-bold'"
               class="size-4"
             />
           </span>

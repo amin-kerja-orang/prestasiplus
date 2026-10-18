@@ -57,14 +57,14 @@ defineExpose({ focus: () => hero.value?.focus() })
       :art="art"
       :title="title"
       :subtitle="subtitle"
-      :tone="strong ? 'win' : 'keep'"
+      :accent="strong ? 'win' : 'action'"
       :title-testid="titleTestid"
     />
     <DsScoreRing
       :value="score"
       :max="max"
       size="lg"
-      :tone="strong ? 'win' : 'action'"
+      :accent="strong ? 'win' : 'action'"
       :label="ringLabel"
       :unit="ringUnit"
     />

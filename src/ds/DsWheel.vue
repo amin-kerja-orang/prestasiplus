@@ -7,6 +7,7 @@
  */
 import { onBeforeUnmount, ref } from 'vue'
 
+import { dsCopy } from './copy'
 import { useMedia } from './useMedia'
 
 type WheelState = 'idle' | 'spinning' | 'revealed'
@@ -23,9 +24,9 @@ const props = withDefaults(
     hideButton?: boolean
   }>(),
   {
-    spinLabel: 'Putar',
-    spinningLabel: 'Sedang berputar...',
-    resetLabel: 'Cuba Lagi',
+    spinLabel: dsCopy.wheelSpin,
+    spinningLabel: dsCopy.wheelSpinning,
+    resetLabel: dsCopy.wheelReset,
     duration: 2400,
     hideButton: false,
   },

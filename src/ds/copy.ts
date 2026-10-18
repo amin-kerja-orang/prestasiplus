@@ -74,6 +74,43 @@ export const dsCopy = {
   breadcrumbMore: 'Lagi',
   fileDrop: 'Seret fail ke sini atau klik untuk memilih',
   fileTooLarge: 'Fail melebihi saiz maksimum {n} MB.',
+  // Learner and game defaults (v2-ds-hardening R10)
+  quizCorrect: 'Betul',
+  quizWrong: 'Salah',
+  badgeNew: 'BARU',
+  badgeLocked: 'Terkunci',
+  progress: 'Kemajuan',
+  ownRow: 'Anda',
+  heatLow: 'Rendah',
+  heatHigh: 'Tinggi',
+  heatNoData: 'Tiada data',
+  audioPlay: 'Main',
+  audioPause: 'Jeda',
+  audioSeek: 'Kedudukan audio',
+  audioSpeed: 'Kelajuan',
+  audioTranscript: 'Transkrip',
+  levelDone: 'Selesai',
+  levelCurrent: 'Sekarang',
+  levelLocked: 'Terkunci',
+  wheelSpin: 'Putar',
+  wheelSpinning: 'Sedang berputar...',
+  wheelReset: 'Cuba Lagi',
+  friendSelected: 'Dipilih',
+  // Dialog and confirm
+  confirmTitle: 'Pengesahan',
+  confirmYes: 'Ya',
+  // Error pages
+  error403Title: 'Akses Ditolak',
+  error403Description: 'Halaman ini tidak tersedia untuk peranan anda.',
+  error404Title: 'Halaman Tidak Dijumpai',
+  error404Description:
+    'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
+  error500Title: 'Sesuatu tidak kena',
+  error500Description: 'Kami tidak dapat memuatkan halaman ini. Cuba lagi sebentar.',
+  // Chart
+  chartLegend: 'Petunjuk {title}',
+  chartTable: 'Data bagi {title}',
+  chartEmpty: 'Tiada data untuk dipaparkan.',
 } as const
 
 export type DsCopyKey = keyof typeof dsCopy

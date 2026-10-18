@@ -23,6 +23,12 @@ const props = withDefaults(
     error?: string
     native?: boolean
     size?: 'md' | 'lg'
+    /** Visible and copyable, not editable: slotted control gets `readonly`; field sits on `bg-soft`. */
+    readonly?: boolean
+    /** The control cannot be used. */
+    disabled?: boolean
+    /** The value is being loaded (`aria-busy`, skeleton text under the label). */
+    loading?: boolean
   }>(),
   {
     name: undefined,
@@ -34,6 +40,9 @@ const props = withDefaults(
     error: undefined,
     native: false,
     size: 'md',
+    readonly: false,
+    disabled: false,
+    loading: false,
   },
 )
 
@@ -51,7 +60,13 @@ const invalid = computed(() => Boolean(props.error))
 </script>
 
 <template>
-  <div v-if="native" class="flex min-w-0 flex-col gap-2" data-ds="form-field">
+  <div
+    v-if="native"
+    class="flex min-w-0 flex-col gap-2"
+    :aria-busy="loading ? 'true' : undefined"
+    :data-state="error ? 'error' : loading ? 'loading' : readonly ? 'read-only' : disabled ? 'disabled' : undefined"
+    data-ds="form-field"
+  >
     <label :for="controlId" class="text-label text-default">
       {{ label }}
       <template v-if="required">
@@ -61,7 +76,15 @@ const invalid = computed(() => Boolean(props.error))
       <slot name="label-extra" />
     </label>
     <p v-if="description" class="text-caption text-muted">{{ description }}</p>
-    <slot :id="controlId" :describedby="describedby" :invalid="invalid" />
+    <USkeleton v-if="loading" class="h-11 w-full rounded-chip" />
+    <slot
+      v-else
+      :id="controlId"
+      :describedby="describedby"
+      :invalid="invalid"
+      :readonly="readonly"
+      :disabled="disabled"
+    />
     <p v-if="hint ?? help" :id="hintId" class="text-caption text-muted">
       <slot name="hint">{{ hint ?? help }}</slot>
     </p>
@@ -87,6 +110,8 @@ const invalid = computed(() => Boolean(props.error))
     :error="error"
     :size="size"
     class="min-w-0"
+    :aria-busy="loading ? 'true' : undefined"
+    :data-state="error ? 'error' : loading ? 'loading' : readonly ? 'read-only' : disabled ? 'disabled' : undefined"
     data-ds="form-field"
   >
     <template v-if="$slots['label-extra']" #label>
@@ -99,6 +124,14 @@ const invalid = computed(() => Boolean(props.error))
         <span>{{ msg }}</span>
       </span>
     </template>
-    <slot :id="controlId" :describedby="describedby" :invalid="invalid" />
+    <USkeleton v-if="loading" class="h-11 w-full rounded-chip" />
+    <slot
+      v-else
+      :id="controlId"
+      :describedby="describedby"
+      :invalid="invalid"
+      :readonly="readonly"
+      :disabled="disabled"
+    />
   </UFormField>
 </template>

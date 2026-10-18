@@ -23,9 +23,32 @@ export type DsTextTone =
   | 'highlighted' | 'default' | 'toned' | 'muted' | 'dimmed' | 'inverted'
   | 'primary' | 'success' | 'warning' | 'error' | 'info'
   | 'on-primary' | 'on-sem'
-export type DsIconName = string & { readonly __brand?: 'DsIconName' }
 export type DsCols = 1 | 2 | 3 | 4 | 5 | 6 | 12
 export type DsResponsive<T extends string | number> = Partial<Record<'base' | DsBreakpoint, T>>
 export type DsSurfaceLevel = 'raised' | 'elevated' | 'soft' | 'accented' | 'inverted'
 export type DsPageLayout = 'list' | 'form' | 'report' | 'dashboard' | 'detail' | 'learner'
 export type DsPageWidth = 'prose' | 'default' | 'wide' | 'full'
+
+/** Colour of a figure; replaces the `valueClass` escape hatch (R2). */
+export type DsValueTone = 'highlighted' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'muted'
+
+/** Table density (R4): `compact` replaces the old `compactCells` boolean. */
+export type DsTableDensity = 'cozy' | 'tight' | 'compact'
+
+/** Tile density (R4): replaces the exclusive `compact` / `roomy` booleans. */
+export type DsTileDensity = 'default' | 'compact' | 'roomy'
+
+/**
+ * Phosphor base name (`fire`); the weight is decided by the personality. The generated union from
+ * `src/theme/ds-icons.ts` is applied at T-Z; until then it is a string so every caller compiles.
+ */
+export type DsIconName = string
+
+/** Deprecated full class form (`i-ph-fire-duotone`), accepted for one release. */
+export type DsLegacyIconClass = `i-${string}`
+
+/** Prop type of every `icon` prop: a base name, or the legacy class for one release. */
+export type DsIconProp = DsIconName
+
+/** Heading level of a component title. */
+export type DsHeadingLevel = 2 | 3

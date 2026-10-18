@@ -13,7 +13,12 @@ const props = withDefaults(
     message?: string
     title?: string
     retryLabel?: string
+    /** `alert` = full alert; `inline` = one line inside a panel. */
+    variant?: 'alert' | 'inline'
+    /** @deprecated use `variant="inline"`. */
     inline?: boolean
+    /** The retry is running. */
+    loading?: boolean
     testid?: string
     /** `data-testid` of the retry button. */
     retryTestid?: string
@@ -22,11 +27,15 @@ const props = withDefaults(
     message: dsCopy.loadError,
     title: undefined,
     retryLabel: dsCopy.retry,
+    variant: undefined,
     inline: false,
+    loading: false,
     testid: undefined,
     retryTestid: undefined,
   },
 )
+
+const isInline = computed(() => (props.variant ?? (props.inline ? 'inline' : 'alert')) === 'inline')
 
 const emit = defineEmits<{ retry: [] }>()
 
@@ -36,6 +45,7 @@ const actions = computed(() => [
     label: props.retryLabel,
     color: 'neutral' as const,
     variant: 'soft' as const,
+    loading: props.loading,
     onClick: () => emit('retry'),
     ...(props.retryTestid ? { 'data-testid': props.retryTestid } : {}),
   },
@@ -44,7 +54,7 @@ const actions = computed(() => [
 
 <template>
   <div
-    v-if="inline"
+    v-if="isInline"
     class="flex flex-wrap items-center gap-3 text-body text-error"
     role="alert"
     data-ds="load-error"
@@ -57,6 +67,7 @@ const actions = computed(() => [
       color="neutral"
       variant="soft"
       :label="retryLabel"
+      :loading="loading"
       :data-testid="retryTestid"
       @click="emit('retry')"
     />

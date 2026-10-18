@@ -6,7 +6,10 @@
  */
 import { computed } from 'vue'
 
+import './states.css'
+import { dsCopy } from './copy'
 import DsArt3D from './DsArt3D.vue'
+import DsIcon from './DsIcon.vue'
 
 type MediaKind = 'video' | 'article' | 'audio'
 
@@ -33,7 +36,7 @@ const props = withDefaults(
     category: undefined,
     meta: undefined,
     progress: undefined,
-    progressLabel: 'Kemajuan',
+    progressLabel: dsCopy.progress,
     to: undefined,
   },
 )
@@ -41,19 +44,21 @@ const props = withDefaults(
 const glyph = computed(
   () =>
     ({
-      video: 'i-ph-play-circle-duotone',
-      article: 'i-ph-article-duotone',
-      audio: 'i-ph-headphones-duotone',
+      video: 'play-circle',
+      article: 'article',
+      audio: 'headphones',
     })[props.kind],
 )
 </script>
 
 <template>
-  <UCard class="relative overflow-hidden" :ui="{ body: 'p-0 sm:p-0' }" data-ds="media-card">
+  <UCard
+    class="relative overflow-hidden"
+    :class="to ? 'transition-shadow hover:shadow-card' : ''" :ui="{ body: 'p-0 sm:p-0' }" data-ds="media-card">
     <div class="relative aspect-video w-full bg-elevated">
       <DsArt3D v-if="thumb" variant="plain" :src="thumb" :alt="thumbAlt" ratio="video" />
       <span v-else class="grid size-full place-items-center text-muted" aria-hidden="true">
-        <UIcon :name="glyph" class="size-12" />
+        <DsIcon :name="glyph" class="size-12" />
       </span>
       <span class="absolute start-2 bottom-2 flex gap-1">
         <UBadge v-if="duration" color="neutral" variant="solid" size="sm" :label="duration" class="tabular" />

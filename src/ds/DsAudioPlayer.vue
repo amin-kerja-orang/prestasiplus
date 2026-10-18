@@ -6,6 +6,8 @@
  */
 import { computed, onBeforeUnmount, ref, useTemplateRef } from 'vue'
 
+import { dsCopy } from './copy'
+
 const props = withDefaults(
   defineProps<{
     src: string
@@ -21,11 +23,11 @@ const props = withDefaults(
   {
     transcript: undefined,
     speeds: () => [0.75, 1, 1.25, 1.5],
-    playLabel: 'Main',
-    pauseLabel: 'Jeda',
-    seekLabel: 'Kedudukan audio',
-    speedLabel: 'Kelajuan',
-    transcriptLabel: 'Transkrip',
+    playLabel: dsCopy.audioPlay,
+    pauseLabel: dsCopy.audioPause,
+    seekLabel: dsCopy.audioSeek,
+    speedLabel: dsCopy.audioSpeed,
+    transcriptLabel: dsCopy.audioTranscript,
   },
 )
 

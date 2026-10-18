@@ -5,6 +5,7 @@
  * with the primary colour. Staff gets the flat row (no lift), learner the raised one.
  */
 import type { Art3DName } from './assets'
+import { dsCopy } from './copy'
 import DsArt3D from './DsArt3D.vue'
 
 withDefaults(
@@ -29,7 +30,7 @@ withDefaults(
     own: false,
     medal: undefined,
     avatarSrc: undefined,
-    ownLabel: 'Anda',
+    ownLabel: dsCopy.ownRow,
   },
 )
 </script>

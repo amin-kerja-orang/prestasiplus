@@ -3,7 +3,7 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 
 import DsDialog from './DsDialog.vue'
-import { confirmHost, confirmState, settleConfirm } from './useConfirm'
+import { acceptConfirm, confirmHost, confirmState, settleConfirm } from './useConfirm'
 
 onMounted(() => {
   confirmHost.count += 1
@@ -23,6 +23,8 @@ function onOpen(value: boolean): void {
     :open="confirmState.open"
     :title="confirmState.title"
     :description="confirmState.message"
+    :tone="confirmState.tone === 'error' ? 'error' : 'default'"
+    :loading="confirmState.loading"
     @update:open="onOpen"
   >
     <p class="text-body text-default" data-ds="confirm-message">{{ confirmState.message }}</p>
@@ -31,16 +33,18 @@ function onOpen(value: boolean): void {
         type="button"
         color="neutral"
         variant="ghost"
+        :disabled="confirmState.loading"
         :label="confirmState.cancelLabel"
         data-ds="confirm-cancel"
         @click="settleConfirm(false)"
       />
       <UButton
         type="button"
-        :color="confirmState.tone === 'danger' ? 'error' : 'primary'"
+        :color="confirmState.tone === 'error' ? 'error' : 'primary'"
+        :loading="confirmState.loading"
         :label="confirmState.confirmLabel"
         data-ds="confirm-ok"
-        @click="settleConfirm(true)"
+        @click="acceptConfirm()"
       />
     </template>
   </DsDialog>

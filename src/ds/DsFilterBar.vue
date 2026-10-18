@@ -10,6 +10,7 @@
 import { computed, ref } from 'vue'
 
 import { dsCopy } from './copy'
+import { warnDeprecated } from './deprecate'
 import DsActiveFilters from './DsActiveFilters.vue'
 import { usePersonality } from './personality'
 import { useMedia } from './useMedia'
@@ -23,6 +24,8 @@ const props = withDefaults(
     /** Count badge on the "Lagi Penapis" button. */
     moreCount?: number
     /** `panel` = own raised card (staff default); `plain` = on the page (learner default). */
+    surface?: 'panel' | 'plain'
+    /** @deprecated use `surface`. */
     tone?: 'panel' | 'plain'
     /**
      * Reset button. `auto` shows it when a filter is active; when the caller passes neither
@@ -41,6 +44,7 @@ const props = withDefaults(
     activeCount: undefined,
     chips: undefined,
     moreCount: 0,
+    surface: undefined,
     tone: undefined,
     showReset: 'auto',
     loading: false,
@@ -59,7 +63,10 @@ const personality = usePersonality()
 const wide = useMedia('(min-width: 768px)')
 const sheet = ref(false)
 
-const panel = computed(() => (props.tone ?? (personality.value === 'staff' ? 'panel' : 'plain')) === 'panel')
+if (props.tone) warnDeprecated('DsFilterBar', 'tone', 'surface')
+const panel = computed(
+  () => (props.surface ?? props.tone ?? (personality.value === 'staff' ? 'panel' : 'plain')) === 'panel',
+)
 const count = computed(() => props.activeCount ?? props.chips?.length ?? 0)
 const resetVisible = computed(() => {
   if (props.showReset !== 'auto') return props.showReset

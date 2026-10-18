@@ -7,6 +7,7 @@
  */
 import { computed } from 'vue'
 
+import { dsCopy } from './copy'
 import type { QuizOptionState } from './types'
 
 const props = withDefaults(
@@ -17,15 +18,17 @@ const props = withDefaults(
     /** Screen-reader words for the locked states (generic BM defaults). */
     correctLabel?: string
     wrongLabel?: string
+    /** Not available (no verdict): dimmed, not focusable, does not emit. */
+    disabled?: boolean
   }>(),
-  { state: 'idle', correctLabel: 'Betul', wrongLabel: 'Salah' },
+  { state: 'idle', correctLabel: dsCopy.quizCorrect, wrongLabel: dsCopy.quizWrong, disabled: false },
 )
 
 const emit = defineEmits<{ select: [] }>()
 
 /** Verdict states stop reacting (the check has been made). */
 const locked = computed(
-  () => props.state === 'correct' || props.state === 'wrong' || props.state === 'dimmed',
+  () => props.state === 'correct' || props.state === 'wrong' || props.state === 'dimmed' || props.disabled,
 )
 const marked = computed(() => props.state === 'correct' || props.state === 'wrong')
 
@@ -56,13 +59,14 @@ function onClick(): void {
     block
     class="relative h-auto min-h-15 justify-start gap-3 overflow-hidden rounded-card bg-default py-2 pr-3.5 pl-2.5 text-start text-body font-semibold text-highlighted shadow-none hover:bg-default"
     :class="[
-      state === 'dimmed'
+      state === 'dimmed' || (disabled && !marked)
         ? 'opacity-55 aria-disabled:opacity-55'
         : locked && 'aria-disabled:opacity-100',
       state === 'wrong' && 'animate-ds-nudge motion-reduce:animate-none',
     ]"
     :aria-pressed="locked ? undefined : state === 'selected'"
     :aria-disabled="locked ? 'true' : undefined"
+    :disabled="disabled"
     :data-state="state"
     data-ds="quiz-option"
     @click="onClick"

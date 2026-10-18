@@ -23,9 +23,14 @@ import {
   type Plugin,
 } from 'chart.js'
 import type { TableColumn } from '@nuxt/ui'
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 
+import { dsCopy, fillCopy } from './copy'
+import { warnDeprecated } from './deprecate'
+import DsEmptyState from './DsEmptyState.vue'
+import DsLoadError from './DsLoadError.vue'
 import { usePersonality } from './personality'
+import type { DsHeadingLevel } from './types'
 
 Chart.register(
   BarController,
@@ -62,10 +67,44 @@ const props = withDefaults(
     /** Caption of the hidden data table (BM). */
     tableLabel?: string
     /** Heading level of the title. */
-    level?: 2 | 3
+    headingLevel?: DsHeadingLevel
+    /** @deprecated use `headingLevel`. */
+    level?: DsHeadingLevel
+    /** Fixed plot height (220 / 280 / 320); unset = 220 growing to 320 with the viewport. */
+    height?: 'sm' | 'md' | 'lg'
+    loading?: boolean
+    /** Failed to load: a retryable error replaces the plot. */
+    error?: boolean
+    errorMessage?: string
+    /** Text of the empty state (no data for the period). */
+    emptyLabel?: string
   }>(),
-  { type: 'bar', unit: '', horizontal: false, tableLabel: undefined, level: 3 },
+  {
+    type: 'bar',
+    unit: '',
+    horizontal: false,
+    tableLabel: undefined,
+    headingLevel: undefined,
+    level: undefined,
+    height: undefined,
+    loading: false,
+    error: false,
+    errorMessage: undefined,
+    emptyLabel: dsCopy.chartEmpty,
+  },
 )
+
+const emit = defineEmits<{ retry: [] }>()
+if (props.level) warnDeprecated('DsChart', 'level', 'headingLevel')
+
+const isEmpty = computed(
+  () => props.series.length === 0 || props.series.every((s) => s.data.length === 0),
+)
+const view = computed<'loading' | 'error' | 'empty' | 'ready'>(() =>
+  props.loading ? 'loading' : props.error ? 'error' : isEmpty.value ? 'empty' : 'ready',
+)
+const HEIGHT = { sm: 'h-55', md: 'h-70', lg: 'h-80' } as const
+const plotHeight = computed(() => (props.height ? HEIGHT[props.height] : 'h-55 md:h-70 lg:h-80'))
 
 const personality = usePersonality()
 const root = useTemplateRef<HTMLElement>('root')
@@ -78,7 +117,7 @@ const CAT_FALLBACK = [
   '--color-delima-700',
   '--color-laut-700',
   '--color-mentari-800',
-  '--color-ungu-600',
+  '--color-heat',
   '--color-ungu-600',
   '--color-daun-700',
 ]
@@ -238,18 +277,41 @@ const tableRows = computed(() =>
   }),
 )
 
-const headingTag =computed(() => `h${props.level}`)
+const headingTag = computed(() => `h${props.headingLevel ?? props.level ?? 3}`)
+
+// The canvas stays mounted (hidden) while loading / empty / error; redraw when the plot is back.
+watch(view, async (v) => {
+  if (v !== 'ready') return
+  await nextTick()
+  render()
+})
 </script>
 
 <template>
-  <figure ref="root" class="m-0 flex min-w-0 flex-col gap-3" data-ds="chart">
+  <figure
+    ref="root"
+    class="m-0 flex min-w-0 flex-col gap-3"
+    :aria-busy="loading ? 'true' : undefined"
+    :data-state="view"
+    data-ds="chart"
+  >
     <component :is="headingTag" class="text-subheading text-highlighted" data-ds="chart-title">
       {{ title }}
     </component>
-    <div class="relative h-55 w-full md:h-70 lg:h-80">
+    <USkeleton v-if="view === 'loading'" class="w-full" :class="plotHeight" data-ds="chart-loading" />
+    <DsLoadError
+      v-else-if="view === 'error'"
+      :message="errorMessage"
+      variant="inline"
+      @retry="emit('retry')"
+    />
+    <DsEmptyState v-else-if="view === 'empty'" size="sm" :title="emptyLabel" icon="chart-line-up" />
+    <div v-show="view === 'ready'" class="relative w-full" :class="plotHeight">
       <canvas ref="canvas" role="img" :aria-label="title" />
     </div>
-    <ul class="flex flex-wrap gap-x-4 gap-y-2" data-ds="chart-legend" :aria-label="`Petunjuk ${title}`">
+    <ul
+      v-if="view === 'ready'"
+      class="flex flex-wrap gap-x-4 gap-y-2" data-ds="chart-legend" :aria-label="fillCopy(dsCopy.chartLegend, { title })">
       <li v-for="(l, i) in legend" :key="i" class="flex items-center gap-2 text-caption text-muted">
         <span class="size-3 shrink-0" :class="[l.swatch, shape]" aria-hidden="true" />
         {{ l.label }}
@@ -259,7 +321,7 @@ const headingTag =computed(() => `h${props.level}`)
       class="sr-only"
       :data="tableRows"
       :columns="tableColumns"
-      :caption="tableLabel ?? `Data bagi ${title}`"
+      :caption="tableLabel ?? fillCopy(dsCopy.chartTable, { title })"
       data-ds="chart-table"
     />
   </figure>

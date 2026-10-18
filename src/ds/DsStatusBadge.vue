@@ -15,8 +15,10 @@ const props = withDefaults(
     /** Replaces the word (live exception). */
     label?: string
     size?: 'sm' | 'md'
+    /** `soft` = tinted (default); `strong` = solid, for live / new. */
+    emphasis?: 'soft' | 'strong'
   }>(),
-  { label: undefined, size: 'md' },
+  { label: undefined, size: 'md', emphasis: 'soft' },
 )
 
 const def = computed(() => statusMap[props.status])
@@ -25,7 +27,7 @@ const def = computed(() => statusMap[props.status])
 <template>
   <UBadge
     :color="def.color"
-    variant="subtle"
+    :variant="emphasis === 'strong' ? 'solid' : 'subtle'"
     :size="size"
     class="gap-1 whitespace-nowrap"
     data-ds="status-badge"

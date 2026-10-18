@@ -8,6 +8,9 @@ import type { RouteLocationRaw } from 'vue-router'
 
 import { dsCopy } from './copy'
 import DsPanel from './DsPanel.vue'
+import { resolveIcon } from './icon'
+import { usePersonality } from './personality'
+import type { DsIconProp } from './types'
 
 withDefaults(
   defineProps<{
@@ -18,8 +21,8 @@ withDefaults(
     disabled?: boolean
     showCancel?: boolean
     sticky?: boolean
-    /** Phosphor icon class of the submit button. */
-    submitIcon?: string
+    /** Phosphor base name of the submit button icon. */
+    submitIcon?: DsIconProp
   }>(),
   {
     submitLabel: dsCopy.save,
@@ -29,9 +32,12 @@ withDefaults(
     disabled: false,
     showCancel: true,
     sticky: true,
-    submitIcon: 'i-ph-floppy-disk',
+    // Bundle hint until `floppy-disk` joins `ds-icons.ts`: i-ph-floppy-disk i-ph-floppy-disk-duotone
+    submitIcon: 'floppy-disk',
   },
 )
+
+const personality = usePersonality()
 
 const emit = defineEmits<{ cancel: [] }>()
 </script>
@@ -58,7 +64,7 @@ const emit = defineEmits<{ cancel: [] }>()
         <UButton
           type="submit"
           variant="solid"
-          :icon="submitIcon"
+          :icon="resolveIcon(submitIcon, personality)"
           :label="submitLabel"
           :loading="saving"
           :disabled="saving || disabled"

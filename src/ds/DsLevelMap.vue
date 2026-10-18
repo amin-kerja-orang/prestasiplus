@@ -4,6 +4,8 @@
  * colour alone), joined by a tonal rail. Locked nodes are not selectable. The `detail` slot is
  * rendered under the current (or selected) node.
  */
+import { dsCopy } from './copy'
+
 export interface LevelNode {
   id: string
   label: string
@@ -21,7 +23,12 @@ withDefaults(
     currentLabel?: string
     lockedLabel?: string
   }>(),
-  { selected: undefined, doneLabel: 'Selesai', currentLabel: 'Sekarang', lockedLabel: 'Terkunci' },
+  {
+    selected: undefined,
+    doneLabel: dsCopy.levelDone,
+    currentLabel: dsCopy.levelCurrent,
+    lockedLabel: dsCopy.levelLocked,
+  },
 )
 
 defineEmits<{ select: [id: string] }>()
