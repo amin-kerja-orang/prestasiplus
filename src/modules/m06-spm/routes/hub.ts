@@ -19,6 +19,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Mod SPM - PRESTASIPLUS',
       header: { title: 'Mod SPM', subtitle: SUBTITLE },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -31,6 +32,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Databank Soalan SPM - PRESTASIPLUS',
       header: { title: 'Databank Soalan SPM', subtitle: SUBTITLE },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -43,6 +45,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Databank Soalan SPM - PRESTASIPLUS',
       header: { title: 'Databank Soalan SPM' },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -55,6 +58,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Latih Tubi SPM - PRESTASIPLUS',
       header: { title: 'Latih Tubi SPM', subtitle: SUBTITLE },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -67,6 +71,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Latih Tubi SPM - PRESTASIPLUS',
       header: { title: 'Latih Tubi SPM' },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -79,6 +84,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Latih Tubi SPM - PRESTASIPLUS',
       header: { title: 'Latih Tubi SPM' },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -91,6 +97,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Sejarah Kuiz SPM - PRESTASIPLUS',
       header: { title: 'Sejarah Kuiz SPM', subtitle: SUBTITLE },
       module: 'M06',
+      v2: true,
     },
   },
 ]

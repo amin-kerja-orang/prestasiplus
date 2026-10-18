@@ -6,11 +6,11 @@
 import type { SetStatus, SubjektifOverview, TargetType, TrackingASetCard } from '../api'
 import { targetName } from './latih-tubi'
 
-/** Badge text and classes of a set status (BR-M06-08; "Belum Cukup" is the locked card). */
-export const SET_STATUS: Record<SetStatus, { label: string; badge: string }> = {
-  bersih: { label: 'Set Bersih', badge: 'bg-emerald-100 text-emerald-700' },
-  bank_besar: { label: 'Ready Bank Besar', badge: 'bg-blue-100 text-blue-700' },
-  belum_cukup: { label: 'Belum Cukup', badge: 'bg-amber-100 text-amber-800' },
+/** Badge text and colour of a set status (BR-M06-08; "Belum Cukup" is the locked card). */
+export const SET_STATUS: Record<SetStatus, { label: string; color: 'success' | 'info' | 'warning' }> = {
+  bersih: { label: 'Set Bersih', color: 'success' },
+  bank_besar: { label: 'Ready Bank Besar', color: 'info' },
+  belum_cukup: { label: 'Belum Cukup', color: 'warning' },
 }
 
 export const isStartable = (status: SetStatus): boolean => status !== 'belum_cukup'

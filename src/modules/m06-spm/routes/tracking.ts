@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tracking A SPM - PRESTASIPLUS',
       header: { title: 'Tracking A SPM', subtitle: SUBTITLE },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -33,6 +34,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Tracking A SPM - PRESTASIPLUS',
       header: { title: 'Tracking A SPM' },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -45,6 +47,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Latihan Subjektif SPM - PRESTASIPLUS',
       header: { title: 'Subjektif SPM', subtitle: SUBTITLE },
       module: 'M06',
+      v2: true,
     },
   },
 ]

@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
       title: 'SPM Mock Exam',
       header: { title: 'SPM Mock Exam' },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -29,6 +30,7 @@ const routes: RouteRecordRaw[] = [
       title: 'SPM Mock Exam',
       header: { title: 'SPM Mock Exam' },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -41,6 +43,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Result Mock SPM',
       header: { title: 'Result Mock SPM' },
       module: 'M06',
+      v2: true,
     },
   },
   {
@@ -53,6 +56,7 @@ const routes: RouteRecordRaw[] = [
       title: 'SPM Walkthrough — Cikgu Alesa',
       header: { title: 'SPM Walkthrough — Cikgu Alesa' },
       module: 'M06',
+      v2: true,
     },
   },
 ]

@@ -12,38 +12,25 @@ export interface HistoryFilter {
   /** `null` is "Semua" (`/spm/history`). */
   type: HistoryType | null
   label: string
-  /** Active: `bg-{colour}-500 text-white shadow-md`; inactive: white + slate border + coloured hover. */
-  active: string
-  hover: string
+  /** Phosphor icon of the pill. */
+  icon: string
 }
 
 export const HISTORY_FILTERS: readonly HistoryFilter[] = [
-  { type: null, label: 'Semua', active: 'bg-indigo-500', hover: 'hover:border-indigo-400' },
-  {
-    type: 'past_year',
-    label: 'Tahun Lepas',
-    active: 'bg-amber-500',
-    hover: 'hover:border-amber-400',
-  },
-  {
-    type: 'latih_tubi',
-    label: 'Latih Tubi',
-    active: 'bg-blue-500',
-    hover: 'hover:border-blue-400',
-  },
-  {
-    type: 'ramalan',
-    label: 'Tracking A',
-    active: 'bg-purple-500',
-    hover: 'hover:border-purple-400',
-  },
+  { type: null, label: 'Semua', icon: 'i-ph-squares-four-bold' },
+  { type: 'past_year', label: 'Tahun Lepas', icon: 'i-ph-scroll-bold' },
+  { type: 'latih_tubi', label: 'Latih Tubi', icon: 'i-ph-barbell-bold' },
+  { type: 'ramalan', label: 'Tracking A', icon: 'i-ph-magic-wand-bold' },
 ]
 
 /** Type badge text and colour (FR-M06-63/66; Tracking A purple INFERRED). */
-export const TYPE_BADGES: Record<HistoryType, { label: string; cls: string }> = {
-  past_year: { label: 'Tahun Lepas', cls: 'bg-amber-100 text-amber-700' },
-  latih_tubi: { label: 'Latih Tubi', cls: 'bg-blue-100 text-blue-700' },
-  ramalan: { label: 'Tracking A', cls: 'bg-purple-100 text-purple-700' },
+export const TYPE_BADGES: Record<
+  HistoryType,
+  { label: string; color: 'warning' | 'info' | 'secondary' }
+> = {
+  past_year: { label: 'Tahun Lepas', color: 'warning' },
+  latih_tubi: { label: 'Latih Tubi', color: 'info' },
+  ramalan: { label: 'Tracking A', color: 'secondary' },
 }
 
 /** The `?type=` value when it is one of the three, else `null` (absent or unknown → all rows). */
@@ -52,11 +39,11 @@ export function parseHistoryType(raw: unknown): HistoryType | null {
   return v === 'past_year' || v === 'latih_tubi' || v === 'ramalan' ? v : null
 }
 
-/** Score tile colour: red below 50%, yellow 50–79%, green from 80% (FR-M06-66). */
-export function scoreTileClass(percent: number): string {
-  if (percent < 50) return 'bg-red-100 text-red-600'
-  if (percent < 80) return 'bg-yellow-100 text-yellow-700'
-  return 'bg-green-100 text-green-600'
+/** Score badge colour: error below 50%, warning 50–79%, success from 80% (FR-M06-66). */
+export function scoreColor(percent: number): 'error' | 'warning' | 'success' {
+  if (percent < 50) return 'error'
+  if (percent < 80) return 'warning'
+  return 'success'
 }
 
 export const isSpmMode = (m: PracticeMode): m is HistoryType =>

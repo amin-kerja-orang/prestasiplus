@@ -14,7 +14,7 @@
 import { nextTick, ref } from 'vue'
 
 import { alertNative } from '@/composables'
-import { FORM_INPUT_CLASS, FORM_SELECT_CLASS, FORM_TEXTAREA_CLASS } from '@/components/form'
+import { DsFormField, DsNativeSelect, DsPage, DsPanel } from '@/ds'
 
 import { solveWalkthrough } from '../api'
 import DutaBlock from '../components/DutaBlock.vue'
@@ -64,127 +64,104 @@ async function solve(): Promise<void> {
 </script>
 
 <template>
-  <div class="px-2 py-4 sm:px-6 sm:py-8" data-testid="walk-page">
-    <div class="mx-auto max-w-[880px] space-y-4">
-      <header class="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
-        <h1 class="font-heading text-xl font-bold break-words text-slate-900">
-          📝 SPM Walkthrough
-        </h1>
-        <p class="mt-1 text-sm text-slate-600">
-          Snap soalan SPM, AI walk-through step-by-step dengan mark scheme + sebutan buku teks.
-          Faham bukan hafal.
-        </p>
-      </header>
-
-      <form
-        id="spmForm"
-        class="space-y-4 rounded-2xl bg-white p-4 shadow-sm sm:p-6"
-        data-testid="walk-form"
-        @submit.prevent="solve"
-      >
+  <DsPage
+    title="📝 SPM Walkthrough"
+    subtitle="Snap soalan SPM, AI walk-through step-by-step dengan mark scheme + sebutan buku teks. Faham bukan hafal."
+    :show-title="true"
+    data-testid="walk-page"
+  >
+    <DsPanel title="Soalan SPM" icon="i-ph-camera-duotone" accent="friend">
+      <form id="spmForm" class="flex flex-col gap-4" data-testid="walk-form" @submit.prevent="solve">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div class="min-w-0">
-            <label
-              for="walk-subject"
-              class="mb-1 block text-xs font-bold tracking-wide text-slate-600 uppercase"
-              >Subjek</label
-            >
-            <select
-              id="walk-subject"
-              v-model="subject"
-              name="subject"
-              required
-              :class="FORM_SELECT_CLASS"
-              class="min-h-11"
-              data-testid="walk-subject"
-            >
-              <option value="">Pilih</option>
-              <option v-for="s in WALKTHROUGH_SUBJECT_OPTIONS" :key="s" :value="s">{{ s }}</option>
-            </select>
-          </div>
-          <div class="min-w-0">
-            <label
-              for="walk-year"
-              class="mb-1 block text-xs font-bold tracking-wide text-slate-600 uppercase"
-              >Tahun (opsyen)</label
-            >
-            <input
-              id="walk-year"
-              v-model="year"
-              type="text"
-              name="year"
-              maxlength="8"
-              placeholder="Cth: 2023"
-              :class="FORM_INPUT_CLASS"
-              class="min-h-11"
-              data-testid="walk-year"
+          <DsFormField label="Subjek" native>
+            <template #default="{ id }">
+              <DsNativeSelect
+                :id="id"
+                v-model="subject"
+                name="subject"
+                required
+                placeholder="Pilih"
+                data-testid="walk-subject"
+              >
+                <option v-for="s in WALKTHROUGH_SUBJECT_OPTIONS" :key="s" :value="s">{{ s }}</option>
+              </DsNativeSelect>
+            </template>
+          </DsFormField>
+          <DsFormField label="Tahun (opsyen)" native>
+            <template #default="{ id }">
+              <UInput
+                :id="id"
+                v-model="year"
+                name="year"
+                :maxlength="8"
+                placeholder="Cth: 2023"
+                class="w-full"
+                data-testid="walk-year"
+              />
+            </template>
+          </DsFormField>
+        </div>
+
+        <DsFormField label="Soalan (taip atau snap)" native>
+          <template #default="{ id }">
+            <UTextarea
+              :id="id"
+              v-model="questionText"
+              name="question_text"
+              :rows="5"
+              placeholder="Salin soalan SPM di sini, atau upload gambar di bawah..."
+              class="w-full"
+              data-testid="walk-question"
             />
-          </div>
-        </div>
+          </template>
+        </DsFormField>
 
-        <div>
+        <UCard variant="subtle" :ui="{ body: 'p-3' }">
           <label
-            for="walk-question"
-            class="mb-1 block text-xs font-bold tracking-wide text-slate-600 uppercase"
-            >Soalan (taip atau snap)</label
+            for="imgInput"
+            class="flex min-h-11 cursor-pointer items-center justify-center text-center text-label break-words text-muted"
+            data-testid="walk-image-label"
+            >{{ imageLabel }}</label
           >
-          <textarea
-            id="walk-question"
-            v-model="questionText"
-            name="question_text"
-            rows="5"
-            placeholder="Salin soalan SPM di sini, atau upload gambar di bawah..."
-            :class="FORM_TEXTAREA_CLASS"
-            data-testid="walk-question"
-          ></textarea>
-        </div>
-
-        <label
-          for="imgInput"
-          class="flex min-h-11 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-3 py-4 text-center text-sm break-words text-slate-600 uppercase hover:border-amber-400 hover:bg-amber-50"
-          data-testid="walk-image-label"
-          >{{ imageLabel }}</label
-        >
+        </UCard>
+        <!-- Native file input behind the label above; the browser picker needs it. -->
+        <!-- eslint-disable-next-line vue/no-restricted-html-elements -->
         <input
           id="imgInput"
           type="file"
           name="image"
           accept="image/*"
-          class="hidden"
+          class="sr-only"
           data-testid="walk-image"
           @change="onFile"
         />
 
-        <button
+        <UButton
           id="solveBtn"
           type="submit"
+          size="lg"
           :disabled="busy"
-          class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-orange-700 disabled:opacity-60 sm:w-auto"
+          :loading="busy"
+          class="min-h-11 self-start max-sm:w-full max-sm:justify-center"
           data-testid="walk-submit"
+          >{{ busy ? 'AI sedang fikir... (mungkin 15-30s)' : 'Bagi Walkthrough' }}</UButton
         >
-          {{ busy ? 'AI sedang fikir... (mungkin 15-30s)' : 'Bagi Walkthrough' }}
-        </button>
       </form>
+    </DsPanel>
 
-      <section
-        v-if="result !== null"
-        id="result"
-        ref="resultEl"
-        class="rounded-2xl bg-white p-4 shadow-sm sm:p-6"
-        data-testid="walk-result"
-      >
-        <h2 class="font-heading text-base font-bold text-slate-900">✨ Walkthrough Cikgu Alesa</h2>
+    <div v-if="result !== null" ref="resultEl" class="min-w-0">
+      <DsPanel id="result" title="✨ Walkthrough Cikgu Alesa" data-testid="walk-result">
         <pre
           id="walkBody"
-          class="mt-3 font-sans text-sm break-words whitespace-pre-wrap text-slate-700"
+          class="text-body break-words whitespace-pre-wrap text-default"
           data-testid="walk-body"
           >{{ result }}</pre>
-      </section>
-
-      <DutaBlock
-        title="🎓 Cikgu Maestro SPM"
-        text="Setelah baca walkthrough, tonton video penjelasan dari Duta SPM."
-      />
+      </DsPanel>
     </div>
-  </div>
+
+    <DutaBlock
+      title="🎓 Cikgu Maestro SPM"
+      text="Setelah baca walkthrough, tonton video penjelasan dari Duta SPM."
+    />
+  </DsPage>
 </template>

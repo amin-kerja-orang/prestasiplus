@@ -13,9 +13,8 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
-import { AlertBox } from '@/components/feedback'
-import { FORM_TEXTAREA_CLASS } from '@/components/form'
 import { useApi } from '@/composables'
+import { DsPage } from '@/ds'
 import { clock } from '@/lib/time'
 
 import { fetchMock, submitMock } from '../api'
@@ -86,99 +85,102 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="px-2 py-4 sm:px-6 sm:py-8" data-testid="run-page" data-provisional="true">
-    <div class="mx-auto max-w-3xl space-y-4">
-      <div v-if="loading && !data" class="space-y-2" data-testid="run-skeleton">
-        <div v-for="n in 3" :key="n" class="h-20 animate-pulse rounded-xl bg-slate-100"></div>
-      </div>
-      <div v-else-if="error && !notFound" class="space-y-3" data-testid="run-error">
-        <AlertBox :messages="LOAD_ERROR" />
-        <button
-          type="button"
-          class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
-          data-testid="run-retry"
-          @click="reload()"
-        >
-          Cuba Semula
-        </button>
-      </div>
-
-      <form
-        v-else-if="data && data.status === 'in_progress'"
-        class="space-y-4"
-        data-testid="run-form"
-        @submit.prevent="submit"
+  <DsPage :show-title="false" data-testid="run-page" data-provisional="true">
+    <div v-if="loading && !data" class="flex flex-col gap-2" data-testid="run-skeleton">
+      <USkeleton v-for="n in 3" :key="n" class="h-20" />
+    </div>
+    <div
+      v-else-if="error && !notFound"
+      class="flex max-w-xl flex-col gap-3"
+      data-testid="run-error"
+    >
+      <UAlert color="error" variant="soft" icon="i-ph-warning-circle-duotone" :title="LOAD_ERROR" />
+      <UButton size="lg" class="min-h-11 self-start" data-testid="run-retry" @click="reload()"
+        >Cuba Semula</UButton
       >
-        <header
-          class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm sm:p-6"
-        >
-          <h1
-            class="font-heading text-lg font-bold break-words text-slate-900"
-            data-testid="run-title"
-          >
+    </div>
+
+    <form
+      v-else-if="data && data.status === 'in_progress'"
+      class="flex min-w-0 flex-col gap-4"
+      data-testid="run-form"
+      @submit.prevent="submit"
+    >
+      <UCard>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h1 class="text-heading break-words text-highlighted" data-testid="run-title">
             {{ data.subject }} · Paper {{ data.paperNumber }}
           </h1>
-          <p
-            class="rounded-lg bg-slate-100 px-3 py-1.5 font-mono text-sm font-bold text-slate-800"
+          <UBadge
+            color="neutral"
+            variant="soft"
+            size="lg"
+            class="tabular"
+            icon="i-ph-timer-duotone"
             data-testid="mock-timer"
+            >{{ elapsed }}</UBadge
           >
-            {{ elapsed }}
-          </p>
-        </header>
+        </div>
+      </UCard>
 
-        <AlertBox v-if="submitError" :messages="submitError" data-testid="run-submit-error" />
+      <UAlert
+        v-if="submitError"
+        color="error"
+        variant="soft"
+        icon="i-ph-warning-circle-duotone"
+        :title="submitError"
+        data-testid="run-submit-error"
+      />
 
-        <ol class="space-y-3" data-testid="run-items">
-          <li
-            v-for="it in data.items"
-            :key="it.no"
-            class="rounded-2xl bg-white p-4 shadow-sm sm:p-5"
-            :data-testid="`run-item-${String(it.no)}`"
-          >
-            <p class="text-sm font-semibold break-words text-slate-900">
-              Soalan {{ it.no }}
-              <span class="text-xs font-normal text-slate-500">({{ it.maxMarks }} markah)</span>
-            </p>
-            <p class="mt-1 text-sm break-words whitespace-pre-line text-slate-700">{{ it.text }}</p>
-            <fieldset v-if="it.options" class="mt-3 space-y-1">
-              <label
-                v-for="(opt, i) in it.options"
-                :key="i"
-                class="flex min-h-11 cursor-pointer items-start gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                <input
-                  v-model="answers[it.no]"
-                  type="radio"
-                  :name="`answer-${String(it.no)}`"
-                  :value="optionLetter(i)"
-                  class="mt-0.5 h-4 w-4 shrink-0"
-                  data-testid="run-option"
-                />
-                <span class="min-w-0 break-words"
-                  ><b>{{ optionLetter(i) }}.</b> {{ opt }}</span
-                >
-              </label>
-            </fieldset>
-            <textarea
-              v-else
-              v-model="answers[it.no]"
-              rows="4"
-              :class="FORM_TEXTAREA_CLASS"
-              class="mt-3"
-              data-testid="run-answer"
-            ></textarea>
-          </li>
-        </ol>
+      <ol class="flex flex-col gap-3" data-testid="run-items">
+        <li v-for="it in data.items" :key="it.no" :data-testid="`run-item-${String(it.no)}`">
+          <UCard>
+            <div class="flex flex-col gap-2">
+              <p class="text-label break-words text-highlighted">
+                Soalan {{ it.no }}
+                <span class="text-caption text-muted">({{ it.maxMarks }} markah)</span>
+              </p>
+              <p class="text-body break-words whitespace-pre-line text-default">{{ it.text }}</p>
+              <fieldset v-if="it.options" class="flex flex-col gap-2">
+                <UCard v-for="(opt, i) in it.options" :key="i" variant="subtle" :ui="{ body: 'p-3' }">
+                  <label class="flex min-h-11 cursor-pointer items-start gap-3 text-body text-default">
+                    <!-- Native radio: the browser keeps arrow-key grouping and the `name`. -->
+                    <!-- eslint-disable-next-line vue/no-restricted-html-elements -->
+                    <input
+                      v-model="answers[it.no]"
+                      type="radio"
+                      :name="`answer-${String(it.no)}`"
+                      :value="optionLetter(i)"
+                      class="mt-1 size-4 shrink-0"
+                      data-testid="run-option"
+                    />
+                    <span class="min-w-0 break-words"
+                      ><b>{{ optionLetter(i) }}.</b> {{ opt }}</span
+                    >
+                  </label>
+                </UCard>
+              </fieldset>
+              <UTextarea
+                v-else
+                v-model="answers[it.no]"
+                :rows="4"
+                class="w-full"
+                data-testid="run-answer"
+              />
+            </div>
+          </UCard>
+        </li>
+      </ol>
 
-        <button
-          type="submit"
-          :disabled="submitting"
-          class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-orange-700 disabled:opacity-60 sm:w-auto"
-          data-testid="run-submit"
-        >
-          Hantar
-        </button>
-      </form>
-    </div>
-  </div>
+      <UButton
+        type="submit"
+        size="lg"
+        :loading="submitting"
+        :disabled="submitting"
+        class="min-h-11 self-start max-sm:w-full max-sm:justify-center"
+        data-testid="run-submit"
+        >Hantar</UButton
+      >
+    </form>
+  </DsPage>
 </template>

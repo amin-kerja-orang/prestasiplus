@@ -2,7 +2,7 @@
  * Pure helpers of the M06 mock-exam screens (SRS M06 §2.11-§2.13, BR-M06-24/25/29, DV-M06-06/08).
  */
 
-import type { HeroClass, MockGrade, MockItem } from '../api/types'
+import type { MockGrade, MockItem } from '../api/types'
 
 /** The 10 S11 subject options (values = labels). */
 export const MOCK_SUBJECT_OPTIONS = [
@@ -28,25 +28,22 @@ export const WALKTHROUGH_SUBJECT_OPTIONS = [
   'Prinsip Akaun',
 ] as const
 
-/** Grade chip classes (DV-M06-06: A+/A emerald, B+/B blue, C amber, D/E/G red, pending slate). */
-export const GRADE_CHIP_CLASS: Record<MockGrade | 'pending', string> = {
-  'A+': 'bg-emerald-100 text-emerald-700',
-  A: 'bg-emerald-100 text-emerald-700',
-  'B+': 'bg-blue-100 text-blue-700',
-  B: 'bg-blue-100 text-blue-700',
-  C: 'bg-amber-100 text-amber-700',
-  D: 'bg-red-100 text-red-700',
-  E: 'bg-red-100 text-red-700',
-  G: 'bg-red-100 text-red-700',
-  pending: 'bg-slate-100 text-slate-600',
+/** Colour of the grade badge (DV-M06-06: A+/A success, B+/B info, C warning, D/E/G error, pending neutral). */
+export const GRADE_COLOR: Record<
+  MockGrade | 'pending',
+  'success' | 'info' | 'warning' | 'error' | 'neutral'
+> = {
+  'A+': 'success',
+  A: 'success',
+  'B+': 'info',
+  B: 'info',
+  C: 'warning',
+  D: 'error',
+  E: 'error',
+  G: 'error',
+  pending: 'neutral',
 }
 
-/** Result hero background by class (`.mr-hero` green, `.mid` yellow, `.bad` red). */
-export const HERO_CLASS: Record<HeroClass, string> = {
-  good: 'bg-gradient-to-br from-emerald-500 to-green-600 text-white',
-  mid: 'bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-900',
-  bad: 'bg-gradient-to-br from-red-500 to-red-700 text-white',
-}
 
 /** "Score: {a}/{b} ({p}%)" with two decimals (FR-M06-70). */
 export function scoreLabel(score: number, max: number, percent: number): string {
