@@ -12,7 +12,7 @@ withDefaults(
 <template>
   <UCard :ui="{ header: 'p-6', body: 'p-6' }">
     <template #header>
-      <div class="flex items-start gap-3">
+      <div class="flex items-center gap-3">
         <DsIconChip v-if="icon" :icon="icon" :accent="accent" size="sm" />
         <div class="min-w-0">
           <h2 class="text-label text-highlighted">{{ title }}</h2>

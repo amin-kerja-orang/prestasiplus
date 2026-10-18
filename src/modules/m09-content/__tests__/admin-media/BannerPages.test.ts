@@ -153,7 +153,7 @@ async function form(mode: 'create' | 'edit', id = 1) {
 }
 
 const shown = (el: Element): boolean =>
-  (el.closest('div[style]') as HTMLElement | null)?.style.display !== 'none'
+  el.closest<HTMLElement>('div[style]')?.style.display !== 'none'
 const val = (w: VueWrapper, id: string) => (t(w, id).element as HTMLInputElement).value
 
 describe('BannerFormPage create (S10)', () => {

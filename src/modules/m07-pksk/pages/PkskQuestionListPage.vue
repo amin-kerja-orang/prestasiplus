@@ -477,7 +477,7 @@ const cardFields: CardField[] = [
         </template>
         <template #text-cell="{ row }">
           <p
-            class="line-clamp-2 min-w-64 text-body text-highlighted"
+            class="line-clamp-2 min-w-40 text-body text-highlighted"
             data-testid="pksk-question-row"
             :data-question-id="row.original.id"
           >

@@ -125,7 +125,7 @@ const cardFields: CardField[] = [
       />
     </div>
 
-    <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <section class="grid grid-cols-2 gap-4 sm:grid-cols-3">
       <DsStatTile :value="rows.length" unit="Jumlah banner" icon="i-ph-image" accent="action" />
       <DsStatTile :value="activeCount" unit="Aktif" icon="i-ph-check-circle" accent="win" />
       <DsStatTile
@@ -162,11 +162,11 @@ const cardFields: CardField[] = [
       </template>
       <template #title-cell="{ row }">
         <div
-          class="flex min-w-64 items-center gap-4"
+          class="flex min-w-40 items-center gap-4"
           data-testid="banner-row"
           :data-banner-id="row.original.id"
         >
-          <div class="w-24 shrink-0">
+          <div class="w-16 shrink-0">
             <DsArt3D
               v-if="row.original.raw.imageUrl"
               variant="plain"

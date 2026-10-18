@@ -241,7 +241,7 @@ const cardFields: CardField[] = [
       />
     </div>
 
-    <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <section class="grid grid-cols-2 gap-4 sm:grid-cols-3">
       <DsStatTile :value="total" unit="Jumlah artikel" icon="i-ph-newspaper" accent="action" />
       <DsStatTile
         :value="publishedOnPage"
@@ -330,7 +330,7 @@ const cardFields: CardField[] = [
     >
       <template #title-cell="{ row }">
         <div
-          class="flex min-w-56 flex-col gap-1"
+          class="flex min-w-40 flex-col gap-1"
           data-testid="admin-article-row"
           :data-article-id="row.original.id"
         >

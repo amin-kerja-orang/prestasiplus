@@ -285,7 +285,7 @@ const cardFields: CardField[] = [
       >
         <template #title-cell="{ row }">
           <p
-            class="line-clamp-2 min-w-56 text-label text-highlighted"
+            class="line-clamp-2 min-w-40 text-label text-highlighted"
             data-testid="audio-set"
             :data-set-id="row.original.id"
           >

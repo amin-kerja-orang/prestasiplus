@@ -247,7 +247,7 @@ const cardFields: CardField[] = [
     </div>
 
     <!-- Three global KPI tiles (#15). -->
-    <section v-if="stats" class="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="access-stats">
+    <section v-if="stats" class="grid grid-cols-2 gap-4 sm:grid-cols-3" data-testid="access-stats">
       <div v-for="t in STAT_TILES" :key="t.key" :data-testid="t.testid">
         <DsStatTile :value="stats[t.key]" :unit="t.label" :icon="t.icon" :accent="t.accent" />
       </div>
@@ -364,7 +364,7 @@ const cardFields: CardField[] = [
     >
       <template #userName-cell="{ row }">
         <div
-          class="flex min-w-48 flex-col gap-1"
+          class="flex min-w-40 flex-col gap-1"
           data-testid="access-row"
           :data-access-id="row.original.id"
         >
