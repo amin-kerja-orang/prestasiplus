@@ -1,13 +1,27 @@
 <script setup lang="ts">
 /**
- * Page root helper (restyle spec 1.2): optional title block (one `h1` + subtitle), content width
- * by personality, standard gaps and an actions slot. Pages that already print the shell title
- * leave `title` out.
+ * Page root helper (restyle spec 1.2): content width by personality, standard gaps, and the page
+ * header, which `DsPageHeader` renders (one `h1`, subtitle, back link and the header slots). Pages
+ * that already get their title from the shell leave it to `showTitle="auto"`.
  */
-defineProps<{
+import type { RouteLocationRaw } from 'vue-router'
+
+import DsPageHeader from './DsPageHeader.vue'
+
+withDefaults(
+  defineProps<{
   title?: string
   subtitle?: string
-}>()
+  backTo?: RouteLocationRaw
+  backLabel?: string
+  showTitle?: 'auto' | boolean
+  titleTestid?: string
+  subtitleTestid?: string
+}>(),
+  { title: undefined, subtitle: undefined, backTo: undefined, backLabel: undefined, showTitle: 'auto', titleTestid: undefined, subtitleTestid: undefined },
+)
+
+const headerSlots = ['leading', 'breadcrumb', 'subtitle', 'actions', 'tabs', 'meta'] as const
 </script>
 
 <template>
@@ -15,25 +29,19 @@ defineProps<{
     class="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-5 md:gap-6 lg:gap-8 staff:max-w-none"
     data-ds="page"
   >
-    <header
-      v-if="title || subtitle || $slots.actions"
-      class="flex flex-wrap items-start justify-between gap-3"
-      data-ds="page-header"
+    <DsPageHeader
+      :title="title"
+      :subtitle="subtitle"
+      :back-to="backTo"
+      :back-label="backLabel"
+      :show-title="showTitle"
+      :title-testid="titleTestid"
+      :subtitle-testid="subtitleTestid"
     >
-      <div class="flex min-w-0 flex-col gap-1">
-        <h1
-          v-if="title"
-          class="font-display text-title font-extrabold text-highlighted"
-          data-ds="page-title"
-        >
-          {{ title }}
-        </h1>
-        <p v-if="subtitle" class="max-w-prose text-body text-muted">{{ subtitle }}</p>
-      </div>
-      <div v-if="$slots.actions" class="flex flex-wrap items-center gap-2">
-        <slot name="actions" />
-      </div>
-    </header>
+      <template v-for="name in headerSlots.filter((n) => $slots[n])" :key="name" #[name]>
+        <slot :name="name" />
+      </template>
+    </DsPageHeader>
     <slot />
   </div>
 </template>
