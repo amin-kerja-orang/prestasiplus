@@ -12,11 +12,21 @@
  *   must never become a `/pelajar/null` link.
  * - The query string is the state (a GET form on live).
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, usePageMeta } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsIdentity,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsPillNav,
+  type PillItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchRankings } from '../api/performance'
@@ -33,9 +43,8 @@ import {
   scopeQuery,
   tabTitle,
 } from '../lib/ranking'
+import { LOAD_ERROR } from '../lib/prestasi/load'
 import { fetchSubjectOptions } from '../lib/subject-options'
-
-const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
 const route = useRoute()
 const router = useRouter()
@@ -118,31 +127,43 @@ const subjectModel = bindFilter(subjectId)
 const tingkatanModel = bindFilter(tingkatan)
 const negeriModel = bindFilter(negeri)
 
+const scopePills = computed<PillItem<string>[]>(() =>
+  SCOPE_PILLS.map((p) => ({
+    key: p.id,
+    label: p.label,
+    icon: PILL_ICONS[p.id],
+    to: { path: RANKING_PATH, query: scopeQuery(state.value, p.id) },
+  })),
+)
+
+type Row = NonNullable<typeof data.value>['rows'][number]
+const tableRows = computed<Row[]>(() => rows.value)
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'rank', header: '#' },
+  { accessorKey: 'name', header: 'Pelajar' },
+  { accessorKey: 'tahap', header: 'Tahap' },
+  { accessorKey: 'correct', header: 'Betul' },
+  { accessorKey: 'accuracy', header: 'Tepat' },
+]
 </script>
 
 <template>
-  <DsPage title="Kedudukan" data-testid="ranking-page">
-    <p class="-mt-3 text-body text-muted" data-testid="ranking-subtitle">{{ label }}</p>
+  <DsPage
+    title="Kedudukan"
+    :subtitle="label"
+    subtitle-testid="ranking-subtitle"
+    data-testid="ranking-page"
+  >
+    <DsPillNav
+      :items="scopePills"
+      :active="active"
+      label="Skop kedudukan"
+      testid-prefix="ranking-pill"
+      data-testid="ranking-pills"
+    />
 
-    <!-- Scope pills -->
-    <nav class="flex gap-2 overflow-x-auto pb-1" data-testid="ranking-pills">
-      <UButton
-        v-for="pill in SCOPE_PILLS"
-        :key="pill.id"
-        :to="{ path: RANKING_PATH, query: scopeQuery(state, pill.id) }"
-        :color="active === pill.id ? 'primary' : 'neutral'"
-        :variant="active === pill.id ? 'solid' : 'soft'"
-        :icon="PILL_ICONS[pill.id]"
-        :label="pill.label"
-        size="lg"
-        class="shrink-0"
-        :data-testid="`ranking-pill-${pill.id}`"
-        :data-active="active === pill.id ? 'true' : 'false'"
-      />
-    </nav>
-
-    <!-- Filters (GET form) -->
-    <UCard data-testid="ranking-filter">
+    <!-- Filters (GET form): submit on change -->
+    <DsPanel data-testid="ranking-filter">
       <form
         method="get"
         :action="RANKING_PATH"
@@ -183,27 +204,9 @@ const negeriModel = bindFilter(negeri)
           />
         </UFormField>
       </form>
-    </UCard>
+    </DsPanel>
 
-    <!-- Error -->
-    <div v-if="error" class="flex flex-col items-start gap-3" data-testid="ranking-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning-circle"
-        role="alert"
-        :title="LOAD_ERROR"
-        class="w-full"
-      />
-      <UButton
-        color="neutral"
-        variant="soft"
-        size="lg"
-        label="Cuba Semula"
-        data-testid="ranking-retry"
-        @click="reload()"
-      />
-    </div>
+    <DsLoadError v-if="error" :message="LOAD_ERROR" testid="ranking-error" @retry="reload()" />
 
     <!-- Loading -->
     <div
@@ -231,72 +234,84 @@ const negeriModel = bindFilter(negeri)
     </div>
 
     <!-- List -->
-    <UCard v-else :ui="{ body: 'p-0 sm:p-0' }" data-testid="ranking-list">
-      <div role="table" aria-label="Kedudukan">
-        <div
-          role="row"
-          class="grid grid-cols-12 items-center gap-2 bg-elevated px-3 py-3 text-overline text-muted sm:gap-3 sm:px-4"
-          data-testid="ranking-head"
-        >
-          <div role="columnheader" class="col-span-1 text-center">#</div>
-          <div role="columnheader" class="col-span-5">Pelajar</div>
-          <div role="columnheader" class="col-span-2 text-center">Tahap</div>
-          <div role="columnheader" class="col-span-2 text-center sm:col-span-2">Betul</div>
-          <div role="columnheader" class="col-span-2 text-center sm:col-span-2">Tepat</div>
-        </div>
-        <div
-          v-for="row in rows"
-          :key="row.rank"
-          role="row"
-          class="grid min-h-14 grid-cols-12 items-center gap-2 px-3 py-3 odd:bg-soft sm:gap-3 sm:px-4"
-          data-testid="ranking-row"
-        >
-          <div role="cell" class="col-span-1 flex justify-center" data-testid="ranking-rank">
+    <div v-else class="flex min-w-0 flex-col gap-3" data-testid="ranking-list">
+      <DsDataTable
+        :data="tableRows"
+        :columns="columns"
+        :page-size="tableRows.length"
+        variant="flush"
+        layout="fixed"
+        caption="Kedudukan"
+      >
+        <template #rank-cell="{ row }">
+          <span data-testid="ranking-rank">
             <UBadge
-              v-if="MEDALS[row.rank]"
+              v-if="MEDALS[row.original.rank]"
               color="primary"
               variant="solid"
-              :label="MEDALS[row.rank]?.emoji"
+              :label="MEDALS[row.original.rank]?.emoji"
             />
-            <span v-else class="tabular text-label text-muted">{{ row.rank }}</span>
-          </div>
-          <div role="cell" class="col-span-5 min-w-0">
-            <p class="truncate text-label text-highlighted" data-testid="ranking-name">
-              {{ row.name }}
-            </p>
-            <p class="truncate text-caption text-muted" data-testid="ranking-school">
-              {{ row.schoolName }}
-            </p>
-          </div>
-          <div role="cell" class="col-span-2 text-center">
-            <UBadge color="neutral" variant="subtle" size="sm" data-testid="ranking-tahap"
-              >L{{ row.tahap }}</UBadge
-            >
-          </div>
-          <div
-            role="cell"
-            class="tabular col-span-2 text-center text-label text-highlighted"
-            data-testid="ranking-betul"
+            <span v-else class="text-label text-muted">{{ row.original.rank }}</span>
+          </span>
+        </template>
+        <template #name-cell="{ row }">
+          <DsIdentity :name="row.original.name" :sub="row.original.schoolName">
+            <template #name>
+              <span class="truncate" data-testid="ranking-name">{{ row.original.name }}</span>
+            </template>
+          </DsIdentity>
+        </template>
+        <template #tahap-cell="{ row }">
+          <UBadge color="neutral" variant="subtle" size="sm" data-testid="ranking-tahap"
+            >L{{ row.original.tahap }}</UBadge
           >
-            {{ formatNumber(row.correct) }}
-          </div>
-          <div
-            role="cell"
-            class="tabular col-span-2 text-center text-label"
-            :class="row.accuracy >= 50 ? 'text-success' : 'text-error'"
+        </template>
+        <template #correct-cell="{ row }">
+          <span class="text-label text-highlighted" data-testid="ranking-betul">{{
+            formatNumber(row.original.correct)
+          }}</span>
+        </template>
+        <template #accuracy-cell="{ row }">
+          <span
+            class="text-label"
+            :class="row.original.accuracy >= 50 ? 'text-success' : 'text-error'"
             data-testid="ranking-tepat"
+            >{{ row.original.accuracy.toFixed(2) }}%</span
           >
-            {{ row.accuracy.toFixed(2) }}%
+        </template>
+        <template #card="{ row }">
+          <div class="flex min-w-0 items-center gap-3">
+            <UBadge
+              :color="MEDALS[row.rank] ? 'primary' : 'neutral'"
+              :variant="MEDALS[row.rank] ? 'solid' : 'subtle'"
+              :label="MEDALS[row.rank]?.emoji ?? String(row.rank)"
+            />
+            <DsIdentity :name="row.name" :sub="row.schoolName" />
           </div>
-        </div>
-        <div
-          v-if="footer"
-          class="bg-elevated px-4 py-3 text-center text-caption text-muted"
-          data-testid="ranking-footer"
-        >
-          Menunjukkan {{ rows.length }} dari {{ footer.total }} pelajar
-        </div>
-      </div>
-    </UCard>
+          <dl class="grid grid-cols-3 gap-x-3">
+            <div>
+              <dt class="text-caption text-muted">Tahap</dt>
+              <dd class="tabular text-label">L{{ row.tahap }}</dd>
+            </div>
+            <div>
+              <dt class="text-caption text-muted">Betul</dt>
+              <dd class="tabular text-label text-highlighted">{{ formatNumber(row.correct) }}</dd>
+            </div>
+            <div>
+              <dt class="text-caption text-muted">Tepat</dt>
+              <dd
+                class="tabular text-label"
+                :class="row.accuracy >= 50 ? 'text-success' : 'text-error'"
+              >
+                {{ row.accuracy.toFixed(2) }}%
+              </dd>
+            </div>
+          </dl>
+        </template>
+      </DsDataTable>
+      <p v-if="footer" class="text-center text-caption text-muted" data-testid="ranking-footer">
+        Menunjukkan {{ rows.length }} dari {{ footer.total }} pelajar
+      </p>
+    </div>
   </DsPage>
 </template>

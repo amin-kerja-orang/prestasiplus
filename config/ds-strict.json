@@ -188,7 +188,9 @@
     { "glob": "src/modules/m12-kirkpatrick/pages/**", "level": "page" },
     { "glob": "src/modules/m12-kirkpatrick/components/**", "level": "page" },
     { "glob": "src/modules/m17-admin-dashboard/pages/**", "level": "page" },
-    { "glob": "src/modules/m17-admin-dashboard/components/**", "level": "page" }
+    { "glob": "src/modules/m17-admin-dashboard/components/**", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/**", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/components/**", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

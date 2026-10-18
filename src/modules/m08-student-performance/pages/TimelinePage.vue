@@ -6,13 +6,11 @@
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
 
-import { DsEmptyState, DsIconChip, DsPage } from '@/ds'
+import { DsEmptyState, DsIconChip, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import { fetchTimeline } from '../api/performance'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
 import PostCard from '../components/timeline/PostCard.vue'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { copyText } from '../lib/timeline/clipboard'
 import { sortPosts } from '../lib/timeline/posts'
 import { absoluteUrl } from '../lib/timeline/profile'
@@ -40,24 +38,24 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <DsPage data-testid="timeline-page">
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+  <DsPage
+    title="📸 Timeline Saya"
+    subtitle="Kongsi sijil, pencapaian, aktiviti &amp; cerita anda"
+    data-testid="timeline-page"
+  >
+    <template v-if="data" #actions>
+      <UButton
+        to="/timeline/create"
+        icon="i-ph-plus"
+        label="Tambah Post"
+        size="lg"
+        data-testid="add-post"
+      />
+    </template>
+
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div class="min-w-0">
-          <h1 class="text-title text-highlighted">📸 Timeline Saya</h1>
-          <p class="text-body text-muted">Kongsi sijil, pencapaian, aktiviti &amp; cerita anda</p>
-        </div>
-        <UButton
-          to="/timeline/create"
-          icon="i-ph-plus"
-          label="Tambah Post"
-          size="lg"
-          data-testid="add-post"
-        />
-      </div>
-
       <div v-if="posts.length === 0" data-testid="timeline-empty">
         <DsEmptyState
           title="Timeline Kosong"
@@ -79,14 +77,14 @@ onBeforeUnmount(() => {
 
       <ol v-else class="flex flex-col gap-4" data-testid="timeline-posts">
         <li v-for="p in posts" :key="p.id" class="flex min-w-0 gap-3">
-          <DsIconChip icon="i-ph-image-duotone" accent="action" size="sm" class="mt-1 shrink-0" />
+          <DsIconChip icon="i-ph-image-duotone" accent="heat" size="sm" class="mt-1 shrink-0" />
           <PostCard :post="p" class="grow" />
         </li>
       </ol>
 
-      <UCard data-testid="public-profile-box">
-       <div class="flex items-center gap-3">
-        <DsIconChip icon="i-ph-globe" accent="action" size="sm" />
+      <DsPanel data-testid="public-profile-box">
+        <div class="flex items-center gap-3">
+        <DsIconChip icon="i-ph-globe" accent="friend" size="sm" />
         <div class="min-w-0 flex-1">
           <p class="text-label text-highlighted">Profil Awam Anda</p>
           <ULink
@@ -108,9 +106,12 @@ onBeforeUnmount(() => {
           :data-copied="copied"
           @click="copy"
         />
-       </div>
-      </UCard>
+        </div>
+      </DsPanel>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

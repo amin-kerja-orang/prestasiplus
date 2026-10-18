@@ -6,40 +6,30 @@
  */
 import { computed } from 'vue'
 
-import { DsPage } from '@/ds'
+import { DsBreadcrumb, DsLoadError, DsPage, DsPageHeader } from '@/ds'
 import { usePrototypeScope } from '@/composables'
 
 import { fetchItemAnalysisClasses } from '../api/performance'
 import ClassPickCard from '../components/prestasi/ClassPickCard.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import { usePhIcon } from '../lib/icons'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const { home } = usePrototypeScope()
-const icon = usePhIcon()
 const { data, error, reload } = useRouteData((signal) => fetchItemAnalysisClasses({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
 </script>
 
 <template>
   <DsPage data-testid="analisa-item-kelas-pilih-page">
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <nav aria-label="Breadcrumb" data-testid="breadcrumb">
-        <UButton
-          :to="home"
-          color="neutral"
-          variant="ghost"
-          size="lg"
-          :icon="icon('arrow-left')"
-          label="Papan Pemuka"
-        />
-      </nav>
+      <DsBreadcrumb
+        :items="[{ label: 'Papan Pemuka', to: home }, { label: 'Pilih Kelas' }]"
+        aria-label="Breadcrumb"
+        data-testid="breadcrumb"
+      />
 
-      <PageHeader
+      <DsPageHeader
         title="Pilih Kelas untuk Analisis"
         subtitle="Klik mana-mana kelas untuk melihat analisa item"
       />
@@ -57,6 +47,9 @@ const loadFailed = computed(() => isLoadError(error.value))
         />
       </div>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

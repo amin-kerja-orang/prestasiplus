@@ -7,12 +7,11 @@
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadHeadcountCsv } from '../api/headcount'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,6 +37,6 @@ watch(
 
 <template>
   <DsPage data-testid="headcount-export-page">
-    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
   </DsPage>
 </template>

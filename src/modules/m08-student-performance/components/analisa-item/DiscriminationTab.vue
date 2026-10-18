@@ -3,13 +3,12 @@
 import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState } from '@/ds'
+import { DsDataTable, DsEmptyState, DsPanel } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { ItemAnalysis } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
 import { STATUS_COLOR, indexClass } from '../../lib/prestasi/item-analysis'
-import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{ discrimination: ItemAnalysis['discrimination'] }>()
 
@@ -66,7 +65,7 @@ const cardFields = [
 
 <template>
   <div class="flex min-w-0 flex-col gap-4" data-testid="discrimination-tab">
-    <UCard data-testid="discrimination-guide">
+    <DsPanel data-testid="discrimination-guide">
       <div class="flex flex-col gap-3">
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
           <UIcon :name="icon('info')" class="size-5 text-primary" />Panduan Indeks Diskriminasi
@@ -84,7 +83,7 @@ const cardFields = [
           menggunakan semua sesi latihan.
         </p>
       </div>
-    </UCard>
+    </DsPanel>
 
     <DsDataTable
       v-if="discrimination.sufficient"
@@ -110,9 +109,9 @@ const cardFields = [
         <span class="text-error">{{ row.original.lowerText }}</span>
       </template>
       <template #indexText-cell="{ row }">
-        <ToneText :tone="indexClass(row.original.indexValue)" class="text-label">{{
+        <span :class="[indexClass(row.original.indexValue), 'text-label']">{{
           row.original.indexText
-        }}</ToneText>
+        }}</span>
       </template>
       <template #status-cell="{ row }">
         <UBadge

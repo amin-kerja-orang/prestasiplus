@@ -4,12 +4,11 @@
  * code), the name, a bar (≥ 80 success, 60–79.9 warning, < 60 error; INFERRED bands), "{round(x)}%" and
  * "{n} sesi · {m} soalan"; or the empty state with "Mula Berlatih" → `/practice`.
  */
-import { DsEmptyState } from '@/ds'
+import { DsEmptyState, DsPanel } from '@/ds'
 
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
 import { masteryTone } from '../../lib/analitik'
-import ToneText from '../shared/ToneText.vue'
 
 defineProps<{ mastery: StudentPerformance['mastery'] }>()
 
@@ -17,7 +16,7 @@ const icon = usePhIcon()
 </script>
 
 <template>
-  <UCard class="lg:col-span-2" data-testid="mastery-card">
+  <DsPanel class="lg:col-span-2" data-testid="mastery-card">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('books')" class="size-5 text-primary" />Penguasaan Subjek
@@ -54,17 +53,15 @@ const icon = usePhIcon()
                 size="sm"
                 :aria-label="`Penguasaan ${m.subjectName}`"
               />
-              <ToneText
-                :tone="masteryTone(m.accuracy).text"
-                class="tabular text-label"
+              <span
+:class="[masteryTone(m.accuracy).text, 'tabular text-label']"
                 data-testid="pct"
-                >{{ Math.round(m.accuracy) }}%</ToneText
-              >
+                >{{ Math.round(m.accuracy) }}%</span>
             </div>
             <p class="text-caption text-muted">{{ m.sessions }} sesi · {{ m.answered }} soalan</p>
           </div>
         </li>
       </ul>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

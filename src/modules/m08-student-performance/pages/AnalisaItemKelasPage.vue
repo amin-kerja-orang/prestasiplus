@@ -7,18 +7,15 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { DsPage } from '@/ds'
+import { DsBreadcrumb, DsLoadError, DsPage, DsPageHeader, DsPanel, DsPillNav, type PillItem } from '@/ds'
 import { usePrototypeScope } from '@/composables'
 
 import { fetchClassItemAnalysis, fetchItemAnalysisClasses } from '../api/performance'
 import DifficultyTab from '../components/analisa-item/DifficultyTab.vue'
 import DiscriminationTab from '../components/analisa-item/DiscriminationTab.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
 import { usePhIcon } from '../lib/icons'
 import { LEVEL_BADGE, LEVEL_ICON } from '../lib/prestasi/format'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const route = useRoute()
 const { home } = usePrototypeScope()
@@ -68,43 +65,31 @@ const summary = computed(() => {
     },
   ] as const
 })
+const classPills = computed<PillItem<number>[]>(() =>
+  (classes.data.value ?? []).map((c) => ({
+    key: c.id,
+    label: c.name,
+    to: `/analisa-item/kelas/${String(c.id)}`,
+  })),
+)
 </script>
 
 <template>
   <DsPage data-testid="analisa-item-kelas-page">
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <nav
-        class="flex flex-wrap items-center gap-1 text-caption text-muted"
+      <DsBreadcrumb
+        :items="[{ label: 'Papan Pemuka', to: home }, { label: 'Pilih Kelas', to: '/analisa-item/kelas' }, { label: data.class.name }]"
         aria-label="Breadcrumb"
         data-testid="breadcrumb"
-      >
-        <UButton
-          :to="home"
-          color="neutral"
-          variant="ghost"
-          size="lg"
-          :icon="icon('arrow-left')"
-          label="Papan Pemuka"
-        />
-        <span aria-hidden="true">/</span>
-        <UButton
-          to="/analisa-item/kelas"
-          color="neutral"
-          variant="ghost"
-          size="lg"
-          label="Pilih Kelas"
-        />
-        <span aria-hidden="true">/</span>
-        <span class="text-label text-highlighted" aria-current="page">{{ data.class.name }}</span>
-      </nav>
+      />
 
-      <UCard data-testid="class-card">
+      <DsPanel data-testid="class-card">
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex min-w-0 grow flex-col gap-1">
-            <PageHeader
-              :title="data.class.name"
+            <DsPageHeader
+              :show-title="true" :title="data.class.name"
               :subtitle="`${data.class.subjectName ?? 'Tiada Subjek'} • ${data.class.levelSlug} • Tahun ${data.class.year}`"
               title-testid="class-name"
             />
@@ -124,11 +109,11 @@ const summary = computed(() => {
             </div>
           </dl>
         </div>
-      </UCard>
+      </DsPanel>
 
       <ul class="grid grid-cols-3 gap-2 md:gap-4" data-testid="summary-cards">
         <li v-for="c in summary" :key="c.id" class="min-w-0" :data-testid="`summary-${c.id}`">
-          <UCard class="h-full">
+          <DsPanel class="h-full">
             <div class="flex flex-col gap-2">
               <UBadge
                 :color="LEVEL_BADGE[c.level]"
@@ -144,7 +129,7 @@ const summary = computed(() => {
                 {{ c.pct }}
               </p>
             </div>
-          </UCard>
+          </DsPanel>
         </li>
       </ul>
 
@@ -197,24 +182,21 @@ const summary = computed(() => {
       <DifficultyTab v-if="tab === 'difficulty'" :analysis="data.analysis" />
       <DiscriminationTab v-else :discrimination="data.analysis.discrimination" />
 
-      <UCard v-if="classes.data.value" data-testid="switch-class">
+      <DsPanel v-if="classes.data.value" data-testid="switch-class">
         <div class="flex flex-col gap-3">
           <h2 class="text-subheading text-highlighted">Tukar Kelas</h2>
-          <div class="flex max-h-64 flex-wrap gap-2 overflow-y-auto">
-            <UButton
-              v-for="c in classes.data.value"
-              :key="c.id"
-              :to="`/analisa-item/kelas/${c.id}`"
-              size="lg"
-              :color="c.id === data.class.id ? 'primary' : 'neutral'"
-              :variant="c.id === data.class.id ? 'solid' : 'soft'"
-              :label="c.name"
-              :data-testid="`switch-${c.id}`"
-            />
-          </div>
+          <DsPillNav
+            :items="classPills"
+            :active="data.class.id"
+            label="Tukar Kelas"
+            testid-prefix="switch"
+          />
         </div>
-      </UCard>
+      </DsPanel>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

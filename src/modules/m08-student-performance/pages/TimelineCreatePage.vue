@@ -11,7 +11,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from '@nuxt/ui/composables'
 
 import { isApiError } from '@/api'
-import { DsIconChip, DsPage } from '@/ds'
+import { DsBackLink, DsIconChip, DsPage, DsPanel } from '@/ds'
 
 import PhotoPreview from '../components/timeline/PhotoPreview.vue'
 
@@ -115,18 +115,9 @@ const fieldError = (name: string): string | undefined => errors.value[name]
 
 <template>
   <DsPage title="📸 Post Baru" data-testid="timeline-create-page">
-    <UButton
-      to="/timeline"
-      color="neutral"
-      variant="ghost"
-      icon="i-ph-arrow-left"
-      label="Kembali ke Timeline"
-      size="lg"
-      class="self-start"
-      data-testid="back-link"
-    />
+    <DsBackLink to="/timeline" label="Kembali ke Timeline" data-testid="back-link" />
 
-    <UCard>
+    <DsPanel>
       <form class="flex flex-col gap-6" data-testid="timeline-form" @submit.prevent="submit">
         <UAlert
           v-if="messages.length"
@@ -279,6 +270,6 @@ const fieldError = (name: string): string | undefined => errors.value[name]
           />
         </div>
       </form>
-    </UCard>
+    </DsPanel>
   </DsPage>
 </template>

@@ -6,14 +6,11 @@
  */
 import { computed } from 'vue'
 
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsEmptyState, DsLoadError, DsPage, DsPageHeader } from '@/ds'
 
 import { fetchOwnClasses } from '../api/performance'
 import ClassPickCard from '../components/prestasi/ClassPickCard.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const { data, error, reload } = useRouteData((signal) => fetchOwnClasses({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
@@ -22,8 +19,8 @@ const active = computed(() => (data.value ?? []).filter((c) => c.isActive))
 
 <template>
   <DsPage data-testid="prestasi-kelas-pilih-page">
-    <PageHeader title="Dashboard Kelas" subtitle="Pilih kelas untuk lihat prestasi keseluruhan" />
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsPageHeader title="Dashboard Kelas" subtitle="Pilih kelas untuk lihat prestasi keseluruhan" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <div v-if="active.length === 0" data-testid="kelas-empty">
@@ -57,6 +54,9 @@ const active = computed(() => (data.value ?? []).filter((c) => c.isActive))
         />
       </div>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

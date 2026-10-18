@@ -4,12 +4,11 @@
  * for an accuracy below 50 (PROPOSED, OQ-M08-08) and "Peta DSKP — Standard Pembelajaran".
  * Text is 12px and up (D-26, D9: the live 11px / 10px text is unreadable).
  */
-import { DsScoreRing } from '@/ds'
+import { DsPanel, DsScoreRing } from '@/ds'
 
 import type { AnalyticsSubject } from '../../api/types'
 import { STATUS_LABEL, TILE_COLOR, TREND_ICON, TREND_TEXT, accuracyText } from '../../lib/analitik'
 import { usePhIcon } from '../../lib/icons'
-import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{ subject: AnalyticsSubject }>()
 
@@ -36,7 +35,7 @@ const dots = () =>
 <template>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" :data-testid="`pane-${subject.subjectId}`">
     <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
-      <UCard class="min-w-0" data-testid="ring-card">
+      <DsPanel class="min-w-0" data-testid="ring-card">
         <div class="flex flex-col items-center gap-3">
           <DsScoreRing
             :value="subject.counts.mahir"
@@ -58,18 +57,16 @@ const dots = () =>
             </li>
           </ul>
         </div>
-      </UCard>
+      </DsPanel>
 
-      <UCard class="min-w-0 lg:col-span-2">
+      <DsPanel class="min-w-0 lg:col-span-2">
         <div class="flex flex-col gap-4">
           <ul class="grid grid-cols-2 gap-4 text-center sm:grid-cols-4" data-testid="kpis">
             <li class="flex flex-col gap-1">
-              <ToneText
-                :tone="accuracyText(subject.accuracy)"
-                class="tabular text-title"
+              <span
+:class="[accuracyText(subject.accuracy), 'tabular text-title']"
                 data-testid="kpi-acc"
-                >{{ subject.accuracy.toFixed(1) }}%</ToneText
-              >
+                >{{ subject.accuracy.toFixed(1) }}%</span>
               <span class="text-caption text-muted">Ketepatan</span>
             </li>
             <li class="flex flex-col gap-1">
@@ -80,10 +77,10 @@ const dots = () =>
             </li>
             <li class="flex flex-col items-center gap-1">
               <span class="flex items-center gap-1" data-testid="kpi-trend">
-                <ToneText :tone="TREND_TEXT[subject.trend]" class="flex items-center gap-1">
+                <span :class="[TREND_TEXT[subject.trend], 'flex items-center gap-1']">
                   <UIcon :name="icon(TREND_ICON[subject.trend])" class="size-8" />
                   <span class="text-label">{{ TREND_LABEL[subject.trend] }}</span>
-                </ToneText>
+                </span>
               </span>
               <span class="text-caption text-muted">Trend 30 Hari</span>
             </li>
@@ -103,10 +100,10 @@ const dots = () =>
             data-testid="encourage-box"
           />
         </div>
-      </UCard>
+      </DsPanel>
     </div>
 
-    <UCard data-testid="dskp-map">
+    <DsPanel data-testid="dskp-map">
       <div class="flex flex-col gap-4">
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
           <UIcon :name="icon('map-trifold')" class="size-5 text-primary" />Peta DSKP — Standard
@@ -137,6 +134,6 @@ const dots = () =>
           </li>
         </ul>
       </div>
-    </UCard>
+    </DsPanel>
   </div>
 </template>

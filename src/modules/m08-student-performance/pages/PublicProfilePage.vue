@@ -8,13 +8,12 @@ import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsIconChip, DsScoreRing } from '@/ds'
+import { DsIconChip, DsLoadError, DsPanel, DsScoreRing, DsStatRow, type DsAccent, type StatItem } from '@/ds'
 import { formatDateLong } from '@/lib/time'
 
 import { fetchPublicProfile } from '../api/performance'
-import PageLoadError from '../components/shared/PageLoadError.vue'
 import PostCard from '../components/timeline/PostCard.vue'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { shareProfile } from '../lib/timeline/clipboard'
 import { sortPosts } from '../lib/timeline/posts'
 import { absoluteUrl, count, initialOf, percent, tierName } from '../lib/timeline/profile'
@@ -45,25 +44,25 @@ const nextTier = computed(() => {
     : ''
 })
 
-const stats = computed(() => {
+const stats = computed<StatItem[]>(() => {
   const d = data.value
   if (!d) return []
   return [
-    { id: 'syiling', emoji: '🪙', value: count(d.syiling), label: 'Syiling' },
-    { id: 'kombo', emoji: '🔥', value: count(d.streak.current), label: 'Kombo Hari' },
-    { id: 'sesi', emoji: '📚', value: count(d.activity.sessions), label: 'Sesi Latihan' },
-    { id: 'tepat', emoji: '🎯', value: percent(d.accuracy), label: 'Ketepatan' },
+    { key: 'syiling', icon: 'coins', accent: 'win', value: count(d.syiling), label: 'Syiling' },
+    { key: 'kombo', icon: 'fire', accent: 'heat', value: count(d.streak.current), label: 'Kombo Hari' },
+    { key: 'sesi', icon: 'books', accent: 'action', value: count(d.activity.sessions), label: 'Sesi Latihan' },
+    { key: 'tepat', icon: 'target', accent: 'friend', value: percent(d.accuracy), label: 'Ketepatan' },
   ]
 })
 
-const summary = computed(() => {
+const summary = computed<{ id: string; accent: DsAccent; icon: string; text: string }[]>(() => {
   const a = data.value?.activity
   if (!a) return []
   return [
-    { id: 'sesi', icon: 'i-ph-book-open', text: `${count(a.sessions)} sesi latihan` },
-    { id: 'hari', icon: 'i-ph-calendar-check', text: `${count(a.practiceDays)} hari berlatih` },
-    { id: 'betul', icon: 'i-ph-check-circle', text: `${count(a.correct)} jawapan betul` },
-    { id: 'kombo', icon: 'i-ph-fire', text: `${count(a.bestStreak)} kombo terpanjang` },
+    { id: 'sesi', accent: 'action', icon: 'i-ph-book-open', text: `${count(a.sessions)} sesi latihan` },
+    { id: 'hari', accent: 'heat', icon: 'i-ph-calendar-check', text: `${count(a.practiceDays)} hari berlatih` },
+    { id: 'betul', accent: 'win', icon: 'i-ph-check-circle', text: `${count(a.correct)} jawapan betul` },
+    { id: 'kombo', accent: 'friend', icon: 'i-ph-fire', text: `${count(a.bestStreak)} kombo terpanjang` },
   ]
 })
 
@@ -100,7 +99,7 @@ const share = (): void => {
     </header>
 
     <div v-if="loadFailed" class="mx-auto max-w-3xl px-4 py-8">
-      <PageLoadError @retry="reload()" />
+      <DsLoadError :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
     </div>
 
     <template v-else-if="data">
@@ -129,7 +128,7 @@ const share = (): void => {
       </div>
 
       <main class="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
-        <UCard data-testid="profile-card">
+        <DsPanel data-testid="profile-card">
           <div class="flex flex-col items-center gap-6 text-center md:flex-row md:text-start">
             <div class="relative shrink-0">
               <DsScoreRing
@@ -205,11 +204,11 @@ const share = (): void => {
               </div>
             </div>
           </div>
-        </UCard>
+        </DsPanel>
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div class="flex min-w-0 flex-col gap-6">
-            <UCard data-testid="tier-card">
+            <DsPanel data-testid="tier-card">
               <div class="flex items-center justify-between gap-2">
                 <p class="flex items-center gap-2 text-heading text-highlighted">
                   <span>{{ data.tier.emoji }}</span>
@@ -226,9 +225,9 @@ const share = (): void => {
               <p v-if="nextTier" class="mt-2 text-caption text-muted" data-testid="tier-next">
                 {{ nextTier }}
               </p>
-            </UCard>
+            </DsPanel>
 
-            <UCard data-testid="activity-summary">
+            <DsPanel data-testid="activity-summary">
               <h2 class="flex items-center gap-2 text-heading text-highlighted">
                 <UIcon name="i-ph-info" class="size-5 text-primary" /> Ringkasan Aktiviti
               </h2>
@@ -238,34 +237,24 @@ const share = (): void => {
                   :key="s.id"
                   class="flex items-center gap-3 text-body text-default"
                 >
-                  <DsIconChip :icon="s.icon" accent="action" size="sm" />
+                  <DsIconChip :icon="s.icon" :accent="s.accent" size="sm" />
                   <span data-testid="summary-item">{{ s.text }}</span>
                 </li>
               </ul>
-            </UCard>
+            </DsPanel>
           </div>
 
           <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
-            <section class="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="stat-cards">
-              <UCard v-for="s in stats" :key="s.id" class="min-w-0" data-testid="stat-card">
-                <div class="flex flex-col items-center gap-1 text-center">
-                  <span class="text-heading">{{ s.emoji }}</span>
-                  <p class="tabular text-heading text-highlighted" data-testid="stat-value">
-                    {{ s.value }}
-                  </p>
-                  <p class="text-caption text-muted">{{ s.label }}</p>
-                </div>
-              </UCard>
-            </section>
+            <DsStatRow :items="stats" prefix="stat" :cols="4" data-testid="stat-cards" />
 
             <section v-if="posts.length" class="flex flex-col gap-3" data-testid="profile-posts">
               <h2 class="text-heading text-highlighted">Timeline</h2>
               <PostCard v-for="p in posts" :key="p.id" :post="p" />
             </section>
 
-            <UCard data-testid="sponsor-cta">
+            <DsPanel data-testid="sponsor-cta">
               <div class="flex flex-col items-center gap-3 text-center">
-                <DsIconChip icon="i-ph-hand-heart" accent="action" size="lg" />
+                <DsIconChip icon="i-ph-hand-heart" accent="friend" size="lg" />
                 <h3 class="text-heading text-highlighted">Ingin menyokong pelajar ini?</h3>
                 <p class="text-body text-muted">
                   Jadilah penaja "Anak Angkat" dan bantu pelajar cemerlang!
@@ -278,14 +267,14 @@ const share = (): void => {
                   data-testid="sponsor-link"
                 />
               </div>
-            </UCard>
+            </DsPanel>
           </div>
         </div>
 
         <footer class="flex flex-col items-center gap-6 text-center" data-testid="profile-footer">
-          <UCard class="w-full max-w-sm">
+          <DsPanel class="w-full max-w-sm">
             <div class="flex items-center gap-3 text-start">
-              <DsIconChip icon="i-ph-star" accent="action" size="lg" />
+              <DsIconChip icon="i-ph-star" accent="win" size="lg" />
               <div class="min-w-0">
                 <p class="text-label break-words text-highlighted" data-testid="footer-line">
                   Teruskan usaha {{ data.firstName }}!
@@ -293,7 +282,7 @@ const share = (): void => {
                 <p class="text-caption text-muted">Setiap latihan membawa kejayaan ⭐</p>
               </div>
             </div>
-          </UCard>
+          </DsPanel>
           <p class="text-body text-muted">
             <UIcon name="i-ph-graduation-cap" class="me-1 size-4" />
             <ULink to="/" class="inline-flex min-h-11 items-center" data-testid="footer-logo"

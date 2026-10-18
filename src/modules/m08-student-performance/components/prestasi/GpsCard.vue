@@ -1,5 +1,6 @@
 <script setup lang="ts">
 /** S1 "📊 GPS Anggaran" (FR-M08-14). A null GPS (no graded headcount entries yet) shows "—" and no badge. */
+import { DsPanel } from '@/ds'
 import { computed } from 'vue'
 
 import type { SchoolPerformance } from '../../api/types'
@@ -11,7 +12,7 @@ const style = computed(() => (props.gps.band ? BAND_STYLE[props.gps.band] : null
 </script>
 
 <template>
-  <UCard data-testid="gps-card">
+  <DsPanel data-testid="gps-card">
     <div class="flex flex-col items-center gap-3 text-center">
       <h2 class="text-subheading text-highlighted">📊 GPS Anggaran</h2>
       <p class="text-caption text-muted">Gred Purata Sekolah (lebih rendah = lebih baik)</p>
@@ -37,5 +38,5 @@ const style = computed(() => (props.gps.band ? BAND_STYLE[props.gps.band] : null
       </p>
       <p class="text-caption text-muted">* Anggaran dari markah OTR, bukan SPM sebenar</p>
     </div>
-  </UCard>
+  </DsPanel>
 </template>
