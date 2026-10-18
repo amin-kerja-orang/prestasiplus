@@ -13,6 +13,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/LaporanSoalanPage.vue'),
     meta: {
       layout: 'user',
+      v2: true,
       access: 'auth',
       title: 'Laporan Soalan Saya',
       header: {
