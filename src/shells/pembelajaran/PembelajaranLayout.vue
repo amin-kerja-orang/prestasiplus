@@ -37,6 +37,9 @@ import {
   accountLinks,
   buildLearnNav,
   buildLearnSearch,
+  CHIP_CLASS,
+  chipSlot,
+  flatItems,
   currentItem,
   drawerEntries,
   pembelajaranTabs,
@@ -186,18 +189,25 @@ const lagiGroups = computed(() => [
 ])
 
 /** Active row: filled gradient pill for the learner, tonal row for staff. */
-const navUi = computed(() =>
-  learner.value
-    ? {
-        link: 'aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on',
-        linkLeadingIcon: 'group-aria-[current=page]:text-primary-on',
-        label: 'px-3 pt-4 pb-1 text-overline text-muted',
-      }
-    : {
-        link: 'aria-[current=page]:before:bg-primary/10 aria-[current=page]:font-semibold',
-        label: 'px-3 pt-4 pb-1 text-overline text-muted',
-      },
-)
+const navUi = computed(() => ({
+  link: learner.value
+    ? 'min-h-11 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:font-semibold'
+    : 'min-h-11 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/10 aria-[current=page]:font-semibold',
+  linkLeadingIcon: 'size-4',
+  label: "flex items-center gap-2 px-3 pt-4 pb-1 text-overline text-highlighted before:size-1.5 before:rounded-full before:bg-primary before:content-['']",
+}))
+
+const slotById = computed(() => {
+  const m = new Map<string, number>()
+  for (const i of [...flatItems(sidebar.value), ...flatItems(drawer.value)]) m.set(i.id, chipSlot(i))
+  return m
+})
+const slotOf = (id: unknown): number => slotById.value.get(String(id)) ?? 1
+
+const chipClass = (chip: unknown, active: boolean): string =>
+  active && learner.value
+    ? 'bg-white/20 text-primary-on'
+    : (CHIP_CLASS[Number(chip)] ?? CHIP_CLASS[1] ?? '')
 </script>
 
 <template>
@@ -263,7 +273,16 @@ const navUi = computed(() =>
               :ui="navUi"
               aria-label="Menu utama"
               data-testid="pembelajaran-nav"
-            />
+            >
+              <template #item-leading="{ item, active }">
+                <span
+                  v-if="item.icon"
+                  class="grid size-8 shrink-0 place-items-center rounded-md"
+                  :class="chipClass(slotOf(item.value), active)"
+                  ><UIcon v-if="item.icon" :name="item.icon" class="size-[18px]"
+                /></span>
+              </template>
+            </UNavigationMenu>
           </template>
 
           <template #footer="{ collapsed }">
@@ -515,7 +534,16 @@ const navUi = computed(() =>
             :ui="navUi"
             aria-label="Menu penuh"
             data-testid="pembelajaran-lagi-nav"
-          />
+          >
+            <template #item-leading="{ item, active }">
+              <span
+                v-if="item.icon"
+                class="grid size-8 shrink-0 place-items-center rounded-md"
+                :class="chipClass(slotOf((item as { value?: string }).value), active)"
+                ><UIcon v-if="item.icon" :name="item.icon" class="size-[18px]"
+              /></span>
+            </template>
+          </UNavigationMenu>
         </template>
       </USlideover>
 

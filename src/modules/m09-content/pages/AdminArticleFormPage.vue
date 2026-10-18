@@ -16,7 +16,15 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+} from '@/ds'
 
 import {
   createAdminArticle,
@@ -25,13 +33,6 @@ import {
   type ArticleInputBody,
 } from '../api/admin-articles-notes'
 import type { ArticleCategory, GradeLevel } from '../api/types'
-import AdminBackLink from '../components/admin-articles-notes/AdminBackLink.vue'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
-import AdminField from '../components/admin-kit/AdminField.vue'
-import AdminFormBar from '../components/admin-kit/AdminFormBar.vue'
-import AdminSection from '../components/admin-kit/AdminSection.vue'
-import AdminSwitch from '../components/admin-kit/AdminSwitch.vue'
-import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
 import {
   ARTICLES_LIST_PATH,
   CATEGORY_OPTIONS,
@@ -73,7 +74,11 @@ const form = reactive<ArticleForm>({
 })
 
 // S3: GET /api/admin/articles/:id pre-fills the form (never fetched for a non-numeric id).
-const { data: loaded, error: loadError } = useApi(
+const {
+  data: loaded,
+  error: loadError,
+  reload,
+} = useApi(
   (signal) => fetchAdminArticle(numericId.value ?? 0, { signal }),
   () => props.id,
   { immediate: props.mode === 'edit' && numericId.value !== null },
@@ -175,20 +180,23 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="admin-article-form-page">
-    <AdminBackLink :to="ARTICLES_LIST_PATH" />
-
-    <AdminAlert
+  <DsPage
+    :back-to="ARTICLES_LIST_PATH"
+    back-label="Kembali ke Senarai"
+    data-testid="admin-article-form-page"
+  >
+    <DsLoadError
       v-if="failed"
-      :messages="[COPY.loadFailed]"
-      data-testid="admin-article-load-error"
+      :message="COPY.loadFailed"
+      testid="admin-article-load-error"
+      @retry="reload()"
     />
 
-    <UCard v-else-if="!ready" data-testid="admin-article-form-skeleton">
+    <DsPanel v-else-if="!ready" data-testid="admin-article-form-skeleton">
       <div class="flex flex-col gap-6">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
       </div>
-    </UCard>
+    </DsPanel>
 
     <form
       v-else
@@ -197,10 +205,27 @@ async function submit(): Promise<void> {
       data-testid="admin-article-form"
       @submit.prevent="submit"
     >
-      <AdminAlert :messages="topErrors" data-testid="admin-article-form-alert" />
+      <UAlert
+        v-if="topErrors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="admin-article-form-alert"
+      >
+        <template #description>
+          <p v-for="m in topErrors" :key="m">{{ m }}</p>
+        </template>
+      </UAlert>
 
-      <AdminSection title="Kandungan Artikel" icon="i-ph-article" accent="action">
-        <AdminField for="article-title" label="Tajuk Artikel" required :error="messageOf('title')">
+      <DsFormSection title="Kandungan Artikel" icon="i-ph-article" accent="action">
+        <DsFormField
+          native
+          for="article-title"
+          label="Tajuk Artikel"
+          required
+          :error="messageOf('title')"
+        >
           <UInput
             id="article-title"
             v-model="form.title"
@@ -213,9 +238,9 @@ async function submit(): Promise<void> {
             :color="invalid('title') ? 'error' : undefined"
             data-testid="article-title"
           />
-        </AdminField>
+        </DsFormField>
 
-        <AdminField for="article-excerpt" label="Ringkasan" :error="messageOf('excerpt')">
+        <DsFormField native for="article-excerpt" label="Ringkasan" :error="messageOf('excerpt')">
           <UTextarea
             id="article-excerpt"
             v-model="form.excerpt"
@@ -227,9 +252,15 @@ async function submit(): Promise<void> {
             :color="invalid('excerpt') ? 'error' : undefined"
             data-testid="article-excerpt"
           />
-        </AdminField>
+        </DsFormField>
 
-        <AdminField for="article-content" label="Kandungan" required :error="messageOf('content')">
+        <DsFormField
+          native
+          for="article-content"
+          label="Kandungan"
+          required
+          :error="messageOf('content')"
+        >
           <UTextarea
             id="article-content"
             v-model="form.content"
@@ -242,18 +273,19 @@ async function submit(): Promise<void> {
             :color="invalid('content') ? 'error' : undefined"
             data-testid="article-content"
           />
-        </AdminField>
-      </AdminSection>
+        </DsFormField>
+      </DsFormSection>
 
-      <AdminSection title="Klasifikasi & Media" icon="i-ph-tag" accent="friend">
+      <DsFormSection title="Klasifikasi & Media" icon="i-ph-tag" accent="friend">
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <AdminField
+          <DsFormField
+            native
             for="article-category"
             label="Kategori"
             required
             :error="messageOf('category')"
           >
-            <NativeSelect
+            <DsNativeSelect
               id="article-category"
               v-model="form.category"
               name="category"
@@ -265,15 +297,16 @@ async function submit(): Promise<void> {
               <option v-for="o in CATEGORY_OPTIONS" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
-            </NativeSelect>
-          </AdminField>
+            </DsNativeSelect>
+          </DsFormField>
 
-          <AdminField
+          <DsFormField
+            native
             for="article-grade"
             label="Tahap Pendidikan"
             :error="messageOf('gradeLevel', 'grade_level')"
           >
-            <NativeSelect
+            <DsNativeSelect
               id="article-grade"
               v-model="form.gradeLevel"
               name="grade_level"
@@ -282,11 +315,12 @@ async function submit(): Promise<void> {
               <option v-for="o in GRADE_OPTIONS" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
-            </NativeSelect>
-          </AdminField>
+            </DsNativeSelect>
+          </DsFormField>
 
           <div class="md:col-span-2">
-            <AdminField
+            <DsFormField
+              native
               for="article-image"
               label="URL Gambar Utama"
               :error="messageOf('featuredImage', 'featured_image')"
@@ -302,29 +336,31 @@ async function submit(): Promise<void> {
                 :color="invalid('featuredImage', 'featured_image') ? 'error' : undefined"
                 data-testid="article-image"
               />
-            </AdminField>
+            </DsFormField>
           </div>
         </div>
-      </AdminSection>
+      </DsFormSection>
 
-      <AdminSection title="Penerbitan" icon="i-ph-rocket-launch" accent="win">
+      <DsFormSection title="Penerbitan" icon="i-ph-rocket-launch" accent="win">
         <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
-          <AdminSwitch
+          <USwitch
             v-model="form.isPublished"
             name="is_published"
             label="Terbitkan Sekarang"
-            testid="article-published"
+            class="min-h-11"
+            data-testid="article-published"
           />
-          <AdminSwitch
+          <USwitch
             v-model="form.isFeatured"
             name="is_featured"
             label="Artikel Featured"
-            testid="article-featured"
+            class="min-h-11"
+            data-testid="article-featured"
           />
         </div>
-      </AdminSection>
+      </DsFormSection>
 
-      <AdminFormBar
+      <DsFormBar
         :cancel-to="ARTICLES_LIST_PATH"
         :submit-label="editing ? 'Kemaskini Artikel' : 'Simpan Artikel'"
         :saving="saving"

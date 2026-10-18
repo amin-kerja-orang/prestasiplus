@@ -333,7 +333,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await page.getByTestId('linker-search').fill('Pelajar Dua')
       await page.getByTestId('linker-result').first().click()
       await expect(page.getByTestId('linker-chip')).toHaveCount(1)
-      await page.getByTestId('user-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL('/admin/users')
 
       await mock.setUser(STUDENT_NO_PARENT)
@@ -347,7 +347,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await mock.setUser('admin@demo.test')
       await gotoApp('/admin/users/5401/edit')
       await page.getByTestId('linker-remove').first().click()
-      await page.getByTestId('user-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL('/admin/users')
       await mock.setUser(STUDENT_NO_PARENT)
       await gotoApp('/jemput-ibu-bapa')

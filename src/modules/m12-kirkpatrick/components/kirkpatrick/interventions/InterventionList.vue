@@ -4,15 +4,12 @@
  * PROPOSED table, newest first (the API order). Staff table (`DsDataTable`: card list below md, inner scroll
  * when wide); the status is a badge with its word.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsEmptyState } from '@/ds'
-
-import KirkpatrickTable from '../common/KirkpatrickTable.vue'
+import { DsDataTable, DsEmptyState, DsPanel } from '@/ds'
 
 import type { InterventionRow } from '../../../api/types'
-import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { dateEn, pct } from '../common/kirkpatrick-format'
 import { alertLabel, moodLabel, STATUS_COLOR } from './intervention-format'
 
@@ -76,19 +73,22 @@ const cardFields = [
   { key: 'after', label: 'Ketepatan Selepas (%)' },
   { key: 'status', label: 'Status' },
 ]
+
+/** Paged at 20 rows. */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(20)
 </script>
 
 <template>
-  <KirkpatrickTableSection
-    title="Senarai Intervensi"
-    icon="i-ph-clipboard-text"
-    data-testid="int-list"
-  >
+  <DsPanel title="Senarai Intervensi" icon="i-ph-clipboard-text" data-testid="int-list">
     <UCard v-if="rows.length === 0" data-testid="int-empty">
       <DsEmptyState icon="i-ph-clipboard" title="Tiada intervensi direkodkan lagi." />
     </UCard>
-    <KirkpatrickTable
+    <DsDataTable
       v-else
+      v-model:page-size="pageSize"
+      variant="bare"
+      :page-size-options="PAGE_SIZES"
       :data="data"
       :columns="columns"
       caption="Senarai intervensi"
@@ -124,6 +124,6 @@ const cardFields = [
           data-testid="int-row-status"
         />
       </template>
-    </KirkpatrickTable>
-  </KirkpatrickTableSection>
+    </DsDataTable>
+  </DsPanel>
 </template>

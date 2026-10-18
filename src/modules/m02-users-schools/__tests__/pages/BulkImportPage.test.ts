@@ -48,7 +48,7 @@ async function render(): Promise<VueWrapper> {
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid=${id}]`)
 
 async function pickRole(w: VueWrapper, role: string): Promise<void> {
-  await w.get(`[data-testid=bulk-role-${role}] input`).setValue(true)
+  await w.get(`button[role=radio][value=${role}]`).trigger('click')
 }
 
 beforeEach(() => {
@@ -76,15 +76,14 @@ describe('BulkImportPage (M02 S4)', () => {
     expect(w.text()).toContain('Import Pengguna Pukal')
     expect(w.text()).toContain('Daftarkan guru, ibu bapa, atau pentadbir sekolah secara pukal.')
     expect(w.text()).toContain('Borang Import Pengguna')
-    const radios = w.findAll('input[name=role]')
+    const radios = w.findAll('button[role=radio]')
     expect(radios.map((r) => r.attributes('value'))).toEqual([
       'teacher',
       'parent',
       'school_admin',
       'ppd_officer',
     ])
-    expect(radios.every((r) => (r.element as HTMLInputElement).checked === false)).toBe(true)
-    expect(radios.every((r) => r.attributes('required') !== undefined)).toBe(true)
+    expect(radios.every((r) => r.attributes('aria-checked') === 'false')).toBe(true)
     const pw = t(w, 'bulk-default-password')
     expect((pw.element as HTMLInputElement).value).toBe(DEFAULT_PASSWORD)
     expect(pw.attributes('placeholder')).toBe(DEFAULT_PASSWORD)
@@ -96,7 +95,7 @@ describe('BulkImportPage (M02 S4)', () => {
     expect(t(w, 'bulk-format').text()).toContain(
       'Baris pertama akan dilangkau jika ia mengandungi tajuk (header).',
     )
-    expect(t(w, 'bulk-back').attributes('href')).toBe('/admin/users')
+    expect(w.get('[data-ds="back-link"]').attributes('href')).toBe('/admin/users')
     expect(t(w, 'bulk-students-link').attributes('href')).toBe('/admin/import-students')
     expect(w.findAll('[data-testid=bulk-notes] li')).toHaveLength(4)
   })
@@ -150,14 +149,13 @@ describe('BulkImportPage (M02 S4)', () => {
     const w = await render()
     await t(w, 'import-mode-csv').trigger('click')
     expect(w.text()).toContain('Seret & Lepas fail CSV di sini')
-    expect(w.text()).toContain('atau')
-    expect(w.text()).toContain('Pilih Fail')
-    expect(t(w, 'import-file').attributes('accept')).toBe('.csv,.txt')
+    expect(w.text()).toContain('atau klik untuk memilih fail')
+    const input = w.get('[data-testid=import-dropzone] input[type=file]')
+    expect(input.attributes('accept')).toBe('.csv,.txt')
     expect(t(w, 'import-file-status').text()).toBe('Tiada fail dipilih')
-    const input = t(w, 'import-file').element as HTMLInputElement
     const csv = new File(['a,b'], 'demo.csv', { type: 'text/csv' })
-    Object.defineProperty(input, 'files', { value: [csv], configurable: true })
-    await t(w, 'import-file').trigger('change')
+    w.findComponent({ name: 'FileUpload' }).vm.$emit('update:modelValue', csv)
+    await flushPromises()
     expect(t(w, 'import-file-status').text()).toBe('Fail dipilih: demo.csv')
   })
 
@@ -193,7 +191,7 @@ describe('BulkImportPage (M02 S4)', () => {
       message: 'Import selesai: 1 pengguna didaftarkan, 1 dilangkau, 1 gagal.',
     })
     expect(
-      w.findAll('input[name=role]').every((r) => !(r.element as HTMLInputElement).checked),
+      w.findAll('button[role=radio]').every((r) => r.attributes('aria-checked') === 'false'),
     ).toBe(true)
     expect(w.find('[data-testid=bulk-school]').exists()).toBe(false)
     expect((t(w, 'import-paste').element as HTMLTextAreaElement).value).toBe('')
@@ -232,7 +230,7 @@ describe('BulkImportPage (M02 S4)', () => {
     const alert = t(w, 'bulk-alert')
     expect(alert.text()).toContain('The school id field is required.')
     expect(alert.text()).toContain('Tiada data untuk diimport.')
-    expect((w.get('input[value=teacher]').element as HTMLInputElement).checked).toBe(true)
+    expect(w.get('button[role=radio][value=teacher]').attributes('aria-checked')).toBe('true')
     expect(useFlashStore().current).toBeNull()
   })
 })

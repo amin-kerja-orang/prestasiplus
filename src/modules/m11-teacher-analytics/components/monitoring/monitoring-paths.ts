@@ -7,6 +7,8 @@
  * `/admin-sekolah/monitoring`).
  */
 
+import type { CrumbItem } from '@/ds'
+
 export const MONITORING_BASE = '/guru/monitoring'
 
 export interface MonitoringFilterQuery {
@@ -45,4 +47,26 @@ export function monitoringPaths(base: string = MONITORING_BASE): MonitoringPaths
       return `${root}/export/${format}?${pairs.join('&')}`
     },
   }
+}
+
+/**
+ * Breadcrumb of S3-S5 (FR-M11-03, FN-M11-1.1.3): "Monitoring" / "{sekolah}" (S4/S5: a link to S3) /
+ * "{nama}". On live it sits under the admin header; here it is the first line of the page.
+ */
+export function monitoringCrumbs(
+  paths: MonitoringPaths,
+  school: string,
+  schoolId?: number,
+  person?: string,
+): CrumbItem[] {
+  const items: CrumbItem[] = [{ label: 'Monitoring', to: paths.overview }]
+  if (school) {
+    items.push(
+      schoolId !== undefined && person !== undefined
+        ? { label: school, to: paths.school(schoolId) }
+        : { label: school },
+    )
+  }
+  if (person) items.push({ label: person })
+  return items
 }

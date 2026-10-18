@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
@@ -65,6 +65,13 @@ function listResult(rows: AdminUserListItem[], total = rows.length, page = 1) {
   }
 }
 
+/** The `<tr>` of a user: the table cells cannot carry the id, so it is found from the actions cell. */
+function rowOf(w: VueWrapper, id: number): DOMWrapper<Element> {
+  const tr = w.get(`[data-user-id="${String(id)}"]`).element.closest('tr')
+  if (!tr) throw new Error(`No table row for user ${String(id)}`)
+  return new DOMWrapper(tr)
+}
+
 let wrapper: VueWrapper | null = null
 let router: Router
 
@@ -126,7 +133,7 @@ describe('UserListPage (M02 S1)', () => {
     const expected = ['4533', '551', '38', '6', '16', '5', '2']
     expected.forEach((n, i) => expect(counts[i]).toContain(n))
     expect(w.findAll('[data-testid="user-row"]')).toHaveLength(3)
-    expect(w.text()).toContain('Menunjukkan 1-3 daripada 5159 hasil')
+    expect(w.text()).toContain('Menunjukkan 1-25 daripada 5159 hasil')
     expect(w.text()).toContain('5159')
     expect(w.text()).toContain('21/09/2026')
     expect(w.text()).toContain('0123456789')
@@ -142,7 +149,7 @@ describe('UserListPage (M02 S1)', () => {
 
   it('leaves the own row without checkbox, Login As and delete; Pakej only for school admins', async () => {
     const w = await render()
-    const own = w.get(`[data-user-id="${String(ME)}"]`)
+    const own = rowOf(w, ME)
     expect(own.find('[data-testid="user-select"]').exists()).toBe(false)
     expect(own.find('[data-testid="user-edit"]').exists()).toBe(true)
     expect(await openRowMenu(w, `[data-user-id="${String(ME)}"]`)).toEqual(['Nyahaktifkan'])
@@ -155,7 +162,7 @@ describe('UserListPage (M02 S1)', () => {
     closeMenus()
     expect(await openRowMenu(w, '[data-user-id="3"]')).toContain('Pakej')
     closeMenus()
-    expect(w.get('[data-user-id="3"] [data-testid="user-status"]').text()).toBe('Tidak Aktif')
+    expect(rowOf(w, 3).get('[data-testid="user-status"]').text()).toBe('Tidak Aktif')
   })
 
   it('toggles after the native confirm and does nothing on cancel', async () => {
@@ -190,7 +197,7 @@ describe('UserListPage (M02 S1)', () => {
   it('selects all selectable rows, shows the bulk bar and bulk deletes', async () => {
     api.bulkDeleteAdminUsers.mockResolvedValue({ data: { deleted: 2 }, status: 'ok' })
     const w = await render()
-    await w.get('[data-testid="users-select-all"]').setValue(true)
+    await w.get('[data-testid="users-select-all"]').trigger('click')
     expect(w.get('[data-testid="users-selected-count"]').text()).toBe('2')
     expect(w.get('[data-testid="users-bulk-bar"]').text()).toContain('dipilih')
     await w.get('[data-testid="users-bulk-delete"]').trigger('click')
@@ -238,15 +245,16 @@ describe('UserListPage (M02 S1)', () => {
     expect(w.findAll('[data-testid="user-row"]')).toHaveLength(2)
   })
 
-  it('shows the load error with "Cuba Lagi" and retry reloads', async () => {
+  it('shows the load error with "Cuba Semula" and retry reloads', async () => {
     api.fetchAdminUsers
       .mockRejectedValueOnce(new Error('gagal'))
       .mockResolvedValue(listResult([user(2)], 1))
     const w = await render()
     expect(w.find('[data-testid="users-error"]').exists()).toBe(true)
-    expect(w.get('[data-testid="users-retry"]').text()).toBe('Cuba Lagi')
+    const retry = w.findAll('button').find((b) => b.text() === 'Cuba Semula')
+    expect(retry).toBeDefined()
     expect(w.find('[data-testid="user-row"]').exists()).toBe(false)
-    await w.get('[data-testid="users-retry"]').trigger('click')
+    await retry!.trigger('click')
     await flushPromises()
     expect(api.fetchAdminUsers).toHaveBeenCalledTimes(2)
     expect(w.find('[data-testid="users-error"]').exists()).toBe(false)

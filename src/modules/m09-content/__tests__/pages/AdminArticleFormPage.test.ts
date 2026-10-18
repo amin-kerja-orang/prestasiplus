@@ -73,8 +73,8 @@ afterEach(() => {
 describe('AdminArticleFormPage create (M09 S2)', () => {
   it('shows the labels, placeholders, required flags and defaults', async () => {
     const w = await render('create', '')
-    expect(t(w, 'back-link').text()).toBe('Kembali ke Senarai')
-    expect(t(w, 'back-link').attributes('href')).toBe('/admin/articles')
+    expect(w.get('[data-ds=back-link]').text()).toBe('Kembali ke Senarai')
+    expect(w.get('[data-ds=back-link]').attributes('href')).toBe('/admin/articles')
     const title = el<HTMLInputElement>(w, 'article-title')
     expect(title.required).toBe(true)
     expect(title.placeholder).toBe('cth: 10 Tips Belajar Matematik')
@@ -94,8 +94,8 @@ describe('AdminArticleFormPage create (M09 S2)', () => {
     expect([...category.options].map((o) => o.text)[0]).toBe('Pilih kategori')
     expect(category.options).toHaveLength(8)
     expect(el<HTMLSelectElement>(w, 'article-grade').value).toBe('SEMUA')
-    expect(el<HTMLInputElement>(w, 'article-published').checked).toBe(false)
-    expect(el<HTMLInputElement>(w, 'article-featured').checked).toBe(false)
+    expect(t(w, 'article-published').attributes('aria-checked')).toBe('false')
+    expect(t(w, 'article-featured').attributes('aria-checked')).toBe('false')
     expect(w.text()).toContain('Terbitkan Sekarang')
     expect(w.text()).toContain('Artikel Featured')
     expect(t(w, 'form-submit').text()).toBe('Simpan Artikel')
@@ -121,7 +121,7 @@ describe('AdminArticleFormPage create (M09 S2)', () => {
     await t(w, 'article-title').setValue('Tajuk Baru')
     await t(w, 'article-content').setValue('<h2>Tajuk</h2><p>Isi</p>')
     await t(w, 'article-category').setValue('BERITA')
-    await t(w, 'article-published').setValue(true)
+    await t(w, 'article-published').trigger('click')
     await t(w, 'admin-article-form').trigger('submit')
     await flushPromises()
     expect(api.createAdminArticle).toHaveBeenCalledWith({
@@ -172,8 +172,8 @@ describe('AdminArticleFormPage edit (M09 S3)', () => {
     expect(category.value).toBe('TIPS_BELAJAR')
     expect(category.options).toHaveLength(7)
     expect(el<HTMLSelectElement>(w, 'article-grade').value).toBe('DARJAH_4')
-    expect(el<HTMLInputElement>(w, 'article-published').checked).toBe(true)
-    expect(el<HTMLInputElement>(w, 'article-featured').checked).toBe(true)
+    expect(t(w, 'article-published').attributes('aria-checked')).toBe('true')
+    expect(t(w, 'article-featured').attributes('aria-checked')).toBe('true')
     expect(el<HTMLFormElement>(w, 'admin-article-form').checkValidity()).toBe(true)
     expect(t(w, 'form-submit').text()).toBe('Kemaskini Artikel')
   })
@@ -184,7 +184,7 @@ describe('AdminArticleFormPage edit (M09 S3)', () => {
       status: 'Artikel berjaya dikemaskini.',
     })
     const w = await render('edit')
-    await t(w, 'article-featured').setValue(false)
+    await t(w, 'article-featured').trigger('click')
     await t(w, 'admin-article-form').trigger('submit')
     await flushPromises()
     expect(api.updateAdminArticle).toHaveBeenCalledWith(

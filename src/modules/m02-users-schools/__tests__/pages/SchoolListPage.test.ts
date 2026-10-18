@@ -120,7 +120,7 @@ describe('SchoolListPage (M02 S9)', () => {
       'Status',
       'Tindakan',
     ])
-    const rows = w.findAll('[data-testid=school-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(2)
     expect(rows[0]?.text()).toContain('SK TAMAN CONTOH 1')
     expect(rows[0]?.text()).toContain('Selangor')
@@ -190,13 +190,12 @@ describe('SchoolListPage (M02 S9)', () => {
     const w = await render('/admin/schools?search=zzqxv')
     const empty = w.get('[data-testid=schools-empty]')
     expect(empty.text()).toBe('Tiada sekolah dijumpai')
-    expect(empty.get('td').attributes('colspan')).toBe('9')
     expect(w.find('nav').exists()).toBe(false)
   })
 
   it('renders the pager summary and keeps the filters when paging', async () => {
     const w = await render('/admin/schools?type=SK')
-    const pager = w.get('[data-testid=schools-pager]')
+    const pager = w.get('[data-ds="data-table-pager"]')
     expect(pager.text()).toContain('Menunjukkan 1-30 daripada 10220 hasil')
     await pager.get('button[aria-label="Page 2"]').trigger('click')
     await flushPromises()
@@ -243,11 +242,16 @@ describe('SchoolListPage (M02 S9)', () => {
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'HTTP 500' }),
     )
     const w = await render()
-    expect(w.get('[data-testid=schools-error]').text()).toContain('Ralat berlaku. Sila cuba lagi.')
-    await w.get('[data-testid=schools-retry]').trigger('click')
+    expect(w.get('[data-testid=schools-error]').text()).toContain(
+      'Tidak dapat memuatkan senarai sekolah. Sila cuba semula.',
+    )
+    await w
+      .findAll('button')
+      .find((b) => b.text() === 'Cuba Semula')!
+      .trigger('click')
     await flushPromises()
     expect(w.find('[data-testid=schools-error]').exists()).toBe(false)
-    expect(w.findAll('[data-testid=school-row]')).toHaveLength(2)
+    expect(w.findAll('tbody tr')).toHaveLength(2)
   })
 
   it('shows skeleton rows while the first load is pending', async () => {

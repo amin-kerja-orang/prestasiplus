@@ -1,52 +1,49 @@
 <script setup lang="ts">
 /**
  * S1 summary tiles (FR-M03-05): "Subjek", "Tahap", "Jumlah Bab" and "Topik / Subtopik" as compact
- * KPI tiles with coloured icon chips. Long names are truncated by the tile (full text in the title).
+ * KPI tiles (`DsStatRow`) with coloured icon chips. Long names are truncated by the tile.
  */
-import { AdminKpiStrip } from '@/ds/admin'
-import { DsStatTile } from '@/ds'
+import { computed } from 'vue'
+
+import { DsStatRow, type StatItem } from '@/ds'
 
 import type { CurriculumTree } from '../../api/admin-curriculum'
 
-defineProps<{ tree: CurriculumTree }>()
+const props = defineProps<{ tree: CurriculumTree }>()
+
+const items = computed<StatItem[]>(() => [
+  { key: 'subject', label: 'Subjek', value: props.tree.subject.name, icon: 'book' },
+  {
+    key: 'level',
+    label: 'Tahap',
+    value: props.tree.level.name,
+    icon: 'graduation-cap',
+    accent: 'friend',
+  },
+  {
+    key: 'chapters',
+    label: 'Jumlah Bab',
+    value: props.tree.stats.chapters,
+    icon: 'book-open',
+    accent: 'win',
+  },
+  {
+    key: 'topics',
+    label: 'Topik / Subtopik',
+    value: `${String(props.tree.stats.topics)} / ${String(props.tree.stats.subtopics)}`,
+    icon: 'list',
+    accent: 'trial',
+  },
+])
 </script>
 
 <template>
-  <AdminKpiStrip
-    label="Ringkasan kurikulum"
-    class="xl:grid-cols-4 2xl:grid-cols-4"
+  <DsStatRow
+    prefix="stat"
+    :items="items"
+    compact
+    :cols="4"
+    aria-label="Ringkasan kurikulum"
     data-testid="curriculum-stats"
-  >
-    <DsStatTile
-      compact
-      :value="tree.subject.name"
-      unit="Subjek"
-      icon="i-ph-book"
-      data-testid="stat-subject"
-    />
-    <DsStatTile
-      compact
-      accent="friend"
-      :value="tree.level.name"
-      unit="Tahap"
-      icon="i-ph-graduation-cap"
-      data-testid="stat-level"
-    />
-    <DsStatTile
-      compact
-      accent="win"
-      :value="tree.stats.chapters"
-      unit="Jumlah Bab"
-      icon="i-ph-book-open"
-      data-testid="stat-chapters"
-    />
-    <DsStatTile
-      compact
-      accent="trial"
-      :value="`${tree.stats.topics} / ${tree.stats.subtopics}`"
-      unit="Topik / Subtopik"
-      icon="i-ph-list"
-      data-testid="stat-topics"
-    />
-  </AdminKpiStrip>
+  />
 </template>

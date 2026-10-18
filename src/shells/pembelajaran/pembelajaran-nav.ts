@@ -172,6 +172,37 @@ export function sectionOf(entries: readonly NavEntry[], itemId: string): string 
   return ''
 }
 
+/** Categorical slot (1-8, theme tokens) per old Font Awesome colour family. */
+const HUE_TO_CAT: readonly [RegExp, number][] = [
+  [/(indigo|blue-[56])/, 1],
+  [/(amber|yellow)/, 5],
+  [/orange/, 6],
+  [/(red|rose)/, 3],
+  [/(purple|violet|fuchsia|pink)/, 7],
+  [/(emerald|green|teal)/, 8],
+  [/(cyan|blue)/, 4],
+]
+
+/** Chip colour slot of an item: from its old colour class, else a stable pick by id. */
+export function chipSlot(item: Pick<NavItem, 'id' | 'color'>): number {
+  for (const [re, n] of HUE_TO_CAT) if (re.test(item.color)) return n
+  let h = 0
+  for (const ch of item.id) h = (h * 31 + ch.charCodeAt(0)) % 8
+  return h + 1
+}
+
+/** Literal classes (Tailwind scans this file): soft tint chip and glyph colour per slot. */
+export const CHIP_CLASS: Record<number, string> = {
+  1: 'bg-cat-1/15 text-cat-1',
+  2: 'bg-cat-2/15 text-cat-2',
+  3: 'bg-cat-3/15 text-cat-3',
+  4: 'bg-cat-4/15 text-cat-4',
+  5: 'bg-cat-5/15 text-cat-5',
+  6: 'bg-cat-6/15 text-cat-6',
+  7: 'bg-cat-7/15 text-cat-7',
+  8: 'bg-cat-8/15 text-cat-8',
+}
+
 function leaf(item: NavItem, opts: LearnNavOptions, activeId: string | undefined): NavigationMenuItem {
   return {
     label: item.label,

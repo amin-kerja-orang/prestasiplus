@@ -75,8 +75,8 @@ afterEach(() => {
 describe('SchoolFormPage create (M02 S10)', () => {
   it('shows the fields, placeholders, options and the switch on by default', async () => {
     const w = await render({ mode: 'create' })
-    expect(w.get('[data-testid=school-back]').text()).toBe('Kembali ke Senarai Sekolah')
-    expect(w.get('label[for=school-name]').text()).toBe('Nama Sekolah *')
+    expect(w.get('[data-ds="back-link"]').text()).toBe('Kembali ke Senarai Sekolah')
+    expect(w.get('label[for=school-name]').text()).toContain('Nama Sekolah *')
     expect(w.get('[data-testid=school-name]').attributes('placeholder')).toBe(
       'cth: SK TAMAN KLUANG BARU',
     )
@@ -99,9 +99,9 @@ describe('SchoolFormPage create (M02 S10)', () => {
     const states = w.findAll('[data-testid=school-state] option').map((o) => o.text())
     expect(states).toHaveLength(17)
     expect(states[0]).toBe('Pilih negeri')
-    expect((w.get('[data-testid=school-active]').element as HTMLInputElement).checked).toBe(true)
-    expect(w.get('[data-testid=school-submit]').text()).toBe('Simpan')
-    expect(w.get('[data-testid=school-cancel]').attributes('href')).toBe('/admin/schools')
+    expect(w.get('[data-testid=school-active]').attributes('aria-checked')).toBe('true')
+    expect(w.get('[data-testid=form-submit]').text()).toBe('Simpan')
+    expect(w.get('[data-testid=form-cancel]').attributes('href')).toBe('/admin/schools')
     expect(w.find('form').attributes('novalidate')).toBeUndefined()
     expect(api.fetchAdminSchool).not.toHaveBeenCalled()
   })
@@ -165,8 +165,8 @@ describe('SchoolFormPage edit (M02 S11)', () => {
     expect((w.get('[data-testid=school-state]').element as HTMLSelectElement).value).toBe(
       'Selangor',
     )
-    expect((w.get('[data-testid=school-active]').element as HTMLInputElement).checked).toBe(false)
-    expect(w.get('[data-testid=school-submit]').text()).toBe('Kemaskini')
+    expect(w.get('[data-testid=school-active]').attributes('aria-checked')).toBe('false')
+    expect(w.get('[data-testid=form-submit]').text()).toBe('Kemaskini')
     expect(usePageMeta().state.header).toEqual({
       title: 'Edit Sekolah',
       subtitle: 'SK TAMAN CONTOH',
@@ -177,7 +177,7 @@ describe('SchoolFormPage edit (M02 S11)', () => {
     api.updateSchool.mockResolvedValue({ data: SCHOOL, status: 'Sekolah berjaya disimpan.' })
     const w = await render({ mode: 'edit', id: 42 })
     await w.get('[data-testid=school-district]').setValue('PPD LAIN')
-    await w.get('[data-testid=school-active]').setValue(true)
+    await w.get('[data-testid=school-active]').trigger('click')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(api.updateSchool).toHaveBeenCalledWith(42, {
@@ -211,7 +211,9 @@ describe('SchoolFormPage edit (M02 S11)', () => {
     )
     const w = await render({ mode: 'edit', id: 42 })
     expect(useRouteOutcome().value).toBeNull()
-    expect(w.get('[data-testid=school-load-error]').text()).toContain('Ralat berlaku')
+    expect(w.get('[data-testid=school-load-error]').text()).toContain(
+      'Tidak dapat memuatkan sekolah. Sila cuba semula.',
+    )
     expect(w.find('[data-testid=school-form]').exists()).toBe(false)
   })
 

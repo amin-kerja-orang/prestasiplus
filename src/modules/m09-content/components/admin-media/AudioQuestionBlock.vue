@@ -6,9 +6,9 @@
  * validation: question text, the four options and the answer are required. The four options sit in
  * one column below `md` and two from `md`. The state object belongs to the parent form.
  */
+import { DsFormField, DsFormSection, DsNativeSelect } from '@/ds'
+
 import { ANSWER_OPTIONS, type QuestionState } from '../../lib/admin-media/audio'
-import AdminField from '../admin-kit/AdminField.vue'
-import NativeSelect from '../admin-kit/native/NativeSelect.vue'
 
 defineProps<{ no: number }>()
 
@@ -23,14 +23,13 @@ const OPTIONS = [
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-6' }" data-testid="question-block" :data-question-no="no">
-    <div class="flex flex-col gap-6">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <h3 class="text-label text-highlighted">Soalan {{ no }}</h3>
+  <div data-testid="question-block" :data-question-no="no">
+    <DsFormSection :title="`Soalan ${String(no)}`" icon="i-ph-question" accent="heat">
+      <template #actions>
         <UBadge color="warning" variant="subtle" label="KBAT Audio" />
-      </div>
+      </template>
 
-      <AdminField :for="`q${String(no)}-text`" label="Teks Soalan">
+      <DsFormField native :for="`q${String(no)}-text`" label="Teks Soalan">
         <UTextarea
           :id="`q${String(no)}-text`"
           v-model="question.questionText"
@@ -41,12 +40,13 @@ const OPTIONS = [
           class="w-full"
           data-testid="q-text"
         />
-      </AdminField>
+      </DsFormField>
 
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <AdminField
+        <DsFormField
           v-for="option in OPTIONS"
           :key="option.key"
+          native
           :for="`q${String(no)}-${option.key}`"
           :label="option.label"
         >
@@ -60,12 +60,12 @@ const OPTIONS = [
             class="w-full"
             :data-testid="`q-${option.key}`"
           />
-        </AdminField>
+        </DsFormField>
       </div>
 
       <div class="grid grid-cols-2 gap-6 md:grid-cols-4">
-        <AdminField :for="`q${String(no)}-answer`" label="Jawapan">
-          <NativeSelect
+        <DsFormField native :for="`q${String(no)}-answer`" label="Jawapan">
+          <DsNativeSelect
             :id="`q${String(no)}-answer`"
             v-model="question.correctAnswer"
             :name="`questions[${String(no)}][correct_answer]`"
@@ -75,9 +75,9 @@ const OPTIONS = [
             <option v-for="letter in ANSWER_OPTIONS" :key="letter" :value="letter">
               {{ letter }}
             </option>
-          </NativeSelect>
-        </AdminField>
-        <AdminField :for="`q${String(no)}-marks`" label="Markah">
+          </DsNativeSelect>
+        </DsFormField>
+        <DsFormField native :for="`q${String(no)}-marks`" label="Markah">
           <UInput
             :id="`q${String(no)}-marks`"
             v-model.number="question.marks"
@@ -89,8 +89,8 @@ const OPTIONS = [
             class="w-full"
             data-testid="q-marks"
           />
-        </AdminField>
-        <AdminField :for="`q${String(no)}-kbat`" label="KBAT Level">
+        </DsFormField>
+        <DsFormField native :for="`q${String(no)}-kbat`" label="KBAT Level">
           <UInput
             :id="`q${String(no)}-kbat`"
             v-model.number="question.kbatLevel"
@@ -102,8 +102,8 @@ const OPTIONS = [
             class="w-full"
             data-testid="q-kbat"
           />
-        </AdminField>
-        <AdminField :for="`q${String(no)}-dskp`" label="DSKP SP ID">
+        </DsFormField>
+        <DsFormField native :for="`q${String(no)}-dskp`" label="DSKP SP ID">
           <UInput
             :id="`q${String(no)}-dskp`"
             v-model.number="question.dskpSpId"
@@ -114,10 +114,10 @@ const OPTIONS = [
             class="w-full"
             data-testid="q-dskp"
           />
-        </AdminField>
+        </DsFormField>
       </div>
 
-      <AdminField :for="`q${String(no)}-explanation`" label="Skema / Penjelasan">
+      <DsFormField native :for="`q${String(no)}-explanation`" label="Skema / Penjelasan">
         <UTextarea
           :id="`q${String(no)}-explanation`"
           v-model="question.explanation"
@@ -127,7 +127,7 @@ const OPTIONS = [
           class="w-full"
           data-testid="q-explanation"
         />
-      </AdminField>
-    </div>
-  </UCard>
+      </DsFormField>
+    </DsFormSection>
+  </div>
 </template>

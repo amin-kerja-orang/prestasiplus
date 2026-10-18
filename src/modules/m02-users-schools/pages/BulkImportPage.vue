@@ -12,19 +12,14 @@
  */
 import { computed, nextTick, onMounted, ref } from 'vue'
 
-import { AdminCard, AdminFormSection, AdminPageHeader, AdminStickyBar } from '@/ds/admin'
 import { useFlash } from '@/composables'
-import { DsIconChip, DsPage } from '@/ds'
+import { DsFormBar, DsFormField, DsFormSection, DsIconChip, DsPage, DsPanel } from '@/ds'
 
 import { importUsers, type BulkImportRole, type ImportMode } from '../api/imports'
 import type { SchoolSummary } from '../api/schools'
 import { fetchAdminDefaults } from '../api/users'
-import AdminAlert from '../components/AdminAlert.vue'
-import AdminField from '../components/AdminField.vue'
 import BulkSchoolPicker from '../components/BulkSchoolPicker.vue'
 import ImportSourceFields from '../components/ImportSourceFields.vue'
-import NativeChoice from '../components/native/NativeChoice.vue'
-import NativePanel from '../components/native/NativePanel.vue'
 import {
   BULK_PASTE_PLACEHOLDER,
   BULK_ROLE_OPTIONS,
@@ -95,6 +90,13 @@ async function submit(): Promise<void> {
   }
 }
 
+const roleItems = computed(() =>
+  BULK_ROLE_OPTIONS.map((o) => ({
+    value: o.value,
+    label: o.label,
+    icon: ROLE_ICONS[o.icon] ?? 'i-ph-buildings',
+  })),
+)
 const ROLE_ICONS: Record<string, string> = {
   teacher: 'i-ph-chalkboard-teacher',
   parent: 'i-ph-users',
@@ -104,23 +106,12 @@ const ROLE_ICONS: Record<string, string> = {
 </script>
 
 <template>
-  <DsPage data-testid="bulk-import-page">
-    <AdminPageHeader
-      title="Import Pengguna Pukal"
-      subtitle="Daftarkan guru, ibu bapa, atau pentadbir sekolah secara pukal."
-    >
-      <template #actions>
-        <UButton
-          :to="USERS_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          label="Kembali"
-          data-testid="bulk-back"
-        />
-      </template>
-    </AdminPageHeader>
-
+  <DsPage
+    title="Import Pengguna Pukal"
+    subtitle="Daftarkan guru, ibu bapa, atau pentadbir sekolah secara pukal."
+    :back-to="USERS_LIST_PATH"
+    data-testid="bulk-import-page"
+  >
     <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
       <form
         method="post"
@@ -132,47 +123,62 @@ const ROLE_ICONS: Record<string, string> = {
         <h2 class="sr-only">Borang Import Pengguna</h2>
 
         <div ref="alertBox" class="empty:hidden">
-          <AdminAlert :messages="errors" data-testid="bulk-alert" />
+          <UAlert
+            v-if="errors.length > 0"
+            color="error"
+            variant="subtle"
+            icon="i-ph-warning-circle"
+            role="alert"
+            data-testid="bulk-alert"
+          >
+            <template #description>
+              <div class="flex flex-col gap-1">
+                <p v-for="m in errors" :key="m">{{ m }}</p>
+              </div>
+            </template>
+          </UAlert>
         </div>
 
-        <AdminFormSection
+        <DsFormSection
           title="Peranan dan Sekolah"
           description="Pilih jenis pengguna dan sekolah mereka."
-          icon="i-ph-user-check"
+          icon="user-check"
+          :columns="2"
         >
-          <fieldset class="flex min-w-0 flex-col gap-3 md:col-span-2">
-            <legend class="mb-3 flex items-center gap-2 text-label text-default">
+          <div class="flex min-w-0 flex-col gap-3 sm:col-span-2">
+            <p class="text-label text-default">
               Peranan Pengguna <span class="text-error">*</span>
-            </legend>
-            <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <NativeChoice
-                v-for="o in BULK_ROLE_OPTIONS"
-                :key="o.value"
-                v-model="role"
-                name="role"
-                :value="o.value"
-                required
-                :data-testid="`bulk-role-${o.value}`"
-              >
-                <UIcon
-                  :name="ROLE_ICONS[o.icon] ?? 'i-ph-buildings'"
-                  class="size-4"
-                  aria-hidden="true"
-                />
-                {{ o.label }}
-              </NativeChoice>
-            </div>
-          </fieldset>
+            </p>
+            <URadioGroup
+              :model-value="role === '' ? undefined : role"
+              :items="roleItems"
+              legend="Peranan Pengguna"
+              name="role"
+              required
+              variant="card"
+              color="info"
+              indicator="hidden"
+              orientation="horizontal"
+              :ui="{
+                fieldset: 'grid grid-cols-2 gap-3 md:grid-cols-4',
+                item: 'min-h-11 items-center justify-center bg-elevated p-2 text-center',
+                wrapper: 'w-full text-center',
+                legend: 'sr-only',
+              }"
+              @update:model-value="(v) => (role = v as BulkImportRole)"
+            >
+            </URadioGroup>
+          </div>
 
-          <div v-if="showSchool" class="md:col-span-2">
+          <div v-if="showSchool" class="sm:col-span-2">
             <BulkSchoolPicker v-model="school" />
           </div>
 
-          <div class="md:col-span-2">
-            <AdminField
+          <div class="sm:col-span-2">
+            <DsFormField
+              native
               for="bulk-default-password"
               label="Kata Laluan Default (untuk pengguna tanpa kata laluan)"
-              icon="i-ph-key"
               hint="Kata laluan jika tidak dinyatakan dalam data import."
             >
               <UInput
@@ -185,16 +191,17 @@ const ROLE_ICONS: Record<string, string> = {
                 class="w-full"
                 data-testid="bulk-default-password"
               />
-            </AdminField>
+            </DsFormField>
           </div>
-        </AdminFormSection>
+        </DsFormSection>
 
-        <AdminFormSection
+        <DsFormSection
           title="Data Pengguna"
           description="Muat naik CSV atau tampal data secara manual."
-          icon="i-ph-file-arrow-up"
+          icon="file-arrow-up"
+          :columns="2"
         >
-          <div class="md:col-span-2">
+          <div class="sm:col-span-2">
             <ImportSourceFields
               v-model:mode="mode"
               v-model:paste="paste"
@@ -202,84 +209,89 @@ const ROLE_ICONS: Record<string, string> = {
               :paste-placeholder="BULK_PASTE_PLACEHOLDER"
             >
               <template #format>
-                <NativePanel
-                  tone="soft"
-                  class="flex flex-col gap-1 text-label text-muted"
-                  data-testid="bulk-format"
-                >
-                  <p class="flex items-center gap-2 text-body text-default">
-                    <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
-                    Format CSV:
-                  </p>
-                  <p class="break-words">Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)</p>
-                  <p class="break-words">
-                    Contoh: Muhammad Fulan bin Fulan, ahmad@email.com, 0123456789, pass123
-                  </p>
-                  <p>Baris pertama akan dilangkau jika ia mengandungi tajuk (header).</p>
-                </NativePanel>
+                <DsPanel tone="inset" data-testid="bulk-format">
+                  <div class="flex flex-col gap-1 text-label text-muted">
+                    <p class="flex items-center gap-2 text-body text-default">
+                      <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
+                      Format CSV:
+                    </p>
+                    <p class="break-words">Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)</p>
+                    <p class="break-words">
+                      Contoh: Muhammad Fulan bin Fulan, ahmad@email.com, 0123456789, pass123
+                    </p>
+                    <p>Baris pertama akan dilangkau jika ia mengandungi tajuk (header).</p>
+                  </div>
+                </DsPanel>
               </template>
             </ImportSourceFields>
           </div>
-        </AdminFormSection>
+        </DsFormSection>
 
-        <AdminStickyBar>
-          <UButton
-            type="submit"
-            icon="i-ph-users-three"
-            label="Import"
-            :loading="submitting"
-            :disabled="submitting"
-            data-testid="bulk-submit"
-          />
-        </AdminStickyBar>
+        <DsFormBar
+          :show-cancel="false"
+          submit-label="Import"
+          submit-icon="i-ph-users-three"
+          :saving="submitting"
+          data-testid="bulk-footer"
+        />
       </form>
 
       <aside class="flex min-w-0 flex-col gap-6">
-        <AdminCard class="flex flex-col gap-4" data-testid="bulk-hero">
-          <div class="flex items-center gap-4">
-            <DsIconChip icon="i-ph-users-three" size="lg" />
-            <h3 class="text-subheading text-highlighted">Jenis pengguna</h3>
+        <DsPanel flush data-testid="bulk-hero">
+          <div class="flex flex-col gap-4 p-4 sm:p-6">
+            <div class="flex items-center gap-4">
+              <DsIconChip icon="users-three" size="lg" />
+              <h3 class="text-subheading text-highlighted">Jenis pengguna</h3>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <UBadge
+                color="neutral"
+                variant="subtle"
+                size="lg"
+                icon="i-ph-chalkboard-teacher"
+                label="Guru"
+              />
+              <UBadge
+                color="neutral"
+                variant="subtle"
+                size="lg"
+                icon="i-ph-users"
+                label="Ibu Bapa"
+              />
+              <UBadge
+                color="neutral"
+                variant="subtle"
+                size="lg"
+                icon="i-ph-shield-check"
+                label="Admin"
+              />
+            </div>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <UBadge
-              color="neutral"
-              variant="subtle"
-              size="lg"
-              icon="i-ph-chalkboard-teacher"
-              label="Guru"
-            />
-            <UBadge color="neutral" variant="subtle" size="lg" icon="i-ph-users" label="Ibu Bapa" />
-            <UBadge
-              color="neutral"
-              variant="subtle"
-              size="lg"
-              icon="i-ph-shield-check"
-              label="Admin"
-            />
-          </div>
-        </AdminCard>
+        </DsPanel>
 
-        <AdminCard data-testid="bulk-notes">
-          <h3 class="mb-3 flex items-center gap-2 text-body text-highlighted">
-            <UIcon name="i-ph-lightbulb" class="size-5 text-muted" aria-hidden="true" />
-            Nota Penting:
-          </h3>
-          <ul class="flex flex-col gap-2 text-body text-muted">
-            <li>• Emel sedia ada akan dilangkau automatik</li>
-            <li>• Guru &amp; admin sekolah dikaitkan dengan sekolah dipilih</li>
-            <li>• Kata laluan boleh dinyatakan per-pengguna di lajur ke-4</li>
-            <li>
-              • Pelajar DELIMa &rarr;
-              <ULink
-                :to="STUDENT_IMPORT_PATH"
-                class="text-primary"
-                data-testid="bulk-students-link"
-              >
-                Import Pelajar
-              </ULink>
-            </li>
-          </ul>
-        </AdminCard>
+        <DsPanel flush data-testid="bulk-notes">
+          <div class="p-4 sm:p-6">
+            <h3 class="mb-3 flex items-center gap-2 text-body text-highlighted">
+              <UIcon name="i-ph-lightbulb" class="size-5 text-muted" aria-hidden="true" />
+              Nota Penting:
+            </h3>
+            <ul class="flex flex-col gap-2 text-body text-muted">
+              <li>• Emel sedia ada akan dilangkau automatik</li>
+              <li>• Guru &amp; admin sekolah dikaitkan dengan sekolah dipilih</li>
+              <li>• Kata laluan boleh dinyatakan per-pengguna di lajur ke-4</li>
+              <li>
+                • Pelajar DELIMa &rarr;
+                <ULink
+                  :to="STUDENT_IMPORT_PATH"
+                  class="text-primary"
+                  data-testid="bulk-students-link"
+                >
+                  Import Pelajar
+                </ULink>
+              </li>
+            </ul>
+          </div>
+        </DsPanel>
       </aside>
     </div>
   </DsPage>

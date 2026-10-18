@@ -63,7 +63,7 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await fillIdentity(page, 'Murid Ujian QA', 'murid.qa@contoh.test')
     await page.locator('label:has([data-testid=grade-10])').click()
     await expect(page.locator('label:has([data-testid=grade-10])')).toContainText('Ting. 4')
-    await byId(page, 'user-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL('/admin/users')
     const posts = (await writes(mock)).filter((r) => r.method === 'POST')
     expect((posts.at(-1)!.body as { grade: number }).grade).toBe(10)
@@ -71,9 +71,11 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await gotoApp('/admin/users/create')
     await pickRole(page, 'student')
     await byId(page, 'user-name').fill('Tidak Disimpan')
-    await byId(page, 'user-cancel').click()
+    await byId(page, 'form-cancel').click()
     await expect(page).toHaveURL('/admin/users')
-    await expect(byId(page, 'users-stat-student').getByTestId('users-stat-count')).toHaveText('4534')
+    await expect(byId(page, 'users-stat-student').getByTestId('users-stat-count')).toHaveText(
+      '4534',
+    )
     await gotoApp('/admin/users?search=Tidak+Disimpan')
     await expect(byId(page, 'users-empty')).toBeVisible()
   })
@@ -109,7 +111,7 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await byId(page, 'gen-search').fill('bangi')
     await byId(page, 'gen-result').filter({ hasNotText: 'Tiada kod' }).first().click()
     await byId(page, 'gen-generate').click()
-    await byId(page, 'user-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL('/admin/users')
     const post = (await writes(mock)).filter((r) => r.method === 'POST').at(-1)!
     expect((post.body as { grade?: number }).grade).toBeUndefined()
@@ -192,7 +194,7 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     page,
   }) => {
     await pickRole(page, 'school_admin')
-    await expect(byId(page, 'user-submit')).toBeDisabled()
+    await expect(byId(page, 'form-submit')).toBeDisabled()
     await byId(page, 'gen-search').fill('AMINUDDIN BAKI')
     const noCode = byId(page, 'gen-result').filter({ hasText: 'Tiada kod' })
     await expect(noCode.first()).toBeVisible()
@@ -201,7 +203,7 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
       'Sekolah ini tiada kod KPM. Sila kemaskini kod sekolah di halaman Sekolah terlebih dahulu.',
     )
     await expect(byId(page, 'gen-generate')).toBeDisabled()
-    await expect(byId(page, 'user-submit')).toBeDisabled()
+    await expect(byId(page, 'form-submit')).toBeDisabled()
     await expect(byId(page, 'gen-box')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
@@ -246,7 +248,7 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await expect(byId(page, 'officer-ppd').locator('option')).toHaveCount(11)
     await byId(page, 'officer-ppd').selectOption({ value: 'PPD HULU LANGAT' })
     await fillIdentity(page, 'Pegawai PPD QA', 'ppd.qa@contoh.test')
-    await byId(page, 'user-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL('/admin/users')
     const post = (await writes(mock)).filter((r) => r.method === 'POST').at(-1)!
     expect(post.body).toMatchObject({ ppdState: 'Selangor', ppdDistrict: 'PPD HULU LANGAT' })
@@ -279,11 +281,11 @@ test.describe('M02 QA S3 edit gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(byId(page, 'user-password-panel')).toBeVisible()
     await byId(page, 'user-password-toggle').click()
     await expect(byId(page, 'user-password-panel')).toBeHidden()
-    await byId(page, 'user-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL('/admin/users')
     await gotoApp('/admin/users/10/edit')
     await expect(byId(page, 'user-role')).toHaveValue('jpn_officer')
-    await byId(page, 'user-cancel').click()
+    await byId(page, 'form-cancel').click()
     await expect(page).toHaveURL('/admin/users')
   })
 
@@ -297,13 +299,13 @@ test.describe('M02 QA S3 edit gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await byId(page, 'user-password-toggle').click()
     await byId(page, 'user-new-password').fill('Baru12345')
     await byId(page, 'user-new-password-confirm').fill('Baru12345')
-    await byId(page, 'user-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL('/admin/users')
 
     // A blank password keeps the old one for user 3.
     await gotoApp('/admin/users/3/edit')
     await byId(page, 'user-name').fill('Pelajar Maju Diubah')
-    await byId(page, 'user-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL('/admin/users')
 
     const tab = await newTab()
@@ -325,7 +327,7 @@ test.describe('M02 QA S3 edit gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
 
     await gotoApp('/admin/users/3/edit')
     await byId(page, 'user-email').fill('bukan-emel')
-    await byId(page, 'user-submit').click()
+    await byId(page, 'form-submit').click()
     // Native type=email validation or the server red alert: either way the form stays.
     await expect(page).toHaveURL('/admin/users/3/edit')
   })
@@ -370,7 +372,7 @@ test.describe('M02 QA S3 edit gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await byId(page, 'linker-search').fill('pelajar')
     await byId(page, 'linker-result').first().click()
     await expect(byId(page, 'linker-chip')).toHaveCount(1)
-    await byId(page, 'user-cancel').click()
+    await byId(page, 'form-cancel').click()
     await expect(page).toHaveURL('/admin/users')
     await gotoApp('/admin/users/5401/edit')
     await expect(byId(page, 'linker-none')).toHaveText('Tiada pelajar dipautkan lagi')
@@ -418,7 +420,7 @@ test.describe('M02 QA S3 edit gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(byId(page, 'user-ic')).not.toHaveValue('')
 
     await pickRole(page, 'parent')
-    await byId(page, 'user-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL('/admin/users')
     const put = (await writes(mock)).filter((r) => r.method !== 'POST').at(-1)!
     const body = put.body as Record<string, unknown>

@@ -15,8 +15,22 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, DsStatTile, useConfirm } from '@/ds'
-import type { CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsRowActions,
+  DsStatRow,
+  DsStatusBadge,
+  useConfirm,
+} from '@/ds'
+import type { CardField, RowAction, StatItem } from '@/ds'
 
 import {
   fetchPkskAccessList,
@@ -26,11 +40,7 @@ import {
   revokePkskAccess,
   type PkskAccessItem,
 } from '../api/admin'
-import AdminActiveFilters from '../components/admin/AdminActiveFilters.vue'
-import AdminAlert from '../components/admin/AdminAlert.vue'
-import AdminField from '../components/admin/AdminField.vue'
-import AdminSection from '../components/admin/AdminSection.vue'
-import NativeSelect from '../components/admin/native/NativeSelect.vue'
+import { cellClass } from '../lib/table-cols'
 import {
   ACCESS_PATH,
   ACCESS_STATUS,
@@ -175,21 +185,34 @@ async function revoke(row: PkskAccessItem): Promise<void> {
   }
 }
 
-const STAT_TILES = [
-  {
-    key: 'activeTotal',
-    testid: 'stat-active',
-    label: 'Jumlah Akses Aktif',
-    icon: 'i-ph-key',
-    accent: 'action',
-  },
-  { key: 't1', testid: 'stat-t1', label: 'Akses T1', icon: 'i-ph-number-one', accent: 'friend' },
-  { key: 't4', testid: 'stat-t4', label: 'Akses T4', icon: 'i-ph-number-four', accent: 'trial' },
-] as const
+const statItems = computed<StatItem[]>(() => {
+  const s = stats.value
+  if (!s) return []
+  return [
+    {
+      key: 'active',
+      label: 'Jumlah Akses Aktif',
+      value: s.activeTotal,
+      icon: 'key',
+      accent: 'action',
+    },
+    { key: 't1', label: 'Akses T1', value: s.t1, icon: 'number-one', accent: 'friend' },
+    { key: 't4', label: 'Akses T4', value: s.t4, icon: 'number-four', accent: 'trial' },
+  ]
+})
 
-const statusColor = (s: PkskAccessItem['displayStatus']) => STATUS_COLOR[s]
-const statusLabel = (s: PkskAccessItem['displayStatus']) => ACCESS_STATUS[s].label
-const STATUS_COLOR = { active: 'success', expired: 'neutral', revoked: 'error' } as const
+/** "Tarik" is offered on active rows only. */
+function actionsOf(row: PkskAccessItem): RowAction[] {
+  if (row.displayStatus !== 'active') return []
+  return [
+    {
+      label: 'Tarik',
+      icon: 'i-ph-prohibit',
+      disabled: revoking.value,
+      onSelect: () => void revoke(row),
+    },
+  ]
+}
 
 interface TableRow extends Record<string, unknown> {
   id: number
@@ -214,13 +237,13 @@ const tableRows = computed<TableRow[]>(() =>
 )
 
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'userName', header: 'Pengguna' },
-  { accessorKey: 'packageName', header: 'Pakej' },
-  { accessorKey: 'granter', header: 'Diberi Oleh' },
-  { accessorKey: 'granted', header: 'Tarikh' },
-  { accessorKey: 'expires', header: 'Tamat' },
-  { id: 'status', header: 'Status' },
-  { id: 'actions', header: 'Tindakan' },
+  { accessorKey: 'userName', header: 'Pengguna', ...cellClass('') },
+  { accessorKey: 'packageName', header: 'Pakej', ...cellClass('w-44') },
+  { accessorKey: 'granter', header: 'Diberi Oleh', ...cellClass('w-36') },
+  { accessorKey: 'granted', header: 'Tarikh', ...cellClass('w-32') },
+  { accessorKey: 'expires', header: 'Tamat', ...cellClass('w-32') },
+  { id: 'status', header: 'Status', ...cellClass('w-40') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-32') },
 ]
 const cardFields: CardField[] = [
   { key: 'packageName', label: 'Pakej' },
@@ -232,123 +255,136 @@ const cardFields: CardField[] = [
 
 <template>
   <DsPage data-testid="pksk-access-page">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <p class="min-w-0 text-body text-muted">Urus akses premium PKSK pengguna</p>
+    <template #subtitle>Urus akses premium PKSK pengguna</template>
+    <template #actions>
       <UButton
         type="button"
         icon="i-ph-plus"
         label="Beri Akses Baru"
-        size="md"
         class="min-h-11"
         :aria-expanded="formOpen"
         data-testid="grant-toggle"
         @click="formOpen = !formOpen"
       />
-    </div>
+    </template>
 
     <!-- Three global KPI tiles (#15). -->
-    <section v-if="stats" class="grid grid-cols-2 gap-4 sm:grid-cols-3" data-testid="access-stats">
-      <div v-for="t in STAT_TILES" :key="t.key" :data-testid="t.testid">
-        <DsStatTile :value="stats[t.key]" :unit="t.label" :icon="t.icon" :accent="t.accent" />
-      </div>
-    </section>
+    <DsStatRow v-if="stats" :items="statItems" prefix="stat" :cols="3" data-testid="access-stats" />
 
     <!-- "Beri Akses": the grant form. -->
     <div v-show="formOpen" data-testid="grant-card">
       <form method="post" data-testid="grant-form" @submit.prevent="grant">
-        <AdminSection title="Beri Akses" icon="i-ph-key" accent="heat">
-          <AdminAlert :messages="grantTop" data-testid="grant-alert" />
+        <DsFormSection title="Beri Akses" icon="i-ph-key" accent="heat">
+          <UAlert
+            v-if="grantTop.length > 0"
+            color="error"
+            variant="subtle"
+            icon="i-ph-warning-circle"
+            role="alert"
+            data-testid="grant-alert"
+          >
+            <template #description>
+              <p v-for="m in grantTop" :key="m">{{ m }}</p>
+            </template>
+          </UAlert>
           <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <AdminField for="grant-user" label="ID Pengguna" :error="grantErrors.userId">
-              <UInput
-                id="grant-user"
-                v-model="userId"
-                type="number"
-                name="user_id"
-                required
-                placeholder="User ID"
-                size="md"
-                class="w-full"
-                :color="grantErrors.userId ? 'error' : undefined"
-                data-testid="grant-user"
-              />
-            </AdminField>
-            <AdminField for="grant-package" label="Pakej">
-              <NativeSelect
-                id="grant-package"
-                v-model="packageId"
-                name="pksk_package_id"
-                required
-                data-testid="grant-package"
-              >
-                <option v-for="p in packages ?? []" :key="p.id" :value="String(p.id)">
-                  {{ p.name }} ({{ p.level }})
-                </option>
-              </NativeSelect>
-            </AdminField>
-            <AdminField for="grant-expires" label="Tamat Tempoh">
-              <UInput
-                id="grant-expires"
-                v-model="expiresAt"
-                type="date"
-                name="expires_at"
-                size="md"
-                class="w-full"
-                data-testid="grant-expires"
-              />
-            </AdminField>
+            <DsFormField native for="grant-user" label="ID Pengguna" :error="grantErrors.userId">
+              <template #default="{ id, describedby, invalid }">
+                <UInput
+                  :id="id"
+                  v-model="userId"
+                  type="number"
+                  name="user_id"
+                  required
+                  placeholder="User ID"
+                  class="w-full"
+                  :color="invalid ? 'error' : undefined"
+                  :aria-describedby="describedby"
+                  data-testid="grant-user"
+                />
+              </template>
+            </DsFormField>
+            <DsFormField native for="grant-package" label="Pakej">
+              <template #default="{ id }">
+                <DsNativeSelect
+                  :id="id"
+                  v-model="packageId"
+                  name="pksk_package_id"
+                  required
+                  data-testid="grant-package"
+                >
+                  <option v-for="p in packages ?? []" :key="p.id" :value="String(p.id)">
+                    {{ p.name }} ({{ p.level }})
+                  </option>
+                </DsNativeSelect>
+              </template>
+            </DsFormField>
+            <DsFormField native for="grant-expires" label="Tamat Tempoh">
+              <template #default="{ id }">
+                <UInput
+                  :id="id"
+                  v-model="expiresAt"
+                  type="date"
+                  name="expires_at"
+                  class="w-full"
+                  data-testid="grant-expires"
+                />
+              </template>
+            </DsFormField>
           </div>
-          <div class="flex justify-end">
-            <UButton
-              type="submit"
-              icon="i-ph-check"
-              label="Beri Akses"
-              size="md"
-              class="min-h-11"
-              :loading="granting"
-              :disabled="granting"
-              data-testid="grant-submit"
-            />
-          </div>
-        </AdminSection>
+          <template #footer>
+            <div class="flex justify-end">
+              <UButton
+                type="submit"
+                icon="i-ph-check"
+                label="Beri Akses"
+                class="min-h-11"
+                :loading="granting"
+                :disabled="granting"
+                data-testid="grant-submit"
+              />
+            </div>
+          </template>
+        </DsFormSection>
       </form>
     </div>
 
-    <div class="flex flex-col gap-3">
-      <DsFilterBar
-        :active-count="chips.length"
-        data-testid="access-search-form"
-        @apply="submitSearch"
-        @reset="resetSearch"
-      >
-        <template #search>
-          <UInput
-            v-model="search"
-            type="text"
-            name="search"
-            aria-label="Cari"
-            placeholder="Cari nama / email..."
-            icon="i-ph-magnifying-glass"
-            size="md"
-            class="w-full md:min-w-72 md:grow"
-            data-testid="access-search"
-          />
-        </template>
-      </DsFilterBar>
-      <AdminActiveFilters :chips="chips" @remove="resetSearch" @reset="resetSearch" />
-    </div>
+    <DsFilterBar
+      :chips="chips"
+      data-testid="access-search-form"
+      @apply="submitSearch"
+      @reset="resetSearch"
+      @remove-chip="resetSearch"
+    >
+      <template #search>
+        <UInput
+          v-model="search"
+          type="text"
+          name="search"
+          aria-label="Cari"
+          placeholder="Cari nama / email..."
+          icon="i-ph-magnifying-glass"
+          class="w-full md:min-w-72 md:grow"
+          data-testid="access-search"
+        />
+      </template>
+    </DsFilterBar>
 
-    <div v-if="error" class="flex flex-col gap-4" data-testid="pksk-access-error">
-      <AdminAlert :messages="errorLines(error)" />
-      <div><UButton label="Cuba Lagi" class="min-h-11" @click="reload()" /></div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="errorLines(error).join(' ')"
+      testid="pksk-access-error"
+      @retry="reload()"
+    />
 
-    <UCard v-else-if="!firstLoad && rows.length === 0" data-testid="access-empty">
-      <DsEmptyState :title="COPY.accessEmpty" icon="i-ph-lock" />
-    </UCard>
+    <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="access-empty">
+      <DsEmptyState :title="COPY.accessEmpty" icon="lock" />
+    </DsPanel>
 
     <DsDataTable
       v-else
+      variant="flush"
+      layout="fixed"
       :data="tableRows"
       :columns="columns"
       caption="Senarai akses PKSK"
@@ -356,9 +392,10 @@ const cardFields: CardField[] = [
       :total="total"
       :page-size="data?.meta.pageSize ?? 20"
       :page="applied.page"
+      :filtered="chips.length > 0"
       card-title="userName"
       :card-fields="cardFields"
-      :empty-label="COPY.accessEmpty"
+      :empty-title="COPY.accessEmpty"
       data-testid="access-table"
       @update:page="goToPage"
     >
@@ -394,39 +431,17 @@ const cardFields: CardField[] = [
         <span class="text-nowrap" data-testid="a-expires">{{ row.original.expires }}</span>
       </template>
       <template #status-cell="{ row }">
-        <UBadge
-          :color="statusColor(row.original.raw.displayStatus)"
-          variant="subtle"
-          :label="statusLabel(row.original.raw.displayStatus)"
+        <DsStatusBadge
+          :status="ACCESS_STATUS[row.original.raw.displayStatus].status"
+          :label="ACCESS_STATUS[row.original.raw.displayStatus].label"
           data-testid="a-status"
         />
       </template>
       <template #actions-cell="{ row }">
-        <UButton
-          v-if="row.original.raw.displayStatus === 'active'"
-          type="button"
-          color="error"
-          variant="soft"
-          icon="i-ph-prohibit"
-          label="Tarik"
-          class="min-h-11"
-          :disabled="revoking"
-          data-testid="a-revoke"
-          @click="revoke(row.original.raw)"
-        />
+        <DsRowActions :actions="actionsOf(row.original.raw)" :inline="1" />
       </template>
       <template #card-actions="{ row }">
-        <UButton
-          v-if="(row as unknown as TableRow).raw.displayStatus === 'active'"
-          type="button"
-          color="error"
-          variant="soft"
-          icon="i-ph-prohibit"
-          label="Tarik"
-          class="min-h-11"
-          :disabled="revoking"
-          @click="revoke((row as unknown as TableRow).raw)"
-        />
+        <DsRowActions :actions="actionsOf((row as unknown as TableRow).raw)" :inline="1" />
       </template>
     </DsDataTable>
   </DsPage>

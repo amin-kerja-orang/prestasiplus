@@ -10,11 +10,10 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
+import { DsFormField, DsPanel } from '@/ds'
+
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { SEARCH_MIN_CHARS } from '../lib/user-form-options'
-import AdminField from './AdminField.vue'
-import NativeDropdown from './native/NativeDropdown.vue'
-import NativeOption from './native/NativeOption.vue'
 
 const school = defineModel<SchoolSummary | null>({ required: true })
 
@@ -40,7 +39,7 @@ function onInput(value: string): void {
 
 <template>
   <div ref="root" data-testid="std-school">
-    <AdminField for="std-school-search" label="Sekolah" icon="i-ph-buildings">
+    <DsFormField native for="std-school-search" label="Sekolah">
       <div class="relative">
         <UInput
           id="std-school-search"
@@ -54,20 +53,25 @@ function onInput(value: string): void {
           @update:model-value="onInput"
           @focus="picker.onFocus()"
         />
-        <NativeDropdown v-if="showDropdown" data-testid="std-school-dropdown">
-          <NativeOption
+        <DsPanel v-if="showDropdown" tone="float" flush data-testid="std-school-dropdown">
+          <UButton
             v-for="item in results"
             :key="item.id"
+            type="button"
+            block
+            color="neutral"
+            variant="ghost"
+            class="h-auto min-h-11 justify-start text-start whitespace-normal"
             data-testid="std-school-result"
             @click="picker.select(item)"
           >
             {{ item.name }} ({{ item.type }}, {{ item.state }})
-          </NativeOption>
-        </NativeDropdown>
+          </UButton>
+        </DsPanel>
       </div>
       <p v-if="school" class="text-caption text-success" data-testid="std-school-chosen">
         {{ school.name }}
       </p>
-    </AdminField>
+    </DsFormField>
   </div>
 </template>

@@ -19,6 +19,7 @@ import { useThemeMode } from '@/theme/color-mode'
 import { uiLocale } from '@/theme/locale-ms'
 
 import { MENU_STORAGE_KEY, PENTADBIRAN_MENU, activeItem, groupOf } from './menu'
+import { groupTintClass } from './group-accent'
 import { buildNavItems, buildSearchGroups } from './menu-nav'
 
 const route = useRoute()
@@ -165,7 +166,19 @@ const accountItems = computed(() => [
               tooltip
               aria-label="Menu utama"
               data-testid="pentadbiran-nav"
-            />
+            :ui="{
+                link: 'min-h-11 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/15 aria-[current=page]:font-semibold aria-[current=page]:text-highlighted',
+              }"
+            >
+              <template #item-leading="{ item }">
+                <span
+                  v-if="item.icon"
+                  class="grid size-8 shrink-0 place-items-center rounded-md"
+                  :class="groupTintClass(String(item.value))"
+                  ><UIcon :name="item.icon" class="size-[18px]"
+                /></span>
+              </template>
+            </UNavigationMenu>
           </template>
 
           <template #footer="{ collapsed }">

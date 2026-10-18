@@ -101,9 +101,9 @@ describe('CompStudentCreatePage (M02 S7) content', () => {
     expect(t(w, 'comp-help').text()).toBe(
       'Satu pelajar setiap baris, format: NAMA, NOKP (cth: MUHAMMAD FULAN BIN FULAN, 090101101234)',
     )
-    expect(t(w, 'comp-back').attributes('href')).toBe('/admin/comp-students')
-    expect(t(w, 'comp-back').text()).toBe('Senarai pelajar komplimen')
-    expect(t(w, 'comp-submit').text()).toBe('Daftar Pelajar Komplimen')
+    expect(t(w, 'form-cancel').attributes('href')).toBe('/admin/comp-students')
+    expect(t(w, 'form-cancel').text()).toBe('Senarai pelajar komplimen')
+    expect(t(w, 'form-submit').text()).toBe('Daftar Pelajar Komplimen')
   })
 })
 

@@ -6,22 +6,23 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsIconChip, DsPage } from '@/ds'
+import { DsBreadcrumb, DsIconChip, DsLoadError, DsPage, DsStatRow, type StatItem } from '@/ds'
 
 import { fetchStudentDetail } from '../api'
 import type { StudentAnswerRow } from '../api/types'
-import MonitoringCrumbs from '../components/monitoring/MonitoringCrumbs.vue'
-import MonitoringStatCard from '../components/monitoring/MonitoringStatCard.vue'
 import {
   ACCURACY_TEXT,
-  LOAD_ERROR_COPY,
   accuracyBand,
   count,
   dmyHm,
   pct1,
   type UiColor,
 } from '../components/monitoring/monitoring-format'
-import { MONITORING_BASE, monitoringPaths } from '../components/monitoring/monitoring-paths'
+import {
+  MONITORING_BASE,
+  monitoringCrumbs,
+  monitoringPaths,
+} from '../components/monitoring/monitoring-paths'
 import StudentGaps from '../components/monitoring/StudentGaps.vue'
 import StudentQuestionList from '../components/monitoring/StudentQuestionList.vue'
 import StudentQuestionModal from '../components/monitoring/StudentQuestionModal.vue'
@@ -35,7 +36,7 @@ const props = withDefaults(defineProps<{ schoolId: number; userId: number; baseP
 })
 const paths = computed(() => monitoringPaths(props.basePath))
 
-const { data, error, blocked } = useMonitoringPage(
+const { data, error, blocked, reload } = useMonitoringPage(
   (signal) => fetchStudentDetail(props.schoolId, props.userId, { signal }),
   [() => props.schoolId, () => props.userId],
   (d) => `${d.student.name} - Detail Pelajar`,
@@ -54,7 +55,7 @@ const tabs = computed<
   {
     key: 'wrong',
     label: 'Jawapan Salah',
-    icon: 'i-ph-x-circle',
+    icon: 'i-ph-x-circle', accent: 'heat',
     chip: { n: data.value?.wrong.count ?? 0, color: 'error' },
   },
   {
@@ -74,6 +75,42 @@ const accuracyColour = computed(() =>
   data.value ? ACCURACY_TEXT[accuracyBand(data.value.cards.accuracy)] : '',
 )
 
+const cards = computed<StatItem[]>(() => {
+  const c = data.value?.cards
+  if (!c) return []
+  return [
+    {
+      key: 'answered',
+      label: 'Soalan Dijawab',
+      value: count(c.answered),
+      icon: 'i-ph-pencil-simple', accent: 'trial',
+    },
+    {
+      key: 'correct',
+      label: 'Betul',
+      value: count(c.correct),
+      icon: 'i-ph-check-circle', accent: 'win',
+      tone: 'success',
+      valueClass: 'text-success',
+    },
+    {
+      key: 'wrong',
+      label: 'Salah',
+      value: count(c.wrong),
+      icon: 'i-ph-x-circle',
+      tone: 'error',
+      valueClass: 'text-error',
+    },
+    {
+      key: 'accuracy',
+      label: 'Ketepatan',
+      value: accuracy.value,
+      icon: 'i-ph-target', accent: 'friend',
+      valueClass: accuracyColour.value,
+    },
+  ]
+})
+
 const observations = computed(() =>
   (data.value?.observations ?? []).map((o) =>
     o.kind === 'strong'
@@ -86,21 +123,14 @@ const observations = computed(() =>
 <template>
   <DsPage data-testid="monitoring-student-page">
     <template v-if="!blocked">
-      <MonitoringCrumbs
-        :paths="paths"
-        :school="data?.school.name ?? ''"
-        :school-id="schoolId"
-        :person="data?.student.name ?? ''"
+      <DsBreadcrumb
+        :items="
+          monitoringCrumbs(paths, data?.school.name ?? '', schoolId, data?.student.name ?? '')
+        "
+        data-testid="mon-crumbs"
       />
 
-      <UAlert
-        v-if="error"
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning"
-        :description="LOAD_ERROR_COPY"
-        data-testid="mon-error"
-      />
+      <DsLoadError v-if="error" testid="mon-error" @retry="reload" />
       <p
         v-else-if="!data"
         class="flex items-center gap-2 text-body text-muted"
@@ -127,35 +157,13 @@ const observations = computed(() =>
           </div>
         </UCard>
 
-        <section class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-testid="mon-student-cards">
-          <MonitoringStatCard
-            label="Soalan Dijawab"
-            :value="count(data.cards.answered)"
-            icon="i-ph-pencil-simple"
-            accent="trial"
-          />
-          <MonitoringStatCard
-            label="Betul"
-            :value="count(data.cards.correct)"
-            icon="i-ph-check-circle"
-            accent="win"
-            value-class="text-success"
-          />
-          <MonitoringStatCard
-            label="Salah"
-            :value="count(data.cards.wrong)"
-            icon="i-ph-x-circle"
-            accent="heat"
-            value-class="text-error"
-          />
-          <MonitoringStatCard
-            label="Ketepatan"
-            :value="accuracy"
-            icon="i-ph-target"
-            accent="friend"
-            :value-class="accuracyColour"
-          />
-        </section>
+        <DsStatRow
+          :items="cards"
+          prefix="mon-stat"
+          :cols="4"
+          roomy
+          data-testid="mon-student-cards"
+        />
 
         <div class="flex flex-wrap gap-2" data-testid="mon-tabs">
           <UButton

@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 
 import { fetchKirkpatrickChain } from '../api'
 import ChainCards from '../components/kirkpatrick/chain/ChainCards.vue'
@@ -13,7 +13,6 @@ import ChainConclusion from '../components/kirkpatrick/chain/ChainConclusion.vue
 import ChainCorrelation from '../components/kirkpatrick/chain/ChainCorrelation.vue'
 import {
   KIRKPATRICK_ADMIN_BASE,
-  KirkpatrickLoadState,
   kirkpatrickPaths,
   useKirkpatrickPage,
 } from '../components/kirkpatrick/common'
@@ -25,7 +24,9 @@ const props = withDefaults(defineProps<{ basePath?: string }>(), {
 const paths = computed(() => kirkpatrickPaths(props.basePath))
 const exportPath = computed(() => `${paths.value.overview}/export-pdf`)
 
-const { data, error, loading } = useKirkpatrickPage((signal) => fetchKirkpatrickChain({ signal }))
+const { data, error, loading, reload } = useKirkpatrickPage((signal) =>
+  fetchKirkpatrickChain({ signal }),
+)
 </script>
 
 <template>
@@ -58,7 +59,15 @@ const { data, error, loading } = useKirkpatrickPage((signal) => fetchKirkpatrick
         data-testid="chain-back"
       />
     </template>
-    <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
+    <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
+    <p
+      v-else-if="data === null && loading"
+      class="flex items-center gap-2 text-label text-muted"
+      data-testid="kirk-loading"
+      role="status"
+    >
+      <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
+    </p>
     <template v-if="data">
       <ChainCards :chain="data" />
       <ChainCorrelation :correlation="data.correlation" :strength="data.t4.strength" />

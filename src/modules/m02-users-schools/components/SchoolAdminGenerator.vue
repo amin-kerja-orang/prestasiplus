@@ -10,12 +10,10 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
+import { DsFormField, DsPanel } from '@/ds'
+
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { generatedAdminEmail, SEARCH_MIN_CHARS } from '../lib/user-form-options'
-import AdminField from './AdminField.vue'
-import NativeDropdown from './native/NativeDropdown.vue'
-import NativeOption from './native/NativeOption.vue'
-import NativePanel from './native/NativePanel.vue'
 
 const school = defineModel<SchoolSummary | null>('school', { required: true })
 const generated = defineModel<boolean>('generated', { required: true })
@@ -85,13 +83,7 @@ function metaLine(s: SchoolSummary): string {
 <template>
   <div ref="root" class="flex flex-col gap-4" data-testid="school-admin-generator">
     <!-- FR-M02-27: search -->
-    <AdminField
-      v-if="!school"
-      for="gen-search"
-      label="Cari Sekolah"
-      icon="i-ph-magnifying-glass"
-      required
-    >
+    <DsFormField v-if="!school" native for="gen-search" label="Cari Sekolah" required>
       <div class="relative">
         <UInput
           id="gen-search"
@@ -106,62 +98,71 @@ function metaLine(s: SchoolSummary): string {
           @focus="picker.onFocus()"
         />
         <span v-if="searching" class="sr-only" data-testid="gen-loading">Mencari...</span>
-        <NativeDropdown v-if="showDropdown" data-testid="gen-dropdown">
-          <NativeOption
+        <DsPanel v-if="showDropdown" tone="float" flush data-testid="gen-dropdown">
+          <UButton
             v-for="item in results"
             :key="item.id"
+            type="button"
+            block
+            color="neutral"
+            variant="ghost"
+            class="h-auto min-h-11 justify-start text-start whitespace-normal"
             data-testid="gen-result"
             @click="picker.select(item)"
           >
-            <span class="block text-label text-highlighted">{{ item.name }}</span>
-            <span
-              class="flex flex-wrap items-center justify-between gap-x-3 text-caption text-muted"
-            >
-              <span>{{ metaLine(item) }}</span>
-              <span>{{ item.code === '' ? 'Tiada kod' : item.code }}</span>
+            <span class="flex w-full min-w-0 flex-col">
+              <span class="text-label text-highlighted">{{ item.name }}</span>
+              <span
+                class="flex flex-wrap items-center justify-between gap-x-3 text-caption text-muted"
+              >
+                <span>{{ metaLine(item) }}</span>
+                <span>{{ item.code === '' ? 'Tiada kod' : item.code }}</span>
+              </span>
             </span>
-          </NativeOption>
+          </UButton>
           <p v-if="showEmpty" class="p-3 text-center text-label text-muted" data-testid="gen-empty">
             Tiada sekolah dijumpai
           </p>
-        </NativeDropdown>
+        </DsPanel>
       </div>
-    </AdminField>
+    </DsFormField>
 
     <!-- FR-M02-28: chosen school -->
-    <NativePanel v-else tone="primary" class="flex items-start gap-3" data-testid="gen-chosen">
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-overline text-primary">Sekolah Dipilih</span>
-          <UBadge v-if="school.code !== ''" :label="school.code" />
+    <DsPanel v-else tone="tint" data-testid="gen-chosen">
+      <div class="flex items-start gap-3">
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-overline text-primary">Sekolah Dipilih</span>
+            <UBadge v-if="school.code !== ''" :label="school.code" />
+          </div>
+          <p class="text-body break-words text-highlighted">{{ school.name }}</p>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted">
+            <span class="inline-flex items-center gap-1">
+              <UIcon name="i-ph-bank" class="size-4" aria-hidden="true" />
+              {{ school.state }}
+            </span>
+            <span v-if="school.district" class="inline-flex items-center gap-1">
+              <UIcon name="i-ph-buildings" class="size-4" aria-hidden="true" />
+              {{ school.district }}
+            </span>
+            <span class="inline-flex items-center gap-1">
+              <UIcon name="i-ph-tag" class="size-4" aria-hidden="true" />
+              {{ school.type }}
+            </span>
+          </div>
         </div>
-        <p class="text-body break-words text-highlighted">{{ school.name }}</p>
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted">
-          <span class="inline-flex items-center gap-1">
-            <UIcon name="i-ph-bank" class="size-4" aria-hidden="true" />
-            {{ school.state }}
-          </span>
-          <span v-if="school.district" class="inline-flex items-center gap-1">
-            <UIcon name="i-ph-buildings" class="size-4" aria-hidden="true" />
-            {{ school.district }}
-          </span>
-          <span class="inline-flex items-center gap-1">
-            <UIcon name="i-ph-tag" class="size-4" aria-hidden="true" />
-            {{ school.type }}
-          </span>
-        </div>
+        <UButton
+          type="button"
+          color="error"
+          variant="ghost"
+          icon="i-ph-x-circle"
+          title="Reset"
+          aria-label="Reset"
+          data-testid="gen-reset"
+          @click="reset"
+        />
       </div>
-      <UButton
-        type="button"
-        color="error"
-        variant="ghost"
-        icon="i-ph-x-circle"
-        title="Reset"
-        aria-label="Reset"
-        data-testid="gen-reset"
-        @click="reset"
-      />
-    </NativePanel>
+    </DsPanel>
 
     <!-- FR-M02-29: the generate button -->
     <div v-if="school && !generated" class="flex flex-col gap-2">
@@ -187,13 +188,13 @@ function metaLine(s: SchoolSummary): string {
     </div>
 
     <!-- FR-M02-30: generated credentials -->
-    <NativePanel v-if="school && generated" tone="soft" class="p-4" data-testid="gen-box">
+    <DsPanel v-if="school && generated" tone="inset" data-testid="gen-box">
       <p class="mb-3 flex items-center gap-2 text-overline text-success">
         <UIcon name="i-ph-check-circle" class="size-4" aria-hidden="true" />
         Maklumat Dijana
       </p>
       <div class="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
-        <AdminField for="gen-name" label="Nama Pentadbir">
+        <DsFormField native for="gen-name" label="Nama Pentadbir">
           <UInput
             id="gen-name"
             v-model="name"
@@ -203,8 +204,8 @@ function metaLine(s: SchoolSummary): string {
             class="w-full"
             data-testid="gen-name"
           />
-        </AdminField>
-        <AdminField for="gen-email" label="ID Login (Emel)">
+        </DsFormField>
+        <DsFormField native for="gen-email" label="ID Login (Emel)">
           <div class="flex items-center gap-1">
             <UInput
               id="gen-email"
@@ -227,8 +228,8 @@ function metaLine(s: SchoolSummary): string {
               @click="emit('copy', email)"
             />
           </div>
-        </AdminField>
-        <AdminField for="gen-password" label="Kata Laluan">
+        </DsFormField>
+        <DsFormField native for="gen-password" label="Kata Laluan">
           <div class="flex items-center gap-1">
             <UInput
               id="gen-password"
@@ -249,8 +250,8 @@ function metaLine(s: SchoolSummary): string {
               @click="emit('copy', props.password)"
             />
           </div>
-        </AdminField>
-        <AdminField for="gen-phone" label="Telefon (Pilihan)">
+        </DsFormField>
+        <DsFormField native for="gen-phone" label="Telefon (Pilihan)">
           <UInput
             id="gen-phone"
             v-model="phone"
@@ -262,7 +263,7 @@ function metaLine(s: SchoolSummary): string {
             class="w-full"
             data-testid="gen-phone"
           />
-        </AdminField>
+        </DsFormField>
       </div>
       <div class="mt-3 flex flex-wrap gap-2">
         <UBadge
@@ -280,6 +281,6 @@ function metaLine(s: SchoolSummary): string {
           data-testid="gen-ppd"
         />
       </div>
-    </NativePanel>
+    </DsPanel>
   </div>
 </template>

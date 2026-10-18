@@ -7,12 +7,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, gotoApp as gotoAppOn, test } from '../fixtures/test'
-import {
-  acceptNextDialog,
-  expectNoHorizontalScroll,
-  moduleTag,
-  TAG,
-} from '../support'
+import { acceptNextDialog, expectNoHorizontalScroll, moduleTag, TAG } from '../support'
 
 const ADMIN = 'admin@demo.test'
 const byId = (page: Page, id: string) => page.getByTestId(id)
@@ -75,7 +70,9 @@ test.describe('M02 QA S4 bulk import gaps', { tag: [TAG.smoke, moduleTag(2)] }, 
     await expect(byId(page, 'import-dropzone')).toBeVisible()
     const accept = await byId(page, 'import-file').getAttribute('accept')
     expect(accept).toMatch(/csv/)
-    await expect(byId(page, 'bulk-format')).toContainText('Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)')
+    await expect(byId(page, 'bulk-format')).toContainText(
+      'Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)',
+    )
     await byId(page, 'bulk-back').click()
     await expect(page).toHaveURL('/admin/users')
   })
@@ -100,7 +97,7 @@ test.describe('M02 QA S4 bulk import gaps', { tag: [TAG.smoke, moduleTag(2)] }, 
         `Guru Sedia Ada, ${ADMIN}`,
       ].join('\n'),
     )
-    await byId(page, 'bulk-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(byId(page, 'cmp-flash')).toContainText('2 pengguna didaftarkan, 1 dilangkau')
     await gotoApp('/admin/users?search=guru.qa')
     await expect(byId(page, 'user-row')).toHaveCount(2)
@@ -202,7 +199,7 @@ test.describe('M02 QA S5 student import gaps', { tag: [TAG.smoke, moduleTag(2)] 
     await expect(byId(page, 'quota-none')).toBeVisible()
     await page.locator('input[name=class_level]').first().check({ force: true })
     await byId(page, 'import-paste').fill('PELAJAR QA TIGA\nm-qa0003@moe-dl.edu.my\nkatalaluan3')
-    await byId(page, 'student-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(byId(page, 'student-alert')).toBeVisible()
     await expect(byId(page, 'import-paste')).toHaveValue(/PELAJAR QA TIGA/)
 
@@ -212,7 +209,7 @@ test.describe('M02 QA S5 student import gaps', { tag: [TAG.smoke, moduleTag(2)] 
     await expect(byId(page, 'quota-figures')).toHaveText('2 / 1000')
     await page.locator('input[name=class_level]').first().check({ force: true })
     await byId(page, 'import-paste').fill('PELAJAR QA SATU\nm-qa0001@moe-dl.edu.my\nkatalaluan1')
-    await byId(page, 'student-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(byId(page, 'cmp-flash')).toContainText('1 pelajar didaftarkan')
 
     await gotoApp('/admin/users?search=m-qa0001')
@@ -280,15 +277,17 @@ test.describe('M02 QA S6-S8 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await byId(page, 'comp-students').fill(
       ['MURID KOMPLIMEN QA SATU, 070707077701', 'MURID KOMPLIMEN QA DUA, 080808088802'].join('\n'),
     )
-    await byId(page, 'comp-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/comp-students$/)
     const created = byId(page, 'comp-row').filter({ hasText: '077701@prestasiplus.my' })
     await expect(created).toHaveCount(1)
     await expect(created.getByTestId('comp-coins')).toHaveText('OFF')
-    const pw = (await (async () => {
-      await gotoApp('/admin/comp-students/create')
-      return byId(page, 'comp-info-password').innerText()
-    })()).trim()
+    const pw = (
+      await (async () => {
+        await gotoApp('/admin/comp-students/create')
+        return byId(page, 'comp-info-password').innerText()
+      })()
+    ).trim()
     const tab = await newTab()
     await loginUi(tab, '077701@prestasiplus.my', pw)
     await expect(tab).not.toHaveURL(/\/login/)
@@ -413,7 +412,7 @@ test.describe('M02 QA E2E-M02-33 (DV-M02-09)', { tag: [TAG.smoke, moduleTag(2)] 
     await page.getByLabel('Jenis').selectOption('SJK(C)')
     await page.getByLabel('Negeri').selectOption('Selangor')
     await page.getByLabel('Daerah').fill('PPD DEMO')
-    await page.getByTestId('school-submit').click()
+    await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL('/admin/schools')
     await page.evaluate(async () => {
       const el = document.querySelector('#app') as Element & {

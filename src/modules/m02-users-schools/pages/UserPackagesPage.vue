@@ -11,11 +11,9 @@ import { nextTick, reactive, ref, watch } from 'vue'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import { DsIconChip, DsPage } from '@/ds'
+import { DsBackLink, DsFormField, DsIconChip, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import { assignUserPackage, fetchUserPackages, type AdminPackageCard } from '../api/users'
-import AdminAlert from '../components/AdminAlert.vue'
-import AdminField from '../components/AdminField.vue'
 import { schoolMeta } from '../lib/user-form-options'
 import { errorLines } from '../lib/school-errors'
 import { isNotFound, QUOTA_MAX, QUOTA_MIN } from '../lib/subscription-options'
@@ -95,17 +93,11 @@ async function assign(card: AdminPackageCard): Promise<void> {
       class="flex flex-col gap-3"
       data-testid="packages-error"
     >
-      <AdminAlert :messages="errorLines(error)" />
-      <div class="flex flex-wrap gap-3">
-        <UButton label="Cuba Lagi" @click="reload()" />
-        <UButton
-          to="/admin/users?role=school_admin"
-          color="neutral"
-          variant="ghost"
-          icon="i-ph-arrow-left"
-          label="Kembali ke Senarai"
-        />
-      </div>
+      <DsLoadError
+        message="Tidak dapat memuatkan pakej pengguna. Sila cuba semula."
+        @retry="reload()"
+      />
+      <DsBackLink to="/admin/users?role=school_admin" label="Kembali ke Senarai" />
     </div>
 
     <div v-else-if="!data" class="flex flex-col gap-4" data-testid="packages-skeleton">
@@ -118,12 +110,25 @@ async function assign(card: AdminPackageCard): Promise<void> {
 
     <template v-else>
       <div ref="alertBox">
-        <AdminAlert :messages="errors" data-testid="packages-alert" />
+        <UAlert
+          v-if="errors.length > 0"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          role="alert"
+          data-testid="packages-alert"
+        >
+          <template #description>
+            <div class="flex flex-col gap-1">
+              <p v-for="m in errors" :key="m">{{ m }}</p>
+            </div>
+          </template>
+        </UAlert>
       </div>
 
-      <UCard data-testid="packages-school">
+      <DsPanel data-testid="packages-school">
         <div class="flex items-center gap-4">
-          <DsIconChip icon="i-ph-buildings" />
+          <DsIconChip icon="buildings" />
           <div class="flex min-w-0 flex-col gap-1">
             <h3
               class="text-heading break-words text-highlighted"
@@ -152,10 +157,10 @@ async function assign(card: AdminPackageCard): Promise<void> {
             </div>
           </div>
         </div>
-      </UCard>
+      </DsPanel>
 
       <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        <UCard v-for="card in data.packages" :key="card.formLevel">
+        <DsPanel v-for="card in data.packages" :key="card.formLevel">
           <form
             method="post"
             class="flex flex-col gap-4"
@@ -178,10 +183,10 @@ async function assign(card: AdminPackageCard): Promise<void> {
               />
             </div>
 
-            <AdminField
+            <DsFormField
+              native
               :for="`package-quota-${card.formLevel}`"
               :label="`Kuota Pelajar ${card.code}`"
-              icon="i-ph-users"
             >
               <UInput
                 :id="`package-quota-${card.formLevel}`"
@@ -203,7 +208,7 @@ async function assign(card: AdminPackageCard): Promise<void> {
                 <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
                 {{ data.existingT5Count }} pelajar T5 sedia ada dalam sistem
               </p>
-            </AdminField>
+            </DsFormField>
 
             <UButton
               type="submit"
@@ -215,7 +220,7 @@ async function assign(card: AdminPackageCard): Promise<void> {
               data-testid="package-submit"
             />
           </form>
-        </UCard>
+        </DsPanel>
       </div>
 
       <div class="flex flex-wrap items-center justify-between gap-3">

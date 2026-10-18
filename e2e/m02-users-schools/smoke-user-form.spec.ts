@@ -38,7 +38,7 @@ async function fillIdentity(page: Page, name: string, email: string): Promise<vo
 }
 
 async function submitAndLeave(page: Page): Promise<void> {
-  await byId(page, 'user-submit').click()
+  await byId(page, 'form-submit').click()
   await expect(page).toHaveURL('/admin/users')
 }
 
@@ -74,13 +74,13 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       'Admin',
     ])
     await expect(byId(page, 'user-fields')).toHaveCount(0)
-    await expect(byId(page, 'user-submit')).toHaveCount(0)
+    await expect(byId(page, 'form-submit')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
 
     // Student: every field with its copy.
     await pickRole(page, 'student')
-    await expect(byId(page, 'user-submit')).toHaveText('Daftar Pengguna')
-    await expect(byId(page, 'user-cancel')).toHaveAttribute('href', '/admin/users')
+    await expect(byId(page, 'form-submit')).toHaveText('Daftar Pengguna')
+    await expect(byId(page, 'form-cancel')).toHaveAttribute('href', '/admin/users')
     await expect(byId(page, 'user-name')).toHaveAttribute('placeholder', 'Nama penuh')
     await expect(byId(page, 'user-email')).toHaveAttribute('placeholder', 'contoh@email.com')
     await expect(byId(page, 'user-phone')).toHaveAttribute('placeholder', 'Cth: 0191234567')
@@ -109,8 +109,8 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
 
     if (!isDesktopShell(page)) {
       await expectTouchTarget(byId(page, 'user-role'))
-      await expectTouchTarget(byId(page, 'user-submit'))
-      await expectTouchTarget(byId(page, 'user-cancel'))
+      await expectTouchTarget(byId(page, 'form-submit'))
+      await expectTouchTarget(byId(page, 'form-cancel'))
       await expectTouchTarget(page.locator('label:has([data-testid=grade-1])'))
       await expectTouchTarget(page.locator('label:has([data-testid=grade-11])'))
     }
@@ -275,7 +275,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await loginAs(ADMIN)
     await gotoApp('/admin/users/create')
     await pickRole(page, 'school_admin')
-    await expect(byId(page, 'user-submit')).toBeDisabled()
+    await expect(byId(page, 'form-submit')).toBeDisabled()
     await expect(byId(page, 'gen-search')).toHaveAttribute(
       'placeholder',
       'Taipkan nama sekolah atau kod sekolah (cth: JBA0001)...',
@@ -287,7 +287,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await rows.filter({ hasNotText: 'Tiada kod' }).first().click()
     await expect(byId(page, 'gen-chosen')).toContainText('Sekolah Dipilih')
     await expect(byId(page, 'gen-reset')).toHaveAttribute('title', 'Reset')
-    await expect(byId(page, 'user-submit')).toBeDisabled()
+    await expect(byId(page, 'form-submit')).toBeDisabled()
     await expect(byId(page, 'gen-generate')).toHaveText('Janakan Akaun Admin Sekolah')
 
     await byId(page, 'gen-generate').click()
@@ -300,7 +300,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(byId(page, 'gen-phone')).toHaveAttribute('placeholder', '012-345 6789')
     await expect(byId(page, 'gen-jpn')).toContainText('JPN: ')
     await expect(byId(page, 'gen-ppd')).toContainText('PPD: ')
-    await expect(byId(page, 'user-submit')).toBeEnabled()
+    await expect(byId(page, 'form-submit')).toBeEnabled()
     await expectNoHorizontalScroll(page)
 
     const password = await byId(page, 'gen-password').inputValue()
@@ -345,7 +345,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(byId(page, 'gen-box')).toHaveCount(0)
     await expect(byId(page, 'gen-chosen')).toHaveCount(0)
     await expect(byId(page, 'gen-search')).toHaveValue('')
-    await expect(byId(page, 'user-submit')).toBeDisabled()
+    await expect(byId(page, 'form-submit')).toBeDisabled()
     await expectNoHorizontalScroll(page)
   })
 
@@ -356,7 +356,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       await loginAs(ADMIN)
       await gotoApp('/admin/users/create')
       await pickRole(page, 'student')
-      await byId(page, 'user-submit').click()
+      await byId(page, 'form-submit').click()
       const alert = byId(page, 'user-form-alert')
       await expect(alert).toBeVisible()
       await expect(alert).toContainText('The name field is required.')
@@ -373,7 +373,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       await byId(page, 'user-password').fill('abc')
       await byId(page, 'user-password-confirm').fill('abc')
       await page.locator('label:has([data-testid=grade-1])').click()
-      await byId(page, 'user-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(alert).toContainText('The email has already been taken.')
       await expect(alert).toContainText('The password field must be at least 6 characters.')
       await expect(alert).not.toContainText('The name field is required.')
@@ -381,7 +381,7 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       await byId(page, 'user-email').fill('baru.e2e@contoh.test')
       await byId(page, 'user-password').fill('rahsia123')
       await byId(page, 'user-password-confirm').fill('rahsia456')
-      await byId(page, 'user-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(alert).toContainText('The password field confirmation does not match.')
       await expect(alert).not.toContainText('The email has already been taken.')
       // Values are kept, the passwords are cleared.
@@ -451,8 +451,8 @@ test.describe('M02 S3 edit user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(byId(page, 'user-pksk-status')).toHaveText('Tiada Akses')
     await expect(byId(page, 'admin-school-chip')).toBeVisible()
     await expect(byId(page, 'user-active')).toBeChecked()
-    await expect(byId(page, 'user-submit')).toHaveText('Kemaskini')
-    await expect(byId(page, 'user-cancel')).toHaveAttribute('href', '/admin/users')
+    await expect(byId(page, 'form-submit')).toHaveText('Kemaskini')
+    await expect(byId(page, 'form-cancel')).toHaveAttribute('href', '/admin/users')
 
     const notes = byId(page, 'user-security-notes')
     await expect(notes).toContainText('Nota Keselamatan')
@@ -470,7 +470,7 @@ test.describe('M02 S3 edit user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expectNoHorizontalScroll(page)
 
     if (!isDesktopShell(page)) {
-      await expectTouchTarget(byId(page, 'user-submit'))
+      await expectTouchTarget(byId(page, 'form-submit'))
       await expectTouchTarget(byId(page, 'user-password-toggle'))
       await expectTouchTarget(byId(page, 'admin-school-clear'))
       await expectTouchTarget(page.locator('label:has([data-testid=grade-10])'))
@@ -511,7 +511,7 @@ test.describe('M02 S3 edit user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       await byId(page, 'user-package').selectOption('personal')
       // The native checkbox is visually hidden behind the pill: click the label, as a user does.
       await page.locator('label:has([data-testid=user-active])').click()
-      await byId(page, 'user-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(page).toHaveURL('/admin/users')
       await expect(page.getByText('Pengguna berjaya dikemaskini.')).toBeVisible()
 
@@ -546,7 +546,7 @@ test.describe('M02 S3 edit user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expectNoHorizontalScroll(page)
     await byId(page, 'linker-remove').first().click()
     await expect(chips).toHaveCount(1)
-    await byId(page, 'user-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL('/admin/users')
 
     await gotoApp('/admin/users/6/edit')
@@ -563,7 +563,7 @@ test.describe('M02 S3 edit user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       await byId(page, 'user-password-toggle').click()
       await byId(page, 'user-new-password').fill('abc')
       await byId(page, 'user-new-password-confirm').fill('abc')
-      await byId(page, 'user-submit').click()
+      await byId(page, 'form-submit').click()
       const alert = byId(page, 'user-form-alert')
       await expect(alert).toContainText('The email has already been taken.')
       await expect(alert).toContainText('The new password field must be at least 6 characters.')
@@ -574,7 +574,7 @@ test.describe('M02 S3 edit user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       await byId(page, 'user-email').fill('pelajar@demo.test')
       await byId(page, 'user-new-password').fill('baru1234')
       await byId(page, 'user-new-password-confirm').fill('baru5678')
-      await byId(page, 'user-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(alert).toContainText('The new password field confirmation does not match.')
       await expect(alert).not.toContainText('The email has already been taken.')
       await expectNoHorizontalScroll(page)

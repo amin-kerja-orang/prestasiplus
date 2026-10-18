@@ -14,9 +14,8 @@
 import { nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { AdminFormSection, AdminPageHeader, AdminStickyBar } from '@/ds/admin'
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 
 import {
   fetchTeacherClassrooms,
@@ -25,11 +24,8 @@ import {
   type TeacherClassroomOption,
 } from '../api/comp-students'
 import { fetchAdminDefaults } from '../api/users'
-import AdminAlert from '../components/AdminAlert.vue'
-import AdminField from '../components/AdminField.vue'
 import { COMP_LIST_PATH, COMP_PASTE_PLACEHOLDER, defaultPackageExpiry } from '../lib/comp-students'
 import { errorLines } from '../lib/user-form-errors'
-import AdminSelect from '../components/native/AdminSelect.vue'
 
 const router = useRouter()
 const flash = useFlash()
@@ -94,12 +90,11 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="comp-create-page">
-    <AdminPageHeader
-      title="Daftar Pelajar Komplimen"
-      subtitle="Daftarkan pelajar komplimen ke kelas guru."
-    />
-
+  <DsPage
+    title="Daftar Pelajar Komplimen"
+    subtitle="Daftarkan pelajar komplimen ke kelas guru."
+    data-testid="comp-create-page"
+  >
     <UAlert color="info" variant="subtle" icon="i-ph-info" data-testid="comp-info">
       <template #description>
         Setiap pelajar dapat: username <strong>6 digit akhir IC</strong>@prestasiplus.my, kata
@@ -119,25 +114,39 @@ async function submit(): Promise<void> {
       @submit.prevent="submit"
     >
       <div ref="alertBox" class="empty:hidden">
-        <AdminAlert :messages="errors" data-testid="comp-alert" />
+        <UAlert
+          v-if="errors.length > 0"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          role="alert"
+          data-testid="comp-alert"
+        >
+          <template #description>
+            <div class="flex flex-col gap-1">
+              <p v-for="m in errors" :key="m">{{ m }}</p>
+            </div>
+          </template>
+        </UAlert>
       </div>
 
-      <AdminFormSection
+      <DsFormSection
         title="Kelas"
         description="Pilih guru, kelasnya dan tarikh tamat pakej."
-        icon="i-ph-chalkboard-teacher"
+        icon="chalkboard-teacher"
+        :columns="2"
       >
-        <AdminField for="comp-teacher" label="Guru">
-          <AdminSelect id="comp-teacher" v-model="teacherId" data-testid="comp-teacher">
+        <DsFormField native for="comp-teacher" label="Guru">
+          <DsNativeSelect id="comp-teacher" v-model="teacherId" data-testid="comp-teacher">
             <option value="">— Pilih guru —</option>
             <option v-for="t in teachers.data.value ?? []" :key="t.id" :value="String(t.id)">
               {{ t.name }} ({{ t.email }})
             </option>
-          </AdminSelect>
-        </AdminField>
+          </DsNativeSelect>
+        </DsFormField>
 
-        <AdminField for="comp-class" label="Kelas guru">
-          <AdminSelect
+        <DsFormField native for="comp-class" label="Kelas guru">
+          <DsNativeSelect
             id="comp-class"
             v-model="classroomId"
             name="classroom_id"
@@ -149,7 +158,7 @@ async function submit(): Promise<void> {
             <option v-for="c in classes" :key="c.id" :value="String(c.id)">
               {{ c.name }} ({{ c.classCode }})
             </option>
-          </AdminSelect>
+          </DsNativeSelect>
           <p
             v-if="teacherId !== '' && classes.length === 0"
             class="text-label text-muted"
@@ -157,9 +166,9 @@ async function submit(): Promise<void> {
           >
             Guru ini tiada kelas aktif.
           </p>
-        </AdminField>
+        </DsFormField>
 
-        <AdminField for="comp-expiry" label="Tarikh tamat pakej">
+        <DsFormField native for="comp-expiry" label="Tarikh tamat pakej">
           <UInput
             id="comp-expiry"
             v-model="expiresAt"
@@ -169,16 +178,17 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="comp-expiry"
           />
-        </AdminField>
-      </AdminFormSection>
+        </DsFormField>
+      </DsFormSection>
 
-      <AdminFormSection
+      <DsFormSection
         title="Senarai Pelajar"
         description="Satu pelajar setiap baris."
-        icon="i-ph-student"
+        icon="student"
+        :columns="2"
       >
-        <div class="md:col-span-2">
-          <AdminField for="comp-students" label="Senarai pelajar">
+        <div class="sm:col-span-2">
+          <DsFormField native for="comp-students" label="Senarai pelajar">
             <p class="text-label text-muted" data-testid="comp-help">
               Satu pelajar setiap baris, format:
               <code class="bg-elevated text-default">NAMA, NOKP</code>
@@ -195,28 +205,17 @@ async function submit(): Promise<void> {
               class="w-full"
               data-testid="comp-students"
             />
-          </AdminField>
+          </DsFormField>
         </div>
-      </AdminFormSection>
+      </DsFormSection>
 
-      <AdminStickyBar>
-        <UButton
-          :to="COMP_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          label="Senarai pelajar komplimen"
-          data-testid="comp-back"
-        />
-        <UButton
-          type="submit"
-          icon="i-ph-user-plus"
-          label="Daftar Pelajar Komplimen"
-          :loading="submitting"
-          :disabled="submitting"
-          data-testid="comp-submit"
-        />
-      </AdminStickyBar>
+      <DsFormBar
+        :cancel-to="COMP_LIST_PATH"
+        cancel-label="Senarai pelajar komplimen"
+        submit-label="Daftar Pelajar Komplimen"
+        submit-icon="i-ph-user-plus"
+        :saving="submitting"
+      />
     </form>
   </DsPage>
 </template>

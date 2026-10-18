@@ -223,8 +223,8 @@ export const uiConfig = {
   checkbox: {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
-      // `bg-elevated`: the ring token is transparent (no lines), so an unchecked box needs its own fill.
-      base: "relative overflow-visible rounded-xs bg-elevated after:absolute after:-inset-2.5 after:content-['']",
+      // Borders are transparent (layers, not lines): an unchecked box needs its own fill to show.
+      base: "relative overflow-visible rounded-xs bg-accented after:absolute after:-inset-2.5 after:content-['']",
     },
     variants: { size: { md: { base: 'size-6' }, sm: { base: 'size-6' } } },
   },
@@ -302,7 +302,7 @@ export const uiConfig = {
   // coloured border).
   // The radio dot gets a fill too: its ring token is transparent, so an unchecked radio would be invisible.
   radioGroup: {
-    slots: { base: 'bg-elevated' },
+    slots: { base: 'bg-accented' },
     compoundVariants: [
       { variant: 'card', class: { item: 'border-0' } },
       { variant: 'card', color: 'info', class: { item: 'has-data-[state=checked]:bg-info/20' } },

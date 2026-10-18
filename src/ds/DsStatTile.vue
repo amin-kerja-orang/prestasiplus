@@ -49,6 +49,8 @@ const props = withDefaults(
     delta?: StatDelta
     /** Skeleton in place of the content. */
     loading?: boolean
+    /** The tile is a button (a drill-down that is not a route); the caller listens to `click`. */
+    clickable?: boolean
   }>(),
   {
     sub: undefined,
@@ -62,13 +64,16 @@ const props = withDefaults(
     to: undefined,
     delta: undefined,
     loading: false,
+    clickable: false,
   },
 )
 
 const personality = usePersonality()
 // Decided once per tile at mount; non-reactive on purpose (the entry is a one-shot).
 const riseOff = !staffRiseAllowed()
-const chipSize = computed(() => (props.roomy ? (personality.value === 'staff' ? 'lg' : 'sm') : 'md'))
+const chipSize = computed(() =>
+  props.roomy ? (personality.value === 'staff' ? 'lg' : 'sm') : 'md',
+)
 
 const deltaIcon = { up: 'arrow-up', down: 'arrow-down', flat: 'minus' } as const
 const deltaTone = { up: 'text-success', down: 'text-error', flat: 'text-muted' } as const
@@ -76,28 +81,39 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
 </script>
 
 <template>
-  <div
-    v-if="compact"
-    class="flex min-w-0 items-center gap-3 rounded-card bg-default p-3 shadow-ds-xs sm:gap-4 sm:p-4"
-    data-ds="stat-tile"
-    data-compact="true"
-  >
-    <DsIconChip v-if="icon" :icon="icon" :accent="accent" :tone="tone" size="md" />
-    <div class="flex min-w-0 flex-col">
-      <span
-        class="tabular truncate font-display text-heading leading-tight font-extrabold"
-        :class="valueClass"
-        >{{ value }}</span
-      >
-      <span class="truncate text-label font-semibold text-muted">{{ unit }}</span>
-    </div>
-  </div>
   <component
     :is="to ? RouterLink : 'div'"
-    v-else
+    v-if="compact"
     v-bind="to ? { to } : {}"
+    class="flex min-w-0 items-center gap-3 rounded-card bg-default p-3 shadow-ds-xs sm:gap-4 sm:p-4"
+    :class="to ? 'hover:bg-elevated' : ''"
+    data-ds="stat-tile"
+    data-compact="true"
+    :aria-busy="loading ? 'true' : undefined"
+  >
+    <template v-if="loading">
+      <USkeleton class="size-8 rounded-chip" />
+      <USkeleton class="h-9 w-24" />
+    </template>
+    <template v-else>
+      <DsIconChip v-if="icon" :icon="icon" :accent="accent" :tone="tone" size="md" />
+      <div class="flex min-w-0 flex-col">
+        <span
+          class="tabular truncate font-display text-heading leading-tight font-extrabold"
+          :class="valueClass"
+          >{{ value }}</span
+        >
+        <span class="truncate text-label font-semibold text-muted">{{ unit }}</span>
+      </div>
+    </template>
+  </component>
+  <component
+    :is="to ? RouterLink : clickable ? 'button' : 'div'"
+    v-else
+    v-bind="to ? { to } : clickable ? { type: 'button' } : {}"
     class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift"
     :class="[
+      clickable ? 'cursor-pointer text-start' : '',
       roomy ? 'gap-3 p-6' : 'gap-2 px-2.5 pt-3.5 pb-3',
       riseOff ? 'staff:animate-none' : 'staff:animate-ds-rise-quick',
     ]"
@@ -111,13 +127,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     </template>
     <template v-else>
       <DsArt3D v-if="art" :name="art" size="md" />
-      <DsIconChip
-        v-else-if="icon"
-        :icon="icon"
-        :accent="accent"
-        :tone="tone"
-        :size="chipSize"
-      />
+      <DsIconChip v-else-if="icon" :icon="icon" :accent="accent" :tone="tone" :size="chipSize" />
       <span
         class="tabular font-display font-extrabold"
         :class="[valueClass, roomy ? 'text-title' : 'text-heading']"

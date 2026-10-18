@@ -10,15 +10,12 @@
  * - The server decides what is accepted (JPG, PNG, GIF, WebP, BMP, 10 MB each); refused files come
  *   back as an error flash, kept files as the success flash and in the list.
  */
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsEmptyState, DsFileField, DsFormSection, DsLoadError, DsPage } from '@/ds'
 
 import { fetchScreenshots, uploadScreenshots } from '../api/admin-media'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
-import AdminSection from '../components/admin-kit/AdminSection.vue'
-import NativeDropZone from '../components/admin-kit/native/NativeDropZone.vue'
 import { COPY, errorLines } from '../lib/admin-media/common'
 
 const flash = useFlash()
@@ -27,12 +24,19 @@ const { data: files, error, reload } = useApi((signal) => fetchScreenshots({ sig
 
 const sending = ref(false)
 
-async function send(list: File[] | null): Promise<void> {
-  const picked = list ? [...list] : []
-  if (picked.length === 0 || sending.value) return
+/** The picked files; sending starts at once and the field is cleared again. */
+const picked = ref<File | File[] | null>(null)
+watch(picked, (value) => {
+  if (!value) return
+  picked.value = null
+  void send(Array.isArray(value) ? value : [value])
+})
+
+async function send(list: File[]): Promise<void> {
+  if (list.length === 0 || sending.value) return
   sending.value = true
   try {
-    const result = await uploadScreenshots(picked)
+    const result = await uploadScreenshots(list)
     const { saved, rejected } = result.data
     if (rejected.length > 0) {
       const lines = rejected.map((r) => r.reason)
@@ -56,28 +60,38 @@ async function send(list: File[] | null): Promise<void> {
   <DsPage data-testid="screenshots-page">
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div class="flex min-w-0 flex-col gap-6 lg:col-span-1">
-        <AdminSection
+        <DsFormSection
           title="Upload Gambar"
           description="Format: JPG, PNG, GIF, WebP, BMP. Maks 10MB setiap fail."
           icon="i-ph-upload-simple"
           accent="action"
         >
           <form method="post" enctype="multipart/form-data" data-testid="upload-form">
-            <NativeDropZone name="files[]" accept="image/*" @files="send">
-              <UIcon name="i-ph-images" class="size-10" aria-hidden="true" />
-              <span class="text-label text-highlighted">Klik atau seret fail ke sini</span>
-              <span class="text-caption">Boleh pilih banyak fail</span>
-            </NativeDropZone>
+            <DsFileField
+              v-model="picked"
+              name="files[]"
+              accept="image/*"
+              multiple
+              preview="none"
+              label="Klik atau seret fail ke sini"
+              hint="Boleh pilih banyak fail"
+              data-testid="drop-zone"
+            />
           </form>
           <p class="text-caption text-muted">
             Tip: guna nama fail yang ringkas. Sistem akan auto-sanitize nama fail.
           </p>
-        </AdminSection>
+        </DsFormSection>
       </div>
 
       <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
-        <AdminSection title="Fail Sedia Ada" icon="i-ph-folder-open" accent="win">
-          <AdminAlert v-if="error" :messages="[COPY.loadFailed]" data-testid="files-error" />
+        <DsFormSection title="Fail Sedia Ada" icon="i-ph-folder-open" accent="win">
+          <DsLoadError
+            v-if="error"
+            :message="COPY.loadFailed"
+            testid="files-error"
+            @retry="reload()"
+          />
           <template v-else-if="files">
             <p class="text-body text-muted" data-testid="files-count">
               Jumlah: {{ files.length }} fail
@@ -85,7 +99,7 @@ async function send(list: File[] | null): Promise<void> {
             <DsEmptyState
               v-if="files.length === 0"
               title="Tiada fail lagi."
-              icon="i-ph-tray"
+              icon="tray"
               data-testid="files-empty"
             />
             <ul
@@ -111,7 +125,7 @@ async function send(list: File[] | null): Promise<void> {
               </li>
             </ul>
           </template>
-        </AdminSection>
+        </DsFormSection>
       </div>
     </div>
   </DsPage>

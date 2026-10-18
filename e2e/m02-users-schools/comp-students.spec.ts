@@ -160,7 +160,7 @@ test.describe('M02 S7 register complimentary students', { tag: [TAG.smoke, modul
           'PELAJAR DEMO DUA BIN DEMO, 080808088802',
         ].join('\n'),
       )
-      await byId(page, 'comp-submit').click()
+      await byId(page, 'form-submit').click()
 
       await expect(page).toHaveURL(/\/admin\/comp-students$/)
       await expect(byId(page, 'cmp-flash')).toContainText(
@@ -178,7 +178,7 @@ test.describe('M02 S7 register complimentary students', { tag: [TAG.smoke, modul
   )
 
   test('an empty submit is stopped by the native required check', async ({ page }) => {
-    await byId(page, 'comp-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/comp-students\/create$/)
     await expect(byId(page, 'comp-alert')).toHaveCount(0)
   })

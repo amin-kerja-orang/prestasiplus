@@ -5,19 +5,25 @@
  * Dates are shown in Asia/Kuala_Lumpur (DV-M22-09). Counts and the total cover all tickets, the table at
  * most 200 rows. The markup keeps the server's no-ARIA rule (CHK-M22-02).
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { AdminCard, AdminPageHeader } from '@/ds/admin'
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsPillNav,
+  type PillItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { formatDateTimeRaw } from '@/lib/time'
 
 import { fetchQueue } from '../api/tickets'
-import AdminCell from '../components/native/AdminCell.vue'
-import AdminRow from '../components/native/AdminRow.vue'
-import AdminTable from '../components/native/AdminTable.vue'
+import type { QueueRow } from '../api/types'
 
 const route = useRoute()
 
@@ -37,82 +43,84 @@ const rows = computed(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.counts ?? [])
 const total = computed(() => data.value?.meta.total ?? 0)
 
-const COLUMNS = [
-  { key: 'date', label: 'Tarikh' },
-  { key: 'user', label: 'Pengguna' },
-  { key: 'subject', label: 'Subjek' },
-  { key: 'status', label: 'Status' },
-  { key: 'replied', label: 'Dibalas' },
+type TicketRow = QueueRow & Record<string, unknown>
+const tableRows = computed(() => rows.value as TicketRow[])
+const COLUMNS: TableColumn<TicketRow>[] = [
+  { id: 'date', header: 'Tarikh' },
+  { id: 'user', header: 'Pengguna' },
+  { accessorKey: 'subject', header: 'Subjek' },
+  { id: 'status', header: 'Status' },
+  { id: 'replied', header: 'Dibalas' },
 ]
+/** Status chips (links with the counts); the filter lives in the URL. */
+const chipItems = computed<PillItem<string>[]>(() => [
+  { key: '', label: `Semua (${formatNumber(total.value)})`, to: '/admin/tiket', testid: 'all' },
+  ...counts.value.map((c) => ({
+    key: c.status,
+    label: `${c.status} (${formatNumber(c.count)})`,
+    to: `/admin/tiket?status=${encodeURIComponent(c.status)}`,
+  })),
+])
 </script>
 
 <template>
-  <DsPage data-testid="tq-page">
-    <AdminPageHeader title="Tiket Sokongan" subtitle="Permohonan bantuan daripada pengguna." />
-
+  <DsPage
+    title="Tiket Sokongan"
+    subtitle="Permohonan bantuan daripada pengguna."
+    data-testid="tq-page"
+  >
     <template v-if="data">
-      <AdminCard
-        as="nav"
-        flush
-        class="flex flex-wrap items-center gap-3 p-4"
-        data-testid="tq-chips"
-      >
-        <UButton
-          to="/admin/tiket"
-          :color="status === '' ? 'primary' : 'neutral'"
-          :variant="status === '' ? 'solid' : 'soft'"
-          :data-active="status === ''"
-          :label="`Semua (${formatNumber(total)})`"
+      <div data-testid="tq-chips">
+        <DsPillNav
+          :items="chipItems"
+          :active="status"
+          label="Status tiket"
+          testid-prefix="tq-chip"
         />
-        <UButton
-          v-for="c in counts"
-          :key="c.status"
-          :to="`/admin/tiket?status=${encodeURIComponent(c.status)}`"
-          :color="status === c.status ? 'primary' : 'neutral'"
-          :variant="status === c.status ? 'solid' : 'soft'"
-          :data-active="status === c.status"
-          :label="`${c.status} (${formatNumber(c.count)})`"
-        />
-      </AdminCard>
-
-      <AdminCard
-        v-if="rows.length === 0"
-        as="div"
-        flush
-        class="flex flex-col items-center gap-3 p-12 text-center text-body text-muted"
-      >
-        <UIcon name="i-ph-lifebuoy" class="size-10" />
-        <p data-testid="tq-empty">
-          {{ status === '' ? 'Belum ada tiket sokongan.' : `Tiada tiket berstatus “${status}”.` }}
-        </p>
-      </AdminCard>
-      <AdminTable v-else :columns="COLUMNS" caption="Senarai tiket sokongan" data-testid="tq-table">
-        <AdminRow v-for="r in rows" :key="r.id" data-testid="tq-row">
-          <AdminCell label="Tarikh">
-            <span class="text-nowrap text-muted">{{ formatDateTimeRaw(r.createdAt) }}</span>
-          </AdminCell>
-          <AdminCell label="Pengguna">
-            <span class="text-highlighted">{{ r.userName ?? '—' }}</span>
-          </AdminCell>
-          <AdminCell label="Subjek">{{ r.subject }}</AdminCell>
-          <AdminCell label="Status">
-            <UBadge color="neutral" variant="subtle" :label="r.status" />
-          </AdminCell>
-          <AdminCell label="Dibalas">{{ r.replied ? 'Ya' : '—' }}</AdminCell>
-        </AdminRow>
-      </AdminTable>
-    </template>
-    <div v-else-if="error" class="flex flex-col gap-4" data-testid="tq-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning-circle"
-        :description="error.message"
-      />
-      <div>
-        <UButton label="Cuba lagi" data-testid="tq-retry" @click="reload" />
       </div>
-    </div>
+
+      <DsPanel v-if="tableRows.length === 0" flush>
+        <DsEmptyState
+          size="sm"
+          icon="lifebuoy"
+          :title="
+            status === '' ? 'Belum ada tiket sokongan.' : `Tiada tiket berstatus “${status}”.`
+          "
+          data-testid="tq-empty"
+        />
+      </DsPanel>
+      <DsDataTable
+        v-else
+        :data="tableRows"
+        :columns="COLUMNS"
+        variant="flush"
+        caption="Senarai tiket sokongan"
+        :page-size="Math.max(tableRows.length, 1)"
+        card-title="subject"
+        data-testid="tq-table"
+      >
+        <template #date-cell="{ row }">
+          <span class="text-nowrap text-muted" data-testid="tq-row">{{
+            formatDateTimeRaw(row.original.createdAt)
+          }}</span>
+        </template>
+        <template #user-cell="{ row }">
+          <span class="text-highlighted">{{ row.original.userName ?? '—' }}</span>
+        </template>
+        <template #status-cell="{ row }">
+          <UBadge color="neutral" variant="subtle" :label="row.original.status" />
+        </template>
+        <template #replied-cell="{ row }">{{ row.original.replied ? 'Ya' : '—' }}</template>
+        <template #card="{ row }">
+          <p class="text-body text-highlighted" data-testid="tq-row">{{ row.subject }}</p>
+          <p class="text-label text-muted">
+            {{ row.userName ?? '—' }} · {{ formatDateTimeRaw(row.createdAt as string) }}
+          </p>
+          <UBadge class="w-fit" color="neutral" variant="subtle" :label="row.status as string" />
+        </template>
+      </DsDataTable>
+    </template>
+    <DsLoadError v-else-if="error" :message="error.message" testid="tq-error" @retry="reload" />
     <div v-else-if="loading" class="flex flex-col gap-3" data-testid="tq-loading">
       <USkeleton v-for="n in 5" :key="n" class="h-14 w-full" />
     </div>

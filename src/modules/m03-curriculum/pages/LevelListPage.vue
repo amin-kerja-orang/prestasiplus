@@ -11,9 +11,15 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 
-import { AdminKpiStrip, AdminPageHeader } from '@/ds/admin'
 import { alertNative, useApi, useFlash } from '@/composables'
-import { DsDataTable, DsPage, DsStatTile, type CardField } from '@/ds'
+import {
+  type CardField,
+  DsDataTable,
+  DsPage,
+  DsPageHeader,
+  DsStatRow,
+  type StatItem,
+} from '@/ds'
 
 import {
   deleteLevel,
@@ -46,6 +52,19 @@ const kpi = computed(() => ({
   subjects: rows.value.reduce((sum, r) => sum + r.subjectCount, 0),
   questions: rows.value.reduce((sum, r) => sum + r.questionCount, 0),
 }))
+
+const kpiItems = computed<StatItem[]>(() => [
+  { key: 'total', label: 'Jumlah Tahap', value: rows.value.length, icon: 'graduation-cap' },
+  { key: 'active', label: 'Aktif', value: kpi.value.active, icon: 'check-circle', accent: 'win' },
+  { key: 'subjects', label: 'Subjek', value: kpi.value.subjects, icon: 'books', accent: 'friend' },
+  {
+    key: 'questions',
+    label: 'Jumlah Soalan',
+    value: kpi.value.questions,
+    icon: 'question',
+    accent: 'trial',
+  },
+])
 
 const columns: TableColumn<LevelRow>[] = [
   { accessorKey: 'id', header: '#' },
@@ -138,7 +157,7 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
     />
 
     <template v-else-if="data">
-      <AdminPageHeader>
+      <DsPageHeader>
         <template #subtitle>
           <div>
             <h2 class="text-subheading text-highlighted">Senarai Tahap Pendidikan</h2>
@@ -152,26 +171,9 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
             Tambah Tahap
           </UButton>
         </template>
-      </AdminPageHeader>
+      </DsPageHeader>
 
-      <AdminKpiStrip label="Ringkasan tahap" class="xl:grid-cols-4 2xl:grid-cols-4">
-        <DsStatTile compact :value="rows.length" unit="Jumlah Tahap" icon="i-ph-graduation-cap" />
-        <DsStatTile
-          compact
-          accent="win"
-          :value="kpi.active"
-          unit="Aktif"
-          icon="i-ph-check-circle"
-        />
-        <DsStatTile compact accent="friend" :value="kpi.subjects" unit="Subjek" icon="i-ph-books" />
-        <DsStatTile
-          compact
-          accent="trial"
-          :value="kpi.questions"
-          unit="Jumlah Soalan"
-          icon="i-ph-question"
-        />
-      </AdminKpiStrip>
+      <DsStatRow :items="kpiItems" compact :cols="4" aria-label="Ringkasan tahap" />
 
       <DsDataTable
         :data="tableRows"

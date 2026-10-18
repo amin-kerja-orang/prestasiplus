@@ -8,14 +8,12 @@
 import { computed, watch } from 'vue'
 
 import { usePageMeta } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsDataTable, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 import { formatDate } from '@/lib/time'
 
 import { fetchPkskExamAttempts } from '../api/pksk'
 import type { PkskLevel } from '../api/types'
-import BackLink from '../components/BackLink.vue'
-import LoadError from '../components/LoadError.vue'
-import { isLoadError, usePkskData } from '../lib/load'
+import { LOAD_ERROR, isLoadError, usePkskData } from '../lib/load'
 
 const props = defineProps<{ level: PkskLevel }>()
 
@@ -32,6 +30,10 @@ const { data, error, reload } = usePkskData(
   (signal) => fetchPkskExamAttempts(props.level, { signal }),
   [() => props.level],
 )
+const cardFields = [
+  { key: 'score', label: 'Skor' },
+  { key: 'grade', label: 'Gred' },
+]
 const columns = [
   { accessorKey: 'date', header: 'Tarikh' },
   { accessorKey: 'score', header: 'Skor' },
@@ -48,21 +50,27 @@ const loadFailed = computed(() => isLoadError(error.value))
 </script>
 
 <template>
-  <DsPage data-testid="pksk-history" data-provisional="L-4">
-    <BackLink :to="`/pksk/level/${level}`" label="Kembali ke Dashboard" />
-
-    <LoadError v-if="loadFailed" @retry="reload()" />
+  <DsPage
+    :back-to="`/pksk/level/${level}`"
+    back-label="Kembali ke Dashboard"
+    data-testid="pksk-history"
+    data-provisional="L-4"
+  >
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <UCard v-if="data.length === 0" data-testid="history-empty">
-        <DsEmptyState
-          title="Tiada sejarah peperiksaan."
-          icon="i-ph-clock-counter-clockwise-duotone"
-        />
+        <DsEmptyState item="sejarah peperiksaan" icon="i-ph-clock-counter-clockwise-duotone" />
       </UCard>
-      <UCard v-else>
-        <UTable :data="rows" :columns="columns" data-testid="history-table" />
-      </UCard>
+      <DsDataTable
+        v-else
+        :data="rows"
+        :columns="columns"
+        caption="Sejarah peperiksaan PKSK"
+        card-title="date"
+        :card-fields="cardFields"
+        data-testid="history-table"
+      />
     </template>
   </DsPage>
 </template>

@@ -363,8 +363,8 @@ describe('VideoFormPage (S20 add)', () => {
     expect(radios[1]?.disabled).toBe(true)
     expect(radios[1]?.description).toBe('Tiada sekolah')
     expect(t(w, 'video-uploader-strip').text()).toContain('Admin Demo')
-    expect(t(w, 'video-form-submit').text()).toBe('Terbitkan Video')
-    expect(t(w, 'video-form-cancel').attributes('href')).toBe('/video')
+    expect(t(w, 'form-submit').text()).toBe('Terbitkan Video')
+    expect(t(w, 'form-cancel').attributes('href')).toBe('/video')
   })
 
   it('enables "Sekolah Saya" with the school name when the context has one', async () => {
@@ -462,8 +462,8 @@ describe('VideoFormPage (S19 edit)', () => {
     expect(t(w, 'video-preview-label').text()).toBe('Platform dikesan: Youtube')
     expect(w.find('[data-testid="video-uploader-strip"]').exists()).toBe(false)
     expect(w.text()).not.toContain('(opsional)')
-    expect(t(w, 'video-form-submit').text()).toBe('Simpan Perubahan')
-    expect(t(w, 'video-form-cancel').attributes('href')).toBe('/video/2224')
+    expect(t(w, 'form-submit').text()).toBe('Simpan Perubahan')
+    expect(t(w, 'form-cancel').attributes('href')).toBe('/video/2224')
   })
 
   it('saves and returns to the detail page', async () => {

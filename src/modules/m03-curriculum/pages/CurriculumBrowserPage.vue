@@ -11,9 +11,8 @@
 import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { AdminCard, AdminPageHeader } from '@/ds/admin'
 import { useApi, useFlash } from '@/composables'
-import { DsEmptyState, DsPage, useConfirm } from '@/ds'
+import { DsEmptyState, DsPage, DsPageHeader, DsPanel, useConfirm } from '@/ds'
 import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
 
 import {
@@ -161,7 +160,7 @@ provide(TREE_ACTIONS, actions)
 
 <template>
   <DsPage data-testid="curriculum-page">
-    <AdminPageHeader
+    <DsPageHeader
       title="Pengurusan Kurikulum"
       subtitle="Urus bab, topik dan subtopik mengikut subjek dan tahap."
     >
@@ -173,7 +172,7 @@ provide(TREE_ACTIONS, actions)
           data-testid="chapter-add"
         />
       </template>
-    </AdminPageHeader>
+    </DsPageHeader>
 
     <DsLoadError
       v-if="optionsFailed || treeFailed"
@@ -183,79 +182,84 @@ provide(TREE_ACTIONS, actions)
     />
 
     <template v-if="optionsReady">
-      <AdminCard
-        as="form"
+      <DsPanel
         flush
+        as="form"
         method="get"
-        class="flex flex-col gap-4 p-4 md:flex-row md:items-end md:p-6"
         data-testid="curriculum-filter"
         @submit.prevent="applyFilter"
       >
-        <div class="min-w-0 md:flex-1">
-          <DsFormField v-slot="{ id }" native for="cur-subject" label="Subjek">
-            <DsNativeSelect
-              :id="id"
-              v-model="subjectSel"
-              name="subject_id"
-              data-testid="curriculum-subject"
-            >
-              <option value="">-- Pilih Subjek --</option>
-              <option v-for="s in subjects?.data ?? []" :key="s.id" :value="String(s.id)">
-                {{ s.name }}
-              </option>
-            </DsNativeSelect>
-          </DsFormField>
+        <div class="flex flex-col gap-4 p-4 md:flex-row md:items-end md:p-6">
+          <div class="min-w-0 md:flex-1">
+            <DsFormField v-slot="{ id }" native for="cur-subject" label="Subjek">
+              <DsNativeSelect
+                :id="id"
+                v-model="subjectSel"
+                name="subject_id"
+                data-testid="curriculum-subject"
+              >
+                <option value="">-- Pilih Subjek --</option>
+                <option v-for="s in subjects?.data ?? []" :key="s.id" :value="String(s.id)">
+                  {{ s.name }}
+                </option>
+              </DsNativeSelect>
+            </DsFormField>
+          </div>
+          <div class="min-w-0 md:flex-1">
+            <DsFormField v-slot="{ id }" native for="cur-level" label="Tahap">
+              <DsNativeSelect
+                :id="id"
+                v-model="levelSel"
+                name="education_level_id"
+                data-testid="curriculum-level"
+              >
+                <option value="">-- Pilih Tahap --</option>
+                <option v-for="l in levels?.data ?? []" :key="l.id" :value="String(l.id)">
+                  {{ l.name }}
+                </option>
+              </DsNativeSelect>
+            </DsFormField>
+          </div>
+          <UButton
+            type="submit"
+            icon="i-ph-funnel"
+            class="justify-center"
+            data-testid="curriculum-filter-submit"
+          >
+            Tapis
+          </UButton>
         </div>
-        <div class="min-w-0 md:flex-1">
-          <DsFormField v-slot="{ id }" native for="cur-level" label="Tahap">
-            <DsNativeSelect
-              :id="id"
-              v-model="levelSel"
-              name="education_level_id"
-              data-testid="curriculum-level"
-            >
-              <option value="">-- Pilih Tahap --</option>
-              <option v-for="l in levels?.data ?? []" :key="l.id" :value="String(l.id)">
-                {{ l.name }}
-              </option>
-            </DsNativeSelect>
-          </DsFormField>
-        </div>
-        <UButton
-          type="submit"
-          icon="i-ph-funnel"
-          class="justify-center"
-          data-testid="curriculum-filter-submit"
-        >
-          Tapis
-        </UButton>
-      </AdminCard>
+      </DsPanel>
 
-      <AdminCard v-if="!hasPair" flush class="p-6" data-testid="curriculum-prompt">
-        <DsEmptyState
-          title="Sila pilih subjek dan tahap pendidikan"
-          description="Gunakan penapis di atas"
-          icon="i-ph-info"
-        />
-      </AdminCard>
+      <DsPanel v-if="!hasPair" flush data-testid="curriculum-prompt">
+        <div class="p-6">
+          <DsEmptyState
+            title="Sila pilih subjek dan tahap pendidikan"
+            description="Gunakan penapis di atas"
+            icon="i-ph-info"
+          />
+        </div>
+      </DsPanel>
 
       <template v-else-if="showTree && tree">
         <CurriculumStatCards :tree="tree" />
 
         <div class="flex flex-col gap-4" data-testid="curriculum-tree">
-          <AdminCard v-if="tree.chapters.length === 0" flush class="p-6" data-testid="tree-empty">
-            <DsEmptyState title="Tiada bab dijumpai untuk subjek dan tahap ini." icon="i-ph-tray">
-              <template #actions>
-                <UButton
-                  :to="chapterCreateTo(subjectParam, levelParam)"
-                  icon="i-ph-plus"
-                  data-testid="chapter-add-first"
-                >
-                  Tambah Bab Pertama
-                </UButton>
-              </template>
-            </DsEmptyState>
-          </AdminCard>
+          <DsPanel v-if="tree.chapters.length === 0" flush data-testid="tree-empty">
+            <div class="p-6">
+              <DsEmptyState title="Tiada bab dijumpai untuk subjek dan tahap ini." icon="i-ph-tray">
+                <template #actions>
+                  <UButton
+                    :to="chapterCreateTo(subjectParam, levelParam)"
+                    icon="i-ph-plus"
+                    data-testid="chapter-add-first"
+                  >
+                    Tambah Bab Pertama
+                  </UButton>
+                </template>
+              </DsEmptyState>
+            </div>
+          </DsPanel>
           <template v-else>
             <ChapterBlock v-for="c in tree.chapters" :key="c.id" :chapter="c" />
           </template>

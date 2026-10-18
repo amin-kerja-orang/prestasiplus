@@ -168,3 +168,29 @@ export const pick = async (w: VueWrapper, name: string, value: string) => {
 /** The table row (or card item) that holds the element. */
 export const rowOf = (el: { element: Element }) =>
   new DOMWrapper(el.element.closest('tr') ?? el.element.closest('li') ?? el.element)
+
+/** Labels of the options of the native `<select>` with this `name` (`DsNativeSelect`). */
+export const nativeLabels = (w: VueWrapper, name: string) =>
+  w.findAll(`select[name="${name}"] option`).map((o) => o.text())
+/** Picks a value of the native `<select>` with this `name`. */
+export const nativePick = async (w: VueWrapper, name: string, value: string) => {
+  await w.get(`select[name="${name}"]`).setValue(value)
+  await flushPromises()
+}
+/** The "Reset" link of the filter chips row (`DsActiveFilters`, live label). */
+export const resetLink = (w: VueWrapper) => w.find('[data-testid="active-filters-reset"]')
+
+/** The `DsStatTile`s of a page: big number, label and the optional caption line. */
+export const tiles = (w: VueWrapper) =>
+  w.findAll('[data-ds="stat-tile"]').map((tile) => {
+    const value = tile.get('.tabular')
+    const sub = tile.find('[data-ds="stat-tile-sub"]')
+    return {
+      value: value.text(),
+      label: value.element.nextElementSibling?.textContent?.trim() ?? '',
+      sub: sub.exists() ? sub.text() : undefined,
+    }
+  })
+/** The caption lines of the stat tiles that have one. */
+export const captions = (w: VueWrapper) =>
+  tiles(w).flatMap((x) => (x.sub === undefined ? [] : [x.sub]))

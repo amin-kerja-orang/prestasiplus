@@ -14,8 +14,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
-import { AdminFormSection, AdminPageHeader } from '@/ds/admin'
+import { DsFormSection, DsPage, DsPageHeader } from '@/ds'
 
 import {
   createLevel,
@@ -127,7 +126,7 @@ async function submit(): Promise<void> {
 </script>
 <template>
   <DsPage data-testid="level-form-page">
-    <AdminPageHeader
+    <DsPageHeader
       :title="editing ? 'Edit Tahap Pendidikan' : 'Tambah Tahap Pendidikan'"
       :subtitle="editing ? 'Kemaskini maklumat tahap.' : 'Daftarkan tahap pendidikan baharu.'"
     >
@@ -142,7 +141,7 @@ async function submit(): Promise<void> {
           Kembali ke Senarai
         </UButton>
       </template>
-    </AdminPageHeader>
+    </DsPageHeader>
 
     <DsLoadError
       v-if="failed"
@@ -171,10 +170,11 @@ async function submit(): Promise<void> {
         </template>
       </UAlert>
 
-      <AdminFormSection
+      <DsFormSection
         title="Maklumat Tahap"
         description="Nama, kod, peringkat dan kurikulum."
         icon="i-ph-graduation-cap"
+        :columns="2"
       >
         <DsFormField
           v-slot="{ id: fid }"
@@ -281,7 +281,7 @@ async function submit(): Promise<void> {
             data-testid="level-order"
           />
         </DsFormField>
-      </AdminFormSection>
+      </DsFormSection>
 
       <FormActions
         :cancel-to="LEVELS_LIST_PATH"

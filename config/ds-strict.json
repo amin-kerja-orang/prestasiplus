@@ -176,7 +176,19 @@
     { "glob": "src/modules/m04-question-bank/pages/{DiagramAudit,ImportHistory,LaporanSoalan,MasterNotes,QuestionCreate,QuestionDetail,QuestionEdit,QuestionImport,QuestionList,QuestionQuality,QuestionReports,StructuredDetail,StructuredList,SubmissionList}Page.vue", "level": "page" },
     { "glob": "src/modules/m04-question-bank/components/{AiExplanationCard,DiagramCard,DskpTagging,MasterNoteRow,QuestionForm,QuestionImagePicker,QuestionSummaryCard,SubmissionActions}.vue", "level": "page" },
     { "glob": "src/modules/m03-curriculum/pages/**", "level": "page" },
-    { "glob": "src/modules/m03-curriculum/components/subjects-levels/FormActions.vue", "level": "page" }
+    { "glob": "src/modules/m03-curriculum/components/subjects-levels/FormActions.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/UserPackagesPage.vue", "level": "page" },
+    { "glob": "src/modules/m22-support-tickets/pages/**", "level": "page" },
+    { "glob": "src/modules/m09-content/pages/**", "level": "page" },
+    { "glob": "src/modules/m09-content/components/**", "level": "page" },
+    { "glob": "src/modules/m07-pksk/pages/**", "level": "page" },
+    { "glob": "src/modules/m07-pksk/components/**", "level": "page" },
+    { "glob": "src/modules/m11-teacher-analytics/pages/**", "level": "page" },
+    { "glob": "src/modules/m11-teacher-analytics/components/**", "level": "page" },
+    { "glob": "src/modules/m12-kirkpatrick/pages/**", "level": "page" },
+    { "glob": "src/modules/m12-kirkpatrick/components/**", "level": "page" },
+    { "glob": "src/modules/m17-admin-dashboard/pages/**", "level": "page" },
+    { "glob": "src/modules/m17-admin-dashboard/components/**", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

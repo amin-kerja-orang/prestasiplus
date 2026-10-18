@@ -6,16 +6,14 @@
 import { computed, watch } from 'vue'
 
 import { usePageMeta } from '@/composables'
-import { DsIconChip, DsPage } from '@/ds'
+import { DsIconChip, DsLoadError, DsPage } from '@/ds'
 
 import { fetchPkskDomainSections } from '../api/pksk'
 import type { PkskLevel } from '../api/types'
-import BackLink from '../components/BackLink.vue'
-import LoadError from '../components/LoadError.vue'
 import AccentBadge from '../components/AccentBadge.vue'
 import MasteryBar from '../components/MasteryBar.vue'
 import { SECTION_STYLE } from '../lib/levels'
-import { isLoadError, usePkskData } from '../lib/load'
+import { LOAD_ERROR, isLoadError, usePkskData } from '../lib/load'
 
 const props = defineProps<{ level: PkskLevel }>()
 
@@ -39,10 +37,12 @@ const loadFailed = computed(() => isLoadError(error.value))
 </script>
 
 <template>
-  <DsPage data-testid="pksk-domains">
-    <BackLink :to="`/pksk/level/${level}`" label="Kembali ke Dashboard" />
-
-    <LoadError v-if="loadFailed" @retry="reload()" />
+  <DsPage
+    :back-to="`/pksk/level/${level}`"
+    back-label="Kembali ke Dashboard"
+    data-testid="pksk-domains"
+  >
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <section

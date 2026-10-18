@@ -15,9 +15,16 @@ import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AdminCard, AdminFormSection, AdminPageHeader, AdminStickyBar } from '@/ds/admin'
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import { DsPage } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+} from '@/ds'
 
 import {
   createSchool,
@@ -26,9 +33,6 @@ import {
   type SchoolInputBody,
   type SchoolType,
 } from '../api/schools-admin'
-import AdminAlert from '../components/AdminAlert.vue'
-import AdminField from '../components/AdminField.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
 import { errorLines, fieldErrors } from '../lib/school-errors'
 import { SCHOOLS_LIST_PATH, SCHOOL_STATE_OPTIONS, SCHOOL_TYPE_OPTIONS } from '../lib/school-options'
@@ -135,46 +139,28 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="school-form-page">
-    <AdminPageHeader
-      :title="editing ? 'Edit Sekolah' : 'Tambah Sekolah'"
-      :subtitle="
-        editing ? 'Kemaskini maklumat sekolah.' : 'Daftarkan sekolah baharu ke dalam sistem.'
-      "
-    >
-      <template #actions>
-        <UButton
-          :to="SCHOOLS_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          label="Kembali ke Senarai Sekolah"
-          data-testid="school-back"
-        />
-      </template>
-    </AdminPageHeader>
-
+  <DsPage
+    :title="editing ? 'Edit Sekolah' : 'Tambah Sekolah'"
+    back-label="Kembali ke Senarai Sekolah"
+    :subtitle="
+      editing ? 'Kemaskini maklumat sekolah.' : 'Daftarkan sekolah baharu ke dalam sistem.'
+    "
+    :back-to="SCHOOLS_LIST_PATH"
+    data-testid="school-form-page"
+  >
     <!-- S11 could not load the school (unknown id): red box + the way back. INFERRED. -->
-    <div
+    <DsLoadError
       v-if="editing && loadError && !notFound"
-      class="flex flex-col gap-4"
-      data-testid="school-load-error"
-    >
-      <AdminAlert :messages="errorLines(loadError)" />
-      <div>
-        <UButton label="Cuba Lagi" @click="reloadSchool()" />
-      </div>
-    </div>
+      message="Tidak dapat memuatkan sekolah. Sila cuba semula."
+      testid="school-load-error"
+      @retry="reloadSchool()"
+    />
 
-    <AdminCard
-      v-else-if="!ready && !notFound"
-      as="div"
-      flush
-      class="flex flex-col gap-6 p-6"
-      data-testid="school-form-skeleton"
-    >
-      <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
-    </AdminCard>
+    <DsPanel v-else-if="!ready && !notFound" flush data-testid="school-form-skeleton">
+      <div class="flex flex-col gap-6 p-6">
+        <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
+      </div>
+    </DsPanel>
 
     <form
       v-else-if="!notFound"
@@ -183,15 +169,35 @@ async function submit(): Promise<void> {
       data-testid="school-form"
       @submit.prevent="submit"
     >
-      <AdminAlert :messages="errors" data-testid="school-form-alert" />
+      <UAlert
+        v-if="errors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="school-form-alert"
+      >
+        <template #description>
+          <div class="flex flex-col gap-1">
+            <p v-for="m in errors" :key="m">{{ m }}</p>
+          </div>
+        </template>
+      </UAlert>
 
-      <AdminFormSection
+      <DsFormSection
         title="Maklumat Sekolah"
         description="Nama, kod KPM dan jenis sekolah."
-        icon="i-ph-buildings"
+        icon="buildings"
+        :columns="2"
       >
-        <div class="md:col-span-2">
-          <AdminField for="school-name" label="Nama Sekolah" required :error="fieldMessages.name">
+        <div class="sm:col-span-2">
+          <DsFormField
+            native
+            for="school-name"
+            label="Nama Sekolah"
+            required
+            :error="fieldMessages.name"
+          >
             <UInput
               id="school-name"
               v-model="form.name"
@@ -203,10 +209,16 @@ async function submit(): Promise<void> {
               class="w-full"
               data-testid="school-name"
             />
-          </AdminField>
+          </DsFormField>
         </div>
 
-        <AdminField for="school-code" label="Kod Sekolah" required :error="fieldMessages.code">
+        <DsFormField
+          native
+          for="school-code"
+          label="Kod Sekolah"
+          required
+          :error="fieldMessages.code"
+        >
           <UInput
             id="school-code"
             v-model="form.code"
@@ -218,47 +230,48 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="school-code"
           />
-        </AdminField>
+        </DsFormField>
 
-        <AdminField for="school-type" label="Jenis" required :error="fieldMessages.type">
-          <NativeSelect
+        <DsFormField native for="school-type" label="Jenis" required :error="fieldMessages.type">
+          <DsNativeSelect
             id="school-type"
             v-model="form.type"
             name="type"
             required
-            :aria-invalid="invalid('type') ? 'true' : undefined"
+            :invalid="invalid('type')"
             data-testid="school-type"
           >
             <option value="">Pilih jenis</option>
             <option v-for="type in SCHOOL_TYPE_OPTIONS" :key="type" :value="type">
               {{ type }}
             </option>
-          </NativeSelect>
-        </AdminField>
-      </AdminFormSection>
+          </DsNativeSelect>
+        </DsFormField>
+      </DsFormSection>
 
-      <AdminFormSection
+      <DsFormSection
         title="Lokasi dan Status"
         description="Negeri, daerah, bandar dan status sekolah."
-        icon="i-ph-map-pin"
+        icon="map-pin"
+        :columns="2"
       >
-        <AdminField for="school-state" label="Negeri" required :error="fieldMessages.state">
-          <NativeSelect
+        <DsFormField native for="school-state" label="Negeri" required :error="fieldMessages.state">
+          <DsNativeSelect
             id="school-state"
             v-model="form.state"
             name="state"
             required
-            :aria-invalid="invalid('state') ? 'true' : undefined"
+            :invalid="invalid('state')"
             data-testid="school-state"
           >
             <option value="">Pilih negeri</option>
             <option v-for="name in SCHOOL_STATE_OPTIONS" :key="name" :value="name">
               {{ name }}
             </option>
-          </NativeSelect>
-        </AdminField>
+          </DsNativeSelect>
+        </DsFormField>
 
-        <AdminField for="school-district" label="Daerah" :error="fieldMessages.district">
+        <DsFormField native for="school-district" label="Daerah" :error="fieldMessages.district">
           <UInput
             id="school-district"
             v-model="form.district"
@@ -269,9 +282,9 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="school-district"
           />
-        </AdminField>
+        </DsFormField>
 
-        <AdminField for="school-city" label="Bandar" :error="fieldMessages.city">
+        <DsFormField native for="school-city" label="Bandar" :error="fieldMessages.city">
           <UInput
             id="school-city"
             v-model="form.city"
@@ -282,7 +295,7 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="school-city"
           />
-        </AdminField>
+        </DsFormField>
 
         <div class="self-end">
           <UserFormSwitch
@@ -292,25 +305,13 @@ async function submit(): Promise<void> {
             testid="school-active"
           />
         </div>
-      </AdminFormSection>
+      </DsFormSection>
 
-      <AdminStickyBar>
-        <UButton
-          :to="SCHOOLS_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          label="Batal"
-          data-testid="school-cancel"
-        />
-        <UButton
-          type="submit"
-          icon="i-ph-floppy-disk"
-          :label="editing ? 'Kemaskini' : 'Simpan'"
-          :loading="saving"
-          :disabled="saving"
-          data-testid="school-submit"
-        />
-      </AdminStickyBar>
+      <DsFormBar
+        :cancel-to="SCHOOLS_LIST_PATH"
+        :submit-label="editing ? 'Kemaskini' : 'Simpan'"
+        :saving="saving"
+      />
     </form>
   </DsPage>
 </template>

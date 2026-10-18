@@ -11,7 +11,7 @@ import { computed, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsFilterBar, DsIconChip, DsPage } from '@/ds'
+import { DsEmptyState, DsFilterBar, DsIconChip, DsLoadError, DsPage } from '@/ds'
 
 import { fetchAudioSets } from '../api'
 import type { AudioSetListQuery } from '../api'
@@ -78,7 +78,7 @@ function apiQuery(): AudioSetListQuery {
   return q
 }
 
-const { data, error, loading } = useApi(
+const { data, error, loading, reload } = useApi(
   (signal) => fetchAudioSets(apiQuery(), { signal }),
   () => route.fullPath,
 )
@@ -133,14 +133,7 @@ function reset(): void {
       />
     </DsFilterBar>
 
-    <UAlert
-      v-if="error"
-      color="error"
-      variant="soft"
-      icon="i-ph-warning-duotone"
-      :description="COPY.loadFailed"
-      data-testid="audio-error"
-    />
+    <DsLoadError v-if="error" :message="COPY.loadFailed" testid="audio-error" @retry="reload()" />
 
     <div
       v-else-if="loading && !data"

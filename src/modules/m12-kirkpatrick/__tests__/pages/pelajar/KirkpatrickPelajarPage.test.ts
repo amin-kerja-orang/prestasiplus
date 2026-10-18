@@ -150,9 +150,7 @@ describe('S8 header (AC-M12-30.1)', () => {
 
   it('stacks the header below sm', async () => {
     const w = await open()
-    expect(t(w, 'kirk-pelajar').get('header').classes()).toEqual(
-      expect.arrayContaining(['flex-col', 'sm:flex-row']),
-    )
+    expect(t(w, 'kirk-pelajar').get('header').classes()).toContain('flex-col')
   })
 })
 

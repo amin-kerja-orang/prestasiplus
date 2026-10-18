@@ -330,6 +330,6 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     )
     const { w } = await open('/admin/tiket', AdminTicketsPage)
     expect(tid(w, 'tq-error').text()).toContain('Ralat pelayan.')
-    expect(tid(w, 'tq-retry').text()).toBe('Cuba lagi')
+    expect(w.findAll('button').some((b) => b.text() === 'Cuba Semula')).toBe(true)
   })
 })

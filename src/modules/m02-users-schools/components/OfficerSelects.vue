@@ -8,9 +8,9 @@
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
 
+import { DsFormField, DsNativeSelect } from '@/ds'
+
 import { fetchPpdList, type Jpn, type Ppd } from '../api/schools'
-import AdminField from './AdminField.vue'
-import NativeSelect from './native/NativeSelect.vue'
 
 const state = defineModel<string>('state', { required: true })
 const district = defineModel<string>('district', { required: true })
@@ -59,14 +59,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <AdminField for="officer-jpn" label="Negeri (JPN)" required>
-    <NativeSelect id="officer-jpn" v-model="jpnId" data-testid="officer-jpn" @change="onJpnChange">
+  <DsFormField native for="officer-jpn" label="Negeri (JPN)" required>
+    <DsNativeSelect
+      id="officer-jpn"
+      v-model="jpnId"
+      data-testid="officer-jpn"
+      @change="onJpnChange"
+    >
       <option value="">-- Pilih Negeri --</option>
       <option v-for="jpn in jpns" :key="jpn.id" :value="String(jpn.id)">{{ jpn.name }}</option>
-    </NativeSelect>
-  </AdminField>
-  <AdminField v-if="needsPpd" for="officer-ppd" label="PPD" required>
-    <NativeSelect
+    </DsNativeSelect>
+  </DsFormField>
+  <DsFormField v-if="needsPpd" native for="officer-ppd" label="PPD" required>
+    <DsNativeSelect
       id="officer-ppd"
       v-model="district"
       :disabled="jpnId === '' || loading"
@@ -74,6 +79,6 @@ onBeforeUnmount(() => {
     >
       <option value="">-- Pilih PPD --</option>
       <option v-for="ppd in ppds" :key="ppd.id" :value="ppd.code">{{ ppd.name }}</option>
-    </NativeSelect>
-  </AdminField>
+    </DsNativeSelect>
+  </DsFormField>
 </template>

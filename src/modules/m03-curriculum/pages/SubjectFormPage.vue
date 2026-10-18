@@ -14,8 +14,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
-import { AdminFormSection, AdminPageHeader } from '@/ds/admin'
+import { DsFormSection, DsPage, DsPageHeader } from '@/ds'
 
 import {
   createSubject,
@@ -151,7 +150,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
 </script>
 <template>
   <DsPage data-testid="subject-form-page">
-    <AdminPageHeader
+    <DsPageHeader
       :title="editing ? 'Edit Subjek' : 'Tambah Subjek'"
       :subtitle="editing ? 'Kemaskini maklumat subjek.' : 'Daftarkan subjek baharu.'"
     >
@@ -166,7 +165,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
           Kembali ke Senarai
         </UButton>
       </template>
-    </AdminPageHeader>
+    </DsPageHeader>
 
     <DsLoadError
       v-if="failed"
@@ -195,10 +194,11 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
         </template>
       </UAlert>
 
-      <AdminFormSection
+      <DsFormSection
         title="Maklumat Subjek"
         description="Nama, kod dan susunan paparan."
         icon="i-ph-book"
+        :columns="2"
       >
         <DsFormField
           v-slot="{ id: fid }"
@@ -270,12 +270,13 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             data-testid="subject-order"
           />
         </DsFormField>
-      </AdminFormSection>
+      </DsFormSection>
 
-      <AdminFormSection
+      <DsFormSection
         title="Penampilan"
         description="Ikon, warna tema dan jenis subjek."
         icon="i-ph-palette"
+        :columns="2"
       >
         <DsFormField v-slot="{ id: fid }" native for="subject-icon" label="Ikon (Font Awesome)">
           <UInput
@@ -332,12 +333,13 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
           />
           <p class="mt-2 text-label text-muted">Tandakan jika subjek ini adalah subjek wajib</p>
         </div>
-      </AdminFormSection>
+      </DsFormSection>
 
-      <AdminFormSection
+      <DsFormSection
         title="Tahap Pendidikan Berkaitan"
         description="Pilih tahap yang mempunyai subjek ini."
         icon="i-ph-graduation-cap"
+        :columns="2"
       >
         <fieldset class="min-w-0 md:col-span-2">
           <legend class="sr-only">Tahap Pendidikan Berkaitan</legend>
@@ -361,7 +363,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             </div>
           </div>
         </fieldset>
-      </AdminFormSection>
+      </DsFormSection>
 
       <FormActions
         :cancel-to="SUBJECTS_LIST_PATH"

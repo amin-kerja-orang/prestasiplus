@@ -23,9 +23,6 @@ export const gps = (value: number) => formatNumber(value, { decimals: 2 })
 /** Day key to "dd Mmm yyyy" with the English month as live ("01 Jan 2026"). */
 export const dateEn = (dayKey: string) => formatDateEn(dayKey)
 
-/** A failed fetch (no M12-specific copy on live, SRS §8.3). */
-export const LOAD_ERROR_COPY = 'Gagal memuatkan data. Sila cuba lagi.'
-
 /** Semantic colour of a badge or progress bar (Nuxt UI colour names, theme tokens only). */
 export type KirkColor = 'primary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
 
