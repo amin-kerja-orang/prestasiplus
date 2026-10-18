@@ -9,7 +9,6 @@ import type { TableColumn } from '@nuxt/ui'
 import { DsDataTable } from '@/ds'
 
 import type { SchoolPerformance } from '../../api/types'
-import ToneText from '../shared/ToneText.vue'
 import { ACHIEVEMENT_COLOR, BAND_STYLE, DASH, bandOf, dec2 } from '../../lib/prestasi/format'
 
 const props = defineProps<{ subjects: SchoolPerformance['subjects'] }>()
@@ -97,14 +96,14 @@ const cardFields = [
         >
       </template>
       <template #gpsText-cell="{ row }">
-        <ToneText :tone="bandText(row.original.gps)" class="text-label">{{
+        <span :class="[bandText(row.original.gps), 'text-label']">{{
           row.original.gpsText
-        }}</ToneText>
+        }}</span>
       </template>
       <template #gradeText-cell="{ row }">
-        <ToneText :tone="bandText(row.original.gps)" class="text-label">{{
+        <span :class="[bandText(row.original.gps), 'text-label']">{{
           row.original.gradeText
-        }}</ToneText>
+        }}</span>
       </template>
       <template #onTrack-cell="{ row }">
         <span class="text-success">{{ row.original.onTrack }}</span>

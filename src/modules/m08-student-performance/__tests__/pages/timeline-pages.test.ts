@@ -253,11 +253,11 @@ describe('S18 PublicProfilePage', () => {
       '0 jawapan betul',
       '5 kombo terpanjang',
     ])
-    expect(w.findAll('[data-testid=stat-card]').map((s) => s.text())).toEqual([
-      '🪙256Syiling',
-      '🔥1Kombo Hari',
-      '📚0Sesi Latihan',
-      '🎯0%Ketepatan',
+    expect(w.findAll('[data-testid=stat-cards] > li').map((s) => s.text())).toEqual([
+      '256Syiling',
+      '1Kombo Hari',
+      '0Sesi Latihan',
+      '0%Ketepatan',
     ])
     expect(w.get('[data-testid=sponsor-link]').attributes('href')).toBe('/sponsor/register')
     expect(w.get('[data-testid=footer-line]').text()).toBe('Teruskan usaha Admin!')

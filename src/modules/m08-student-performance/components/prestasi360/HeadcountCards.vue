@@ -4,6 +4,7 @@
  * BR-M08-08 rule (1), the chip row TOV → OTRn (AR chips only) → ETR joined by chevrons; the row wraps
  * on narrow screens (DV-M08-10). "Lihat Penuh" → `/headcount/student/{id}`.
  */
+import { DsPanel } from '@/ds'
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
 
@@ -31,7 +32,7 @@ const chipText = (chip: Chip): string =>
 </script>
 
 <template>
-  <UCard data-testid="headcount-block">
+  <DsPanel data-testid="headcount-block">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('chart-line-up')" class="size-5 text-primary" />Headcount — Prestasi SPM
@@ -77,5 +78,5 @@ const chipText = (chip: Chip): string =>
         </article>
       </div>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

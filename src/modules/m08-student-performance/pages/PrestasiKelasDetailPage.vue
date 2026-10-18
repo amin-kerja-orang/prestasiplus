@@ -8,7 +8,7 @@ import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsChart, DsDataTable, DsEmptyState, DsPage } from '@/ds'
+import { DsBackLink, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { formatNumber } from '@/lib/number'
 import { diffForHumans } from '@/lib/time'
@@ -16,19 +16,16 @@ import { diffForHumans } from '@/lib/time'
 import { fetchClassDashboard } from '../api/class'
 import { fetchOwnClasses } from '../api/performance'
 import ClassHeadcountBlock from '../components/prestasi/ClassHeadcountBlock.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
-import { usePhIcon } from '../lib/icons'
 import { classAccuracySeries, classSessionSeries } from '../lib/prestasi/class-chart'
 import { capPct, pctTrim, plain } from '../lib/prestasi/format'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { useStatItems, type StatSpec } from '../lib/stat-items'
+
+const statItems = useStatItems()
 
 const route = useRoute()
 const router = useRouter()
 const pageMeta = usePageMeta()
-const icon = usePhIcon()
 const classId = computed(() => Number(route.params.id))
 
 const { data, error, reload } = useRouteData(
@@ -63,7 +60,7 @@ const sessionChart = computed(() => classSessionSeries(data.value?.trend ?? []))
 const minutes = (n: number): string =>
   `${formatNumber(n, { decimals: 1, dropZeroFraction: true })}m`
 
-const stats = computed<StatItem[]>(() => {
+const stats = computed<StatSpec[]>(() => {
   const s = data.value?.stats
   if (!s) return []
   return [
@@ -136,26 +133,17 @@ const cardFields = [
 
 <template>
   <DsPage data-testid="prestasi-kelas-detail-page">
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <PageHeader
-        :title="data.class.name"
+      <DsPageHeader
+        :show-title="true" :title="data.class.name"
         :subtitle="subtitle"
         title-testid="class-name"
         subtitle-testid="class-sub"
       >
-        <template #leading>
-          <UButton
-            to="/prestasi/kelas"
-            color="neutral"
-            variant="ghost"
-            size="lg"
-            :icon="icon('arrow-left')"
-            aria-label="Kembali ke senarai kelas"
-            title="Kembali ke senarai kelas"
-            data-testid="back-link"
-          />
+        <template #breadcrumb>
+          <DsBackLink to="/prestasi/kelas" label="Kembali ke senarai kelas" title="Kembali ke senarai kelas" data-testid="back-link" />
         </template>
         <template #subtitle>
           {{ subtitle }} · Kod: <b class="tabular text-primary">{{ data.class.joinCode }}</b>
@@ -171,14 +159,14 @@ const cardFields = [
             @update:model-value="(v: string | undefined) => switchClass(v)"
           />
         </template>
-      </PageHeader>
+      </DsPageHeader>
 
-      <StatGrid :items="stats" :columns="6" />
+      <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="5" prefix="stat" />
 
       <ClassHeadcountBlock v-if="data.headcount" :block="data.headcount" />
 
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
-        <UCard class="min-w-0 lg:col-span-1" data-testid="attention">
+        <DsPanel class="min-w-0 lg:col-span-1" data-testid="attention">
           <div class="flex flex-col gap-3">
             <h2 class="text-subheading text-highlighted">
               ⚠️ Perlu Perhatian
@@ -212,9 +200,9 @@ const cardFields = [
               </RouterLink>
             </div>
           </div>
-        </UCard>
+        </DsPanel>
 
-        <UCard class="min-w-0 lg:col-span-2" data-testid="trend">
+        <DsPanel class="min-w-0 lg:col-span-2" data-testid="trend">
           <div class="flex flex-col gap-4">
             <h2 class="text-subheading text-highlighted">📈 Trend Aktiviti Kelas (30 Hari)</h2>
             <div v-if="data.trend.length > 0" class="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -237,7 +225,7 @@ const cardFields = [
               <DsEmptyState title="Belum ada aktiviti dalam 30 hari terakhir." icon="i-ph-tray" />
             </div>
           </div>
-        </UCard>
+        </DsPanel>
       </div>
 
       <section class="flex min-w-0 flex-col gap-3" data-testid="ranking-card">
@@ -290,6 +278,9 @@ const cardFields = [
         </DsDataTable>
       </section>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

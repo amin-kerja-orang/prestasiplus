@@ -7,15 +7,14 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsChart, DsEmptyState, DsPage } from '@/ds'
+import { DsChart, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
 
 import { fetchHeadcountDashboard } from '../api/headcount'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
 import { dashboardLevels, dashboardStats } from '../lib/headcount/format'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { useStatItems, type StatSpec } from '../lib/stat-items'
+
+const statItems = useStatItems()
 
 const { data, error, reload } = useRouteData((signal) => fetchHeadcountDashboard({ signal }))
 
@@ -30,7 +29,7 @@ const filtered = computed(() =>
 )
 const stats = computed(() => dashboardStats(filtered.value))
 
-const tiles = computed<StatItem[]>(() => [
+const tiles = computed<StatSpec[]>(() => [
   { id: 'configs', label: 'Konfigurasi', value: stats.value.configs, icon: 'list-numbers' },
   { id: 'students', label: 'Jumlah Murid', value: stats.value.students, icon: 'users' },
   { id: 'on', label: 'On Track', value: stats.value.onTrack, icon: 'check-circle' },
@@ -43,7 +42,7 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
 
 <template>
   <DsPage data-testid="headcount-dashboard-page">
-    <PageHeader title="Dashboard Headcount" subtitle="Ringkasan prestasi semua kelas anda">
+    <DsPageHeader title="Dashboard Headcount" subtitle="Ringkasan prestasi semua kelas anda">
       <template #actions>
         <UButton
           to="/headcount"
@@ -54,9 +53,9 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
           data-testid="hero-list"
         />
       </template>
-    </PageHeader>
+    </DsPageHeader>
 
-    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Tapis" data-testid="level-filter">
@@ -87,9 +86,9 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
         />
       </div>
 
-      <StatGrid :items="tiles" prefix="stat" />
+      <DsStatRow :items="statItems(tiles)" data-testid="stat-cards" :cols="4" prefix="stat" />
 
-      <UCard v-if="stats.tracked > 0" data-testid="overall-card">
+      <DsPanel v-if="stats.tracked > 0" data-testid="overall-card">
         <div class="flex flex-col gap-3">
           <div class="flex items-baseline justify-between gap-3">
             <h2 class="text-subheading text-highlighted">Keseluruhan On-Track</h2>
@@ -110,14 +109,14 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
             <span>Tiada Data: {{ stats.noData }}</span>
           </div>
         </div>
-      </UCard>
+      </DsPanel>
 
       <div v-if="configs.length === 0" data-testid="dashboard-empty">
         <DsEmptyState title="Belum ada headcount." icon="i-ph-clipboard-text" />
       </div>
 
       <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2" data-testid="dashboard-charts">
-        <UCard
+        <DsPanel
           v-for="c in filtered"
           :key="c.id"
           class="min-w-0"
@@ -134,9 +133,12 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
             unit="%"
             :data-testid="`headcount-chart-${String(c.id)}`"
           />
-        </UCard>
+        </DsPanel>
       </div>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

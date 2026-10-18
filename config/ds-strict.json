@@ -178,7 +178,9 @@
     { "glob": "src/modules/m09-content/pages/**", "level": "page" },
     { "glob": "src/modules/m09-content/components/**", "level": "page" },
     { "glob": "src/modules/m07-pksk/pages/**", "level": "page" },
-    { "glob": "src/modules/m07-pksk/components/**", "level": "page" }
+    { "glob": "src/modules/m07-pksk/components/**", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/pages/**", "level": "page" },
+    { "glob": "src/modules/m08-student-performance/components/**", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

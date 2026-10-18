@@ -9,14 +9,11 @@ import { computed, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsBackLink, DsEmptyState, DsLoadError, DsPage, DsPageHeader } from '@/ds'
 
 import { fetchHeadcountStudent } from '../api/headcount'
 import StudentSection from '../components/headcount/StudentSection.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const route = useRoute()
 const router = useRouter()
@@ -47,28 +44,19 @@ function back() {
 
 <template>
   <DsPage data-testid="headcount-student-page">
-    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <PageHeader
-        :title="data.student.name"
+      <DsPageHeader
+        :show-title="true" :title="data.student.name"
         :subtitle="subtitle"
         title-testid="student-name"
         subtitle-testid="student-subtitle"
       >
-        <template #leading>
-          <UButton
-            type="button"
-            color="neutral"
-            variant="ghost"
-            size="lg"
-            icon="i-ph-arrow-left"
-            aria-label="Kembali"
-            data-testid="back-button"
-            @click="back"
-          />
+        <template #breadcrumb>
+          <DsBackLink to="/headcount" label="Kembali" data-testid="back-button" @click.prevent="back" />
         </template>
-      </PageHeader>
+      </DsPageHeader>
 
       <div v-if="data.sections.length === 0" data-testid="student-empty">
         <DsEmptyState title="Belum ada headcount." icon="i-ph-clipboard-text" />
@@ -76,6 +64,9 @@ function back() {
 
       <StudentSection v-for="s in data.sections" :key="s.configId" :section="s" />
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

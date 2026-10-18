@@ -9,11 +9,10 @@ import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import { fetchHeadcountSummary } from '../api/headcount'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const route = useRoute()
 const id = computed(() => Number(route.params.id))
@@ -36,18 +35,10 @@ watch(
 
 <template>
   <DsPage data-testid="headcount-shell-page">
-    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <div v-else-if="data" class="flex items-center gap-3">
-      <UButton
-        :to="`/headcount/${String(id)}`"
-        color="neutral"
-        variant="soft"
-        size="lg"
-        icon="i-ph-arrow-left"
-        aria-label="Kembali"
-        data-testid="back-link"
-      />
+      <DsBackLink :to="`/headcount/${String(id)}`" label="Kembali" data-testid="back-link" />
     </div>
   </DsPage>
 </template>

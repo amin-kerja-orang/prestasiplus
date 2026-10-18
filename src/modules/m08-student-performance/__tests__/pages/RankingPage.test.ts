@@ -92,7 +92,7 @@ describe('RankingPage (M08 S19)', () => {
 
   it('renders rows as plain names (no link, even without a user id) and the footer', async () => {
     const w = await render()
-    const rows = w.findAll('[data-testid=ranking-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(3)
     expect(w.find('[data-testid=ranking-list] a').exists()).toBe(false)
     expect(rows[0]?.get('[data-testid=ranking-name]').text()).toBe('Pelajar Demo 1')
@@ -103,7 +103,7 @@ describe('RankingPage (M08 S19)', () => {
     expect(rows[0]?.get('[data-testid=ranking-tepat]').classes()).toContain('text-success')
     expect(rows[1]?.get('[data-testid=ranking-tepat]').classes()).toContain('text-error')
     expect(rows[2]?.get('[data-testid=ranking-betul]').text()).toBe('17,612')
-    expect(w.findAll('[data-testid=ranking-head] div').map((d) => d.text())).toEqual([
+    expect(w.findAll('thead th').map((d) => d.text())).toEqual([
       '#',
       'Pelajar',
       'Tahap',
@@ -177,8 +177,8 @@ describe('RankingPage (M08 S19)', () => {
     api.fetchRankings.mockRejectedValueOnce(new Error('boom'))
     const w = await render()
     expect(w.get('[data-testid=ranking-error]').text()).toContain('Maaf, berlaku ralat.')
-    await w.get('[data-testid=ranking-retry]').trigger('click')
+    await w.get('[data-testid=ranking-error] button').trigger('click')
     await flushPromises()
-    expect(w.findAll('[data-testid=ranking-row]')).toHaveLength(3)
+    expect(w.findAll('tbody tr')).toHaveLength(3)
   })
 })

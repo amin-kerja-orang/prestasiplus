@@ -3,7 +3,7 @@
  * S6 "Cadangan" (FR-M08-44): the BR-M08-13 sentences in order, each with an icon chip (the icon per kind
  * is INFERRED). Recommendations are friend/info content, so the chip uses the info accent.
  */
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon, type PhIcon } from '../../lib/icons'
@@ -23,7 +23,7 @@ const ICON: Record<string, PhIcon> = {
 </script>
 
 <template>
-  <UCard data-testid="suggestions">
+  <DsPanel data-testid="suggestions">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('lightbulb')" class="size-5 text-primary" />Cadangan
@@ -40,5 +40,5 @@ const ICON: Record<string, PhIcon> = {
         </li>
       </ul>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

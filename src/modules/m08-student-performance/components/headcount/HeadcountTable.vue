@@ -14,7 +14,6 @@ import { DsDataTable, type CardField } from '@/ds'
 
 import type { CellTone, HeadcountDetail } from '../../api/headcount-types'
 import { DASH, gradeOfPercent, num1 } from '../../lib/headcount/format'
-import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{ detail: HeadcountDetail }>()
 const selected = defineModel<number[]>('selected', { required: true })
@@ -182,12 +181,11 @@ const toneOf = (row: Row, i: number): CellTone => row[`tone${String(i)}`] as Cel
       >
     </template>
     <template v-for="i in otrs" :key="i" #[`ar${String(i)}-cell`]="{ row }">
-      <ToneText
-        :tone="TONE[toneOf(row.original, i)]"
+      <span
+:class="TONE[toneOf(row.original, i)]"
         :data-testid="`ar-${String(row.original.userId)}-${String(i + 1)}`"
         :data-tone="toneOf(row.original, i)"
-        >{{ row.original[`ar${String(i)}`] }}</ToneText
-      >
+        >{{ row.original[`ar${String(i)}`] }}</span>
     </template>
     <template #card-actions="{ row }">
       <div class="flex items-center gap-2">

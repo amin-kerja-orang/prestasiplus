@@ -8,17 +8,14 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsIconChip, DsPage } from '@/ds'
+import { DsIconChip, DsLoadError, DsPage, DsPageHeader, DsPanel } from '@/ds'
 
 import { fetchAnalytics } from '../api/performance'
 import SubjectPane from '../components/analitik/SubjectPane.vue'
 import WeakTopicCard from '../components/analitik/WeakTopicCard.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
 import { usePhIcon } from '../lib/icons'
 import { TOP_WEAK_LIMIT } from '../lib/analitik'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const { data, error, reload } = useRouteData((signal) => fetchAnalytics({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
@@ -66,11 +63,11 @@ function collapseLeave(el: Element, done: () => void): void {
 
 <template>
   <DsPage data-testid="analitik-page">
-    <PageHeader
+    <DsPageHeader
       title="Analitik Pembelajaran"
       subtitle="Pantau prestasi dan kenal pasti topik yang perlu diperkukuhkan"
     />
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <section class="flex min-w-0 flex-col gap-3" data-testid="top-weak">
@@ -90,7 +87,7 @@ function collapseLeave(el: Element, done: () => void): void {
         </div>
       </section>
 
-      <UCard v-if="hasExtra" data-testid="more-weak">
+      <DsPanel v-if="hasExtra" data-testid="more-weak">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <p class="text-body text-default">
             Masih ada topik lemah lain untuk subjek ini.
@@ -111,7 +108,7 @@ function collapseLeave(el: Element, done: () => void): void {
             @click="showAll = !showAll"
           />
         </div>
-      </UCard>
+      </DsPanel>
 
       <Transition :css="false" @enter="collapseEnter" @leave="collapseLeave">
         <div
@@ -150,6 +147,9 @@ function collapseLeave(el: Element, done: () => void): void {
         <SubjectPane :key="active.subjectId" :subject="active" />
       </template>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

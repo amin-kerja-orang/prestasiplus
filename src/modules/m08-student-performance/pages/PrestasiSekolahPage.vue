@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
 
 import { fetchSchoolPerformance } from '../api/performance'
 import GpsCard from '../components/prestasi/GpsCard.vue'
@@ -15,19 +15,18 @@ import GpsTrendCard from '../components/prestasi/GpsTrendCard.vue'
 import GradeDistribution from '../components/prestasi/GradeDistribution.vue'
 import LevelAndTeachers from '../components/prestasi/LevelAndTeachers.vue'
 import SubjectGpsTable from '../components/prestasi/SubjectGpsTable.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
 import { usePhIcon } from '../lib/icons'
 import { grouped, pct1, plain } from '../lib/prestasi/format'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { useStatItems, type StatSpec } from '../lib/stat-items'
+
+const statItems = useStatItems()
 
 const { data, error, reload } = useRouteData((signal) => fetchSchoolPerformance({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
 const icon = usePhIcon()
 
-const cards = computed<StatItem[]>(() => {
+const cards = computed<StatSpec[]>(() => {
   const s = data.value?.stats
   if (!s) return []
   return [
@@ -55,11 +54,11 @@ const quickNav = computed(() => [
 
 <template>
   <DsPage data-testid="prestasi-sekolah-page">
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <div data-testid="school-header">
-        <PageHeader
+        <DsPageHeader
           title="Dashboard Sekolah"
           :subtitle="`Ringkasan prestasi keseluruhan · ${plain(data.header.classCount)} kelas · ${plain(data.header.studentCount)} murid`"
           subtitle-testid="header-summary"
@@ -82,10 +81,10 @@ const quickNav = computed(() => [
               label="Kelas"
             />
           </template>
-        </PageHeader>
+        </DsPageHeader>
       </div>
 
-      <StatGrid :items="cards" :columns="7" />
+      <DsStatRow :items="statItems(cards)" data-testid="stat-cards" :cols="5" prefix="stat" />
 
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
         <GpsCard :gps="data.gps" />
@@ -96,7 +95,7 @@ const quickNav = computed(() => [
       <SubjectGpsTable :subjects="data.subjects" />
       <LevelAndTeachers :levels="data.levels" :teachers="data.teachers" />
 
-      <UCard data-testid="quick-nav">
+      <DsPanel data-testid="quick-nav">
         <div class="flex flex-col gap-4">
           <h2 class="text-subheading text-highlighted">🔗 Navigasi Pantas</h2>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -113,8 +112,11 @@ const quickNav = computed(() => [
             />
           </div>
         </div>
-      </UCard>
+      </DsPanel>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

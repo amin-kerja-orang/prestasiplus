@@ -9,11 +9,22 @@
  *   Ketepatan from 1024px. Every viewer sees the same list; names are plain text (no user link).
  * - Footer "{n} peserta bersaing" and, from 768px, "Dikemaskini real-time".
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsIconChip, DsPage } from '@/ds'
+import {
+  DsDataTable,
+  DsIdentity,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsPillNav,
+  DsStatRow,
+  type PillItem,
+  type StatItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchLeaderboard } from '../api/performance'
@@ -26,8 +37,7 @@ import {
   accuracyColor,
   readPeriod,
 } from '../lib/leaderboard'
-
-const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
+import { LOAD_ERROR } from '../lib/prestasi/load'
 
 const route = useRoute()
 const period = computed(() => readPeriod(route.query.period))
@@ -41,14 +51,14 @@ const firstLoad = computed(() => data.value === null && error.value === null)
 const rows = computed(() => data.value?.rows ?? [])
 const me = computed(() => data.value?.me ?? null)
 
-const meTiles = computed(() => {
+const meTiles = computed<StatItem[]>(() => {
   const m = me.value
   if (!m) return []
   return [
-    { id: 'rank', label: 'Ranking', icon: 'i-ph-ranking', accent: 'action' as const, value: m.rank === null ? '#-' : `#${String(m.rank)}` },
-    { id: 'coins', label: 'Koin', icon: 'i-ph-coins', accent: 'win' as const, value: formatNumber(m.coins) },
-    { id: 'sessions', label: 'Sesi', icon: 'i-ph-books', accent: 'action' as const, value: formatNumber(m.sessions) },
-    { id: 'accuracy', label: 'Ketepatan', icon: 'i-ph-target', accent: 'win' as const, value: percentText(m.accuracy) },
+    { key: 'rank', label: 'Ranking', icon: 'i-ph-ranking', accent: 'action', value: m.rank === null ? '#-' : `#${String(m.rank)}` },
+    { key: 'coins', label: 'Koin', icon: 'i-ph-coins', accent: 'win', value: formatNumber(m.coins) },
+    { key: 'sessions', label: 'Sesi', icon: 'i-ph-books', accent: 'heat', value: formatNumber(m.sessions) },
+    { key: 'accuracy', label: 'Ketepatan', icon: 'i-ph-target', accent: 'friend', value: percentText(m.accuracy) },
   ]
 })
 
@@ -58,46 +68,36 @@ const TAB_ICONS:Record<string, string> = {
   month: 'i-ph-calendar-blank',
 }
 
+const periodTabs = computed<PillItem<string>[]>(() =>
+  PERIOD_TABS.map((tab) => ({
+    key: tab.id,
+    label: tab.label,
+    icon: TAB_ICONS[tab.id],
+    to: { path: LEADERBOARD_PATH, query: { period: tab.id } },
+  })),
+)
+
+type Row = NonNullable<typeof data.value>['rows'][number]
+const columns: TableColumn<Row>[] = [
+  { accessorKey: 'rank', header: '#' },
+  { accessorKey: 'name', header: 'Pelajar' },
+  { accessorKey: 'coins', header: 'Koin' },
+  { accessorKey: 'sessions', header: 'Sesi' },
+  { accessorKey: 'accuracy', header: 'Ketepatan' },
+]
 </script>
 
 <template>
   <DsPage title="Papan Pendahulu" subtitle="Siapa juara minggu ini?" data-testid="leaderboard-page">
+    <DsPillNav
+      :items="periodTabs"
+      :active="period"
+      label="Tempoh"
+      testid-prefix="leaderboard-tab"
+      data-testid="leaderboard-tabs"
+    />
 
-    <!-- Period links -->
-    <nav class="flex flex-wrap gap-2" data-testid="leaderboard-tabs">
-      <UButton
-        v-for="tab in PERIOD_TABS"
-        :key="tab.id"
-        :to="{ path: LEADERBOARD_PATH, query: { period: tab.id } }"
-        :color="period === tab.id ? 'primary' : 'neutral'"
-        :variant="period === tab.id ? 'solid' : 'soft'"
-        :icon="TAB_ICONS[tab.id]"
-        :label="tab.label"
-        size="lg"
-        :data-testid="`leaderboard-tab-${tab.id}`"
-        :data-active="period === tab.id ? 'true' : 'false'"
-      />
-    </nav>
-
-    <!-- Error -->
-    <div v-if="error" class="flex flex-col items-start gap-3" data-testid="leaderboard-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning-circle"
-        role="alert"
-        :title="LOAD_ERROR"
-        class="w-full"
-      />
-      <UButton
-        color="neutral"
-        variant="soft"
-        size="lg"
-        label="Cuba Semula"
-        data-testid="leaderboard-retry"
-        @click="reload()"
-      />
-    </div>
+    <DsLoadError v-if="error" :message="LOAD_ERROR" testid="leaderboard-error" @retry="reload()" />
 
     <!-- Loading -->
     <div
@@ -114,98 +114,97 @@ const TAB_ICONS:Record<string, string> = {
       <!-- Kedudukan Anda -->
       <section class="flex flex-col gap-3" data-testid="leaderboard-me">
         <h2 class="flex items-center gap-2 text-heading text-highlighted">
-          <UIcon name="i-ph-user-circle" class="size-6 text-primary" aria-hidden="true" />
+          <UIcon name="i-ph-user-circle" class="size-5 text-primary" aria-hidden="true" />
           Kedudukan Anda
         </h2>
-        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <UCard v-for="t in meTiles" :key="t.id" class="min-w-0">
-            <div class="flex flex-col items-start gap-2">
-              <DsIconChip :icon="t.icon" :accent="t.accent" />
-              <span class="tabular text-heading text-highlighted" :data-testid="`me-${t.id}`">{{
-                t.value
-              }}</span>
-              <span class="-mt-1 text-caption text-muted">{{ t.label }}</span>
-            </div>
-          </UCard>
-        </div>
+        <DsStatRow :items="meTiles" prefix="me" :cols="4" />
       </section>
 
       <!-- Podium + table -->
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" data-testid="leaderboard-board">
-        <div v-if="rows.length > 0" class="px-3 pt-8 sm:px-6">
+      <div class="flex min-w-0 flex-col gap-4" data-testid="leaderboard-board">
+        <DsPanel v-if="rows.length > 0">
           <LeaderboardPodium :rows="rows" />
-        </div>
-        <div class="overflow-x-auto">
-          <div role="table" aria-label="Papan Pendahulu" data-testid="leaderboard-table">
-            <div
-              role="row"
-              class="mt-4 grid grid-cols-12 items-center gap-2 bg-elevated px-3 py-3 text-overline text-muted sm:px-4"
+        </DsPanel>
+        <DsDataTable
+          :data="rows"
+          :columns="columns"
+          :page-size="Math.max(rows.length, 1)"
+          variant="flush"
+          layout="fixed"
+          caption="Papan Pendahulu"
+          data-testid="leaderboard-table"
+        >
+          <template #rank-cell="{ row }">
+            <UBadge
+              :color="row.original.rank <= 3 ? 'primary' : 'neutral'"
+              :variant="row.original.rank <= 3 ? 'solid' : 'subtle'"
+              :label="String(row.original.rank)"
+              data-testid="row-rank"
+            />
+          </template>
+          <template #name-cell="{ row }">
+            <DsIdentity
+              :name="row.original.name"
+              :src="row.original.avatarUrl"
+              :initials="initialOf(row.original.name)"
             >
-              <div role="columnheader" class="col-span-2 text-center sm:col-span-1">#</div>
-              <div role="columnheader" class="col-span-6 md:col-span-5 lg:col-span-4">Pelajar</div>
-              <div role="columnheader" class="col-span-4 text-end md:col-span-2">Koin</div>
-              <div role="columnheader" class="hidden text-end md:col-span-2 md:block">Sesi</div>
-              <div role="columnheader" class="hidden text-end lg:col-span-2 lg:block">
-                Ketepatan
-              </div>
+              <template #name>
+                <span class="truncate" data-testid="row-name">{{ row.original.name }}</span>
+              </template>
+            </DsIdentity>
+          </template>
+          <template #coins-cell="{ row }">
+            <span class="inline-flex items-center gap-1 text-label whitespace-nowrap text-highlighted">
+              <UIcon name="i-ph-coins" class="size-4" aria-hidden="true" />
+              <span data-testid="row-coins">{{ formatNumber(row.original.coins) }}</span>
+            </span>
+          </template>
+          <template #sessions-cell="{ row }">
+            <span class="text-muted" data-testid="row-sessions">{{
+              formatNumber(row.original.sessions)
+            }}</span>
+          </template>
+          <template #accuracy-cell="{ row }">
+            <UBadge
+              :color="accuracyColor(row.original.accuracy)"
+              variant="solid"
+              :label="percentText(row.original.accuracy)"
+              data-testid="row-accuracy"
+            />
+          </template>
+          <template #card="{ row }">
+            <div class="flex min-w-0 items-center gap-3">
+              <UBadge
+                :color="row.rank <= 3 ? 'primary' : 'neutral'"
+                :variant="row.rank <= 3 ? 'solid' : 'subtle'"
+                :label="String(row.rank)"
+              />
+              <DsIdentity :name="row.name" :src="row.avatarUrl" :initials="initialOf(row.name)" />
             </div>
-            <div
-              v-for="row in rows"
-              :key="row.rank"
-              role="row"
-              class="grid min-h-14 grid-cols-12 items-center gap-2 px-3 py-2 odd:bg-soft sm:px-4"
-              data-testid="leaderboard-row"
-            >
-              <div role="cell" class="col-span-2 flex justify-center sm:col-span-1">
-                <UBadge
-                  :color="row.rank <= 3 ? 'primary' : 'neutral'"
-                  :variant="row.rank <= 3 ? 'solid' : 'subtle'"
-                  :label="String(row.rank)"
-                  class="tabular"
-                  data-testid="row-rank"
-                />
+            <dl class="grid grid-cols-3 gap-x-3">
+              <div>
+                <dt class="text-caption text-muted">Koin</dt>
+                <dd class="tabular text-label text-highlighted">{{ formatNumber(row.coins) }}</dd>
               </div>
-              <div role="cell" class="col-span-6 min-w-0 md:col-span-5 lg:col-span-4">
-                <div class="flex min-w-0 items-center gap-2">
-                  <UAvatar
-                    :src="row.avatarUrl ?? undefined"
-                    :alt="row.name"
-                    :text="initialOf(row.name)"
-                    size="md"
+              <div>
+                <dt class="text-caption text-muted">Sesi</dt>
+                <dd class="tabular text-label">{{ formatNumber(row.sessions) }}</dd>
+              </div>
+              <div>
+                <dt class="text-caption text-muted">Ketepatan</dt>
+                <dd>
+                  <UBadge
+                    :color="accuracyColor(row.accuracy)"
+                    variant="solid"
+                    :label="percentText(row.accuracy)"
                   />
-                  <span class="truncate text-label text-highlighted" data-testid="row-name">{{
-                    row.name
-                  }}</span>
-                </div>
+                </dd>
               </div>
-              <div
-                role="cell"
-                class="tabular col-span-4 text-end text-label whitespace-nowrap text-highlighted md:col-span-2"
-              >
-                <UIcon name="i-ph-coins" class="size-4" aria-hidden="true" />
-                <span data-testid="row-coins">{{ formatNumber(row.coins) }}</span>
-              </div>
-              <div
-                role="cell"
-                class="tabular hidden text-end text-body whitespace-nowrap text-muted md:col-span-2 md:block"
-                data-testid="row-sessions"
-              >
-                {{ formatNumber(row.sessions) }}
-              </div>
-              <div role="cell" class="hidden text-end lg:col-span-2 lg:block">
-                <UBadge
-                  :color="accuracyColor(row.accuracy)"
-                  variant="solid"
-                  :label="percentText(row.accuracy)"
-                  class="tabular"
-                  data-testid="row-accuracy"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+            </dl>
+          </template>
+        </DsDataTable>
         <div
-          class="flex items-center justify-between gap-3 bg-elevated px-4 py-3 text-caption text-muted"
+          class="flex items-center justify-between gap-3 text-caption text-muted"
           data-testid="leaderboard-footer"
         >
           <span class="inline-flex items-center gap-2">
@@ -220,7 +219,7 @@ const TAB_ICONS:Record<string, string> = {
             Dikemaskini real-time
           </span>
         </div>
-      </UCard>
+      </div>
     </template>
   </DsPage>
 </template>

@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState, DsFilterBar } from '@/ds'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsPanel } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 import { formatNumber } from '@/lib/number'
 
@@ -24,7 +24,6 @@ import {
   type SortKey,
 } from '../../lib/prestasi/item-analysis'
 
-import ToneText from '../shared/ToneText.vue'
 
 import DifficultyDetail from './DifficultyDetail.vue'
 
@@ -182,9 +181,9 @@ function reset(): void {
           </span>
         </template>
         <template #accuracyText-cell="{ row }">
-          <ToneText :tone="accuracyClass(row.original.accuracy)" class="text-label">{{
+          <span :class="[accuracyClass(row.original.accuracy), 'text-label']">{{
             row.original.accuracyText
-          }}</ToneText>
+          }}</span>
         </template>
         <template #level-cell="{ row }">
           <UBadge
@@ -198,7 +197,7 @@ function reset(): void {
 
       <ul v-else class="flex flex-col gap-3" data-testid="difficulty-table">
         <li v-for="r in rows" :key="r.questionId" :data-testid="`difficulty-group-${r.questionId}`">
-          <UCard>
+          <DsPanel>
             <div class="flex flex-col gap-3">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="tabular text-label text-muted">#{{ r.index }}</span>
@@ -237,7 +236,7 @@ function reset(): void {
                 <div>
                   <dt class="text-caption text-muted">Ketepatan</dt>
                   <dd class="tabular text-label">
-                    <ToneText :tone="accuracyClass(r.accuracy)">{{ r.accuracyText }}</ToneText>
+                    <span :class="accuracyClass(r.accuracy)">{{ r.accuracyText }}</span>
                   </dd>
                 </div>
                 <div>
@@ -249,7 +248,7 @@ function reset(): void {
                 <DifficultyDetail :row="r.source" />
               </div>
             </div>
-          </UCard>
+          </DsPanel>
         </li>
       </ul>
     </template>
