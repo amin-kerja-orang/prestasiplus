@@ -8,6 +8,7 @@ import { useSessionStore } from '@/stores/session'
 
 import type { AdminUserListItem } from '../../api/users'
 import UserListPage from '../../pages/UserListPage.vue'
+import { closeMenus, openRowMenu, pickRowMenuItem } from './menu'
 
 const api = vi.hoisted(() => ({
   fetchAdminUsers: vi.fn(),
@@ -20,7 +21,9 @@ const api = vi.hoisted(() => ({
 vi.mock('../../api/users', () => api)
 
 // `useConfirm` falls back to `window.confirm` when no `DsConfirmHost` is mounted (same BM text).
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn<(message: string) => boolean>(() => true) }))
+const dialogs = vi.hoisted(() => ({
+  confirmNative: vi.fn<(message: string) => boolean>(() => true),
+}))
 
 const ME = 1
 
@@ -141,22 +144,27 @@ describe('UserListPage (M02 S1)', () => {
     const w = await render()
     const own = w.get(`[data-user-id="${String(ME)}"]`)
     expect(own.find('[data-testid="user-select"]').exists()).toBe(false)
-    expect(own.find('[data-testid="user-login-as"]').exists()).toBe(false)
-    expect(own.find('[data-testid="user-delete"]').exists()).toBe(false)
-    expect(own.find('[data-testid="user-toggle"]').exists()).toBe(true)
     expect(own.find('[data-testid="user-edit"]').exists()).toBe(true)
-    expect(w.findAll('[data-testid="user-packages"]')).toHaveLength(1)
-    expect(w.get('[data-user-id="3"] [data-testid="user-toggle"]').text()).toContain('Tidak')
+    expect(await openRowMenu(w, `[data-user-id="${String(ME)}"]`)).toEqual(['Nyahaktifkan'])
+    closeMenus()
+    expect(await openRowMenu(w, '[data-user-id="2"]')).toEqual([
+      'Nyahaktifkan',
+      'Login As',
+      'Padam',
+    ])
+    closeMenus()
+    expect(await openRowMenu(w, '[data-user-id="3"]')).toContain('Pakej')
+    closeMenus()
+    expect(w.get('[data-user-id="3"] [data-testid="user-status"]').text()).toBe('Tidak Aktif')
   })
 
   it('toggles after the native confirm and does nothing on cancel', async () => {
     api.toggleUserActive.mockResolvedValue({ data: { isActive: false }, status: 'Selesai.' })
     const w = await render()
     dialogs.confirmNative.mockReturnValueOnce(false)
-    await w.get('[data-user-id="2"] [data-testid="user-toggle"]').trigger('submit')
+    await pickRowMenuItem(w, '[data-user-id="2"]', 'Nyahaktifkan')
     expect(api.toggleUserActive).not.toHaveBeenCalled()
-    await w.get('[data-user-id="2"] form').trigger('submit')
-    await flushPromises()
+    await pickRowMenuItem(w, '[data-user-id="2"]', 'Nyahaktifkan')
     expect(dialogs.confirmNative).toHaveBeenLastCalledWith(
       'Pasti untuk menukar status pengguna ini?',
     )
@@ -167,7 +175,7 @@ describe('UserListPage (M02 S1)', () => {
   it('deletes through the modal', async () => {
     api.deleteAdminUser.mockResolvedValue({ data: { deleted: 2 }, status: 'ok' })
     const w = await render()
-    await w.get('[data-user-id="2"] [data-testid="user-delete"]').trigger('click')
+    await pickRowMenuItem(w, '[data-user-id="2"]', 'Padam')
     expect(document.body.textContent).toContain('Padam Pengguna?')
     expect(document.body.textContent).toContain('Anda pasti mahu memadam pengguna ini?')
     expect(document.querySelector('[data-testid="users-delete-name"]')?.textContent).toBe(
@@ -201,8 +209,7 @@ describe('UserListPage (M02 S1)', () => {
       user: { id: 2, role: 'student', landingPath: '/dashboard' },
     })
     const w = await render()
-    await w.get('[data-user-id="2"] [data-testid="user-login-as"]').trigger('submit')
-    await flushPromises()
+    await pickRowMenuItem(w, '[data-user-id="2"]', 'Login As')
     expect(dialogs.confirmNative).toHaveBeenLastCalledWith('Login sebagai Pengguna Contoh 2?')
     expect(useSessionStore().token).toBe('student-token')
     expect(router.currentRoute.value.path).toBe('/dashboard')
@@ -223,7 +230,7 @@ describe('UserListPage (M02 S1)', () => {
       .mockResolvedValueOnce(listResult([], 25, 2))
       .mockResolvedValue(listResult([user(2), user(3)], 25, 1))
     const w = await render('/admin/users?page=2')
-    await w.get('[data-user-id="30"] [data-testid="user-delete"]').trigger('click')
+    await pickRowMenuItem(w, '[data-user-id="30"]', 'Padam')
     ;(document.querySelector('[data-testid="users-delete-confirm"]') as HTMLElement).click()
     await flushPromises()
     expect(api.deleteAdminUser).toHaveBeenCalledWith(30)

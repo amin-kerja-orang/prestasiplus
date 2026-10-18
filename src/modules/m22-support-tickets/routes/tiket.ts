@@ -29,7 +29,9 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       roles: ['admin'],
       title: 'Tiket Sokongan - PRESTASIPLUS',
+      header: { title: 'Tiket Sokongan', subtitle: 'Permohonan bantuan daripada pengguna' },
       module: 'M22',
+      v2: true,
     },
   },
 ]

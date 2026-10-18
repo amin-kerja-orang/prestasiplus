@@ -1,34 +1,47 @@
 <script setup lang="ts">
 /**
- * Portal Pembelajaran layout (V2-T15 subset; design v2-shells 5.1 and 5.5), for the student
- * (learner personality, dark by default) and the teacher (staff personality, calm look).
+ * Portal Pembelajaran layout (design v2-shells 5.1 and 5.5), for the student (learner personality,
+ * dark by default) and the teacher / school admin (staff personality). Built on the Nuxt UI
+ * dashboard kit, like the Portal Pentadbiran:
  *
- *   >= lg: sidebar (272px) + header + main
- *   <  lg: header + main + 5-tab bottom bar (active tab = filled gradient pill for the learner,
- *          tonal pill for staff) + "Lagi" slide-over with the complete menu
+ *   >= lg: UDashboardSidebar (full height, collapses to an icon rail) + UDashboardPanel with a
+ *          UDashboardNavbar (title, search, reward chips, theme, avatar menu)
+ *   <  lg: navbar + main + 5-tab bottom bar + "Lagi" slide-over with the complete menu and the
+ *          account block (Log Keluar is always within two taps)
  *
- * Menus come from `pembelajaran-nav.ts` (derived from the existing user-nav data, filtered by the
- * prototype scope). Role and name come from `useShellUser()`. Legacy pages (routes without
- * `meta.v2`) render unchanged inside a light "island", so their hard-coded light colours stay
- * readable while the surrounding chrome is dark.
+ * Menus come from `pembelajaran-nav.ts` (derived from the user-nav data, filtered by role and the
+ * prototype scope). Legacy pages (routes without `meta.v2`) render unchanged inside a light island.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
-import { DsArt3D, DsBrandLogo, DsConfirmHost, DsFriendAvatar, DsFriendPicker, DsIcon, DsRewardChip } from '@/ds'
+import {
+  DsArt3D,
+  DsBrandLogo,
+  DsConfirmHost,
+  DsFriendAvatar,
+  DsFriendPicker,
+  DsIcon,
+  DsRewardChip,
+  provideShellTitle,
+} from '@/ds'
 import { useGamificationSummary } from '@/shells/user/useGamificationSummary'
 import { useToast } from '@nuxt/ui/composables'
 import { uiLocale } from '@/theme/locale-ms'
 import { useThemeMode, type Personality } from '@/theme/color-mode'
 
-import PembelajaranNavList from './PembelajaranNavList.vue'
 import {
-  accountItems,
+  accountLinks,
+  buildLearnNav,
+  buildLearnSearch,
+  currentItem,
   drawerEntries,
   pembelajaranTabs,
+  phClass,
+  sectionOf,
   sidebarEntries,
   tabActive,
 } from './pembelajaran-nav'
@@ -46,26 +59,71 @@ const toast = useToast()
 const learner = computed(() => role.value === 'student')
 const personality = computed<Personality>(() => (learner.value ? 'learner' : 'staff'))
 const theme = useThemeMode(personality)
+// Staff pages let the navbar print the h1; learner pages keep their own headings.
+if (role.value !== 'student') provideShellTitle()
 
 const { friend, friendName, pickerOpen, choose, openPicker } = useFriend()
 const { summary, refresh: refreshSummary } = useGamificationSummary()
 
 const lagiOpen = ref(false)
+const sidebarOpen = ref(false)
 useExclusiveSheets(lagiOpen, pickerOpen, useMediaQuery(LG_QUERY))
 const tabs = computed(() => pembelajaranTabs(role.value))
 const sidebar = computed(() => sidebarEntries(role.value))
 const drawer = computed(() => drawerEntries(role.value))
-const account = computed(() => accountItems(role.value))
+const links = computed(() => accountLinks(role.value))
 const showAlesa = computed(() => allows('/cikgu'))
 const isLegacy = computed(() => route.meta.v2 !== true)
+
+const navOpts = computed(() => ({ learner: learner.value, currentPath: route.path }))
+const navGroups = computed(() => buildLearnNav(sidebar.value, navOpts.value))
+const searchGroups = computed(() => {
+  const groups = buildLearnSearch(sidebar.value, navOpts.value)
+  groups.push({
+    id: 'akaun',
+    label: 'Akaun',
+    items: [
+      ...links.value.map((l) => ({
+        id: l.id,
+        label: l.label,
+        icon: phClass(l.icon, learner.value),
+        to: l.to,
+      })),
+      { id: 'logout', label: 'Log Keluar', icon: phClass('sign-out', learner.value), to: '/logout' },
+    ],
+  })
+  return groups
+})
+
+const current = computed(() => currentItem(sidebar.value, route.path))
+const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
+const crumb = computed(() => {
+  const c = current.value ? sectionOf(sidebar.value, current.value.id) : ''
+  return c && c !== title.value ? c : ''
+})
+const initials = computed(
+  () =>
+    name.value
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w.charAt(0).toUpperCase())
+      .join('') || 'A',
+)
 
 watch(
   () => route.fullPath,
   () => {
     lagiOpen.value = false
+    sidebarOpen.value = false
     if (learner.value || role.value === 'teacher') void refreshSummary()
   },
   { immediate: true },
+)
+// The panel body is the scroll container: start every page at the top.
+watch(
+  () => route.path,
+  () => void nextTick(() => document.getElementById('kandungan')?.parentElement?.scrollTo(0, 0)),
 )
 
 function onPicked(chosen: 'aiman' | 'aisyah'): void {
@@ -78,13 +136,76 @@ const ariaFriend = computed(() => `Tukar rakan belajar. Rakan sekarang: ${friend
 const themeLabel = computed(() =>
   theme.scheme.value === 'dark' ? 'Tukar ke tema cerah' : 'Tukar ke tema gelap',
 )
+
+/** Account menu (role-access-matrix section A + theme + Log Keluar), shared by sidebar and navbar. */
+const accountMenu = computed(() => [
+  [
+    { label: name.value || 'Akaun', type: 'label' as const },
+    ...(schoolName.value
+      ? [{ label: schoolName.value, type: 'label' as const, class: 'font-normal' }]
+      : []),
+  ],
+  links.value.map((l) => ({ label: l.label, icon: phClass(l.icon, learner.value), to: l.to })),
+  [
+    ...(learner.value
+      ? [{ label: 'Tukar Rakan Belajar', icon: phClass('smiley', true), onSelect: () => openPicker() }]
+      : []),
+    {
+      label: themeLabel.value,
+      icon: phClass('circle-half', learner.value),
+      onSelect: () => theme.toggle(),
+    },
+  ],
+  [
+    {
+      label: 'Log Keluar',
+      icon: phClass('sign-out', learner.value),
+      to: '/logout',
+      color: 'error' as const,
+    },
+  ],
+])
+
+/** "Lagi" sheet: the complete menu plus the account block. */
+const lagiGroups = computed(() => [
+  ...buildLearnNav(drawer.value, navOpts.value),
+  [
+    { label: 'Akaun', type: 'label' as const },
+    ...links.value.map((l) => ({
+      label: l.label,
+      icon: phClass(l.icon, learner.value),
+      to: l.to,
+    })),
+    {
+      label: 'Log Keluar',
+      icon: phClass('sign-out', learner.value),
+      to: '/logout',
+      class: 'text-error',
+    },
+  ],
+])
+
+/** Active row: filled gradient pill for the learner, tonal row for staff. */
+const navUi = computed(() =>
+  learner.value
+    ? {
+        link: 'aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on',
+        linkLeadingIcon: 'group-aria-[current=page]:text-primary-on',
+        label: 'px-3 pt-4 pb-1 text-overline text-muted',
+      }
+    : {
+        link: 'aria-[current=page]:before:bg-primary/10 aria-[current=page]:font-semibold',
+        label: 'px-3 pt-4 pb-1 text-overline text-muted',
+      },
+)
 </script>
 
 <template>
   <UApp :locale="uiLocale">
     <div
-      class="min-h-dvh bg-muted font-body text-default"
+      class="font-body text-default"
       data-layout="pembelajaran"
+      data-portal="pembelajaran"
       :data-role="role ?? undefined"
     >
       <a
@@ -93,92 +214,215 @@ const themeLabel = computed(() =>
         >Langkau ke kandungan</a
       >
 
-      <!-- Sidebar (>= lg) -->
-      <aside
-        class="fixed inset-y-0 start-0 z-30 hidden w-72 flex-col gap-4 overflow-y-auto bg-default p-4 shadow-ds-xs lg:flex"
-        data-testid="pembelajaran-sidebar"
+      <UDashboardGroup
+        storage="local"
+        storage-key="pembelajaran-dashboard"
+        class="overflow-clip bg-muted"
       >
-        <RouterLink to="/dashboard" class="inline-flex min-h-11 items-center self-start px-2">
-          <DsBrandLogo />
-        </RouterLink>
-        <div class="flex items-center gap-3 rounded-sheet bg-muted p-3">
-          <DsFriendAvatar
-            v-if="learner"
-            :friend="friend"
-            size="md"
-            interactive
-            :label="ariaFriend"
-            @press="openPicker"
-          />
-          <div class="min-w-0">
-            <p class="truncate text-label font-semibold text-highlighted">{{ name }}</p>
-            <p v-if="schoolName" class="truncate text-caption text-muted">{{ schoolName }}</p>
-          </div>
-        </div>
-        <nav aria-label="Menu utama" class="flex-1">
-          <PembelajaranNavList :entries="sidebar" :current-path="route.path" :learner="learner" />
-        </nav>
-      </aside>
-
-      <div class="flex min-h-dvh min-w-0 flex-col lg:ps-72">
-        <!-- Header -->
-        <header
-          class="sticky top-0 z-20 flex min-h-16 items-center gap-1 bg-default px-2 pt-[env(safe-area-inset-top)] shadow-bar sm:px-4"
-          data-testid="pembelajaran-header"
+        <!-- Sidebar (>= lg): full height, collapses to an icon rail -->
+        <UDashboardSidebar
+          id="pembelajaran"
+          v-model:open="sidebarOpen"
+          collapsible
+          resizable
+          :min-size="14"
+          :default-size="17"
+          :max-size="26"
+          :collapsed-size="4"
+          :ui="{
+            root: 'bg-default',
+            header: 'h-16 shrink-0 px-4',
+            body: 'px-3 py-2',
+            footer: 'p-3',
+          }"
+          data-testid="pembelajaran-sidebar"
         >
-          <RouterLink
-            to="/dashboard"
-            class="inline-flex min-h-11 shrink-0 items-center lg:hidden"
-            ><DsBrandLogo
-          /></RouterLink>
-          <div class="ms-auto flex min-w-0 shrink items-center gap-0.5 sm:gap-2">
-            <template v-if="learner">
-              <DsRewardChip art="fire" :value="summary.streakDays" label="hari" />
-              <DsRewardChip art="coin" :value="summary.coins" label="Koin" />
-              <DsFriendAvatar
-                :friend="friend"
-                size="sm"
-                interactive
-                :label="ariaFriend"
-                class="max-sm:min-h-11! max-sm:min-w-11! lg:hidden"
-                @press="openPicker"
-              />
-            </template>
-            <button
-              type="button"
-              class="grid size-11 shrink-0 place-items-center rounded-chip bg-elevated text-default hover:bg-accented"
-              :aria-label="themeLabel"
-              data-testid="pembelajaran-theme-toggle"
-              @click="theme.toggle()"
+          <template #header="{ collapsed }">
+            <RouterLink
+              to="/dashboard"
+              class="flex min-w-0 items-center gap-2"
+              aria-label="Laman utama"
             >
-              <DsIcon :name="theme.scheme.value === 'dark' ? 'sun' : 'moon'" class="size-6" />
-            </button>
-          </div>
-        </header>
+              <DsBrandLogo v-if="!collapsed" />
+              <span
+                v-else
+                class="grid size-9 place-items-center rounded-md bg-gradient-primary font-display text-label font-extrabold text-primary-on"
+                aria-hidden="true"
+                >P+</span
+              >
+            </RouterLink>
+          </template>
 
-        <main
-          id="kandungan"
-          :key="route.path"
-          class="mx-auto w-full max-w-6xl min-w-0 flex-1 px-4 py-4 pb-32 sm:py-6 lg:pb-12"
-          data-testid="pembelajaran-main"
-          tabindex="-1"
+          <template #default="{ collapsed }">
+            <UNavigationMenu
+              :items="navGroups"
+              :collapsed="collapsed"
+              orientation="vertical"
+              popover
+              tooltip
+              :ui="navUi"
+              aria-label="Menu utama"
+              data-testid="pembelajaran-nav"
+            />
+          </template>
+
+          <template #footer="{ collapsed }">
+            <UDropdownMenu
+              :items="accountMenu"
+              :content="{ align: 'start', side: 'top' }"
+              :ui="{ content: 'min-w-60' }"
+            >
+              <button
+                type="button"
+                class="flex min-h-11 w-full min-w-0 items-center gap-3 rounded-md p-2 text-start hover:bg-elevated"
+                aria-label="Menu akaun"
+                data-testid="pembelajaran-account"
+              >
+                <span
+                  class="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-label font-bold text-primary-on"
+                  aria-hidden="true"
+                  >{{ initials }}</span
+                >
+                <span v-if="!collapsed" class="min-w-0 flex-1">
+                  <span class="block truncate text-label font-semibold text-highlighted">{{
+                    name || 'Akaun'
+                  }}</span>
+                  <span v-if="schoolName" class="block truncate text-caption text-muted">{{
+                    schoolName
+                  }}</span>
+                </span>
+                <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
+              </button>
+            </UDropdownMenu>
+          </template>
+        </UDashboardSidebar>
+
+        <UDashboardPanel
+          id="pembelajaran-main"
+          :ui="{ root: 'bg-muted', body: 'p-0 sm:p-0 gap-0', header: 'p-0' }"
         >
-          <FlashOutlet :flash="flash" class="mb-4" />
-          <div
-            v-if="isLegacy"
-            class="light overflow-x-auto rounded-sheet bg-default p-4 text-default"
-            data-personality="staff"
-            data-testid="pembelajaran-legacy-island"
-          >
-            <slot />
-          </div>
-          <slot v-else />
-          <footer class="mt-8 hidden text-center text-caption text-muted lg:block">
-            <p>&copy; 2026 PRESTASIPLUS. Hakcipta Terpelihara.</p>
-            <p>Didikan penuh ❤️ dari Malaysia 🇲🇾</p>
-          </footer>
-        </main>
-      </div>
+          <template #header>
+            <UDashboardNavbar
+              :ui="{
+                root: 'h-16 bg-default pt-[env(safe-area-inset-top)] shadow-bar',
+                title: 'min-w-0',
+              }"
+              data-testid="pembelajaran-header"
+            >
+              <template #leading>
+                <div class="hidden lg:block">
+                  <UDashboardSidebarCollapse
+                    color="neutral"
+                    variant="ghost"
+                    aria-label="Tukar saiz menu"
+                  />
+                </div>
+                <RouterLink
+                  to="/dashboard"
+                  class="inline-flex min-h-11 shrink-0 items-center lg:hidden"
+                  aria-label="Laman utama"
+                  ><DsBrandLogo
+                /></RouterLink>
+              </template>
+              <template #title>
+                <div class="hidden min-w-0 flex-col leading-tight lg:flex">
+                  <span v-if="crumb" class="truncate text-caption text-muted">{{ crumb }}</span>
+                  <h1 v-if="!learner" class="truncate text-subheading font-bold text-highlighted">
+                    {{ title }}
+                  </h1>
+                  <p v-else class="truncate text-subheading font-bold text-highlighted">
+                    {{ title }}
+                  </p>
+                </div>
+              </template>
+              <template #right>
+                <UDashboardSearchButton
+                  label="Cari menu"
+                  color="neutral"
+                  variant="soft"
+                  class="hidden lg:inline-flex"
+                />
+                <UDashboardSearchButton
+                  :collapsed="true"
+                  color="neutral"
+                  variant="soft"
+                  class="hidden sm:inline-flex lg:hidden"
+                />
+                <template v-if="learner">
+                  <DsRewardChip art="fire" :value="summary.streakDays" label="hari" />
+                  <DsRewardChip art="coin" :value="summary.coins" label="Koin" />
+                  <DsFriendAvatar
+                    :friend="friend"
+                    size="sm"
+                    interactive
+                    :label="ariaFriend"
+                    class="hidden sm:inline-flex"
+                    @press="openPicker"
+                  />
+                </template>
+                <UButton
+                  color="neutral"
+                  variant="soft"
+                  :icon="theme.scheme.value === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
+                  class="hidden sm:inline-flex"
+                  :aria-label="themeLabel"
+                  data-testid="pembelajaran-theme-toggle"
+                  @click="theme.toggle()"
+                />
+                <UDropdownMenu
+                  :items="accountMenu"
+                  :content="{ align: 'end', side: 'bottom' }"
+                  :ui="{ content: 'min-w-60' }"
+                >
+                  <button
+                    type="button"
+                    class="grid size-11 shrink-0 place-items-center rounded-full"
+                    aria-label="Menu akaun"
+                    data-testid="pembelajaran-account-top"
+                  >
+                    <span
+                      class="grid size-9 place-items-center rounded-full bg-gradient-primary text-label font-bold text-primary-on"
+                      aria-hidden="true"
+                      >{{ initials }}</span
+                    >
+                  </button>
+                </UDropdownMenu>
+              </template>
+            </UDashboardNavbar>
+          </template>
+
+          <template #body>
+            <main
+              id="kandungan"
+              :key="route.path"
+              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 py-4 pb-32 sm:py-6 lg:pb-12"
+              data-testid="pembelajaran-main"
+              tabindex="-1"
+            >
+              <FlashOutlet :flash="flash" class="mb-4" />
+              <div
+                v-if="isLegacy"
+                class="light overflow-x-auto rounded-sheet bg-default p-4 text-default"
+                data-personality="staff"
+                data-testid="pembelajaran-legacy-island"
+              >
+                <slot />
+              </div>
+              <slot v-else />
+              <footer class="mt-8 hidden text-center text-caption text-muted lg:block">
+                <p>&copy; 2026 PRESTASIPLUS. Hakcipta Terpelihara.</p>
+                <p>Didikan penuh ❤️ dari Malaysia 🇲🇾</p>
+              </footer>
+            </main>
+          </template>
+        </UDashboardPanel>
+
+        <UDashboardSearch
+          :groups="searchGroups"
+          placeholder="Cari menu..."
+          :fuse="{ resultLimit: 30 }"
+        />
+      </UDashboardGroup>
 
       <!-- Cikgu Alesa floating button -->
       <RouterLink
@@ -219,7 +463,9 @@ const themeLabel = computed(() =>
               :data-nav-id="`tab-${tab.id}`"
             >
               <DsIcon :name="tab.icon" class="size-6" />
-              <span class="max-w-full text-center leading-tight break-words" :title="tab.label">{{ tab.label }}</span>
+              <span class="max-w-full text-center leading-tight break-words" :title="tab.label">{{
+                tab.label
+              }}</span>
               <span
                 v-if="tab.live"
                 class="absolute end-3 top-1.5 size-2 rounded-full bg-error"
@@ -250,33 +496,26 @@ const themeLabel = computed(() =>
         :ui="{ content: 'max-w-[min(88vw,360px)]' }"
       >
         <template #body>
-          <nav aria-label="Menu penuh">
-            <PembelajaranNavList
-              :entries="drawer"
-              :current-path="route.path"
-              :learner="learner"
-              @navigate="lagiOpen = false"
-            />
-            <ul class="mt-4 flex flex-col gap-1">
-              <li v-for="item in account" :key="item.id">
-                <RouterLink
-                  :to="item.to"
-                  class="flex min-h-11 items-center rounded-chip px-3 text-label text-toned hover:bg-elevated"
-                  @click="lagiOpen = false"
-                  >{{ item.label }}</RouterLink
-                >
-              </li>
-              <li>
-                <RouterLink
-                  to="/logout"
-                  class="flex min-h-11 items-center rounded-chip px-3 text-label text-error hover:bg-elevated"
-                  data-testid="pembelajaran-logout"
-                  @click="lagiOpen = false"
-                  >Log Keluar</RouterLink
-                >
-              </li>
-            </ul>
-          </nav>
+          <div class="mb-2 flex items-center gap-3 rounded-sheet bg-muted p-3">
+            <span
+              class="grid size-10 shrink-0 place-items-center rounded-full bg-gradient-primary text-label font-bold text-primary-on"
+              aria-hidden="true"
+              >{{ initials }}</span
+            >
+            <span class="min-w-0">
+              <span class="block truncate text-label font-semibold text-highlighted">{{ name }}</span>
+              <span v-if="schoolName" class="block truncate text-caption text-muted">{{
+                schoolName
+              }}</span>
+            </span>
+          </div>
+          <UNavigationMenu
+            :items="lagiGroups"
+            orientation="vertical"
+            :ui="navUi"
+            aria-label="Menu penuh"
+            data-testid="pembelajaran-lagi-nav"
+          />
         </template>
       </USlideover>
 

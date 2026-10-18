@@ -284,7 +284,8 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
       '/admin/tiket?status=dibuka',
       '/admin/tiket?status=selesai',
     ])
-    expect(chips[0]?.classes()).toContain('bg-indigo-600')
+    expect(chips[0]?.attributes('data-active')).toBe('true')
+    expect(chips[1]?.attributes('data-active')).toBe('false')
     expect(w.findAll('th').map((t) => t.text())).toEqual([
       'Tarikh',
       'Pengguna',

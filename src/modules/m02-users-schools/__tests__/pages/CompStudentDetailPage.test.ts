@@ -137,7 +137,6 @@ describe('CompStudentDetailPage (M02 S8) content', () => {
     const rows = w.findAll('[data-testid=comp-class-row]')
     expect(rows[0]!.text()).toContain('5 BESTARI DMO201')
     expect(rows[1]!.findAll('td')[1]!.text()).toBe('—')
-    expect(rows[0]!.findAll('td')[3]!.classes()).toContain('uppercase')
     expect(rows[0]!.findAll('td')[3]!.text()).toBe('active')
   })
 

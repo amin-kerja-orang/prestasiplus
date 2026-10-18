@@ -168,7 +168,9 @@
     { "glob": "src/modules/m09-content/pages/{Admin*,Banner*,AudioSet*,AudioTemplate,Screenshots}Page.vue", "level": "page" },
     { "glob": "src/modules/m09-content/components/admin-kit/*.vue", "level": "page" },
     { "glob": "src/modules/m09-content/components/admin-articles-notes/**", "level": "page" },
-    { "glob": "src/modules/m09-content/components/admin-media/**", "level": "page" }
+    { "glob": "src/modules/m09-content/components/admin-media/**", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/CompStudent*.vue", "level": "page" },
+    { "glob": "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

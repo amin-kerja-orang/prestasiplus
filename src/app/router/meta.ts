@@ -43,6 +43,8 @@ declare module 'vue-router' {
     guestTitle?: RouteTitle
     /** Static shell header. Pages with a data-driven header use `usePageMeta().setHeader()`. */
     header?: PageHeader
+    /** The shell prints this page's title, so `DsPageHeader` (showTitle auto) leaves its h1 out. */
+    shellTitle?: boolean
     module?: ModuleId
     /** Page already built in v2: renders directly in the Pembelajaran layout (others sit in a light island). */
     v2?: boolean

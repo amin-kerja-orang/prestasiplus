@@ -106,7 +106,6 @@ watch(classLevel, () => {
             placeholder="Cari nama / email / ID..."
             icon="i-ph-magnifying-glass"
             aria-label="Cari pelajar"
-            size="lg"
             class="min-w-0 flex-1"
             data-testid="existing-search"
           />
@@ -151,7 +150,12 @@ watch(classLevel, () => {
                 </span>
               </CardCell>
               <CardCell label="Kelas">
-                <UBadge v-if="s.classLevel" color="neutral" variant="subtle" :label="s.classLevel" />
+                <UBadge
+                  v-if="s.classLevel"
+                  color="neutral"
+                  variant="subtle"
+                  :label="s.classLevel"
+                />
               </CardCell>
             </CardRow>
           </CardTable>

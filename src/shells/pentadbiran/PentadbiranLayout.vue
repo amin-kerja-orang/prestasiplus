@@ -13,7 +13,7 @@ import { RouterLink, useRoute } from 'vue-router'
 
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
-import { DsBrandLogo, DsConfirmHost, DsIcon } from '@/ds'
+import { DsBrandLogo, DsConfirmHost, DsIcon, provideShellTitle } from '@/ds'
 import { useShellUser } from '@/shells/pembelajaran/useShellUser'
 import { useThemeMode } from '@/theme/color-mode'
 import { uiLocale } from '@/theme/locale-ms'
@@ -22,6 +22,8 @@ import { MENU_STORAGE_KEY, PENTADBIRAN_MENU, activeItem, groupOf } from './menu'
 import { buildNavItems, buildSearchGroups } from './menu-nav'
 
 const route = useRoute()
+// The navbar prints the page title (h1), so DsPageHeader leaves its own out.
+provideShellTitle()
 const { name } = useShellUser()
 const { flash } = useFlash()
 const theme = useThemeMode('staff')

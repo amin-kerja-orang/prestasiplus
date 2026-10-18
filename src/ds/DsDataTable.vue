@@ -60,6 +60,8 @@ const props = withDefaults(
     sortLabel?: string
     /** Adds a checkbox column (and card checkbox); v-model:selection holds the chosen rows. */
     selectable?: boolean
+    /** Tighter horizontal cell padding (px-2) for wide tables with many columns. */
+    compactCells?: boolean
     /** @deprecated use `variant="flush"` */
     dense?: boolean
     /** @deprecated use `layout="fixed"` */
@@ -88,6 +90,7 @@ const props = withDefaults(
     sortItems: () => [],
     sortLabel: dsCopy.sort,
     selectable: false,
+    compactCells: false,
     dense: false,
     fixedLayout: false,
     emptyLabel: undefined,
@@ -99,15 +102,6 @@ const pageSize = defineModel<number>('pageSize', { default: 10 })
 const sort = defineModel<string | undefined>('sort', { default: undefined })
 const selection = defineModel<T[]>('selection', { default: () => [] })
 const emit = defineEmits<{ retry: []; 'row-click': [row: T] }>()
-defineSlots<{
-  empty?: () => unknown
-  toolbar?: () => unknown
-  card?: (props: { row: T }) => unknown
-  'card-actions'?: (props: { row: T }) => unknown
-  // Every other slot is a `UTable` slot (`<id>-cell`, `<id>-header`).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- UTable slot props are typed per column id
-  [name: string]: ((props: any) => unknown) | undefined
-}>()
 
 const wide = useMedia('(min-width: 768px)')
 
@@ -156,7 +150,7 @@ const tableUi = computed(() => {
   const sticky = flush.value || bare.value || props.stickyHeader
   const th = [
     'text-overline whitespace-nowrap text-muted',
-    tight.value ? 'px-3 py-3' : 'px-4 py-3.5',
+    props.compactCells ? 'px-2 py-3.5' : tight.value ? 'px-3 py-3' : 'px-4 py-3.5',
     sticky ? `sticky top-0 z-10 ${bare.value ? 'bg-elevated' : 'bg-default shadow-bar'}` : '',
   ].join(' ')
   return {
@@ -166,7 +160,7 @@ const tableUi = computed(() => {
     th,
     td: [
       'tabular align-middle text-body font-normal',
-      tight.value ? 'px-3 py-3' : 'px-4 py-4',
+      props.compactCells ? 'px-2 py-4' : tight.value ? 'px-3 py-3' : 'px-4 py-4',
       fixed.value ? 'whitespace-normal' : '',
     ].join(' '),
     tr: bare.value

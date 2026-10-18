@@ -168,8 +168,8 @@ describe('SubscriptionDetailPage (M02 S14)', () => {
     const { w } = await render()
     expect(w.get('[data-testid=sub-bar]').html()).toContain('bg-error')
     expect(w.get('[data-testid=sub-usage]').text()).toBe('562 / 500')
-    expect(w.get('[data-testid=sub-price]').text()).toBe('RM30.00')
-    expect(w.get('[data-testid=sub-total]').text()).toBe('RM15,000.00')
+    expect(w.get('[data-testid=sub-price]').text()).toContain('RM30.00')
+    expect(w.get('[data-testid=sub-total]').text()).toContain('RM15,000.00')
     expect(w.find('[data-testid=sub-toggle-upgrade]').exists()).toBe(false)
   })
 

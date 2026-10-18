@@ -49,7 +49,6 @@ function onInput(value: string): void {
           autocomplete="off"
           placeholder="Cari nama sekolah..."
           icon="i-ph-magnifying-glass"
-          size="lg"
           class="w-full"
           data-testid="std-school-search"
           @update:model-value="onInput"

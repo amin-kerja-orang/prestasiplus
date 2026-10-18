@@ -21,3 +21,12 @@ describe('DsIcon name registry', () => {
     for (const c of dsIconClasses) expect(iconBundle.icons).toContain(c)
   })
 })
+
+describe('Pembelajaran menu icons', () => {
+  it('every learn glyph exists in Phosphor (Regular and Duotone) and is bundled offline', async () => {
+    const { learnIconClasses } = await import('@/theme/ds-icons')
+    const missing = learnIconClasses.filter((c) => !(c.replace('i-ph-', '') in ph.icons))
+    expect(missing).toEqual([])
+    for (const c of learnIconClasses) expect(iconBundle.icons).toContain(c)
+  })
+})

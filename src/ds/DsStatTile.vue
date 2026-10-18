@@ -38,6 +38,8 @@ const props = withDefaults(
     tone?: 'success' | 'warning' | 'error' | 'info'
     /** 3D reward image instead of the chip (learner "Ganjaran 3D"). */
     art?: Art3DName
+    /** Row layout for KPI strips: chip left, number and unit stacked (staff lists). */
+    compact?: boolean
     /** Report size: roomy padding and a larger number (admin KPI strips). */
     roomy?: boolean
     /** Token colour class of the number (a focus point), e.g. 'text-primary'. */
@@ -54,6 +56,7 @@ const props = withDefaults(
     accent: 'action',
     tone: undefined,
     art: undefined,
+    compact: false,
     roomy: false,
     valueClass: 'text-highlighted',
     to: undefined,
@@ -73,8 +76,25 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
 </script>
 
 <template>
+  <div
+    v-if="compact"
+    class="flex min-w-0 items-center gap-3 rounded-card bg-default p-3 shadow-ds-xs sm:gap-4 sm:p-4"
+    data-ds="stat-tile"
+    data-compact="true"
+  >
+    <DsIconChip v-if="icon" :icon="icon" :accent="accent" :tone="tone" size="md" />
+    <div class="flex min-w-0 flex-col">
+      <span
+        class="tabular truncate font-display text-heading leading-tight font-extrabold"
+        :class="valueClass"
+        >{{ value }}</span
+      >
+      <span class="truncate text-label font-semibold text-muted">{{ unit }}</span>
+    </div>
+  </div>
   <component
     :is="to ? RouterLink : 'div'"
+    v-else
     v-bind="to ? { to } : {}"
     class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift"
     :class="[

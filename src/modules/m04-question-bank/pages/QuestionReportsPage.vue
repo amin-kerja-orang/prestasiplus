@@ -13,7 +13,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsEmptyState, DsPage, DsPanel } from '@/ds'
 
 import { fetchQuestionReports, type ReportFilter } from '../api/reports'
 import ErrorBox from '../components/ErrorBox.vue'
@@ -75,6 +75,7 @@ const SKELETON_CARDS = 3
       Soalan yang dilaporkan oleh pelajar dari kuiz, latihan &amp; Papan Bijak
     </p>
 
+    <DsPanel>
     <nav class="flex max-w-full flex-wrap gap-2" aria-label="Status laporan" data-testid="reports-tabs">
       <UButton
         v-for="t in TABS"
@@ -90,6 +91,7 @@ const SKELETON_CARDS = 3
         {{ t.label }}<template v-if="counts"> ({{ counts[t.value] }})</template>
       </UButton>
     </nav>
+    </DsPanel>
 
     <div v-if="error" class="flex flex-col gap-3" data-testid="reports-error">
       <ErrorBox :messages="LOAD_ERROR" />

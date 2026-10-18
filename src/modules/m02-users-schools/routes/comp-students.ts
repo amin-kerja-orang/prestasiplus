@@ -7,7 +7,13 @@ import { COMP_CREATE_PATH, COMP_LIST_PATH, COMP_ROUTES } from '../lib/comp-stude
  * admin shell. Tab titles and headers are exact (SRS §2); S8 replaces both with the student's name once
  * the data is loaded.
  */
-const adminMeta = { layout: 'admin', access: 'auth', roles: ['admin'], module: 'M02' } as const
+const adminMeta = {
+  layout: 'admin',
+  access: 'auth',
+  roles: ['admin'],
+  module: 'M02',
+  v2: true,
+} as const
 
 const routes: RouteRecordRaw[] = [
   {

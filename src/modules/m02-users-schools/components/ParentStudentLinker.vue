@@ -80,7 +80,11 @@ function remove(id: number): void {
     class="flex flex-col gap-3"
     :data-testid="isEdit ? 'parent-linker-edit' : 'parent-linker'"
   >
-    <h3 v-if="isEdit" id="linker-heading" class="flex items-center gap-2 text-label text-highlighted">
+    <h3
+      v-if="isEdit"
+      id="linker-heading"
+      class="flex items-center gap-2 text-label text-highlighted"
+    >
       <UIcon name="i-ph-baby" class="size-4 text-muted" aria-hidden="true" />
       Anak yang Dipautkan
     </h3>
@@ -102,7 +106,6 @@ function remove(id: number): void {
           "
           icon="i-ph-magnifying-glass"
           :loading="searching"
-          size="lg"
           class="w-full"
           aria-label="Cari pelajar"
           data-testid="linker-search"

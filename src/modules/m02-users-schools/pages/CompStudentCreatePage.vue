@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * S7 `/admin/comp-students/create` "Daftar Pelajar Komplimen - Admin Panel" (M02-T7; FR-M02-70…73; BR-18).
+ * S7 `/admin/comp-students/create` "Daftar Pelajar Komplimen - Admin Panel" (M02-T7; FR-M02-70…73; BR-18),
+ * v2 staff theme.
  *
  * Blue info alert (with the configured default password), then the form: "Guru" (not submitted; every
  * teacher), "Kelas guru" (`classroom_id`, required, disabled without a teacher; the teacher's classes),
@@ -10,13 +11,12 @@
  * `required` validation. Success goes to S6 with the result flash (UNVERIFIED COPY: the API `status`,
  * INFERRED: the failed lines follow it); errors show a red alert and keep the input.
  */
-import { ArrowLeft, Info, LoaderCircle, UserPlus } from '@lucide/vue'
 import { nextTick, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
+import { AdminFormSection, AdminPageHeader, AdminStickyBar } from '@/ds/admin'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import {
   fetchTeacherClassrooms,
@@ -25,8 +25,11 @@ import {
   type TeacherClassroomOption,
 } from '../api/comp-students'
 import { fetchAdminDefaults } from '../api/users'
+import AdminAlert from '../components/AdminAlert.vue'
+import AdminField from '../components/AdminField.vue'
 import { COMP_LIST_PATH, COMP_PASTE_PLACEHOLDER, defaultPackageExpiry } from '../lib/comp-students'
 import { errorLines } from '../lib/user-form-errors'
+import AdminSelect from '../components/native/AdminSelect.vue'
 
 const router = useRouter()
 const flash = useFlash()
@@ -88,19 +91,17 @@ async function submit(): Promise<void> {
     submitting.value = false
   }
 }
-
-const LABEL = 'mb-1.5 block text-sm font-semibold text-slate-700'
-const CODE = 'rounded bg-slate-100 px-1 py-0.5 font-mono text-slate-600'
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl space-y-5" data-testid="comp-create-page">
-    <div
-      class="flex items-start gap-3 rounded-xl border-l-4 border-blue-400 bg-blue-50 px-4 py-3 text-sm text-blue-800"
-      data-testid="comp-info"
-    >
-      <Info class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-      <p class="min-w-0 break-words">
+  <DsPage data-testid="comp-create-page">
+    <AdminPageHeader
+      title="Daftar Pelajar Komplimen"
+      subtitle="Daftarkan pelajar komplimen ke kelas guru."
+    />
+
+    <UAlert color="info" variant="subtle" icon="i-ph-info" data-testid="comp-info">
+      <template #description>
         Setiap pelajar dapat: username <strong>6 digit akhir IC</strong>@prestasiplus.my, kata
         laluan
         <strong data-testid="comp-info-password">{{
@@ -108,113 +109,114 @@ const CODE = 'rounded bg-slate-100 px-1 py-0.5 font-mono text-slate-600'
         }}</strong
         >, pakej penuh percuma, dan <strong>syiling dimatikan</strong> (tak boleh kumpul/claim
         walaupun jawab soalan / main game).
-      </p>
-    </div>
+      </template>
+    </UAlert>
 
     <form
       method="post"
-      class="space-y-5 rounded-2xl bg-white p-5 shadow sm:p-6"
+      class="flex w-full min-w-0 flex-col gap-6"
       data-testid="comp-form"
       @submit.prevent="submit"
     >
-      <div ref="alertBox" class="scroll-mt-4">
-        <AlertBox :messages="errors" data-testid="comp-alert" />
+      <div ref="alertBox" class="empty:hidden">
+        <AdminAlert :messages="errors" data-testid="comp-alert" />
       </div>
 
-      <div>
-        <label for="comp-teacher" :class="LABEL">Guru</label>
-        <select
-          id="comp-teacher"
-          v-model="teacherId"
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
-          data-testid="comp-teacher"
-        >
-          <option value="">— Pilih guru —</option>
-          <option v-for="t in teachers.data.value ?? []" :key="t.id" :value="String(t.id)">
-            {{ t.name }} ({{ t.email }})
-          </option>
-        </select>
-      </div>
+      <AdminFormSection
+        title="Kelas"
+        description="Pilih guru, kelasnya dan tarikh tamat pakej."
+        icon="i-ph-chalkboard-teacher"
+      >
+        <AdminField for="comp-teacher" label="Guru">
+          <AdminSelect id="comp-teacher" v-model="teacherId" data-testid="comp-teacher">
+            <option value="">— Pilih guru —</option>
+            <option v-for="t in teachers.data.value ?? []" :key="t.id" :value="String(t.id)">
+              {{ t.name }} ({{ t.email }})
+            </option>
+          </AdminSelect>
+        </AdminField>
 
-      <div>
-        <label for="comp-class" :class="LABEL">Kelas guru</label>
-        <select
-          id="comp-class"
-          v-model="classroomId"
-          name="classroom_id"
-          required
-          :disabled="teacherId === ''"
-          :class="[
-            FORM_INPUT_CLASS,
-            'min-h-11 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400',
-          ]"
-          data-testid="comp-class"
-        >
-          <option value="">— Pilih kelas —</option>
-          <option v-for="c in classes" :key="c.id" :value="String(c.id)">
-            {{ c.name }} ({{ c.classCode }})
-          </option>
-        </select>
-        <p
-          v-if="teacherId !== '' && classes.length === 0"
-          class="mt-1 text-xs text-slate-500"
-          data-testid="comp-no-class"
-        >
-          Guru ini tiada kelas aktif.
-        </p>
-      </div>
+        <AdminField for="comp-class" label="Kelas guru">
+          <AdminSelect
+            id="comp-class"
+            v-model="classroomId"
+            name="classroom_id"
+            required
+            :disabled="teacherId === ''"
+            data-testid="comp-class"
+          >
+            <option value="">— Pilih kelas —</option>
+            <option v-for="c in classes" :key="c.id" :value="String(c.id)">
+              {{ c.name }} ({{ c.classCode }})
+            </option>
+          </AdminSelect>
+          <p
+            v-if="teacherId !== '' && classes.length === 0"
+            class="text-label text-muted"
+            data-testid="comp-no-class"
+          >
+            Guru ini tiada kelas aktif.
+          </p>
+        </AdminField>
 
-      <div>
-        <label for="comp-expiry" :class="LABEL">Tarikh tamat pakej</label>
-        <input
-          id="comp-expiry"
-          v-model="expiresAt"
-          type="date"
-          name="package_expires_at"
-          required
-          :class="[FORM_INPUT_CLASS, 'min-h-11']"
-          data-testid="comp-expiry"
-        />
-      </div>
+        <AdminField for="comp-expiry" label="Tarikh tamat pakej">
+          <UInput
+            id="comp-expiry"
+            v-model="expiresAt"
+            type="date"
+            name="package_expires_at"
+            required
+            class="w-full"
+            data-testid="comp-expiry"
+          />
+        </AdminField>
+      </AdminFormSection>
 
-      <div>
-        <label for="comp-students" :class="LABEL">Senarai pelajar</label>
-        <p class="mb-2 text-xs text-slate-500" data-testid="comp-help">
-          Satu pelajar setiap baris, format: <code :class="CODE">NAMA, NOKP</code> (cth:
-          <code :class="CODE">MUHAMMAD FULAN BIN FULAN, 090101101234</code>)
-        </p>
-        <textarea
-          id="comp-students"
-          v-model="students"
-          name="students"
-          rows="8"
-          required
-          :placeholder="COMP_PASTE_PLACEHOLDER"
-          :class="[FORM_INPUT_CLASS, 'font-mono']"
-          data-testid="comp-students"
-        ></textarea>
-      </div>
+      <AdminFormSection
+        title="Senarai Pelajar"
+        description="Satu pelajar setiap baris."
+        icon="i-ph-student"
+      >
+        <div class="md:col-span-2">
+          <AdminField for="comp-students" label="Senarai pelajar">
+            <p class="text-label text-muted" data-testid="comp-help">
+              Satu pelajar setiap baris, format:
+              <code class="bg-elevated text-default">NAMA, NOKP</code>
+              (cth:
+              <code class="bg-elevated text-default">MUHAMMAD FULAN BIN FULAN, 090101101234</code>)
+            </p>
+            <UTextarea
+              id="comp-students"
+              v-model="students"
+              name="students"
+              :rows="8"
+              required
+              :placeholder="COMP_PASTE_PLACEHOLDER"
+              class="w-full"
+              data-testid="comp-students"
+            />
+          </AdminField>
+        </div>
+      </AdminFormSection>
 
-      <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
-        <RouterLink
+      <AdminStickyBar>
+        <UButton
           :to="COMP_LIST_PATH"
-          class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-arrow-left"
+          label="Senarai pelajar komplimen"
           data-testid="comp-back"
-        >
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          Senarai pelajar komplimen
-        </RouterLink>
-        <button
+        />
+        <UButton
           type="submit"
+          icon="i-ph-user-plus"
+          label="Daftar Pelajar Komplimen"
+          :loading="submitting"
           :disabled="submitting"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:cursor-wait disabled:opacity-60"
           data-testid="comp-submit"
-        >
-          <LoaderCircle v-if="submitting" class="h-4 w-4 animate-spin" aria-hidden="true" />
-          <UserPlus v-else class="h-4 w-4" aria-hidden="true" />
-          Daftar Pelajar Komplimen
-        </button>
-      </div>
+        />
+      </AdminStickyBar>
     </form>
-  </div>
+  </DsPage>
 </template>

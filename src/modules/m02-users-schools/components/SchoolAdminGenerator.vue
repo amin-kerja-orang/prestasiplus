@@ -100,7 +100,6 @@ function metaLine(s: SchoolSummary): string {
           autocomplete="off"
           placeholder="Taipkan nama sekolah atau kod sekolah (cth: JBA0001)..."
           :loading="searching"
-          size="lg"
           class="w-full"
           data-testid="gen-search"
           @update:model-value="onInput"
@@ -115,7 +114,9 @@ function metaLine(s: SchoolSummary): string {
             @click="picker.select(item)"
           >
             <span class="block text-label text-highlighted">{{ item.name }}</span>
-            <span class="flex flex-wrap items-center justify-between gap-x-3 text-caption text-muted">
+            <span
+              class="flex flex-wrap items-center justify-between gap-x-3 text-caption text-muted"
+            >
               <span>{{ metaLine(item) }}</span>
               <span>{{ item.code === '' ? 'Tiada kod' : item.code }}</span>
             </span>
@@ -175,7 +176,11 @@ function metaLine(s: SchoolSummary): string {
           @click="emit('generate')"
         />
       </div>
-      <p v-if="!hasCode" class="flex items-start gap-2 text-label text-warning" data-testid="gen-no-code">
+      <p
+        v-if="!hasCode"
+        class="flex items-start gap-2 text-label text-warning"
+        data-testid="gen-no-code"
+      >
         <UIcon name="i-ph-warning" class="mt-1 size-4 shrink-0" aria-hidden="true" />
         Sekolah ini tiada kod KPM. Sila kemaskini kod sekolah di halaman Sekolah terlebih dahulu.
       </p>
@@ -195,7 +200,6 @@ function metaLine(s: SchoolSummary): string {
             type="text"
             name="name"
             required
-            size="lg"
             class="w-full"
             data-testid="gen-name"
           />
@@ -209,7 +213,6 @@ function metaLine(s: SchoolSummary): string {
               required
               readonly
               :model-value="email"
-              size="lg"
               class="w-full"
               data-testid="gen-email"
             />
@@ -232,7 +235,6 @@ function metaLine(s: SchoolSummary): string {
               type="text"
               readonly
               :model-value="props.password"
-              size="lg"
               class="w-full"
               data-testid="gen-password"
             />
@@ -257,7 +259,6 @@ function metaLine(s: SchoolSummary): string {
             maxlength="14"
             inputmode="tel"
             placeholder="012-345 6789"
-            size="lg"
             class="w-full"
             data-testid="gen-phone"
           />

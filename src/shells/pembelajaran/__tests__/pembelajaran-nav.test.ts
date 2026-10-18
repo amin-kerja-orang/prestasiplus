@@ -4,7 +4,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveShell, userShellFor } from '@/app/router/layouts'
 import { FRIEND_STORAGE_KEY, resetFriendForTests, useFriend } from '@/composables/useFriend'
 
-import { accountItems, drawerEntries, pembelajaranTabs, sidebarEntries } from '../pembelajaran-nav'
+import { dsIconBaseNames } from '@/theme/ds-icons'
+import { learnIconNames } from '@/theme/learn-icons'
+
+import {
+  accountItems,
+  accountLinks,
+  buildLearnNav,
+  buildLearnSearch,
+  drawerEntries,
+  flatItems,
+  pembelajaranTabs,
+  phIconFor,
+  sidebarEntries,
+} from '../pembelajaran-nav'
 
 beforeEach(() => vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on'))
 afterEach(() => vi.unstubAllEnvs())
@@ -82,5 +95,48 @@ describe('useFriend', () => {
     const f = useFriend()
     f.offerFirstRun()
     expect(f.pickerOpen.value).toBe(false)
+  })
+})
+
+describe('Pembelajaran Nuxt UI menu data', () => {
+  const roles = ['student', 'teacher', 'school_admin'] as const
+
+  it('every menu item gets a Phosphor glyph that is registered in the icon bundle', () => {
+    for (const role of roles) {
+      for (const item of flatItems(sidebarEntries(role))) {
+        expect([...learnIconNames, ...dsIconBaseNames], `${role}/${item.id}`).toContain(phIconFor(item))
+      }
+    }
+  })
+
+  it('learner rows use the Duotone weight, staff rows the Regular weight', () => {
+    const learner = buildLearnNav(sidebarEntries('student'), { learner: true, currentPath: '/spm' })
+    const staff = buildLearnNav(sidebarEntries('teacher'), { learner: false, currentPath: '/guru' })
+    const icons = (groups: typeof learner) =>
+      groups.flat().flatMap((i) => (i.icon ? [String(i.icon)] : []))
+    expect(icons(learner).every((c) => c.endsWith('-duotone'))).toBe(true)
+    expect(icons(staff).some((c) => c.endsWith('-duotone'))).toBe(false)
+  })
+
+  it('headings become label rows and exactly one item is active', () => {
+    const groups = buildLearnNav(sidebarEntries('teacher'), { learner: false, currentPath: '/guru' })
+    const flat = groups.flat()
+    expect(flat.some((i) => i.type === 'label')).toBe(true)
+    expect(flat.filter((i) => i.active === true)).toHaveLength(1)
+  })
+
+  it('the account menu lists the section A links and keeps routes in scope', () => {
+    for (const role of roles) {
+      const labels = accountLinks(role).map((l) => l.label)
+      expect(labels, role).toEqual(['Profil Saya', 'Tetapan Peribadi', 'Panduan', 'Tiket Bantuan'])
+    }
+  })
+
+  it('search groups cover every sidebar item', () => {
+    const entries = sidebarEntries('student')
+    const ids = buildLearnSearch(entries, { learner: true, currentPath: '/' }).flatMap((g) =>
+      g.items.map((i) => i.id),
+    )
+    expect(ids.sort()).toEqual(flatItems(entries).map((i) => i.id).sort())
   })
 })

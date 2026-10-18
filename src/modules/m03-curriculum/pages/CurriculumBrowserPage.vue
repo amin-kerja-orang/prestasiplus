@@ -11,6 +11,7 @@
 import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { AdminCard, AdminPageHeader } from '@/ds/admin'
 import { useApi, useFlash } from '@/composables'
 import { DsEmptyState, DsPage, useConfirm } from '@/ds'
 
@@ -28,7 +29,6 @@ import {
 import ChapterBlock from '../components/curriculum/ChapterBlock.vue'
 import CurriculumStatCards from '../components/curriculum/CurriculumStatCards.vue'
 import ErrorBox from '../components/ErrorBox.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import {
   CURRICULUM_PATH,
   chapterCreateTo,
@@ -38,6 +38,7 @@ import {
 } from '../lib/curriculum-paths'
 import { queryString } from '../lib/query'
 import { TREE_ACTIONS, type TreeActions } from '../lib/tree-actions'
+import NativeSelect from '../components/native/NativeSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -115,12 +116,18 @@ async function mutate(run: () => Promise<CurriculumMutation<unknown>>): Promise<
 
 const actions: TreeActions = {
   async deleteChapter(chapter) {
-    if (busy.value || !(await confirm({ message: 'Adakah anda pasti mahu padam bab ini?', tone: 'danger' })))
+    if (
+      busy.value ||
+      !(await confirm({ message: 'Adakah anda pasti mahu padam bab ini?', tone: 'danger' }))
+    )
       return
     await mutate(() => deleteChapter(chapter.id))
   },
   async deleteTopic(topic) {
-    if (busy.value || !(await confirm({ message: 'Adakah anda pasti mahu padam topik ini?', tone: 'danger' })))
+    if (
+      busy.value ||
+      !(await confirm({ message: 'Adakah anda pasti mahu padam topik ini?', tone: 'danger' }))
+    )
       return
     await mutate(() => deleteTopic(topic.id))
   },
@@ -136,11 +143,24 @@ const actions: TreeActions = {
   addSubtopic: (topicId, input) => mutate(() => createSubtopic({ topicId, ...input })),
 }
 provide(TREE_ACTIONS, actions)
-
 </script>
 
 <template>
   <DsPage data-testid="curriculum-page">
+    <AdminPageHeader
+      title="Pengurusan Kurikulum"
+      subtitle="Urus bab, topik dan subtopik mengikut subjek dan tahap."
+    >
+      <template v-if="showTree && tree" #actions>
+        <UButton
+          :to="chapterCreateTo(subjectParam, levelParam)"
+          icon="i-ph-plus"
+          label="Tambah Bab"
+          data-testid="chapter-add"
+        />
+      </template>
+    </AdminPageHeader>
+
     <ErrorBox
       v-if="optionsFailed || treeFailed"
       :messages="LOAD_ERROR"
@@ -148,91 +168,77 @@ provide(TREE_ACTIONS, actions)
     />
 
     <template v-if="optionsReady">
-      <form method="get" data-testid="curriculum-filter" @submit.prevent="applyFilter">
-        <UCard>
-          <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-funnel" class="size-5 text-primary" />
-            Tapis Kurikulum
-          </h2>
-          <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-3">
-            <div class="min-w-0">
-              <label for="cur-subject" class="mb-2 block text-label text-highlighted">Subjek</label>
-              <NativeSelect
-                id="cur-subject"
-                v-model="subjectSel"
-                name="subject_id"
-                data-testid="curriculum-subject"
-              >
-                <option value="">-- Pilih Subjek --</option>
-                <option v-for="s in subjects?.data ?? []" :key="s.id" :value="String(s.id)">
-                  {{ s.name }}
-                </option>
-              </NativeSelect>
-            </div>
-            <div class="min-w-0">
-              <label for="cur-level" class="mb-2 block text-label text-highlighted">Tahap</label>
-              <NativeSelect
-                id="cur-level"
-                v-model="levelSel"
-                name="education_level_id"
-                data-testid="curriculum-level"
-              >
-                <option value="">-- Pilih Tahap --</option>
-                <option v-for="l in levels?.data ?? []" :key="l.id" :value="String(l.id)">
-                  {{ l.name }}
-                </option>
-              </NativeSelect>
-            </div>
-            <UButton
-              type="submit"
-              icon="i-ph-magnifying-glass"
-              block
-              class="min-h-11"
-              data-testid="curriculum-filter-submit"
-            >
-              Tapis
-            </UButton>
-          </div>
-        </UCard>
-      </form>
+      <AdminCard
+        as="form"
+        flush
+        method="get"
+        class="flex flex-col gap-4 p-4 md:flex-row md:items-end md:p-6"
+        data-testid="curriculum-filter"
+        @submit.prevent="applyFilter"
+      >
+        <div class="min-w-0 md:flex-1">
+          <label for="cur-subject" class="mb-2 block text-label text-highlighted">Subjek</label>
+          <NativeSelect
+            id="cur-subject"
+            v-model="subjectSel"
+            name="subject_id"
+            data-testid="curriculum-subject"
+          >
+            <option value="">-- Pilih Subjek --</option>
+            <option v-for="s in subjects?.data ?? []" :key="s.id" :value="String(s.id)">
+              {{ s.name }}
+            </option>
+          </NativeSelect>
+        </div>
+        <div class="min-w-0 md:flex-1">
+          <label for="cur-level" class="mb-2 block text-label text-highlighted">Tahap</label>
+          <NativeSelect
+            id="cur-level"
+            v-model="levelSel"
+            name="education_level_id"
+            data-testid="curriculum-level"
+          >
+            <option value="">-- Pilih Tahap --</option>
+            <option v-for="l in levels?.data ?? []" :key="l.id" :value="String(l.id)">
+              {{ l.name }}
+            </option>
+          </NativeSelect>
+        </div>
+        <UButton
+          type="submit"
+          icon="i-ph-funnel"
+          class="justify-center"
+          data-testid="curriculum-filter-submit"
+        >
+          Tapis
+        </UButton>
+      </AdminCard>
 
-      <UCard v-if="!hasPair" data-testid="curriculum-prompt">
+      <AdminCard v-if="!hasPair" flush class="p-6" data-testid="curriculum-prompt">
         <DsEmptyState
           title="Sila pilih subjek dan tahap pendidikan"
           description="Gunakan penapis di atas"
           icon="i-ph-info"
         />
-      </UCard>
+      </AdminCard>
 
       <template v-else-if="showTree && tree">
         <CurriculumStatCards :tree="tree" />
 
-        <div>
-          <UButton
-            :to="chapterCreateTo(subjectParam, levelParam)"
-            icon="i-ph-plus"
-            class="min-h-11"
-            data-testid="chapter-add"
-          >
-            Tambah Bab
-          </UButton>
-        </div>
-
-        <div class="flex flex-col gap-3 md:gap-4" data-testid="curriculum-tree">
-          <UCard v-if="tree.chapters.length === 0" data-testid="tree-empty">
+        <div class="flex flex-col gap-4" data-testid="curriculum-tree">
+          <AdminCard v-if="tree.chapters.length === 0" flush class="p-6" data-testid="tree-empty">
             <DsEmptyState title="Tiada bab dijumpai untuk subjek dan tahap ini." icon="i-ph-tray">
               <template #actions>
                 <UButton
                   :to="chapterCreateTo(subjectParam, levelParam)"
                   icon="i-ph-plus"
-                  class="min-h-11"
                   data-testid="chapter-add-first"
                 >
                   Tambah Bab Pertama
                 </UButton>
               </template>
             </DsEmptyState>
-          </UCard>
+          </AdminCard>
           <template v-else>
             <ChapterBlock v-for="c in tree.chapters" :key="c.id" :chapter="c" />
           </template>

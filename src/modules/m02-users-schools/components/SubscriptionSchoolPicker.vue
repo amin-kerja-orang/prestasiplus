@@ -77,9 +77,11 @@ function clear(): void {
         data-testid="sub-school-chip"
       >
         <span class="min-w-0 flex-1">
-          <span class="block text-label break-words text-highlighted" data-testid="sub-school-name">{{
-            school.name
-          }}</span>
+          <span
+            class="block text-label break-words text-highlighted"
+            data-testid="sub-school-name"
+            >{{ school.name }}</span
+          >
           <span class="block text-caption break-words text-muted">{{ meta(school) }}</span>
         </span>
         <UButton
@@ -101,7 +103,6 @@ function clear(): void {
           autocomplete="off"
           placeholder="Taip nama atau kod sekolah..."
           :loading="searching"
-          size="lg"
           class="w-full"
           data-testid="sub-school-search"
           @update:model-value="onInput"

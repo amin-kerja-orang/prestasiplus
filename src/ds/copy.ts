@@ -61,6 +61,19 @@ export const dsCopy = {
   statusRiskHigh: 'Tinggi',
   statusNew: 'Baharu',
   statusLive: 'LIVE',
+  // Form kit and navigation (v2/ds1)
+  save: 'Simpan',
+  cancel: 'Batal',
+  back: 'Kembali',
+  search: 'Cari',
+  apply: 'Guna',
+  reset: 'Set Semula',
+  required: 'wajib',
+  selectPlaceholder: 'Pilih',
+  breadcrumbAria: 'Jejak navigasi',
+  breadcrumbMore: 'Lagi',
+  fileDrop: 'Seret fail ke sini atau klik untuk memilih',
+  fileTooLarge: 'Fail melebihi saiz maksimum {n} MB.',
 } as const
 
 export type DsCopyKey = keyof typeof dsCopy

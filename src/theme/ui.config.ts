@@ -13,7 +13,7 @@
  * `ring-error/25` on subtle alerts and badges).
  */
 
-import { dsIconClasses } from './ds-icons.ts'
+import { dsIconClasses, learnIconClasses } from './ds-icons.ts'
 
 /** Filled, borderless field with a 2px primary focus ring (D34). */
 const filled =
@@ -96,7 +96,7 @@ const icons = {
  * literal "i-ph-*" string (a future DsIcon that builds names from a base name must list its set here).
  */
 export const iconBundle = {
-  icons: [...Object.values(icons), ...dsIconClasses],
+  icons: [...new Set([...Object.values(icons), ...dsIconClasses, ...learnIconClasses])],
   scan: {
     globInclude: ['src/**/*.{vue,ts}'],
     globExclude: ['node_modules', 'dist', '**/__tests__/**'],

@@ -3,6 +3,7 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import {
   DsFriendPicker,
@@ -16,7 +17,6 @@ import {
   DsWinScreen,
 } from '@/ds'
 
-import { createMemoryHistory, createRouter } from 'vue-router'
 
 import DsGalleryShowcase from '@/dev/ds/DsGalleryShowcase.vue'
 

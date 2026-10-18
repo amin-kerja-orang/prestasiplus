@@ -92,21 +92,26 @@
 }
 
 /* Staff portal: thin, quiet scrollbars (no arrow buttons) on every scroll area. */
-[data-portal='pentadbiran'] ::-webkit-scrollbar {
+[data-portal='pentadbiran'] ::-webkit-scrollbar,
+[data-portal='pembelajaran'] ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-[data-portal='pentadbiran'] ::-webkit-scrollbar-thumb {
+[data-portal='pentadbiran'] ::-webkit-scrollbar-thumb,
+[data-portal='pembelajaran'] ::-webkit-scrollbar-thumb {
   background: var(--ui-bg-accented);
 }
-[data-portal='pentadbiran'] ::-webkit-scrollbar-track {
+[data-portal='pentadbiran'] ::-webkit-scrollbar-track,
+[data-portal='pembelajaran'] ::-webkit-scrollbar-track {
   background: transparent;
 }
-[data-portal='pentadbiran'] ::-webkit-scrollbar-button {
+[data-portal='pentadbiran'] ::-webkit-scrollbar-button,
+[data-portal='pembelajaran'] ::-webkit-scrollbar-button {
   display: none;
 }
 @supports not selector(::-webkit-scrollbar) {
-  [data-portal='pentadbiran'] * {
+  [data-portal='pentadbiran'] *,
+  [data-portal='pembelajaran'] * {
     scrollbar-width: thin;
     scrollbar-color: var(--ui-bg-accented) transparent;
   }
