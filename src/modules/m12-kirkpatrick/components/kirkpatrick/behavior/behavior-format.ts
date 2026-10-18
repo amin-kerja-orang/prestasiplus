@@ -32,6 +32,6 @@ export function heatClass(n: number, max: number): string {
   const a = heatAlpha(n, max)
   if (a < 0.3) return 'bg-cat-1/20 text-highlighted'
   if (a < 0.55) return 'bg-cat-1/40 text-highlighted'
-  if (a < 0.8) return 'bg-cat-1/70 text-inverted'
-  return 'bg-cat-1 text-inverted'
+  if (a < 0.8) return 'bg-cat-1/55 text-highlighted'
+  return 'bg-cat-1 text-white dark:bg-cat-1/70 dark:text-highlighted'
 }
