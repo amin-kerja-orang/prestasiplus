@@ -284,7 +284,8 @@ describe('S1 DashboardPage (v2 Murid Home)', () => {
 
   it('offers the friend picker on the first visit of a student only', async () => {
     await render(dash({ user: { id: 1, name: 'Aina', role: 'student' } }))
-    expect(useFriend().pickerOpen.value).toBe(true)
+    // First run now raises a non-modal prompt instead of opening the modal sheet.
+    expect(useFriend().promptOpen.value).toBe(true)
   })
 
   it('does not offer the picker to other roles', async () => {
