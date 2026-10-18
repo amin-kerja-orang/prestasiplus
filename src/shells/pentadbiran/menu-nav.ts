@@ -1,63 +1,66 @@
 /**
- * Pentadbiran menu as `UNavigationMenu` items (vertical, collapsible groups). A group is a trigger
- * row (accent icon + label) with its screens below; a second-level heading (Kirkpatrick,
- * Gamifikasi) becomes a nested trigger. Pure data so it can be unit-tested and reused by the
- * Ctrl+K palette.
+ * Pentadbiran menu as `UNavigationMenu` items. Two levels at most and one line per row: each group
+ * is a quiet, non-clickable section label followed by its screens (icon + label). A second-level
+ * heading (Kirkpatrick) is folded into ONE row that opens its first page; the other pages are
+ * in-page tabs (`SECTION_TABS`). Pure data so it can be unit-tested and reused by the Ctrl+K palette.
  */
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 import type { PentadbiranGroup, PentadbiranItem } from './menu'
+import { ITEM_ICON } from './menu-icons'
 
 export interface NavBuildOptions {
   activeId: string | undefined
-  isOpen: (key: string) => boolean
-  toggle: (key: string) => void
+  /** Sub-heading of the active screen (for example `Kirkpatrick`), when it has one. */
+  activeSub?: string | undefined
 }
 
-function leaf(item: PentadbiranItem, activeId: string | undefined): NavigationMenuItem {
+function row(
+  item: PentadbiranItem,
+  group: PentadbiranGroup,
+  opts: NavBuildOptions,
+  label = item.label,
+  active = item.id === opts.activeId,
+): NavigationMenuItem {
   return {
-    label: item.label,
+    label,
+    icon: ITEM_ICON[item.id] ?? `i-ph-${group.icon}`,
     to: item.to,
-    active: item.id === activeId,
+    active,
     value: item.id,
   }
 }
 
+/** Groups as label + rows (array of arrays, the `UNavigationMenu` shape). */
 export function buildNavItems(
   groups: readonly PentadbiranGroup[],
   opts: NavBuildOptions,
-): NavigationMenuItem[] {
+): NavigationMenuItem[][] {
   return groups.map((group) => {
-    const children: NavigationMenuItem[] = []
-    const subs = new Map<string, NavigationMenuItem>()
+    const rows: NavigationMenuItem[] = [{ label: group.label, type: 'label', value: group.key }]
+    const folded = new Set<string>()
     for (const item of group.items) {
       if (!item.sub) {
-        children.push(leaf(item, opts.activeId))
+        rows.push(row(item, group, opts))
         continue
       }
-      let sub = subs.get(item.sub)
-      if (!sub) {
-        sub = {
-          label: item.sub,
-          type: 'trigger',
-          defaultOpen: true,
-          children: [],
-        }
-        subs.set(item.sub, sub)
-        children.push(sub)
-      }
-      sub.children?.push(leaf(item, opts.activeId))
+      if (folded.has(item.sub)) continue
+      folded.add(item.sub)
+      rows.push(row(item, group, opts, item.sub, opts.activeSub === item.sub))
     }
-    return {
-      label: group.label,
-      icon: `i-ph-${group.icon}`,
-      type: 'trigger',
-      value: group.key,
-      open: opts.isOpen(group.key),
-      onSelect: () => opts.toggle(group.key),
-      children,
-    }
+    return rows
   })
+}
+
+/** In-page tabs of a folded section: the screens that share the sub-heading `sub`. */
+export function sectionTabs(
+  groups: readonly PentadbiranGroup[],
+  sub: string,
+): { label: string; to: string }[] {
+  return groups
+    .flatMap((g) => g.items)
+    .filter((i) => i.sub === sub)
+    .map((i) => ({ label: i.label, to: i.to }))
 }
 
 /** Flat entries for the command palette: every visible screen, grouped. */
@@ -69,7 +72,7 @@ export function buildSearchGroups(groups: readonly PentadbiranGroup[]) {
       id: i.id,
       label: i.label,
       suffix: i.sub,
-      icon: `i-ph-${g.icon}`,
+      icon: ITEM_ICON[i.id] ?? `i-ph-${g.icon}`,
       to: i.to,
     })),
   }))

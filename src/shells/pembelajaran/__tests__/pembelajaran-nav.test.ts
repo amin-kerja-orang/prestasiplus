@@ -14,6 +14,7 @@ import {
   buildLearnSearch,
   drawerEntries,
   flatItems,
+  groupTabs,
   pembelajaranTabs,
   phIconFor,
   sidebarEntries,
@@ -123,6 +124,20 @@ describe('Pembelajaran Nuxt UI menu data', () => {
     const flat = groups.flat()
     expect(flat.some((i) => i.type === 'label')).toBe(true)
     expect(flat.filter((i) => i.active === true)).toHaveLength(1)
+  })
+
+  it('folds Kirkpatrick into one row (no children) and exposes its pages as in-page tabs', () => {
+    const entries = sidebarEntries('teacher')
+    const flat = buildLearnNav(entries, { learner: false, currentPath: '/guru/kirkpatrick/chain' }).flat()
+    expect(flat.every((i) => i.children === undefined)).toBe(true)
+    const row = flat.filter((i) => i.label === 'Kirkpatrick')
+    expect(row).toHaveLength(1)
+    expect(row[0]?.active).toBe(true)
+    expect(row[0]?.to).toBe('/guru/kirkpatrick')
+    const tabs = groupTabs(entries, 't-kirk-rantaian')
+    expect(tabs.map((t) => t.label)).toContain('Rantaian Impak')
+    expect(tabs).toHaveLength(7)
+    expect(groupTabs(entries, 't-prestasi')).toEqual([])
   })
 
   it('the account menu lists the section A links and keeps routes in scope', () => {

@@ -25,6 +25,7 @@ import {
   DsFriendAvatar,
   DsFriendPicker,
   DsIcon,
+  DsPillNav,
   DsRewardChip,
   provideShellTitle,
 } from '@/ds'
@@ -40,6 +41,7 @@ import {
   CHIP_CLASS,
   chipSlot,
   flatItems,
+  groupTabs,
   currentItem,
   drawerEntries,
   pembelajaranTabs,
@@ -50,11 +52,14 @@ import {
 } from './pembelajaran-nav'
 import { FRIEND_OPTIONS, useFriend } from '@/composables/useFriend'
 import { LG_QUERY, useMediaQuery } from '@/shells/admin/useMinWidth'
+import ModPelajarBanner from '@/shells/shared/ModPelajarBanner.vue'
+import { useSessionStore } from '@/stores/session'
 import { useExclusiveSheets } from './useExclusiveSheets'
 import { useShellUser } from './useShellUser'
 
 const route = useRoute()
 const { role, name, schoolName } = useShellUser()
+const modeOn = computed(() => useSessionStore().mode !== null)
 const { allows } = usePrototypeScope()
 const { flash } = useFlash()
 const toast = useToast()
@@ -99,6 +104,10 @@ const searchGroups = computed(() => {
 })
 
 const current = computed(() => currentItem(sidebar.value, route.path))
+/** In-page tabs of a folded section (Kirkpatrick): its pages, moved between inside the page. */
+const sectionTabs = computed(() =>
+  groupTabs(sidebar.value, current.value?.id).map((t) => ({ key: t.id, label: t.label, to: t.to })),
+)
 const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
 const crumb = computed(() => {
   const c = current.value ? sectionOf(sidebar.value, current.value.id) : ''
@@ -188,21 +197,22 @@ const lagiGroups = computed(() => [
   ],
 ])
 
-/** Active row: filled gradient pill for the learner, tonal row for staff. */
+/** One line per row, quiet section labels; active row: gradient pill (learner) or tinted pill (staff). */
 const navUi = computed(() => ({
+  root: 'gap-0',
   link: learner.value
-    ? 'min-h-11 h-auto py-1.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:font-semibold'
-    : 'min-h-11 h-auto py-1.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/10 aria-[current=page]:font-semibold',
+    ? 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:font-semibold'
+    : 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/10 aria-[current=page]:text-primary aria-[current=page]:font-semibold',
   linkLeadingIcon: 'size-4',
-  // Long labels wrap to a second line instead of being clipped; badges keep their own space.
-  linkLabel: 'whitespace-normal break-words text-start leading-snug',
+  linkLabel: 'truncate',
   linkTrailing: 'shrink-0',
-  label: "flex items-center gap-2 px-3 pt-4 pb-1 text-overline text-highlighted before:size-1.5 before:rounded-full before:bg-primary before:content-['']",
+  label: 'px-2.5 pt-5 pb-1.5 text-overline font-semibold text-muted uppercase',
 }))
 
 const slotById = computed(() => {
   const m = new Map<string, number>()
   for (const i of [...flatItems(sidebar.value), ...flatItems(drawer.value)]) m.set(i.id, chipSlot(i))
+  for (const e of [...sidebar.value, ...drawer.value]) if (e.kind === 'group') m.set(e.id, chipSlot(e))
   return m
 })
 const slotOf = (id: unknown): number => slotById.value.get(String(id)) ?? 1
@@ -227,9 +237,12 @@ const chipClass = (chip: unknown, active: boolean): string =>
         >Langkau ke kandungan</a
       >
 
+      <ModPelajarBanner />
       <UDashboardGroup
         storage="local"
-        storage-key="pembelajaran-dashboard-v2"
+        storage-key="pembelajaran-dashboard-v3"
+        unit="rem"
+        :class="modeOn ? 'top-10!' : ''"
         class="overflow-clip bg-muted"
       >
         <!-- Sidebar (>= lg): full height, collapses to an icon rail -->
@@ -238,15 +251,15 @@ const chipClass = (chip: unknown, active: boolean): string =>
           v-model:open="sidebarOpen"
           collapsible
           resizable
-          :min-size="16"
-          :default-size="21"
-          :max-size="30"
-          :collapsed-size="4"
+          :min-size="14"
+          :default-size="16"
+          :max-size="20"
+          :collapsed-size="4.5"
           :ui="{
-            root: 'bg-default',
+            root: modeOn ? 'bg-default min-h-0! h-full!' : 'bg-default',
             header: 'h-16 shrink-0 px-4',
-            body: 'px-3 py-2',
-            footer: 'p-3',
+            body: 'px-3 pt-1 pb-3',
+            footer: 'p-2 border-t border-default',
           }"
           data-testid="pembelajaran-sidebar"
         >
@@ -280,13 +293,13 @@ const chipClass = (chip: unknown, active: boolean): string =>
               <template #item-leading="{ item, active }">
                 <span
                   v-if="item.icon"
-                  class="grid size-8 shrink-0 place-items-center rounded-md"
+                  class="grid size-7 shrink-0 place-items-center rounded-md"
                   :class="chipClass(slotOf(item.value), active)"
-                  ><UIcon v-if="item.icon" :name="item.icon" class="size-[18px]"
+                  ><UIcon v-if="item.icon" :name="item.icon" class="size-4"
                 /></span>
               </template>
               <template #item-label="{ item }"
-                ><span :title="item.label">{{ item.label }}</span></template
+                ><span class="truncate" :title="item.label">{{ item.label }}</span></template
               >
             </UNavigationMenu>
           </template>
@@ -299,24 +312,24 @@ const chipClass = (chip: unknown, active: boolean): string =>
             >
               <button
                 type="button"
-                class="flex min-h-11 w-full min-w-0 items-center gap-3 rounded-md p-2 text-start hover:bg-elevated"
+                class="flex min-h-11 w-full min-w-0 items-center gap-2.5 rounded-md p-1.5 text-start hover:bg-elevated"
                 aria-label="Menu akaun"
                 data-testid="pembelajaran-account"
               >
                 <span
-                  class="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-label font-bold text-primary-on"
+                  class="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
                   aria-hidden="true"
                   >{{ initials }}</span
                 >
-                <span v-if="!collapsed" class="min-w-0 flex-1">
+                <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
                   <span
-                    class="block break-words text-label font-semibold text-highlighted"
+                    class="block truncate text-label font-semibold text-highlighted"
                     :title="name || 'Akaun'"
                     >{{ name || 'Akaun' }}</span
                   >
                   <span
                     v-if="schoolName"
-                    class="block break-words text-caption text-muted"
+                    class="block truncate text-caption text-muted"
                     :title="schoolName"
                     >{{ schoolName }}</span
                   >
@@ -434,6 +447,15 @@ const chipClass = (chip: unknown, active: boolean): string =>
               tabindex="-1"
             >
               <FlashOutlet :flash="flash" class="mb-4" />
+              <DsPillNav
+                v-if="sectionTabs.length > 0"
+                :items="sectionTabs"
+                :active="current?.id ?? null"
+                label="Bahagian Kirkpatrick"
+                testid-prefix="section-tab"
+                class="mb-4"
+                data-testid="pembelajaran-section-tabs"
+              />
               <div
                 v-if="isLegacy"
                 class="light overflow-x-auto rounded-sheet bg-default p-4 text-default"
@@ -555,13 +577,13 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <template #item-leading="{ item, active }">
               <span
                 v-if="item.icon"
-                class="grid size-8 shrink-0 place-items-center rounded-md"
+                class="grid size-7 shrink-0 place-items-center rounded-md"
                 :class="chipClass(slotOf((item as { value?: string }).value), active)"
-                ><UIcon v-if="item.icon" :name="item.icon" class="size-[18px]"
+                ><UIcon v-if="item.icon" :name="item.icon" class="size-4"
               /></span>
             </template>
             <template #item-label="{ item }"
-              ><span :title="item.label">{{ item.label }}</span></template
+              ><span class="truncate" :title="item.label">{{ item.label }}</span></template
             >
           </UNavigationMenu>
         </template>

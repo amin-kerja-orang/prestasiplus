@@ -6,13 +6,20 @@ import { createAppRouter } from '@/app/router'
 import { adminShellFor, resolveShell, resolveShellForPath } from '@/app/router/layouts'
 
 import { isPathInScope } from '@/app/prototype-scope'
-import { navFor, userBottomNavFor, userDrawerAccountFor, type NavEntry } from '@/shells/nav/user-nav'
+import {
+  navFor,
+  userBottomNavFor,
+  userDrawerAccountFor,
+  type NavEntry,
+} from '@/shells/nav/user-nav'
 
 import { ALL_ITEMS, FULL_ITEMS, PENTADBIRAN_FULL_MENU, PENTADBIRAN_MENU, activeItem } from '../menu'
 
 describe('Pentadbiran menu data', () => {
   it('keeps the full 9-group, 100-item definition as data', () => {
-    expect(PENTADBIRAN_FULL_MENU.map((g) => g.items.length)).toEqual([2, 28, 7, 12, 12, 6, 22, 6, 5])
+    expect(PENTADBIRAN_FULL_MENU.map((g) => g.items.length)).toEqual([
+      2, 28, 7, 12, 12, 6, 22, 6, 5,
+    ])
     expect(FULL_ITEMS).toHaveLength(100)
     expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(100)
   })
@@ -89,4 +96,3 @@ describe('Pembelajaran menus (scope on)', () => {
     }
   })
 })
-

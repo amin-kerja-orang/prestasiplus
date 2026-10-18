@@ -29,6 +29,14 @@ export interface ClientSession {
    * "Kembali ke Admin" returns to. Not derived from `UserMe`; the shell renders the banner from it.
    */
   impersonator?: { id: number; name: string; returnTo: string }
+  /** Client-only: Mod Pelajar parks the admin session here (v2-portals US-07); the mock never writes it. */
+  mode?: {
+    kind: 'mod_pelajar'
+    returnRole: UserMe['role']
+    since: string
+    returnTo: string
+    parent: { token: string; remember: boolean; expiresAt: string; user: UserMe }
+  }
 }
 
 export function issueSession(

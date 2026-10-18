@@ -227,6 +227,11 @@ export const CHIP_CLASS: Record<number, string> = {
   8: 'bg-cat-8/15 text-cat-8',
 }
 
+/** A heading without its leading emoji (the rows carry the icons; labels stay quiet text). */
+export function plainLabel(label: string): string {
+  return label.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || label
+}
+
 function leaf(item: NavItem, opts: LearnNavOptions, activeId: string | undefined): NavigationMenuItem {
   return {
     label: item.label,
@@ -242,7 +247,8 @@ function leaf(item: NavItem, opts: LearnNavOptions, activeId: string | undefined
 /**
  * Menu entries as `UNavigationMenu` groups (array of arrays). Every section or sub-heading starts a
  * new group headed by a label row; the entries before the first heading form an unlabeled group.
- * A collapsible group (Kirkpatrick) becomes a trigger with its items below.
+ * A collapsible group (Kirkpatrick) is folded into ONE row that opens its first page (active on
+ * any of its pages); its pages become in-page tabs (`groupTabs`). Two levels at most, one line per row.
  */
 export function buildLearnNav(
   entries: readonly NavEntry[],
@@ -259,21 +265,37 @@ export function buildLearnNav(
   for (const entry of entries) {
     if (entry.kind === 'section' || entry.kind === 'subheading') {
       flush()
-      cur.push({ label: entry.label, type: 'label' })
+      cur.push({ label: plainLabel(entry.label), type: 'label' })
     } else if (entry.kind === 'item') {
       cur.push(leaf(entry, opts, activeId))
     } else {
+      const first = entry.children[0]
+      if (!first) continue
       cur.push({
         label: entry.label,
         icon: phClass(FA_TO_PH[entry.fa] ?? FALLBACK_PH, opts.learner),
-        type: 'trigger',
-        defaultOpen: entry.children.some((c) => c.id === activeId),
-        children: entry.children.map((c) => leaf(c, opts, activeId)),
+        to: first.to,
+        active: entry.children.some((c) => c.id === activeId),
+        value: entry.id,
       })
     }
   }
   flush()
   return groups
+}
+
+/** The pages of the collapsible group that contains `itemId` (in-page tabs), or `[]`. */
+export function groupTabs(
+  entries: readonly NavEntry[],
+  itemId: string | undefined,
+): { id: string; label: string; to: string }[] {
+  if (!itemId) return []
+  for (const entry of entries) {
+    if (entry.kind === 'group' && entry.children.some((c) => c.id === itemId)) {
+      return entry.children.map((c) => ({ id: c.id, label: c.label, to: c.to }))
+    }
+  }
+  return []
 }
 
 /** Flat Ctrl+K groups over the same entries: one group per heading. */

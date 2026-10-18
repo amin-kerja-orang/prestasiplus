@@ -34,7 +34,13 @@ import { computed, shallowRef } from 'vue'
 import { api, type Transport, type TransportRequest } from '@/api'
 import { clock, MINUTE_MS, toIsoMyt } from '@/lib/time'
 
-import { PP_AUTH_STORAGE_KEY, type ClientSession, type Role, type UserMe } from './session-types'
+import {
+  PP_AUTH_STORAGE_KEY,
+  type ClientSession,
+  type ModPelajarMode,
+  type Role,
+  type UserMe,
+} from './session-types'
 
 /** Non-remember lifetime after the last request (M01 BR-06, live `SESSION_LIFETIME=120`). */
 export const SESSION_LIFETIME_MS = 120 * MINUTE_MS
@@ -118,8 +124,9 @@ export function parseClientSession(raw: string | null): ClientSession | null {
   if (typeof expiresAt !== 'string' || Number.isNaN(Date.parse(expiresAt))) return null
   if (!isRecord(user) || typeof user.id !== 'number' || typeof user.role !== 'string') return null
   if (typeof user.landingPath !== 'string') return null
-  const { impersonator, ...rest } = value
+  const { impersonator, mode, ...rest } = value
   const session = rest as unknown as ClientSession
+  if (isModPelajar(mode)) session.mode = mode
   if (impersonator === undefined) return session
   // A malformed impersonator is dropped (the session stays usable); a valid one round-trips.
   if (
@@ -138,6 +145,20 @@ export function parseClientSession(raw: string | null): ClientSession | null {
     }
   }
   return session
+}
+
+function isModPelajar(value: unknown): value is ModPelajarMode {
+  if (!isRecord(value) || value.kind !== 'mod_pelajar') return false
+  const { parent } = value
+  return (
+    typeof value.returnRole === 'string' &&
+    typeof value.returnTo === 'string' &&
+    isRecord(parent) &&
+    typeof parent.token === 'string' &&
+    typeof parent.expiresAt === 'string' &&
+    isRecord(parent.user) &&
+    typeof parent.user.role === 'string'
+  )
 }
 
 export function readStoredSession(): ClientSession | null {
@@ -176,6 +197,9 @@ export const useSessionStore = defineStore('session', () => {
   /** The actor of an impersonated session (XR-M27-21); `null` otherwise. The shell banner reads it. */
   const impersonator = computed(() => auth.value?.impersonator ?? null)
 
+  /** Mod Pelajar (admin viewing as the demo student); `null` otherwise. The shell banner reads it. */
+  const mode = computed<ModPelajarMode | null>(() => auth.value?.mode ?? null)
+
   function commit(next: ClientSession | null): void {
     auth.value = next
     writeStoredSession(next)
@@ -202,6 +226,53 @@ export const useSessionStore = defineStore('session', () => {
   /** Stores a new session (login, register, token reset, M02 "Login As"). */
   function setSession(session: ClientSession): void {
     commit({ ...session })
+  }
+
+  /**
+   * "Masuk Mod Pelajar": the student session replaces the current one, which is parked inside it.
+   * Refused when a mode is already on.
+   */
+  function enterModPelajar(
+    student: { token: string; expiresAt: string; user: UserMe },
+    returnTo: string,
+  ): boolean {
+    const current = auth.value
+    if (!current || current.mode) return false
+    commit({
+      token: student.token,
+      remember: false,
+      expiresAt: student.expiresAt,
+      user: student.user,
+      mode: {
+        kind: 'mod_pelajar',
+        returnRole: current.user.role,
+        since: toIsoMyt(clock.now()),
+        returnTo,
+        parent: {
+          token: current.token,
+          remember: current.remember,
+          expiresAt: current.expiresAt,
+          user: current.user,
+        },
+      },
+    })
+    return true
+  }
+
+  /**
+   * "Keluar Mod Pelajar": restores the parked session and returns where to go. `null` when no mode
+   * is on or the parked session has expired meanwhile (the session is then cleared).
+   */
+  function leaveModPelajar(now: number = clock.now()): string | null {
+    const current = auth.value?.mode
+    if (!current) return null
+    const { parent, returnTo } = current
+    if (Date.parse(parent.expiresAt) <= now) {
+      clear()
+      return null
+    }
+    commit({ ...parent })
+    return returnTo
   }
 
   /** Replaces the cached user (after `GET /api/me` or a profile update). */
@@ -281,6 +352,9 @@ export const useSessionStore = defineStore('session', () => {
     remember,
     expiresAt,
     impersonator,
+    mode,
+    enterModPelajar,
+    leaveModPelajar,
     check,
     setSession,
     setUser,

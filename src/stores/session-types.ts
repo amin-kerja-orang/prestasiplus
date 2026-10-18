@@ -65,4 +65,17 @@ export interface ClientSession {
   user: UserMe
   /** Only on an impersonated session (XR-M27-21): the actor and the path "Kembali ke Admin" uses. */
   impersonator?: { id: number; name: string; returnTo: string }
+  /** Only in Mod Pelajar (v2-portals US-07): the admin session parked while the student view is open. */
+  mode?: ModPelajarMode
+}
+
+/** The session parked by "Masuk Mod Pelajar"; "Keluar Mod Pelajar" restores it (contract `Session.mode`). */
+export interface ModPelajarMode {
+  kind: 'mod_pelajar'
+  returnRole: Role
+  /** ISO 8601 (+08:00). */
+  since: string
+  /** Where "Keluar Mod Pelajar" lands. */
+  returnTo: string
+  parent: { token: string; remember: boolean; expiresAt: string; user: UserMe }
 }

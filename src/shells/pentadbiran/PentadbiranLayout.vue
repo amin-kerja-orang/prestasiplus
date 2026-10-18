@@ -9,24 +9,26 @@
  * Pages without `meta.v2` (legacy admin screens) render inside a light island.
  */
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
-import { DsBrandLogo, DsConfirmHost, DsIcon, provideShellTitle } from '@/ds'
+import { DsBrandLogo, DsConfirmHost, DsIcon, DsPillNav, provideShellTitle } from '@/ds'
 import { useShellUser } from '@/shells/pembelajaran/useShellUser'
 import { useThemeMode } from '@/theme/color-mode'
 import { uiLocale } from '@/theme/locale-ms'
 
-import { MENU_STORAGE_KEY, PENTADBIRAN_MENU, activeItem, groupOf } from './menu'
+import { PENTADBIRAN_MENU, activeItem, groupOf } from './menu'
 import { groupTintClass } from './group-accent'
-import { buildNavItems, buildSearchGroups } from './menu-nav'
+import { buildNavItems, buildSearchGroups, sectionTabs } from './menu-nav'
+import { enterModPelajar } from '@/shells/shared/mod-pelajar'
 
 const route = useRoute()
 // The navbar prints the page title (h1), so DsPageHeader leaves its own out.
 provideShellTitle()
 const { name } = useShellUser()
-const { flash } = useFlash()
+const flashApi = useFlash()
+const { flash } = flashApi
 const theme = useThemeMode('staff')
 
 const isLegacy = computed(() => route.meta.v2 !== true)
@@ -52,47 +54,49 @@ const initials = computed(
       .join('') || 'A',
 )
 
+const NAV_UI = {
+  root: 'gap-0',
+  label: 'px-2.5 pt-5 pb-1.5 text-overline font-semibold text-muted uppercase',
+  link: 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/10 aria-[current=page]:text-primary aria-[current=page]:font-semibold',
+  linkLabel: 'truncate',
+  linkTrailing: 'shrink-0',
+}
+
 const SCOPE_CHIP = 'Admin Pusat · Seluruh Negara'
 
-// Open state of the groups, persisted. The group of the active page opens on every navigation.
-function readOpen(): Record<string, boolean> {
-  try {
-    const raw = window.localStorage.getItem(MENU_STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {}
-  } catch {
-    return {}
-  }
-}
-const open = ref<Record<string, boolean>>(readOpen())
-function save(): void {
-  try {
-    window.localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(open.value))
-  } catch {
-    /* storage unavailable: keep in memory */
-  }
-}
-const isOpen = (key: string): boolean => open.value[key] === true
-function toggle(key: string): void {
-  open.value = { ...open.value, [key]: !isOpen(key) }
-  save()
-}
 const sidebarOpen = ref(false)
 watch(
   () => route.path,
   () => {
     sidebarOpen.value = false
-    const key = activeGroupDef.value?.key
-    if (key && !isOpen(key)) {
-      open.value = { ...open.value, [key]: true }
-      save()
-    }
   },
   { immediate: true },
 )
 
 const navItems = computed(() =>
-  buildNavItems(PENTADBIRAN_MENU, { activeId: activeId.value, isOpen, toggle }),
+  buildNavItems(PENTADBIRAN_MENU, { activeId: activeId.value, activeSub: current.value?.sub }),
 )
+const tabs = computed(() => {
+  const sub = current.value?.sub
+  return sub
+    ? sectionTabs(PENTADBIRAN_MENU, sub).map((t) => ({ key: t.to, label: t.label, to: t.to }))
+    : []
+})
+const chipOf = (id: unknown): string => groupTintClass(groupOf(String(id))?.key)
+
+const router = useRouter()
+const switching = ref(false)
+async function openModPelajar(): Promise<void> {
+  if (switching.value) return
+  switching.value = true
+  try {
+    await router.push(await enterModPelajar())
+  } catch {
+    flashApi.show({ type: 'error', message: 'Mod Pelajar tidak dapat dibuka. Sila cuba lagi.' })
+  } finally {
+    switching.value = false
+  }
+}
 const searchGroups = buildSearchGroups(PENTADBIRAN_MENU)
 
 const themeLabel = computed(() =>
@@ -104,7 +108,11 @@ const accountItems = computed(() => [
   [
     { label: 'Tetapan Peribadi', icon: 'i-ph-gear', to: '/tetapan' },
     { label: themeLabel.value, icon: 'i-ph-circle-half', onSelect: () => theme.toggle() },
-    { label: 'Masuk Mod Pelajar', icon: 'i-ph-student', to: '/dashboard' },
+    {
+      label: 'Masuk Mod Pelajar',
+      icon: 'i-ph-student',
+      onSelect: () => void openModPelajar(),
+    },
   ],
   [{ label: 'Log Keluar', icon: 'i-ph-sign-out', to: '/logout', color: 'error' as const }],
 ])
@@ -125,7 +133,8 @@ const accountItems = computed(() => [
       >
       <UDashboardGroup
         storage="local"
-        storage-key="pentadbiran-dashboard-v2"
+        storage-key="pentadbiran-dashboard-v3"
+        unit="rem"
         class="overflow-clip bg-muted"
       >
         <UDashboardSidebar
@@ -133,20 +142,24 @@ const accountItems = computed(() => [
           v-model:open="sidebarOpen"
           collapsible
           resizable
-          :min-size="16"
-          :default-size="21"
-          :max-size="30"
-          :collapsed-size="4"
+          :min-size="14"
+          :default-size="16"
+          :max-size="20"
+          :collapsed-size="4.5"
           :ui="{
             root: 'bg-default',
             header: 'h-16 shrink-0 px-4',
-            body: 'px-3 py-2',
-            footer: 'p-3',
+            body: 'px-3 pt-1 pb-3',
+            footer: 'p-2 border-t border-default',
           }"
           data-testid="pentadbiran-sidebar"
         >
           <template #header="{ collapsed }">
-            <RouterLink to="/admin" class="flex min-w-0 items-center gap-2" aria-label="Pentadbiran">
+            <RouterLink
+              to="/admin"
+              class="flex min-w-0 items-center gap-2"
+              aria-label="Pentadbiran"
+            >
               <DsBrandLogo v-if="!collapsed" />
               <span
                 v-else
@@ -166,22 +179,18 @@ const accountItems = computed(() => [
               tooltip
               aria-label="Menu utama"
               data-testid="pentadbiran-nav"
-            :ui="{
-                linkLabel: 'whitespace-normal break-words text-start leading-snug',
-                linkTrailing: 'shrink-0',
-                link: 'min-h-11 h-auto py-1.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/15 aria-[current=page]:font-semibold aria-[current=page]:text-highlighted',
-              }"
+              :ui="NAV_UI"
             >
               <template #item-leading="{ item }">
                 <span
                   v-if="item.icon"
-                  class="grid size-8 shrink-0 place-items-center rounded-md"
-                  :class="groupTintClass(String(item.value))"
-                  ><UIcon :name="item.icon" class="size-[18px]"
+                  class="grid size-7 shrink-0 place-items-center rounded-md"
+                  :class="chipOf(item.value)"
+                  ><UIcon :name="item.icon" class="size-4"
                 /></span>
               </template>
               <template #item-label="{ item }"
-                ><span :title="item.label">{{ item.label }}</span></template
+                ><span class="truncate" :title="item.label">{{ item.label }}</span></template
               >
             </UNavigationMenu>
           </template>
@@ -194,22 +203,24 @@ const accountItems = computed(() => [
             >
               <button
                 type="button"
-                class="flex w-full min-w-0 items-center gap-3 rounded-md p-2 text-start hover:bg-elevated"
+                class="flex w-full min-w-0 items-center gap-2.5 rounded-md p-1.5 text-start hover:bg-elevated"
                 aria-label="Menu akaun"
                 data-testid="pentadbiran-account"
               >
                 <span
-                  class="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-label font-bold text-primary-on"
+                  class="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
                   aria-hidden="true"
                   >{{ initials }}</span
                 >
-                <span v-if="!collapsed" class="min-w-0 flex-1">
+                <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
                   <span
-                    class="block break-words text-label font-semibold text-highlighted"
+                    class="block truncate text-label font-semibold text-highlighted"
                     :title="name || 'Akaun'"
                     >{{ name || 'Akaun' }}</span
                   >
-                  <span class="block break-words text-caption text-muted">{{ SCOPE_CHIP }}</span>
+                  <span class="block truncate text-caption text-muted" :title="SCOPE_CHIP">{{
+                    SCOPE_CHIP
+                  }}</span>
                 </span>
                 <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
               </button>
@@ -293,6 +304,14 @@ const accountItems = computed(() => [
               tabindex="-1"
             >
               <FlashOutlet :flash="flash" />
+              <DsPillNav
+                v-if="tabs.length > 0"
+                :items="tabs"
+                :active="current?.to ?? null"
+                label="Bahagian Kirkpatrick"
+                testid-prefix="section-tab"
+                data-testid="pentadbiran-section-tabs"
+              />
               <div
                 v-if="isLegacy"
                 class="light overflow-x-auto rounded-card bg-default p-4 text-default"
