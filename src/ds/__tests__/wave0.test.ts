@@ -98,7 +98,7 @@ describe('DsDataTable', () => {
     expect(w.text()).toContain('Gagal memuatkan')
     await w
       .findAll('button')
-      .find((b) => b.text() === 'Cuba Lagi')!
+      .find((b) => b.text() === 'Cuba Semula')!
       .trigger('click')
     expect(w.emitted('retry')).toHaveLength(1)
   })
@@ -116,7 +116,7 @@ describe('DsPagedTable', () => {
     expect(w.text()).toContain('Menunjukkan 1-20 daripada 45 hasil')
     expect(w.text()).toContain('Murid #20.')
     expect(w.text()).not.toContain('Murid #21.')
-    expect(w.find('[aria-label="Bilangan baris setiap halaman"]').exists()).toBe(true)
+    expect(w.find('[aria-label="Baris setiap halaman"]').exists()).toBe(true)
   })
   it('keeps the header and shows the empty label when there are no rows', async () => {
     const w = mount(DsPagedTable, { props: { data: [], columns, emptyLabel: 'Tiada pelajar' } })
