@@ -5,115 +5,113 @@
  * (PROPOSED layout, §8.3; LS-12): title, type chip, subject, "{n} soalan", "{c} syiling per jawapan
  * betul", the resource link (new tab; http(s) / internal only) and note, "Mula Misi" → Q5 or "Selesai ✓".
  */
-import { Inbox } from '@lucide/vue'
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi } from '@/composables'
+import {
+  DsEmptyState,
+  DsIconChip,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatusBadge,
+  type DsAccent,
+} from '@/ds'
 
 import { fetchTodayMissions } from '../api/practice'
 import { missionDone, safeResourceUrl } from '../components/remedial/assigned-lib'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
+const ACCENTS: readonly DsAccent[] = ['action', 'win', 'heat', 'friend', 'trial']
 
 const { data, error, reload } = useApi((signal) => fetchTodayMissions({ signal }))
 const items = computed(() => data.value?.data ?? [])
 </script>
 
 <template>
-  <div class="min-h-screen px-2 py-4 sm:px-6 sm:py-8" data-testid="missions-page">
-    <div class="mx-auto max-w-3xl">
-      <template v-if="data">
-        <div
-          v-if="items.length === 0"
-          class="rounded-2xl bg-white p-8 text-center shadow-sm"
-          data-testid="missions-empty"
-        >
-          <Inbox class="mx-auto mb-3 h-10 w-10 text-slate-300" />
-          <p class="font-bold text-slate-600">Tiada misi hari ini</p>
-          <p class="text-xs text-slate-400">Misi baru akan muncul bila guru anda assign.</p>
-        </div>
+  <DsPage title="Misi Harian" data-testid="missions-page">
+    <template v-if="data">
+      <DsPanel v-if="items.length === 0" data-testid="missions-empty">
+        <DsEmptyState
+          title="Tiada misi hari ini"
+          description="Misi baru akan muncul bila guru anda assign."
+          icon="tray"
+        />
+      </DsPanel>
 
-        <ul v-else class="space-y-3" data-testid="missions-list">
-          <li
-            v-for="m in items"
-            :key="m.id"
-            class="rounded-2xl bg-white p-4 shadow-sm sm:p-5"
-            :data-testid="`mission-card-${String(m.id)}`"
-          >
-            <div class="mb-2 flex flex-wrap items-center gap-2">
-              <h3
-                class="font-heading text-base font-bold break-words text-slate-800"
+      <ul v-else class="flex flex-col gap-3" data-testid="missions-list">
+        <li v-for="(m, i) in items" :key="m.id" class="min-w-0">
+          <DsPanel class="flex flex-col gap-2" :data-testid="`mission-card-${String(m.id)}`">
+            <div class="flex flex-wrap items-center gap-3">
+              <DsIconChip icon="i-ph-target-duotone" :accent="ACCENTS[i % ACCENTS.length]" />
+              <h2
+                class="min-w-0 text-subheading break-words text-highlighted"
                 data-testid="mission-title"
               >
                 {{ m.title }}
-              </h3>
-              <span
+              </h2>
+              <UBadge
                 v-if="m.typeLabel"
-                class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700"
+                color="neutral"
+                variant="subtle"
                 data-testid="mission-type"
-                >{{ m.typeLabel }}</span
+                >{{ m.typeLabel }}</UBadge
               >
             </div>
-            <p class="text-sm text-slate-600" data-testid="mission-info">
+            <p class="text-body text-muted" data-testid="mission-info">
               <span v-if="m.subjectName">{{ m.subjectName }} · </span>{{ m.questionCount }} soalan ·
               {{ m.coinsPerCorrect }} syiling per jawapan betul
             </p>
             <p
               v-if="m.resourceUrl || m.resourceTitle"
-              class="mt-2 text-sm"
+              class="text-body"
               data-testid="mission-resource"
             >
-              <a
+              <ULink
                 v-if="safeResourceUrl(m.resourceUrl)"
                 :href="safeResourceUrl(m.resourceUrl) ?? undefined"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex min-h-11 items-center font-semibold break-all text-indigo-600 underline"
+                class="inline-flex min-h-11 items-center break-all text-primary"
                 data-testid="mission-link"
-                >{{ m.resourceTitle || m.resourceUrl }}</a
+                >{{ m.resourceTitle || m.resourceUrl }}</ULink
               >
-              <span v-else class="text-slate-600">{{ m.resourceTitle }}</span>
+              <span v-else class="text-muted">{{ m.resourceTitle }}</span>
             </p>
             <p
               v-if="m.resourceNote"
-              class="mt-1 text-xs break-words text-slate-500"
+              class="text-caption break-words text-muted"
               data-testid="mission-note"
             >
               {{ m.resourceNote }}
             </p>
-            <div class="mt-3">
-              <span
+            <div>
+              <DsStatusBadge
                 v-if="missionDone(m)"
-                class="inline-flex min-h-11 items-center rounded-lg bg-green-100 px-5 text-sm font-bold text-green-700"
+                status="done"
+                label="Selesai ✓"
                 data-testid="mission-done"
-                >Selesai ✓</span
-              >
-              <RouterLink
+              />
+              <UButton
                 v-else
                 :to="`/misi-harian/${String(m.id)}`"
-                class="inline-flex min-h-11 items-center justify-center rounded-lg bg-indigo-600 px-5 text-sm font-bold text-white hover:bg-indigo-700"
+                size="lg"
+                class="min-h-11"
                 data-testid="mission-start"
+                >Mula Misi</UButton
               >
-                Mula Misi
-              </RouterLink>
             </div>
-          </li>
-        </ul>
-      </template>
+          </DsPanel>
+        </li>
+      </ul>
+    </template>
 
-      <div v-else-if="error" class="space-y-3" data-testid="missions-error">
-        <AlertBox :messages="LOAD_ERROR" />
-        <button
-          type="button"
-          class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow hover:bg-blue-700"
-          data-testid="missions-retry"
-          @click="reload()"
-        >
-          Cuba Semula
-        </button>
-      </div>
-    </div>
-  </div>
+    <DsLoadError
+      v-else-if="error"
+      :message="LOAD_ERROR"
+      testid="missions-error"
+      retry-testid="missions-retry"
+      @retry="reload()"
+    />
+  </DsPage>
 </template>

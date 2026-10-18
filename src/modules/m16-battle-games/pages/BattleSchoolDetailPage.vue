@@ -12,7 +12,7 @@ import { useRoute } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, usePageMeta } from '@/composables'
-import { DsArt3D, DsLeaderRow, DsPage, DsStatTile } from '@/ds'
+import { DsArt3D, DsLeaderRow, DsPage, DsStatTile, DsLoadError } from '@/ds'
 
 import { fetchSchoolDetail } from '../api'
 import BattleRecentList from '../components/battle/BattleRecentList.vue'
@@ -112,19 +112,12 @@ const boxes = computed(() => {
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-32 w-full" />
     </div>
-    <div
+    <DsLoadError
       v-else-if="error && !notFound"
-      class="flex flex-col items-start gap-3"
-      data-testid="battle-load-error"
-    >
-      <UAlert
-        color="error"
-        variant="subtle"
-        title="Maaf, berlaku ralat. Sila cuba semula."
-        class="w-full"
-      />
-      <UButton size="lg" class="min-h-11" @click="reload()">Cuba Lagi</UButton>
-    </div>
+      message="Maaf, berlaku ralat. Sila cuba semula."
+      testid="battle-load-error"
+      @retry="reload()"
+    />
 
     <template v-else-if="data">
       <UCard>

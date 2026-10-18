@@ -7,7 +7,7 @@
 import { computed, ref, shallowRef } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsArt3D, DsPage, DsRewardChip } from '@/ds'
+import { DsArt3D, DsPage, DsRewardChip, DsLoadError } from '@/ds'
 
 import {
   fetchMysteryBoxes,
@@ -17,10 +17,10 @@ import {
 } from '../api'
 import { BOX_COPY } from '../components/copy'
 import { errorMessage, formatDayMonthTime } from '../components/format'
-import LoadError from '../components/LoadError.vue'
 import LoadSkeleton from '../components/LoadSkeleton.vue'
 import MysteryBoxCard from '../components/MysteryBoxCard.vue'
 import MysteryResultModal from '../components/MysteryResultModal.vue'
+import { COMMON_COPY } from '../components/copy'
 
 const flash = useFlash()
 const view = useApi((signal) => fetchMysteryBoxes({ signal }))
@@ -76,7 +76,7 @@ async function open(boxId: number): Promise<void> {
       </div>
     </UCard>
 
-    <LoadError v-if="view.error.value && !data" @retry="view.reload()" />
+    <DsLoadError v-if="view.error.value && !data" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="view.reload()" />
     <LoadSkeleton v-else-if="!data" testid="box-loading" />
     <template v-else>
       <div

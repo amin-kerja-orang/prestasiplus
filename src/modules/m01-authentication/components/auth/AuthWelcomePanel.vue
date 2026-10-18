@@ -24,7 +24,7 @@ const TILE_LOOK: readonly { accent: DsAccent; art: Art3DName }[] = [
 <template>
   <div class="relative flex flex-col gap-3">
     <div
-      class="flex size-16 items-center justify-center rounded-full bg-primary-on/15 text-4xl"
+      class="flex size-16 items-center justify-center rounded-full bg-primary-on/15 text-display"
       aria-hidden="true"
     >
       <span data-testid="auth-mascot">{{ mascot }}</span>

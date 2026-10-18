@@ -2,10 +2,10 @@
 /** "Subjek Tersedia" (FR-M05-23, 24): one card per subject with its question count and a start link. */
 import { computed, ref } from 'vue'
 
-import { DsArt3D } from '@/ds'
+import { DsArt3D, DsIconChip } from '@/ds'
 
 import type { PracticeSubject } from '../../api/types'
-import SubjectIcon from '../quiz/SubjectIcon.vue'
+import { subjectAccent, subjectGlyph } from '../quiz/subject-glyph'
 
 const props = defineProps<{ subjects: PracticeSubject[] }>()
 
@@ -31,15 +31,15 @@ const shown = computed(() => (showAll.value ? props.subjects : props.subjects.sl
       </span>
     </div>
     <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      <li v-for="s in shown" :key="s.code" class="min-w-0" :data-testid="`dash-subject-${s.code}`">
+      <li v-for="(s, i) in shown" :key="s.code" class="min-w-0" :data-testid="`dash-subject-${s.code}`">
         <UCard :ui="{ body: 'flex h-full flex-col gap-2 p-4' }">
           <div class="flex items-center justify-between gap-2">
-            <span
-              class="grid size-10 place-items-center text-heading text-primary"
+            <DsIconChip
+              :icon="subjectGlyph(s.icon)"
+              :accent="subjectAccent(i)"
+              size="lg"
               data-testid="dash-subject-icon"
-            >
-              <SubjectIcon :icon="s.icon" class="size-6" />
-            </span>
+            />
             <UBadge color="neutral" variant="subtle" data-testid="dash-subject-count"
               >{{ s.approvedCount }} soalan</UBadge
             >

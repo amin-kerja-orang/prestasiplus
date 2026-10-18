@@ -9,13 +9,13 @@
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsBackLink, DsCharacterCard, DsIconChip, DsPage, DsPanel } from '@/ds'
+import { DsBackLink, DsCharacterCard, DsIconChip, DsPage, DsPanel, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchTrackingAHub } from '../api'
-import LoadError from '../components/LoadError.vue'
 import SkeletonCards from '../components/SkeletonCards.vue'
 import { bahasaHref, lockChip, targetChip, tileTarget } from '../lib/tracking'
+import { LOAD_ERROR } from '../lib/copy'
 
 const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal }))
 </script>
@@ -330,7 +330,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
         </ul>
       </section>
     </template>
-    <LoadError v-else-if="error" @retry="reload()" />
+    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else />
   </DsPage>
 </template>

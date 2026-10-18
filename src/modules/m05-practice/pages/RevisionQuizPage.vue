@@ -18,10 +18,10 @@ import { useApi, usePageMeta } from '@/composables'
 
 import { fetchRevisionSubject } from '../api/practice'
 import type { StartSessionRequest, StartSessionResponse } from '../api/types'
-import LoadError from '../components/quiz/LoadError.vue'
 import QuizRunner from '../components/quiz/QuizRunner.vue'
 import { REVISION_LABELS } from '../components/quiz/quiz-labels'
 import { setRevisionFlash } from '../components/revision/revision-flash'
+import { DsLoadError } from '@/ds'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const REVISION_COUNT = 20
@@ -83,11 +83,11 @@ const headerTitle = (s: StartSessionResponse): string =>
     :report="{ source: 'revision', failureText: 'Gagal menghantar laporan. Sila cuba lagi.' }"
     :accent-color="ready.subject.color"
   />
-  <LoadError
+  <DsLoadError
     v-else-if="error && !notFound"
     :message="LOAD_ERROR"
     retry-testid="revision-quiz-retry"
-    data-testid="revision-quiz-error"
+    testid="revision-quiz-error"
     @retry="reload()"
   />
 </template>

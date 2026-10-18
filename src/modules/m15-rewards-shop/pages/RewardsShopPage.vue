@@ -8,12 +8,12 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsArt3D, DsEmptyState, DsPage, DsRewardChip } from '@/ds'
+import { DsArt3D, DsEmptyState, DsPage, DsRewardChip, DsLoadError } from '@/ds'
 import { fetchGamificationWallet } from '@/modules/m14-gamification'
 
 import { SHOP_COPY } from '../components/copy'
-import LoadError from '../components/LoadError.vue'
 import LoadSkeleton from '../components/LoadSkeleton.vue'
+import { COMMON_COPY } from '../components/copy'
 
 const wallet = useApi((signal) => fetchGamificationWallet({ signal }))
 const balance = computed(() => wallet.data.value?.tokenBalance ?? null)
@@ -39,7 +39,7 @@ const balance = computed(() => wallet.data.value?.tokenBalance ?? null)
       </div>
     </UCard>
 
-    <LoadError v-if="wallet.error.value" @retry="wallet.reload()" />
+    <DsLoadError v-if="wallet.error.value" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="wallet.reload()" />
     <LoadSkeleton v-else-if="!wallet.data.value" testid="shop-loading" />
     <section v-else data-testid="shop-empty">
       <DsEmptyState

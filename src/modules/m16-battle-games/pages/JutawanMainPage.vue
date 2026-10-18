@@ -15,7 +15,6 @@ import { answerJutawan, lifelineJutawan, startJutawan } from '../api'
 import type { RoomQuestion } from '../api'
 import JutawanLadder from '../components/jutawan/JutawanLadder.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
-import LoadState from '../components/solo/LoadState.vue'
 import { JUTAWAN_LEVELS } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 
@@ -125,7 +124,15 @@ onMounted(() => void start())
 <template>
   <div data-testid="jutawan-game">
     <GamePanel>
-      <LoadState :loading="phase === 'loading'" error="" />
+      <div
+        v-if="phase === 'loading'"
+        class="flex flex-col gap-3"
+        aria-busy="true"
+        data-testid="solo-loading"
+      >
+        <USkeleton class="h-16 w-full" />
+        <USkeleton class="h-16 w-full" />
+      </div>
       <div v-if="phase === 'error'" class="flex flex-col items-start gap-3">
         <UAlert color="error" variant="subtle" :title="error" class="w-full" />
         <UButton to="/permainan/jutawan" color="neutral" variant="soft" class="min-h-11">

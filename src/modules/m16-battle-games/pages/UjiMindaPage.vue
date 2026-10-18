@@ -7,21 +7,20 @@
  * OQ-M16-12).
  */
 import { useApi } from '@/composables'
-import { DsArt3D, DsPage } from '@/ds'
+import { DsArt3D, DsPage, DsLoadError, DsBackLink } from '@/ds'
 
 import { fetchUjiMinda } from '../api'
-import BackLink from '../components/competition/BackLink.vue'
-import { UJI_MINDA_COPY as COPY } from '../components/competition/copy'
-import PageLoadError from '../components/competition/PageLoadError.vue'
+import { BACK_LINK, UJI_MINDA_COPY as COPY } from '../components/competition/copy'
+import { LOAD_COPY } from '../components/competition/copy'
 
 const view = useApi((signal) => fetchUjiMinda({ signal }))
 </script>
 
 <template>
   <DsPage data-testid="m16-uji-minda-page">
-    <BackLink />
+    <DsBackLink :to="BACK_LINK.to" :label="BACK_LINK.label" data-testid="m16-back-link" />
 
-    <PageLoadError v-if="view.error.value" @retry="view.reload()" />
+    <DsLoadError v-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
     <div
       v-else-if="!view.data.value"
       class="flex flex-col gap-3"

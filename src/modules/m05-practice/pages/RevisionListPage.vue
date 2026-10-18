@@ -14,11 +14,10 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsCharacterCard, DsIconChip } from '@/ds'
+import { DsCharacterCard, DsIconChip, DsLoadError, DsPage } from '@/ds'
 
 import { fetchRevisionOverview } from '../api/practice'
-import LoadError from '../components/quiz/LoadError.vue'
-import { subjectGlyph } from '../components/quiz/subject-glyph'
+import { subjectAccent, subjectGlyph } from '../components/quiz/subject-glyph'
 import { takeRevisionFlash } from '../components/revision/revision-flash'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
@@ -37,11 +36,11 @@ const TIPS = [
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="revision-list-page">
-    <div class="flex flex-col gap-1" data-testid="revision-banner">
-      <h1 class="text-title text-highlighted">Soalan Aku Salah</h1>
-      <p class="max-w-prose text-body text-muted">Ulang kaji soalan yang pernah dijawab salah</p>
-    </div>
+  <DsPage
+    title="Soalan Aku Salah"
+    subtitle="Ulang kaji soalan yang pernah dijawab salah"
+    data-testid="revision-list-page"
+  >
 
     <template v-if="data">
       <DsCharacterCard
@@ -65,7 +64,7 @@ const TIPS = [
         class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3"
         data-testid="revision-grid"
       >
-        <li v-for="s in subjects" :key="s.code" class="min-w-0">
+        <li v-for="(s, i) in subjects" :key="s.code" class="min-w-0">
           <RouterLink
             :to="`/practice/revision/${s.code}`"
             class="block h-full"
@@ -76,6 +75,7 @@ const TIPS = [
                 <div class="flex items-center gap-3">
                   <DsIconChip
                     :icon="subjectGlyph(s.icon)"
+                    :accent="subjectAccent(i)"
                     size="lg"
                     data-testid="revision-subject-icon"
                   />
@@ -132,12 +132,12 @@ const TIPS = [
       >
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error"
       :message="LOAD_ERROR"
       retry-testid="revision-retry"
-      data-testid="revision-error"
+      testid="revision-error"
       @retry="reload()"
     />
-  </div>
+  </DsPage>
 </template>

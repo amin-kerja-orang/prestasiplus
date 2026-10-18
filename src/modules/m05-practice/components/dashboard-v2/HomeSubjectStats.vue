@@ -2,9 +2,11 @@
 /** "Statistik Subjek" (FR-M05-28): bank size, average difficulty (stars) and times used per subject. */
 import { computed, ref } from 'vue'
 
+import { DsIconChip } from '@/ds'
+
 import type { DashboardSubjectStat } from '../../api/types'
 import { starStates } from '../dashboard/dashboard-lib'
-import SubjectIcon from '../quiz/SubjectIcon.vue'
+import { subjectAccent, subjectGlyph } from '../quiz/subject-glyph'
 
 const props = defineProps<{ stats: DashboardSubjectStat[] }>()
 
@@ -22,15 +24,15 @@ const shown = computed(() => (showAll.value ? props.stats : props.stats.slice(0,
   >
     <h2 id="dash-subject-stats-h" class="text-heading text-highlighted">📊 Statistik Subjek</h2>
     <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      <li v-for="s in shown" :key="s.id" class="min-w-0" data-testid="dash-subject-stat">
+      <li v-for="(s, idx) in shown" :key="s.id" class="min-w-0" data-testid="dash-subject-stat">
         <UCard :ui="{ body: 'flex flex-col gap-3 p-4' }">
           <div class="flex items-center gap-3">
-            <span
-              class="grid size-10 shrink-0 place-items-center text-heading text-primary"
+            <DsIconChip
+              :icon="subjectGlyph(s.icon)"
+              :accent="subjectAccent(idx)"
+              size="lg"
               data-testid="dash-stat-icon"
-            >
-              <SubjectIcon :icon="s.icon" class="size-6" />
-            </span>
+            />
             <div class="min-w-0">
               <p class="truncate text-subheading text-highlighted" data-testid="dash-stat-name">
                 {{ s.name }}

@@ -12,12 +12,11 @@ import { useRoute } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsBackLink, DsIconChip } from '@/ds'
+import { DsBackLink, DsIconChip, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { subjectGlyph } from '@/modules/m05-practice'
 
 import { fetchLatihTubiConfig } from '../api'
-import LoadError from '../components/LoadError.vue'
 import {
   DIFFICULTY_OPTIONS,
   LEVEL_OPTIONS,
@@ -27,6 +26,7 @@ import {
   type DifficultyKey,
   type LevelKey,
 } from '../lib/latih-tubi'
+import { LOAD_ERROR } from '../lib/copy'
 
 const route = useRoute()
 const pageMeta = usePageMeta()
@@ -211,7 +211,7 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
         </div>
       </UCard>
     </template>
-    <LoadError v-else-if="error && !notFound" @retry="reload()" />
+    <DsLoadError v-else-if="error && !notFound" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <div v-else-if="!error" class="flex flex-col gap-3" aria-busy="true" data-testid="spm-skeleton">
       <USkeleton class="h-20" />
       <USkeleton class="h-96" />

@@ -8,11 +8,11 @@ import { computed, ref, watch } from 'vue'
 
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
-import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
 import { susunGain, susunMatches, susunTitle } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
+import { DsLoadError } from '@/ds'
 
 const timers = useGameTimers()
 const { darjah, payload, loading, error, load } = useSoloGame('susun-jawapan')
@@ -160,7 +160,11 @@ watch(darjah, () => void start(), { immediate: true })
   <div data-testid="solo-susun-jawapan">
     <DarjahPicker v-if="darjah === null" title="Susun Jawapan" art="books" />
     <GamePanel>
-      <LoadState :loading="loading" :error="error" />
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+        <USkeleton class="h-16 w-full" />
+        <USkeleton class="h-16 w-full" />
+      </div>
+      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
       <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
         <div class="flex items-center justify-between gap-2">

@@ -21,13 +21,13 @@ useThemeMode('learner')
 
 <template>
   <main class="flex min-h-dvh flex-col bg-muted" data-testid="password-layout">
-    <AuthBrandStrip class="!flex" />
+    <AuthBrandStrip class="flex!" />
     <div class="flex flex-1 items-center justify-center p-4 sm:p-8">
       <div class="w-full max-w-md">
         <UCard>
           <div class="mb-6 flex flex-col items-center gap-2 text-center">
             <div
-              class="flex size-16 items-center justify-center rounded-card bg-primary/10 text-4xl leading-none text-primary"
+              class="flex size-16 items-center justify-center rounded-card bg-primary/10 text-title leading-none text-primary"
               aria-hidden="true"
             >
               <slot name="icon" />
@@ -35,7 +35,7 @@ useThemeMode('learner')
             <h1 class="text-heading text-highlighted" data-testid="password-heading">
               {{ heading }}
             </h1>
-            <p class="text-label font-medium text-muted">{{ intro }}</p>
+            <p class="text-label text-muted">{{ intro }}</p>
           </div>
           <slot />
         </UCard>

@@ -8,11 +8,10 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsIconChip } from '@/ds'
+import { DsEmptyState, DsIconChip, DsLoadError, DsPage } from '@/ds'
 import { formatDate } from '@/lib/time'
 
 import { fetchRemedialTests } from '../api/practice'
-import LoadError from '../components/quiz/LoadError.vue'
 import { remedialChip } from '../components/remedial/assigned-lib'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
@@ -22,14 +21,15 @@ const items = computed(() => data.value?.data ?? [])
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-4 md:gap-6" data-testid="remedial-page">
-    <div class="flex items-start gap-3" data-testid="remedial-heading">
+  <DsPage
+    title="Ujian Remedial Saya"
+    subtitle="Ujian khas untuk topik yang perlu diperbaiki"
+    title-testid="remedial-h1"
+    data-testid="remedial-page"
+  >
+    <template #leading>
       <span class="text-title" aria-hidden="true">🔬</span>
-      <div class="flex min-w-0 flex-col gap-1">
-        <h1 class="text-title text-highlighted" data-testid="remedial-h1">Ujian Remedial Saya</h1>
-        <p class="text-body text-muted">Ujian khas untuk topik yang perlu diperbaiki</p>
-      </div>
-    </div>
+    </template>
 
     <template v-if="data">
       <DsEmptyState
@@ -83,12 +83,12 @@ const items = computed(() => data.value?.data ?? [])
       </ul>
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error"
       :message="LOAD_ERROR"
       retry-testid="remedial-retry"
-      data-testid="remedial-error"
+      testid="remedial-error"
       @retry="reload()"
     />
-  </div>
+  </DsPage>
 </template>

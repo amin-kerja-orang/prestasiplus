@@ -8,13 +8,12 @@
 import { ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsCharacterCard, DsPage, DsStatTile } from '@/ds'
+import { DsCharacterCard, DsPage, DsStatTile, DsLoadError } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchReferral } from '../../api'
 import BrandTelegramIcon from '../../components/student-b/BrandTelegramIcon.vue'
 import BrandWhatsAppIcon from '../../components/student-b/BrandWhatsAppIcon.vue'
-import StudentBLoadState from '../../components/student-b/StudentBLoadState.vue'
 import { REFERRAL_COPY } from '../../lib/student/referral-lib'
 import { copyText } from '../../lib/student/studentb-share'
 
@@ -169,13 +168,17 @@ async function copyLink(): Promise<void> {
         </div>
       </section>
     </template>
-    <StudentBLoadState
-      v-else
-      :error="error !== null"
+    <DsLoadError
+      v-else-if="error !== null"
       :message="REFERRAL_COPY.loadError"
       :retry-label="REFERRAL_COPY.retry"
-      test-key="referral"
+      testid="referral-error"
+      retry-testid="referral-retry"
       @retry="reload()"
     />
+    <div v-else class="flex flex-col gap-3" aria-busy="true" data-testid="referral-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

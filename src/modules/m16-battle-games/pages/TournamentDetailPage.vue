@@ -10,11 +10,10 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsArt3D, DsPage } from '@/ds'
+import { DsArt3D, DsPage, DsLoadError } from '@/ds'
 import { formatDateTime } from '@/lib/time'
 
 import { fetchBattleLobby, fetchTournament } from '../api'
-import PageLoadError from '../components/competition/PageLoadError.vue'
 import {
   DETAIL_LABELS as L,
   EDUCATION_LEVELS,
@@ -23,6 +22,7 @@ import {
   QUESTION_MODES,
   STATUS_LINE,
 } from '../components/tournament/copy'
+import { LOAD_COPY } from '../components/competition/copy'
 
 const props = defineProps<{ uuid: string }>()
 
@@ -131,7 +131,7 @@ const rows = computed<Row[]>(() => {
     </UButton>
 
     <template v-if="notFound" />
-    <PageLoadError v-else-if="view.error.value" @retry="view.reload()" />
+    <DsLoadError v-else-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
     <div
       v-else-if="!t"
       class="flex flex-col gap-3"

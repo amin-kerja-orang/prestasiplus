@@ -14,10 +14,9 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, usePageMeta } from '@/composables'
-import { DsEmptyState } from '@/ds'
+import { DsEmptyState, DsLoadError } from '@/ds'
 
 import { fetchStructured } from '../api/practice'
-import LoadError from '../components/quiz/LoadError.vue'
 import {
   answerUrl,
   KBAT_OPTIONS,
@@ -321,11 +320,11 @@ function goPage(page: number): void {
       </div>
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error"
       :message="LOAD_ERROR"
       retry-testid="structured-retry"
-      data-testid="structured-error"
+      testid="structured-error"
       @retry="reload()"
     />
   </div>

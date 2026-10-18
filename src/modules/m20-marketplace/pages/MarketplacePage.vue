@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsEmptyState, DsPage, DsLoadError } from '@/ds'
 
 import { fetchMarketplaceCategories, searchMarketplaceProducts, type BuyerSort } from '../api'
 import CategoryChips from '../components/product/CategoryChips.vue'
@@ -20,7 +20,6 @@ import {
   readPage,
   type BuyerQuery,
 } from '../components/product/copy'
-import LoadError from '../components/product/LoadError.vue'
 import ProductFilters from '../components/product/ProductFilters.vue'
 import ProductGrid from '../components/product/ProductGrid.vue'
 
@@ -80,7 +79,7 @@ const pagerQuery = computed(() => ({
 
 <template>
   <DsPage data-testid="marketplace-page">
-    <LoadError v-if="failed" @retry="retry" />
+    <DsLoadError v-if="failed" :message="MARKETPLACE_COPY.loadFailed" testid="m20-load-error" retry-testid="m20-retry" @retry="retry" />
     <template v-else>
       <ProductFilters
         v-if="categories.data.value"

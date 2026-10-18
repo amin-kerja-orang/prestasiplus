@@ -8,12 +8,11 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
-import { DsPage, DsPanel } from '@/ds'
+import { DsPage, DsPanel, DsLoadError } from '@/ds'
 
 import { fetchRph } from '../api'
 import { RPH_COPY as C } from '../components/teacher/copy'
 import { dmy } from '../components/teacher/lib'
-import PageState from '../components/teacher/PageState.vue'
 
 const props = defineProps<{ id: number }>()
 
@@ -40,13 +39,23 @@ watch(notFound, (is404) => {
         >{{ C.back }}</UButton
       >
     </div>
-    <PageState
-      :loaded="data !== null || notFound"
-      :error="error !== null && !notFound"
+    <DsLoadError
+      v-if="error !== null && !notFound"
       :message="C.loadFailed"
       :retry-label="C.retry"
+      testid="page-error"
+      retry-testid="page-retry"
       @retry="reload"
+    />
+    <div
+      v-else-if="!(data !== null || notFound)"
+      class="flex flex-col gap-3"
+      aria-busy="true"
+      data-testid="page-loading"
     >
+      <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
+    </div>
+    <template v-else>
       <DsPanel v-if="data" class="flex flex-col gap-4">
         <h1 class="text-heading text-highlighted">{{ C.title }}</h1>
         <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -75,13 +84,14 @@ watch(notFound, (is404) => {
             </dd>
           </div>
         </dl>
-        <div
-          class="rounded-card bg-soft p-4 text-body break-words whitespace-pre-line text-default"
+        <DsPanel
+          tone="inset"
+          class="text-body break-words whitespace-pre-line text-default"
           data-testid="rph-view-content"
         >
           {{ data.content }}
-        </div>
+        </DsPanel>
       </DsPanel>
-    </PageState>
+    </template>
   </DsPage>
 </template>

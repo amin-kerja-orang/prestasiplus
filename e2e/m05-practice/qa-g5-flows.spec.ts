@@ -573,7 +573,7 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
       ['/practice/MATH', 'config-name', ['Latih Tubi']],
       ['/practice/chapter', 'chapter-subject-grid', ['Soalan by Chapter']],
       ['/practice/chapter/MATH', 'chapter-card-1', ['Soalan by Chapter']],
-      ['/practice/revision', 'revision-banner', []],
+      ['/practice/revision', 'revision-list-page', []],
       ['/latihan-berstruktur', 'structured-h1', ['Soalan Berstruktur']],
       ['/remedial/saya', 'remedial-h1', ['Remedial']],
       ['/misi-harian', 'missions-page', ['Misi Harian']],

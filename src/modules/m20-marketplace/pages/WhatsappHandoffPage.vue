@@ -11,7 +11,8 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 
 import { recordWhatsappClick } from '../api'
-import LoadError from '../components/product/LoadError.vue'
+import { DsLoadError } from '@/ds'
+import { MARKETPLACE_COPY } from '../components/product/copy'
 
 const props = defineProps<{ slug: string }>()
 const failed = ref(false)
@@ -34,7 +35,7 @@ onMounted(() => {
 
 <template>
   <div v-if="failed" class="mx-auto max-w-xl p-4" data-testid="whatsapp-error">
-    <LoadError @retry="handOff" />
+    <DsLoadError :message="MARKETPLACE_COPY.loadFailed" testid="m20-load-error" retry-testid="m20-retry" @retry="handOff" />
   </div>
   <div v-else data-testid="whatsapp-handoff" />
 </template>

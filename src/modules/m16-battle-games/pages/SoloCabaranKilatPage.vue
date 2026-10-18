@@ -5,15 +5,14 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { DsQuizOption } from '@/ds'
+import { DsQuizOption, DsLoadError } from '@/ds'
 import type { QuizOptionState } from '@/ds'
 
 import CountdownView from '../components/solo/CountdownView.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
-import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
-import StatBar from '../components/solo/StatBar.vue'
+import GameHud from '../components/solo/GameHud.vue'
 import {
   cabaranGain,
   cabaranKilatTitle,
@@ -148,7 +147,11 @@ watch(darjah, () => void start(), { immediate: true })
   <div data-testid="solo-cabaran-kilat">
     <DarjahPicker v-if="darjah === null" title="Cabaran Kilat" art="bolt" />
     <GamePanel>
-      <LoadState :loading="loading" :error="error" />
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+        <USkeleton class="h-16 w-full" />
+        <USkeleton class="h-16 w-full" />
+      </div>
+      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
       <CountdownView v-if="phase === 'countdown'" title="⚡ CABARAN KILAT" :count="count" />
 
@@ -163,7 +166,7 @@ watch(darjah, () => void start(), { immediate: true })
             >🔥 {{ combo }}x COMBO</UBadge
           >
         </div>
-        <StatBar :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" caps />
+        <GameHud :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" caps />
         <div class="flex items-center justify-between gap-2 pt-2">
           <p class="text-caption text-muted">Soalan {{ index + 1 }}</p>
           <UBadge

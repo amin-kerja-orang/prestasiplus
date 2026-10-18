@@ -9,12 +9,10 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError, DsBackLink } from '@/ds'
 
 import { fetchMarketplaceShop } from '../api'
-import BackLink from '../components/product/BackLink.vue'
-import { SHOP_COPY } from '../components/product/copy'
-import LoadError from '../components/product/LoadError.vue'
+import { MARKETPLACE_COPY, SHOP_COPY } from '../components/product/copy'
 import ProductGrid from '../components/product/ProductGrid.vue'
 import ShopCard from '../components/product/ShopCard.vue'
 
@@ -60,8 +58,8 @@ watch(
 <template>
   <div v-if="notFound" />
   <DsPage v-else data-testid="shop-page">
-    <BackLink />
-    <LoadError v-if="failed" @retry="shop.reload" />
+    <DsBackLink to="/marketplace" :label="MARKETPLACE_COPY.back" data-testid="marketplace-back" />
+    <DsLoadError v-if="failed" :message="MARKETPLACE_COPY.loadFailed" testid="m20-load-error" retry-testid="m20-retry" @retry="shop.reload" />
     <div v-else-if="!shop.data.value" class="flex flex-col gap-3" aria-busy="true" data-testid="shop-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-40 w-full" />

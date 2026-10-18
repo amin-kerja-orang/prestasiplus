@@ -7,11 +7,11 @@
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsEmptyState, DsPage, DsLoadError } from '@/ds'
 
 import { fetchStudentStandings } from '../api'
 import { mskText } from '../components/battle/battle-lib'
-import StatRow from '../components/battle/StatRow.vue'
+import RankedRow from '../components/battle/RankedRow.vue'
 
 const period = ref<'weekly' | 'monthly'>('weekly')
 const { data, error, loading, reload } = useApi(
@@ -44,15 +44,12 @@ const PILLS = [
       </UButton>
     </div>
 
-    <div v-if="error" class="flex flex-col items-start gap-3" data-testid="battle-load-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        title="Maaf, berlaku ralat. Sila cuba semula."
-        class="w-full"
-      />
-      <UButton size="lg" class="min-h-11" @click="reload()">Cuba Lagi</UButton>
-    </div>
+    <DsLoadError
+      v-if="error"
+      message="Maaf, berlaku ralat. Sila cuba semula."
+      testid="battle-load-error"
+      @retry="reload()"
+    />
     <div v-else-if="loading && !data" class="flex flex-col gap-2" aria-busy="true">
       <USkeleton v-for="n in 4" :key="n" class="h-16 w-full" />
     </div>
@@ -63,7 +60,7 @@ const PILLS = [
       data-testid="battle-leaderboard-empty"
     />
     <ul v-else class="flex flex-col gap-2" data-testid="battle-leaderboard-scroll">
-      <StatRow
+      <RankedRow
         v-for="r in rows"
         :key="r.userId"
         :rank="r.rank"
@@ -90,7 +87,7 @@ const PILLS = [
           <dt class="text-caption text-muted">Skor</dt>
           <dd class="tabular text-label text-primary">{{ r.skor }}</dd>
         </div>
-      </StatRow>
+      </RankedRow>
     </ul>
   </DsPage>
 </template>

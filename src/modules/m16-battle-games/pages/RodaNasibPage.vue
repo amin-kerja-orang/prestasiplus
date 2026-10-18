@@ -8,12 +8,11 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import { alertNative } from '@/composables/native-dialogs'
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import { fetchSpinPage, spinWheel } from '../api'
 import type { SpinPage } from '../api'
-import LoadState from '../components/solo/LoadState.vue'
 import PrizeModal from '../components/solo/PrizeModal.vue'
 import { nextWheelRotation, WHEEL_SPIN_MS } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
@@ -92,7 +91,11 @@ onMounted(() => void loadPage())
       <p class="text-body text-muted">Pusing roda sekali sehari untuk hadiah misteri!</p>
     </div>
 
-    <LoadState :loading="loading" :error="error" />
+    <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+      <USkeleton class="h-16 w-full" />
+      <USkeleton class="h-16 w-full" />
+    </div>
+    <DsLoadError v-else-if="error" :message="error" @retry="loadPage()" />
 
     <template v-if="page">
       <div class="flex flex-wrap gap-3">

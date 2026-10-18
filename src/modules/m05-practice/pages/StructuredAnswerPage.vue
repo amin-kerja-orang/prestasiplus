@@ -21,9 +21,9 @@ import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
 import { fetchStructuredDetail, submitStructuredAttempt } from '../api/practice'
 import type { StructuredAttemptResult } from '../api/types'
-import LoadError from '../components/quiz/LoadError.vue'
 import StimulusImage from '../components/structured/StimulusImage.vue'
 import { marksLabel, parseVariant, safeImageSrc } from '../components/structured/structured-lib'
+import { DsLoadError } from '@/ds'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const SUBMIT_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
@@ -236,11 +236,11 @@ async function submit(): Promise<void> {
       />
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error && !notFound"
       :message="LOAD_ERROR"
       retry-testid="answer-retry"
-      data-testid="answer-error"
+      testid="answer-error"
       @retry="reload()"
     />
   </div>

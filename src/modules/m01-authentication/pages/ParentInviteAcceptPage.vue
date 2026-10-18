@@ -9,13 +9,12 @@
  *   valid card and shows the red alert (FR-L45-29, INFERRED, UNVERIFIED COPY).
  * A GET never links (DV-L45-05). The token is never carried through login or registration (FR-L45-30).
  */
-import { ChartLine, CircleCheck, Info, LogIn, LogOut } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
 import { usePageMeta } from '@/composables'
+import { DsLoadError } from '@/ds'
 import {
   acceptParentInvite,
   fetchInvitePreview,
@@ -23,6 +22,7 @@ import {
   type InvitePreview,
 } from '@/modules/m02-users-schools'
 
+import AuthAlert from '../components/auth/AuthAlert.vue'
 import InviteInvalidCard from '../components/invite/InviteInvalidCard.vue'
 import InviteValidCard from '../components/invite/InviteValidCard.vue'
 import { GENERIC_ERROR } from '../lib/error-lines'
@@ -96,36 +96,28 @@ onMounted(load)
 // The router reuses this component when only `:token` changes: load the new link from scratch.
 watch(() => props.token, load)
 
-const PRIMARY_BUTTON =
-  'flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-center font-bold text-white shadow-md transition hover:bg-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:outline-none'
 </script>
 
 <template>
-  <div
+  <main
     v-if="phase === 'loading'"
-    class="flex min-h-screen items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100 text-indigo-600"
+    class="flex min-h-dvh items-center justify-center bg-muted px-4"
     role="status"
     data-testid="invite-loading"
   >
-    <LoadingSpinner :size="32" />
-  </div>
+    <UProgress animation="carousel" class="w-40" aria-label="Memuatkan" />
+  </main>
 
   <InviteInvalidCard v-else-if="phase === 'invalid'" />
 
   <main
     v-else-if="phase === 'error'"
-    class="flex min-h-screen flex-col items-center justify-center gap-4 bg-linear-to-br from-blue-50 to-indigo-100 px-3 py-6 font-sans"
+    class="flex min-h-dvh flex-col items-center justify-center gap-4 bg-muted px-3 py-6"
     data-testid="invite-error"
   >
-    <div class="w-full max-w-lg"><AlertBox :messages="[GENERIC_ERROR]" /></div>
-    <button
-      type="button"
-      class="min-h-11 rounded-xl border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-      data-testid="invite-retry"
-      @click="load"
-    >
-      Cuba lagi
-    </button>
+    <div class="w-full max-w-lg">
+      <DsLoadError :message="GENERIC_ERROR" retry-testid="invite-retry" @retry="load" />
+    </div>
   </main>
 
   <InviteValidCard
@@ -140,80 +132,84 @@ const PRIMARY_BUTTON =
     <template v-if="preview.viewer === 'parent'">
       <div
         v-if="accepting"
-        class="flex justify-center py-6 text-indigo-600"
+        class="flex justify-center py-6"
         role="status"
         data-testid="invite-accepting"
       >
-        <LoadingSpinner :size="28" />
+        <UProgress animation="carousel" class="w-28" aria-label="Menghubungkan" />
       </div>
       <template v-else-if="linked">
-        <div
-          class="flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700"
+        <UAlert
+          color="success"
+          variant="subtle"
+          icon="i-ph-check-circle-duotone"
+          :description="`Akaun anda (${linked.parent.name}) telah dihubungkan dengan pelajar ini. Anda kini boleh memantau kemajuan mereka.`"
           data-testid="invite-linked-box"
-        >
-          <CircleCheck class="mt-0.5 h-4 w-4 shrink-0" />
-          <p class="min-w-0 break-words">
-            Akaun anda ({{ linked.parent.name }}) telah dihubungkan dengan pelajar ini. Anda kini
-            boleh memantau kemajuan mereka.
-          </p>
-        </div>
-        <RouterLink
+        />
+        <UButton
           :to="`/pelajar/${linked.student.id}`"
-          :class="PRIMARY_BUTTON"
+          block
+          size="xl"
+          variant="solid"
+          icon="i-ph-chart-line-up-duotone"
           data-testid="invite-profile-link"
+          >Lihat Profil Kemajuan</UButton
         >
-          <ChartLine class="h-4 w-4" />
-          Lihat Profil Kemajuan
-        </RouterLink>
       </template>
-      <AlertBox v-else :messages="acceptErrors" data-testid="invite-accept-alert" />
+      <AuthAlert v-else :messages="acceptErrors" data-testid="invite-accept-alert" />
     </template>
 
     <!-- Logged-in non-parent -->
     <template v-else-if="preview.viewer === 'other'">
-      <p class="text-sm text-slate-600" data-testid="invite-other-text">
+      <p class="text-body text-toned" data-testid="invite-other-text">
         Anda kini log masuk sebagai akaun yang
-        <strong class="font-semibold">bukan Ibu Bapa</strong>. Untuk berhubung dengan pelajar ini,
-        sila log keluar dan log masuk semula menggunakan akaun Ibu Bapa anda.
+        <strong class="text-highlighted">bukan Ibu Bapa</strong>. Untuk berhubung dengan pelajar
+        ini, sila log keluar dan log masuk semula menggunakan akaun Ibu Bapa anda.
       </p>
-      <button
+      <UButton
         type="button"
-        :class="PRIMARY_BUTTON"
+        block
+        size="xl"
+        variant="solid"
+        icon="i-ph-sign-out-duotone"
         data-testid="invite-switch"
         @click="switchAccount"
       >
-        <LogOut class="h-4 w-4 shrink-0" />
         Log Keluar &amp; Log Masuk Sebagai Ibu Bapa
-      </button>
+      </UButton>
     </template>
 
     <!-- Guest -->
     <template v-else>
-      <p class="text-sm text-slate-600" data-testid="invite-guest-text">
+      <p class="text-body text-toned" data-testid="invite-guest-text">
         Untuk memantau kemajuan pembelajaran anak anda di PRESTASIPLUS, sila log masuk menggunakan
         akaun Ibu Bapa anda. Selepas log masuk, buka semula pautan jemputan ini untuk mengesahkan
         hubungan.
       </p>
-      <RouterLink to="/login" :class="PRIMARY_BUTTON" data-testid="invite-login">
-        <LogIn class="h-4 w-4 shrink-0" />
+      <UButton
+        to="/login"
+        block
+        size="xl"
+        variant="solid"
+        icon="i-ph-sign-in-duotone"
+        data-testid="invite-login"
+      >
         Log Masuk Sebagai Ibu Bapa
-      </RouterLink>
-      <div
-        class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+      </UButton>
+      <UAlert
+        color="warning"
+        variant="subtle"
+        icon="i-ph-info-duotone"
         data-testid="invite-register-note"
       >
-        <Info class="mt-0.5 h-4 w-4 shrink-0" />
-        <p class="min-w-0">
+        <template #description>
           Belum mempunyai akaun Ibu Bapa?
-          <RouterLink
-            to="/register"
-            class="-my-3 inline-block py-3 font-semibold underline"
-            data-testid="invite-register-link"
-            >Daftar akaun Ibu Bapa</RouterLink
+          <ULink to="/register" class="text-highlighted" data-testid="invite-register-link"
+            >Daftar akaun Ibu Bapa</ULink
           >
           terlebih dahulu, kemudian buka semula pautan jemputan ini.
-        </p>
-      </div>
+        </template>
+      </UAlert>
     </template>
   </InviteValidCard>
 </template>

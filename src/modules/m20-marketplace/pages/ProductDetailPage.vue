@@ -12,7 +12,7 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError, DsBackLink } from '@/ds'
 
 import { fetchMarketplaceProduct } from '../api'
 import { DETAIL_COPY } from '../components/detail/copy'
@@ -21,8 +21,7 @@ import ProductInfo from '../components/detail/ProductInfo.vue'
 import RelatedProducts from '../components/detail/RelatedProducts.vue'
 import ReviewsCard from '../components/detail/ReviewsCard.vue'
 import SellerPanel from '../components/detail/SellerPanel.vue'
-import BackLink from '../components/product/BackLink.vue'
-import LoadError from '../components/product/LoadError.vue'
+import { MARKETPLACE_COPY } from '../components/product/copy'
 
 const props = defineProps<{ slug: string }>()
 
@@ -61,8 +60,8 @@ watch(
 <template>
   <div v-if="notFound" />
   <DsPage v-else data-testid="product-page">
-    <BackLink />
-    <LoadError v-if="failed" @retry="product.reload" />
+    <DsBackLink to="/marketplace" :label="MARKETPLACE_COPY.back" data-testid="marketplace-back" />
+    <DsLoadError v-if="failed" :message="MARKETPLACE_COPY.loadFailed" testid="m20-load-error" retry-testid="m20-retry" @retry="product.reload" />
     <div v-else-if="!product.data.value" class="flex flex-col gap-3" aria-busy="true" data-testid="product-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-40 w-full" />

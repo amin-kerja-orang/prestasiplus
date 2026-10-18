@@ -13,13 +13,12 @@ import { computed, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsCharacterCard, DsIconChip } from '@/ds'
+import { DsCharacterCard, DsIconChip, DsLoadError, DsPage } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchPracticeSubjects } from '../api/practice'
 import { entryTarget } from '../components/quiz/entry-params'
-import LoadError from '../components/quiz/LoadError.vue'
-import { subjectGlyph } from '../components/quiz/subject-glyph'
+import { subjectAccent, subjectGlyph } from '../components/quiz/subject-glyph'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
@@ -43,11 +42,12 @@ watch(
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="practice-list-page">
-    <div class="flex flex-col gap-1" data-testid="practice-hero">
-      <h1 class="text-title text-highlighted" data-testid="practice-title">Latih Tubi 🎯</h1>
-      <p class="max-w-prose text-body text-muted">Pilih subjek dan mula berlatih!</p>
-    </div>
+  <DsPage
+    title="Latih Tubi 🎯"
+    subtitle="Pilih subjek dan mula berlatih!"
+    title-testid="practice-title"
+    data-testid="practice-list-page"
+  >
 
     <template v-if="data">
       <RouterLink to="/practice/chapter" class="block" data-testid="chapter-banner">
@@ -65,7 +65,7 @@ watch(
       </RouterLink>
 
       <ul class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3" data-testid="subject-grid">
-        <li v-for="s in subjects" :key="s.code" class="min-w-0">
+        <li v-for="(s, i) in subjects" :key="s.code" class="min-w-0">
           <RouterLink
             :to="`/practice/${s.code}`"
             class="block h-full"
@@ -73,7 +73,12 @@ watch(
           >
             <UCard class="h-full" :ui="{ body: 'flex h-full flex-col gap-3 p-4' }">
               <div class="flex items-start justify-between gap-2">
-                <DsIconChip :icon="subjectGlyph(s.icon)" size="lg" data-testid="subject-icon" />
+                <DsIconChip
+                  :icon="subjectGlyph(s.icon)"
+                  :accent="subjectAccent(i)"
+                  size="lg"
+                  data-testid="subject-icon"
+                />
                 <UBadge
                   v-if="s.isCore"
                   color="warning"
@@ -107,12 +112,12 @@ watch(
       </ul>
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error"
       :message="LOAD_ERROR"
       retry-testid="practice-retry"
-      data-testid="practice-error"
+      testid="practice-error"
       @retry="reload()"
     />
-  </div>
+  </DsPage>
 </template>

@@ -9,20 +9,11 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsBackLink,
-  DsEmptyState,
-  DsPage,
-  DsPillNav,
-  DsStatTile,
-  type DsAccent,
-  type PillItem,
-} from '@/ds'
+import { DsBackLink, DsEmptyState, DsPage, DsPillNav, DsStatTile, type DsAccent, type PillItem, DsLoadError } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 import { formatDateTimeEn12, formatMinSec } from '@/lib/time'
 import { fetchSessions } from '@/modules/m05-practice'
 
-import LoadError from '../components/LoadError.vue'
 import SkeletonCards from '../components/SkeletonCards.vue'
 import {
   HISTORY_FILTERS,
@@ -32,6 +23,7 @@ import {
   parseHistoryType,
   scoreColor,
 } from '../lib/history'
+import { LOAD_ERROR } from '../lib/copy'
 
 const route = useRoute()
 const type = computed(() => parseHistoryType(route.query.type))
@@ -181,7 +173,7 @@ const activeFilter = computed<string | null>(() =>
         </DsEmptyState>
       </UCard>
     </template>
-    <LoadError v-else-if="error" @retry="reload()" />
+    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else :count="3" />
   </DsPage>
 </template>

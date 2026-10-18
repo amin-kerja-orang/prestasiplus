@@ -17,13 +17,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsEmptyState } from '@/ds'
+import { DsEmptyState, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchChapterSubject } from '../api/practice'
 import { chapterListHref, parseLevelParam } from '../components/chapter/chapter-lib'
 import ChapterCardItem from '../components/chapter/ChapterCardItem.vue'
-import LoadError from '../components/quiz/LoadError.vue'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
@@ -119,11 +118,11 @@ function onLevelChange(id: unknown): void {
       </div>
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error && !notFound"
       :message="LOAD_ERROR"
       retry-testid="chapter-retry"
-      data-testid="chapter-error"
+      testid="chapter-error"
       @retry="reload()"
     />
   </div>

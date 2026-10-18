@@ -7,9 +7,8 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 
-import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
 import { formatClock } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
@@ -144,7 +143,11 @@ onMounted(() => void start())
       >
     </div>
 
-    <LoadState :loading="loading" :error="error" />
+    <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+      <USkeleton class="h-16 w-full" />
+      <USkeleton class="h-16 w-full" />
+    </div>
+    <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
     <div
       v-if="cards.length > 0"

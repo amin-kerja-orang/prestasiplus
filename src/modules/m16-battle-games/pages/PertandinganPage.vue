@@ -11,14 +11,13 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError, DsBackLink } from '@/ds'
 import { clock } from '@/lib/time'
 
 import { fetchWeeklyCompetition } from '../api'
-import BackLink from '../components/competition/BackLink.vue'
-import { MEDALS, PERTANDINGAN_COPY as COPY } from '../components/competition/copy'
+import { BACK_LINK, MEDALS, PERTANDINGAN_COPY as COPY } from '../components/competition/copy'
 import { formatCountdown, formatPct, formatWeekRange } from '../components/competition/format'
-import PageLoadError from '../components/competition/PageLoadError.vue'
+import { LOAD_COPY } from '../components/competition/copy'
 
 const REFRESH_MS = 60_000
 
@@ -58,14 +57,14 @@ function medalOf(rank: number): string | null {
 <template>
   <DsPage data-testid="m16-pertandingan-page">
     <div class="flex flex-col items-start gap-1">
-      <BackLink />
+      <DsBackLink :to="BACK_LINK.to" :label="BACK_LINK.label" data-testid="m16-back-link" />
       <header data-testid="pertandingan-hero">
         <h1 class="text-title text-highlighted">{{ COPY.heading }}</h1>
         <p class="mt-1 text-body text-muted">{{ COPY.sub }}</p>
       </header>
     </div>
 
-    <PageLoadError v-if="view.error.value" @retry="view.reload()" />
+    <DsLoadError v-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
     <div
       v-else-if="!data"
       class="flex flex-col gap-3"

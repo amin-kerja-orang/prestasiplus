@@ -95,7 +95,7 @@ describe('LoginPage (M01 S1)', () => {
       placeholder: '••••••••',
     })
     expect(w.get('form').attributes('novalidate')).toBeUndefined()
-    expect((w.get('[data-testid=login-remember]').element as HTMLInputElement).checked).toBe(false)
+    expect(w.get('[data-testid=login-remember]').attributes('aria-checked')).toBe('false')
     expect(w.text()).toContain('Alamat Email')
     expect(w.text()).toContain('Kata Laluan')
     expect(w.text()).toContain('© 2026 PRESTASIPLUS. Platform Pendidikan Malaysia.')
@@ -178,7 +178,7 @@ describe('LoginPage (M01 S1)', () => {
   it('stores the session and goes to the landing path with no message', async () => {
     apiMocks.login.mockResolvedValue(SESSION)
     const w = await render()
-    await w.get('[data-testid=login-remember]').setValue(true)
+    await w.get('[data-testid=login-remember]').trigger('click')
     await fillAndSubmit(w, 'pelajar@demo.test', 'Demo1234')
     expect(apiMocks.login).toHaveBeenCalledWith({
       email: 'pelajar@demo.test',

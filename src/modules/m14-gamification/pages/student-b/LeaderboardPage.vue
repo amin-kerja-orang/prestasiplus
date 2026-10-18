@@ -8,12 +8,11 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 
 import { fetchGamificationLeaderboard } from '../../api'
 import LeaderboardPodium from '../../components/student-b/LeaderboardPodium.vue'
 import LeaderboardRows from '../../components/student-b/LeaderboardRows.vue'
-import StudentBLoadState from '../../components/student-b/StudentBLoadState.vue'
 import { LEADERBOARD_COPY } from '../../lib/student/leaderboard-lib'
 
 const { data, error, reload } = useApi((signal) => fetchGamificationLeaderboard({ signal }))
@@ -36,13 +35,17 @@ const loaded = computed(() => data.value !== null)
       <LeaderboardPodium v-if="data.podium.length > 0" :podium="data.podium" />
       <LeaderboardRows :rows="data.rows" />
     </template>
-    <StudentBLoadState
-      v-else
-      :error="error !== null"
+    <DsLoadError
+      v-else-if="error !== null"
       :message="LEADERBOARD_COPY.loadError"
       :retry-label="LEADERBOARD_COPY.retry"
-      test-key="leaderboard"
+      testid="leaderboard-error"
+      retry-testid="leaderboard-retry"
       @retry="reload()"
     />
+    <div v-else class="flex flex-col gap-3" aria-busy="true" data-testid="leaderboard-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

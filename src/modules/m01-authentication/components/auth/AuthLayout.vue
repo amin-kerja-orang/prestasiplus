@@ -8,8 +8,7 @@
  * - the card column holds the logo + tagline + default slot, an optional `below` slot (the S1
  *   stats stickers) and the footer line.
  */
-import { DsArt3D, DsFriendAvatar } from '@/ds'
-import { LOGO_URL } from '@/shells/shared/brand'
+import { DsArt3D, DsBrandLogo, DsFriendAvatar } from '@/ds'
 import { useThemeMode } from '@/theme/color-mode'
 
 import AuthBrandStrip from './AuthBrandStrip.vue'
@@ -48,37 +47,37 @@ useThemeMode('learner')
           name="trophy"
           size="xl"
           float
-          class="absolute top-44 right-8 [animation-delay:-1.2s]"
+          class="absolute top-44 right-8"
         />
         <DsArt3D
           name="coin"
           size="lg"
           float
-          class="absolute right-10 bottom-14 [animation-delay:-2.4s]"
+          class="absolute right-10 bottom-14"
         />
         <DsArt3D
           name="fire"
           size="md"
           float
-          class="absolute right-36 bottom-4 [animation-delay:-0.6s]"
+          class="absolute right-36 bottom-4"
         />
         <DsArt3D
           name="books"
           size="lg"
           float
-          class="absolute bottom-3 left-12 [animation-delay:-3s]"
+          class="absolute bottom-3 left-12"
         />
         <DsArt3D
           name="party"
           size="sm"
           float
-          class="absolute top-6 left-1/2 [animation-delay:-1.8s]"
+          class="absolute top-6 left-1/2"
         />
       </div>
       <div class="relative flex items-end gap-3" aria-hidden="true" data-testid="auth-friends">
         <DsFriendAvatar friend="aiman" mood="happy" size="lg" />
         <DsFriendAvatar friend="aisyah" mood="happy" size="lg" />
-        <p class="mb-3 rounded-2xl rounded-bl-md bg-primary-on px-4 py-2.5 text-label text-primary-t shadow-lift">Jom sambung belajar!</p>
+        <p class="mb-3 rounded-card bg-primary-on px-4 py-2.5 text-label text-primary-t shadow-lift">Jom sambung belajar!</p>
       </div>
       <slot name="welcome" />
     </aside>
@@ -88,7 +87,7 @@ useThemeMode('learner')
         <div class="rounded-card transition-shadow focus-within:shadow-hero">
           <UCard>
             <div class="mb-6 flex flex-col items-center gap-2 text-center">
-              <img :src="LOGO_URL" alt="PRESTASIPLUS" class="h-12 w-auto max-w-full sm:h-14" />
+              <DsBrandLogo size="xl" />
               <p class="text-label font-medium text-muted" data-testid="auth-tagline">
                 {{ tagline }}
               </p>

@@ -63,7 +63,7 @@ test.describe('QA-G5 access guards', { tag: [moduleTag(5)] }, () => {
     { path: '/practice/MATH', ready: 'config-name' },
     { path: '/practice/chapter', ready: 'chapter-subject-grid' },
     { path: '/practice/chapter/MATH', ready: 'chapter-card-1' },
-    { path: '/practice/revision', ready: 'revision-banner' },
+    { path: '/practice/revision', ready: 'revision-list-page' },
     { path: '/latihan-berstruktur', ready: 'structured-h1' },
     { path: '/remedial/saya', ready: 'remedial-h1' },
     { path: '/misi-harian', ready: 'missions-page' },
@@ -179,9 +179,9 @@ test.describe('QA-G5 heading legibility on dark heroes', { tag: [moduleTag(5)] }
 
   const HEROES: Array<[string, string, string, string]> = [
     ['S2 banner h2', '/practice', 'chapter-banner', 'h2'],
-    ['S4 hero h1', '/practice/chapter', 'chapter-hero', 'h1'],
+    ['S4 hero h1', '/practice/chapter', 'chapter-index-page', 'h1'],
     ['S5 hero h1', '/practice/chapter/MATH', 'chapter-subject-hero', 'h1'],
-    ['S6 banner h1', '/practice/revision', 'revision-banner', 'h1'],
+    ['S6 banner h1', '/practice/revision', 'revision-list-page', 'h1'],
   ]
   for (const [name, path, root, heading] of HEROES) {
     test('AC-M05-19.1 / 11.2 / 18.1 ' + name + ' is light text on the dark gradient (not slate-800)', async ({

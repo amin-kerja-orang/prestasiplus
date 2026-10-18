@@ -8,12 +8,11 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsDataTable, DsPage, type CardField } from '@/ds'
+import { DsDataTable, DsPage, type CardField, DsLoadError } from '@/ds'
 
 import { fetchRphList } from '../api'
 import { RPH_COPY as C } from '../components/teacher/copy'
 import { dmy, pageOf } from '../components/teacher/lib'
-import PageState from '../components/teacher/PageState.vue'
 
 interface Row extends Record<string, unknown> {
   id: number
@@ -69,13 +68,23 @@ function goToPage(next: number): void {
       >
     </template>
 
-    <PageState
-      :loaded="data !== null"
-      :error="error !== null"
+    <DsLoadError
+      v-if="error !== null"
       :message="C.loadFailed"
       :retry-label="C.retry"
+      testid="page-error"
+      retry-testid="page-retry"
       @retry="reload"
+    />
+    <div
+      v-else-if="!(data !== null)"
+      class="flex flex-col gap-3"
+      aria-busy="true"
+      data-testid="page-loading"
     >
+      <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
+    </div>
+    <template v-else>
       <DsDataTable
         v-if="data"
         :data="rows"
@@ -114,6 +123,6 @@ function goToPage(next: number): void {
           >
         </template>
       </DsDataTable>
-    </PageState>
+    </template>
   </DsPage>
 </template>

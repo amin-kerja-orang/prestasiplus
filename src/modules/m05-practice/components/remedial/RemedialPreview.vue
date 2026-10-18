@@ -14,7 +14,7 @@ import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 
 import { fetchRemedialPreview } from '../../api/practice'
-import LoadError from '../quiz/LoadError.vue'
+import { DsLoadError } from '@/ds'
 
 const props = defineProps<{ id: number }>()
 
@@ -109,11 +109,11 @@ watch(
       </UCard>
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error && !notFound"
       :message="LOAD_ERROR"
       retry-testid="preview-retry"
-      data-testid="preview-error"
+      testid="preview-error"
       @retry="reload()"
     />
   </div>

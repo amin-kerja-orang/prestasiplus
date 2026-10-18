@@ -2,7 +2,7 @@
 /** Sejarah Bijak SPM (US-18): every sitting, newest first, with a link to its Semakan or to resume it. */
 import { computed } from 'vue'
 
-import { DsEmptyState, DsStatTile } from '@/ds'
+import { DsEmptyState, DsStatTile, DsLoadError, DsPage, DsPanel } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import { formatClock } from '../domain/paper-model'
@@ -35,21 +35,14 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
 </script>
 
 <template>
-  <main class="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6" data-testid="bijak-history">
-    <UButton
-      to="/spm/bijak"
-      icon="i-ph-arrow-left"
-      color="neutral"
-      variant="ghost"
-      class="self-start"
-      >Bijak SPM</UButton
-    >
-    <h1 class="text-title text-highlighted">Sejarah Bijak SPM</h1>
+  <DsPage
+    title="Sejarah Bijak SPM"
+    back-to="/spm/bijak"
+    back-label="Bijak SPM"
+    data-testid="bijak-history"
+  >
 
-    <div v-if="error" class="flex flex-col gap-3">
-      <UAlert color="error" variant="soft" title="Sejarah tidak dapat dimuatkan." />
-      <UButton class="self-start" @click="reload">Cuba lagi</UButton>
-    </div>
+    <DsLoadError v-if="error" message="Sejarah tidak dapat dimuatkan." @retry="reload" />
     <div v-else-if="!rows" class="flex flex-col gap-3" aria-busy="true">
       <USkeleton v-for="n in 3" :key="n" class="h-20 w-full" />
     </div>
@@ -62,13 +55,20 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
     />
     <template v-else>
       <ul class="grid grid-cols-3 gap-3" aria-label="Ringkasan" data-testid="history-summary">
-        <li><DsStatTile :value="rows.length" unit="Percubaan" icon="i-ph-files" /></li>
-        <li><DsStatTile :value="`${average}%`" unit="Purata" icon="i-ph-chart-line-up" /></li>
+        <li><DsStatTile :value="rows.length" unit="Percubaan" icon="i-ph-files" accent="action" /></li>
+        <li>
+          <DsStatTile
+            :value="`${average}%`"
+            unit="Purata"
+            icon="i-ph-chart-line-up"
+            accent="win"
+          />
+        </li>
         <li><DsStatTile :value="coins" unit="Koin" art="coin" /></li>
       </ul>
       <ul class="flex flex-col gap-3" data-testid="history-list">
         <li v-for="r in rows" :key="r.attemptId">
-          <UCard :data-testid="`history-${r.attemptId}`">
+          <DsPanel :data-testid="`history-${r.attemptId}`">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex min-w-0 flex-col gap-2">
                 <p class="text-body text-highlighted">{{ r.title }}</p>
@@ -114,9 +114,9 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
                 >
               </div>
             </div>
-          </UCard>
+          </DsPanel>
         </li>
       </ul>
     </template>
-  </main>
+  </DsPage>
 </template>

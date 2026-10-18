@@ -1,12 +1,11 @@
 <script setup lang="ts">
 /**
  * L45 S2 valid-token page (FR-L45-22..27; PROPOSED layout from the reference acceptance page, no
- * images, D22). Shared frame: back link, white card with a purple-gradient header (initials tile,
+ * images, D22). Shared frame: back link, a raised card with a brand-gradient header (initials tile,
  * eyebrow, H1, school line), the body slot and the caption below. The body per state (guest,
  * non-parent, accepting, linked, error) is supplied by the page.
  */
-import { ArrowLeft, School } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
+import { useThemeMode } from '@/theme/color-mode'
 
 defineProps<{
   initials: string
@@ -17,37 +16,38 @@ defineProps<{
 }>()
 
 defineSlots<{ default: () => unknown }>()
+
+useThemeMode('learner')
 </script>
 
 <template>
   <main
-    class="flex min-h-screen flex-col items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100 px-3 py-6 font-sans sm:px-4"
+    class="flex min-h-dvh flex-col items-center justify-center bg-muted px-3 py-6 sm:px-4"
     data-testid="invite-valid"
   >
-    <div class="w-full max-w-lg">
-      <RouterLink
+    <div class="flex w-full max-w-lg flex-col gap-2">
+      <UButton
         to="/"
-        class="mb-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900"
+        variant="link"
+        color="neutral"
+        icon="i-ph-arrow-left"
+        class="min-h-11 self-start"
         data-testid="invite-back"
+        >PRESTASIPLUS</UButton
       >
-        <ArrowLeft class="h-4 w-4" />
-        PRESTASIPLUS
-      </RouterLink>
 
-      <div class="overflow-hidden rounded-3xl bg-white shadow-xl">
-        <div class="bg-linear-to-br from-indigo-600 to-purple-700 px-5 py-6 text-white sm:px-6">
+      <div class="overflow-hidden rounded-sheet bg-default shadow-lift">
+        <div class="bg-gradient-primary px-5 py-6 text-primary-on sm:px-6">
           <div class="flex items-center gap-4">
             <span
-              class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 font-heading text-xl font-bold"
+              class="flex size-16 shrink-0 items-center justify-center rounded-chip bg-primary-on/15 font-display text-heading"
               data-testid="invite-initials"
               >{{ initials }}</span
             >
             <div class="min-w-0">
-              <p class="text-sm font-medium text-indigo-100" data-testid="invite-eyebrow">
-                {{ eyebrow }}
-              </p>
+              <p class="text-label" data-testid="invite-eyebrow">{{ eyebrow }}</p>
               <h1
-                class="font-heading text-xl leading-snug font-bold break-words text-white"
+                class="font-display text-heading leading-snug break-words"
                 data-testid="invite-heading"
               >
                 {{ heading }}
@@ -56,19 +56,19 @@ defineSlots<{ default: () => unknown }>()
           </div>
           <p
             v-if="schoolName"
-            class="mt-3 flex items-center gap-2 text-sm text-indigo-100"
+            class="mt-3 flex items-center gap-2 text-label"
             data-testid="invite-school"
           >
-            <School class="h-4 w-4 shrink-0" />
+            <UIcon name="i-ph-buildings-duotone" class="size-4 shrink-0" />
             <span class="min-w-0 break-words">{{ schoolName }}</span>
           </p>
         </div>
-        <div class="space-y-4 p-5 sm:p-6">
+        <div class="flex flex-col gap-4 p-5 sm:p-6">
           <slot />
         </div>
       </div>
 
-      <p class="mt-4 text-center text-sm text-slate-500" data-testid="invite-caption">
+      <p class="text-center text-label text-muted" data-testid="invite-caption">
         Pautan jemputan ini dikongsi oleh {{ studentName }} melalui PRESTASIPLUS.
       </p>
     </div>

@@ -7,19 +7,14 @@
  * email and clears the two password fields (INFERRED, Laravel "withInput except password").
  */
 import { ref } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import AuthAlert from '../components/auth/AuthAlert.vue'
 import { useFlash } from '@/composables'
+import { DsFormField } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { resetPassword } from '../api'
-import {
-  AUTH_INPUT_CLASS,
-  AUTH_LABEL_CLASS,
-  AUTH_LINK_CLASS,
-  AUTH_SUBMIT_CLASS,
-} from '../components/auth/classes'
 import PasswordCard from '../components/auth/PasswordCard.vue'
 import PasswordInput from '../components/auth/PasswordInput.vue'
 import { errorLines } from '../lib/error-lines'
@@ -65,16 +60,12 @@ async function submit(): Promise<void> {
   <PasswordCard heading="Reset Kata Laluan" intro="Masukkan kata laluan baru anda.">
     <template #icon>🔒</template>
 
-    <form data-testid="reset-form" class="space-y-5" @submit.prevent="submit">
+    <form data-testid="reset-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="reset-alert" />
-      <input type="hidden" name="token" :value="token" />
+      <UInput type="hidden" name="token" :model-value="token" class="hidden" />
 
-      <div>
-        <label for="email" :class="AUTH_LABEL_CLASS">
-          <UIcon name="i-ph-envelope-simple-duotone" class="size-4 text-primary" />
-          Alamat Email
-        </label>
-        <input
+      <DsFormField native for="email" label="Alamat Email">
+        <UInput
           id="email"
           v-model="email"
           type="email"
@@ -82,16 +73,14 @@ async function submit(): Promise<void> {
           required
           autocomplete="email"
           placeholder="nama@email.com"
-          :class="AUTH_INPUT_CLASS"
+          icon="i-ph-envelope-simple-duotone"
+          size="xl"
+          class="w-full"
           data-testid="reset-email"
         />
-      </div>
+      </DsFormField>
 
-      <div>
-        <label for="password" :class="AUTH_LABEL_CLASS">
-          <UIcon name="i-ph-lock-duotone" class="size-4 text-primary" />
-          Kata Laluan Baru
-        </label>
+      <DsFormField native for="password" label="Kata Laluan Baru">
         <PasswordInput
           id="password"
           v-model="password"
@@ -100,13 +89,9 @@ async function submit(): Promise<void> {
           autocomplete="new-password"
           testid="reset-password"
         />
-      </div>
+      </DsFormField>
 
-      <div>
-        <label for="password_confirmation" :class="AUTH_LABEL_CLASS">
-          <UIcon name="i-ph-lock-duotone" class="size-4 text-primary" />
-          Sahkan Kata Laluan
-        </label>
+      <DsFormField native for="password_confirmation" label="Sahkan Kata Laluan">
         <PasswordInput
           id="password_confirmation"
           v-model="confirmation"
@@ -115,30 +100,29 @@ async function submit(): Promise<void> {
           autocomplete="new-password"
           testid="reset-confirm"
         />
-      </div>
+      </DsFormField>
 
-      <button
+      <UButton
         type="submit"
+        block
+        size="xl"
+        variant="solid"
+        :loading="loading"
         :disabled="loading"
-        :class="AUTH_SUBMIT_CLASS"
+        icon="i-ph-check-circle-duotone"
         data-testid="reset-submit"
       >
-        <template v-if="loading">
-          <UIcon name="i-ph-circle-notch" class="size-5 motion-safe:animate-spin" />
-          Menukar...
-        </template>
-        <template v-else>
-          <UIcon name="i-ph-check-circle-duotone" class="size-5" />
-          Tukar Kata Laluan
-        </template>
-      </button>
+        {{ loading ? 'Menukar...' : 'Tukar Kata Laluan' }}
+      </UButton>
 
-      <p class="text-center">
-        <RouterLink to="/login" :class="[AUTH_LINK_CLASS, 'text-muted hover:text-default']">
-          <UIcon name="i-ph-arrow-left" class="size-4" />
-          Kembali ke Log Masuk
-        </RouterLink>
-      </p>
+      <UButton
+        to="/login"
+        variant="link"
+        color="neutral"
+        icon="i-ph-arrow-left"
+        class="min-h-11 justify-center"
+        >Kembali ke Log Masuk</UButton
+      >
     </form>
   </PasswordCard>
 </template>

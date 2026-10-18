@@ -391,7 +391,7 @@ describe('S15 SpmTargetsPage', () => {
     const w = await render(SpmTargetsPage, '/target-spm')
     const r1 = t(w, 'target-row-1')
     expect(r1.get('[data-testid=target-status]').text()).toBe('12 soalan · 75%')
-    expect(r1.get('[data-testid=target-bar]').attributes('style')).toContain('75%')
+    expect(r1.get('[data-testid=target-bar]').attributes('data-value')).toBe('75')
     expect(r1.get('[data-testid=target-predicted]').text()).toBe('A-')
     expect((r1.get('select').element as HTMLSelectElement).value).toBe('A')
     const r2 = t(w, 'target-row-2')

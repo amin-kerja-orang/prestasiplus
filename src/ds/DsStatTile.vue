@@ -51,6 +51,9 @@ const props = withDefaults(
     loading?: boolean
     /** Test-id prefix of the parts (`<prefix>-value`, `-label`, `-sub`) for tests that read the figures. */
     partPrefix?: string
+    /** Test ids of the number and the `sub` line (modules whose tests address them). */
+    valueTestid?: string
+    subTestid?: string
     /** The tile is a button (a drill-down that is not a route); the caller listens to `click`. */
     clickable?: boolean
   }>(),
@@ -67,6 +70,8 @@ const props = withDefaults(
     delta: undefined,
     loading: false,
     partPrefix: undefined,
+    valueTestid: undefined,
+    subTestid: undefined,
     clickable: false,
   },
 )
@@ -108,7 +113,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
         <span
           class="tabular truncate font-display text-heading leading-tight font-extrabold"
           :class="valueClass"
-          :data-testid="part('value')"
+          :data-testid="valueTestid ?? part('value')"
           >{{ value }}</span
         >
         <span class="truncate text-label font-semibold text-muted" :data-testid="part('label')">{{ unit }}</span>
@@ -139,7 +144,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
       <span
         class="tabular font-display font-extrabold"
         :class="[valueClass, roomy ? 'text-title' : 'text-heading']"
-        :data-testid="part('value')"
+        :data-testid="valueTestid ?? part('value')"
         >{{ value }}</span
       >
       <span
@@ -148,7 +153,13 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
         :data-testid="part('label')"
         >{{ unit }}</span
       >
-      <span v-if="sub" class="text-caption text-muted" data-ds="stat-tile-sub" :data-testid="part('sub')">{{ sub }}</span>
+      <span
+        v-if="sub"
+        class="text-caption text-muted"
+        data-ds="stat-tile-sub"
+        :data-testid="subTestid ?? part('sub')"
+        >{{ sub }}</span
+      >
       <span
         v-if="delta"
         class="tabular inline-flex items-center gap-1 text-caption font-semibold"
@@ -159,6 +170,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
         <span class="sr-only">{{ deltaWord[delta.dir] }}</span>
         {{ delta.value }}
       </span>
+      <slot />
     </template>
   </component>
 </template>

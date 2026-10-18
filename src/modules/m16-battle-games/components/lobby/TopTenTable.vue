@@ -6,7 +6,7 @@
  * 375, 768 and 1280 px) with the five figures as labelled stats; ranks 1-3 get the lime rank chip.
  */
 import type { GameLobby } from '../../api'
-import StatRow from '../battle/StatRow.vue'
+import RankedRow from '../battle/RankedRow.vue'
 import { MEDALS } from './lobby-config'
 import { kadarColor } from './lobby-lib'
 
@@ -17,7 +17,7 @@ defineProps<{ rows: NonNullable<GameLobby['top10']> }>()
   <UCard data-testid="top10-card">
     <h2 class="text-subheading text-highlighted">🏆 Papan Markah — Top 10 Juara</h2>
     <ol class="mt-3 flex flex-col gap-2" data-testid="top10-table">
-      <StatRow
+      <RankedRow
         v-for="row in rows"
         :key="row.userId"
         :rank="row.rank"
@@ -50,7 +50,7 @@ defineProps<{ rows: NonNullable<GameLobby['top10']> }>()
           <dt class="text-caption text-muted">✅ Betul</dt>
           <dd class="tabular text-label text-highlighted">{{ row.betul }}</dd>
         </div>
-      </StatRow>
+      </RankedRow>
     </ol>
   </UCard>
 </template>
