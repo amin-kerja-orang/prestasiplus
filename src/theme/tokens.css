@@ -327,9 +327,18 @@
   --ds-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ds-ink: #0b0d12;
   --ds-primary-gradient: linear-gradient(135deg, var(--ds-c1), var(--ds-primary-2));
-  --ds-r-card: 1rem;
-  --ds-r-sheet: 1.75rem;
-  --ds-r-chip: 0.75rem;
+  /* Radius scale (ratio 1 : 2 : 3 : 4 : 6 on a 4px base). Size follows importance, and an inner
+     radius is the outer one minus the padding between them (button in a card, chip in a tile).
+     xs 4 tags, checkboxes | sm 8 chips, icon chips, inputs, small buttons | md 12 buttons, list rows
+     lg 16 cards | xl 24 hero and feature cards, sheets, modals | full pills, avatars, dots. */
+  --ds-r-xs: 0.25rem;
+  --ds-r-sm: 0.5rem;
+  --ds-r-md: 0.75rem;
+  --ds-r-lg: 1rem;
+  --ds-r-xl: 1.5rem;
+  --ds-r-card: var(--ds-r-lg);
+  --ds-r-sheet: var(--ds-r-xl);
+  --ds-r-chip: var(--ds-r-sm);
 
   /* Subject identity dots, slots 1 to 8 (data stores the slot number, never hex). */
   --ds-cat-1: var(--color-kobalt-600);
@@ -411,16 +420,16 @@
   --ds-overlay: rgb(13 17 32 / 0.6);
 
   --ds-c1: #2440f0;
-  --ds-primary-2: #2440f0;
+  --ds-primary-2: #6a4dff;
   --ds-c2: #bceb27;
   --ds-c3: #a33f05;
-  --ds-c4: #0e6a85;
+  --ds-c4: #7c3aed;
   --ds-amber: #ffb91a;
   --ds-ai: #0e6a85;
   --ds-ic-flame: #2440f0;
 
-  --ds-shadow-xs: 0 1px 2px rgb(13 17 32 / 0.05), 0 2px 8px rgb(13 17 32 / 0.05);
-  --ds-shadow-lift: 0 6px 20px rgb(13 17 32 / 0.1);
+  --ds-shadow-xs: 0 1px 2px rgb(13 17 32 / 0.06), 0 4px 14px rgb(36 64 240 / 0.08);
+  --ds-shadow-lift: 0 10px 28px rgb(36 64 240 / 0.16);
   --ds-shadow-card: 0 8px 24px rgb(13 17 32 / 0.08);
   --ds-shadow-modal: 0 16px 40px rgb(13 17 32 / 0.18);
   --ds-shadow-bar: 0 2px 12px rgb(13 17 32 / 0.06);
@@ -464,14 +473,14 @@
   --ds-overlay: rgb(0 0 0 / 0.6);
 
   --ds-c1: #6283ff;
-  --ds-primary-2: #6283ff;
+  --ds-primary-2: #a06cff;
   --ds-c3: #ff8a2b;
-  --ds-c4: #2cc4e3;
+  --ds-c4: #a06cff;
   --ds-ai: #2cc4e3;
   --ds-ic-flame: #6283ff;
 
-  --ds-shadow-xs: none;
-  --ds-shadow-lift: 0 6px 20px rgb(0 0 0 / 0.35);
+  --ds-shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 14px rgb(0 0 0 / 0.28);
+  --ds-shadow-lift: 0 10px 28px rgb(0 0 0 / 0.5);
   --ds-shadow-card: 0 8px 24px rgb(0 0 0 / 0.35);
   --ds-shadow-modal: 0 16px 40px rgb(0 0 0 / 0.6);
   --ds-shadow-bar: none;
@@ -486,7 +495,6 @@
   --ds-bg-device: #e6e8ec;
   --ds-ai-a: #a98bff;
   --ds-ai-b: #7c3aed;
-  --ds-r-card: 1.25rem;
   --ui-bg-muted: #f5f6f8;
   --ui-bg: #ffffff;
   --ui-bg-elevated: #eceef2;
@@ -594,4 +602,12 @@
     animation-duration: 1s !important;
     animation-iteration-count: infinite !important;
   }
+}
+
+/* Brand logo: dark blue lettering, so it gets a light backing chip in dark mode (or when `backed`). */
+[data-ds='brand-logo'][data-backed='true'],
+.dark [data-ds='brand-logo'] {
+  background: #ffffff;
+  border-radius: var(--ds-r-chip);
+  padding: 0.25rem 0.5rem;
 }

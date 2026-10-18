@@ -18,7 +18,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
-import { DsArt3D, DsConfirmHost, DsFriendAvatar, DsFriendPicker, DsIcon, DsRewardChip } from '@/ds'
+import { DsArt3D, DsBrandLogo, DsConfirmHost, DsFriendAvatar, DsFriendPicker, DsIcon, DsRewardChip } from '@/ds'
 import { useGamificationSummary } from '@/shells/user/useGamificationSummary'
 import { useToast } from '@nuxt/ui/composables'
 import { uiLocale } from '@/theme/locale-ms'
@@ -98,11 +98,8 @@ const themeLabel = computed(() =>
         class="fixed inset-y-0 start-0 z-30 hidden w-72 flex-col gap-4 overflow-y-auto bg-default p-4 shadow-ds-xs lg:flex"
         data-testid="pembelajaran-sidebar"
       >
-        <RouterLink
-          to="/dashboard"
-          class="px-2 pt-2 font-display text-title font-extrabold text-highlighted"
-        >
-          Prestasi<span class="text-primary-t">Plus</span>
+        <RouterLink to="/dashboard" class="inline-flex min-h-11 items-center self-start px-2">
+          <DsBrandLogo />
         </RouterLink>
         <div class="flex items-center gap-3 rounded-sheet bg-muted p-3">
           <DsFriendAvatar
@@ -131,9 +128,9 @@ const themeLabel = computed(() =>
         >
           <RouterLink
             to="/dashboard"
-            class="inline-flex min-h-11 shrink-0 items-center font-display text-label font-extrabold text-highlighted sm:text-subheading lg:hidden"
-            >Prestasi<span class="text-primary-t">Plus</span></RouterLink
-          >
+            class="inline-flex min-h-11 shrink-0 items-center lg:hidden"
+            ><DsBrandLogo
+          /></RouterLink>
           <div class="ms-auto flex min-w-0 shrink items-center gap-0.5 sm:gap-2">
             <template v-if="learner">
               <DsRewardChip art="fire" :value="summary.streakDays" label="hari" />

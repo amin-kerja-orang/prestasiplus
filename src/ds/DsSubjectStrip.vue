@@ -32,7 +32,7 @@ defineEmits<{ select: [id: Id] }>()
       <UButton
         color="neutral"
         variant="ghost"
-        class="h-auto min-h-26 w-22 flex-col justify-center gap-2 rounded-2xl bg-default px-1 py-2.5 text-label font-semibold text-highlighted shadow-ds-xs hover:bg-default learner:shadow-lift"
+        class="h-auto min-h-26 w-22 flex-col justify-center gap-2 rounded-card bg-default px-1 py-2.5 text-label font-semibold text-highlighted shadow-ds-xs hover:bg-default learner:shadow-lift"
         data-ds="subject-tile"
         @click="$emit('select', item.id)"
       >

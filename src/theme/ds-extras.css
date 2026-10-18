@@ -75,3 +75,18 @@
     inset-inline: 0;
   }
 }
+
+/* Staff: clickable cards lift on hover (layers, not lines). */
+@media (prefers-reduced-motion: no-preference) {
+  [data-personality='staff'] a[class~='rounded-card'],
+  [data-personality='staff'] button[class~='rounded-card'] {
+    transition:
+      transform 160ms var(--ds-ease-out),
+      box-shadow 160ms var(--ds-ease-out);
+  }
+  [data-personality='staff'] a[class~='rounded-card']:hover,
+  [data-personality='staff'] button[class~='rounded-card']:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ds-shadow-lift);
+  }
+}

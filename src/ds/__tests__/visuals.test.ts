@@ -21,12 +21,12 @@ import {
 } from '@/ds'
 
 describe('DsIconChip', () => {
-  it('is decorative and uses the solid accent fill with the staff tint variant', () => {
+  it('is decorative and uses the solid accent fill with a staff glyph variant', () => {
     const w = mount(DsIconChip, { props: { icon: 'i-ph-fire-duotone', accent: 'heat' } })
     expect(w.attributes('aria-hidden')).toBe('true')
     expect(w.classes()).toContain('bg-heat')
     expect(w.classes()).toContain('text-on-highlight')
-    expect(w.classes().some((c) => c.startsWith('staff:bg-ic-theme'))).toBe(true)
+    expect(w.classes()).toContain('staff:text-primary-on')
   })
   it('has size variants', () => {
     const w = mount(DsIconChip, { props: { icon: 'i-ph-star', size: 'lg' } })

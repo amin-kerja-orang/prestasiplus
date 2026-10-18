@@ -1,8 +1,8 @@
 /**
  * Menu of the Portal Pentadbiran (D30; `docs/requirements/v2-portals.md` section 6): 9 groups and
- * 100 items for Admin Pusat. Every item has its doc id, BM label and a route. An item that is built
- * in the prototype points at its existing route; an item that is not built points at
- * `/admin/p/<id>`, which shows the staff "Belum tersedia dalam prototaip" page (never hidden).
+ * 100 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
+ * next round; `PENTADBIRAN_MENU` (rendered) holds built screens only and drops empty groups.
+ * Unbuilt items are listed in `docs/requirements/v2-pentadbiran-backlog.md`.
  */
 
 export interface PentadbiranItem {
@@ -24,7 +24,7 @@ export interface PentadbiranGroup {
   items: readonly PentadbiranItem[]
 }
 
-/** The placeholder route of an item that is not built. */
+/** Internal key of an item that is not built (never rendered, never routed). */
 export const placeholderPath = (id: string): string => `/admin/p/${id.toLowerCase()}`
 
 type Row = readonly [id: string, label: string, to?: string, sub?: string]
@@ -42,7 +42,7 @@ function items(rows: readonly Row[]): PentadbiranItem[] {
 const K = 'Kirkpatrick'
 const G = 'Gamifikasi'
 
-export const PENTADBIRAN_MENU: readonly PentadbiranGroup[] = [
+export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
   {
     key: 'papan-pemuka',
     label: 'Papan Pemuka',
@@ -208,9 +208,18 @@ export const PENTADBIRAN_MENU: readonly PentadbiranGroup[] = [
   },
 ]
 
+/** All 100 items, built or not (backlog data). */
+export const FULL_ITEMS: readonly PentadbiranItem[] = PENTADBIRAN_FULL_MENU.flatMap((g) => g.items)
+
+/** The rendered menu: built screens only; a group with no built item is dropped. */
+export const PENTADBIRAN_MENU: readonly PentadbiranGroup[] = PENTADBIRAN_FULL_MENU.map((g) => ({
+  ...g,
+  items: g.items.filter((i) => i.built),
+})).filter((g) => g.items.length > 0)
+
 export const ALL_ITEMS: readonly PentadbiranItem[] = PENTADBIRAN_MENU.flatMap((g) => g.items)
 
-/** Item by doc id or by placeholder slug (`pm-04`). */
+/** Built item by doc id. */
 export function itemById(id: string): PentadbiranItem | undefined {
   const upper = id.toUpperCase()
   return ALL_ITEMS.find((i) => i.id === upper)

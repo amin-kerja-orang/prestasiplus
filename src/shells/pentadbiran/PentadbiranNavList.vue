@@ -1,12 +1,13 @@
 <script setup lang="ts">
 /**
  * The nine Pentadbiran groups (design v2-shells 2.2) for the sidebar and the mobile drawer. A group
- * row is an icon chip plus label; its items open below. Active = tone + weight, no bar.
+ * row is an coloured icon chip plus label; its items open below. The active item is an A1 gradient pill.
  */
 import { RouterLink } from 'vue-router'
 
 import { DsIcon } from '@/ds'
 
+import { groupChipClass } from './group-accent'
 import type { PentadbiranGroup, PentadbiranItem } from './menu'
 
 defineProps<{
@@ -30,15 +31,15 @@ function showSub(items: readonly PentadbiranItem[], index: number): boolean {
     <li v-for="group in groups" :key="group.key">
       <button
         type="button"
-        class="flex min-h-11 w-full items-center gap-3 rounded-chip px-2 text-start text-label hover:bg-elevated"
+        class="flex min-h-11 w-full items-center gap-3 rounded-chip px-2 text-start text-label hover:bg-soft"
         :class="activeGroup === group.key ? 'font-semibold text-highlighted' : 'text-default'"
         :aria-expanded="isOpen(group.key)"
         :data-group="group.key"
         @click="emit('toggle', group.key)"
       >
         <span
-          class="grid size-8 shrink-0 place-items-center rounded-chip"
-          :class="activeGroup === group.key ? 'bg-primary text-primary-on' : 'bg-primary/10 text-primary-t'"
+          class="grid size-8 shrink-0 place-items-center rounded-chip shadow-ds-xs"
+          :class="groupChipClass(group.key)"
         >
           <DsIcon :name="group.icon" class="size-5" />
         </span>
@@ -64,8 +65,8 @@ function showSub(items: readonly PentadbiranItem[], index: number): boolean {
               class="flex min-h-11 items-center rounded-chip px-3 text-label"
               :class="
                 item.id === activeId
-                  ? 'bg-primary/10 font-semibold text-highlighted'
-                  : 'text-toned hover:bg-elevated'
+                  ? 'bg-gradient-primary font-semibold text-primary-on shadow-cta'
+                  : 'text-toned hover:bg-soft hover:text-highlighted'
               "
               :aria-current="item.id === activeId ? 'page' : undefined"
               :data-nav-id="item.id"

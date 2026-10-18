@@ -22,8 +22,8 @@ withDefaults(
 const chipSize: Record<ChipSize, string> = {
   xs: 'size-6.5 rounded-full',
   sm: 'size-9 rounded-chip',
-  md: 'size-8 learner:size-10 learner:rounded-2xl rounded-chip',
-  lg: 'size-12 rounded-2xl',
+  md: 'size-8 learner:size-10 rounded-chip',
+  lg: 'size-12 rounded-chip',
 }
 const iconSize: Record<ChipSize, string> = {
   xs: 'size-4',

@@ -92,7 +92,14 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
     if (to.path === '/dashboard' && home !== '/dashboard' && isPrototypeRole(session.role)) {
       return { kind: 'redirect', to: home }
     }
-    if (!isPathAllowed(session.role, to.path)) return { kind: 'in-place', status: 'scope' }
+    if (!isPathAllowed(session.role, to.path)) {
+      // Never show "Belum tersedia": send a logged-in prototype role to its own home. The page
+      // stays only where no home exists (guest, or the home itself is out of scope).
+      if (isPrototypeRole(session.role) && home !== to.path && isPathAllowed(session.role, home)) {
+        return { kind: 'redirect', to: home }
+      }
+      return { kind: 'in-place', status: 'scope' }
+    }
   }
 
   return ALLOW

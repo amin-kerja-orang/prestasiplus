@@ -39,7 +39,7 @@ const hasRing = () => props.progress !== undefined && !!props.ringLabel
 
 <template>
   <article
-    class="relative mt-3 flex items-center gap-4 rounded-3xl bg-gradient-primary p-4.5 text-primary-on shadow-hero"
+    class="relative mt-3 flex items-center gap-4 rounded-sheet bg-gradient-primary p-4.5 text-primary-on shadow-hero"
     :aria-labelledby="titleId"
     data-ds="hero-card"
   >

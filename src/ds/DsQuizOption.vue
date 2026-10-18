@@ -54,7 +54,7 @@ function onClick(): void {
     color="neutral"
     variant="ghost"
     block
-    class="relative h-auto min-h-15 justify-start gap-3 overflow-hidden rounded-2xl bg-default py-2 pr-3.5 pl-2.5 text-start text-body font-semibold text-highlighted shadow-none hover:bg-default"
+    class="relative h-auto min-h-15 justify-start gap-3 overflow-hidden rounded-card bg-default py-2 pr-3.5 pl-2.5 text-start text-body font-semibold text-highlighted shadow-none hover:bg-default"
     :class="[
       state === 'dimmed'
         ? 'opacity-55 aria-disabled:opacity-55'
@@ -69,7 +69,7 @@ function onClick(): void {
   >
     <span class="pointer-events-none absolute inset-0" :class="tint[state]" aria-hidden="true" />
     <span
-      class="relative inline-grid size-9 shrink-0 place-items-center rounded-xl text-label font-extrabold"
+      class="relative inline-grid size-9 shrink-0 place-items-center rounded-chip text-label font-extrabold"
       :class="letterTone[state]"
       aria-hidden="true"
       >{{ letter }}</span

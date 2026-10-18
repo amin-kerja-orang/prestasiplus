@@ -20,7 +20,12 @@ const filled =
   'bg-elevated text-highlighted hover:bg-accented focus:bg-elevated disabled:bg-elevated/50 focus-visible:ring-2 focus-visible:ring-inset'
 
 /** Field height: staff 40px (44px on coarse pointers), learner 52px; text is 16px on every size. */
-const fieldSize = 'min-h-10 pointer-coarse:min-h-11 learner:min-h-13 text-base'
+/**
+ * Radius scale (tokens.css): xs 4 tags and checkboxes, sm 8 inputs, md 12 buttons and segmented
+ * lists, lg 16 cards and tables, xl 24 modals and hero cards, full pills. Inputs sit one step below
+ * the buttons beside them; a control inside a card is always smaller than the card.
+ */
+const fieldSize = 'min-h-10 pointer-coarse:min-h-11 learner:min-h-13 rounded-sm text-base'
 
 const fieldConfig = {
   defaultVariants: { variant: 'soft' },
@@ -120,10 +125,10 @@ export const uiConfig = {
     variants: {
       size: {
         md: {
-          base: 'min-h-9 pointer-coarse:min-h-11 learner:min-h-13 learner:rounded-lg learner:px-5',
+          base: 'min-h-9 pointer-coarse:min-h-11 learner:min-h-13 learner:rounded-md learner:px-5',
         },
         lg: {
-          base: 'min-h-10 pointer-coarse:min-h-11 learner:min-h-14 learner:rounded-lg learner:px-6',
+          base: 'min-h-10 pointer-coarse:min-h-11 learner:min-h-14 learner:rounded-md learner:px-6',
         },
       },
     },
@@ -183,7 +188,8 @@ export const uiConfig = {
     variants: {
       variant: {
         pill: {
-          list: 'bg-elevated rounded-lg p-1 gap-1',
+          list: 'bg-elevated rounded-md p-1 gap-1',
+          indicator: 'rounded-sm',
           trigger: 'min-h-11',
         },
       },
@@ -207,7 +213,7 @@ export const uiConfig = {
   checkbox: {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
-      base: "relative overflow-visible after:absolute after:-inset-2.5 after:content-['']",
+      base: "relative overflow-visible rounded-xs after:absolute after:-inset-2.5 after:content-['']",
     },
     variants: { size: { md: { base: 'size-6' }, sm: { base: 'size-6' } } },
   },
@@ -230,7 +236,7 @@ export const uiConfig = {
       content: 'z-50 divide-y-0',
     },
     variants: {
-      fullscreen: { false: { content: 'rounded-lg shadow-modal ring-0' } },
+      fullscreen: { false: { content: 'rounded-xl shadow-modal ring-0' } },
     },
   },
   // Overlays sit above the shell chrome (sidebar and bars are z-30): modal surfaces never hide behind it.
@@ -283,7 +289,7 @@ export const uiConfig = {
     compoundVariants: [{ variant: ['outline', 'subtle'], class: { root: 'ring-0' } }],
   },
 
-  toast: { slots: { root: 'bg-elevated shadow-modal ring-0 rounded-lg' } },
+  toast: { slots: { root: 'bg-elevated shadow-modal ring-0 rounded-md' } },
 
   progress: {
     slots: { base: 'bg-elevated', status: 'tabular-nums font-bold text-default' },

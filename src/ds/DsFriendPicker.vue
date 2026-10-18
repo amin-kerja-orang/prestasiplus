@@ -81,7 +81,7 @@ function cancel(): void {
         orientation="horizontal"
         :ui="{
           fieldset: 'grid grid-cols-2 gap-3',
-          item: 'min-h-14 items-center justify-center rounded-2xl bg-default p-3',
+          item: 'min-h-14 items-center justify-center rounded-card bg-default p-3',
           wrapper: 'w-full text-center',
           label: 'flex flex-col items-center gap-2',
           description: 'text-center text-caption text-muted',

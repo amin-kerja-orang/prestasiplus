@@ -20,7 +20,7 @@ withDefaults(
 
 <template>
   <div
-    class="flex min-w-0 animate-ds-rise flex-col gap-0.5 rounded-2xl rounded-bl-md bg-default px-3.5 py-2.5 text-body text-highlighted shadow-lift motion-reduce:animate-none"
+    class="flex min-w-0 animate-ds-rise flex-col gap-0.5 rounded-card rounded-bl-md bg-default px-3.5 py-2.5 text-body text-highlighted shadow-lift motion-reduce:animate-none"
     :role="live ? 'status' : undefined"
     :aria-live="live ? 'polite' : undefined"
     data-ds="speech-bubble"

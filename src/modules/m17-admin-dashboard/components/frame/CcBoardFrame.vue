@@ -11,7 +11,7 @@ import { RouterLink } from 'vue-router'
 import { isPrototypeScopeOn } from '@/app/prototype-scope'
 import { adminShellFor } from '@/app/router/layouts'
 import { useSession } from '@/composables/useSession'
-import { DsIcon } from '@/ds'
+import { DsBrandLogo, DsIcon } from '@/ds'
 import { useThemeMode } from '@/theme/color-mode'
 
 const theme = useThemeMode('staff')
@@ -36,9 +36,9 @@ const label = computed(() =>
       >
         <RouterLink
           to="/"
-          class="inline-flex min-h-11 items-center font-display text-subheading font-extrabold text-highlighted"
-          >Prestasi<span class="text-primary-t">Plus</span></RouterLink
-        >
+          class="inline-flex min-h-11 items-center"
+          ><DsBrandLogo
+        /></RouterLink>
         <UButton
           class="ms-auto"
           color="neutral"

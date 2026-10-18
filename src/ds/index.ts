@@ -1,5 +1,6 @@
 /** Composite layer (V2-T05). Pages import the composites from `@/ds`. */
 export { default as DsArt3D } from './DsArt3D.vue'
+export { default as DsBrandLogo } from './DsBrandLogo.vue'
 export { default as DsCarousel } from './DsCarousel.vue'
 export { default as DsCharacterCard } from './DsCharacterCard.vue'
 export { default as DsDrillTable } from './DsDrillTable.vue'

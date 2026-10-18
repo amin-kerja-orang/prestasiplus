@@ -31,7 +31,7 @@ defineEmits<{ close: [] }>()
       color="neutral"
       variant="soft"
       icon="i-ph-x"
-      class="size-11 shrink-0 justify-center rounded-2xl bg-default"
+      class="size-11 shrink-0 justify-center rounded-chip bg-default"
       :aria-label="closeLabel"
       data-ds="quiz-close"
       @click="$emit('close')"
@@ -46,7 +46,7 @@ defineEmits<{ close: [] }>()
       :ui="{ base: 'bg-elevated rounded-full', indicator: 'rounded-full bg-gradient-primary-h' }"
     />
     <span
-      class="tabular inline-flex h-11 min-w-14 items-center justify-center gap-1 rounded-2xl bg-default px-2.5 font-display font-extrabold"
+      class="tabular inline-flex h-11 min-w-14 items-center justify-center gap-1 rounded-chip bg-default px-2.5 font-display font-extrabold"
       :class="combo > 0 ? 'text-highlighted' : 'text-muted'"
       :data-lit="combo > 0"
       data-ds="combo-chip"

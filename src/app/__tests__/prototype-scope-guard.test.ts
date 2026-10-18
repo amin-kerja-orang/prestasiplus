@@ -101,8 +101,15 @@ describe('decideAccess with the prototype scope on', () => {
     vi.unstubAllEnvs()
   })
 
-  it("renders an out-of-scope route as the in-place 'scope' outcome", () => {
+  it("sends an out-of-scope route of a logged-in role to the role's home", () => {
     expect(decideAccess(fakeRoute('/misi-harian', 'm05.missions'), session('student'))).toEqual({
+      kind: 'redirect',
+      to: '/dashboard',
+    })
+  })
+
+  it("keeps the in-place 'scope' outcome for a role outside the prototype", () => {
+    expect(decideAccess(fakeRoute('/misi-harian', 'x'), session('parent'))).toEqual({
       kind: 'in-place',
       status: 'scope',
     })
@@ -130,10 +137,10 @@ describe('decideAccess with the prototype scope on', () => {
     })
   })
 
-  it('shows the friendly page for an unbuilt or mistyped path of a logged-in user', () => {
+  it('redirects an unbuilt or mistyped path of a logged-in user to their home', () => {
     expect(decideAccess(fakeRoute('/liga', 'core.not-found'), session('teacher'))).toEqual({
-      kind: 'in-place',
-      status: 'scope',
+      kind: 'redirect',
+      to: '/guru',
     })
   })
 
@@ -199,26 +206,19 @@ describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
     vi.unstubAllEnvs()
   })
 
-  it('shows the friendly page inside the shell for a typed out-of-scope URL', async () => {
+  it('redirects a typed out-of-scope URL to the role home instead of the friendly page', async () => {
     logIn(STUDENT)
     const w = await open('/misi-harian')
-    expect(useRouteOutcome().value).toBe('scope')
-    expect(
-      w.find('[data-layout="pembelajaran"] [data-testid="prototype-unavailable"]').exists(),
-    ).toBe(true)
-    expect(w.text()).toContain('Belum tersedia dalam prototaip')
+    expect(useRouteOutcome().value).toBeNull()
+    expect(w.find('[data-testid="prototype-unavailable"]').exists()).toBe(false)
+    expect(w.text()).not.toContain('Belum tersedia dalam prototaip')
     expect(w.find('[data-testid="misi-harian"]').exists()).toBe(false)
-    const home = w.find('[data-testid="prototype-unavailable-home"]')
-    expect(home.attributes('href')).toBe('/dashboard')
-    expect(document.title).toBe('Belum Tersedia dalam Prototaip | PRESTASIPLUS')
   })
 
-  it('uses the Pembelajaran layout even when the blocked route is a bare page', async () => {
+  it('redirects a blocked bare page the same way', async () => {
     logIn(STUDENT)
     const w = await open('/pricing')
-    expect(
-      w.find('[data-layout="pembelajaran"] [data-testid="prototype-unavailable"]').exists(),
-    ).toBe(true)
+    expect(w.find('[data-testid="prototype-unavailable"]').exists()).toBe(false)
   })
 
   it('renders an in-scope route normally and clears the outcome', async () => {

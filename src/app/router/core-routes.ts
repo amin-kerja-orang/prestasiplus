@@ -164,19 +164,9 @@ function previewHubRoutes(): RouteRecordRaw[] {
 export const leadingCoreRoutes: readonly RouteRecordRaw[] = [
   rootRoute,
   logoutRoute,
-  // Portal Pentadbiran items that are not built yet (V2-T13/T14 PoC): `/admin/p/<id>`.
-  {
-    path: '/admin/p/:itemId',
-    name: 'pentadbiran.placeholder',
-    component: () => import('@/shells/pentadbiran/PentadbiranPlaceholderPage.vue'),
-    meta: {
-      layout: 'admin',
-      access: 'auth',
-      roles: ['admin'],
-      v2: true,
-      title: 'Belum Tersedia dalam Prototaip | PRESTASIPLUS',
-    },
-  },
+  // Unbuilt Pentadbiran items have no screen (`docs/requirements/v2-pentadbiran-backlog.md`). The
+  // old placeholder URL `/admin/p/<id>` goes to the admin home instead of a "not available" page.
+  { path: '/admin/p/:itemId', redirect: '/admin/command-center' },
 ]
 
 /** Must be the last route. */

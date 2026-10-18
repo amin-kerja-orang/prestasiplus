@@ -33,7 +33,7 @@ defineEmits<{ continue: [] }>()
 
 <template>
   <section
-    class="relative animate-ds-sheet overflow-hidden rounded-3xl bg-default p-3.5 motion-reduce:animate-none"
+    class="relative animate-ds-sheet overflow-hidden rounded-sheet bg-default p-3.5 motion-reduce:animate-none"
     :data-tone="tone"
     data-ds="feedback-sheet"
   >
@@ -64,7 +64,7 @@ defineEmits<{ continue: [] }>()
         <p v-if="body" class="text-body text-default" :data-testid="testids?.body">{{ body }}</p>
         <p
           v-if="aiLine"
-          class="mt-1.5 rounded-xl bg-elevated px-3 py-2 text-body text-highlighted"
+          class="mt-1.5 rounded-chip bg-elevated px-3 py-2 text-body text-highlighted"
           data-ds="feedback-ai"
           :data-testid="testids?.ai"
         >

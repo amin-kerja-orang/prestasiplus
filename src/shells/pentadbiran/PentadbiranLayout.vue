@@ -13,12 +13,15 @@ import { RouterLink, useRoute } from 'vue-router'
 
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
-import { DsConfirmHost, DsIcon } from '@/ds'
+import { DsBrandLogo, DsConfirmHost, DsIcon } from '@/ds'
 import { useShellUser } from '@/shells/pembelajaran/useShellUser'
 import { useThemeMode } from '@/theme/color-mode'
 import { uiLocale } from '@/theme/locale-ms'
 
+import { groupChipClass } from './group-accent'
+import { heroFor } from './heroes'
 import { MENU_STORAGE_KEY, PENTADBIRAN_MENU, activeItem, groupOf } from './menu'
+import PentadbiranHero from './PentadbiranHero.vue'
 import PentadbiranNavList from './PentadbiranNavList.vue'
 
 const route = useRoute()
@@ -41,6 +44,17 @@ const subtitle = computed(() => {
   const g = current.value ? groupOf(current.value.id) : undefined
   return g && g.label !== title.value ? g.label : ''
 })
+
+const hero = computed(() => heroFor(route.path))
+const activeGroupIcon = computed(() => (current.value ? groupOf(current.value.id)?.icon : undefined))
+const initials = computed(() =>
+  name.value
+    .split(/s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w.charAt(0).toUpperCase())
+    .join('') || 'A',
+)
 
 const SCOPE_CHIP = 'Admin Pusat · Seluruh Negara'
 
@@ -115,24 +129,25 @@ onBeforeUnmount(() => {
 
       <!-- Sidebar (>= lg) -->
       <aside
-        class="fixed inset-y-0 start-0 z-30 hidden w-72 flex-col gap-4 overflow-x-hidden overflow-y-auto bg-default p-4 shadow-ds-xs lg:flex"
+        class="fixed inset-y-0 start-0 z-30 hidden w-72 flex-col gap-3 overflow-x-hidden overflow-y-auto bg-soft p-3 shadow-card lg:flex"
         data-testid="pentadbiran-sidebar"
       >
-        <div class="flex min-w-0 items-center gap-2 px-2 pt-2">
-          <RouterLink
-            to="/admin"
-            class="min-w-0 truncate font-display text-title font-extrabold text-highlighted"
-          >
-            Prestasi<span class="text-primary-t">Plus</span>
-          </RouterLink>
-          <UBadge
-            label="Pentadbiran"
-            color="primary"
-            variant="subtle"
-            :ui="{ base: 'shrink-0 whitespace-nowrap' }"
+        <div
+          class="relative flex min-w-0 items-center gap-2 overflow-hidden rounded-card bg-gradient-primary px-4 py-4 text-primary-on shadow-hero"
+        >
+          <span
+            class="pointer-events-none absolute -end-6 -top-8 size-24 rounded-full bg-primary-on/10"
+            aria-hidden="true"
           />
+          <RouterLink to="/admin" class="relative inline-flex min-h-11 min-w-0 items-center">
+            <DsBrandLogo backed />
+          </RouterLink>
+          <span
+            class="relative shrink-0 rounded-full bg-primary-on/20 px-2 py-0.5 text-caption font-semibold whitespace-nowrap"
+            >Pentadbiran</span
+          >
         </div>
-        <nav aria-label="Menu utama" class="flex-1">
+        <nav aria-label="Menu utama" class="flex-1 rounded-card bg-default p-2 shadow-ds-xs">
           <PentadbiranNavList
             :groups="PENTADBIRAN_MENU"
             :active-id="activeId"
@@ -159,20 +174,24 @@ onBeforeUnmount(() => {
             >
               <DsIcon name="list" class="size-6" />
             </button>
+            <span
+              class="hidden size-9 shrink-0 place-items-center rounded-chip shadow-ds-xs sm:grid"
+              :class="groupChipClass(activeGroup)"
+              aria-hidden="true"
+            >
+              <DsIcon :name="activeGroupIcon ?? 'squares-four'" class="size-5" />
+            </span>
             <div class="min-w-0 flex-1">
               <h1 class="truncate text-heading font-semibold text-highlighted">{{ title }}</h1>
               <p v-if="subtitle" class="hidden truncate text-caption text-muted sm:block">
                 {{ subtitle }}
               </p>
             </div>
-            <UBadge
-              :label="SCOPE_CHIP"
-              size="lg"
-              color="neutral"
-              variant="subtle"
-              class="hidden max-w-64 truncate sm:inline-flex"
+            <span
+              class="hidden max-w-64 truncate rounded-full bg-gradient-primary px-3 py-1.5 text-label font-semibold text-primary-on shadow-cta sm:inline-flex"
               data-testid="pentadbiran-scope-chip"
-            />
+              >{{ SCOPE_CHIP }}</span
+            >
             <button
               type="button"
               class="grid size-11 shrink-0 place-items-center rounded-chip bg-elevated text-default hover:bg-accented"
@@ -185,17 +204,21 @@ onBeforeUnmount(() => {
             <UDropdownMenu :items="accountItems" :content="{ align: 'end' }">
               <button
                 type="button"
-                class="grid size-11 shrink-0 place-items-center rounded-chip text-default hover:bg-elevated"
+                class="grid size-11 shrink-0 place-items-center rounded-full hover:bg-elevated"
                 aria-label="Menu akaun"
                 data-testid="pentadbiran-account"
               >
-                <DsIcon name="user-circle" class="size-7" />
+                <span
+                  class="grid size-9 place-items-center rounded-full bg-gradient-primary text-label font-bold text-primary-on shadow-cta"
+                  aria-hidden="true"
+                  >{{ initials }}</span
+                >
               </button>
             </UDropdownMenu>
           </div>
           <!-- Scope bar (< sm) -->
-          <div class="flex min-h-11 items-center bg-elevated px-3 sm:hidden">
-            <span class="truncate text-label font-semibold text-toned">{{ SCOPE_CHIP }}</span>
+          <div class="flex min-h-11 items-center bg-gradient-primary px-3 sm:hidden">
+            <span class="truncate text-label font-semibold text-primary-on">{{ SCOPE_CHIP }}</span>
           </div>
         </header>
 
@@ -207,6 +230,7 @@ onBeforeUnmount(() => {
           tabindex="-1"
         >
           <FlashOutlet :flash="flash" class="mb-4" />
+          <PentadbiranHero v-if="hero" :hero="hero" />
           <div
             v-if="isLegacy"
             class="light overflow-x-auto rounded-sheet bg-default p-4 text-default"

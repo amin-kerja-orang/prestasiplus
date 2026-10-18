@@ -101,21 +101,16 @@ for (const [role, c] of Object.entries(CASES)) {
       await expectNoHorizontalScroll(page)
     })
 
-    test('an out-of-scope URL shows "Belum tersedia dalam prototaip"', async ({
+    test('an out-of-scope URL goes to the role home, never "Belum tersedia"', async ({
       page,
       loginAs,
       gotoApp,
     }) => {
       await loginAs(c.email)
       await gotoApp(c.blocked)
-      await expect(page).toHaveURL(new RegExp(`${c.blocked}$`))
-      const notice = page.getByTestId('prototype-unavailable')
-      await expect(notice).toBeVisible()
-      await expect(notice).toContainText('Belum tersedia dalam prototaip')
-      // Inside the shell: the menu is still there and the way back works.
-      await expect(page.locator('[data-layout]').first()).toBeVisible()
-      await page.getByTestId('prototype-unavailable-home').click()
       await expect(page).toHaveURL(new RegExp(`${c.home}$`))
+      await expect(page.getByTestId('prototype-unavailable')).toHaveCount(0)
+      await expect(page.locator('[data-layout]').first()).toBeVisible()
       await expectNoHorizontalScroll(page)
     })
   })
