@@ -22,6 +22,7 @@ import {
   decideAccess,
   FORBIDDEN_TITLE,
   NOT_FOUND_TITLE,
+  resolvePostLoginTarget,
   scrollBehavior,
   setRouteOutcome,
   useRouteOutcome,
@@ -66,11 +67,11 @@ afterEach(() => {
 })
 
 describe('auth guard (FR-M01-14, BR-09)', () => {
-  it('sends a guest on an auth route to /login with no query and no message', async () => {
+  it('sends a guest on an auth route to /login?redirect=<requested page>, no message', async () => {
     const router = testRouter()
     await router.push('/dashboard?x=1')
     expect(router.currentRoute.value.path).toBe('/login')
-    expect(router.currentRoute.value.query).toEqual({})
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/dashboard?x=1' })
     expect(router.currentRoute.value.hash).toBe('')
     expect(useFlashStore().current).toBeNull()
   })
@@ -465,5 +466,48 @@ describe('meta.guestTitle (F-20)', () => {
     logIn(STUDENT)
     await router.push('/g')
     expect(document.title).toBe('Tajuk Log Masuk')
+  })
+})
+
+describe('session survives a reload and returns to the requested page', () => {
+  it('a stored session is restored by a fresh store (simulated full page load)', async () => {
+    logIn(STUDENT)
+    setActivePinia(createPinia()) // a new page load: empty memory, same localStorage
+    const router = testRouter()
+    await router.push('/dashboard')
+    expect(router.currentRoute.value.path).toBe('/dashboard')
+    expect(useSessionStore().isLoggedIn).toBe(true)
+  })
+
+  it('remembers the requested page, and the login page returns there for an allowed role', async () => {
+    const router = testRouter()
+    await router.push('/topics')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/topics' })
+    const redirect = router.currentRoute.value.query.redirect
+    const admin = { isLoggedIn: true, role: STUDENT.role, landingPath: STUDENT.landingPath }
+    expect(resolvePostLoginTarget(router, redirect, admin)).toBe('/topics')
+  })
+
+  it('falls back to the role landing for an unknown or unsafe target', () => {
+    const router = testRouter()
+    const student = {
+      isLoggedIn: true,
+      role: STUDENT.role,
+      landingPath: STUDENT.landingPath,
+    }
+        expect(resolvePostLoginTarget(router, '/no/such/page', student)).toBe(student.landingPath)
+    expect(resolvePostLoginTarget(router, '//evil.example', student)).toBe(student.landingPath)
+    expect(resolvePostLoginTarget(router, '/login', student)).toBe(student.landingPath)
+    expect(resolvePostLoginTarget(router, undefined, student)).toBe(student.landingPath)
+  })
+
+  it('logout clears pp.auth so a reload shows login', async () => {
+    logIn(STUDENT)
+    await useSessionStore().logout()
+    expect(localStorage.getItem(PP_AUTH_STORAGE_KEY)).toBeNull()
+    setActivePinia(createPinia())
+    const router = testRouter()
+    await router.push('/dashboard')
+    expect(router.currentRoute.value.path).toBe('/login')
   })
 })

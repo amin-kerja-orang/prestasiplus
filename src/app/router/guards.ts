@@ -4,8 +4,8 @@
  * Before each navigation, in order:
  * 1. **Session check**: `session.check()` reloads `pp.auth` and drops an expired session (by the
  *    shared clock).
- * 2. **Auth**: `access: 'auth'` and no session → `/login`, with no `redirect` query and no message
- *    (FR-M01-14, BR-08).
+ * 2. **Auth**: `access: 'auth'` and no session → `/login?redirect=<requested path>` (v2; the 401
+ *    policy goes to plain `/login`), no message (FR-M01-14, BR-08).
  * 3. **Role**: `roles` set and the role not in it → `onForbidden`: `landing` redirects to the
  *    server-given `landingPath` (BR-07); `403` / `404` render the error page in place.
  * 4. **Guest pages have no guard**: `/login` and `/register` render for a logged-in user too
@@ -46,6 +46,14 @@ import {
 } from './outcome'
 
 export const LOGIN_PATH = '/login'
+
+/** A same-origin app path that is worth returning to (not `/`, not an auth page, no `//host`). */
+export function isSafeRedirect(value: unknown): value is string {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return false
+  if (value.includes('\\') ||value === '/') return false
+  const path = value.split(/[?#]/)[0] ?? ''
+  return !['/login', '/logout', '/register'].includes(path)
+}
 
 /** Name of the catch-all 404 route (core-routes.ts). */
 const NOT_FOUND_ROUTE_NAME = 'core.not-found'
@@ -114,7 +122,13 @@ export function installGuards(router: Router): void {
 
     const decision = decideAccess(to, session)
     pendingOutcome = decision.kind === 'in-place' ? decision.status : null
-    return decision.kind === 'redirect' ? decision.to : true
+    if (decision.kind !== 'redirect') return true
+    // v2 usability: a guest sent to /login remembers the page asked for (`?redirect=`); the login
+    // page returns there when the role may open it. The 401 policy and `/logout` stay plain.
+    if (decision.to === LOGIN_PATH && isSafeRedirect(to.fullPath)) {
+      return { path: LOGIN_PATH, query: { redirect: to.fullPath } }
+    }
+    return decision.to
   })
 
   router.afterEach((to, _from, failure) => {
@@ -159,4 +173,20 @@ function titleFor(to: RouteLocationNormalized): string | null {
     return typeof guestTitle === 'function' ? guestTitle(to) : guestTitle
   }
   return resolveTitle(to)
+}
+
+/**
+ * Where to go after a successful login: the remembered `redirect` when it resolves to a real page
+ * the signed-in role may open, otherwise the role landing path.
+ */
+export function resolvePostLoginTarget(
+  router: Router,
+  redirect: unknown,
+  session: GuardSession,
+): string {
+  const landing = session.landingPath ?? '/'
+  if (!isSafeRedirect(redirect)) return landing
+  const resolved = router.resolve(redirect)
+  if (resolved.name === NOT_FOUND_ROUTE_NAME) return landing
+  return decideAccess(resolved as RouteLocationNormalized, session).kind === 'allow' ? resolved.fullPath : landing
 }

@@ -7,9 +7,10 @@
  * kept and the password cleared (FR-M01-09/10/68). Renders for a logged-in user too (FR-M01-13).
  */
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import AuthAlert from '../components/auth/AuthAlert.vue'
+import { resolvePostLoginTarget } from '@/app/router/guards'
 import { useApi } from '@/composables'
 import { DsSticker } from '@/ds'
 import { formatNumber } from '@/lib/number'
@@ -29,6 +30,7 @@ import { LOGIN_TILES } from '../components/auth/welcome-tiles'
 import { errorLines } from '../lib/error-lines'
 
 const router = useRouter()
+const route = useRoute()
 const session = useSessionStore()
 
 const email = ref('')
@@ -50,7 +52,13 @@ async function submit(): Promise<void> {
       remember: remember.value,
     })
     session.setSession(next)
-    await router.push(next.user.landingPath)
+    await router.push(
+      resolvePostLoginTarget(router, route.query.redirect, {
+        isLoggedIn: true,
+        role: next.user.role,
+        landingPath: next.user.landingPath,
+      }),
+    )
   } catch (err) {
     errors.value = errorLines(err)
     password.value = ''
