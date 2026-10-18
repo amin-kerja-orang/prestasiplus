@@ -6,6 +6,20 @@
  * Reveal rules (US-15): an answer key or mark scheme leaves this class only inside a graded
  * result, i.e. after submit (exam) or after "Semak" on that one question (latihan).
  */
+import { groupsOf } from '../admin/intake/domain/grouping'
+import { paperMarks } from '../admin/intake/domain/marks'
+import { validateBatch } from '../admin/intake/domain/validation'
+import { demoBatch } from '../admin/intake/lib/seed'
+import type {
+  ExtractedPaper,
+  IntakeBatch,
+  IntakeIssue,
+  IntakeMeta,
+  IntakeStatus,
+  IntakeSummary,
+  PageText,
+  SaveExtractedPayload,
+} from '../admin/intake/types'
 import { composeFromBlueprint, poolUnits, type PoolUnit } from '../domain/blueprint'
 import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registry'
 import { gradePart, isBlank } from '../domain/grading'
@@ -57,6 +71,9 @@ export class MemoryStorage implements KeyValueStore {
   }
 }
 
+/** Plain-data copy (structuredClone rejects Vue reactive proxies passed in by pages). */
+const jsonClone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T
+
 export const SERVER_STORAGE_KEY = 'pp.bijak.server.v1'
 /** After the deadline the server closes an unattended exam attempt itself (AC-05.4). */
 export const GRACE_SECONDS = 300
@@ -90,6 +107,8 @@ interface State {
   seq: number
   attempts: Record<string, Attempt>
   generated: Record<string, GeneratedPaper>
+  /** Admin SPM question intake batches (additive; seeded on first use). */
+  intake?: Record<string, IntakeBatch>
 }
 
 export class BijakError extends Error {
@@ -804,6 +823,120 @@ export class BijakServer {
         ),
         ...(a.result ? { score: a.result.score, max: a.result.max } : {}),
       }))
+  }
+
+  /* ------------------------------------------------------------------ admin question intake */
+
+  private intakeStore(): Record<string, IntakeBatch> {
+    if (!this.state.intake) {
+      const demo = demoBatch(this.now())
+      this.state.intake = { [demo.id]: demo }
+      this.persist()
+    }
+    return this.state.intake
+  }
+
+  private intakeBatch(id: string): IntakeBatch {
+    const b = this.intakeStore()[id]
+    if (!b) throw new BijakError('not_found', 'Kumpulan ekstrak tidak ditemui')
+    return b
+  }
+
+  private intakeSummary(b: IntakeBatch): IntakeSummary {
+    return {
+      id: b.id,
+      title: `${subjectName(b.subject)} Kertas ${b.kertas} ${b.year}`,
+      subject: b.subject,
+      subjectName: subjectName(b.subject),
+      kertas: b.kertas,
+      year: b.year,
+      status: b.status,
+      fileName: b.fileName,
+      questionCount: b.questions.length,
+      groupCount: groupsOf(b.questions).length,
+      lowCount: b.questions.reduce(
+        (n, q) => n + q.lowFields.filter((f) => !q.confirmed.includes(f)).length,
+        0,
+      ),
+      marks: paperMarks(b.questions),
+      updatedAt: b.updatedAt,
+    }
+  }
+
+  async listIntakeBatches(
+    filter: { status?: IntakeStatus; subject?: SubjectCode; q?: string } = {},
+  ): Promise<IntakeSummary[]> {
+    await this.tick()
+    const needle = filter.q?.trim().toLowerCase()
+    return Object.values(this.intakeStore())
+      .filter((b) => !filter.status || b.status === filter.status)
+      .filter((b) => !filter.subject || b.subject === filter.subject)
+      .filter((b) => !needle || b.fileName.toLowerCase().includes(needle))
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .map((b) => this.intakeSummary(b))
+  }
+
+  async getIntakeBatch(id: string): Promise<IntakeBatch> {
+    await this.tick()
+    return jsonClone(this.intakeBatch(id))
+  }
+
+  /** Draf batch from an extraction run. The page text is kept; page images stay in the browser. */
+  async createIntakeBatch(
+    userId: number,
+    meta: IntakeMeta,
+    extracted: ExtractedPaper,
+    pages: PageText[],
+  ): Promise<IntakeBatch> {
+    await this.tick()
+    const store = this.intakeStore()
+    this.state.seq += 1
+    const now = this.now()
+    const batch: IntakeBatch = {
+      ...meta,
+      id: `ek-${this.state.seq}`,
+      userId,
+      status: 'draf',
+      createdAt: now,
+      updatedAt: now,
+      provider: extracted.provider,
+      model: extracted.model,
+      questions: jsonClone(extracted.questions),
+      stimuli: jsonClone(extracted.stimuli),
+      unmatched: [...extracted.unmatched],
+      pages: jsonClone(pages),
+    }
+    store[batch.id] = batch
+    this.persist()
+    return jsonClone(batch)
+  }
+
+  /** Replace the edited content of a Draf batch. A batch under review is read-only. */
+  async saveExtracted(id: string, payload: SaveExtractedPayload): Promise<IntakeBatch> {
+    await this.tick()
+    const b = this.intakeBatch(id)
+    if (b.status !== 'draf') throw new BijakError('bad_request', 'Kumpulan sudah dihantar untuk semakan')
+    b.questions = jsonClone(payload.questions)
+    b.stimuli = jsonClone(payload.stimuli)
+    b.updatedAt = this.now()
+    this.persist()
+    return jsonClone(b)
+  }
+
+  /** Draf to Semakan. The quality gate runs here too, so the UI cannot bypass it (E9). */
+  async submitForReview(
+    id: string,
+  ): Promise<{ ok: true; batch: IntakeBatch } | { ok: false; issues: IntakeIssue[] }> {
+    await this.tick()
+    const b = this.intakeBatch(id)
+    if (b.status !== 'draf') throw new BijakError('bad_request', 'Kumpulan sudah dihantar untuk semakan')
+    const issues = validateBatch(b)
+    if (issues.length > 0) return { ok: false, issues }
+    b.status = 'semakan'
+    b.submittedAt = this.now()
+    b.updatedAt = b.submittedAt
+    this.persist()
+    return { ok: true, batch: jsonClone(b) }
   }
 
   /** Test helper: the saved answers of an attempt, as the server holds them. */
