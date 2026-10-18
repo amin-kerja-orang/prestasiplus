@@ -19,15 +19,39 @@ Every backend agent on every PC follows this page. Re-read it from `origin/featu
 - Only the LEAD edits this page, [sessions.md](sessions.md), [agent-kickoff/](agent-kickoff/README.md), the card files and the tracker's Summary and Change log. PCs edit only the tracker rows of cards they hold.
 - Questions, blockers and change requests go to the LEAD as a GitHub issue (label `question`, `blocked`, `contract` or `cross-lane`). Do not wait idle: take the next card.
 
+### Open list (the LEAD controls what may start)
+
+A PC may claim **only** cards listed here. A card that is not listed is closed, even if it looks ready. The LEAD adds and removes rows. A row gives the mode:
+
+| Mode | Meaning |
+|---|---|
+| `full` | The whole card, normally. Section 1 applies (dependencies must be `done`). |
+| `contract-only` | Only the wire contract of the card: zod schemas, contract tests and the `openapi.ts` registration. Edit only in `packages/contract/src/<card's domain>/**`. This mode may start before the card's dependencies are done. Branch `be/<card-id>-contract`, PR label `contract`, tracker note "contract only". After the LEAD merges it, the card goes back to `todo` with the note "contract merged", and any PC can later take the full card. |
+
+| Card | Mode | Opened | Note |
+|---|---|---|---|
+| BE-01 | full | 2026-10-19 | Scaffold + CI; first card on the critical path. |
+| BE-05 | contract-only | 2026-10-19 | Users and schools: `packages/contract/src/{users,schools}/**`. |
+| BE-08 | contract-only | 2026-10-19 | Curriculum: `packages/contract/src/curriculum/**`. |
+| BE-09 | contract-only | 2026-10-19 | Question bank core: `packages/contract/src/questions/**`. |
+| BE-11 | contract-only | 2026-10-19 | Wallet and streak: `packages/contract/src/wallet/**`. |
+| BE-12 | contract-only | 2026-10-19 | Practice write path: `packages/contract/src/practice/**`. |
+
+Rules for `contract-only`:
+- The frontend mock is the spec: match the mock handlers' request and response shapes, error codes and BM messages exactly.
+- Run `npm run contract:check` and `npm run contract:emit`.
+- Never edit `packages/contract/src/{common,session,auth,access}/**`; those belong to the LEAD.
+
 ### Lead notices (current instructions; newest first)
+
+- 2026-10-19: **Start now; do not wait for perfect docs.** Take cards only from the Open list above. If `docs/requirements/v2-backend-urs.md` or `docs/plan/backend-dev-guide.md` is not on the branch yet, follow `docs/architecture/v2-backend-plan.md` and the card file. Once they land, re-read them at your next session start.
 
 - 2026-10-19: **S0 is open, start now.** Defaults in force until the LEAD says otherwise:
   - Stack: NestJS 11 + Prisma + Vitest (OD-3).
   - The LEAD reviews and merges every PR (OD-12).
   - Any number of PCs may join; there is no fixed PC-to-lane split (section 1).
-  - Only **BE-01** is ready at first, so the first PC takes it.
-  - BE-02 follows, then BE-03. After those, BE-34 and the cards that depend on BE-03 open up.
-  - Until then, the other PCs do the "What a lane does while it is blocked" preparation in [sessions.md](sessions.md) section 2, or stop and report `idle`.
+  - What may start is set only by the Open list.
+  - When the Open list has nothing free for you, stop and report `idle`; the LEAD opens more cards as merges land.
 
 ## 0b. Any number of PCs
 
@@ -47,6 +71,7 @@ gh issue list --label lead --state open      # LEAD instructions: do what applie
 
 1. **Unfinished card of yours first:** if this PC already holds a card (its branch or draft PR, Owner = your PC name), continue it.
 2. Otherwise open [backend-tracker.md](backend-tracker.md) **on `origin/feature/v2-backend`** and list the cards that are **ready**:
+   - listed in the **Open list** (section 0); `contract-only` rows skip the dependency check below;
    - status `todo`, and no open PR or `origin/be/<card>-*` branch exists for it (that would mean it is taken);
    - every card in `Depends on` is `done`;
    - **no clash:** no card currently `in-progress` or `review` in the same lane touches the same module folder or Prisma file (check the "Files" or scope section of both card files). Two cards of one lane may run in parallel only when neither depends on the other and their files do not overlap (example: BE-08 curriculum and BE-11 wallet).
