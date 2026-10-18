@@ -216,7 +216,7 @@ describe('DsRowActions', () => {
     })
     await wait()
     const buttons = w.findAll('button')
-    expect(buttons[0]!.text()).toBe('Edit')
+    expect(buttons[0]!.attributes('aria-label')).toBe('Edit')
     expect(w.find('[data-testid="row-menu"]').attributes('aria-label')).toBe('Tindakan')
     await buttons[0]!.trigger('click')
     expect(onEdit).toHaveBeenCalledTimes(1)

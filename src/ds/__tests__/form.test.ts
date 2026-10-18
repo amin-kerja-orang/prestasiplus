@@ -162,7 +162,7 @@ describe('DsPanel header', () => {
   it('without a title there is no header and the old padding stays', () => {
     const w = mount(DsPanel, { slots: { default: '<p>isi</p>' } })
     expect(w.find('header').exists()).toBe(false)
-    expect(w.classes()).toContain('p-3')
+    expect(w.classes()).toContain('p-4')
   })
 })
 

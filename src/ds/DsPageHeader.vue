@@ -54,11 +54,11 @@ const hasAny = computed(
     <DsBackLink v-if="backTo !== undefined" :to="backTo" :label="backLabel" />
     <div
       v-if="titleShown || hasSubtitle || $slots.leading || $slots.actions"
-      class="flex flex-wrap items-start justify-between gap-3"
+      class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 staff:items-center"
     >
-      <div class="flex min-w-0 items-start gap-3">
+      <div class="flex min-w-0 items-start gap-3 staff:items-center staff:gap-4">
         <slot name="leading" />
-        <div class="flex min-w-0 flex-col gap-1">
+        <div class="flex min-w-0 flex-col gap-1 staff:gap-0.5">
           <h1
             v-if="titleShown"
             class="font-display text-title font-extrabold text-highlighted"
@@ -75,7 +75,7 @@ const hasAny = computed(
           </div>
         </div>
       </div>
-      <div v-if="$slots.actions" class="flex flex-wrap items-center gap-2">
+      <div v-if="$slots.actions" class="flex flex-wrap items-center gap-2 staff:ms-auto staff:gap-3">
         <slot name="actions" />
       </div>
     </div>

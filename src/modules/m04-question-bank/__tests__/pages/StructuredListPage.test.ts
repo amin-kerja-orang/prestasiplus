@@ -146,7 +146,7 @@ describe('StructuredListPage (M04 S8)', () => {
     expect(rows[0]?.get('[data-testid=structured-kbat-pill]').text()).toBe('L3')
     expect(rows[0]?.text()).toContain('8m')
     const view = rows[0]?.get('[data-testid=structured-view]')
-    expect(view?.text()).toBe('Lihat')
+    expect(view?.attributes('aria-label')).toBe('Lihat')
     expect(view?.attributes('href')).toBe('/admin/structured-questions/4454')
   })
 

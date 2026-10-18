@@ -175,7 +175,7 @@ describe('SubjectListPage (M03 S6)', () => {
     const w = await render()
     const row = w.findAll('tbody tr')[0]
     expect(row?.get('[data-testid=subject-edit]').attributes('href')).toBe('/admin/subjects/1/edit')
-    expect(row?.get('[data-testid=subject-edit]').text()).toBe('Edit')
+    expect(row?.get('[data-testid=subject-edit]').attributes('aria-label')).toBe('Edit')
     expect(row?.get('[data-testid=subject-more]').attributes('aria-label')).toBe('Tindakan')
   })
 

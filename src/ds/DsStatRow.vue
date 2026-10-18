@@ -5,6 +5,7 @@
  * `StatRow` convention: `${prefix}-${key}` on the cell.
  */
 import { computed } from 'vue'
+
 import type { RouteLocationRaw } from 'vue-router'
 
 import DsStatTile, { type StatDelta } from './DsStatTile.vue'
@@ -56,13 +57,17 @@ const grid = computed(() => {
   return GRID[String(n)]
 })
 
+// Staff: a strip of 2-3 tiles is capped (~22rem per tile) so it does not spread over a 1600px page.
+const CAP: Record<string, string> = { '2': 'staff:max-w-3xl', '3': 'staff:max-w-6xl' }
+const cap = computed(() => CAP[String(Math.min(Math.max(props.items.length, 2), 5))] ?? '')
+
 function id(key: string): string | undefined {
   return props.prefix ? `${props.prefix}-${key}` : undefined
 }
 </script>
 
 <template>
-  <ul class="grid min-w-0 gap-3 md:gap-4" :class="grid" data-ds="stat-row">
+  <ul class="grid min-w-0 gap-3 md:gap-4" :class="[grid, cap]" data-ds="stat-row">
     <li
       v-for="item in items"
       :key="item.key"

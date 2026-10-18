@@ -22,7 +22,6 @@ import {
   DsArt3D,
   DsBrandLogo,
   DsConfirmHost,
-  DsFriendAvatar,
   DsFriendPicker,
   DsIcon,
   DsPillNav,
@@ -70,7 +69,7 @@ const theme = useThemeMode(personality)
 // One rule for every role: the navbar prints the page title (h1); DsPageHeader leaves its own out.
 provideShellTitle()
 
-const { friend, friendName, pickerOpen, choose, openPicker } = useFriend()
+const { friend, pickerOpen, choose, openPicker } = useFriend()
 const { summary, refresh: refreshSummary } = useGamificationSummary()
 
 const lagiOpen = ref(false)
@@ -144,7 +143,6 @@ function onPicked(chosen: 'aiman' | 'aisyah'): void {
   toast.add({ title: `Rakan belajar: ${picked}`, color: 'success' })
 }
 
-const ariaFriend = computed(() => `Tukar rakan belajar. Rakan sekarang: ${friendName.value}`)
 const themeLabel = computed(() =>
   theme.scheme.value === 'dark' ? 'Tukar ke tema cerah' : 'Tukar ke tema gelap',
 )
@@ -351,6 +349,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
               :ui="{
                 root: 'h-16 bg-default pt-[env(safe-area-inset-top)] shadow-bar',
                 title: 'min-w-0',
+                right: 'gap-2',
               }"
               data-testid="pembelajaran-header"
             >
@@ -370,16 +369,11 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 /></RouterLink>
               </template>
               <template #title>
-                <div class="flex min-w-0 flex-col leading-tight">
-                  <span v-if="crumb" class="hidden truncate text-caption text-muted lg:block">{{
-                    crumb
-                  }}</span>
-                  <h1
-                    v-if="title"
-                    class="line-clamp-2 text-label font-bold break-words text-highlighted sm:text-subheading"
+                <div class="flex min-w-0 items-baseline gap-2">
+                  <span v-if="crumb" class="hidden truncate text-body text-muted xl:block"
+                    >{{ crumb }} <span aria-hidden="true">/</span></span
                   >
-                    {{ title }}
-                  </h1>
+                  <h1 v-if="title" class="truncate text-subheading text-highlighted">{{ title }}</h1>
                 </div>
               </template>
               <template #right>
@@ -387,29 +381,27 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   label="Cari menu"
                   color="neutral"
                   variant="soft"
-                  class="hidden lg:inline-flex"
+                  size="sm"
+                  class="hidden w-52 justify-start font-normal text-muted lg:inline-flex"
+                  :ui="{ label: 'grow text-start' }"
                 />
                 <UDashboardSearchButton
                   :collapsed="true"
                   color="neutral"
-                  variant="soft"
+                  variant="ghost"
+                  size="sm"
                   class="hidden sm:inline-flex lg:hidden"
                 />
                 <template v-if="learner">
-                  <DsRewardChip art="fire" :value="summary.streakDays" label="hari" />
-                  <DsRewardChip art="coin" :value="summary.coins" label="Koin" />
-                  <DsFriendAvatar
-                    :friend="friend"
-                    size="sm"
-                    interactive
-                    :label="ariaFriend"
-                    class="hidden sm:inline-flex"
-                    @press="openPicker"
-                  />
+                  <div class="hidden items-center gap-2 sm:flex">
+                    <DsRewardChip quiet art="fire" :value="summary.streakDays" label="hari" />
+                    <DsRewardChip quiet art="coin" :value="summary.coins" label="Koin" />
+                  </div>
                 </template>
                 <UButton
                   color="neutral"
-                  variant="soft"
+                  variant="ghost"
+                  size="sm"
                   :icon="theme.scheme.value === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
                   class="hidden sm:inline-flex"
                   :aria-label="themeLabel"
@@ -423,12 +415,12 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 >
                   <button
                     type="button"
-                    class="grid size-11 shrink-0 place-items-center rounded-full"
+                    class="grid size-10 shrink-0 place-items-center rounded-full"
                     aria-label="Menu akaun"
                     data-testid="pembelajaran-account-top"
                   >
                     <span
-                      class="grid size-9 place-items-center rounded-full bg-gradient-primary text-label font-bold text-primary-on"
+                      class="grid size-8 place-items-center rounded-full bg-gradient-primary text-caption font-semibold text-primary-on"
                       aria-hidden="true"
                       >{{ initials }}</span
                     >

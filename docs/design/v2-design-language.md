@@ -51,29 +51,52 @@ Guru, Ibu Bapa and Penaja live inside the learning shell but use the **staff** c
 
 ---
 
-## 3. Type scale and density
+## 3. Type scale, spacing and density (strict scale, 2026-10-19)
 
-Authority: `tokens.css` `--text-*` and design system section 7 and "Density scale (cozy)". Pages use only these utilities (stock `text-xs...9xl` banned).
+Authority: `tokens.css` `--text-*` (the staff block redefines every step) and `ui.config.ts`. One modular scale for the whole product: **12 / 13 / 14 / 16 / 18 / 20 / 24 / 28 / 36**. Stock `text-xs...4xl` resolve to the same steps; pages still use the role utilities below, never an arbitrary `text-[Npx]`.
 
-| Utility | Size (375 to 1280) | Staff size | Use | Never |
+### 3.1 Staff type roles (Pentadbiran, Guru, Ibu Bapa, Penaja)
+
+| Role | Utility | Size / line-height | Weight | Notes |
 |---|---|---|---|---|
-| `text-display` | 40 to 56px, Display 800 | same | Win score, hero numbers (learner), one per screen | Staff table cells |
-| `text-title` | 30 to 40px; staff 24 to 28px | see tokens | The **one** h1 | Card titles |
-| `text-heading` | 22 to 26px; staff 18 to 20px | | Section h2, KPI numbers (`DsStatTile`), dialog titles | Table text |
-| `text-subheading` | 19 to 22px | | Card titles, sheet titles, h3 | Labels |
-| `text-body` | 16px / 1.55 | 16px < md, 15-16px >= md | Paragraphs, table cells, input text | Hints |
-| `text-label` | 15px / 600 | | Buttons, field labels, nav, badges, cell emphasis | Paragraphs |
-| `text-caption` | 13px / 500 | | Hints, units, timestamps, pager summary | Essential content |
-| `text-overline` | 13px caps +0.08em | | Table headers, nav group labels | Titles |
-| `tabular` | | | Every number in a table, KPI or pager | |
+| Display (one big figure) | `text-display` | 36 / 1.1 | 700 | Rare; learner keeps 40-56 |
+| Page title | `text-title` | 24 / 1.25 | 700, -0.02em | The one h1 |
+| Section title | `text-heading` | 20 / 1.3 | 700 | h2 of a page section |
+| Card / panel title | `text-subheading` | 16 / 1.4 | 600 | Navbar title, card header |
+| KPI value | `text-kpi` | 28 / 1.1 | 800, tabular | `DsStatTile` |
+| Body, table cell | `text-body` | 14 / 1.5 | 400 | Paragraphs, cells, input text (16 below md) |
+| Label, button, nav | `text-label` | 14 / 1.4 | 600 | Buttons, field labels, KPI label (500) |
+| Table header | `text-th` | 13 / 1.25 | 600 | **Sentence case, no tracking**, muted |
+| Caption / meta | `text-caption` | 13 / 1.4 | 400 | Hints, units, timestamps, descriptions |
+| Overline (group label) | `text-overline` | 13 / 1.3 | 600, no tracking | Nav group labels |
+| Badge | `text-xs` (role `text-badge`) | 12 / 1.2 | 600 | **One style**, sentence case |
 
-Rules:
+The staff face is one family (Plus Jakarta Sans): `--font-display` resolves to the UI face in the staff scope. Learner ("Elektrik") keeps the fluid display scale and Bricolage Grotesque.
 
-1. Max three type steps per card (title, body, caption). A KPI tile is number (`text-heading`), label (`text-label`), sub (`text-caption`).
-2. Weight is part of the step; pages never add `font-bold`/`font-semibold` (G-3). The only page-level typographic utility besides the scale is `font-display` on a title, and it is baked into `DsPageHeader` and `DsStatTile`, so pages do not write it.
-3. Body copy `max-w-prose`. Numbers right-aligned in tables.
-4. Casing: titles and button labels are Title Case BM (as live: "Set Semula", "Tambah Soalan"); hints, descriptions and toasts are sentence case. Never ALL CAPS in copy (the overline style uppercases by CSS).
-5. Density is a property of the **shell** (`data-density`), not of a page. A page that needs more columns uses `DsDataTable density="tight"` (3-4px less cell padding), not smaller type.
+### 3.2 Spacing (4px grid)
+
+| Token | Value | Where |
+|---|---|---|
+| Icon-to-text gap | 8 | buttons, badges (6), menu rows (12) |
+| Control gap | 8-12 | navbar controls 8, button groups 12 |
+| Control height | 44 (touch-first); 36 icon buttons in table rows (44 on coarse pointers); navbar controls 32-40 | |
+| Card padding | 16 (small, mobile) / 20 (default) / 24 (form section) | `UCard`, `DsPanel` 16/20, `DsFormSection` 16/24 |
+| Table cell | 12 vertical, 16 horizontal (12 compact); row ~48, ~60 with a thumbnail | |
+| Section gap | 24 (staff, every width >= md); 20 below | `DsPage` |
+| Page padding | 16 below md, 24 from md | shell `main` |
+| KPI tile | 16 / 20 padding, 40px chip beside the value, ~92px tall; a 2-3 tile strip is capped at ~22rem per tile | `DsStatRow` |
+| Navbar | 64 high, controls centred, 8px between | both shells |
+
+### 3.3 Rules
+
+1. Max three type steps per card (title, body, caption). A KPI tile is value (`text-kpi`), label (`text-body`), sub (`text-caption`).
+2. Weight is part of the step; pages never add `font-bold`/`font-semibold`.
+3. Body copy `max-w-prose`. Numbers tabular, right-aligned in tables.
+4. Casing: titles and button labels Title Case BM; table headers, badges, hints sentence case. A raw code in a badge (`HERO`) is set in sentence case by `DsTag`. No ALL CAPS and no letter-spacing outside the nav group label.
+5. Badges: `DsStatusBadge` (status, icon + word, semantic colour) and `DsTag` (neutral category). Nothing else draws a pill.
+6. Row actions: icon buttons with a tooltip (`DsRowActions`), the rest in the overflow menu. Thumbnails through `DsThumb` (image, or an icon on a tinted tile).
+7. A primary button (default colour) is solid in the staff portal; secondary actions say `color="neutral"`.
+8. Density is a property of the shell, not of a page; a wide table uses `density="tight"`, never smaller type.
 
 ---
 

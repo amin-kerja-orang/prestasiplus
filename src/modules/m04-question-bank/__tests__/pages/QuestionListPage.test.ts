@@ -314,7 +314,7 @@ describe('QuestionListPage (M04 S1)', () => {
     expect(first.get('[data-testid="question-edit"]').attributes('href')).toBe(
       '/admin/questions/564159/edit',
     )
-    expect(first.get('[data-testid="question-view"]').text()).toBe('Lihat')
-    expect(first.get('[data-testid="question-edit"]').text()).toBe('Edit')
+    expect(first.get('[data-testid="question-view"]').attributes('aria-label')).toBe('Lihat')
+    expect(first.get('[data-testid="question-edit"]').attributes('aria-label')).toBe('Edit')
   })
 })
