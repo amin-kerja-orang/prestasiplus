@@ -36,6 +36,10 @@ const props = withDefaults(
     sortItems?: { label: string; value: string }[]
     sortLabel?: string
     retryLabel?: string
+    /** Admin list mode: flush card, sticky header, no sticky first column, always-on pager. */
+    dense?: boolean
+    /** Rows-per-page choices; shows a "halaman" select beside the pager summary. */
+    pageSizeOptions?: number[]
   }>(),
   {
     caption: undefined,
@@ -49,12 +53,18 @@ const props = withDefaults(
     sortItems: () => [],
     sortLabel: 'Isih',
     retryLabel: 'Cuba Lagi',
+    dense: false,
+    pageSizeOptions: () => [],
   },
 )
 
 const page = defineModel<number>('page', { default: 1 })
 const sort = defineModel<string | undefined>('sort', { default: undefined })
-const emit = defineEmits<{ retry: []; 'row-click': [row: T] }>()
+const emit = defineEmits<{
+  retry: []
+  'row-click': [row: T]
+  'update:pageSize': [size: number]
+}>()
 
 const wide = useMedia('(min-width: 768px)')
 
@@ -77,16 +87,33 @@ const META_CLASS = 'class'
 const stickyFirst = { th: 'sticky left-0 bg-default', td: 'sticky left-0 bg-inherit' }
 const cols = computed<TableColumn<T>[]>(() =>
   props.columns.map((c, i) =>
-    i === 0 ? { ...c, meta: { ...c.meta, [META_CLASS]: stickyFirst } } : c,
+    i === 0 && !props.dense ? { ...c, meta: { ...c.meta, [META_CLASS]: stickyFirst } } : c,
   ),
 )
 
-const tableUi = {
-  root: 'max-w-full',
-  th: 'text-overline text-muted',
-  td: 'tabular min-h-11',
-  tr: 'even:bg-soft hover:bg-elevated',
-}
+const tableUi = computed(() =>
+  props.dense
+    ? {
+        root: 'max-w-full overflow-visible rounded-none shadow-none',
+        base: 'table-fixed w-full',
+        thead: 'bg-default',
+        th: 'sticky top-0 z-10 bg-default px-4 py-3.5 text-overline whitespace-nowrap text-muted shadow-bar',
+        td: 'tabular px-4 py-3.5 align-middle text-body font-normal whitespace-normal',
+        tr: 'even:bg-soft hover:bg-elevated data-[selected=true]:bg-primary/10',
+      }
+    : {
+        root: 'max-w-full',
+        th: 'text-overline text-muted',
+        td: 'tabular min-h-11',
+        tr: 'even:bg-soft hover:bg-elevated',
+      },
+)
+const pageSizeItems = computed(() =>
+  props.pageSizeOptions.map((n) => ({ label: `${String(n)} / halaman`, value: n })),
+)
+const showPager = computed(() =>
+  props.pageSizeOptions.length > 0 ? count.value > 0 : count.value > props.pageSize,
+)
 
 function cell(row: T, key: string): string {
   const v = row[key]
@@ -95,9 +122,13 @@ function cell(row: T, key: string): string {
 </script>
 
 <template>
-  <UCard data-ds="data-table">
+  <UCard
+    data-ds="data-table"
+    :ui="dense ? { root: 'overflow-clip', body: 'p-0 sm:p-0' } : {}"
+  >
     <UAlert
-      v-if="error"
+v-if="error"
+      :class="dense ? 'm-4' : ''"
       color="error"
       variant="subtle"
       icon="i-ph-warning-circle"
@@ -109,7 +140,7 @@ function cell(row: T, key: string): string {
       <div v-if="loading && !wide" class="flex flex-col gap-3" data-ds="data-table-loading">
         <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
       </div>
-      <template v-else-if="!wide">
+      <div v-else-if="!wide" :class="dense ? 'p-3' : ''">
         <USelect
           v-if="sortItems.length"
           v-model="sort"
@@ -134,7 +165,7 @@ function cell(row: T, key: string): string {
                 type="button"
                 color="neutral"
                 variant="link"
-                class="justify-start truncate p-0 text-label"
+                class="h-auto justify-start p-0 text-start text-label whitespace-normal"
                 :label="cell(row, cardTitle)"
                 @click="emit('row-click', row)"
               />
@@ -148,8 +179,8 @@ function cell(row: T, key: string): string {
             <slot name="card-actions" :row="row" />
           </li>
         </ul>
-      </template>
-      <div v-else class="max-w-full overflow-x-auto">
+      </div>
+      <div v-else :class="dense ? 'max-w-full' : 'max-w-full overflow-x-auto'">
         <UTable
           :data="rows"
           :columns="cols"
@@ -165,11 +196,23 @@ function cell(row: T, key: string): string {
         </UTable>
       </div>
       <div
-        v-if="count > pageSize"
-        class="mt-3 flex flex-wrap items-center justify-between gap-3"
+        v-if="showPager"
+        class="flex flex-wrap items-center justify-between gap-3"
+        :class="dense ? 'bg-default p-4' : 'mt-3'"
         data-ds="data-table-pager"
       >
-        <p class="text-caption text-muted" role="status">{{ summary }}</p>
+        <div class="flex flex-wrap items-center gap-3">
+          <p class="text-label text-muted" role="status">{{ summary }}</p>
+          <USelect
+            v-if="pageSizeOptions.length"
+            :model-value="pageSize"
+            :items="pageSizeItems"
+            class="w-40"
+            aria-label="Baris setiap halaman"
+            data-ds="data-table-page-size"
+            @update:model-value="(v: number) => emit('update:pageSize', v)"
+          />
+        </div>
         <UPagination
           v-model:page="page"
           :total="count"

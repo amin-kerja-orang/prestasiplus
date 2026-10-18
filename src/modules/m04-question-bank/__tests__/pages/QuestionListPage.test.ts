@@ -91,6 +91,7 @@ async function render(url = '/admin/questions'): Promise<VueWrapper> {
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid="${id}"]`)
 
 beforeEach(() => {
+  window.localStorage.clear()
   setActivePinia(createPinia())
   for (const fn of [...Object.values(questions), ...Object.values(lookups)]) fn.mockReset()
   dialogs.confirmNative.mockReset()
@@ -124,22 +125,36 @@ afterEach(() => {
 })
 
 describe('QuestionListPage (M04 S1)', () => {
-  it('shows the header, the total and the tiles with the 12-character name cut', async () => {
+  it('shows the header, the KPI strip and the collapsible subject breakdown with full names', async () => {
     const w = await render()
     expect(w.text()).toContain('Urus bank soalan untuk platform PRESTASIPLUS')
     expect(t(w, 'questions-total').text().replace(/\s+/g, ' ')).toBe('Jumlah: 465,278 soalan')
+    const kpis = t(w, 'questions-kpis').text()
+    expect(kpis).toContain('465,278')
+    expect(kpis).toContain('Diluluskan')
+    // The breakdown is collapsed until opened.
+    expect(w.find('[data-testid="questions-tile"]').exists()).toBe(false)
+    await t(w, 'questions-summary-toggle').trigger('click')
     const tiles = w.findAll('[data-testid="questions-tile"]')
     expect(tiles).toHaveLength(3)
-    expect(tiles[1]?.text()).toContain('Matematik Ta...')
-    expect(tiles[0]?.text()).toContain('32,905')
-    expect(tiles[0]?.text()).toContain('13,081 lulus')
+    // Sorted by Jumlah, descending; full names, never cut.
+    expect(tiles.map((n) => n.text())).toEqual([
+      'Bahasa Melayu',
+      'Matematik Tambahan',
+      'Sains Sukan',
+    ])
+    const totals = w.findAll('[data-testid="questions-tile-total"]').map((n) => n.text())
+    expect(totals[0]).toBe('32,905')
+    const approved = w.findAll('[data-testid="questions-tile-approved"]').map((n) => n.text())
+    expect(approved[0]).toBe('13,081 lulus')
     // "lulus" is hidden when the approved count is 0.
-    expect(tiles[2]?.text()).not.toContain('lulus')
+    expect(approved).toHaveLength(2)
     expect(w.find('[data-testid="questions-clear-subject"]').exists()).toBe(false)
   })
 
   it('marks the active tile and offers to clear the subject filter', async () => {
     const w = await render('/admin/questions?subject_id=8')
+    await t(w, 'questions-summary-toggle').trigger('click')
     const active = w
       .findAll('[data-testid="questions-tile"]')
       .filter((n) => n.attributes('aria-current') === 'true')
@@ -188,13 +203,13 @@ describe('QuestionListPage (M04 S1)', () => {
 
   it('submits the filter form to the URL (snake_case names) and refetches', async () => {
     const w = await render()
-    await t(w, 'questions-difficulty').setValue('2')
+    await t(w, 'questions-subject').setValue('1')
     await t(w, 'questions-search').setValue('  satelit ')
     await w.get('[data-testid="questions-filter"]').trigger('submit')
     await flushPromises()
-    expect(router.currentRoute.value.query).toEqual({ difficulty_level: '2', search: 'satelit' })
+    expect(router.currentRoute.value.query).toEqual({ subject_id: '1', search: 'satelit' })
     expect(questions.fetchQuestions).toHaveBeenLastCalledWith(
-      expect.objectContaining({ difficultyLevel: '2', search: 'satelit' }),
+      expect.objectContaining({ subjectId: '1', search: 'satelit' }),
     )
   })
 
@@ -272,7 +287,13 @@ describe('QuestionListPage (M04 S1)', () => {
       status: 'Soalan berjaya dipadam.',
     })
     const w = await render()
-    await w.findAll('[data-testid="question-delete"]')[0]?.trigger('click')
+    await w.findAll('[data-testid="question-more"]')[0]?.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    const del = Array.from(document.body.querySelectorAll('[role="menuitem"]')).find((n) =>
+      (n.textContent ?? '').includes('Padam'),
+    )
+    expect(del).toBeDefined()
+    del?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await flushPromises()
     expect(dialogs.confirmNative).toHaveBeenCalledWith(
       'Adakah anda pasti mahu memadamkan soalan ini?',

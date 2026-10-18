@@ -30,6 +30,7 @@ export { default as DsSubjectStrip, type SubjectTile } from './DsSubjectStrip.vu
 export { default as DsWinScreen, type WinReward, type WinSticker } from './DsWinScreen.vue'
 export { usePersonality } from './personality'
 export { default as DsPage } from './DsPage.vue'
+export { default as DsPanel } from './DsPanel.vue'
 export { default as DsFilterBar } from './DsFilterBar.vue'
 export { default as DsDataTable, type CardField } from './DsDataTable.vue'
 export { default as DsChart, type ChartSeries } from './DsChart.vue'
