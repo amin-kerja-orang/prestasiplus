@@ -15,6 +15,7 @@ import {
   type CcDailyActivity,
   type CcPeriod,
 } from '../../api/command-center-board'
+import { accentAt } from '../command-center/cc-format'
 import { S3_COPY } from './board-copy'
 
 const props = defineProps<{ data: CcDailyActivity | null; period: CcPeriod }>()
@@ -118,10 +119,10 @@ const cards = computed<Card[]>(() => {
     data-testid="cc-pulse"
     aria-live="off"
   >
-    <UCard v-for="c in cards" :key="c.id" class="min-w-0" :data-testid="`cc-pulse-${c.id}`">
+    <UCard v-for="(c, ci) in cards" :key="c.id" class="min-w-0" :data-testid="`cc-pulse-${c.id}`">
       <div class="flex min-w-0 flex-col items-start gap-1">
         <span class="flex w-full min-w-0 items-center gap-2">
-          <DsIconChip :icon="c.icon" size="sm" />
+          <DsIconChip :icon="c.icon" :accent="accentAt(ci)" size="sm" />
           <span class="min-w-0 text-overline text-muted" data-testid="cc-pulse-label">{{
             c.label
           }}</span>

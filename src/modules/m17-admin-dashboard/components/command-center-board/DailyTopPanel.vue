@@ -4,6 +4,7 @@ import { formatCount, formatNumber } from '@/lib/number'
 
 import type { CcDailyActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
+import { shortSchool } from '../command-center/cc-format'
 import { rankColor, S3_COPY } from './board-copy'
 import type { LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
@@ -40,9 +41,11 @@ const paths = ccPaths(props.basePath)
             :label="s.name"
             data-testid="cc-daily-top-name"
           />
-          <span v-if="s.schoolName" class="text-caption break-words text-muted">{{
-            s.schoolName
-          }}</span>
+          <span
+            v-if="s.schoolName"
+            class="text-caption break-words text-muted"
+            :title="s.schoolName"
+            >{{ shortSchool(s.schoolName) }}</span>
         </span>
         <span class="tabular flex shrink-0 flex-col text-end">
           <b class="text-label text-highlighted" data-testid="cc-daily-top-answers"

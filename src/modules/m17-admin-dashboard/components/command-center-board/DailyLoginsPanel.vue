@@ -5,6 +5,7 @@
  */
 import type { CcDailyActivity, CcLoginRow } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
+import { shortSchool } from '../command-center/cc-format'
 import { S3_COPY } from './board-copy'
 import type { LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
@@ -72,7 +73,8 @@ function link(row: CcLoginRow): string | null {
           v-if="r.schoolName"
           class="min-w-0 text-caption break-words text-muted"
           data-testid="cc-login-school"
-          >{{ r.schoolName }}</span
+          :title="r.schoolName"
+          >{{ shortSchool(r.schoolName) }}</span
         >
         <span
           v-else-if="r.role === 'student'"

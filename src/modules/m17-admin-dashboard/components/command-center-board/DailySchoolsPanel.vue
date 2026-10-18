@@ -8,6 +8,7 @@ import { formatCount, formatNumber } from '@/lib/number'
 
 import type { CcDailyActivity, CcSchoolActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
+import { shortSchool } from '../command-center/cc-format'
 import { S3_COPY } from './board-copy'
 import type { DrillState, LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
@@ -67,7 +68,8 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
           <span
             class="min-w-0 basis-full text-label break-words text-highlighted sm:flex-1 sm:basis-0"
             data-testid="cc-school-name"
-            >{{ i + 1 }}. {{ s.schoolName }}</span
+            :title="s.schoolName"
+            >{{ i + 1 }}. {{ shortSchool(s.schoolName) }}</span
           >
           <span class="tabular flex shrink-0 items-center gap-4 text-center">
             <span data-testid="cc-school-teachers">

@@ -146,11 +146,11 @@ describe('S2 admin board', () => {
     w.unmount()
   })
 
-  it('cuts the feed school name to 15 characters with the full name in title and escapes names', async () => {
+  it('abbreviates the feed school name to SMK with the full name in title and escapes names', async () => {
     api.fetchCcLiveData.mockResolvedValue(platformLive())
     const w = await mountBoard(false)
     const school = w.get('[data-testid="cc-feed-school"]')
-    expect(school.text()).toBe('SEKOLAH MENENGA')
+    expect(school.text()).toBe('SMK CONTOH SATU')
     expect(school.attributes('title')).toBe('SEKOLAH MENENGAH KEBANGSAAN CONTOH SATU')
     expect(school.attributes('href')).toBe('/admin/command-center/school/8082')
     const name = w.get('[data-testid="cc-feed-name"]')

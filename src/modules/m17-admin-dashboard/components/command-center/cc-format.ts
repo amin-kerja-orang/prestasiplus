@@ -3,12 +3,31 @@
  * SRS M17 §3 FR-M17-48..60, URS FN-M17-5.x). The pages draw the staff theme (v2).
  */
 
-import type { StatItem } from '@/ds'
+import type { DsAccent, StatItem } from '@/ds'
 
 import { formatCount, formatNumber } from '@/lib/number'
 import { formatMyt } from '@/lib/time'
 
 import type { Mood } from '../../api/command-center-types'
+
+/** Categorical chip accents, cycled across the tiles and panels of a board (varied colour). */
+const ACCENTS: readonly DsAccent[] = ['action', 'win', 'heat', 'friend', 'trial']
+export const accentAt = (index: number): DsAccent => ACCENTS[index % ACCENTS.length] ?? 'action'
+/** A stable accent per key (panels keep their colour whatever the order). */
+export const accentFor = (key: string): DsAccent => {
+  let sum = 0
+  for (const ch of key) sum += ch.charCodeAt(0)
+  return accentAt(sum)
+}
+
+/** "SEKOLAH MENENGAH KEBANGSAAN X" -> "SMK X" (the full name stays in a title). */
+export function shortSchool(name: string): string {
+  return name
+    .replace(/^SEKOLAH MENENGAH JENIS KEBANGSAAN(?![A-Z])/i, 'SMJK')
+    .replace(/^SEKOLAH MENENGAH KEBANGSAAN(?![A-Z])/i, 'SMK')
+    .replace(/^SEKOLAH JENIS KEBANGSAAN(?![A-Z])/i, 'SJK')
+    .replace(/^SEKOLAH KEBANGSAAN(?![A-Z])/i, 'SK')
+}
 
 /** `82.3%` (1 decimal, BR-M17-06). */
 export const pct1 = (value: number) => `${formatNumber(value, { decimals: 1 })}%`
