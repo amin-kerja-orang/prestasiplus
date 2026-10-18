@@ -275,6 +275,7 @@ async function resetFilter(): Promise<void> {
 
     <div v-else class="flex flex-col gap-3" data-testid="structured-footer-wrap">
       <DsDataTable
+        dense
         :data="tableRows"
         :columns="columns"
         caption="Senarai soalan berstruktur"

@@ -236,6 +236,12 @@ export const uiConfig = {
       childLink: 'min-h-11 px-3 text-label',
       linkLeadingIcon: 'size-5',
     },
+    // Nested groups (Kirkpatrick) step in by 8px, not 20px, so long labels read in full.
+    variants: {
+      orientation: {
+        vertical: { childList: 'ms-3', childItem: 'ps-0' },
+      },
+    },
   },
 
   dashboardSidebar: { slots: { root: 'bg-default shadow-ds-xs' } },

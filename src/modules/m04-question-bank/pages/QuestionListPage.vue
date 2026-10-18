@@ -430,7 +430,7 @@ const cardFields: CardField[] = [
         data-testid="questions-filter"
         @submit.prevent="submitFilter"
       >
-        <div class="flex min-w-64 grow basis-80 items-center gap-2">
+        <div class="flex min-w-56 grow basis-64 items-center gap-2">
           <label for="q-search" class="sr-only">Cari</label>
           <UInput
             id="q-search"
@@ -446,7 +446,7 @@ const cardFields: CardField[] = [
         </div>
 
         <template v-if="wide">
-          <div v-for="f in PRIMARY_FIELDS" :key="f.key" class="w-40 min-w-0 2xl:w-52">
+          <div v-for="f in PRIMARY_FIELDS" :key="f.key" class="w-36 min-w-0 2xl:w-52">
             <label :for="f.id" class="sr-only">{{ f.label }}</label>
             <NativeSelect
               :id="f.id"
@@ -631,6 +631,7 @@ const cardFields: CardField[] = [
 
       <DsDataTable
         dense
+        fixed-layout
         :data="tableRows"
         :columns="columns"
         caption="Senarai soalan"

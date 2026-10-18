@@ -450,11 +450,11 @@ const COLUMNS = [
                 alt=""
                 size="sm"
               />
-              <span class="min-w-0 break-words" data-testid="user-name">{{ user.name }}</span>
+              <span class="block max-w-48 truncate" :title="user.name" data-testid="user-name">{{ user.name }}</span>
             </div>
           </CardCell>
           <CardCell label="Emel"
-            ><span class="break-all">{{ user.email }}</span></CardCell
+            ><span class="block max-w-48 truncate" :title="user.email">{{ user.email }}</span></CardCell
           >
           <CardCell label="Telefon"
             ><span class="text-nowrap">{{ user.phone || '-' }}</span></CardCell
@@ -467,7 +467,11 @@ const COLUMNS = [
               data-testid="user-role"
             />
           </CardCell>
-          <CardCell label="Sekolah">{{ user.school?.name || '-' }}</CardCell>
+          <CardCell label="Sekolah"
+            ><span class="block max-w-48 truncate" :title="user.school?.name || undefined">{{
+              user.school?.name || '-'
+            }}</span></CardCell
+          >
           <CardCell label="Aktif?">
             <form method="post" @submit.prevent="toggle(user)">
               <UButton
@@ -487,34 +491,34 @@ const COLUMNS = [
             ><span class="text-nowrap">{{ formatUserDate(user.createdAt) }}</span></CardCell
           >
           <CardCell label="Tindakan">
-            <div class="flex flex-wrap items-center justify-end gap-2">
+            <div class="flex items-center justify-end gap-1">
               <UButton
                 :to="`/admin/users/${user.id}/edit`"
-                size="sm"
                 color="neutral"
-                variant="soft"
+                variant="ghost"
                 icon="i-ph-pencil-simple"
-                label="Edit"
+                aria-label="Edit"
+                title="Edit"
                 data-testid="user-edit"
               />
               <UButton
                 v-if="user.role === 'school_admin'"
                 :to="`/admin/users/${user.id}/packages`"
-                size="sm"
                 color="neutral"
-                variant="soft"
+                variant="ghost"
                 icon="i-ph-package"
-                label="Pakej"
+                aria-label="Pakej"
+                title="Pakej"
                 data-testid="user-packages"
               />
               <form v-if="user.id !== ownId" method="post" @submit.prevent="loginAs(user)">
                 <UButton
                   type="submit"
-                  size="sm"
                   color="neutral"
-                  variant="soft"
+                  variant="ghost"
                   icon="i-ph-sign-in"
-                  label="Login As"
+                  aria-label="Login As"
+                  title="Login As"
                   :disabled="busy"
                   data-testid="user-login-as"
                 />
@@ -522,11 +526,11 @@ const COLUMNS = [
               <UButton
                 v-if="user.id !== ownId"
                 type="button"
-                size="sm"
                 color="error"
-                variant="soft"
+                variant="ghost"
                 icon="i-ph-trash"
                 aria-label="Padam"
+                title="Padam"
                 data-testid="user-delete"
                 @click="deleting = { id: user.id, name: user.name }"
               />

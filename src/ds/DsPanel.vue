@@ -7,8 +7,8 @@
  */
 withDefaults(
   defineProps<{
-    /** `raised` = page-layer card; `bulk` = sticky selection bar on the elevated layer. */
-    tone?: 'raised' | 'bulk'
+    /** `raised` = page-layer card; `bulk` = sticky selection bar on the elevated layer; `bar` = sticky bottom action bar of a form. */
+    tone?: 'raised' | 'bulk' | 'bar'
     flush?: boolean
   }>(),
   { tone: 'raised', flush: false },
@@ -19,7 +19,11 @@ withDefaults(
   <div
     class="min-w-0 overflow-clip rounded-card"
     :class="[
-      tone === 'bulk' ? 'sticky top-2 z-20 bg-elevated shadow-lift' : 'bg-default shadow-ds-xs',
+      tone === 'bulk'
+        ? 'sticky top-2 z-20 bg-elevated shadow-lift'
+        : tone === 'bar'
+          ? 'sticky bottom-2 z-20 bg-elevated shadow-lift'
+          : 'bg-default shadow-ds-xs',
       flush ? '' : 'p-3 sm:p-4',
     ]"
     :data-tone="tone"

@@ -11,6 +11,8 @@
  */
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 
+import { DsPanel } from '@/ds'
+
 import type { EducationLevelLookup, SubjectLookup } from '../api/lookups'
 import type { QuestionDetail, QuestionInputBody } from '../api/questions'
 import { backspaceAtCaret, insertAtCaret, type KeyboardMode } from '../lib/arabic-keyboard'
@@ -122,6 +124,8 @@ const STAR_LABELS = [1, 2, 3, 4, 5]
   >
     <ErrorBox :messages="errors.general" data-testid="question-form-alert" />
 
+    <div class="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-2">
+    <div class="flex min-w-0 flex-col gap-4 md:gap-6">
     <!-- Card "Maklumat Soalan" -->
     <UCard data-testid="info-card">
       <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
@@ -130,6 +134,7 @@ const STAR_LABELS = [1, 2, 3, 4, 5]
       </h2>
 
       <div class="flex min-w-0 flex-col gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div class="min-w-0">
           <label for="q-subject" class="mb-2 block text-label text-highlighted">Subjek *</label>
           <NativeSelect
@@ -164,6 +169,8 @@ const STAR_LABELS = [1, 2, 3, 4, 5]
           <p v-if="err('educationLevelId')" class="mt-1 text-caption text-error" data-field-error>
             {{ err('educationLevelId') }}
           </p>
+        </div>
+
         </div>
 
         <div class="min-w-0">
@@ -286,6 +293,8 @@ const STAR_LABELS = [1, 2, 3, 4, 5]
       </div>
     </UCard>
 
+    </div>
+    <div class="flex min-w-0 flex-col gap-4 md:gap-6">
     <!-- MCQ card -->
     <UCard v-show="isMcq" data-testid="mcq-card">
       <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
@@ -509,6 +518,10 @@ const STAR_LABELS = [1, 2, 3, 4, 5]
       </div>
     </UCard>
 
+    </div>
+    </div>
+
+    <DsPanel tone="bar">
     <div class="flex flex-wrap items-center justify-end gap-3">
       <UButton
         :to="cancelTo"
@@ -531,5 +544,6 @@ const STAR_LABELS = [1, 2, 3, 4, 5]
         {{ edit ? 'Kemaskini Soalan' : 'Simpan Soalan' }}
       </UButton>
     </div>
+    </DsPanel>
   </form>
 </template>

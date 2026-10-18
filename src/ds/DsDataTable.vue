@@ -38,6 +38,8 @@ const props = withDefaults(
     retryLabel?: string
     /** Admin list mode: flush card, sticky header, no sticky first column, always-on pager. */
     dense?: boolean
+    /** With `dense`: `table-fixed` full width (the caller sets column widths); otherwise the table scrolls sideways in its card when wider. */
+    fixedLayout?: boolean
     /** Rows-per-page choices; shows a "halaman" select beside the pager summary. */
     pageSizeOptions?: number[]
   }>(),
@@ -54,6 +56,7 @@ const props = withDefaults(
     sortLabel: 'Isih',
     retryLabel: 'Cuba Lagi',
     dense: false,
+    fixedLayout: false,
     pageSizeOptions: () => [],
   },
 )
@@ -95,7 +98,7 @@ const tableUi = computed(() =>
   props.dense
     ? {
         root: 'max-w-full overflow-visible rounded-none shadow-none',
-        base: 'table-fixed w-full',
+        base: props.fixedLayout ? 'table-fixed w-full' : 'w-full',
         thead: 'bg-default',
         th: 'sticky top-0 z-10 bg-default px-4 py-3.5 text-overline whitespace-nowrap text-muted shadow-bar',
         td: 'tabular px-4 py-3.5 align-middle text-body font-normal whitespace-normal',
@@ -180,7 +183,7 @@ v-if="error"
           </li>
         </ul>
       </div>
-      <div v-else :class="dense ? 'max-w-full' : 'max-w-full overflow-x-auto'">
+      <div v-else :class="dense && fixedLayout ? 'max-w-full' : 'max-w-full overflow-x-auto'">
         <UTable
           :data="rows"
           :columns="cols"
