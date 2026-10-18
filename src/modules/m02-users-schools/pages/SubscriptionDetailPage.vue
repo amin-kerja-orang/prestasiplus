@@ -14,8 +14,9 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
+import { AdminCard, AdminKpiStrip, AdminPageHeader } from '@/ds/admin'
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import { DsPage, useConfirm } from '@/ds'
+import { DsPage, DsStatTile, useConfirm } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { formatDate, formatDateTime } from '@/lib/time'
 
@@ -30,12 +31,12 @@ import {
   type SubscriptionMutation,
 } from '../api/subscriptions'
 import AdminAlert from '../components/AdminAlert.vue'
-import CardCell from '../components/native/CardCell.vue'
-import CardRow from '../components/native/CardRow.vue'
-import CardTable from '../components/native/CardTable.vue'
 import NativePanel from '../components/native/NativePanel.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import { errorLines } from '../lib/school-errors'
+import AdminCell from '../components/native/AdminCell.vue'
+import AdminRow from '../components/native/AdminRow.vue'
+import AdminSelect from '../components/native/AdminSelect.vue'
+import AdminTable from '../components/native/AdminTable.vue'
 import {
   barColor,
   EXTEND_PRESETS,
@@ -203,7 +204,9 @@ async function confirmUpgrade(): Promise<void> {
 }
 
 async function cancel(): Promise<void> {
-  if (!(await confirm({ message: 'Adakah anda pasti mahu batalkan langganan ini?', tone: 'danger' })))
+  if (
+    !(await confirm({ message: 'Adakah anda pasti mahu batalkan langganan ini?', tone: 'danger' }))
+  )
     return
   await run(() => cancelSubscription(props.id))
 }
@@ -234,18 +237,27 @@ const STUDENT_COLUMNS = [
 
 <template>
   <DsPage data-testid="sub-detail-page">
-    <div>
-      <UButton
-        :to="SUBSCRIPTIONS_LIST_PATH"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        label="Senarai Langganan"
-        data-testid="sub-list-back"
-      />
-    </div>
+    <AdminPageHeader
+      title="Langganan Sekolah"
+      subtitle="Butiran langganan, kuota dan senarai pelajar."
+    >
+      <template #actions>
+        <UButton
+          :to="SUBSCRIPTIONS_LIST_PATH"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-arrow-left"
+          label="Senarai Langganan"
+          data-testid="sub-list-back"
+        />
+      </template>
+    </AdminPageHeader>
 
-    <div v-if="loadError && !isNotFound(loadError)" class="flex flex-col gap-3" data-testid="sub-load-error">
+    <div
+      v-if="loadError && !isNotFound(loadError)"
+      class="flex flex-col gap-3"
+      data-testid="sub-load-error"
+    >
       <AdminAlert :messages="errorLines(loadError)" />
       <div>
         <UButton label="Cuba Lagi" @click="reloadSub()" />
@@ -263,7 +275,7 @@ const STUDENT_COLUMNS = [
       </div>
 
       <!-- Summary card -->
-      <UCard data-testid="sub-summary-card">
+      <AdminCard data-testid="sub-summary-card">
         <div class="flex flex-col gap-4">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
@@ -278,7 +290,6 @@ const STUDENT_COLUMNS = [
               <UBadge
                 color="neutral"
                 variant="subtle"
-                size="lg"
                 :icon="sub.packageTier === 'basic' ? 'i-ph-eye' : 'i-ph-infinity'"
                 :label="TIER_LABEL[sub.packageTier]"
                 data-testid="sub-tier"
@@ -286,7 +297,6 @@ const STUDENT_COLUMNS = [
               <UBadge
                 :color="STATUS_BADGE[sub.status].color"
                 variant="subtle"
-                size="lg"
                 :label="STATUS_BADGE[sub.status].label"
                 data-testid="sub-status"
               />
@@ -331,40 +341,51 @@ const STUDENT_COLUMNS = [
             </div>
           </NativePanel>
 
-          <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="sub-tiles">
-            <NativePanel tone="soft" class="text-center">
-              <p class="text-caption text-muted">Mula</p>
-              <p class="text-label text-highlighted">{{ formatDate(sub.startsAt) }}</p>
-            </NativePanel>
-            <NativePanel tone="soft" class="text-center">
-              <p class="text-caption text-muted">Tamat</p>
-              <p class="text-label text-highlighted">{{ formatDate(sub.endsAt) }}</p>
-            </NativePanel>
+          <AdminKpiStrip label="Butiran langganan" data-testid="sub-tiles">
+            <DsStatTile
+              compact
+              :value="formatDate(sub.startsAt)"
+              unit="Mula"
+              icon="i-ph-calendar-check"
+            />
+            <DsStatTile
+              compact
+              accent="heat"
+              :value="formatDate(sub.endsAt)"
+              unit="Tamat"
+              icon="i-ph-calendar-x"
+            />
             <template v-if="sub.packageTier === 'basic'">
-              <NativePanel tone="soft" class="text-center">
-                <p class="text-caption text-muted">Had Soalan</p>
-                <p class="text-label text-highlighted">{{ sub.questionLimit ?? 500 }}/bulan</p>
-              </NativePanel>
-              <NativePanel tone="soft" class="text-center">
-                <p class="text-caption text-muted">Kos</p>
-                <p class="text-label text-highlighted">PERCUMA</p>
-              </NativePanel>
+              <DsStatTile
+                compact
+                accent="trial"
+                :value="`${String(sub.questionLimit ?? 500)}/bulan`"
+                unit="Had Soalan"
+                icon="i-ph-question"
+              />
+              <DsStatTile compact accent="win" value="PERCUMA" unit="Kos" icon="i-ph-gift" />
             </template>
             <template v-else>
-              <NativePanel tone="soft" class="text-center">
-                <p class="text-caption text-muted">Harga / Pelajar</p>
-                <p class="text-label text-highlighted" data-testid="sub-price">
-                  {{ money(sub.package.priceAnnual) }}
-                </p>
-              </NativePanel>
-              <NativePanel tone="soft" class="text-center">
-                <p class="text-caption text-muted">Jumlah</p>
-                <p class="text-label text-highlighted" data-testid="sub-total">
-                  {{ money(sub.studentQuota * Number(sub.package.priceAnnual)) }}
-                </p>
-              </NativePanel>
+              <div data-testid="sub-price">
+                <DsStatTile
+                  compact
+                  accent="trial"
+                  :value="money(sub.package.priceAnnual)"
+                  unit="Harga / Pelajar"
+                  icon="i-ph-tag"
+                />
+              </div>
+              <div data-testid="sub-total">
+                <DsStatTile
+                  compact
+                  accent="win"
+                  :value="money(sub.studentQuota * Number(sub.package.priceAnnual))"
+                  unit="Jumlah"
+                  icon="i-ph-coins"
+                />
+              </div>
             </template>
-          </div>
+          </AdminKpiStrip>
 
           <NativePanel
             v-if="sub.notes"
@@ -378,10 +399,10 @@ const STUDENT_COLUMNS = [
             >
           </NativePanel>
         </div>
-      </UCard>
+      </AdminCard>
 
       <!-- Actions -->
-      <UCard data-testid="sub-actions">
+      <AdminCard data-testid="sub-actions">
         <div class="flex flex-col gap-4">
           <h3 class="flex items-center gap-2 text-subheading text-highlighted">
             <UIcon name="i-ph-sliders-horizontal" class="size-5 text-muted" aria-hidden="true" />
@@ -454,7 +475,6 @@ const STUDENT_COLUMNS = [
                 required
                 :min="QUOTA_MIN"
                 :max="QUOTA_MAX"
-                size="lg"
                 class="w-32"
                 data-testid="sub-quota-input"
               />
@@ -465,7 +485,6 @@ const STUDENT_COLUMNS = [
               name="notes"
               placeholder="Sebab perubahan (opsional)"
               aria-label="Sebab perubahan"
-              size="lg"
               class="w-full"
               data-testid="sub-quota-notes"
             />
@@ -490,7 +509,10 @@ const STUDENT_COLUMNS = [
             data-testid="sub-extend-form"
             @submit.prevent="extend"
           >
-            <p class="flex items-center gap-2 text-label text-muted" data-testid="sub-extend-current">
+            <p
+              class="flex items-center gap-2 text-label text-muted"
+              data-testid="sub-extend-current"
+            >
               <UIcon name="i-ph-info" class="size-4 shrink-0" aria-hidden="true" />
               Tamat semasa: {{ formatDateTime(sub.endsAt) }}
             </p>
@@ -500,7 +522,6 @@ const STUDENT_COLUMNS = [
                 v-for="preset in EXTEND_PRESETS"
                 :key="preset.days"
                 type="button"
-                size="sm"
                 color="neutral"
                 variant="soft"
                 :label="preset.label"
@@ -517,7 +538,6 @@ const STUDENT_COLUMNS = [
                 min="1"
                 max="365"
                 aria-label="Bilangan hari"
-                size="lg"
                 class="w-28"
                 data-testid="sub-extend-days"
               />
@@ -529,7 +549,6 @@ const STUDENT_COLUMNS = [
               name="reason"
               placeholder="Sebab lanjutan (opsional)"
               aria-label="Sebab lanjutan"
-              size="lg"
               class="w-full"
               data-testid="sub-extend-reason"
             />
@@ -554,8 +573,15 @@ const STUDENT_COLUMNS = [
             data-testid="sub-upgrade-form"
             @submit.prevent="confirmUpgrade"
           >
-            <p class="flex items-start gap-2 text-label text-default" data-testid="sub-upgrade-text">
-              <UIcon name="i-ph-warning-circle" class="mt-1 size-4 shrink-0 text-warning" aria-hidden="true" />
+            <p
+              class="flex items-start gap-2 text-label text-default"
+              data-testid="sub-upgrade-text"
+            >
+              <UIcon
+                name="i-ph-warning-circle"
+                class="mt-1 size-4 shrink-0 text-warning"
+                aria-hidden="true"
+              />
               <span
                 >Naik taraf dari
                 <strong>Pemantauan ({{ sub.questionLimit ?? 500 }} soalan/bulan)</strong> ke
@@ -569,7 +595,6 @@ const STUDENT_COLUMNS = [
               name="payment_reference"
               placeholder="Rujukan pembayaran (opsional)"
               aria-label="Rujukan pembayaran"
-              size="lg"
               class="w-full"
               data-testid="sub-upgrade-reference"
             />
@@ -579,7 +604,6 @@ const STUDENT_COLUMNS = [
               name="payment_notes"
               placeholder="Nota (opsional)"
               aria-label="Nota"
-              size="lg"
               class="w-full"
               data-testid="sub-upgrade-notes"
             />
@@ -594,11 +618,15 @@ const STUDENT_COLUMNS = [
             </div>
           </NativePanel>
         </div>
-      </UCard>
+      </AdminCard>
 
       <!-- Students -->
       <section data-testid="sub-students">
-        <CardTable :columns="STUDENT_COLUMNS" caption="Senarai pelajar langganan" data-testid="sub-students-table">
+        <AdminTable
+          :columns="STUDENT_COLUMNS"
+          caption="Senarai pelajar langganan"
+          data-testid="sub-students-table"
+        >
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3 p-4">
               <h3 class="flex items-center gap-2 text-subheading text-highlighted">
@@ -607,7 +635,7 @@ const STUDENT_COLUMNS = [
               </h3>
               <div class="flex flex-wrap items-center gap-2 text-label text-muted">
                 <label for="sub-per-page">Tunjuk</label>
-                <NativeSelect
+                <AdminSelect
                   id="sub-per-page"
                   :model-value="pageSize"
                   class="w-24"
@@ -617,7 +645,7 @@ const STUDENT_COLUMNS = [
                   <option v-for="n in SUBSCRIPTION_PER_PAGE_OPTIONS" :key="n" :value="n">
                     {{ n }}
                   </option>
-                </NativeSelect>
+                </AdminSelect>
                 <span data-testid="sub-range"
                   >perbarisan · Memaparkan {{ firstNo }}-{{ lastNo }} dari {{ total }}</span
                 >
@@ -625,36 +653,36 @@ const STUDENT_COLUMNS = [
             </div>
           </template>
 
-          <CardRow v-if="studentsError" data-testid="sub-students-error">
-            <CardCell :colspan="STUDENT_COLUMNS.length">
+          <AdminRow v-if="studentsError" data-testid="sub-students-error">
+            <AdminCell :colspan="STUDENT_COLUMNS.length">
               <div class="flex flex-col items-center gap-3">
                 <AdminAlert :messages="errorLines(studentsError)" />
                 <UButton label="Cuba Lagi" @click="reloadStudents()" />
               </div>
-            </CardCell>
-          </CardRow>
+            </AdminCell>
+          </AdminRow>
           <template v-else-if="!students">
-            <CardRow v-for="n in 5" :key="n">
-              <CardCell v-for="c in STUDENT_COLUMNS" :key="c.key">
+            <AdminRow v-for="n in 5" :key="n">
+              <AdminCell v-for="c in STUDENT_COLUMNS" :key="c.key">
                 <USkeleton class="h-4 w-full max-w-32" />
-              </CardCell>
-            </CardRow>
+              </AdminCell>
+            </AdminRow>
           </template>
           <template v-else>
-            <CardRow
+            <AdminRow
               v-for="(student, i) in students.data"
               :key="student.id"
               data-testid="sub-student-row"
             >
-              <CardCell label="#">{{ firstNo + i }}</CardCell>
-              <CardCell label="Nama">{{ student.name }}</CardCell>
-              <CardCell label="Email ID Delima">
+              <AdminCell label="#">{{ firstNo + i }}</AdminCell>
+              <AdminCell label="Nama">{{ student.name }}</AdminCell>
+              <AdminCell label="Email ID Delima">
                 <span class="break-all">{{ student.idDelima }}</span>
-              </CardCell>
-              <CardCell label="Tingkatan">
+              </AdminCell>
+              <AdminCell label="Tingkatan">
                 <span class="text-nowrap">{{ student.classLevel }}</span>
-              </CardCell>
-            </CardRow>
+              </AdminCell>
+            </AdminRow>
           </template>
 
           <template #footer>
@@ -670,7 +698,7 @@ const STUDENT_COLUMNS = [
               />
             </div>
           </template>
-        </CardTable>
+        </AdminTable>
       </section>
     </template>
   </DsPage>

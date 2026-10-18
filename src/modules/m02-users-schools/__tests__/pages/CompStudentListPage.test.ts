@@ -89,18 +89,7 @@ describe('CompStudentListPage (M02 S6) content', () => {
       t(w, 'comp-table')
         .findAll('th')
         .map((h) => h.text()),
-    ).toEqual([
-      '',
-      'Nama',
-      'Username',
-      'IC',
-      'Sekolah',
-      'Kelas',
-      'Cikgu',
-      'Akaun',
-      'Syiling',
-      'Pakej tamat',
-    ])
+    ).toEqual(['', 'Nama', 'IC', 'Sekolah', 'Kelas / Cikgu', 'Akaun', 'Syiling', 'Pakej tamat'])
     const rows = w.findAll('[data-testid=comp-row]')
     expect(rows).toHaveLength(3)
     expect(rows[0]!.get('[data-testid=comp-name]').attributes('href')).toBe(
@@ -110,8 +99,10 @@ describe('CompStudentListPage (M02 S6) content', () => {
     expect(rows[0]!.get('[data-testid=comp-coins]').text()).toBe('OFF')
     expect(rows[0]!.text()).toContain('31/12/2026')
     // No IC: an empty cell (FR-M02-66).
-    expect(rows[0]!.findAll('td')[3]!.text()).toBe('')
-    expect(rows[1]!.findAll('td')[3]!.text()).not.toBe('')
+    expect(rows[0]!.findAll('td')[2]!.text()).toBe('')
+    expect(rows[1]!.findAll('td')[2]!.text()).not.toBe('')
+    // The username sits under the name.
+    expect(rows[0]!.text()).toContain('000001@prestasiplus.my')
   })
 
   it('shows TIDAK AKTIF and ON for an inactive student with coins on', async () => {
@@ -125,8 +116,7 @@ describe('CompStudentListPage (M02 S6) content', () => {
 
   it('scrolls the table inside its card (DV-M02-05)', async () => {
     const w = await render()
-    expect(w.find('.overflow-x-auto').exists()).toBe(true)
-    expect(w.find('.overflow-x-auto [style*="min-width"]').exists()).toBe(true)
+    expect(w.find('[data-ds="admin-table"]').classes()).toContain('max-xl:overflow-x-auto')
   })
 
   it('shows the empty text with the "Daftar baru." link', async () => {
@@ -144,9 +134,9 @@ describe('CompStudentListPage (M02 S6) content', () => {
     expect(t(w, 'comp-empty').text().replace(/s+/g, ' ')).toBe(
       'Tiada pelajar komplimen lagi. Daftar baru.',
     )
-    expect(t(w, 'comp-empty').element.closest('.overflow-x-auto')).toBeNull()
+    expect(t(w, 'comp-empty').element.closest('tbody')).toBeNull()
     expect(t(w, 'comp-empty-link').attributes('href')).toBe('/admin/comp-students/create')
-    expect(t(w, 'comp-pager').text()).toContain('Showing 0 of 90 results')
+    expect(t(w, 'comp-pager').find('nav').exists()).toBe(true)
   })
 
   it('shows a skeleton while loading, then the error box with a retry', async () => {
@@ -168,7 +158,7 @@ describe('CompStudentListPage (M02 S6) content', () => {
     api.fetchCompStudents.mockResolvedValue(result([student(51)], 90, 2))
     const w = await render('/admin/comp-students?page=2')
     expect(api.fetchCompStudents).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }))
-    expect(t(w, 'comp-pager').text()).toContain('Showing 51 to 90 of 90 results')
+    expect(t(w, 'comp-pager').text()).toContain('Menunjukkan 51-51 daripada 90 hasil')
   })
 })
 

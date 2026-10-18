@@ -90,7 +90,11 @@ async function assign(card: AdminPackageCard): Promise<void> {
 
 <template>
   <DsPage data-testid="packages-page">
-    <div v-if="error && !isNotFound(error)" class="flex flex-col gap-3" data-testid="packages-error">
+    <div
+      v-if="error && !isNotFound(error)"
+      class="flex flex-col gap-3"
+      data-testid="packages-error"
+    >
       <AdminAlert :messages="errorLines(error)" />
       <div class="flex flex-wrap gap-3">
         <UButton label="Cuba Lagi" @click="reload()" />
@@ -119,9 +123,12 @@ async function assign(card: AdminPackageCard): Promise<void> {
 
       <UCard data-testid="packages-school">
         <div class="flex items-center gap-4">
-          <DsIconChip icon="i-ph-buildings" size="lg" />
+          <DsIconChip icon="i-ph-buildings" />
           <div class="flex min-w-0 flex-col gap-1">
-            <h3 class="text-heading break-words text-highlighted" data-testid="packages-school-name">
+            <h3
+              class="text-heading break-words text-highlighted"
+              data-testid="packages-school-name"
+            >
               {{ data.school?.name }}
             </h3>
             <p v-if="data.school" class="text-label text-muted" data-testid="packages-school-meta">
@@ -156,7 +163,7 @@ async function assign(card: AdminPackageCard): Promise<void> {
             @submit.prevent="assign(card)"
           >
             <div class="flex items-start gap-3">
-              <UBadge size="lg" :label="card.code" />
+              <UBadge :label="card.code" />
               <div class="min-w-0 flex-1">
                 <h3 class="text-subheading text-highlighted">
                   {{ card.name.replace('SPM ', '') }}
@@ -185,7 +192,6 @@ async function assign(card: AdminPackageCard): Promise<void> {
                 :min="QUOTA_MIN"
                 :max="QUOTA_MAX"
                 :placeholder="placeholders[card.formLevel]"
-                size="lg"
                 class="w-full"
                 data-testid="package-quota"
               />

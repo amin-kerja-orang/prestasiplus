@@ -14,8 +14,9 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 
+import { AdminKpiStrip, AdminPageHeader } from '@/ds/admin'
 import { alertNative, useApi, useFlash } from '@/composables'
-import { DsDataTable, DsPage, useConfirm, type CardField } from '@/ds'
+import { DsDataTable, DsPage, DsStatTile, useConfirm, type CardField } from '@/ds'
 
 import {
   deleteSubject,
@@ -27,12 +28,7 @@ import ErrorBox from '../components/ErrorBox.vue'
 import ActiveSwitch from '../components/subjects-levels/ActiveSwitch.vue'
 import ColorSwatch from '../components/subjects-levels/ColorSwatch.vue'
 import SubjectIconTile from '../components/subjects-levels/SubjectIconTile.vue'
-import {
-  COPY,
-  SUBJECT_ROUTES,
-  errorLines,
-  isNetworkFailure,
-} from '../lib/subjects-levels'
+import { COPY, SUBJECT_ROUTES, errorLines, isNetworkFailure } from '../lib/subjects-levels'
 
 const flash = useFlash()
 const confirm = useConfirm()
@@ -46,6 +42,11 @@ watch(data, (result) => {
 })
 type SubjectRow = AdminSubjectListItem & Record<string, unknown>
 const tableRows = computed(() => rows.value as SubjectRow[])
+const kpi = computed(() => ({
+  active: rows.value.filter((r) => r.isActive).length,
+  core: rows.value.filter((r) => r.isCore).length,
+  questions: rows.value.reduce((sum, r) => sum + r.questionCount, 0),
+}))
 
 const columns: TableColumn<SubjectRow>[] = [
   { accessorKey: 'id', header: '#' },
@@ -99,7 +100,6 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
     deleting.value = false
   }
 }
-
 </script>
 
 <template>
@@ -107,27 +107,50 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
     <ErrorBox v-if="error" :messages="COPY.loadFailed" data-testid="subjects-error" />
 
     <template v-else-if="data">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="text-subheading text-highlighted">Senarai Subjek</h2>
-          <p class="text-body text-muted" data-testid="subjects-count">
-            Jumlah: {{ rows.length }} subjek
-          </p>
-        </div>
-        <UButton
-          :to="{ name: SUBJECT_ROUTES.create }"
-          icon="i-ph-plus"
-          class="min-h-11"
-          data-testid="subjects-add"
-        >
-          Tambah
-        </UButton>
-      </div>
+      <AdminPageHeader>
+        <template #subtitle>
+          <div>
+            <h2 class="text-subheading text-highlighted">Senarai Subjek</h2>
+            <p class="text-body text-muted" data-testid="subjects-count">
+              Jumlah: {{ rows.length }} subjek
+            </p>
+          </div>
+        </template>
+        <template #actions>
+          <UButton
+            :to="{ name: SUBJECT_ROUTES.create }"
+            icon="i-ph-plus"
+            data-testid="subjects-add"
+          >
+            Tambah
+          </UButton>
+        </template>
+      </AdminPageHeader>
+
+      <AdminKpiStrip label="Ringkasan subjek" class="xl:grid-cols-4 2xl:grid-cols-4">
+        <DsStatTile compact :value="rows.length" unit="Jumlah Subjek" icon="i-ph-books" />
+        <DsStatTile
+          compact
+          accent="win"
+          :value="kpi.active"
+          unit="Aktif"
+          icon="i-ph-check-circle"
+        />
+        <DsStatTile compact accent="friend" :value="kpi.core" unit="Teras" icon="i-ph-star" />
+        <DsStatTile
+          compact
+          accent="trial"
+          :value="kpi.questions"
+          unit="Jumlah Soalan"
+          icon="i-ph-question"
+        />
+      </AdminKpiStrip>
 
       <DsDataTable
         :data="tableRows"
         :columns="columns"
         caption="Senarai subjek"
+        dense
         :page-size="Math.max(tableRows.length, 1)"
         card-title="name"
         :card-fields="cardFields"
@@ -137,7 +160,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
           <SubjectIconTile :icon="row.original.icon" :color="row.original.color" />
         </template>
         <template #name-cell="{ row }">
-          <div class="min-w-40" data-testid="subject-name-cell">
+          <div class="max-w-40 min-w-32 whitespace-normal" data-testid="subject-name-cell">
             <div class="text-label text-highlighted">{{ row.original.name }}</div>
             <div
               v-if="row.original.levels.length > 0"
@@ -145,7 +168,11 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
               data-testid="subject-levels"
             >
               <UIcon name="i-ph-graduation-cap" class="mt-1 size-4 shrink-0" />
-              <span>{{ row.original.levels.map((level) => level.name).join(', ') }}</span>
+              <span
+                class="line-clamp-2 min-w-0"
+                :title="row.original.levels.map((level) => level.name).join(', ')"
+                >{{ row.original.levels.map((level) => level.name).join(', ') }}</span
+              >
             </div>
           </div>
         </template>
@@ -154,7 +181,6 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
             color="neutral"
             variant="subtle"
             :label="row.original.code"
-           
             data-testid="subject-code"
           />
         </template>
@@ -170,11 +196,18 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
             label="Teras"
             data-testid="subject-core"
           />
-          <UBadge v-else color="neutral" variant="subtle" label="Elektif" data-testid="subject-core" />
+          <UBadge
+            v-else
+            color="neutral"
+            variant="subtle"
+            label="Elektif"
+            data-testid="subject-core"
+          />
         </template>
         <template #questionCount-cell="{ row }">
           <UBadge color="warning" variant="subtle" data-testid="subject-questions"
-            >{{ row.original.questionCount }}<span class="hidden sm:inline">{{ ' soalan' }}</span></UBadge
+            >{{ row.original.questionCount
+            }}<span class="hidden 2xl:inline">{{ ' soalan' }}</span></UBadge
           >
         </template>
         <template #isActive-cell="{ row }">
@@ -193,7 +226,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
               color="neutral"
               variant="ghost"
               icon="i-ph-pencil-simple"
-              class="size-11 justify-center"
+              class="size-11 justify-center xl:size-10"
               data-testid="subject-edit"
             />
             <UButton
@@ -204,7 +237,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
               variant="ghost"
               icon="i-ph-trash"
               :disabled="deleting"
-              class="size-11 justify-center"
+              class="size-11 justify-center xl:size-10"
               data-testid="subject-delete"
               @click="remove(row.original)"
             />
@@ -212,7 +245,10 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
         </template>
         <template #card-actions="{ row }">
           <div class="flex items-center gap-1">
-            <ActiveSwitch :active="row.isActive as boolean" @toggle="toggle(row as AdminSubjectListItem)" />
+            <ActiveSwitch
+              :active="row.isActive as boolean"
+              @toggle="toggle(row as AdminSubjectListItem)"
+            />
             <UButton
               :to="{ name: SUBJECT_ROUTES.edit, params: { id: row.id as number } }"
               aria-label="Edit"

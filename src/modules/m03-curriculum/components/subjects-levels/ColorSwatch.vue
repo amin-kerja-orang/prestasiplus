@@ -13,8 +13,10 @@ defineProps<{ color: string }>()
       :style="{ backgroundColor: color }"
       aria-hidden="true"
     ></span>
-    <span class="hidden font-mono text-caption text-muted sm:inline" data-testid="subject-color-hex">{{
-      color
-    }}</span>
+    <span
+      class="hidden font-mono text-caption text-muted 2xl:inline"
+      data-testid="subject-color-hex"
+      >{{ color }}</span
+    >
   </span>
 </template>

@@ -3,9 +3,6 @@
  * buttons and the small helpers the three pages share.
  */
 
-import { Ban, Coins, UserCheck, UserX } from '@lucide/vue'
-import type { Component } from 'vue'
-
 import { clock } from '@/lib/time'
 
 import type { CompBulkAction } from '../api/comp-students'
@@ -24,37 +21,18 @@ export const compDetailPath = (id: number): string => `${COMP_LIST_PATH}/${Strin
 export interface BulkButton {
   action: CompBulkAction
   label: string
-  icon: Component
-  /** Full class strings (finite lookup, overview §8.2 rule 2). */
-  cls: string
+  /** Phosphor icon class. */
+  icon: string
+  /** Nuxt UI button colour (a token colour, never a raw one). */
+  color: 'error' | 'warning' | 'neutral' | 'success'
 }
 
 /** The four bulk-bar submit buttons in live order (FR-M02-67). */
 export const BULK_BUTTONS: readonly BulkButton[] = [
-  {
-    action: 'coins_off',
-    label: 'Matikan syiling',
-    icon: Ban,
-    cls: 'bg-rose-600 text-white hover:bg-rose-700',
-  },
-  {
-    action: 'coins_on',
-    label: 'Hidupkan syiling',
-    icon: Coins,
-    cls: 'bg-amber-500 text-white hover:bg-amber-600',
-  },
-  {
-    action: 'deactivate',
-    label: 'Nyahaktif akaun',
-    icon: UserX,
-    cls: 'bg-slate-600 text-white hover:bg-slate-700',
-  },
-  {
-    action: 'activate',
-    label: 'Aktifkan akaun',
-    icon: UserCheck,
-    cls: 'bg-emerald-600 text-white hover:bg-emerald-700',
-  },
+  { action: 'coins_off', label: 'Matikan syiling', icon: 'i-ph-prohibit', color: 'error' },
+  { action: 'coins_on', label: 'Hidupkan syiling', icon: 'i-ph-coins', color: 'warning' },
+  { action: 'deactivate', label: 'Nyahaktif akaun', icon: 'i-ph-user-minus', color: 'neutral' },
+  { action: 'activate', label: 'Aktifkan akaun', icon: 'i-ph-user-check', color: 'success' },
 ]
 
 /** S7 "Tarikh tamat pakej" default: 31 December of the current year (FR-M02-72). */
@@ -65,10 +43,9 @@ export function defaultPackageExpiry(): string {
 /** S7 textarea placeholder: the same line twice (FR-M02-72). */
 export const COMP_PASTE_PLACEHOLDER = 'NAMA PENUH, NOMBOR KP\nNAMA PENUH, NOMBOR KP'
 
-/** "AKTIF" / "TIDAK AKTIF" text colour (S6 "Akaun", S8 "Status akaun"). */
-export const accountClass = (active: boolean): string =>
-  active ? 'text-emerald-700' : 'text-slate-500'
+/** Badge colour of "AKTIF" / "TIDAK AKTIF" (S6 "Akaun", S8 "Status akaun"). */
+export const accountColor = (active: boolean): 'success' | 'neutral' =>
+  active ? 'success' : 'neutral'
 
-/** "OFF" rose / "ON" amber (S6 "Syiling"). */
-export const coinsClass = (enabled: boolean): string =>
-  enabled ? 'text-amber-700' : 'text-rose-600'
+/** Badge colour of the coins state: "ON" is warning (amber), "OFF" error (S6 "Syiling"). */
+export const coinsColor = (enabled: boolean): 'warning' | 'error' => (enabled ? 'warning' : 'error')

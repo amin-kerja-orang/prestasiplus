@@ -48,7 +48,11 @@ const percent = computed(() => quotaPercent(used.value, total.value))
           <UIcon name="i-ph-users" class="size-4" aria-hidden="true" />
           Kuota Pelajar
         </span>
-        <span class="text-label" :class="full ? 'text-error' : 'text-success'" data-testid="quota-figures">
+        <span
+          class="text-label"
+          :class="full ? 'text-error' : 'text-success'"
+          data-testid="quota-figures"
+        >
           {{ used }} / {{ total }}
         </span>
       </div>
@@ -58,7 +62,11 @@ const percent = computed(() => quotaPercent(used.value, total.value))
         :aria-label="`Kuota digunakan ${String(percent)}%`"
         data-testid="quota-bar"
       />
-      <p class="text-caption" :class="full ? 'text-error' : 'text-success'" data-testid="quota-note">
+      <p
+        class="text-caption"
+        :class="full ? 'text-error' : 'text-success'"
+        data-testid="quota-note"
+      >
         <template v-if="!full">Baki kuota: {{ remaining }} pelajar</template>
         <template v-else>Kuota penuh! Sila tingkatkan kuota dahulu.</template>
       </p>

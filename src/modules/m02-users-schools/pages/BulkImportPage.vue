@@ -12,6 +12,7 @@
  */
 import { computed, nextTick, onMounted, ref } from 'vue'
 
+import { AdminCard, AdminFormSection, AdminPageHeader, AdminStickyBar } from '@/ds/admin'
 import { useFlash } from '@/composables'
 import { DsIconChip, DsPage } from '@/ds'
 
@@ -104,121 +105,124 @@ const ROLE_ICONS: Record<string, string> = {
 
 <template>
   <DsPage data-testid="bulk-import-page">
-    <UCard class="max-w-4xl" data-testid="bulk-hero">
-      <div class="flex items-start gap-4">
-        <DsIconChip icon="i-ph-users-three" size="lg" />
-        <div class="flex min-w-0 flex-col gap-2">
-          <h3 class="text-subheading text-highlighted">Import Pengguna Pukal</h3>
-          <p class="text-label text-muted">
-            Daftarkan guru, ibu bapa, atau pentadbir sekolah secara pukal.
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <UBadge
-              color="neutral"
-              variant="subtle"
-              icon="i-ph-chalkboard-teacher"
-              label="Guru"
-            />
-            <UBadge color="neutral" variant="subtle" icon="i-ph-users" label="Ibu Bapa" />
-            <UBadge color="neutral" variant="subtle" icon="i-ph-shield-check" label="Admin" />
-          </div>
-        </div>
-      </div>
-    </UCard>
+    <AdminPageHeader
+      title="Import Pengguna Pukal"
+      subtitle="Daftarkan guru, ibu bapa, atau pentadbir sekolah secara pukal."
+    >
+      <template #actions>
+        <UButton
+          :to="USERS_LIST_PATH"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-arrow-left"
+          label="Kembali"
+          data-testid="bulk-back"
+        />
+      </template>
+    </AdminPageHeader>
 
-    <UCard class="max-w-4xl">
+    <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
       <form
         method="post"
         enctype="multipart/form-data"
-        class="flex min-w-0 flex-col gap-6"
+        class="flex min-w-0 flex-col gap-6 xl:col-span-2"
         data-testid="bulk-form"
         @submit.prevent="submit"
       >
-        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-file-arrow-up" class="size-5 text-muted" aria-hidden="true" />
-          Borang Import Pengguna
-        </h2>
+        <h2 class="sr-only">Borang Import Pengguna</h2>
 
-        <div ref="alertBox">
+        <div ref="alertBox" class="empty:hidden">
           <AdminAlert :messages="errors" data-testid="bulk-alert" />
         </div>
 
-        <fieldset class="flex min-w-0 flex-col gap-2">
-          <legend class="mb-2 flex items-center gap-2 text-label text-default">
-            <UIcon name="i-ph-user-check" class="size-4 text-muted" aria-hidden="true" />
-            Peranan Pengguna <span class="text-error">*</span>
-          </legend>
-          <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <NativeChoice
-              v-for="o in BULK_ROLE_OPTIONS"
-              :key="o.value"
-              v-model="role"
-              name="role"
-              :value="o.value"
-              required
-              :data-testid="`bulk-role-${o.value}`"
-            >
-              <UIcon :name="ROLE_ICONS[o.icon] ?? 'i-ph-buildings'" class="size-4" aria-hidden="true" />
-              {{ o.label }}
-            </NativeChoice>
+        <AdminFormSection
+          title="Peranan dan Sekolah"
+          description="Pilih jenis pengguna dan sekolah mereka."
+          icon="i-ph-user-check"
+        >
+          <fieldset class="flex min-w-0 flex-col gap-3 md:col-span-2">
+            <legend class="mb-3 flex items-center gap-2 text-label text-default">
+              Peranan Pengguna <span class="text-error">*</span>
+            </legend>
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <NativeChoice
+                v-for="o in BULK_ROLE_OPTIONS"
+                :key="o.value"
+                v-model="role"
+                name="role"
+                :value="o.value"
+                required
+                :data-testid="`bulk-role-${o.value}`"
+              >
+                <UIcon
+                  :name="ROLE_ICONS[o.icon] ?? 'i-ph-buildings'"
+                  class="size-4"
+                  aria-hidden="true"
+                />
+                {{ o.label }}
+              </NativeChoice>
+            </div>
+          </fieldset>
+
+          <div v-if="showSchool" class="md:col-span-2">
+            <BulkSchoolPicker v-model="school" />
           </div>
-        </fieldset>
 
-        <BulkSchoolPicker v-if="showSchool" v-model="school" />
-
-        <AdminField
-          for="bulk-default-password"
-          label="Kata Laluan Default (untuk pengguna tanpa kata laluan)"
-          icon="i-ph-key"
-          hint="Kata laluan jika tidak dinyatakan dalam data import."
-        >
-          <UInput
-            id="bulk-default-password"
-            v-model="defaultPassword"
-            type="text"
-            name="default_password"
-            autocomplete="off"
-            :placeholder="configuredDefault"
-            size="lg"
-            class="w-full"
-            data-testid="bulk-default-password"
-          />
-        </AdminField>
-
-        <ImportSourceFields
-          v-model:mode="mode"
-          v-model:paste="paste"
-          v-model:file="file"
-          :paste-placeholder="BULK_PASTE_PLACEHOLDER"
-        >
-          <template #format>
-            <NativePanel
-              tone="soft"
-              class="flex flex-col gap-1 text-caption text-muted"
-              data-testid="bulk-format"
+          <div class="md:col-span-2">
+            <AdminField
+              for="bulk-default-password"
+              label="Kata Laluan Default (untuk pengguna tanpa kata laluan)"
+              icon="i-ph-key"
+              hint="Kata laluan jika tidak dinyatakan dalam data import."
             >
-              <p class="flex items-center gap-2 text-label text-default">
-                <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
-                Format CSV:
-              </p>
-              <p class="break-words">Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)</p>
-              <p class="break-words">
-                Contoh: Muhammad Fulan bin Fulan, ahmad@email.com, 0123456789, pass123
-              </p>
-              <p>Baris pertama akan dilangkau jika ia mengandungi tajuk (header).</p>
-            </NativePanel>
-          </template>
-        </ImportSourceFields>
+              <UInput
+                id="bulk-default-password"
+                v-model="defaultPassword"
+                type="text"
+                name="default_password"
+                autocomplete="off"
+                :placeholder="configuredDefault"
+                class="w-full"
+                data-testid="bulk-default-password"
+              />
+            </AdminField>
+          </div>
+        </AdminFormSection>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <UButton
-            :to="USERS_LIST_PATH"
-            color="neutral"
-            variant="ghost"
-            icon="i-ph-arrow-left"
-            label="Kembali"
-            data-testid="bulk-back"
-          />
+        <AdminFormSection
+          title="Data Pengguna"
+          description="Muat naik CSV atau tampal data secara manual."
+          icon="i-ph-file-arrow-up"
+        >
+          <div class="md:col-span-2">
+            <ImportSourceFields
+              v-model:mode="mode"
+              v-model:paste="paste"
+              v-model:file="file"
+              :paste-placeholder="BULK_PASTE_PLACEHOLDER"
+            >
+              <template #format>
+                <NativePanel
+                  tone="soft"
+                  class="flex flex-col gap-1 text-label text-muted"
+                  data-testid="bulk-format"
+                >
+                  <p class="flex items-center gap-2 text-body text-default">
+                    <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
+                    Format CSV:
+                  </p>
+                  <p class="break-words">Nama, Emel, Telefon (pilihan), Kata Laluan (pilihan)</p>
+                  <p class="break-words">
+                    Contoh: Muhammad Fulan bin Fulan, ahmad@email.com, 0123456789, pass123
+                  </p>
+                  <p>Baris pertama akan dilangkau jika ia mengandungi tajuk (header).</p>
+                </NativePanel>
+              </template>
+            </ImportSourceFields>
+          </div>
+        </AdminFormSection>
+
+        <AdminStickyBar>
           <UButton
             type="submit"
             icon="i-ph-users-three"
@@ -227,30 +231,56 @@ const ROLE_ICONS: Record<string, string> = {
             :disabled="submitting"
             data-testid="bulk-submit"
           />
-        </div>
+        </AdminStickyBar>
       </form>
-    </UCard>
 
-    <UCard class="max-w-4xl" data-testid="bulk-notes">
-      <h3 class="mb-2 flex items-center gap-2 text-label text-highlighted">
-        <UIcon name="i-ph-lightbulb" class="size-4 text-muted" aria-hidden="true" />
-        Nota Penting:
-      </h3>
-      <ul class="flex flex-col gap-1 text-label text-muted">
-        <li>• Emel sedia ada akan dilangkau automatik</li>
-        <li>• Guru &amp; admin sekolah dikaitkan dengan sekolah dipilih</li>
-        <li>• Kata laluan boleh dinyatakan per-pengguna di lajur ke-4</li>
-        <li>
-          • Pelajar DELIMa &rarr;
-          <ULink
-            :to="STUDENT_IMPORT_PATH"
-            class="text-primary"
-            data-testid="bulk-students-link"
-          >
-            Import Pelajar
-          </ULink>
-        </li>
-      </ul>
-    </UCard>
+      <aside class="flex min-w-0 flex-col gap-6">
+        <AdminCard class="flex flex-col gap-4" data-testid="bulk-hero">
+          <div class="flex items-center gap-4">
+            <DsIconChip icon="i-ph-users-three" size="lg" />
+            <h3 class="text-subheading text-highlighted">Jenis pengguna</h3>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <UBadge
+              color="neutral"
+              variant="subtle"
+              size="lg"
+              icon="i-ph-chalkboard-teacher"
+              label="Guru"
+            />
+            <UBadge color="neutral" variant="subtle" size="lg" icon="i-ph-users" label="Ibu Bapa" />
+            <UBadge
+              color="neutral"
+              variant="subtle"
+              size="lg"
+              icon="i-ph-shield-check"
+              label="Admin"
+            />
+          </div>
+        </AdminCard>
+
+        <AdminCard data-testid="bulk-notes">
+          <h3 class="mb-3 flex items-center gap-2 text-body text-highlighted">
+            <UIcon name="i-ph-lightbulb" class="size-5 text-muted" aria-hidden="true" />
+            Nota Penting:
+          </h3>
+          <ul class="flex flex-col gap-2 text-body text-muted">
+            <li>• Emel sedia ada akan dilangkau automatik</li>
+            <li>• Guru &amp; admin sekolah dikaitkan dengan sekolah dipilih</li>
+            <li>• Kata laluan boleh dinyatakan per-pengguna di lajur ke-4</li>
+            <li>
+              • Pelajar DELIMa &rarr;
+              <ULink
+                :to="STUDENT_IMPORT_PATH"
+                class="text-primary"
+                data-testid="bulk-students-link"
+              >
+                Import Pelajar
+              </ULink>
+            </li>
+          </ul>
+        </AdminCard>
+      </aside>
+    </div>
   </DsPage>
 </template>

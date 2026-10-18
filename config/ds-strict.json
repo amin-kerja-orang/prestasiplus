@@ -162,7 +162,10 @@
     { "glob": "src/modules/m03-curriculum/pages/{CurriculumBrowser,Chapter{Create,Edit},Topic{Create,Edit},Subject{List,Form},Level{List,Form}}Page.vue", "level": "page" },
     { "glob": "src/modules/m03-curriculum/components/curriculum/*.vue", "level": "page" },
     { "glob": "src/modules/m03-curriculum/components/ErrorBox.vue", "level": "page" },
-    { "glob": "src/modules/m03-curriculum/components/subjects-levels/{ActiveSwitch,FormActions}.vue", "level": "page" }
+    { "glob": "src/modules/m03-curriculum/components/subjects-levels/{ActiveSwitch,FormActions}.vue", "level": "page" },
+    { "glob": "src/modules/m02-users-schools/pages/CompStudent*.vue", "level": "page" },
+    { "glob": "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue", "level": "page" },
+    { "glob": "src/components/admin/Admin{PageHeader,KpiStrip,Toolbar,Pager,RowMenu,FormSection,StickyBar,Identity,Row}.vue", "level": "ds" }
   ],
   "exempt": [
     "src/theme/**"

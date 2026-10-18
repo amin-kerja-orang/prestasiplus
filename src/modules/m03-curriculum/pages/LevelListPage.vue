@@ -11,8 +11,9 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 
+import { AdminKpiStrip, AdminPageHeader } from '@/ds/admin'
 import { alertNative, useApi, useFlash } from '@/composables'
-import { DsDataTable, DsPage, useConfirm, type CardField } from '@/ds'
+import { DsDataTable, DsPage, DsStatTile, useConfirm, type CardField } from '@/ds'
 
 import {
   deleteLevel,
@@ -42,6 +43,11 @@ watch(data, (result) => {
 })
 type LevelRow = AdminEducationLevelListItem & Record<string, unknown>
 const tableRows = computed(() => rows.value as LevelRow[])
+const kpi = computed(() => ({
+  active: rows.value.filter((r) => r.isActive).length,
+  subjects: rows.value.reduce((sum, r) => sum + r.subjectCount, 0),
+  questions: rows.value.reduce((sum, r) => sum + r.questionCount, 0),
+}))
 
 const columns: TableColumn<LevelRow>[] = [
   { accessorKey: 'id', header: '#' },
@@ -101,7 +107,6 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
     deleting.value = false
   }
 }
-
 </script>
 
 <template>
@@ -109,27 +114,46 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
     <ErrorBox v-if="error" :messages="COPY.loadFailed" data-testid="levels-error" />
 
     <template v-else-if="data">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="text-subheading text-highlighted">Senarai Tahap Pendidikan</h2>
-          <p class="text-body text-muted" data-testid="levels-count">
-            Jumlah: {{ rows.length }} tahap
-          </p>
-        </div>
-        <UButton
-          :to="{ name: LEVEL_ROUTES.create }"
-          icon="i-ph-plus"
-          class="min-h-11"
-          data-testid="levels-add"
-        >
-          Tambah Tahap
-        </UButton>
-      </div>
+      <AdminPageHeader>
+        <template #subtitle>
+          <div>
+            <h2 class="text-subheading text-highlighted">Senarai Tahap Pendidikan</h2>
+            <p class="text-body text-muted" data-testid="levels-count">
+              Jumlah: {{ rows.length }} tahap
+            </p>
+          </div>
+        </template>
+        <template #actions>
+          <UButton :to="{ name: LEVEL_ROUTES.create }" icon="i-ph-plus" data-testid="levels-add">
+            Tambah Tahap
+          </UButton>
+        </template>
+      </AdminPageHeader>
+
+      <AdminKpiStrip label="Ringkasan tahap" class="xl:grid-cols-4 2xl:grid-cols-4">
+        <DsStatTile compact :value="rows.length" unit="Jumlah Tahap" icon="i-ph-graduation-cap" />
+        <DsStatTile
+          compact
+          accent="win"
+          :value="kpi.active"
+          unit="Aktif"
+          icon="i-ph-check-circle"
+        />
+        <DsStatTile compact accent="friend" :value="kpi.subjects" unit="Subjek" icon="i-ph-books" />
+        <DsStatTile
+          compact
+          accent="trial"
+          :value="kpi.questions"
+          unit="Jumlah Soalan"
+          icon="i-ph-question"
+        />
+      </AdminKpiStrip>
 
       <DsDataTable
         :data="tableRows"
         :columns="columns"
         caption="Senarai tahap pendidikan"
+        dense
         :page-size="Math.max(tableRows.length, 1)"
         card-title="name"
         :card-fields="cardFields"
@@ -198,7 +222,10 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
         </template>
         <template #card-actions="{ row }">
           <div class="flex items-center gap-1">
-            <ActiveSwitch :active="row.isActive as boolean" @toggle="toggle(row as AdminEducationLevelListItem)" />
+            <ActiveSwitch
+              :active="row.isActive as boolean"
+              @toggle="toggle(row as AdminEducationLevelListItem)"
+            />
             <UButton
               :to="{ name: LEVEL_ROUTES.edit, params: { id: row.id as number } }"
               aria-label="Edit"

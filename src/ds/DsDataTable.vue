@@ -36,6 +36,8 @@ const props = withDefaults(
     sortItems?: { label: string; value: string }[]
     sortLabel?: string
     retryLabel?: string
+    /** Tighter cell padding (wide admin tables with many columns). */
+    dense?: boolean
   }>(),
   {
     caption: undefined,
@@ -49,6 +51,7 @@ const props = withDefaults(
     sortItems: () => [],
     sortLabel: 'Isih',
     retryLabel: 'Cuba Lagi',
+    dense: false,
   },
 )
 
@@ -81,12 +84,12 @@ const cols = computed<TableColumn<T>[]>(() =>
   ),
 )
 
-const tableUi = {
+const tableUi = computed(() => ({
   root: 'max-w-full',
-  th: 'text-overline text-muted',
-  td: 'tabular min-h-11',
+  th: props.dense ? 'text-overline text-muted px-2' : 'text-overline text-muted',
+  td: props.dense ? 'tabular min-h-11 px-2' : 'tabular min-h-11',
   tr: 'even:bg-soft hover:bg-elevated',
-}
+}))
 
 function cell(row: T, key: string): string {
   const v = row[key]
@@ -102,7 +105,9 @@ function cell(row: T, key: string): string {
       variant="subtle"
       icon="i-ph-warning-circle"
       :title="error"
-      :actions="[{ label: retryLabel, color: 'neutral', variant: 'soft', onClick: () => emit('retry') }]"
+      :actions="[
+        { label: retryLabel, color: 'neutral', variant: 'soft', onClick: () => emit('retry') },
+      ]"
       role="alert"
     />
     <template v-else>

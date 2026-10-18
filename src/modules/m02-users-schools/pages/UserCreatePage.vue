@@ -17,6 +17,7 @@ import { useRouter } from 'vue-router'
 
 import type { Role } from '@/modules/m01-authentication'
 
+import { AdminFormSection, AdminPageHeader, AdminStickyBar } from '@/ds/admin'
 import { useFlash } from '@/composables'
 import { DsPage } from '@/ds'
 
@@ -31,13 +32,13 @@ import {
 import AdminAlert from '../components/AdminAlert.vue'
 import AdminField from '../components/AdminField.vue'
 import GradeCards from '../components/GradeCards.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import OfficerSelects from '../components/OfficerSelects.vue'
 import ParentStudentLinker from '../components/ParentStudentLinker.vue'
 import SchoolAdminGenerator from '../components/SchoolAdminGenerator.vue'
 import StudentSchoolPicker from '../components/StudentSchoolPicker.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
 import { errorLines, USERS_LIST_PATH } from '../lib/user-list'
+import AdminSelect from '../components/native/AdminSelect.vue'
 import {
   generatedAdminEmail,
   generatedAdminName,
@@ -223,219 +224,214 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPage data-testid="user-create-page">
-    <UCard class="max-w-4xl">
-      <form
-        method="post"
-        class="flex min-w-0 flex-col gap-6"
-        data-testid="user-form"
-        @submit.prevent="submit"
+    <AdminPageHeader
+      title="Borang Pendaftaran Pengguna"
+      subtitle="Isi maklumat untuk mendaftarkan pengguna baru"
+    />
+    <form
+      method="post"
+      class="flex w-full min-w-0 flex-col gap-6"
+      data-testid="user-form"
+      @submit.prevent="submit"
+    >
+      <div ref="alertBox" class="empty:hidden">
+        <AdminAlert :messages="errors" data-testid="user-form-alert" />
+      </div>
+
+      <AdminFormSection
+        title="Peranan"
+        description="Pilih peranan; borang akan menyesuaikan diri."
+        icon="i-ph-user-gear"
       >
-        <div class="flex items-center gap-3">
-          <UIcon name="i-ph-user-plus" class="size-6 shrink-0 text-primary" aria-hidden="true" />
-          <div class="min-w-0">
-            <h2 class="text-subheading text-highlighted">Borang Pendaftaran Pengguna</h2>
-            <p class="text-label text-muted">Isi maklumat untuk mendaftarkan pengguna baru</p>
-          </div>
-        </div>
-
-        <div ref="alertBox" >
-          <AdminAlert :messages="errors" data-testid="user-form-alert" />
-        </div>
-
-        <AdminField for="user-role" label="Peranan" icon="i-ph-user-gear" required>
-          <NativeSelect
-            id="user-role"
-            v-model="role"
-            name="role"
-            required
-            data-testid="user-role"
-          >
+        <AdminField for="user-role" label="Peranan" required>
+          <AdminSelect id="user-role" v-model="role" name="role" required data-testid="user-role">
             <option value="">-- Pilih Peranan --</option>
             <option v-for="o in ROLE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-          </NativeSelect>
+          </AdminSelect>
+        </AdminField>
+      </AdminFormSection>
+
+      <!-- school_admin (FR-M02-27…31) -->
+      <AdminFormSection
+        v-if="isSchoolAdmin"
+        title="Admin Sekolah"
+        description="Cari sekolah dan janakan akaun pentadbir."
+        icon="i-ph-buildings"
+      >
+        <div class="md:col-span-2">
+          <SchoolAdminGenerator
+            v-model:school="genSchool"
+            v-model:generated="generated"
+            v-model:name="genName"
+            v-model:phone="genPhone"
+            :password="defaults?.schoolAdminDefaultPassword ?? ''"
+            :generating="generating"
+            @generate="generate"
+            @copy="copyText"
+          />
+        </div>
+      </AdminFormSection>
+
+      <!-- standard roles and officers (FR-M02-22, FR-M02-32) -->
+      <AdminFormSection
+        v-if="isStandard || isOfficer"
+        title="Maklumat Akaun"
+        :description="
+          isOfficer ? 'Maklumat pegawai dan kata laluan.' : 'Maklumat pengguna dan kata laluan.'
+        "
+        icon="i-ph-identification-card"
+        data-testid="user-fields"
+      >
+        <AdminField for="user-name" label="Nama" icon="i-ph-user" required>
+          <UInput
+            id="user-name"
+            v-model="form.name"
+            type="text"
+            name="name"
+            :placeholder="isOfficer ? 'Nama penuh pegawai' : 'Nama penuh'"
+            class="w-full"
+            data-testid="user-name"
+          />
         </AdminField>
 
-        <!-- school_admin (FR-M02-27…31) -->
-        <SchoolAdminGenerator
-          v-if="isSchoolAdmin"
-          v-model:school="genSchool"
-          v-model:generated="generated"
-          v-model:name="genName"
-          v-model:phone="genPhone"
-          :password="defaults?.schoolAdminDefaultPassword ?? ''"
-          :generating="generating"
-          @generate="generate"
-          @copy="copyText"
-        />
+        <AdminField for="user-email" label="Emel" icon="i-ph-envelope-simple" required>
+          <UInput
+            id="user-email"
+            v-model="form.email"
+            type="email"
+            name="email"
+            placeholder="contoh@email.com"
+            class="w-full"
+            data-testid="user-email"
+          />
+        </AdminField>
 
-        <!-- standard roles and officers (FR-M02-22, FR-M02-32) -->
-        <div
-          v-if="isStandard || isOfficer"
-          class="grid grid-cols-1 gap-6 md:grid-cols-2"
-          data-testid="user-fields"
-        >
-          <AdminField for="user-name" label="Nama" icon="i-ph-user" required>
+        <template v-if="isStandard">
+          <AdminField for="user-phone" label="No. Telefon" icon="i-ph-phone" optional>
             <UInput
-              id="user-name"
-              v-model="form.name"
-              type="text"
-              name="name"
-              :placeholder="isOfficer ? 'Nama penuh pegawai' : 'Nama penuh'"
-              size="lg"
+              id="user-phone"
+              v-model="form.phone"
+              type="tel"
+              name="phone"
+              maxlength="14"
+              inputmode="tel"
+              placeholder="Cth: 0191234567"
               class="w-full"
-              data-testid="user-name"
+              data-testid="user-phone"
             />
           </AdminField>
 
-          <AdminField for="user-email" label="Emel" icon="i-ph-envelope-simple" required>
-            <UInput
-              id="user-email"
-              v-model="form.email"
-              type="email"
-              name="email"
-              placeholder="contoh@email.com"
-              size="lg"
-              class="w-full"
-              data-testid="user-email"
-            />
-          </AdminField>
+          <div v-if="role === 'parent'" class="md:col-span-2">
+            <ParentStudentLinker v-model="linked" variant="create" />
+          </div>
 
-          <template v-if="isStandard">
-            <AdminField for="user-phone" label="No. Telefon" icon="i-ph-phone" optional>
-              <UInput
-                id="user-phone"
-                v-model="form.phone"
-                type="tel"
-                name="phone"
-                maxlength="14"
-                inputmode="tel"
-                placeholder="Cth: 0191234567"
-                size="lg"
-                class="w-full"
-                data-testid="user-phone"
-              />
-            </AdminField>
-
-            <div v-if="role === 'parent'" class="md:col-span-2">
-              <ParentStudentLinker v-model="linked" variant="create" />
+          <template v-if="role === 'student'">
+            <div class="md:col-span-2">
+              <GradeCards v-model="grade" />
             </div>
-
-            <template v-if="role === 'student'">
-              <div class="md:col-span-2">
-                <GradeCards v-model="grade" />
-              </div>
-              <div class="md:col-span-2">
-                <AdminField
-                  for="user-ic"
-                  label="No. Kad Pengenalan"
-                  icon="i-ph-identification-card"
-                  optional
-                  hint="12 digit MyKad. Dilindungi PDPA."
-                >
-                  <UInput
-                    id="user-ic"
-                    v-model="form.icNumber"
-                    type="text"
-                    name="ic_number"
-                    maxlength="14"
-                    inputmode="numeric"
-                    placeholder="Cth: 031215101234"
-                    size="lg"
-                    class="w-full"
-                    data-testid="user-ic"
-                  />
-                </AdminField>
-              </div>
-            </template>
-
-            <div v-if="role === 'student' || role === 'teacher'" class="md:col-span-2">
-              <StudentSchoolPicker v-model="stdSchool" />
+            <div class="md:col-span-2">
+              <AdminField
+                for="user-ic"
+                label="No. Kad Pengenalan"
+                icon="i-ph-identification-card"
+                optional
+                hint="12 digit MyKad. Dilindungi PDPA."
+              >
+                <UInput
+                  id="user-ic"
+                  v-model="form.icNumber"
+                  type="text"
+                  name="ic_number"
+                  maxlength="14"
+                  inputmode="numeric"
+                  placeholder="Cth: 031215101234"
+                  class="w-full"
+                  data-testid="user-ic"
+                />
+              </AdminField>
             </div>
           </template>
 
-          <OfficerSelects
-            v-else
-            :key="role"
-            v-model:state="jpnState"
-            v-model:district="ppdDistrict"
-            :role="officerRole"
-            :jpns="jpns"
-          />
-
-          <AdminField for="user-password" label="Kata Laluan" icon="i-ph-lock" required>
-            <UInput
-              id="user-password"
-              v-model="form.password"
-              type="password"
-              name="password"
-              autocomplete="new-password"
-              placeholder="Minimum 6 aksara"
-              size="lg"
-              class="w-full"
-              data-testid="user-password"
-            />
-          </AdminField>
-
-          <AdminField
-            for="user-password-confirm"
-            label="Sahkan Kata Laluan"
-            icon="i-ph-lock"
-            required
-          >
-            <UInput
-              id="user-password-confirm"
-              v-model="form.passwordConfirmation"
-              type="password"
-              name="password_confirmation"
-              autocomplete="new-password"
-              placeholder="Taip semula kata laluan"
-              size="lg"
-              class="w-full"
-              data-testid="user-password-confirm"
-            />
-          </AdminField>
-
-          <div v-if="isStandard" class="md:col-span-2">
-            <UserFormSwitch
-              v-model="form.isActive"
-              name="is_active"
-              label="Aktifkan Akaun"
-              hint="Pengguna yang tidak aktif tidak boleh log masuk"
-              testid="user-active"
-            />
+          <div v-if="role === 'student' || role === 'teacher'" class="md:col-span-2">
+            <StudentSchoolPicker v-model="stdSchool" />
           </div>
-        </div>
+        </template>
 
-        <!-- FR-M02-34: the footer appears once a role is chosen -->
-        <div
-          v-if="role !== ''"
-          class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between"
-          data-testid="user-form-footer"
-        >
-          <UButton
-            :to="USERS_LIST_PATH"
-            color="neutral"
-            variant="soft"
-            icon="i-ph-arrow-left"
-            label="Batal"
-            data-testid="user-cancel"
+        <OfficerSelects
+          v-else
+          :key="role"
+          v-model:state="jpnState"
+          v-model:district="ppdDistrict"
+          :role="officerRole"
+          :jpns="jpns"
+        />
+
+        <AdminField for="user-password" label="Kata Laluan" icon="i-ph-lock" required>
+          <UInput
+            id="user-password"
+            v-model="form.password"
+            type="password"
+            name="password"
+            autocomplete="new-password"
+            placeholder="Minimum 6 aksara"
+            class="w-full"
+            data-testid="user-password"
           />
-          <UButton
-            type="submit"
-            icon="i-ph-user-plus"
-            label="Daftar Pengguna"
-            :loading="saving"
-            :disabled="saving || (isSchoolAdmin && !generated)"
-            data-testid="user-submit"
+        </AdminField>
+
+        <AdminField
+          for="user-password-confirm"
+          label="Sahkan Kata Laluan"
+          icon="i-ph-lock"
+          required
+        >
+          <UInput
+            id="user-password-confirm"
+            v-model="form.passwordConfirmation"
+            type="password"
+            name="password_confirmation"
+            autocomplete="new-password"
+            placeholder="Taip semula kata laluan"
+            class="w-full"
+            data-testid="user-password-confirm"
+          />
+        </AdminField>
+
+        <div v-if="isStandard" class="md:col-span-2">
+          <UserFormSwitch
+            v-model="form.isActive"
+            name="is_active"
+            label="Aktifkan Akaun"
+            hint="Pengguna yang tidak aktif tidak boleh log masuk"
+            testid="user-active"
           />
         </div>
-      </form>
-    </UCard>
+      </AdminFormSection>
+
+      <!-- FR-M02-34: the footer appears once a role is chosen -->
+      <AdminStickyBar v-if="role !== ''" data-testid="user-form-footer">
+        <UButton
+          :to="USERS_LIST_PATH"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-arrow-left"
+          label="Batal"
+          data-testid="user-cancel"
+        />
+        <UButton
+          type="submit"
+          icon="i-ph-user-plus"
+          label="Daftar Pengguna"
+          :loading="saving"
+          :disabled="saving || (isSchoolAdmin && !generated)"
+          data-testid="user-submit"
+        />
+      </AdminStickyBar>
+    </form>
 
     <UBadge
       v-if="copied"
       color="success"
-      size="lg"
       label="Disalin!"
       role="status"
       class="fixed right-4 bottom-4"

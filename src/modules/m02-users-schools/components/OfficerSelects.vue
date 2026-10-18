@@ -60,12 +60,7 @@ onBeforeUnmount(() => {
 
 <template>
   <AdminField for="officer-jpn" label="Negeri (JPN)" required>
-    <NativeSelect
-      id="officer-jpn"
-      v-model="jpnId"
-      data-testid="officer-jpn"
-      @change="onJpnChange"
-    >
+    <NativeSelect id="officer-jpn" v-model="jpnId" data-testid="officer-jpn" @change="onJpnChange">
       <option value="">-- Pilih Negeri --</option>
       <option v-for="jpn in jpns" :key="jpn.id" :value="String(jpn.id)">{{ jpn.name }}</option>
     </NativeSelect>

@@ -89,7 +89,6 @@ function clear(): void {
           autocomplete="off"
           :placeholder="school ? school.name : '-- Cari nama atau kod sekolah...'"
           icon="i-ph-magnifying-glass"
-          size="lg"
           class="w-full"
           data-testid="bulk-school-search"
           @update:model-value="onInput"

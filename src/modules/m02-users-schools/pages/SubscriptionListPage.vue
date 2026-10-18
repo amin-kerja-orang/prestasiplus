@@ -12,8 +12,9 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
+import { AdminKpiStrip, AdminPageHeader, AdminToolbar, type ToolbarChip } from '@/ds/admin'
 import { useApi } from '@/composables'
-import { DsFilterBar, DsPage, DsStatTile } from '@/ds'
+import { DsPage, DsStatTile } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { formatDate } from '@/lib/time'
 
@@ -23,11 +24,11 @@ import {
   type SubscriptionStatus,
 } from '../api/subscriptions'
 import AdminAlert from '../components/AdminAlert.vue'
-import CardCell from '../components/native/CardCell.vue'
-import CardRow from '../components/native/CardRow.vue'
-import CardTable from '../components/native/CardTable.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import { errorLines } from '../lib/school-errors'
+import AdminCell from '../components/native/AdminCell.vue'
+import AdminRow from '../components/native/AdminRow.vue'
+import AdminSelect from '../components/native/AdminSelect.vue'
+import AdminTable from '../components/native/AdminTable.vue'
 import {
   barColor,
   FORM_LEVEL_FILTER_OPTIONS,
@@ -79,7 +80,23 @@ const { data, error, reload } = useApi(
 const rows = computed(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.counts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
-const activeCount = computed(() => [status.value, formLevel.value].filter((v) => v !== '').length)
+const chips = computed<ToolbarChip[]>(() => {
+  const out: ToolbarChip[] = []
+  const st = STATUS_FILTER_OPTIONS.find((o) => o.value === applied.value.status)
+  if (st) out.push({ key: 'status', label: st.label })
+  const fl = FORM_LEVEL_FILTER_OPTIONS.find((o) => o.value === applied.value.formLevel)
+  if (fl) out.push({ key: 'form_level', label: fl.label })
+  return out
+})
+
+async function removeChip(key: string): Promise<void> {
+  const query: Record<string, string> = {}
+  if (applied.value.search !== '') query.search = applied.value.search
+  if (applied.value.status !== '' && key !== 'status') query.status = applied.value.status
+  if (applied.value.formLevel !== '' && key !== 'form_level')
+    query.form_level = applied.value.formLevel
+  await router.push({ path: SUBSCRIPTIONS_LIST_PATH, query })
+}
 
 async function submitFilter(): Promise<void> {
   const query: Record<string, string> = {}
@@ -114,66 +131,80 @@ const COLUMNS = [
   { key: 'status', label: 'Status' },
   { key: 'start', label: 'Mula' },
   { key: 'end', label: 'Tamat' },
-  { key: 'view', label: 'Tindakan' },
+  { key: 'view', label: 'Tindakan', cls: 'text-end' },
 ]
 const SKELETON_ROWS = 5
 </script>
 
 <template>
   <DsPage data-testid="subs-page">
-    <template #actions>
-      <UButton
-        :to="{ name: SUBSCRIPTION_ROUTES.create }"
-        icon="i-ph-plus"
-        label="Langganan Baru"
-        data-testid="subs-add"
-      />
-    </template>
+    <AdminPageHeader
+      title="Langganan Sekolah"
+      subtitle="Pantau langganan sekolah, kuota pelajar dan tarikh tamat."
+    >
+      <template #actions>
+        <UButton
+          :to="{ name: SUBSCRIPTION_ROUTES.create }"
+          icon="i-ph-plus"
+          label="Langganan Baru"
+          data-testid="subs-add"
+        />
+      </template>
+    </AdminPageHeader>
 
-    <section class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <AdminKpiStrip label="Ringkasan langganan" class="xl:grid-cols-4 2xl:grid-cols-4">
       <div data-testid="subs-stat-active">
         <DsStatTile
           v-if="counts"
+          compact
+          accent="win"
           :value="formatNumber(counts.active)"
           unit="Aktif"
           icon="i-ph-check-circle"
         />
-        <USkeleton v-else class="h-24 w-full" />
+        <USkeleton v-else class="h-20 w-full" />
       </div>
       <div data-testid="subs-stat-grace">
         <DsStatTile
           v-if="counts"
+          compact
+          accent="trial"
           :value="formatNumber(counts.grace)"
           unit="Tempoh Ihsan"
           icon="i-ph-hourglass-medium"
         />
-        <USkeleton v-else class="h-24 w-full" />
+        <USkeleton v-else class="h-20 w-full" />
       </div>
       <div data-testid="subs-stat-expired">
         <DsStatTile
           v-if="counts"
+          compact
+          accent="heat"
           :value="formatNumber(counts.expired)"
           unit="Tamat Tempoh"
           icon="i-ph-calendar-x"
         />
-        <USkeleton v-else class="h-24 w-full" />
+        <USkeleton v-else class="h-20 w-full" />
       </div>
       <div data-testid="subs-stat-quota">
         <DsStatTile
           v-if="counts"
+          compact
+          accent="action"
           :value="formatNumber(counts.totalQuota)"
           unit="Jumlah Kuota Pelajar"
           icon="i-ph-users"
         />
-        <USkeleton v-else class="h-24 w-full" />
+        <USkeleton v-else class="h-20 w-full" />
       </div>
-    </section>
+    </AdminKpiStrip>
 
-    <DsFilterBar
-      :active-count="activeCount"
+    <AdminToolbar
+      :chips="chips"
       data-testid="subs-filter"
       @apply="submitFilter"
       @reset="resetFilter"
+      @remove="removeChip"
     >
       <template #search>
         <UInput
@@ -183,12 +214,11 @@ const SKELETON_ROWS = 5
           aria-label="Cari"
           placeholder="Cari sekolah..."
           icon="i-ph-magnifying-glass"
-          size="lg"
-          class="md:w-72"
+          class="w-full"
           data-testid="subs-search"
         />
       </template>
-      <NativeSelect
+      <AdminSelect
         v-model="status"
         name="status"
         aria-label="Status"
@@ -199,8 +229,8 @@ const SKELETON_ROWS = 5
         <option v-for="o in STATUS_FILTER_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
-      </NativeSelect>
-      <NativeSelect
+      </AdminSelect>
+      <AdminSelect
         v-model="formLevel"
         name="form_level"
         aria-label="Tingkatan"
@@ -211,8 +241,8 @@ const SKELETON_ROWS = 5
         <option v-for="o in FORM_LEVEL_FILTER_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
-      </NativeSelect>
-    </DsFilterBar>
+      </AdminSelect>
+    </AdminToolbar>
 
     <div v-if="error" class="flex flex-col gap-3" data-testid="subs-error">
       <AdminAlert :messages="errorLines(error)" />
@@ -221,39 +251,44 @@ const SKELETON_ROWS = 5
       </div>
     </div>
 
-    <CardTable v-else :columns="COLUMNS" caption="Senarai langganan sekolah" data-testid="subs-table">
+    <AdminTable
+      v-else
+      :columns="COLUMNS"
+      caption="Senarai langganan sekolah"
+      data-testid="subs-table"
+    >
       <template v-if="firstLoad">
-        <CardRow v-for="n in SKELETON_ROWS" :key="n" data-testid="subs-skeleton">
-          <CardCell v-for="c in COLUMNS" :key="c.key">
+        <AdminRow v-for="n in SKELETON_ROWS" :key="n" data-testid="subs-skeleton">
+          <AdminCell v-for="c in COLUMNS" :key="c.key">
             <USkeleton class="h-4 w-full max-w-32" />
-          </CardCell>
-        </CardRow>
+          </AdminCell>
+        </AdminRow>
       </template>
 
-      <CardRow v-else-if="rows.length === 0" data-testid="subs-empty">
-        <CardCell :colspan="COLUMNS.length">
-          <UIcon name="i-ph-file-text" class="mx-auto mb-2 size-8 text-muted" aria-hidden="true" />
+      <AdminRow v-else-if="rows.length === 0" data-testid="subs-empty">
+        <AdminCell :colspan="COLUMNS.length">
+          <UIcon name="i-ph-file-text" class="mx-auto mb-3 size-10 text-muted" aria-hidden="true" />
           <p class="text-label text-default">Tiada langganan dijumpai.</p>
-        </CardCell>
-      </CardRow>
+        </AdminCell>
+      </AdminRow>
 
       <template v-else>
-        <CardRow v-for="row in rows" :key="row.id" data-testid="subs-row" :data-sub-id="row.id">
-          <CardCell label="Sekolah">
+        <AdminRow v-for="row in rows" :key="row.id" data-testid="subs-row" :data-sub-id="row.id">
+          <AdminCell label="Sekolah">
             <div class="flex flex-col gap-1">
-              <span class="text-label text-highlighted">{{ row.school.name }}</span>
-              <span class="text-caption text-muted">{{ row.school.code }}</span>
+              <span class="text-body text-highlighted">{{ row.school.name }}</span>
+              <span class="text-label text-muted">{{ row.school.code }}</span>
             </div>
-          </CardCell>
-          <CardCell label="Tingkatan">
+          </AdminCell>
+          <AdminCell label="Tingkatan">
             <UBadge
               color="neutral"
               variant="subtle"
               :label="levelLabel(row.formLevel)"
               data-testid="subs-level-badge"
             />
-          </CardCell>
-          <CardCell label="Pakej">
+          </AdminCell>
+          <AdminCell label="Pakej">
             <UBadge
               color="neutral"
               variant="subtle"
@@ -261,47 +296,46 @@ const SKELETON_ROWS = 5
               :label="TIER_LABEL[row.packageTier]"
               data-testid="subs-tier-badge"
             />
-          </CardCell>
-          <CardCell label="Kuota">
+          </AdminCell>
+          <AdminCell label="Kuota">
             <div class="flex items-center gap-2">
               <UProgress
-                class="w-20"
+                class="w-24"
                 :model-value="percent(row.used, row.studentQuota)"
                 :color="barColor(percent(row.used, row.studentQuota))"
                 :aria-label="`Kuota digunakan ${String(percent(row.used, row.studentQuota))}%`"
               />
-              <span class="text-caption text-muted" data-testid="subs-quota"
+              <span class="text-label text-muted" data-testid="subs-quota"
                 >{{ row.used }}/{{ row.studentQuota }}</span
               >
             </div>
-          </CardCell>
-          <CardCell label="Status">
+          </AdminCell>
+          <AdminCell label="Status">
             <UBadge
               :color="STATUS_BADGE[row.status].color"
               variant="subtle"
               :label="STATUS_BADGE[row.status].label"
               data-testid="subs-status-badge"
             />
-          </CardCell>
-          <CardCell label="Mula">
+          </AdminCell>
+          <AdminCell label="Mula">
             <span class="text-nowrap">{{ formatDate(row.startsAt) }}</span>
-          </CardCell>
-          <CardCell label="Tamat">
+          </AdminCell>
+          <AdminCell label="Tamat">
             <span class="text-nowrap">{{ formatDate(row.endsAt) }}</span>
-          </CardCell>
-          <CardCell label="Tindakan">
+          </AdminCell>
+          <AdminCell label="Tindakan">
             <UButton
               :to="{ name: SUBSCRIPTION_ROUTES.detail, params: { id: row.id } }"
-              size="sm"
               color="neutral"
               variant="soft"
               trailing-icon="i-ph-arrow-right"
               label="Lihat"
               data-testid="subs-view"
             />
-          </CardCell>
-        </CardRow>
+          </AdminCell>
+        </AdminRow>
       </template>
-    </CardTable>
+    </AdminTable>
   </DsPage>
 </template>

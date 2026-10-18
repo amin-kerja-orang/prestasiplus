@@ -15,6 +15,7 @@ import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
 import { DsPage } from '@/ds'
+import { AdminFormSection, AdminPageHeader } from '@/ds/admin'
 
 import {
   createLevel,
@@ -122,144 +123,154 @@ async function submit(): Promise<void> {
 }
 </script>
 <template>
-  <DsPage class="max-w-3xl" data-testid="level-form-page">
-    <div>
-      <UButton
-        :to="LEVELS_LIST_PATH"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        class="min-h-11"
-        data-testid="level-back"
-      >
-        Kembali ke Senarai
-      </UButton>
-    </div>
+  <DsPage data-testid="level-form-page">
+    <AdminPageHeader
+      :title="editing ? 'Edit Tahap Pendidikan' : 'Tambah Tahap Pendidikan'"
+      :subtitle="editing ? 'Kemaskini maklumat tahap.' : 'Daftarkan tahap pendidikan baharu.'"
+    >
+      <template #actions>
+        <UButton
+          :to="LEVELS_LIST_PATH"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-arrow-left"
+          data-testid="level-back"
+        >
+          Kembali ke Senarai
+        </UButton>
+      </template>
+    </AdminPageHeader>
 
     <ErrorBox v-if="failed" :messages="COPY.loadFailed" data-testid="level-load-error" />
 
-    <form v-else-if="ready" method="post" data-testid="level-form" @submit.prevent="submit">
-      <UCard>
-        <div class="flex min-w-0 flex-col gap-4">
-          <ErrorBox :messages="errors" data-testid="level-form-alert" />
+    <form
+      v-else-if="ready"
+      method="post"
+      class="flex min-w-0 flex-col gap-6"
+      data-testid="level-form"
+      @submit.prevent="submit"
+    >
+      <ErrorBox :messages="errors" data-testid="level-form-alert" />
 
-          <div class="min-w-0">
-            <label for="level-name" class="mb-2 block text-label text-highlighted"
-              >Nama Tahap (Bahasa Melayu) *</label
-            >
-            <UInput
-              id="level-name"
-              v-model="form.name"
-              type="text"
-              name="name"
-              required
-              placeholder="cth: Tahun 1"
-              class="w-full"
-              data-testid="level-name"
-            />
-          </div>
-
-          <div class="min-w-0">
-            <label for="level-name-en" class="mb-2 block text-label text-highlighted"
-              >Nama Tahap (English) *</label
-            >
-            <UInput
-              id="level-name-en"
-              v-model="form.nameEn"
-              type="text"
-              name="nameEn"
-              required
-              placeholder="e.g: Year 1"
-              class="w-full"
-              data-testid="level-name-en"
-            />
-          </div>
-
-          <div class="min-w-0">
-            <label for="level-code" class="mb-2 block text-label text-highlighted"
-              >Kod Tahap *</label
-            >
-            <UInput
-              id="level-code"
-              v-model="form.code"
-              type="text"
-              name="code"
-              required
-              maxlength="10"
-              placeholder="cth: Y1"
-              class="w-full"
-              data-testid="level-code"
-            />
-            <p class="mt-1 flex items-start gap-2 text-caption text-muted">
-              <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />
-              Kod akan ditukar ke huruf besar automatik
-            </p>
-          </div>
-
-          <div class="min-w-0">
-            <label for="level-stage" class="mb-2 block text-label text-highlighted"
-              >Peringkat *</label
-            >
-            <NativeSelect
-              id="level-stage"
-              v-model="form.stage"
-              name="stage"
-              required
-              data-testid="level-stage"
-            >
-              <option value="">-- Pilih Peringkat --</option>
-              <option v-for="option in STAGE_OPTIONS" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </NativeSelect>
-          </div>
-
-          <div class="min-w-0">
-            <label for="level-curriculum" class="mb-2 block text-label text-highlighted"
-              >Kurikulum *</label
-            >
-            <UInput
-              id="level-curriculum"
-              v-model="form.curriculum"
-              type="text"
-              name="curriculum"
-              required
-              placeholder="cth: KSSR, KSSM"
-              class="w-full"
-              data-testid="level-curriculum"
-            />
-            <p class="mt-1 flex items-start gap-2 text-caption text-muted">
-              <UIcon name="i-ph-book-open" class="mt-1 size-4 shrink-0" />
-              Nama kurikulum yang diguna pakai
-            </p>
-          </div>
-
-          <div class="min-w-0">
-            <label for="level-order" class="mb-2 block text-label text-highlighted"
-              >Susunan Paparan</label
-            >
-            <UInput
-              id="level-order"
-              v-model.number="form.order"
-              type="number"
-              name="order"
-              min="0"
-              class="w-full"
-              data-testid="level-order"
-            />
-            <p class="mt-1 flex items-start gap-2 text-caption text-muted">
-              <UIcon name="i-ph-arrows-down-up" class="mt-1 size-4 shrink-0" />
-              Nombor lebih kecil akan dipaparkan dahulu
-            </p>
-          </div>
-
-          <FormActions
-            :cancel-to="LEVELS_LIST_PATH"
-            :submit-label="editing ? 'Kemaskini Tahap' : 'Simpan Tahap'"
-            :saving="saving"
+      <AdminFormSection
+        title="Maklumat Tahap"
+        description="Nama, kod, peringkat dan kurikulum."
+        icon="i-ph-graduation-cap"
+      >
+        <div class="min-w-0">
+          <label for="level-name" class="mb-2 block text-label text-highlighted"
+            >Nama Tahap (Bahasa Melayu) *</label
+          >
+          <UInput
+            id="level-name"
+            v-model="form.name"
+            type="text"
+            name="name"
+            required
+            placeholder="cth: Tahun 1"
+            class="w-full"
+            data-testid="level-name"
           />
         </div>
-      </UCard>
+
+        <div class="min-w-0">
+          <label for="level-name-en" class="mb-2 block text-label text-highlighted"
+            >Nama Tahap (English) *</label
+          >
+          <UInput
+            id="level-name-en"
+            v-model="form.nameEn"
+            type="text"
+            name="nameEn"
+            required
+            placeholder="e.g: Year 1"
+            class="w-full"
+            data-testid="level-name-en"
+          />
+        </div>
+
+        <div class="min-w-0">
+          <label for="level-code" class="mb-2 block text-label text-highlighted">Kod Tahap *</label>
+          <UInput
+            id="level-code"
+            v-model="form.code"
+            type="text"
+            name="code"
+            required
+            maxlength="10"
+            placeholder="cth: Y1"
+            class="w-full"
+            data-testid="level-code"
+          />
+          <p class="mt-2 flex items-start gap-2 text-label text-muted">
+            <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />
+            Kod akan ditukar ke huruf besar automatik
+          </p>
+        </div>
+
+        <div class="min-w-0">
+          <label for="level-stage" class="mb-2 block text-label text-highlighted"
+            >Peringkat *</label
+          >
+          <NativeSelect
+            id="level-stage"
+            v-model="form.stage"
+            name="stage"
+            required
+            data-testid="level-stage"
+          >
+            <option value="">-- Pilih Peringkat --</option>
+            <option v-for="option in STAGE_OPTIONS" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </NativeSelect>
+        </div>
+
+        <div class="min-w-0">
+          <label for="level-curriculum" class="mb-2 block text-label text-highlighted"
+            >Kurikulum *</label
+          >
+          <UInput
+            id="level-curriculum"
+            v-model="form.curriculum"
+            type="text"
+            name="curriculum"
+            required
+            placeholder="cth: KSSR, KSSM"
+            class="w-full"
+            data-testid="level-curriculum"
+          />
+          <p class="mt-2 flex items-start gap-2 text-label text-muted">
+            <UIcon name="i-ph-book-open" class="mt-1 size-4 shrink-0" />
+            Nama kurikulum yang diguna pakai
+          </p>
+        </div>
+
+        <div class="min-w-0">
+          <label for="level-order" class="mb-2 block text-label text-highlighted"
+            >Susunan Paparan</label
+          >
+          <UInput
+            id="level-order"
+            v-model.number="form.order"
+            type="number"
+            name="order"
+            min="0"
+            class="w-full"
+            data-testid="level-order"
+          />
+          <p class="mt-2 flex items-start gap-2 text-label text-muted">
+            <UIcon name="i-ph-arrows-down-up" class="mt-1 size-4 shrink-0" />
+            Nombor lebih kecil akan dipaparkan dahulu
+          </p>
+        </div>
+      </AdminFormSection>
+
+      <FormActions
+        :cancel-to="LEVELS_LIST_PATH"
+        :submit-label="editing ? 'Kemaskini Tahap' : 'Simpan Tahap'"
+        :saving="saving"
+      />
     </form>
   </DsPage>
 </template>

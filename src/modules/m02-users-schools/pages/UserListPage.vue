@@ -2,18 +2,28 @@
 /**
  * S1 `/admin/users` "Pengurusan Pengguna - Admin Panel" (M02-T4; FR-M02-01..19), v2 staff theme.
  *
- * - 7 role stat tiles (all users, unaffected by the filters), a filter bar, three action buttons.
- * - Table of 25 rows per page: bulk select (own row excluded), "Aktif?" toggle, Edit / Pakej /
- *   Login As / Padam. The query string is the state; the form navigates and the list follows it.
+ * - 7 role KPI tiles (all users, unaffected by the filters), a one-row toolbar with filter chips and
+ *   three header actions.
+ * - Table of 25 rows per page (`AdminTable`, cards below `md`): bulk select (own row excluded), status
+ *   badge, Edit and a "..." menu (Pakej / Nyahaktifkan / Login As / Padam). The query string is the
+ *   state; the form navigates and the list follows it.
  * - `useConfirm` for the toggle and Login As (same BM text as the native confirm), dialogs for delete
  *   and bulk delete.
- * - The table scrolls inside its card from `md`; below `md` every row is a card (`CardTable`).
  */
 import { computed, ref, watch } from 'vue'
+import type { DropdownMenuItem } from '@nuxt/ui'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
+import {
+  AdminIdentity,
+  AdminPageHeader,
+  AdminPager,
+  AdminRowMenu,
+  AdminToolbar,
+  type ToolbarChip,
+} from '@/ds/admin'
 import { useApi, useFlash, useSession } from '@/composables'
-import { DsFilterBar, DsPage, useConfirm } from '@/ds'
+import { DsPage, useConfirm } from '@/ds'
 
 import {
   bulkDeleteAdminUsers,
@@ -26,13 +36,13 @@ import {
   type AdminUserRole,
 } from '../api/users'
 import AdminAlert from '../components/AdminAlert.vue'
-import CardCell from '../components/native/CardCell.vue'
-import CardRow from '../components/native/CardRow.vue'
-import CardTable from '../components/native/CardTable.vue'
 import NativeCheckbox from '../components/native/NativeCheckbox.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import UserDeleteModals from '../components/UserDeleteModals.vue'
 import UserStatCards from '../components/UserStatCards.vue'
+import AdminCell from '../components/native/AdminCell.vue'
+import AdminRow from '../components/native/AdminRow.vue'
+import AdminSelect from '../components/native/AdminSelect.vue'
+import AdminTable from '../components/native/AdminTable.vue'
 import {
   errorLines,
   formatUserDate,
@@ -106,15 +116,11 @@ const schoolOptions = computed(() => schoolFilters.data.value ?? [])
 const rows = computed<AdminUserListItem[]>(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.roleCounts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
-const from = computed(() => data.value?.meta.from ?? 1)
 const summary = computed(() => {
   const meta = data.value?.meta
   if (!meta || rows.value.length === 0) return ''
   return `Menunjukkan ${String(meta.from ?? 1)}-${String(meta.to ?? rows.value.length)} daripada ${String(meta.totalItems)} hasil`
 })
-const activeCount = computed(
-  () => [role.value, school.value, status.value].filter((v) => v !== '').length,
-)
 
 function filterQuery(): Record<string, string> {
   const out: Record<string, string> = {}
@@ -135,6 +141,25 @@ const pagerQuery = computed(() => {
   if (applied.value.search !== '') out.search = applied.value.search
   return out
 })
+
+/** Removable chips of the applied filters (the URL is the source of truth). */
+const chips = computed<ToolbarChip[]>(() => {
+  const out: ToolbarChip[] = []
+  if (applied.value.role !== '') out.push({ key: 'role', label: roleLabel(applied.value.role) })
+  if (applied.value.school !== null) {
+    const found = schoolOptions.value.find((s) => s.id === applied.value.school)
+    out.push({ key: 'school', label: found?.name ?? `Sekolah ${String(applied.value.school)}` })
+  }
+  if (applied.value.isActive !== null)
+    out.push({ key: 'is_active', label: applied.value.isActive ? 'Aktif' : 'Tidak Aktif' })
+  return out
+})
+
+async function removeChip(key: string): Promise<void> {
+  const query = { ...pagerQuery.value }
+  delete query[key]
+  await router.push({ path: USERS_LIST_PATH, query })
+}
 
 async function submitFilter(): Promise<void> {
   const query = filterQuery()
@@ -269,55 +294,90 @@ async function confirmBulk(): Promise<void> {
   }
 }
 
-const SKELETON_ROWS = 5
+/** Row menu: Pakej (school admins), the status toggle, Login As (not the own row) and Padam. */
+function menuItems(user: AdminUserListItem): DropdownMenuItem[][] {
+  const main: DropdownMenuItem[] = []
+  if (user.role === 'school_admin')
+    main.push({
+      label: 'Pakej',
+      icon: 'i-ph-package',
+      to: `/admin/users/${String(user.id)}/packages`,
+    })
+  main.push({
+    label: user.isActive ? 'Nyahaktifkan' : 'Aktifkan',
+    icon: user.isActive ? 'i-ph-x-circle' : 'i-ph-check-circle',
+    onSelect: () => void toggle(user),
+  })
+  if (user.id === ownId.value) return [main]
+  main.push({ label: 'Login As', icon: 'i-ph-sign-in', onSelect: () => void loginAs(user) })
+  return [
+    main,
+    [
+      {
+        label: 'Padam',
+        icon: 'i-ph-trash',
+        color: 'error',
+        onSelect: () => {
+          deleting.value = { id: user.id, name: user.name }
+        },
+      },
+    ],
+  ]
+}
+
+const SKELETON_ROWS = 6
 const COLUMNS = [
-  { key: 'select', label: 'Pilih' },
-  { key: 'no', label: '#' },
+  { key: 'select', label: 'Pilih', cls: 'w-14' },
   { key: 'name', label: 'Nama' },
-  { key: 'email', label: 'Emel' },
   { key: 'phone', label: 'Telefon' },
   { key: 'role', label: 'Peranan' },
   { key: 'school', label: 'Sekolah' },
-  { key: 'active', label: 'Aktif?' },
+  { key: 'active', label: 'Status' },
   { key: 'date', label: 'Tarikh' },
-  { key: 'actions', label: 'Tindakan' },
+  { key: 'actions', label: 'Tindakan', cls: 'w-32 text-end' },
 ]
 </script>
 
 <template>
   <DsPage data-testid="users-page">
-    <template #actions>
-      <UButton
-        to="/admin/users/create"
-        icon="i-ph-user-plus"
-        label="Tambah"
-        data-testid="users-add"
-      />
-      <UButton
-        to="/admin/import-students"
-        color="neutral"
-        variant="soft"
-        icon="i-ph-file-arrow-up"
-        label="Import Pelajar"
-        data-testid="users-import-students"
-      />
-      <UButton
-        to="/admin/users/bulk-import"
-        color="neutral"
-        variant="soft"
-        icon="i-ph-users-three"
-        label="Import Pengguna"
-        data-testid="users-import-users"
-      />
-    </template>
+    <AdminPageHeader
+      title="Pengurusan Pengguna"
+      subtitle="Cari, tapis dan urus akaun pelajar, guru dan pentadbir."
+    >
+      <template #actions>
+        <UButton
+          to="/admin/import-students"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-file-arrow-up"
+          label="Import Pelajar"
+          data-testid="users-import-students"
+        />
+        <UButton
+          to="/admin/users/bulk-import"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-users-three"
+          label="Import Pengguna"
+          data-testid="users-import-users"
+        />
+        <UButton
+          to="/admin/users/create"
+          icon="i-ph-user-plus"
+          label="Tambah"
+          data-testid="users-add"
+        />
+      </template>
+    </AdminPageHeader>
 
     <UserStatCards :counts="counts" :active-role="applied.role" />
 
-    <DsFilterBar
-      :active-count="activeCount"
+    <AdminToolbar
+      :chips="chips"
       data-testid="users-filter"
       @apply="submitFilter"
       @reset="resetFilter"
+      @remove="removeChip"
     >
       <template #search>
         <UInput
@@ -325,68 +385,67 @@ const COLUMNS = [
           type="text"
           name="search"
           aria-label="Cari"
-          placeholder="Nama atau emel..."
+          placeholder="Cari nama atau emel..."
           icon="i-ph-magnifying-glass"
-          size="lg"
-          class="md:w-64"
+          class="w-full"
           data-testid="users-search"
         />
       </template>
-      <NativeSelect
+      <AdminSelect
         id="users-role"
         v-model="role"
         name="role"
         aria-label="Peranan"
-        class="md:w-48"
+        class="md:w-44"
         data-testid="users-role"
       >
         <option value="">Semua Peranan</option>
         <option v-for="o in ROLE_FILTER_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
-      </NativeSelect>
-      <NativeSelect
+      </AdminSelect>
+      <AdminSelect
         id="users-school"
         v-model="school"
         name="school"
         aria-label="Sekolah"
-        class="md:w-56"
+        class="md:w-52"
         data-testid="users-school"
       >
         <option value="">Semua Sekolah</option>
         <option v-for="s in schoolOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
-      </NativeSelect>
-      <NativeSelect
+      </AdminSelect>
+      <AdminSelect
         id="users-status"
         v-model="status"
         name="is_active"
         aria-label="Status"
-        class="md:w-40"
+        class="md:w-36"
         data-testid="users-status"
       >
         <option value="">Semua</option>
         <option value="1">Aktif</option>
         <option value="0">Tidak Aktif</option>
-      </NativeSelect>
-    </DsFilterBar>
+      </AdminSelect>
+    </AdminToolbar>
 
     <!-- Load failure: red box in place of the table + retry (design-system 7.4, INFERRED copy). -->
-    <div v-if="error" class="flex flex-col gap-3" data-testid="users-error">
+    <div v-if="error" class="flex flex-col gap-4" data-testid="users-error">
       <AdminAlert :messages="errorLines(error)" />
       <div>
         <UButton label="Cuba Lagi" data-testid="users-retry" @click="reload()" />
       </div>
     </div>
 
-    <CardTable v-else :columns="COLUMNS" caption="Senarai pengguna" data-testid="users-table">
+    <AdminTable v-else :columns="COLUMNS" caption="Senarai pengguna" data-testid="users-table">
       <template #header>
         <div
           v-if="selected.length > 0"
-          class="flex items-center justify-between gap-3 bg-elevated p-3"
+          class="flex items-center justify-between gap-4 bg-elevated p-4"
           data-testid="users-bulk-bar"
         >
-          <span class="flex items-center gap-2 text-label text-default">
-            <UIcon name="i-ph-check-square" class="size-4" aria-hidden="true" />
+          <span class="flex items-center gap-2 text-body text-default">
+            <UIcon name="i-ph-check-square" class="size-5" aria-hidden="true" />
             <span data-testid="users-selected-count">{{ selected.length }}</span> dipilih
           </span>
           <UButton
@@ -410,29 +469,29 @@ const COLUMNS = [
       </template>
 
       <template v-if="firstLoad">
-        <CardRow v-for="n in SKELETON_ROWS" :key="n" data-testid="users-skeleton">
-          <CardCell v-for="c in COLUMNS.length" :key="c">
-            <USkeleton class="h-4 w-full max-w-24" />
-          </CardCell>
-        </CardRow>
+        <AdminRow v-for="n in SKELETON_ROWS" :key="n" data-testid="users-skeleton">
+          <AdminCell v-for="c in COLUMNS.length" :key="c">
+            <USkeleton class="h-5 w-full max-w-28" />
+          </AdminCell>
+        </AdminRow>
       </template>
 
-      <CardRow v-else-if="rows.length === 0" data-testid="users-empty">
-        <CardCell :colspan="COLUMNS.length">
-          <UIcon name="i-ph-users" class="mx-auto mb-2 size-8 text-muted" aria-hidden="true" />
-          <p class="text-label text-default">Tiada pengguna dijumpai</p>
-          <p class="text-label text-muted">Cuba ubah kriteria carian anda</p>
-        </CardCell>
-      </CardRow>
+      <AdminRow v-else-if="rows.length === 0" data-testid="users-empty">
+        <AdminCell :colspan="COLUMNS.length">
+          <UIcon name="i-ph-users" class="mx-auto mb-3 size-10 text-muted" aria-hidden="true" />
+          <p class="text-body text-default">Tiada pengguna dijumpai</p>
+          <p class="text-body text-muted">Cuba ubah kriteria carian anda</p>
+        </AdminCell>
+      </AdminRow>
 
       <template v-else>
-        <CardRow
-          v-for="(user, index) in rows"
+        <AdminRow
+          v-for="user in rows"
           :key="user.id"
           data-testid="user-row"
           :data-user-id="user.id"
         >
-          <CardCell label="Pilih">
+          <AdminCell label="Pilih">
             <NativeCheckbox
               v-if="user.id !== ownId"
               v-model="selected"
@@ -440,121 +499,74 @@ const COLUMNS = [
               :aria-label="`Pilih ${user.name}`"
               data-testid="user-select"
             />
-          </CardCell>
-          <CardCell label="#">{{ from + index }}</CardCell>
-          <CardCell label="Nama">
-            <div class="flex min-w-0 items-center gap-2 text-label text-highlighted">
-              <UAvatar
-                :src="user.avatarUrl || undefined"
-                :text="initialsOf(user.name)"
-                alt=""
-                size="sm"
-              />
-              <span class="min-w-0 break-words" data-testid="user-name">{{ user.name }}</span>
-            </div>
-          </CardCell>
-          <CardCell label="Emel"
-            ><span class="break-all">{{ user.email }}</span></CardCell
+          </AdminCell>
+          <AdminCell>
+            <AdminIdentity
+              :name="user.name"
+              :sub="user.email"
+              :src="user.avatarUrl"
+              :initials="initialsOf(user.name)"
+            >
+              <template #name
+                ><span data-testid="user-name">{{ user.name }}</span></template
+              >
+            </AdminIdentity>
+          </AdminCell>
+          <AdminCell label="Telefon"
+            ><span class="text-nowrap">{{ user.phone || '-' }}</span></AdminCell
           >
-          <CardCell label="Telefon"
-            ><span class="text-nowrap">{{ user.phone || '-' }}</span></CardCell
-          >
-          <CardCell label="Peranan">
+          <AdminCell label="Peranan">
             <UBadge
               color="neutral"
               variant="subtle"
               :label="roleLabel(user.role)"
               data-testid="user-role"
             />
-          </CardCell>
-          <CardCell label="Sekolah">{{ user.school?.name || '-' }}</CardCell>
-          <CardCell label="Aktif?">
-            <form method="post" @submit.prevent="toggle(user)">
-              <UButton
-                type="submit"
-                size="sm"
-                variant="soft"
-                :color="user.isActive ? 'success' : 'neutral'"
-                :icon="user.isActive ? 'i-ph-check-circle' : 'i-ph-x-circle'"
-                :label="user.isActive ? 'Aktif' : 'Tidak'"
-                :loading="togglingId === user.id"
-                :disabled="togglingId === user.id"
-                data-testid="user-toggle"
-              />
-            </form>
-          </CardCell>
-          <CardCell label="Tarikh"
-            ><span class="text-nowrap">{{ formatUserDate(user.createdAt) }}</span></CardCell
+          </AdminCell>
+          <AdminCell label="Sekolah">
+            <span class="block max-w-28 truncate" :title="user.school?.name">{{
+              user.school?.name || '-'
+            }}</span>
+          </AdminCell>
+          <AdminCell label="Status">
+            <UBadge
+              :color="user.isActive ? 'success' : 'neutral'"
+              variant="subtle"
+              :label="user.isActive ? 'Aktif' : 'Tidak Aktif'"
+              data-testid="user-status"
+            />
+          </AdminCell>
+          <AdminCell label="Tarikh"
+            ><span class="text-nowrap">{{ formatUserDate(user.createdAt) }}</span></AdminCell
           >
-          <CardCell label="Tindakan">
-            <div class="flex flex-wrap items-center justify-end gap-2">
+          <AdminCell label="Tindakan">
+            <div class="flex items-center justify-end gap-1">
               <UButton
-                :to="`/admin/users/${user.id}/edit`"
-                size="sm"
+                :to="`/admin/users/${String(user.id)}/edit`"
                 color="neutral"
                 variant="soft"
                 icon="i-ph-pencil-simple"
-                label="Edit"
+                aria-label="Edit"
+                title="Edit"
                 data-testid="user-edit"
               />
-              <UButton
-                v-if="user.role === 'school_admin'"
-                :to="`/admin/users/${user.id}/packages`"
-                size="sm"
-                color="neutral"
-                variant="soft"
-                icon="i-ph-package"
-                label="Pakej"
-                data-testid="user-packages"
-              />
-              <form v-if="user.id !== ownId" method="post" @submit.prevent="loginAs(user)">
-                <UButton
-                  type="submit"
-                  size="sm"
-                  color="neutral"
-                  variant="soft"
-                  icon="i-ph-sign-in"
-                  label="Login As"
-                  :disabled="busy"
-                  data-testid="user-login-as"
-                />
-              </form>
-              <UButton
-                v-if="user.id !== ownId"
-                type="button"
-                size="sm"
-                color="error"
-                variant="soft"
-                icon="i-ph-trash"
-                aria-label="Padam"
-                data-testid="user-delete"
-                @click="deleting = { id: user.id, name: user.name }"
-              />
+              <AdminRowMenu :items="menuItems(user)" :label="`Tindakan lain untuk ${user.name}`" />
             </div>
-          </CardCell>
-        </CardRow>
+          </AdminCell>
+        </AdminRow>
       </template>
 
       <template #footer>
-        <div
-          class="flex flex-wrap items-center justify-between gap-3 p-3 empty:hidden"
+        <AdminPager
+          :summary="summary"
+          :total="data?.meta.totalItems ?? 0"
+          :page="data?.meta.page ?? 1"
+          :page-size="data?.meta.pageSize ?? 25"
           data-testid="users-pager"
-        >
-          <template v-if="data && rows.length > 0">
-            <p class="text-caption text-muted" role="status">{{ summary }}</p>
-            <UPagination
-              v-if="data.meta.totalItems > data.meta.pageSize"
-              :page="data.meta.page"
-              :total="data.meta.totalItems"
-              :items-per-page="data.meta.pageSize"
-              :prev="{ 'aria-label': 'Sebelum' }"
-              :next="{ 'aria-label': 'Seterusnya' }"
-              @update:page="goToPage"
-            />
-          </template>
-        </div>
+          @update:page="goToPage"
+        />
       </template>
-    </CardTable>
+    </AdminTable>
 
     <UserDeleteModals
       :single="deleting"

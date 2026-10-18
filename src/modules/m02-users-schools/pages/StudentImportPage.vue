@@ -14,6 +14,7 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 
+import { AdminCard, AdminFormSection, AdminPageHeader, AdminStickyBar } from '@/ds/admin'
 import { useFlash } from '@/composables'
 import { DsIconChip, DsPage } from '@/ds'
 
@@ -126,149 +127,154 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPage data-testid="student-import-page">
-    <UCard class="max-w-4xl" data-testid="student-hero">
-      <div class="flex items-start gap-4">
-        <DsIconChip icon="i-ph-identification-card" size="lg" />
-        <div class="flex min-w-0 flex-col gap-2">
-          <h3 class="text-subheading text-highlighted">Import Pelajar via ID Delima</h3>
-          <p class="text-label text-muted">
-            Import pelajar dari Darjah 1 hingga Tingkatan 5 menggunakan ID Delima KPM.
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <UBadge color="neutral" variant="subtle" icon="i-ph-key" label="Kata laluan DELIMa" />
-            <UBadge
-              color="neutral"
-              variant="subtle"
-              icon="i-ph-envelope-simple"
-              label="Email DELIMa"
-            />
-          </div>
-        </div>
-      </div>
-    </UCard>
+    <AdminPageHeader
+      title="Import Pelajar via ID Delima"
+      subtitle="Import pelajar dari Darjah 1 hingga Tingkatan 5 menggunakan ID Delima KPM."
+    >
+      <template #actions>
+        <UButton
+          to="/admin"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-arrow-left"
+          label="Kembali"
+          data-testid="student-back"
+        />
+      </template>
+    </AdminPageHeader>
 
-    <UCard class="max-w-4xl">
+    <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
       <form
         method="post"
         enctype="multipart/form-data"
-        class="flex min-w-0 flex-col gap-6"
+        class="flex min-w-0 flex-col gap-6 xl:col-span-2"
         data-testid="student-form"
         @submit.prevent="submit"
       >
-        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-file-arrow-up" class="size-5 text-muted" aria-hidden="true" />
-          Borang Import Pelajar
-        </h2>
+        <h2 class="sr-only">Borang Import Pelajar</h2>
 
-        <div ref="alertBox">
+        <div ref="alertBox" class="empty:hidden">
           <AdminAlert :messages="errors" data-testid="student-alert" />
         </div>
 
-        <div class="flex flex-col gap-3">
-          <AdminSchoolPicker v-model="school" required />
-          <QuotaPanel v-if="school" :loading="quotaLoading" :quota="quota" />
-          <ExistingStudentsPanel
-            v-if="school && !quotaLoading && quota?.hasSubscription && (quota.used ?? 0) > 0"
-            :key="school.id"
-            :school-id="school.id"
-            :school-type="school.type"
-            :used="quota.used ?? 0"
-          />
-        </div>
-
-        <fieldset class="flex min-w-0 flex-col gap-3" data-testid="student-classes">
-          <legend class="mb-2 flex items-center gap-2 text-label text-default">
-            <UIcon name="i-ph-graduation-cap" class="size-4 text-muted" aria-hidden="true" />
-            Darjah / Tingkatan <span class="text-error">*</span>
-          </legend>
-          <div v-if="groups.includes('primary')" class="flex flex-col gap-2" data-testid="class-group-primary">
-            <p class="flex items-center gap-2 text-overline text-muted">
-              <UIcon name="i-ph-buildings" class="size-4" aria-hidden="true" />
-              Sekolah Rendah
-            </p>
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <NativeChoice
-                v-for="o in PRIMARY_CLASS_LEVELS"
-                :key="o.value"
-                v-model="classLevel"
-                name="class_level"
-                :value="o.value"
-                :label="o.label"
-              />
-            </div>
-          </div>
-          <div
-            v-if="groups.includes('secondary')"
-            class="flex flex-col gap-2"
-            data-testid="class-group-secondary"
-          >
-            <p class="flex items-center gap-2 text-overline text-muted">
-              <UIcon name="i-ph-bank" class="size-4" aria-hidden="true" />
-              Sekolah Menengah
-            </p>
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <NativeChoice
-                v-for="o in SECONDARY_CLASS_LEVELS"
-                :key="o.value"
-                v-model="classLevel"
-                name="class_level"
-                :value="o.value"
-                :label="o.label"
-              />
-            </div>
-          </div>
-        </fieldset>
-
-        <ImportSourceFields
-          v-model:mode="mode"
-          v-model:paste="paste"
-          v-model:file="file"
-          :paste-placeholder="DELIMA_PASTE_PLACEHOLDER"
+        <AdminFormSection
+          title="Sekolah"
+          description="Pilih sekolah dan semak kuota pelajar."
+          icon="i-ph-buildings"
         >
-          <template #format="{ mode: current }">
-            <NativePanel
-              v-if="current === 'csv'"
-              tone="soft"
-              class="flex flex-col gap-1 text-caption text-muted"
-              data-testid="student-format-csv"
-            >
-              <p class="flex items-center gap-2 text-label text-default">
-                <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
-                Format CSV:
-              </p>
-              <p class="break-words">Nama, Email DELIMa, Kata Laluan, No KP (pilihan)</p>
-              <p class="break-words">
-                Contoh: Muhammad Fulan bin Fulan, m-XXXXXXXX@moe-dl.edu.my, katalaluan123,
-                031215101234
-              </p>
-            </NativePanel>
-            <NativePanel
-              v-else
-              tone="soft"
-              class="flex flex-col gap-1 text-caption text-muted"
-              data-testid="student-format-paste"
-            >
-              <p class="flex items-center gap-2 text-label text-default">
-                <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
-                Format DELIMa (3-4 baris per pelajar):
-              </p>
-              <p>NAMA PELAJAR</p>
-              <p class="break-all">m-XXXXXXXX@moe-dl.edu.my</p>
-              <p>katalaluan123</p>
-              <p>031215101234 <span class="text-dimmed">(No. KP — pilihan)</span></p>
-            </NativePanel>
-          </template>
-        </ImportSourceFields>
+          <div class="flex flex-col gap-4 md:col-span-2">
+            <AdminSchoolPicker v-model="school" required />
+            <QuotaPanel v-if="school" :loading="quotaLoading" :quota="quota" />
+            <ExistingStudentsPanel
+              v-if="school && !quotaLoading && quota?.hasSubscription && (quota.used ?? 0) > 0"
+              :key="school.id"
+              :school-id="school.id"
+              :school-type="school.type"
+              :used="quota.used ?? 0"
+            />
+          </div>
+        </AdminFormSection>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <UButton
-            to="/admin"
-            color="neutral"
-            variant="ghost"
-            icon="i-ph-arrow-left"
-            label="Kembali"
-            data-testid="student-back"
-          />
+        <AdminFormSection
+          title="Darjah / Tingkatan"
+          description="Pilih tahap pelajar yang diimport."
+          icon="i-ph-graduation-cap"
+        >
+          <fieldset class="flex min-w-0 flex-col gap-4 md:col-span-2" data-testid="student-classes">
+            <legend class="sr-only">Darjah / Tingkatan <span class="text-error">*</span></legend>
+            <div
+              v-if="groups.includes('primary')"
+              class="flex flex-col gap-3"
+              data-testid="class-group-primary"
+            >
+              <p class="flex items-center gap-2 text-label text-muted">
+                <UIcon name="i-ph-buildings" class="size-4" aria-hidden="true" />
+                Sekolah Rendah
+              </p>
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                <NativeChoice
+                  v-for="o in PRIMARY_CLASS_LEVELS"
+                  :key="o.value"
+                  v-model="classLevel"
+                  name="class_level"
+                  :value="o.value"
+                  :label="o.label"
+                />
+              </div>
+            </div>
+            <div
+              v-if="groups.includes('secondary')"
+              class="flex flex-col gap-3"
+              data-testid="class-group-secondary"
+            >
+              <p class="flex items-center gap-2 text-label text-muted">
+                <UIcon name="i-ph-bank" class="size-4" aria-hidden="true" />
+                Sekolah Menengah
+              </p>
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                <NativeChoice
+                  v-for="o in SECONDARY_CLASS_LEVELS"
+                  :key="o.value"
+                  v-model="classLevel"
+                  name="class_level"
+                  :value="o.value"
+                  :label="o.label"
+                />
+              </div>
+            </div>
+          </fieldset>
+        </AdminFormSection>
+
+        <AdminFormSection
+          title="Data Pelajar"
+          description="Muat naik CSV atau tampal data DELIMa."
+          icon="i-ph-file-arrow-up"
+        >
+          <div class="md:col-span-2">
+            <ImportSourceFields
+              v-model:mode="mode"
+              v-model:paste="paste"
+              v-model:file="file"
+              :paste-placeholder="DELIMA_PASTE_PLACEHOLDER"
+            >
+              <template #format="{ mode: current }">
+                <NativePanel
+                  v-if="current === 'csv'"
+                  tone="soft"
+                  class="flex flex-col gap-1 text-label text-muted"
+                  data-testid="student-format-csv"
+                >
+                  <p class="flex items-center gap-2 text-body text-default">
+                    <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
+                    Format CSV:
+                  </p>
+                  <p class="break-words">Nama, Email DELIMa, Kata Laluan, No KP (pilihan)</p>
+                  <p class="break-words">
+                    Contoh: Muhammad Fulan bin Fulan, m-XXXXXXXX@moe-dl.edu.my, katalaluan123,
+                    031215101234
+                  </p>
+                </NativePanel>
+                <NativePanel
+                  v-else
+                  tone="soft"
+                  class="flex flex-col gap-1 text-label text-muted"
+                  data-testid="student-format-paste"
+                >
+                  <p class="flex items-center gap-2 text-body text-default">
+                    <UIcon name="i-ph-info" class="size-4" aria-hidden="true" />
+                    Format DELIMa (3-4 baris per pelajar):
+                  </p>
+                  <p>NAMA PELAJAR</p>
+                  <p class="break-all">m-XXXXXXXX@moe-dl.edu.my</p>
+                  <p>katalaluan123</p>
+                  <p>031215101234 <span class="text-dimmed">(No. KP — pilihan)</span></p>
+                </NativePanel>
+              </template>
+            </ImportSourceFields>
+          </div>
+        </AdminFormSection>
+
+        <AdminStickyBar>
           <UButton
             type="submit"
             icon="i-ph-users-three"
@@ -277,22 +283,48 @@ async function submit(): Promise<void> {
             :disabled="submitting"
             data-testid="student-submit"
           />
-        </div>
+        </AdminStickyBar>
       </form>
-    </UCard>
 
-    <UCard class="max-w-4xl" data-testid="student-notes">
-      <h3 class="mb-2 flex items-center gap-2 text-label text-highlighted">
-        <UIcon name="i-ph-lightbulb" class="size-4 text-muted" aria-hidden="true" />
-        Nota Penting:
-      </h3>
-      <ul class="flex flex-col gap-1 text-label text-muted">
-        <li>
-          • Pelajar login guna <strong>email DELIMa</strong> dan <strong>kata laluan DELIMa</strong>
-        </li>
-        <li>• ID yang sudah wujud akan dilangkau automatik</li>
-        <li>• Nama pelajar akan ditukar ke Title Case</li>
-      </ul>
-    </UCard>
+      <aside class="flex min-w-0 flex-col gap-6">
+        <AdminCard class="flex flex-col gap-4" data-testid="student-hero">
+          <div class="flex items-center gap-4">
+            <DsIconChip icon="i-ph-identification-card" size="lg" />
+            <h3 class="text-subheading text-highlighted">Login pelajar</h3>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <UBadge
+              color="neutral"
+              variant="subtle"
+              size="lg"
+              icon="i-ph-key"
+              label="Kata laluan DELIMa"
+            />
+            <UBadge
+              color="neutral"
+              variant="subtle"
+              size="lg"
+              icon="i-ph-envelope-simple"
+              label="Email DELIMa"
+            />
+          </div>
+        </AdminCard>
+
+        <AdminCard data-testid="student-notes">
+          <h3 class="mb-3 flex items-center gap-2 text-body text-highlighted">
+            <UIcon name="i-ph-lightbulb" class="size-5 text-muted" aria-hidden="true" />
+            Nota Penting:
+          </h3>
+          <ul class="flex flex-col gap-2 text-body text-muted">
+            <li>
+              • Pelajar login guna <strong>email DELIMa</strong> dan
+              <strong>kata laluan DELIMa</strong>
+            </li>
+            <li>• ID yang sudah wujud akan dilangkau automatik</li>
+            <li>• Nama pelajar akan ditukar ke Title Case</li>
+          </ul>
+        </AdminCard>
+      </aside>
+    </div>
   </DsPage>
 </template>

@@ -15,6 +15,7 @@ import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
 import { DsPage } from '@/ds'
+import { AdminFormSection, AdminPageHeader } from '@/ds/admin'
 
 import {
   createSubject,
@@ -26,12 +27,7 @@ import {
 import ErrorBox from '../components/ErrorBox.vue'
 import NativeColor from '../components/native/NativeColor.vue'
 import FormActions from '../components/subjects-levels/FormActions.vue'
-import {
-  COPY,
-  SUBJECTS_LIST_PATH,
-  errorLines,
-  isNotFoundError,
-} from '../lib/subjects-levels'
+import { COPY, SUBJECTS_LIST_PATH, errorLines, isNotFoundError } from '../lib/subjects-levels'
 
 const props = withDefaults(defineProps<{ mode: 'create' | 'edit'; id?: number }>(), { id: 0 })
 
@@ -141,191 +137,216 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
 }
 </script>
 <template>
-  <DsPage class="max-w-3xl" data-testid="subject-form-page">
-    <div>
-      <UButton
-        :to="SUBJECTS_LIST_PATH"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        class="min-h-11"
-        data-testid="subject-back"
-      >
-        Kembali ke Senarai
-      </UButton>
-    </div>
+  <DsPage data-testid="subject-form-page">
+    <AdminPageHeader
+      :title="editing ? 'Edit Subjek' : 'Tambah Subjek'"
+      :subtitle="editing ? 'Kemaskini maklumat subjek.' : 'Daftarkan subjek baharu.'"
+    >
+      <template #actions>
+        <UButton
+          :to="SUBJECTS_LIST_PATH"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-arrow-left"
+          data-testid="subject-back"
+        >
+          Kembali ke Senarai
+        </UButton>
+      </template>
+    </AdminPageHeader>
 
     <ErrorBox v-if="failed" :messages="COPY.loadFailed" data-testid="subject-load-error" />
 
-    <form v-else-if="ready" method="post" data-testid="subject-form" @submit.prevent="submit">
-      <UCard>
-        <div class="flex min-w-0 flex-col gap-4">
-          <ErrorBox :messages="errors" data-testid="subject-form-alert" />
+    <form
+      v-else-if="ready"
+      method="post"
+      class="flex min-w-0 flex-col gap-6"
+      data-testid="subject-form"
+      @submit.prevent="submit"
+    >
+      <ErrorBox :messages="errors" data-testid="subject-form-alert" />
 
-          <div class="min-w-0">
-            <label for="subject-name" class="mb-2 block text-label text-highlighted"
-              >Nama Subjek (Bahasa Melayu) *</label
+      <AdminFormSection
+        title="Maklumat Subjek"
+        description="Nama, kod dan susunan paparan."
+        icon="i-ph-book"
+      >
+        <div class="min-w-0">
+          <label for="subject-name" class="mb-2 block text-label text-highlighted"
+            >Nama Subjek (Bahasa Melayu) *</label
+          >
+          <UInput
+            id="subject-name"
+            v-model="form.name"
+            type="text"
+            name="name"
+            required
+            placeholder="cth: Matematik"
+            class="w-full"
+            data-testid="subject-name"
+          />
+        </div>
+
+        <div class="min-w-0">
+          <label for="subject-name-en" class="mb-2 block text-label text-highlighted"
+            >Nama Subjek (English) *</label
+          >
+          <UInput
+            id="subject-name-en"
+            v-model="form.nameEn"
+            type="text"
+            name="nameEn"
+            required
+            placeholder="e.g: Mathematics"
+            class="w-full"
+            data-testid="subject-name-en"
+          />
+        </div>
+
+        <div class="min-w-0">
+          <label for="subject-code" class="mb-2 block text-label text-highlighted"
+            >Kod Subjek *</label
+          >
+          <UInput
+            id="subject-code"
+            v-model="form.code"
+            type="text"
+            name="code"
+            required
+            maxlength="20"
+            placeholder="cth: MATH01"
+            class="w-full"
+            data-testid="subject-code"
+          />
+          <p class="mt-2 flex items-start gap-2 text-label text-muted">
+            <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />
+            Kod akan ditukar ke huruf besar automatik
+          </p>
+        </div>
+
+        <div class="min-w-0">
+          <label for="subject-order" class="mb-2 block text-label text-highlighted"
+            >Susunan Paparan</label
+          >
+          <UInput
+            id="subject-order"
+            v-model.number="form.order"
+            type="number"
+            name="order"
+            min="0"
+            class="w-full"
+            data-testid="subject-order"
+          />
+          <p class="mt-2 flex items-start gap-2 text-label text-muted">
+            <UIcon name="i-ph-arrows-down-up" class="mt-1 size-4 shrink-0" />
+            Nombor lebih kecil akan dipaparkan dahulu
+          </p>
+        </div>
+      </AdminFormSection>
+
+      <AdminFormSection
+        title="Penampilan"
+        description="Ikon, warna tema dan jenis subjek."
+        icon="i-ph-palette"
+      >
+        <div class="min-w-0">
+          <label for="subject-icon" class="mb-2 block text-label text-highlighted"
+            >Ikon (Font Awesome)</label
+          >
+          <UInput
+            id="subject-icon"
+            v-model="form.icon"
+            type="text"
+            name="icon"
+            placeholder="cth: fas fa-calculator"
+            class="w-full"
+            data-testid="subject-icon-input"
+          />
+          <p class="mt-2 flex items-start gap-2 text-label text-muted">
+            <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0" />
+            <span
+              >Lihat ikon di
+              <ULink
+                :href="FONT_AWESOME_URL"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary"
+                data-testid="subject-icon-link"
+                >Font Awesome</ULink
+              ></span
             >
+          </p>
+        </div>
+
+        <div class="min-w-0">
+          <label for="subject-color" class="mb-2 block text-label text-highlighted"
+            >Warna Tema</label
+          >
+          <div class="flex items-center gap-3">
+            <NativeColor
+              id="subject-color"
+              v-model="form.color"
+              name="color"
+              data-testid="subject-color"
+            />
             <UInput
-              id="subject-name"
-              v-model="form.name"
+              :model-value="form.color"
               type="text"
-              name="name"
-              required
-              placeholder="cth: Matematik"
-              class="w-full"
-              data-testid="subject-name"
+              name="colorText"
+              readonly
+              aria-label="Kod warna"
+              class="min-w-0 flex-1"
+              data-testid="subject-color-text"
             />
           </div>
+        </div>
 
-          <div class="min-w-0">
-            <label for="subject-name-en" class="mb-2 block text-label text-highlighted"
-              >Nama Subjek (English) *</label
-            >
-            <UInput
-              id="subject-name-en"
-              v-model="form.nameEn"
-              type="text"
-              name="nameEn"
-              required
-              placeholder="e.g: Mathematics"
-              class="w-full"
-              data-testid="subject-name-en"
-            />
-          </div>
+        <div class="min-w-0 md:col-span-2">
+          <UCheckbox
+            v-model="form.isCore"
+            name="isCore"
+            value="1"
+            label="Subjek Teras (Core Subject)"
+            data-testid="subject-core"
+          />
+          <p class="mt-2 text-label text-muted">Tandakan jika subjek ini adalah subjek wajib</p>
+        </div>
+      </AdminFormSection>
 
-          <div class="min-w-0">
-            <label for="subject-code" class="mb-2 block text-label text-highlighted"
-              >Kod Subjek *</label
+      <AdminFormSection
+        title="Tahap Pendidikan Berkaitan"
+        description="Pilih tahap yang mempunyai subjek ini."
+        icon="i-ph-graduation-cap"
+      >
+        <fieldset class="min-w-0 md:col-span-2">
+          <legend class="sr-only">Tahap Pendidikan Berkaitan</legend>
+          <div
+            class="grid max-h-80 grid-cols-1 gap-2 overflow-y-auto md:grid-cols-2"
+            data-testid="subject-levels-box"
+          >
+            <div
+              v-for="level in levels?.data ?? []"
+              :key="level.id"
+              class="flex min-h-11 items-center"
             >
-            <UInput
-              id="subject-code"
-              v-model="form.code"
-              type="text"
-              name="code"
-              required
-              maxlength="20"
-              placeholder="cth: MATH01"
-              class="w-full"
-              data-testid="subject-code"
-            />
-            <p class="mt-1 flex items-start gap-2 text-caption text-muted">
-              <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />
-              Kod akan ditukar ke huruf besar automatik
-            </p>
-          </div>
-
-          <div class="min-w-0">
-            <label for="subject-icon" class="mb-2 block text-label text-highlighted"
-              >Ikon (Font Awesome)</label
-            >
-            <UInput
-              id="subject-icon"
-              v-model="form.icon"
-              type="text"
-              name="icon"
-              placeholder="cth: fas fa-calculator"
-              class="w-full"
-              data-testid="subject-icon-input"
-            />
-            <p class="mt-1 flex items-start gap-2 text-caption text-muted">
-              <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0" />
-              <span
-                >Lihat ikon di
-                <ULink
-                  :href="FONT_AWESOME_URL"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-primary"
-                  data-testid="subject-icon-link"
-                  >Font Awesome</ULink
-                ></span
-              >
-            </p>
-          </div>
-
-          <div class="min-w-0">
-            <label for="subject-color" class="mb-2 block text-label text-highlighted"
-              >Warna Tema</label
-            >
-            <div class="flex items-center gap-3">
-              <NativeColor
-                id="subject-color"
-                v-model="form.color"
-                name="color"
-                data-testid="subject-color"
-              />
-              <UInput
-                :model-value="form.color"
-                type="text"
-                name="colorText"
-                readonly
-                aria-label="Kod warna"
-                class="min-w-0 flex-1"
-                data-testid="subject-color-text"
+              <UCheckbox
+                :model-value="form.educationLevelIds.includes(level.id)"
+                name="educationLevelIds"
+                :value="level.id"
+                :label="`${level.name} (${level.nameEn})`"
+                data-testid="subject-level-option"
+                @update:model-value="toggleLevel(level.id, $event)"
               />
             </div>
           </div>
+        </fieldset>
+      </AdminFormSection>
 
-          <div class="min-w-0">
-            <UCheckbox
-              v-model="form.isCore"
-              name="isCore"
-              value="1"
-              label="Subjek Teras (Core Subject)"
-              data-testid="subject-core"
-            />
-            <p class="mt-1 text-caption text-muted">Tandakan jika subjek ini adalah subjek wajib</p>
-          </div>
-
-          <div class="min-w-0">
-            <label for="subject-order" class="mb-2 block text-label text-highlighted"
-              >Susunan Paparan</label
-            >
-            <UInput
-              id="subject-order"
-              v-model.number="form.order"
-              type="number"
-              name="order"
-              min="0"
-              class="w-full"
-              data-testid="subject-order"
-            />
-            <p class="mt-1 flex items-start gap-2 text-caption text-muted">
-              <UIcon name="i-ph-arrows-down-up" class="mt-1 size-4 shrink-0" />
-              Nombor lebih kecil akan dipaparkan dahulu
-            </p>
-          </div>
-
-          <fieldset class="min-w-0">
-            <legend class="mb-2 text-label text-highlighted">Tahap Pendidikan Berkaitan</legend>
-            <UCard variant="subtle" :ui="{ body: 'p-2 sm:p-2' }" data-testid="subject-levels-box">
-              <div class="max-h-64 overflow-y-auto">
-                <div
-                  v-for="level in levels?.data ?? []"
-                  :key="level.id"
-                  class="flex min-h-11 items-center"
-                >
-                  <UCheckbox
-                    :model-value="form.educationLevelIds.includes(level.id)"
-                    name="educationLevelIds"
-                    :value="level.id"
-                    :label="`${level.name} (${level.nameEn})`"
-                    data-testid="subject-level-option"
-                    @update:model-value="toggleLevel(level.id, $event)"
-                  />
-                </div>
-              </div>
-            </UCard>
-          </fieldset>
-
-          <FormActions
-            :cancel-to="SUBJECTS_LIST_PATH"
-            :submit-label="editing ? 'Kemaskini Subjek' : 'Simpan Subjek'"
-            :saving="saving"
-          />
-        </div>
-      </UCard>
+      <FormActions
+        :cancel-to="SUBJECTS_LIST_PATH"
+        :submit-label="editing ? 'Kemaskini Subjek' : 'Simpan Subjek'"
+        :saving="saving"
+      />
     </form>
   </DsPage>
 </template>

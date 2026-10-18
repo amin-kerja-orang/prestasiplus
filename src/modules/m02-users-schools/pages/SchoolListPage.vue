@@ -8,23 +8,30 @@
  * - 30 rows per page, name A-Z; the pager keeps the filters. Edit link and an icon-only toggle button
  *   (no confirmation); after a toggle the list reloads with the same filters and the success flash
  *   (UNVERIFIED COPY, from the API `status`).
- * - The table scrolls inside its card from `md`; below `md` every school is a card (`CardTable`).
+ * - The table scrolls inside its card from `md`; below `md` every school is a card (`AdminTable`).
  */
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
+import {
+  AdminKpiStrip,
+  AdminPageHeader,
+  AdminPager,
+  AdminToolbar,
+  type ToolbarChip,
+} from '@/ds/admin'
 import { useApi, useFlash } from '@/composables'
-import { DsFilterBar, DsPage, DsStatTile } from '@/ds'
+import { DsPage, DsStatTile } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchAdminSchools, toggleSchool, type AdminSchool } from '../api/schools-admin'
 import AdminAlert from '../components/AdminAlert.vue'
-import CardCell from '../components/native/CardCell.vue'
-import CardRow from '../components/native/CardRow.vue'
-import CardTable from '../components/native/CardTable.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import { errorLines } from '../lib/school-errors'
 import { SCHOOL_ROUTES, SCHOOLS_LIST_PATH, SCHOOL_STATE_OPTIONS } from '../lib/school-options'
+import AdminCell from '../components/native/AdminCell.vue'
+import AdminRow from '../components/native/AdminRow.vue'
+import AdminSelect from '../components/native/AdminSelect.vue'
+import AdminTable from '../components/native/AdminTable.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -77,7 +84,21 @@ const rows = computed<AdminSchool[]>(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.counts ?? null)
 const types = computed<string[]>(() => data.value?.meta.types ?? [])
 const firstLoad = computed(() => data.value === null && error.value === null)
-const activeCount = computed(() => [state.value, type.value].filter((v) => v !== '').length)
+/** Removable chips of the applied filters (the URL is the source of truth). */
+const chips = computed<ToolbarChip[]>(() => {
+  const out: ToolbarChip[] = []
+  if (applied.value.state !== '') out.push({ key: 'state', label: applied.value.state })
+  if (applied.value.type !== '') out.push({ key: 'type', label: applied.value.type })
+  return out
+})
+
+async function removeChip(key: string): Promise<void> {
+  const query: Record<string, string> = {}
+  if (applied.value.search !== '') query.search = applied.value.search
+  if (applied.value.state !== '' && key !== 'state') query.state = applied.value.state
+  if (applied.value.type !== '' && key !== 'type') query.type = applied.value.type
+  await router.push({ path: SCHOOLS_LIST_PATH, query })
+}
 const summary = computed(() => {
   const meta = data.value?.meta
   if (!meta || rows.value.length === 0) return ''
@@ -161,57 +182,67 @@ const COLUMNS = [
   { key: 'students', label: 'Pelajar' },
   { key: 'teachers', label: 'Guru' },
   { key: 'status', label: 'Status' },
-  { key: 'actions', label: 'Tindakan' },
+  { key: 'actions', label: 'Tindakan', cls: 'w-28 text-end' },
 ]
 </script>
 
 <template>
   <DsPage data-testid="schools-page">
-    <template #actions>
-      <UButton
-        :to="{ name: SCHOOL_ROUTES.create }"
-        icon="i-ph-plus"
-        label="Tambah Sekolah"
-        data-testid="schools-add"
-      />
-    </template>
+    <AdminPageHeader
+      title="Urus Sekolah"
+      subtitle="Senarai sekolah berdaftar, status dan bilangan pelajar serta guru."
+    >
+      <template #actions>
+        <UButton
+          :to="{ name: SCHOOL_ROUTES.create }"
+          icon="i-ph-plus"
+          label="Tambah Sekolah"
+          data-testid="schools-add"
+        />
+      </template>
+    </AdminPageHeader>
 
-    <!-- Stat tiles: 2 x 2 below lg, three across from lg. -->
-    <section class="grid grid-cols-2 gap-3 lg:grid-cols-3">
+    <AdminKpiStrip label="Ringkasan sekolah" class="xl:grid-cols-3 2xl:grid-cols-3">
       <div data-testid="schools-stat-total">
         <DsStatTile
           v-if="counts"
+          compact
           :value="formatNumber(counts.total)"
           unit="Jumlah Sekolah"
           icon="i-ph-buildings"
         />
-        <USkeleton v-else class="h-24 w-full" />
+        <USkeleton v-else class="h-20 w-full" />
       </div>
       <div data-testid="schools-stat-active">
         <DsStatTile
           v-if="counts"
+          compact
+          accent="win"
           :value="formatNumber(counts.active)"
           unit="Aktif"
           icon="i-ph-check-circle"
         />
-        <USkeleton v-else class="h-24 w-full" />
+        <USkeleton v-else class="h-20 w-full" />
       </div>
       <div data-testid="schools-stat-inactive">
         <DsStatTile
           v-if="counts"
+          compact
+          accent="heat"
           :value="formatNumber(counts.inactive)"
           unit="Tidak Aktif"
           icon="i-ph-pause-circle"
         />
-        <USkeleton v-else class="h-24 w-full" />
+        <USkeleton v-else class="h-20 w-full" />
       </div>
-    </section>
+    </AdminKpiStrip>
 
-    <DsFilterBar
-      :active-count="activeCount"
+    <AdminToolbar
+      :chips="chips"
       data-testid="schools-filter"
       @apply="submitFilter"
       @reset="resetFilter"
+      @remove="removeChip"
     >
       <template #search>
         <UInput
@@ -221,12 +252,11 @@ const COLUMNS = [
           aria-label="Cari"
           placeholder="Cari nama atau kod sekolah..."
           icon="i-ph-magnifying-glass"
-          size="lg"
-          class="md:w-72"
+          class="w-full"
           data-testid="schools-search"
         />
       </template>
-      <NativeSelect
+      <AdminSelect
         v-model="state"
         name="state"
         aria-label="Negeri"
@@ -235,8 +265,8 @@ const COLUMNS = [
       >
         <option value="">Semua Negeri</option>
         <option v-for="name in SCHOOL_STATE_OPTIONS" :key="name" :value="name">{{ name }}</option>
-      </NativeSelect>
-      <NativeSelect
+      </AdminSelect>
+      <AdminSelect
         v-model="type"
         name="type"
         aria-label="Jenis"
@@ -245,8 +275,8 @@ const COLUMNS = [
       >
         <option value="">Semua Jenis</option>
         <option v-for="name in types" :key="name" :value="name">{{ name }}</option>
-      </NativeSelect>
-    </DsFilterBar>
+      </AdminSelect>
+    </AdminToolbar>
 
     <!-- Load failure: red box in place of the table + retry (design-system 7.4, INFERRED copy). -->
     <div v-if="error" class="flex flex-col gap-3" data-testid="schools-error">
@@ -256,64 +286,64 @@ const COLUMNS = [
       </div>
     </div>
 
-    <CardTable v-else :columns="COLUMNS" caption="Senarai sekolah" data-testid="schools-table">
+    <AdminTable v-else :columns="COLUMNS" caption="Senarai sekolah" data-testid="schools-table">
       <!-- Loading: skeleton rows matching the column count (design-system 7.4, INFERRED). -->
       <template v-if="firstLoad">
-        <CardRow v-for="n in SKELETON_ROWS" :key="n" data-testid="schools-skeleton">
-          <CardCell v-for="c in COLUMNS" :key="c.key">
+        <AdminRow v-for="n in SKELETON_ROWS" :key="n" data-testid="schools-skeleton">
+          <AdminCell v-for="c in COLUMNS" :key="c.key">
             <USkeleton class="h-4 w-full max-w-32" />
-          </CardCell>
-        </CardRow>
+          </AdminCell>
+        </AdminRow>
       </template>
 
-      <CardRow v-else-if="rows.length === 0" data-testid="schools-empty">
-        <CardCell :colspan="COLUMNS.length">
-          <UIcon name="i-ph-buildings" class="mx-auto mb-2 size-8 text-muted" aria-hidden="true" />
+      <AdminRow v-else-if="rows.length === 0" data-testid="schools-empty">
+        <AdminCell :colspan="COLUMNS.length">
+          <UIcon name="i-ph-buildings" class="mx-auto mb-3 size-10 text-muted" aria-hidden="true" />
           <p class="text-label text-default">Tiada sekolah dijumpai</p>
-        </CardCell>
-      </CardRow>
+        </AdminCell>
+      </AdminRow>
 
       <template v-else>
-        <CardRow
+        <AdminRow
           v-for="school in rows"
           :key="school.id"
           data-testid="school-row"
           :data-school-id="school.id"
         >
-          <CardCell label="Nama Sekolah">
-            <span class="text-label text-highlighted">{{ school.name }}</span>
-          </CardCell>
-          <CardCell label="Kod">
-            <span class="text-caption text-muted text-nowrap">{{ school.code }}</span>
-          </CardCell>
-          <CardCell label="Jenis">
+          <AdminCell label="Nama Sekolah">
+            <span class="block max-w-72 text-body text-highlighted">{{ school.name }}</span>
+          </AdminCell>
+          <AdminCell label="Kod">
+            <span class="text-label text-nowrap text-muted">{{ school.code }}</span>
+          </AdminCell>
+          <AdminCell label="Jenis">
             <UBadge color="neutral" variant="subtle" :label="school.type" />
-          </CardCell>
-          <CardCell label="Negeri">
+          </AdminCell>
+          <AdminCell label="Negeri">
             <span class="text-nowrap">{{ school.state }}</span>
-          </CardCell>
-          <CardCell label="Daerah">
-            <span class="text-caption text-muted">{{ school.district }}</span>
-          </CardCell>
-          <CardCell label="Pelajar">
+          </AdminCell>
+          <AdminCell label="Daerah">
+            <span class="text-label text-muted">{{ school.district }}</span>
+          </AdminCell>
+          <AdminCell label="Pelajar">
             <span :class="school.studentCount > 0 ? 'text-highlighted' : 'text-dimmed'">{{
               formatNumber(school.studentCount)
             }}</span>
-          </CardCell>
-          <CardCell label="Guru">
+          </AdminCell>
+          <AdminCell label="Guru">
             <span :class="school.teacherCount > 0 ? 'text-highlighted' : 'text-dimmed'">{{
               formatNumber(school.teacherCount)
             }}</span>
-          </CardCell>
-          <CardCell label="Status">
+          </AdminCell>
+          <AdminCell label="Status">
             <UBadge
               :color="school.isActive ? 'success' : 'neutral'"
               variant="subtle"
               :label="school.isActive ? 'Aktif' : 'Tidak Aktif'"
               data-testid="school-status"
             />
-          </CardCell>
-          <CardCell label="Tindakan">
+          </AdminCell>
+          <AdminCell label="Tindakan">
             <div class="flex items-center justify-end gap-2">
               <UButton
                 :to="{ name: SCHOOL_ROUTES.edit, params: { id: school.id } }"
@@ -345,29 +375,20 @@ const COLUMNS = [
                 </UButton>
               </form>
             </div>
-          </CardCell>
-        </CardRow>
+          </AdminCell>
+        </AdminRow>
       </template>
 
       <template #footer>
-        <div
-          class="flex flex-wrap items-center justify-between gap-3 p-3 empty:hidden"
+        <AdminPager
+          :summary="summary"
+          :total="data?.meta.totalItems ?? 0"
+          :page="data?.meta.page ?? 1"
+          :page-size="data?.meta.pageSize ?? 30"
           data-testid="schools-pager"
-        >
-          <template v-if="data && rows.length > 0">
-            <p class="text-caption text-muted" role="status">{{ summary }}</p>
-            <UPagination
-              v-if="data.meta.totalItems > data.meta.pageSize"
-              :page="data.meta.page"
-              :total="data.meta.totalItems"
-              :items-per-page="data.meta.pageSize"
-              :prev="{ 'aria-label': 'Sebelum' }"
-              :next="{ 'aria-label': 'Seterusnya' }"
-              @update:page="goToPage"
-            />
-          </template>
-        </div>
+          @update:page="goToPage"
+        />
       </template>
-    </CardTable>
+    </AdminTable>
   </DsPage>
 </template>

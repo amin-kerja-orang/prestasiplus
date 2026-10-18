@@ -133,13 +133,14 @@ function clear(): void {
             autocomplete="off"
             placeholder="Taip nama sekolah (min. 2 huruf)..."
             :loading="searching"
-            size="lg"
             class="w-full"
             data-testid="admin-school-search"
             @update:model-value="onInput"
             @focus="picker.onFocus()"
           />
-          <span v-if="searching" class="sr-only" data-testid="admin-school-loading">Mencari...</span>
+          <span v-if="searching" class="sr-only" data-testid="admin-school-loading"
+            >Mencari...</span
+          >
           <NativeDropdown v-if="showDropdown" data-testid="admin-school-dropdown">
             <NativeOption
               v-for="item in results"

@@ -17,7 +17,10 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/admin-subjects-levels', () => api)
 
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn((message: string) => message !== ''), alertNative: vi.fn() }))
+const dialogs = vi.hoisted(() => ({
+  confirmNative: vi.fn((message: string) => message !== ''),
+  alertNative: vi.fn(),
+}))
 vi.mock('@/components/overlay/native-dialogs', () => dialogs)
 
 function level(
