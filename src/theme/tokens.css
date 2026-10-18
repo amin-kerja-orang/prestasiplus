@@ -603,11 +603,3 @@
     animation-iteration-count: infinite !important;
   }
 }
-
-/* Brand logo: dark blue lettering, so it gets a light backing chip in dark mode (or when `backed`). */
-[data-ds='brand-logo'][data-backed='true'],
-.dark [data-ds='brand-logo'] {
-  background: #ffffff;
-  border-radius: var(--ds-r-chip);
-  padding: 0.25rem 0.5rem;
-}
