@@ -2,6 +2,16 @@
 
 Every backend agent on every PC follows this page. Re-read it from `origin/feature/v2-backend` at the start and end of each session. Details: [sessions.md](sessions.md) section 6.
 
+> **Standing rule for every PC and every session: commit, push and update the shared records regularly.**
+> - **Commit** after every green step.
+> - **Push** at least every hour and before the session stops.
+> - **With every push, update the shared records of your card:**
+>   - the tracker row (status, notes);
+>   - the PR description (done / left, real `be:verify` output);
+>   - any doc the card changes (deviations, mapping-matrix rows).
+>
+> Other PCs and the LEAD see only what is on GitHub.
+
 ## 0. The LEAD is the central guide
 
 - The **LEAD** is the project owner's own PC and Claude Code session. It is the single central source of instructions for every PC and session. Other PCs never decide programme matters themselves.
@@ -11,7 +21,13 @@ Every backend agent on every PC follows this page. Re-read it from `origin/featu
 
 ### Lead notices (current instructions; newest first)
 
-- 2026-10-19: Plan published. Any number of PCs may join; no fixed PC-to-lane split (section 1). No PC starts before sync point S0 is announced here.
+- 2026-10-19: **S0 is open, start now.** Defaults in force until the LEAD says otherwise:
+  - Stack: NestJS 11 + Prisma + Vitest (OD-3).
+  - The LEAD reviews and merges every PR (OD-12).
+  - Any number of PCs may join; there is no fixed PC-to-lane split (section 1).
+  - Only **BE-01** is ready at first, so the first PC takes it.
+  - BE-02 follows, then BE-03. After those, BE-34 and the cards that depend on BE-03 open up.
+  - Until then, the other PCs do the "What a lane does while it is blocked" preparation in [sessions.md](sessions.md) section 2, or stop and report `idle`.
 
 ## 0b. Any number of PCs
 
