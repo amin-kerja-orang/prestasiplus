@@ -5,28 +5,20 @@ Every backend agent on every PC follows this page. Re-read it from `origin/featu
 ## 0. The LEAD is the central guide
 
 - The **LEAD** is the project owner's own PC and Claude Code session. It is the single central source of instructions for every PC and session. Other PCs never decide programme matters themselves.
-- Order of authority: **(1) Lead notices below and open GitHub issues labelled `lead`**, then (2) this page, then (3) your lane prompt (`agent-kickoff/PC-n.md`), then (4) the card file. On any conflict the higher one wins.
-- Only the LEAD edits this page, [sessions.md](sessions.md), [agent-kickoff/](agent-kickoff/README.md), the card files and the tracker's Summary and Change log. Lanes edit only their own tracker rows.
-- Questions, blockers and change requests go to the LEAD as a GitHub issue (label `question`, `blocked`, `contract` or `cross-lane`). Do not wait idle: take the next unblocked card.
+- Order of authority: **(1) Lead notices below and open GitHub issues labelled `lead`**, then (2) this page, then (3) the lane prompt of your card (`agent-kickoff/PC-n.md`), then (4) the card file. On any conflict the higher one wins. In particular, a lane prompt's "YOUR LANE" does **not** bind a PC to that lane: section 1 decides which card you take.
+- Only the LEAD edits this page, [sessions.md](sessions.md), [agent-kickoff/](agent-kickoff/README.md), the card files and the tracker's Summary and Change log. PCs edit only the tracker rows of cards they hold.
+- Questions, blockers and change requests go to the LEAD as a GitHub issue (label `question`, `blocked`, `contract` or `cross-lane`). Do not wait idle: take the next card.
 
 ### Lead notices (current instructions; newest first)
 
-- 2026-10-19: Current setup is **3 PCs + LEAD** (table below). Plan published. No PC starts before sync point S0 is announced here.
+- 2026-10-19: Plan published. Any number of PCs may join; no fixed PC-to-lane split (section 1). No PC starts before sync point S0 is announced here.
 
-## 0b. Which PC runs which lanes
+## 0b. Any number of PCs
 
-The LEAD sets the current row in the Lead notices. Each PC owner tells the agent its PC letter (A, B, C, ...).
-
-| Setup | PC-A | PC-B | PC-C | PC-D |
-|---|---|---|---|---|
-| **3 PCs + LEAD (current)** | PC-1 + PC-4 | PC-2 + PC-6 | PC-3 + PC-5 | - |
-| 4 PCs + LEAD | PC-1 | PC-2, then BE-31, 17, 19, 18 | PC-3 + PC-5: BE-14, 36, 37, 10, 15, 38, 16, 39, 40 | PC-4, then BE-21, 22, 20, 26 |
-| 2 PCs + LEAD | PC-1 + PC-2 + PC-4 | PC-3 + PC-5 + PC-6 | - | - |
-
-With 6 PCs, each PC takes one lane (PC-1 to PC-6). A PC with several lanes:
-- reads every lane prompt it holds (`agent-kickoff/PC-n.md`) and may edit the folders of all of them;
-- takes cards in the order of the first lane listed; when that lane is blocked, it takes the next unblocked card of its next lane (section 1, step 3, applies to each lane);
-- writes its owner in the tracker as the PC letter plus lane, e.g. `PC-A(PC-4)/S2`.
+- There is no fixed number of PCs and no fixed PC-to-lane split. Every PC **pulls** the next ready card from the whole tracker (section 1). A PC can join or leave at any time; a new PC only needs the setup in [agent-kickoff/README.md](agent-kickoff/README.md) section 1.
+- **PC name:** each PC picks a short unique name once (e.g. `pc-amin`, `pc-ali2`) and uses it in the tracker Owner column as `<pc-name>/S<n>` (n = session number on that PC).
+- **Lanes are file-ownership groups, not people.** The lane of a card (tracker column `Lane`) tells you which lane prompt to read and which folders you may edit while you hold that card.
+- More PCs help only while there are ready cards. When none is ready, a PC does the "blocked" work of [sessions.md](sessions.md) section 2 or stops and reports `idle`.
 
 ## 1. Start of session: find your task
 
@@ -34,41 +26,46 @@ With 6 PCs, each PC takes one lane (PC-1 to PC-6). A PC with several lanes:
 git fetch origin --prune
 git switch feature/v2-backend && git pull --ff-only
 gh pr list --base feature/v2-backend --state open --json number,title,headRefName,isDraft
-gh issue list --label lead --state open      # LEAD instructions: do what applies to your PC first
+gh issue list --label lead --state open      # LEAD instructions: do what applies to you first
 ```
 
-1. Open [backend-tracker.md](backend-tracker.md) **on `origin/feature/v2-backend`** and find the cards of your lanes (section 0b).
-2. A card is **taken** if any of these is true: an open PR exists for its branch, the branch `origin/be/<card>-*` exists, or the tracker says `in-progress` / `review`. Never take a taken card, even if it is in your lane, unless it is yours (same PC).
-3. Take the **first card of your lane, in lane order,** whose `Depends on` cards are all `done` on `origin/feature/v2-backend`. If you already have an unfinished card (your own branch or draft PR), continue that one first.
-4. If nothing in your lane is unblocked: follow "What a lane does while it is blocked" in [sessions.md](sessions.md) section 2, or stop and report `blocked`.
+1. **Unfinished card of yours first:** if this PC already holds a card (its branch or draft PR, Owner = your PC name), continue it.
+2. Otherwise open [backend-tracker.md](backend-tracker.md) **on `origin/feature/v2-backend`** and list the cards that are **ready**:
+   - status `todo`, and no open PR or `origin/be/<card>-*` branch exists for it (that would mean it is taken);
+   - every card in `Depends on` is `done`;
+   - **no clash:** no card currently `in-progress` or `review` in the same lane touches the same module folder or Prisma file (check the "Files" or scope section of both card files). Two cards of one lane may run in parallel only when neither depends on the other and their files do not overlap (example: BE-08 curriculum and BE-11 wallet).
+3. Take the ready card with the **highest priority** (P0, then P1, then P2); on a tie, the one that unblocks the most other cards (the most cards list it in `Depends on`); then the lowest card number.
+4. Read the lane prompt of that card's lane (`agent-kickoff/PC-n.md`, where `PC-n` is the `Lane` column) for its folders, rules and verification, then the card file.
 
 ## 2. Claim it immediately (before writing code)
 
 ```
 git switch -c be/<card-id>-<slug> origin/feature/v2-backend
-# set your tracker row: Status in-progress, Owner PC-n/Sx, Branch
+# set the card's tracker row: Status in-progress, Owner <pc-name>/S<n>, Branch
 git commit -am "chore(<card-id>): claim card" && git push -u origin HEAD
 gh pr create --draft --base feature/v2-backend --title "<card-id>: <title>" --label lane:PC-n --body-file <template>
 ```
 
-**The draft PR is the claim.** Other PCs see it within seconds; that is how two PCs never take the same card.
+**The draft PR is the claim.** Other PCs see it within seconds. If `git push` says the branch already exists, someone claimed it first: delete your local branch and go back to section 1.
 
 ## 3. While working: commit and push often
 
 - **Commit** after each green step (contract, schema/migration, service, tests). Message: `<type>(<card-id>): <what>`, e.g. `feat(BE-08): curriculum tree endpoint`.
 - **Push** at least **every hour** and **always before the session ends** (`git push`, or `git push --force-with-lease` after a rebase, own branch only). Unpushed work does not exist for other PCs.
-- **Rebase** on `origin/feature/v2-backend` at the start of each day, before marking the PR ready, and whenever the lead announces a merge: `git fetch origin && git rebase origin/feature/v2-backend`. Conflicts: [sessions.md](sessions.md) section 5/6 (regenerate `openapi.json` with `npm run contract:emit`, never hand-merge it).
+- **Rebase** on `origin/feature/v2-backend` at the start of each day, before marking the PR ready, and whenever the LEAD announces a merge: `git fetch origin && git rebase origin/feature/v2-backend`. Conflicts: [sessions.md](sessions.md) sections 5 and 6 (regenerate `openapi.json` with `npm run contract:emit`, never hand-merge it).
+- Edit only the folders of your card's lane (its lane prompt) plus the append-only shared files listed there.
 - Never commit secrets, `.env.*`, dumps, real data or `.migration-out/`.
 
 ## 4. End of session (always, even if unfinished)
 
 1. `npm run contract:check && npm run be:verify`, and paste the real output into the PR.
-2. Update your tracker row on your branch: `in-progress` (unfinished), `review` (verify green, PR marked ready with `gh pr ready`) or `blocked` (one-line reason, plus a GitHub issue labelled `blocked`).
+2. Update the card's tracker row on your branch: `in-progress` (unfinished), `review` (verify green, PR marked ready with `gh pr ready`) or `blocked` (one-line reason, plus a GitHub issue labelled `blocked`).
 3. Commit and push. Nothing may be left only on this PC.
 4. Report in 5 lines (to the PC owner, and as a PR comment if the LEAD must act): card, status, PR link, what is left, any question for the LEAD.
+5. Leaving the programme for good, or handing a card over? Push, set the Owner to `-` and status to `todo`, and comment "released" on the PR so another PC can continue the same branch.
 
 ## 5. Never
 
-- Push to `main`, `feature/student-prototype`, `feature/v2-backend` or `v2/*`; merge any PR (the lead merges).
-- Edit another lane's folders, `src/**`, `e2e/**` or `docs/TRACKER.md` (open a `cross-lane` or `contract` issue instead).
+- Push to `main`, `feature/student-prototype`, `feature/v2-backend` or `v2/*`; merge any PR (the LEAD merges).
+- Work on a card another PC holds; edit another lane's folders, `src/**`, `e2e/**` or `docs/TRACKER.md` (open a `cross-lane` or `contract` issue instead).
 - Ask for or use credentials, the .cloud database or real people's data.

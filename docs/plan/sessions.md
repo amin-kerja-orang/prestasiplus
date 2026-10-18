@@ -76,9 +76,9 @@ Blocked time is spent on work that cannot conflict: contract-first schemas as se
 | PC-6 | BE-31 skeleton first (needs only BE-03). Then contract PRs for classes, student performance, school admin from the m10/m08/m27 mocks. | S5 (BE-17), S7 (BE-19) |
 | LEAD | Review contract PRs first, run L1 (hybrid transport), answer issues within one working day. | n/a |
 
-## 3. Compression if there are fewer PCs than lanes
+## 3. Number of PCs (open)
 
-Lane files still apply; one PC runs several lanes **in sequence**, picking the first unblocked card from the tracker. Folder ownership does not change. Estimates are planning figures (agent working days including review turnaround), not promises.
+**Any number of PCs** may work at once (user decision 2026-10-19, OD-17 closed): there is no fixed PC-to-lane split. Every PC pulls the next ready card from the whole tracker, by priority and dependency, and claims it with a draft PR ([AGENT-SYNC.md](AGENT-SYNC.md) sections 0b and 1). Lanes stay as file-ownership groups. The table below only shows how the finish date scales with the number of PCs; estimates are planning figures (agent working days including review turnaround), not promises.
 
 | PCs | Assignment | Estimated finish |
 |---|---|---|
@@ -87,7 +87,7 @@ Lane files still apply; one PC runs several lanes **in sequence**, picking the f
 | 3 + lead | A = PC-1 + PC-4; B = PC-2 + PC-6; C = PC-3 + PC-5 | about 14 weeks |
 | 2 + lead | A = PC-1 + PC-2 + PC-4; B = PC-3 + PC-5 + PC-6 | about 20 weeks; not recommended (the critical path BE-01 to BE-12 serialises anyway) |
 
-Recommendation: start with **4 PCs** (A to D above) and add PC-5/PC-6 capacity when the first merges land. Open decision OD-17.
+More PCs shorten the plan only while ready cards exist; the critical path BE-01 to BE-03 to BE-12 is sequential, so beyond about 6 PCs extra PCs mostly wait.
 
 ## 4. Schedule (Gantt)
 
