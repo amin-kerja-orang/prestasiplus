@@ -56,7 +56,7 @@ Rules for `contract-only`:
 ## 0b. Any number of PCs
 
 - There is no fixed number of PCs and no fixed PC-to-lane split. Every PC **pulls** the next ready card from the whole tracker (section 1). A PC can join or leave at any time; a new PC only needs the setup in [agent-kickoff/README.md](agent-kickoff/README.md) section 1.
-- **PC name:** each PC picks a short unique name once (e.g. `pc-amin`, `pc-ali2`) and uses it in the tracker Owner column as `<pc-name>/S<n>` (n = session number on that PC).
+- **PC name (automatic):** the agent names its PC itself: `pc-` plus the computer name in lower case (run `hostname`, e.g. `pc-desktop-7h2k`). It writes the tracker Owner as `<pc-name>/S<n>` (n = session number on that PC). Nobody has to choose a name.
 - **Lanes are file-ownership groups, not people.** The lane of a card (tracker column `Lane`) tells you which lane prompt to read and which folders you may edit while you hold that card.
 - More PCs help only while there are ready cards. When none is ready, a PC does the "blocked" work of [sessions.md](sessions.md) section 2 or stops and reports `idle`.
 
