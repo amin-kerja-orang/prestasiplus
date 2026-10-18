@@ -8,6 +8,8 @@
 | Lanes (PC-1 to PC-6 + lead), order, sync points S0 to S10, Gantt, file ownership, GitHub flow, sessions | [sessions.md](sessions.md) |
 | Paste-ready Claude Code prompt per lane, and how to start a new PC | [agent-kickoff/README.md](agent-kickoff/README.md) |
 | Task cards BE-01 to BE-40 | [backend-tasks/README.md](backend-tasks/README.md) |
+| Backend requirements (BE-FR, BE-NFR, BE-MIG, BE-OPS, traceability to cards) | [../requirements/v2-backend-urs.md](../requirements/v2-backend-urs.md) |
+| Developer handbook (layout, module anatomy, mock-to-endpoint worked example, errors, Prisma, tests, Definition of Done) | [backend-dev-guide.md](backend-dev-guide.md) |
 | Design: migration-first (section 14), SPM intake and AI (section 15), open decisions OD-1 to OD-20 | [../architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md) |
 
 If you are one of several people or PCs, read [sessions.md](sessions.md) and your lane prompt instead of section 3 below ("pick the first task"); the sections here still apply.
