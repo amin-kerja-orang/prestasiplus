@@ -25,7 +25,7 @@ const filled =
  * lists, lg 16 cards and tables, xl 24 modals and hero cards, full pills. Inputs sit one step below
  * the buttons beside them; a control inside a card is always smaller than the card.
  */
-const fieldSize = 'min-h-10 pointer-coarse:min-h-11 learner:min-h-13 rounded-sm text-base'
+const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base'
 
 const fieldConfig = {
   defaultVariants: { variant: 'soft' },
@@ -124,11 +124,13 @@ export const uiConfig = {
     defaultVariants: { variant: 'soft' },
     variants: {
       size: {
+        xs: { base: 'min-h-9 px-2.5 text-label' },
+        sm: { base: 'min-h-10 px-3.5 text-label' },
         md: {
-          base: 'min-h-9 pointer-coarse:min-h-11 learner:min-h-13 learner:rounded-md learner:px-5',
+          base: 'min-h-11 gap-2 px-4 text-base learner:min-h-13 learner:rounded-md learner:px-5',
         },
         lg: {
-          base: 'min-h-10 pointer-coarse:min-h-11 learner:min-h-14 learner:rounded-md learner:px-6',
+          base: 'min-h-12 gap-2.5 px-5 text-base learner:min-h-14 learner:rounded-md learner:px-6',
         },
       },
     },
@@ -169,7 +171,12 @@ export const uiConfig = {
 
   // Raised surface with a soft shadow, no divider lines.
   card: {
-    slots: { root: 'rounded-card' },
+    slots: {
+      root: 'rounded-card',
+      header: 'p-5 sm:px-6',
+      body: 'p-5 sm:p-6',
+      footer: 'p-5 sm:px-6',
+    },
     variants: {
       variant: {
         outline: { root: 'bg-default shadow-lift ring-0 divide-y-0' },
@@ -224,11 +231,15 @@ export const uiConfig = {
     },
   },
   navigationMenu: {
-    slots: { link: 'min-h-10 pointer-coarse:min-h-12' },
+    slots: {
+      link: 'min-h-11 gap-3 px-3 text-label',
+      childLink: 'min-h-11 px-3 text-label',
+      linkLeadingIcon: 'size-5',
+    },
   },
 
   dashboardSidebar: { slots: { root: 'bg-default shadow-ds-xs' } },
-  dashboardNavbar: { slots: { root: 'bg-default shadow-bar' } },
+  dashboardNavbar: { slots: { root: 'h-16 bg-default shadow-bar' } },
 
   modal: {
     slots: {
@@ -250,10 +261,10 @@ export const uiConfig = {
   // Zebra rows on the raised surface, no row lines.
   table: {
     slots: {
-      root: 'bg-default rounded-lg shadow-ds-xs',
+      root: 'bg-default rounded-lg shadow-ds-xs in-data-[ds=panel]:rounded-none in-data-[ds=panel]:shadow-none',
       tbody: 'divide-y-0 [&>tr:nth-child(even)]:bg-soft',
-      th: 'text-overline uppercase text-muted',
-      td: 'tabular-nums',
+      th: 'px-4 py-3.5 text-overline uppercase text-muted',
+      td: 'px-4 py-3.5 text-body tabular-nums',
     },
   },
 
@@ -261,9 +272,9 @@ export const uiConfig = {
     slots: { base: 'rounded-full font-bold tabular-nums' },
     variants: {
       size: {
-        xs: { base: 'rounded-full' },
-        sm: { base: 'rounded-full' },
-        md: { base: 'rounded-full' },
+        xs: { base: 'rounded-full text-caption' },
+        sm: { base: 'rounded-full text-caption px-2.5 py-1' },
+        md: { base: 'rounded-full text-label px-3 py-1' },
         lg: { base: 'rounded-full' },
         xl: { base: 'rounded-full' },
       },

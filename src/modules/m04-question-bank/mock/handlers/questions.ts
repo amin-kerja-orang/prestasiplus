@@ -99,7 +99,7 @@ function textFilter(req: MockRequest, key: string): string | undefined {
 
 /** #1: filters BR-M04-04…07. Unknown parameters are ignored; unknown values match nothing. */
 function list(req: MockRequest): MockResponse {
-  const pageReq = pageParams(req.query, { pageSize: QUESTIONS_PAGE_SIZE })
+  const pageReq = pageParams(req.query, { pageSize: QUESTIONS_PAGE_SIZE, maxPageSize: 100 })
   const subjectId = idFilter(req, 'subjectId')
   const educationLevelId = idFilter(req, 'educationLevelId')
   const difficultyLevel = idFilter(req, 'difficultyLevel')

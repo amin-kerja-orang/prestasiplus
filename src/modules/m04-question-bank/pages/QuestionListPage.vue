@@ -2,17 +2,21 @@
 /**
  * S1 `/admin/questions` "Pengurusan Soalan" (M04-T3; FR-M04-01..16). v2: Portal Pentadbiran staff theme.
  *
- * - The create button, the summary card with the 31 subject tiles, the 8-field filter bar (the URL is
- *   the state), the table of 20 rows with bulk select, and the server pager.
+ * Admin-list pattern (docs/design/v2-admin-pages.md):
+ * - a compact header row with the create button, a KPI strip + collapsible subject table;
+ * - one filter toolbar (search, 4 selects, a "Lagi penapis" popover, a drawer below `md`, chips of the
+ *   active filters; the URL is the state);
+ * - the dense table (bulk select, row menu) and the server pager with a page-size select.
  * - Bulk bar: the action select is `required`; confirmation through `useConfirm`; the API `status` is the flash.
- * - The table scrolls inside its card; below `md` every row is a card.
+ * - The table fits the width from `xl`; below that Tahap folds into Subjek; below `md` rows are cards.
  */
-import type { TableColumn } from '@nuxt/ui'
+import type { DropdownMenuItem, TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, useConfirm, type CardField } from '@/ds'
+import { DsDataTable, DsEmptyState, DsPage, DsPanel, useConfirm, type CardField } from '@/ds'
+import { useMedia } from '@/ds/useMedia'
 
 import {
   bulkQuestionAction,
@@ -32,6 +36,7 @@ import {
   COMPLIANCE_OPTIONS,
   complianceColor,
   DELETE_CONFIRM,
+  DIFFICULTY_LABELS,
   DIFFICULTY_OPTIONS,
   DSKP_OPTIONS,
   excerpt,
@@ -54,6 +59,10 @@ const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
 const confirm = useConfirm()
+const wide = useMedia('(min-width: 768px)')
+
+const PAGE_SIZES = [20, 50, 100]
+const DEFAULT_PAGE_SIZE = 20
 
 /** The applied filters, read from the URL (the source of truth, as the live GET form). */
 const applied = computed(() => {
@@ -62,6 +71,10 @@ const applied = computed(() => {
   return out
 })
 const page = computed(() => pageOf(route.query.page))
+const perPage = computed(() => {
+  const n = Number.parseInt(queryText(route.query.per_page), 10)
+  return PAGE_SIZES.includes(n) ? n : DEFAULT_PAGE_SIZE
+})
 const activeSubjectId = computed(() => {
   const n = Number.parseInt(applied.value.subject_id, 10)
   return Number.isFinite(n) && n > 0 ? n : null
@@ -94,9 +107,14 @@ const list = useApi(
       sourceFilter: applied.value.source_filter || null,
       search: applied.value.search || null,
       page: page.value,
+      pageSize: perPage.value === DEFAULT_PAGE_SIZE ? null : perPage.value,
       signal,
     }),
-  [...FILTER_KEYS.map((k) => () => route.query[k]), () => route.query.page],
+  [
+    ...FILTER_KEYS.map((k) => () => route.query[k]),
+    () => route.query.page,
+    () => route.query.per_page,
+  ],
 )
 const summary = useApi((signal) => fetchQuestionSummary({ signal }))
 const subjects = useApi((signal) => fetchSubjects({ signal }))
@@ -107,19 +125,112 @@ const firstLoad = computed(() => list.data.value === null && list.error.value ==
 const subjectOptions = computed(() => subjects.data.value?.data ?? [])
 const levelOptions = computed(() => levels.data.value?.data ?? [])
 
-/** The applied filters as the query of the pager links (empty ones dropped). */
+/** The applied filters (and the page size) as the query of the pager links (empty ones dropped). */
 const pagerQuery = computed(() => {
   const out: Record<string, string> = {}
   for (const key of FILTER_KEYS) if (applied.value[key] !== '') out[key] = applied.value[key]
+  if (perPage.value !== DEFAULT_PAGE_SIZE) out.per_page = String(perPage.value)
   return out
 })
 
+// --- Filter fields: one definition drives the toolbar, the popover, the drawer and the chips.
+interface FieldDef {
+  key: FilterKey
+  id: string
+  label: string
+  empty: string
+  testid: string
+  options: { value: string; label: string }[]
+}
+const PRIMARY_FIELDS = computed<FieldDef[]>(() => [
+  {
+    key: 'subject_id',
+    id: 'q-subject',
+    label: 'Subjek',
+    empty: 'Semua Subjek',
+    testid: 'questions-subject',
+    options: subjectOptions.value.map((s) => ({ value: String(s.id), label: s.name })),
+  },
+  {
+    key: 'education_level_id',
+    id: 'q-level',
+    label: 'Tahap',
+    empty: 'Semua Tahap',
+    testid: 'questions-level',
+    options: levelOptions.value.map((l) => ({ value: String(l.id), label: l.name })),
+  },
+  {
+    key: 'status',
+    id: 'q-status',
+    label: 'Status',
+    empty: 'Semua Status',
+    testid: 'questions-status',
+    options: STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+  },
+])
+const MORE_FIELDS: FieldDef[] = [
+  {
+    key: 'difficulty_level',
+    id: 'q-difficulty',
+    label: 'Kesukaran',
+    empty: 'Semua Kesukaran',
+    testid: 'questions-difficulty',
+    options: DIFFICULTY_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+  },
+  {
+    key: 'dskp_filter',
+    id: 'q-dskp',
+    label: 'DSKP',
+    empty: 'Semua DSKP',
+    testid: 'questions-dskp',
+    options: DSKP_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+  },
+  {
+    key: 'compliance_filter',
+    id: 'q-compliance',
+    label: 'Compliance',
+    empty: 'Semua Compliance',
+    testid: 'questions-compliance',
+    options: COMPLIANCE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+  },
+  {
+    key: 'source_filter',
+    id: 'q-source',
+    label: 'Source',
+    empty: 'Semua Source',
+    testid: 'questions-source',
+    options: SOURCE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+  },
+]
+const ALL_FIELDS = computed(() => [...PRIMARY_FIELDS.value, ...MORE_FIELDS])
+const moreActive = computed(() => MORE_FIELDS.filter((f) => applied.value[f.key] !== '').length)
+
+const chips = computed(() => {
+  const out: { key: FilterKey; text: string }[] = []
+  for (const f of ALL_FIELDS.value) {
+    const v = applied.value[f.key]
+    if (v === '') continue
+    const label = f.options.find((o) => o.value === v)?.label ?? v
+    out.push({ key: f.key, text: `${f.label}: ${label}` })
+  }
+  if (applied.value.search !== '') {
+    out.push({ key: 'search', text: `Cari: ${applied.value.search}` })
+  }
+  return out
+})
+
+const sheet = ref(false)
+const morePopover = ref(false)
+
 async function submitFilter(): Promise<void> {
+  sheet.value = false
+  morePopover.value = false
   const query: Record<string, string> = {}
   for (const key of FILTER_KEYS) {
     const value = draft.value[key].trim()
     if (value !== '') query[key] = value
   }
+  if (perPage.value !== DEFAULT_PAGE_SIZE) query.per_page = String(perPage.value)
   // Submitting the same filter reloads the page, as a live GET form does.
   if (JSON.stringify(query) === JSON.stringify(pagerQuery.value) && !route.query.page) {
     await Promise.all([list.reload(), summary.reload()])
@@ -129,8 +240,20 @@ async function submitFilter(): Promise<void> {
 }
 
 async function resetFilter(): Promise<void> {
+  sheet.value = false
+  morePopover.value = false
   for (const key of FILTER_KEYS) draft.value[key] = ''
-  await router.push({ path: QUESTIONS_LIST_PATH })
+  await router.push({
+    path: QUESTIONS_LIST_PATH,
+    ...(perPage.value !== DEFAULT_PAGE_SIZE ? { query: { per_page: String(perPage.value) } } : {}),
+  })
+}
+
+function removeChip(key: FilterKey): void {
+  draft.value[key] = ''
+  const query = { ...pagerQuery.value }
+  Reflect.deleteProperty(query, key)
+  void router.push({ path: QUESTIONS_LIST_PATH, query })
 }
 
 function goToPage(next: number): void {
@@ -138,6 +261,13 @@ function goToPage(next: number): void {
     path: QUESTIONS_LIST_PATH,
     query: { ...pagerQuery.value, page: String(next) },
   })
+}
+
+function setPageSize(size: number): void {
+  const query = { ...pagerQuery.value }
+  Reflect.deleteProperty(query, 'per_page')
+  if (size !== DEFAULT_PAGE_SIZE) query.per_page = String(size)
+  void router.push({ path: QUESTIONS_LIST_PATH, query })
 }
 
 // --- Selection (FR-M04-12): page/filter changes clear it.
@@ -209,11 +339,30 @@ async function remove(row: QuestionRow): Promise<void> {
   }
 }
 
+/** Row menu: Lihat and Edit stay one click away as icon buttons; the menu holds the destructive one. */
+function rowMenu(row: QuestionRow): DropdownMenuItem[][] {
+  return [
+    [{ label: 'Lihat', icon: 'i-ph-eye', to: questionDetailPath(row.id) }],
+    [{ label: 'Edit', icon: 'i-ph-pencil-simple', to: questionEditPath(row.id) }],
+    [
+      {
+        label: 'Padam',
+        icon: 'i-ph-trash',
+        color: 'error',
+        disabled: busy.value,
+        onSelect: () => void remove(row),
+      },
+    ],
+  ]
+}
+
 interface TableRow extends Record<string, unknown> {
   id: number
   excerptText: string
   subjectName: string
   levelName: string
+  statusText: string
+  difficultyText: string
   raw: QuestionRow
 }
 
@@ -223,35 +372,46 @@ const tableRows = computed<TableRow[]>(() =>
     excerptText: excerpt(r.questionText),
     subjectName: r.subject?.name ?? '-',
     levelName: r.level?.name ?? '-',
+    statusText: statusLabel(r.status, true),
+    difficultyText: `${String(r.difficultyLevel)} / 5`,
     raw: r,
   })),
 )
 
+// Per-cell classes under the key `class`; computed so the class linter does not read the key as a list.
+// eslint-disable-next-line pp/ds-class-allowlist -- an object key, not a class list
+const META_CLASS = 'class'
+const cellClass = (th: string, td = th): { meta: Record<string, unknown> } => ({
+  meta: { [META_CLASS]: { th, td } },
+})
+
 const columns: TableColumn<TableRow>[] = [
-  { id: 'select', header: ' ' },
-  { accessorKey: 'id', header: '#' },
-  { accessorKey: 'excerptText', header: 'Soalan' },
-  { accessorKey: 'subjectName', header: 'Subjek' },
-  { accessorKey: 'levelName', header: 'Tahap' },
-  { id: 'difficulty', header: 'Kesukaran' },
-  { id: 'status', header: 'Status' },
-  { id: 'actions', header: 'Tindakan' },
+  { id: 'select', header: ' ', ...cellClass('w-12 pe-0', 'w-12 pe-0') },
+  { accessorKey: 'id', header: 'ID', ...cellClass('w-16') },
+  { accessorKey: 'excerptText', header: 'Soalan', ...cellClass('') },
+  { accessorKey: 'subjectName', header: 'Subjek', ...cellClass('w-36 xl:w-40') },
+  { accessorKey: 'levelName', header: 'Tahap', ...cellClass('hidden 2xl:table-cell w-40') },
+  { id: 'difficulty', header: 'Kesukaran', ...cellClass('w-28') },
+  { id: 'status', header: 'Status', ...cellClass('w-32') },
+  { id: 'actions', header: ' ', ...cellClass('w-36 text-end', 'w-36') },
 ]
 const cardFields: CardField[] = [
   { key: 'subjectName', label: 'Subjek' },
   { key: 'levelName', label: 'Tahap' },
+  { key: 'statusText', label: 'Status' },
+  { key: 'difficultyText', label: 'Kesukaran' },
 ]
 </script>
 
 <template>
   <DsPage data-testid="questions-page">
-    <!-- Subtitle and the create button ("Tambah Soalan" >= 640px, "Tambah" below). -->
+    <!-- Header row: what the page is for, the live total and the primary action. -->
     <div class="flex items-center justify-between gap-3">
       <p class="min-w-0 text-body text-muted">Urus bank soalan untuk platform PRESTASIPLUS</p>
       <UButton
         :to="QUESTIONS_CREATE_PATH"
         icon="i-ph-plus"
-        class="min-h-11 shrink-0"
+        class="shrink-0"
         data-testid="questions-add"
       >
         <span class="hidden sm:inline">Tambah Soalan</span>
@@ -261,106 +421,17 @@ const cardFields: CardField[] = [
 
     <QuestionSummaryCard :summary="summary.data.value" :active-subject-id="activeSubjectId" />
 
-    <!-- Filter (the URL is the state). -->
-    <DsFilterBar
-      :active-count="activeCount"
-      data-testid="questions-filter"
-      @apply="submitFilter"
-      @reset="resetFilter"
-    >
-      <div class="w-full min-w-0 sm:w-48">
-        <label for="q-subject" class="mb-2 block text-label text-highlighted">Subjek</label>
-        <NativeSelect
-          id="q-subject"
-          v-model="draft.subject_id"
-          name="subject_id"
-          data-testid="questions-subject"
-        >
-          <option value="">Semua Subjek</option>
-          <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">
-            {{ s.name }}
-          </option>
-        </NativeSelect>
-      </div>
-      <div class="w-full min-w-0 sm:w-48">
-        <label for="q-level" class="mb-2 block text-label text-highlighted">Tahap</label>
-        <NativeSelect
-          id="q-level"
-          v-model="draft.education_level_id"
-          name="education_level_id"
-          data-testid="questions-level"
-        >
-          <option value="">Semua Tahap</option>
-          <option v-for="l in levelOptions" :key="l.id" :value="String(l.id)">{{ l.name }}</option>
-        </NativeSelect>
-      </div>
-      <div class="w-full min-w-0 sm:w-48">
-        <label for="q-difficulty" class="mb-2 block text-label text-highlighted">Kesukaran</label>
-        <NativeSelect
-          id="q-difficulty"
-          v-model="draft.difficulty_level"
-          name="difficulty_level"
-          data-testid="questions-difficulty"
-        >
-          <option value="">Semua</option>
-          <option v-for="o in DIFFICULTY_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </NativeSelect>
-      </div>
-      <div class="w-full min-w-0 sm:w-48">
-        <label for="q-status" class="mb-2 block text-label text-highlighted">Status</label>
-        <NativeSelect
-          id="q-status"
-          v-model="draft.status"
-          name="status"
-          data-testid="questions-status"
-        >
-          <option value="">Semua Status</option>
-          <option v-for="o in STATUS_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </NativeSelect>
-      </div>
-      <div class="w-full min-w-0 sm:w-48">
-        <label for="q-dskp" class="mb-2 block text-label text-highlighted">DSKP</label>
-        <NativeSelect
-          id="q-dskp"
-          v-model="draft.dskp_filter"
-          name="dskp_filter"
-          data-testid="questions-dskp"
-        >
-          <option value="">Semua</option>
-          <option v-for="o in DSKP_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </NativeSelect>
-      </div>
-      <div class="w-full min-w-0 sm:w-48">
-        <label for="q-compliance" class="mb-2 block text-label text-highlighted">Compliance</label>
-        <NativeSelect
-          id="q-compliance"
-          v-model="draft.compliance_filter"
-          name="compliance_filter"
-          data-testid="questions-compliance"
-        >
-          <option value="">Semua</option>
-          <option v-for="o in COMPLIANCE_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </NativeSelect>
-      </div>
-      <div class="w-full min-w-0 sm:w-48">
-        <label for="q-source" class="mb-2 block text-label text-highlighted">Source</label>
-        <NativeSelect
-          id="q-source"
-          v-model="draft.source_filter"
-          name="source_filter"
-          data-testid="questions-source"
-        >
-          <option value="">Semua</option>
-          <option v-for="o in SOURCE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </NativeSelect>
-      </div>
-      <template #search>
-        <div class="w-full min-w-0 sm:w-64">
-        <label for="q-search" class="mb-2 block text-label text-highlighted">Cari</label>
+    <!-- Filter toolbar (the URL is the state). -->
+    <div class="flex flex-col gap-3">
+      <DsPanel>
+      <form
+        class="flex flex-wrap items-center gap-3"
+        role="search"
+        data-testid="questions-filter"
+        @submit.prevent="submitFilter"
+      >
+        <div class="flex min-w-64 grow basis-80 items-center gap-2">
+          <label for="q-search" class="sr-only">Cari</label>
           <UInput
             id="q-search"
             v-model="draft.search"
@@ -371,20 +442,144 @@ const cardFields: CardField[] = [
             class="w-full"
             data-testid="questions-search"
           />
+          <UButton type="submit" icon="i-ph-magnifying-glass" label="Cari" />
         </div>
-      </template>
-    </DsFilterBar>
+
+        <template v-if="wide">
+          <div v-for="f in PRIMARY_FIELDS" :key="f.key" class="w-40 min-w-0 2xl:w-52">
+            <label :for="f.id" class="sr-only">{{ f.label }}</label>
+            <NativeSelect
+              :id="f.id"
+              v-model="draft[f.key]"
+              :name="f.key"
+              :data-testid="f.testid"
+            >
+              <option value="">{{ f.empty }}</option>
+              <option v-for="o in f.options" :key="o.value" :value="o.value">{{ o.label }}</option>
+            </NativeSelect>
+          </div>
+
+          <UPopover v-model:open="morePopover" :content="{ align: 'end' }">
+            <UChip :show="moreActive > 0" :text="moreActive" color="primary">
+              <UButton
+                type="button"
+                color="neutral"
+                variant="soft"
+                icon="i-ph-sliders-horizontal"
+                data-testid="questions-more-open"
+                >Lagi penapis</UButton
+              >
+            </UChip>
+            <template #content>
+              <div class="flex w-72 flex-col gap-3 p-4" data-testid="questions-more">
+                <div v-for="f in MORE_FIELDS" :key="f.key">
+                  <label :for="f.id" class="mb-2 block text-label text-highlighted">{{
+                    f.label
+                  }}</label>
+                  <NativeSelect
+                    :id="f.id"
+                    v-model="draft[f.key]"
+                    :name="f.key"
+                    :data-testid="f.testid"
+                  >
+                    <option value="">{{ f.empty }}</option>
+                    <option v-for="o in f.options" :key="o.value" :value="o.value">
+                      {{ o.label }}
+                    </option>
+                  </NativeSelect>
+                </div>
+                <UButton type="button" block label="Guna" @click="submitFilter" />
+              </div>
+            </template>
+          </UPopover>
+
+          <UButton
+            v-if="activeCount > 0"
+            type="button"
+            color="neutral"
+            variant="ghost"
+            label="Set Semula"
+            @click="resetFilter"
+          />
+        </template>
+
+        <template v-else>
+          <UChip :show="activeCount > 0" :text="activeCount" color="primary">
+            <UButton
+              type="button"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-funnel"
+              label="Penapis"
+              data-testid="questions-filter-open"
+              @click="sheet = true"
+            />
+          </UChip>
+          <UDrawer v-model:open="sheet" title="Penapis" description=" ">
+            <template #body>
+              <div
+                class="flex flex-col gap-4 overflow-y-auto"
+                data-testid="questions-filter-sheet"
+              >
+                <div v-for="f in ALL_FIELDS" :key="f.key">
+                  <label :for="`m-${f.id}`" class="mb-2 block text-label text-highlighted">{{
+                    f.label
+                  }}</label>
+                  <NativeSelect
+                    :id="`m-${f.id}`"
+                    v-model="draft[f.key]"
+                    :name="f.key"
+                    :data-testid="`m-${f.testid}`"
+                  >
+                    <option value="">{{ f.empty }}</option>
+                    <option v-for="o in f.options" :key="o.value" :value="o.value">
+                      {{ o.label }}
+                    </option>
+                  </NativeSelect>
+                </div>
+                <UButton type="button" block label="Guna" @click="submitFilter" />
+                <UButton
+                  type="button"
+                  block
+                  color="neutral"
+                  variant="ghost"
+                  label="Set Semula"
+                  @click="resetFilter"
+                />
+              </div>
+            </template>
+          </UDrawer>
+        </template>
+      </form>
+      </DsPanel>
+
+      <div
+        v-if="chips.length > 0"
+        class="flex flex-wrap items-center gap-2"
+        data-testid="questions-chips"
+      >
+        <span class="text-label text-muted">Penapis aktif:</span>
+        <UButton
+          v-for="c in chips"
+          :key="c.key"
+          type="button"
+          color="neutral"
+          variant="soft"
+          size="sm"
+          trailing-icon="i-ph-x"
+          :aria-label="`Buang penapis ${c.text}`"
+          data-testid="questions-chip"
+          @click="removeChip(c.key)"
+          >{{ c.text }}</UButton
+        >
+      </div>
+    </div>
 
     <!-- Load failure: alert in place of the table + retry (INFERRED copy, SRS §8.2). -->
     <div v-if="list.error.value" class="flex flex-col gap-3" data-testid="questions-error">
       <ErrorBox :messages="LOAD_ERROR" />
       <div>
-        <UButton
-          type="button"
-          class="min-h-11"
-          data-testid="questions-retry"
-          @click="list.reload()"
-        >
+        <UButton type="button" data-testid="questions-retry" @click="list.reload()">
           Cuba Semula
         </UButton>
       </div>
@@ -398,7 +593,6 @@ const cardFields: CardField[] = [
             :to="QUESTIONS_CREATE_PATH"
             variant="link"
             icon="i-ph-plus"
-            class="min-h-11"
             data-testid="questions-empty-add"
             >Tambah Soalan Pertama</UButton
           >
@@ -407,14 +601,14 @@ const cardFields: CardField[] = [
     </UCard>
 
     <div v-else class="flex flex-col gap-3">
-      <UCard v-if="selected.length > 0">
+      <DsPanel v-if="selected.length > 0" tone="bulk">
       <form
         method="post"
         class="flex flex-wrap items-center gap-3"
         data-testid="questions-bulk-bar"
         @submit.prevent="submitBulk"
       >
-        <span class="inline-flex items-center gap-2 text-label text-highlighted">
+        <span class="inline-flex items-center gap-2 ps-2 text-label text-highlighted">
           <UIcon name="i-ph-check-square" class="size-5 text-primary" />
           <span class="tabular" data-testid="questions-selected-count">{{ selected.length }}</span>
           soalan dipilih
@@ -429,25 +623,28 @@ const cardFields: CardField[] = [
           <option value="">Pilih Tindakan</option>
           <option v-for="o in BULK_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
         </NativeSelect>
-        <UButton type="submit" :disabled="busy" class="min-h-11" data-testid="questions-bulk-submit">
+        <UButton type="submit" :disabled="busy" data-testid="questions-bulk-submit">
           Laksanakan
         </UButton>
       </form>
-      </UCard>
+      </DsPanel>
 
       <DsDataTable
+        dense
         :data="tableRows"
         :columns="columns"
         caption="Senarai soalan"
         :loading="firstLoad"
         :total="list.data.value?.meta.totalItems ?? 0"
-        :page-size="list.data.value?.meta.pageSize ?? 20"
+        :page-size="list.data.value?.meta.pageSize ?? perPage"
+        :page-size-options="PAGE_SIZES"
         :page="list.data.value?.meta.page ?? page"
         card-title="excerptText"
         :card-fields="cardFields"
         empty-label="Tiada soalan dijumpai"
         data-testid="questions-table"
         @update:page="goToPage"
+        @update:page-size="setPageSize"
       >
         <template #select-header>
           <UCheckbox
@@ -466,18 +663,19 @@ const cardFields: CardField[] = [
           />
         </template>
         <template #id-cell="{ row }">
-          <span data-testid="question-id">{{ row.original.id }}</span>
+          <span class="text-label text-dimmed" data-testid="question-id">{{ row.original.id }}</span>
         </template>
         <template #excerptText-cell="{ row }">
-          <div class="flex min-w-60 flex-col gap-1">
-            <p class="break-words text-highlighted" data-testid="question-text">
+          <div class="flex min-w-0 flex-col gap-2">
+            <p class="line-clamp-2 break-words text-highlighted" data-testid="question-text">
               {{ row.original.excerptText }}
             </p>
-            <div class="flex flex-wrap items-center gap-1">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-2">
               <UBadge
                 v-if="row.original.raw.dskpTagged"
                 color="success"
                 variant="subtle"
+                size="sm"
                 icon="i-ph-check-circle"
                 label="DSKP"
                 data-testid="question-dskp"
@@ -486,6 +684,7 @@ const cardFields: CardField[] = [
                 v-else
                 color="neutral"
                 variant="subtle"
+                size="sm"
                 icon="i-ph-book-open"
                 label="Latihan Tambahan"
                 data-testid="question-dskp"
@@ -493,6 +692,7 @@ const cardFields: CardField[] = [
               <UBadge
                 :color="complianceColor(row.original.raw.complianceStatus)"
                 variant="subtle"
+                size="sm"
                 :label="row.original.raw.complianceStatus.replaceAll('_', ' ').toUpperCase()"
                 data-testid="question-compliance"
               />
@@ -500,38 +700,47 @@ const cardFields: CardField[] = [
                 v-if="row.original.raw.aiVerified"
                 color="info"
                 variant="subtle"
+                size="sm"
                 label="AI Verified"
                 data-testid="question-ai-verified"
               />
             </div>
-            <p class="text-caption break-words text-muted" data-testid="question-source">
-              Source: {{ sourceLabel(row.original.raw.sourceType) }}
-            </p>
             <p
-              v-if="row.original.raw.sourceFile"
-              class="text-caption break-words text-muted"
-              data-testid="question-source-file"
+              class="truncate text-caption text-muted"
+              :title="row.original.raw.sourceFile ?? undefined"
             >
-              {{ row.original.raw.sourceFile }}
+              <span data-testid="question-source"
+                >Source: {{ sourceLabel(row.original.raw.sourceType) }}</span
+              >
+              <span v-if="row.original.raw.sourceFile" data-testid="question-source-file">
+                · {{ row.original.raw.sourceFile }}</span
+              >
             </p>
+          </div>
+        </template>
+        <template #subjectName-cell="{ row }">
+          <div class="flex min-w-0 flex-col">
+            <span class="text-highlighted">{{ row.original.subjectName }}</span>
+            <span class="text-caption text-muted 2xl:hidden">{{ row.original.levelName }}</span>
           </div>
         </template>
         <template #difficulty-cell="{ row }">
           <span
-            class="inline-flex gap-1 whitespace-nowrap"
+            class="inline-flex items-center gap-2 whitespace-nowrap"
             data-testid="question-stars"
             :aria-label="`Kesukaran ${row.original.raw.difficultyLevel} daripada 5`"
+            :title="DIFFICULTY_LABELS[row.original.raw.difficultyLevel]"
           >
-            <UIcon
-              v-for="n in 5"
-              :key="n"
-              :name="
-                n <= row.original.raw.difficultyLevel ? 'i-ph-star-fill' : 'i-ph-star'
-              "
-              class="size-4"
-              :class="n <= row.original.raw.difficultyLevel ? 'text-warning' : 'text-dimmed'"
-              :data-filled="n <= row.original.raw.difficultyLevel ? 'true' : 'false'"
-            />
+            <span class="inline-flex gap-1">
+              <UIcon
+                v-for="n in 5"
+                :key="n"
+                :name="n <= row.original.raw.difficultyLevel ? 'i-ph-star-fill' : 'i-ph-star'"
+                class="size-4"
+                :class="n <= row.original.raw.difficultyLevel ? 'text-warning' : 'text-muted'"
+                :data-filled="n <= row.original.raw.difficultyLevel ? 'true' : 'false'"
+              />
+            </span>
           </span>
         </template>
         <template #status-cell="{ row }">
@@ -551,7 +760,7 @@ const cardFields: CardField[] = [
           </div>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex items-center gap-1">
+          <div class="flex items-center justify-end gap-1">
             <UButton
               :to="questionDetailPath(row.original.id)"
               color="neutral"
@@ -559,7 +768,6 @@ const cardFields: CardField[] = [
               icon="i-ph-eye"
               aria-label="Lihat"
               title="Lihat"
-              class="min-h-11 min-w-11 justify-center"
               data-testid="question-view"
             />
             <UButton
@@ -569,21 +777,19 @@ const cardFields: CardField[] = [
               icon="i-ph-pencil-simple"
               aria-label="Edit"
               title="Edit"
-              class="min-h-11 min-w-11 justify-center"
               data-testid="question-edit"
             />
-            <UButton
-              type="button"
-              color="error"
-              variant="ghost"
-              icon="i-ph-trash"
-              aria-label="Padam"
-              title="Padam"
-              :disabled="busy"
-              class="min-h-11 min-w-11 justify-center"
-              data-testid="question-delete"
-              @click="remove(row.original.raw)"
-            />
+            <UDropdownMenu :items="rowMenu(row.original.raw)" :content="{ align: 'end' }">
+              <UButton
+                type="button"
+                color="neutral"
+                variant="ghost"
+                icon="i-ph-dots-three-vertical"
+                aria-label="Lagi tindakan"
+                title="Lagi tindakan"
+                data-testid="question-more"
+              />
+            </UDropdownMenu>
           </div>
         </template>
         <template #card-actions="{ row }">
@@ -594,26 +800,16 @@ const cardFields: CardField[] = [
               variant="soft"
               icon="i-ph-eye"
               aria-label="Lihat"
-              class="min-h-11 min-w-11 justify-center"
             />
-            <UButton
-              :to="questionEditPath(row.id as number)"
-              color="neutral"
-              variant="soft"
-              icon="i-ph-pencil-simple"
-              aria-label="Edit"
-              class="min-h-11 min-w-11 justify-center"
-            />
-            <UButton
-              type="button"
-              color="error"
-              variant="soft"
-              icon="i-ph-trash"
-              aria-label="Padam"
-              :disabled="busy"
-              class="min-h-11 min-w-11 justify-center"
-              @click="remove(row.raw as QuestionRow)"
-            />
+            <UDropdownMenu :items="rowMenu(row.raw as QuestionRow)" :content="{ align: 'end' }">
+              <UButton
+                type="button"
+                color="neutral"
+                variant="soft"
+                icon="i-ph-dots-three-vertical"
+                aria-label="Lagi tindakan"
+              />
+            </UDropdownMenu>
           </div>
         </template>
       </DsDataTable>

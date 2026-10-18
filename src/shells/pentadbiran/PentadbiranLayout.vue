@@ -120,14 +120,18 @@ const accountItems = computed(() => [
         class="sr-only focus:not-sr-only focus:fixed focus:start-2 focus:top-2 focus:z-50 focus:rounded-chip focus:bg-primary focus:px-4 focus:py-3 focus:text-primary-on"
         >Langkau ke kandungan</a
       >
-      <UDashboardGroup storage="local" storage-key="pentadbiran-dashboard" class="bg-muted">
+      <UDashboardGroup
+        storage="local"
+        storage-key="pentadbiran-dashboard"
+        class="overflow-clip bg-muted"
+      >
         <UDashboardSidebar
           id="pentadbiran"
           v-model:open="sidebarOpen"
           collapsible
           resizable
-          :min-size="16"
-          :default-size="19"
+          :min-size="14"
+          :default-size="17"
           :max-size="26"
           :collapsed-size="4"
           :ui="{
@@ -146,11 +150,7 @@ const accountItems = computed(() => [
                 class="grid size-9 place-items-center rounded-md bg-gradient-primary font-display text-label font-extrabold text-primary-on"
                 >P+</span
               >
-              <span
-                v-if="!collapsed"
-                class="rounded-full bg-primary/15 px-2 py-0.5 text-caption font-bold text-primary"
-                >Pentadbiran</span
-              >
+              <span class="sr-only">Pentadbiran</span>
             </RouterLink>
           </template>
 
@@ -161,10 +161,6 @@ const accountItems = computed(() => [
               orientation="vertical"
               popover
               tooltip
-              :ui="{
-                link: 'min-h-10 pointer-coarse:min-h-11 text-label font-semibold',
-                childLink: 'min-h-9 pointer-coarse:min-h-11 text-label',
-              }"
               aria-label="Menu utama"
               data-testid="pentadbiran-nav"
             />
@@ -214,12 +210,13 @@ const accountItems = computed(() => [
                   aria-label="Buka menu"
                   data-testid="pentadbiran-menu-button"
                 />
-                <UDashboardSidebarCollapse
-                  class="hidden lg:inline-flex"
-                  color="neutral"
-                  variant="ghost"
-                  aria-label="Tukar saiz menu"
-                />
+                <div class="hidden lg:block">
+                  <UDashboardSidebarCollapse
+                    color="neutral"
+                    variant="ghost"
+                    aria-label="Tukar saiz menu"
+                  />
+                </div>
               </template>
               <template #title>
                 <div class="flex min-w-0 flex-col leading-tight">

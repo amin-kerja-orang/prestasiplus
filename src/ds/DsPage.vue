@@ -12,7 +12,7 @@ defineProps<{
 
 <template>
   <div
-    class="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-4 md:gap-6 staff:max-w-screen-2xl"
+    class="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-5 md:gap-6 lg:gap-8 staff:max-w-none"
     data-ds="page"
   >
     <header
