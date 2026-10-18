@@ -11,12 +11,9 @@ import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, usePageMeta } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
 import { fetchAdminNote } from '../api/admin-articles-notes'
-import AdminBackLink from '../components/admin-articles-notes/AdminBackLink.vue'
-import AdminStatusPill from '../components/admin-articles-notes/AdminStatusPill.vue'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
 import {
   COPY,
   NOTES_LIST_PATH,
@@ -33,7 +30,11 @@ const meta = usePageMeta()
 
 const numericId = computed(() => (/^\d+$/.test(props.id) ? Number(props.id) : null))
 
-const { data: note, error } = useApi(
+const {
+  data: note,
+  error,
+  reload,
+} = useApi(
   (signal) => fetchAdminNote(numericId.value ?? 0, { signal }),
   () => props.id,
   { immediate: numericId.value !== null },
@@ -57,15 +58,27 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
 </script>
 
 <template>
-  <DsPage data-testid="admin-note-preview-page">
-    <AdminBackLink :to="NOTES_LIST_PATH" />
+  <DsPage
+    :back-to="NOTES_LIST_PATH"
+    back-label="Kembali ke Senarai"
+    data-testid="admin-note-preview-page"
+  >
+    <DsLoadError
+      v-if="failed"
+      :message="COPY.loadFailed"
+      testid="admin-note-load-error"
+      @retry="reload()"
+    />
 
-    <AdminAlert v-if="failed" :messages="[COPY.loadFailed]" data-testid="admin-note-load-error" />
-
-    <UCard v-else-if="note" data-testid="admin-note-card">
-      <article class="flex min-w-0 flex-col gap-6">
+    <DsPanel v-else-if="note" data-testid="admin-note-card">
+      <article class="flex min-w-0 flex-col gap-6 p-2 sm:p-4">
         <div class="flex flex-col gap-3">
-          <div><AdminStatusPill :published="note.isPublished" /></div>
+          <div>
+            <DsStatusBadge
+              :status="note.isPublished ? 'published' : 'draft'"
+              data-testid="status-pill"
+            />
+          </div>
           <h1 class="text-title break-words text-highlighted" data-testid="preview-title">
             {{ note.title }}
           </h1>
@@ -140,6 +153,6 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
           />
         </div>
       </article>
-    </UCard>
+    </DsPanel>
   </DsPage>
 </template>

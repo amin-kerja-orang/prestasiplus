@@ -13,18 +13,27 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, DsStatTile, useConfirm } from '@/ds'
-import type { CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsRowActions,
+  DsStatRow,
+  DsStatusBadge,
+  useConfirm,
+} from '@/ds'
+import type { CardField, RowAction, StatItem } from '@/ds'
 
 import {
   deleteAdminArticle,
   fetchAdminArticles,
   type AdminArticleItem,
 } from '../api/admin-articles-notes'
-import AdminActiveFilters from '../components/admin-kit/AdminActiveFilters.vue'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
-import AdminRowMenu from '../components/admin-kit/AdminRowMenu.vue'
-import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
+import { cellClass } from '../lib/table-cols'
 import {
   ARTICLES_LIST_PATH,
   ARTICLE_ROUTES,
@@ -109,7 +118,6 @@ const chips = computed(() => {
   if (pub) out.push({ key: 'published', label: pub.label })
   return out
 })
-const activeCount = computed(() => chips.value.length)
 
 function formQuery(): Record<string, string> {
   const out: Record<string, string> = {}
@@ -168,14 +176,14 @@ async function remove(row: AdminArticleItem): Promise<void> {
   }
 }
 
-function actionsOf(row: AdminArticleItem) {
+function actionsOf(row: AdminArticleItem): RowAction[] {
   return [
-    { label: 'Lihat', icon: 'i-ph-eye', to: `${ARTICLES_LIST_PATH}/${String(row.id)}` },
     {
       label: 'Edit',
       icon: 'i-ph-pencil-simple',
       to: `${ARTICLES_LIST_PATH}/${String(row.id)}/edit`,
     },
+    { label: 'Lihat', icon: 'i-ph-eye', to: `${ARTICLES_LIST_PATH}/${String(row.id)}` },
     {
       label: 'Padam',
       icon: 'i-ph-trash',
@@ -185,6 +193,24 @@ function actionsOf(row: AdminArticleItem) {
     },
   ]
 }
+
+const statItems = computed<StatItem[]>(() => [
+  { key: 'k1', label: 'Jumlah artikel', value: total.value, icon: 'newspaper', accent: 'action' },
+  {
+    key: 'k2',
+    label: 'Diterbitkan (halaman ini)',
+    value: publishedOnPage.value,
+    icon: 'check-circle',
+    accent: 'win',
+  },
+  {
+    key: 'k3',
+    label: 'Featured (halaman ini)',
+    value: featuredOnPage.value,
+    icon: 'star',
+    accent: 'trial',
+  },
+])
 
 interface TableRow extends Record<string, unknown> {
   id: number
@@ -209,13 +235,13 @@ const tableRows = computed<TableRow[]>(() =>
 )
 
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'title', header: 'Tajuk' },
-  { accessorKey: 'categoryLabel', header: 'Kategori' },
-  { accessorKey: 'gradeLevel', header: 'Tahap' },
-  { id: 'status', header: 'Status' },
-  { accessorKey: 'views', header: 'Views' },
-  { accessorKey: 'date', header: 'Tarikh' },
-  { id: 'actions', header: 'Tindakan' },
+  { accessorKey: 'title', header: 'Tajuk', ...cellClass('') },
+  { accessorKey: 'categoryLabel', header: 'Kategori', ...cellClass('w-36') },
+  { accessorKey: 'gradeLevel', header: 'Tahap', ...cellClass('w-28') },
+  { id: 'status', header: 'Status', ...cellClass('w-40') },
+  { accessorKey: 'views', header: 'Views', ...cellClass('w-20') },
+  { accessorKey: 'date', header: 'Tarikh', ...cellClass('w-28') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-36') },
 ]
 const cardFields: CardField[] = [
   { key: 'categoryLabel', label: 'Kategori' },
@@ -226,43 +252,27 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage data-testid="admin-articles-page">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <p class="min-w-0 text-body text-muted" data-testid="admin-articles-count">
-        Jumlah: {{ total }} artikel
-      </p>
+  <DsPage subtitle-testid="admin-articles-count" data-testid="admin-articles-page">
+    <template #subtitle>Jumlah: {{ total }} artikel</template>
+    <template #actions>
       <UButton
         :to="{ name: ARTICLE_ROUTES.create }"
         icon="i-ph-plus"
         label="Tambah"
-        size="md"
         class="min-h-11"
         data-testid="admin-articles-add"
       />
-    </div>
+    </template>
 
-    <section class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-      <DsStatTile :value="total" unit="Jumlah artikel" icon="i-ph-newspaper" accent="action" />
-      <DsStatTile
-        :value="publishedOnPage"
-        unit="Diterbitkan (halaman ini)"
-        icon="i-ph-check-circle"
-        accent="win"
-      />
-      <DsStatTile
-        :value="featuredOnPage"
-        unit="Featured (halaman ini)"
-        icon="i-ph-star"
-        accent="trial"
-      />
-    </section>
+    <DsStatRow :items="statItems" prefix="stat" :cols="3" />
 
     <div class="flex flex-col gap-3">
       <DsFilterBar
-        :active-count="activeCount"
+        :chips="chips"
         data-testid="admin-articles-filter"
         @apply="submitFilter"
         @reset="resetFilter"
+        @remove-chip="removeChip"
       >
         <template #search>
           <UInput
@@ -277,7 +287,7 @@ const cardFields: CardField[] = [
             data-testid="admin-articles-search"
           />
         </template>
-        <NativeSelect
+        <DsNativeSelect
           v-model="category"
           name="category"
           aria-label="Kategori"
@@ -288,8 +298,8 @@ const cardFields: CardField[] = [
           <option v-for="o in CATEGORY_OPTIONS" :key="o.value" :value="o.value">
             {{ o.label }}
           </option>
-        </NativeSelect>
-        <NativeSelect
+        </DsNativeSelect>
+        <DsNativeSelect
           v-model="published"
           name="published"
           aria-label="Status"
@@ -299,22 +309,25 @@ const cardFields: CardField[] = [
           <option v-for="o in PUBLISHED_FILTER_OPTIONS" :key="o.value" :value="o.value">
             {{ o.label }}
           </option>
-        </NativeSelect>
+        </DsNativeSelect>
       </DsFilterBar>
-      <AdminActiveFilters :chips="chips" @remove="removeChip" @reset="resetFilter" />
     </div>
 
-    <div v-if="error" class="flex flex-col gap-4" data-testid="admin-articles-error">
-      <AdminAlert :messages="errorLines(error)" />
-      <div><UButton label="Cuba Lagi" class="min-h-11" @click="reload()" /></div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="errorLines(error).join(' ')"
+      testid="admin-articles-error"
+      @retry="reload()"
+    />
 
-    <UCard v-else-if="!firstLoad && rows.length === 0" data-testid="admin-articles-empty">
+    <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="admin-articles-empty">
       <DsEmptyState :title="COPY.articleEmpty" icon="i-ph-newspaper" />
-    </UCard>
+    </DsPanel>
 
     <DsDataTable
       v-else
+      variant="flush"
+      layout="fixed"
       :data="tableRows"
       :columns="columns"
       caption="Senarai artikel"
@@ -324,7 +337,7 @@ const cardFields: CardField[] = [
       :page="applied.page"
       card-title="title"
       :card-fields="cardFields"
-      :empty-label="COPY.articleEmpty"
+      :empty-title="COPY.articleEmpty"
       data-testid="admin-articles-table"
       @update:page="goToPage"
     >
@@ -361,10 +374,8 @@ const cardFields: CardField[] = [
         <span class="text-nowrap" data-testid="article-grade">{{ row.original.gradeLevel }}</span>
       </template>
       <template #status-cell="{ row }">
-        <UBadge
-          :color="row.original.raw.isPublished ? 'success' : 'neutral'"
-          variant="subtle"
-          :label="row.original.raw.isPublished ? COPY.published : COPY.draft"
+        <DsStatusBadge
+          :status="row.original.raw.isPublished ? 'published' : 'draft'"
           data-testid="status-pill"
         />
       </template>
@@ -375,10 +386,10 @@ const cardFields: CardField[] = [
         <span class="text-nowrap" data-testid="article-date">{{ row.original.date }}</span>
       </template>
       <template #actions-cell="{ row }">
-        <AdminRowMenu :actions="actionsOf(row.original.raw)" />
+        <DsRowActions :actions="actionsOf(row.original.raw)" :inline="1" />
       </template>
       <template #card-actions="{ row }">
-        <AdminRowMenu :actions="actionsOf((row as unknown as TableRow).raw)" />
+        <DsRowActions :actions="actionsOf((row as unknown as TableRow).raw)" :inline="1" />
       </template>
     </DsDataTable>
   </DsPage>

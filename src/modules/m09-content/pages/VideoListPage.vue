@@ -17,7 +17,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsArt3D, DsEmptyState, DsPage } from '@/ds'
+import { DsArt3D, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { fetchVideos } from '../api/content'
@@ -66,7 +66,7 @@ function apiQuery(): VideoListQuery {
   return query
 }
 
-const { data, error } = useApi(
+const { data, error, reload } = useApi(
   (signal) => fetchVideos(apiQuery(), { signal }),
   [
     () => route.query.search,
@@ -174,13 +174,11 @@ function goToPage(page: number): void {
       />
     </form>
 
-    <UAlert
+    <DsLoadError
       v-if="error"
-      color="error"
-      variant="soft"
-      icon="i-ph-warning-duotone"
-      :description="errorLines(error).join(' ')"
-      data-testid="video-list-error"
+      :message="errorLines(error).join(' ')"
+      testid="video-list-error"
+      @retry="reload()"
     />
 
     <template v-else-if="data && facets">

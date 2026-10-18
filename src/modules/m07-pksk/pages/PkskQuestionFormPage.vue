@@ -20,7 +20,15 @@ import { useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import { DsPage } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+} from '@/ds'
 
 import {
   createPkskQuestion,
@@ -31,12 +39,7 @@ import {
 } from '../api/admin'
 import { fetchPkskDomains } from '../api/pksk'
 import type { Bahagian, PkskLevel } from '../api/types'
-import AdminAlert from '../components/admin/AdminAlert.vue'
-import AdminField from '../components/admin/AdminField.vue'
-import AdminFormBar from '../components/admin/AdminFormBar.vue'
-import AdminSection from '../components/admin/AdminSection.vue'
-import NativeSelect from '../components/admin/native/NativeSelect.vue'
-import OptionsCard from '../components/admin/OptionsCard.vue'
+import OptionsCard from '../components/OptionsCard.vue'
 import {
   BAHAGIAN_CREATE_OPTIONS,
   DIFFICULTY_CREATE_OPTIONS,
@@ -93,10 +96,18 @@ const options = ref<OptionRow[]>(
 const savedBahagian = ref<Bahagian | null>(null)
 
 // The 15 domains come from #2 (FR-M07-61), never hard-coded.
-const { data: domains, error: domainsError } = useApi((signal) => fetchPkskDomains({ signal }))
+const {
+  data: domains,
+  error: domainsError,
+  reload: reloadDomains,
+} = useApi((signal) => fetchPkskDomains({ signal }))
 
 // S7: #9 pre-fills the form.
-const { data: loaded, error: loadError } = useApi(
+const {
+  data: loaded,
+  error: loadError,
+  reload: reloadLoaded,
+} = useApi(
   (signal) => fetchPkskQuestion(numericId.value ?? 0, { signal }),
   () => props.id,
   {
@@ -124,6 +135,11 @@ watch(loadError, (err) => {
   if (isApiError(err) && err.status === 404) setRouteOutcome(404)
 })
 if (props.mode === 'edit' && numericId.value === null) setRouteOutcome(404)
+
+function retryLoad(): void {
+  void reloadDomains()
+  if (editing.value) void reloadLoaded()
+}
 
 const loadFailed = computed(
   () =>
@@ -160,8 +176,6 @@ const FIELD_NAMES = [
   'questionText',
   'difficultyLevel',
 ]
-
-const invalid = (name: string): boolean => fieldMessages.value[name] !== undefined
 
 /** S6: a correct flag is only posted for Bahagian B (a tick kept after switching to A is dropped). */
 function optionBody(onlyB = false): PkskOptionInput[] {
@@ -216,17 +230,18 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPage data-testid="pksk-question-form-page">
-    <AdminAlert
+    <DsLoadError
       v-if="loadFailed || domainsError"
-      :messages="errorLines(loadError ?? domainsError)"
-      data-testid="pksk-form-load-error"
+      :message="errorLines(loadError ?? domainsError).join(' ')"
+      testid="pksk-form-load-error"
+      @retry="retryLoad"
     />
 
-    <UCard v-else-if="!ready" data-testid="pksk-form-skeleton">
+    <DsPanel v-else-if="!ready" data-testid="pksk-form-skeleton">
       <div class="flex flex-col gap-6">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
       </div>
-    </UCard>
+    </DsPanel>
 
     <form
       v-else
@@ -235,40 +250,59 @@ async function submit(): Promise<void> {
       data-testid="pksk-question-form"
       @submit.prevent="submit"
     >
-      <AdminAlert :messages="topErrors" data-testid="pksk-form-alert" />
+      <UAlert
+        v-if="topErrors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="pksk-form-alert"
+      >
+        <template #description>
+          <p v-for="m in topErrors" :key="m">{{ m }}</p>
+        </template>
+      </UAlert>
 
       <!-- Card 1: Bahagian & Domain (S6) / Domain, Sasaran, Status (S7). -->
-      <AdminSection title="Bahagian & Domain" icon="i-ph-squares-four" accent="friend">
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <AdminField
-            v-if="!editing"
-            for="q-bahagian"
-            label="Bahagian"
-            :error="fieldMessages.bahagian"
-          >
-            <NativeSelect
-              id="q-bahagian"
+      <DsFormSection
+        title="Bahagian & Domain"
+        icon="i-ph-squares-four"
+        accent="friend"
+        :columns="2"
+      >
+        <DsFormField
+          v-if="!editing"
+          native
+          for="q-bahagian"
+          label="Bahagian"
+          :error="fieldMessages.bahagian"
+        >
+          <template #default="{ id: fid, describedby, invalid }">
+            <DsNativeSelect
+              :id="fid"
               v-model="form.bahagian"
               name="bahagian"
               required
-              :aria-invalid="invalid('bahagian') ? 'true' : undefined"
+              placeholder="-- Pilih --"
+              :items="BAHAGIAN_CREATE_OPTIONS"
+              :invalid="invalid"
+              :aria-describedby="describedby"
               data-testid="q-bahagian"
               @change="onBahagianChange"
-            >
-              <option value="">-- Pilih --</option>
-              <option v-for="o in BAHAGIAN_CREATE_OPTIONS" :key="o.value" :value="o.value">
-                {{ o.label }}
-              </option>
-            </NativeSelect>
-          </AdminField>
+            />
+          </template>
+        </DsFormField>
 
-          <AdminField for="q-domain" label="Domain" :error="fieldMessages.pkskDomainId">
-            <NativeSelect
-              id="q-domain"
+        <DsFormField native for="q-domain" label="Domain" :error="fieldMessages.pkskDomainId">
+          <template #default="{ id: fid, describedby, invalid }">
+            <DsNativeSelect
+              :id="fid"
               v-model="form.domainId"
               name="pksk_domain_id"
               required
-              :aria-invalid="invalid('pkskDomainId') ? 'true' : undefined"
+              :placeholder="editing ? false : '-- Pilih domain --'"
+              :invalid="invalid"
+              :aria-describedby="describedby"
               data-testid="q-domain"
             >
               <template v-if="editing">
@@ -277,21 +311,23 @@ async function submit(): Promise<void> {
                 </option>
               </template>
               <template v-else>
-                <option value="">-- Pilih domain --</option>
                 <option v-for="d in createDomains" :key="d.id" :value="String(d.id)">
                   {{ d.name }}
                 </option>
               </template>
-            </NativeSelect>
-          </AdminField>
+            </DsNativeSelect>
+          </template>
+        </DsFormField>
 
-          <AdminField for="q-level" label="Sasaran" :error="fieldMessages.pkskTargetLevel">
-            <NativeSelect
-              id="q-level"
+        <DsFormField native for="q-level" label="Sasaran" :error="fieldMessages.pkskTargetLevel">
+          <template #default="{ id: fid, describedby, invalid }">
+            <DsNativeSelect
+              :id="fid"
               v-model="form.level"
               name="pksk_target_level"
               required
-              :aria-invalid="invalid('pkskTargetLevel') ? 'true' : undefined"
+              :invalid="invalid"
+              :aria-describedby="describedby"
               data-testid="q-level"
             >
               <template v-if="editing">
@@ -303,59 +339,72 @@ async function submit(): Promise<void> {
                   {{ o.label }}
                 </option>
               </template>
-            </NativeSelect>
-          </AdminField>
+            </DsNativeSelect>
+          </template>
+        </DsFormField>
 
-          <AdminField v-if="editing" for="q-status" label="Status" :error="fieldMessages.status">
-            <NativeSelect
-              id="q-status"
+        <DsFormField
+          v-if="editing"
+          native
+          for="q-status"
+          label="Status"
+          :error="fieldMessages.status"
+        >
+          <template #default="{ id: fid, describedby, invalid }">
+            <DsNativeSelect
+              :id="fid"
               v-model="form.status"
               name="status"
               required
-              :aria-invalid="invalid('status') ? 'true' : undefined"
+              :items="STATUS_OPTIONS"
+              :invalid="invalid"
+              :aria-describedby="describedby"
               data-testid="q-status"
-            >
-              <option v-for="o in STATUS_OPTIONS" :key="o.value" :value="o.value">
-                {{ o.label }}
-              </option>
-            </NativeSelect>
-          </AdminField>
-        </div>
-      </AdminSection>
+            />
+          </template>
+        </DsFormField>
+      </DsFormSection>
 
       <!-- Card 2: Soalan. -->
-      <AdminSection title="Soalan" icon="i-ph-question" accent="heat">
-        <AdminField
-          for="q-text"
-          :label="editing ? 'Soalan' : 'Teks Soalan'"
-          :error="fieldMessages.questionText"
-        >
-          <UTextarea
-            id="q-text"
-            v-model="form.text"
-            name="question_text"
-            :rows="5"
-            required
-            :placeholder="editing ? undefined : 'Tulis soalan di sini...'"
-            size="md"
-            class="w-full"
-            :color="invalid('questionText') ? 'error' : undefined"
-            data-testid="q-text"
-          />
-        </AdminField>
-
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <AdminField
-            for="q-difficulty"
-            :label="editing ? 'Kesukaran' : 'Tahap Kesukaran (1-5)'"
-            :error="fieldMessages.difficultyLevel"
+      <DsFormSection title="Soalan" icon="i-ph-question" accent="heat" :columns="2">
+        <div class="sm:col-span-2">
+          <DsFormField
+            native
+            for="q-text"
+            :label="editing ? 'Soalan' : 'Teks Soalan'"
+            :error="fieldMessages.questionText"
           >
-            <NativeSelect
-              id="q-difficulty"
+            <template #default="{ id: fid, describedby, invalid }">
+              <UTextarea
+                :id="fid"
+                v-model="form.text"
+                name="question_text"
+                :rows="5"
+                required
+                :placeholder="editing ? undefined : 'Tulis soalan di sini...'"
+                class="w-full"
+                :color="invalid ? 'error' : undefined"
+                :aria-describedby="describedby"
+                data-testid="q-text"
+              />
+            </template>
+          </DsFormField>
+        </div>
+
+        <DsFormField
+          native
+          for="q-difficulty"
+          :label="editing ? 'Kesukaran' : 'Tahap Kesukaran (1-5)'"
+          :error="fieldMessages.difficultyLevel"
+        >
+          <template #default="{ id: fid, describedby, invalid }">
+            <DsNativeSelect
+              :id="fid"
               v-model="form.difficulty"
               name="difficulty_level"
               :required="!editing"
-              :aria-invalid="invalid('difficultyLevel') ? 'true' : undefined"
+              :invalid="invalid"
+              :aria-describedby="describedby"
               data-testid="q-difficulty"
             >
               <template v-if="editing">
@@ -370,23 +419,30 @@ async function submit(): Promise<void> {
                   {{ o.label }}
                 </option>
               </template>
-            </NativeSelect>
-          </AdminField>
-        </div>
+            </DsNativeSelect>
+          </template>
+        </DsFormField>
 
-        <AdminField for="q-explanation" :label="editing ? 'Penjelasan' : 'Penjelasan (Opsional)'">
-          <UTextarea
-            id="q-explanation"
-            v-model="form.explanation"
-            name="explanation"
-            :rows="3"
-            :placeholder="editing ? undefined : 'Penjelasan jawapan...'"
-            size="md"
-            class="w-full"
-            data-testid="q-explanation"
-          />
-        </AdminField>
-      </AdminSection>
+        <div class="sm:col-span-2">
+          <DsFormField
+            native
+            for="q-explanation"
+            :label="editing ? 'Penjelasan' : 'Penjelasan (Opsional)'"
+          >
+            <template #default="{ id: fid }">
+              <UTextarea
+                :id="fid"
+                v-model="form.explanation"
+                name="explanation"
+                :rows="3"
+                :placeholder="editing ? undefined : 'Penjelasan jawapan...'"
+                class="w-full"
+                data-testid="q-explanation"
+              />
+            </template>
+          </DsFormField>
+        </div>
+      </DsFormSection>
 
       <!-- Card 3: Pilihan Jawapan (S7: not rendered for a saved Bahagian C). -->
       <OptionsCard
@@ -399,10 +455,9 @@ async function submit(): Promise<void> {
         :placeholder="editing ? undefined : 'Teks pilihan'"
       />
 
-      <AdminFormBar
+      <DsFormBar
         :cancel-to="QUESTIONS_PATH"
         cancel-label="Kembali"
-        cancel-testid="form-back"
         :submit-label="editing ? 'Kemaskini' : 'Simpan Soalan'"
         :saving="saving"
       />

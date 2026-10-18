@@ -143,7 +143,7 @@ describe('PkskDashboardPage (S2)', () => {
     expect(w.get('[data-testid=readiness]').text()).toContain('Teruskan usaha anda!')
     expect(w.get('[data-testid=exam-count]').text()).toContain('0')
     expect(w.get('[data-testid=avg-b]').text()).toContain('0.0%')
-    expect(w.get('[data-testid=back-link]').attributes('href')).toBe('/pksk')
+    expect(w.get('[data-ds=back-link]').attributes('href')).toBe('/pksk')
     expect(w.get('[data-testid=shortcut-domains]').attributes('href')).toBe(
       '/pksk/level/T1/domains',
     )
@@ -200,7 +200,9 @@ describe('PkskDomainsPage (S3)', () => {
         bahagian: 'A',
         name: 'Kecerdasan Insaniah',
         subtitle: 'Nilai, akhlak & sahsiah',
-        domains: [domain('PKSK_INSANIAH', 'Kecerdasan Insaniah', { questionCount: 12, masteryPct: 0 })],
+        domains: [
+          domain('PKSK_INSANIAH', 'Kecerdasan Insaniah', { questionCount: 12, masteryPct: 0 }),
+        ],
       },
       {
         bahagian: 'B',
@@ -210,11 +212,16 @@ describe('PkskDomainsPage (S3)', () => {
       },
     ]
     api.fetchPkskDomainSections.mockResolvedValue(sections)
-    const w = await render(PkskDomainsPage, '/pksk/level/T1/domains', '/pksk/level/:level/domains', {
-      level: 'T1',
-    })
-    expect(w.get('[data-testid=back-link]').text()).toBe('Kembali ke Dashboard')
-    expect(w.get('[data-testid=back-link]').attributes('href')).toBe('/pksk/level/T1')
+    const w = await render(
+      PkskDomainsPage,
+      '/pksk/level/T1/domains',
+      '/pksk/level/:level/domains',
+      {
+        level: 'T1',
+      },
+    )
+    expect(w.get('[data-ds=back-link]').text()).toBe('Kembali ke Dashboard')
+    expect(w.get('[data-ds=back-link]').attributes('href')).toBe('/pksk/level/T1')
     expect(w.get('[data-testid=section-B] h2').text()).toBe('Kecerdasan Intelek')
     expect(w.get('[data-testid=section-B] [data-testid=section-badge]').text()).toBe('B')
     const card = w.get('[data-testid=section-B] [data-testid=domain-card]')
@@ -242,9 +249,14 @@ describe('PkskHistoryPage (S4, DV-M07-01)', () => {
 
   it('renders the read-only table, newest first, dd/mm/yyyy, and is tagged provisional', async () => {
     api.fetchPkskExamAttempts.mockResolvedValue(attempts)
-    const w = await render(PkskHistoryPage, '/pksk/level/T1/history', '/pksk/level/:level/history', {
-      level: 'T1',
-    })
+    const w = await render(
+      PkskHistoryPage,
+      '/pksk/level/T1/history',
+      '/pksk/level/:level/history',
+      {
+        level: 'T1',
+      },
+    )
     expect(w.get('[data-testid=pksk-history]').attributes('data-provisional')).toBe('L-4')
     expect(w.findAll('th').map((t) => t.text())).toEqual(['Tarikh', 'Skor', 'Gred'])
     expect(w.findAll('tbody tr').map((r) => r.findAll('td').map((c) => c.text()))).toEqual([
@@ -256,10 +268,15 @@ describe('PkskHistoryPage (S4, DV-M07-01)', () => {
 
   it('shows the empty text instead of the table', async () => {
     api.fetchPkskExamAttempts.mockResolvedValue([])
-    const w = await render(PkskHistoryPage, '/pksk/level/T4/history', '/pksk/level/:level/history', {
-      level: 'T4',
-    })
-    expect(w.get('[data-testid=history-empty]').text()).toBe('Tiada sejarah peperiksaan.')
+    const w = await render(
+      PkskHistoryPage,
+      '/pksk/level/T4/history',
+      '/pksk/level/:level/history',
+      {
+        level: 'T4',
+      },
+    )
+    expect(w.get('[data-testid=history-empty]').text()).toBe('Belum ada sejarah peperiksaan.')
     expect(w.find('table').exists()).toBe(false)
   })
 })
@@ -277,7 +294,12 @@ describe('PkskPracticePage (S4a, provisional L-2)', () => {
   it('shows the domain name, an input per item, and posts the answers then opens the domain list', async () => {
     api.fetchPkskPractice.mockResolvedValue(practice)
     api.submitPkskPractice.mockResolvedValue({ masteryPct: 50, sessionId: 's', gamification: {} })
-    const w = await render(PkskPracticePage, '/pksk/level/T1/domain/PKSK_MATH', '/pksk/level/:level/domain/:code', props)
+    const w = await render(
+      PkskPracticePage,
+      '/pksk/level/T1/domain/PKSK_MATH',
+      '/pksk/level/:level/domain/:code',
+      props,
+    )
     expect(w.get('[data-testid=pksk-practice]').attributes('data-provisional')).toBe('L-2')
     expect(w.get('h2').text()).toBe('Matematik')
     expect(w.findAll('[data-testid=pksk-item]')).toHaveLength(2)
@@ -297,7 +319,12 @@ describe('PkskPracticePage (S4a, provisional L-2)', () => {
       domain: { id: 15, code: 'PKSK_ESSAY', name: 'Artikulasi Penulisan', bahagian: 'C' },
       questions: [{ id: 99, questionText: 'Tulis esei', options: [] }],
     })
-    const w = await render(PkskPracticePage, '/pksk/level/T1/domain/PKSK_ESSAY', '/pksk/level/:level/domain/:code', { level: 'T1', code: 'PKSK_ESSAY' })
+    const w = await render(
+      PkskPracticePage,
+      '/pksk/level/T1/domain/PKSK_ESSAY',
+      '/pksk/level/:level/domain/:code',
+      { level: 'T1', code: 'PKSK_ESSAY' },
+    )
     expect(w.find('[data-testid=pksk-option]').exists()).toBe(false)
     await w.get('[data-testid=pksk-essay]').setValue('Esei saya')
     await w.get('form').trigger('submit')
@@ -309,14 +336,23 @@ describe('PkskPracticePage (S4a, provisional L-2)', () => {
 
   it('raises the 404 outcome for an unknown domain code', async () => {
     api.fetchPkskPractice.mockRejectedValue(notFound())
-    await render(PkskPracticePage, '/pksk/level/T1/domain/PKSK_XYZ', '/pksk/level/:level/domain/:code', { level: 'T1', code: 'PKSK_XYZ' })
+    await render(
+      PkskPracticePage,
+      '/pksk/level/T1/domain/PKSK_XYZ',
+      '/pksk/level/:level/domain/:code',
+      { level: 'T1', code: 'PKSK_XYZ' },
+    )
     expect(useRouteOutcome().value).toBe(404)
   })
 })
 
 describe('PkskExamPage (S4b, provisional L-3)', () => {
   it('groups the items A / B / C and posts every item then opens the dashboard', async () => {
-    const q = (id: number, options: { text: string }[]) => ({ id, questionText: `S${String(id)}`, options })
+    const q = (id: number, options: { text: string }[]) => ({
+      id,
+      questionText: `S${String(id)}`,
+      options,
+    })
     const exam: PkskExam = {
       sections: [
         { bahagian: 'A', weightPct: 20, questions: [q(1, [{ text: 'x' }, { text: 'y' }])] },
@@ -326,7 +362,9 @@ describe('PkskExamPage (S4b, provisional L-3)', () => {
     }
     api.fetchPkskExam.mockResolvedValue(exam)
     api.submitPkskExam.mockResolvedValue({ id: 1, completedAt: '', scorePct: 0, grade: 'E' })
-    const w = await render(PkskExamPage, '/pksk/level/T1/exam', '/pksk/level/:level/exam', { level: 'T1' })
+    const w = await render(PkskExamPage, '/pksk/level/T1/exam', '/pksk/level/:level/exam', {
+      level: 'T1',
+    })
     expect(w.get('[data-testid=pksk-exam]').attributes('data-provisional')).toBe('L-3')
     expect(w.get('h2').text()).toBe('Peperiksaan Penuh')
     expect(w.findAll('h3').map((h) => h.text())).toEqual(['Bahagian A', 'Bahagian B', 'Bahagian C'])

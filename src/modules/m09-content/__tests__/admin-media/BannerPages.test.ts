@@ -98,7 +98,7 @@ describe('BannerListPage (S9)', () => {
   it('has an edit link and a delete action per row and no view action', async () => {
     wrapper = (await mountAt(BannerListPage, '/page')).wrapper
     const items = await openRowMenu(wrapper, 1)
-    expect(menuItem(items, 'Edit')?.getAttribute('href')).toBe('/admin/banners/2/edit')
+    expect(wrapper.find('a[href="/admin/banners/2/edit"]').exists()).toBe(true)
     expect(menuItem(items, 'Padam')).toBeDefined()
     expect(menuItem(items, 'Lihat')).toBeUndefined()
   })
@@ -108,9 +108,9 @@ describe('BannerListPage (S9)', () => {
     expect(wrapper.findAll('[data-testid=banner-active]')[4]?.text()).toBe('Tidak Aktif')
   })
 
-  it('keeps the table inside its scrolling card', async () => {
+  it('keeps the table inside its card (fixed layout, no page scroll)', async () => {
     wrapper = (await mountAt(BannerListPage, '/page')).wrapper
-    expect(wrapper.find('.overflow-x-auto').exists()).toBe(true)
+    expect(wrapper.find('table.table-fixed').exists()).toBe(true)
   })
 
   it('delete: dismissing the confirm sends nothing', async () => {
@@ -159,8 +159,8 @@ const val = (w: VueWrapper, id: string) => (t(w, id).element as HTMLInputElement
 describe('BannerFormPage create (S10)', () => {
   it('shows the labels, placeholders, hints and defaults', async () => {
     const { wrapper: w } = await form('create')
-    expect(t(w, 'back-link').text()).toBe('Kembali ke Senarai')
-    expect(t(w, 'back-link').attributes('href')).toBe('/admin/banners')
+    expect(w.get('[data-ds=back-link]').text()).toBe('Kembali ke Senarai')
+    expect(w.get('[data-ds=back-link]').attributes('href')).toBe('/admin/banners')
     expect(t(w, 'banner-title').attributes('placeholder')).toBe('cth: Promosi SPM 2024')
     expect(t(w, 'banner-title').attributes('required')).toBeDefined()
     expect(t(w, 'banner-description').attributes('placeholder')).toBe(
@@ -173,7 +173,7 @@ describe('BannerFormPage create (S10)', () => {
     expect(w.text()).toContain('Tandakan untuk memaparkan banner')
     expect(val(w, 'banner-order')).toBe('0')
     expect(t(w, 'banner-order').attributes('min')).toBe('0')
-    expect((t(w, 'banner-active').element as HTMLInputElement).checked).toBe(true)
+    expect(t(w, 'banner-active').attributes('aria-checked')).toBe('true')
     expect(val(w, 'banner-type')).toBe('')
     expect(t(w, 'banner-type').attributes('required')).toBeDefined()
     expect(

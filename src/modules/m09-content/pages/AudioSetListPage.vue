@@ -14,8 +14,18 @@ import { computed, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, DsStatTile } from '@/ds'
-import type { CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  DsStatusBadge,
+} from '@/ds'
+import type { CardField, DsStatus, StatItem } from '@/ds'
 
 import {
   fetchAdminAudioSets,
@@ -26,9 +36,7 @@ import {
   type AudioSetStatus,
 } from '../api/admin-media'
 import AudioTemplateLink from '../components/admin-media/AudioTemplateLink.vue'
-import AdminActiveFilters from '../components/admin-kit/AdminActiveFilters.vue'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
-import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
+import { cellClass } from '../lib/table-cols'
 import { FILTER_STATUS_OPTIONS, LIST_GUIDE, sortByName } from '../lib/admin-media/audio'
 import { AUDIO_PATH, COPY, MEDIA_ROUTES, queryText } from '../lib/admin-media/common'
 
@@ -104,21 +112,44 @@ function removeChip(key: string): void {
   void router.push({ path: AUDIO_PATH, query })
 }
 
-const STAT_CARDS = [
-  { key: 'sets', label: 'Set', icon: 'i-ph-headphones', accent: 'action' },
-  { key: 'approved', label: 'Approved', icon: 'i-ph-check-circle', accent: 'win' },
-  { key: 'draftPending', label: 'Draft/Pending', icon: 'i-ph-hourglass', accent: 'heat' },
-  { key: 'questions', label: 'Soalan', icon: 'i-ph-question', accent: 'trial' },
-] as const
+const statItems = computed<StatItem[]>(() => [
+  {
+    key: 'sets',
+    label: 'Set',
+    value: stats.value?.sets ?? 0,
+    icon: 'headphones',
+    accent: 'action',
+  },
+  {
+    key: 'approved',
+    label: 'Approved',
+    value: stats.value?.approved ?? 0,
+    icon: 'check-circle',
+    accent: 'win',
+  },
+  {
+    key: 'draftPending',
+    label: 'Draft/Pending',
+    value: stats.value?.draftPending ?? 0,
+    icon: 'hourglass',
+    accent: 'heat',
+  },
+  {
+    key: 'questions',
+    label: 'Soalan',
+    value: stats.value?.questions ?? 0,
+    icon: 'question',
+    accent: 'trial',
+  },
+])
 
-const statusColor = (s: AdminAudioSetItem['status']) => STATUS_COLOR[s]
-
-const STATUS_COLOR = {
-  draft: 'neutral',
-  pending_review: 'warning',
-  approved: 'success',
-  archived: 'neutral',
-} as const
+/** Status word stays the live API label ("Draft", "Pending Review", ...); the badge adds icon and colour. */
+const STATUS_BADGE: Record<AdminAudioSetItem['status'], DsStatus> = {
+  draft: 'draft',
+  pending_review: 'awaiting-review',
+  approved: 'approved',
+  archived: 'inactive',
+}
 
 interface TableRow extends Record<string, unknown> {
   id: number
@@ -141,11 +172,11 @@ const tableRows = computed<TableRow[]>(() =>
 )
 
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'title', header: 'Tajuk Set' },
-  { accessorKey: 'level', header: 'Tahap' },
-  { accessorKey: 'subject', header: 'Subjek' },
-  { id: 'status', header: 'Status' },
-  { accessorKey: 'questions', header: 'Soalan' },
+  { accessorKey: 'title', header: 'Tajuk Set', ...cellClass('') },
+  { accessorKey: 'level', header: 'Tahap', ...cellClass('w-36') },
+  { accessorKey: 'subject', header: 'Subjek', ...cellClass('w-44') },
+  { id: 'status', header: 'Status', ...cellClass('w-44') },
+  { accessorKey: 'questions', header: 'Soalan', ...cellClass('w-28') },
 ]
 const cardFields: CardField[] = [
   { key: 'level', label: 'Tahap' },
@@ -156,24 +187,21 @@ const cardFields: CardField[] = [
 
 <template>
   <DsPage data-testid="audio-list-page">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex min-w-0 flex-col items-start gap-2">
-        <UBadge color="warning" variant="subtle" icon="i-ph-headphones" label="Ujian Mendengar" />
-        <p class="text-body text-muted">Senarai set soalan audio fixed sequence, bukan rawak.</p>
-      </div>
-      <div class="flex flex-wrap gap-3">
-        <AudioTemplateLink kind="xlsx" />
-        <AudioTemplateLink kind="word" />
-        <UButton
-          :to="{ name: MEDIA_ROUTES.audioCreate }"
-          icon="i-ph-plus"
-          label="Cipta Set"
-          size="md"
-          class="min-h-11"
-          data-testid="audio-create"
-        />
-      </div>
-    </div>
+    <template #meta>
+      <UBadge color="warning" variant="subtle" icon="i-ph-headphones" label="Ujian Mendengar" />
+    </template>
+    <template #subtitle>Senarai set soalan audio fixed sequence, bukan rawak.</template>
+    <template #actions>
+      <AudioTemplateLink kind="xlsx" />
+      <AudioTemplateLink kind="word" />
+      <UButton
+        :to="{ name: MEDIA_ROUTES.audioCreate }"
+        icon="i-ph-plus"
+        label="Cipta Set"
+        class="min-h-11"
+        data-testid="audio-create"
+      />
+    </template>
 
     <UAlert
       color="info"
@@ -189,30 +217,19 @@ const cardFields: CardField[] = [
       </template>
     </UAlert>
 
-    <div v-if="error" class="flex flex-col gap-4" data-testid="audio-error">
-      <AdminAlert :messages="[COPY.loadFailed]" />
-      <div><UButton label="Cuba Lagi" class="min-h-11" @click="reload()" /></div>
-    </div>
+    <DsLoadError v-if="error" :message="COPY.loadFailed" testid="audio-error" @retry="reload()" />
 
     <template v-else>
-      <section class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-testid="audio-stats">
-        <div v-for="card in STAT_CARDS" :key="card.key" :data-testid="`stat-${card.key}`">
-          <DsStatTile
-            :value="stats ? stats[card.key] : 0"
-            :unit="card.label"
-            :icon="card.icon"
-            :accent="card.accent"
-          />
-        </div>
-      </section>
+      <DsStatRow :items="statItems" prefix="stat" :cols="4" data-testid="audio-stats" />
 
       <div class="flex flex-col gap-3">
         <DsFilterBar
-          :active-count="chips.length"
+          :chips="chips"
           apply-label="Tapis"
           data-testid="audio-filter"
           @apply="apply"
           @reset="reset"
+          @remove-chip="removeChip"
         >
           <template #search>
             <UInput
@@ -227,7 +244,7 @@ const cardFields: CardField[] = [
               data-testid="filter-search"
             />
           </template>
-          <NativeSelect
+          <DsNativeSelect
             v-model="filter.education_level_id"
             name="education_level_id"
             aria-label="Tahap"
@@ -238,8 +255,8 @@ const cardFields: CardField[] = [
             <option v-for="level in levels?.data ?? []" :key="level.id" :value="String(level.id)">
               {{ level.name }}
             </option>
-          </NativeSelect>
-          <NativeSelect
+          </DsNativeSelect>
+          <DsNativeSelect
             v-model="filter.subject_id"
             name="subject_id"
             aria-label="Subjek"
@@ -250,8 +267,8 @@ const cardFields: CardField[] = [
             <option v-for="subject in subjectOptions" :key="subject.id" :value="String(subject.id)">
               {{ subject.name }}
             </option>
-          </NativeSelect>
-          <NativeSelect
+          </DsNativeSelect>
+          <DsNativeSelect
             v-model="filter.status"
             name="status"
             aria-label="Status"
@@ -262,17 +279,18 @@ const cardFields: CardField[] = [
             <option v-for="s in FILTER_STATUS_OPTIONS" :key="s.value" :value="s.value">
               {{ s.label }}
             </option>
-          </NativeSelect>
+          </DsNativeSelect>
         </DsFilterBar>
-        <AdminActiveFilters :chips="chips" @remove="removeChip" @reset="reset" />
       </div>
 
-      <UCard v-if="!firstLoad && sets.length === 0" data-testid="audio-empty">
-        <DsEmptyState title="Belum ada set Audio KBAT." icon="i-ph-headphones" />
-      </UCard>
+      <DsPanel v-if="!firstLoad && sets.length === 0" data-testid="audio-empty">
+        <DsEmptyState title="Belum ada set Audio KBAT." icon="headphones" />
+      </DsPanel>
 
       <DsDataTable
         v-else
+        variant="flush"
+        layout="fixed"
         :data="tableRows"
         :columns="columns"
         caption="Senarai set Audio KBAT"
@@ -299,9 +317,8 @@ const cardFields: CardField[] = [
           <span data-testid="set-subject">{{ row.original.subject }}</span>
         </template>
         <template #status-cell="{ row }">
-          <UBadge
-            :color="statusColor(row.original.raw.status)"
-            variant="subtle"
+          <DsStatusBadge
+            :status="STATUS_BADGE[row.original.raw.status]"
             :label="row.original.raw.statusLabel"
             data-testid="set-status"
           />

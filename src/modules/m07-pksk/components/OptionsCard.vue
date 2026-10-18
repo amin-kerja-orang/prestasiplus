@@ -7,10 +7,9 @@
  * checkbox and the whole card are only hidden (`v-show`), never removed, so their state is kept. A
  * `disabled` card (Bahagian C on S6) is neither validated nor sent (DV-M07-05).
  */
-import { MAX_OPTIONS, MIN_OPTIONS, newOption, optionLetter, type OptionRow } from '../../lib/admin'
+import { DsFormSection } from '@/ds'
 
-import AdminSection from './AdminSection.vue'
-import NativeCheck from './native/NativeCheck.vue'
+import { MAX_OPTIONS, MIN_OPTIONS, newOption, optionLetter, type OptionRow } from '../lib/admin'
 
 withDefaults(
   defineProps<{
@@ -41,9 +40,8 @@ function remove(uid: number): void {
 
 <template>
   <div v-show="shown" data-testid="options-card">
-    <AdminSection
+    <DsFormSection
       :title="suffix ? 'Pilihan Jawapan (Tiada jawapan betul/salah)' : 'Pilihan Jawapan'"
-      title-testid="options-title"
       icon="i-ph-list-numbers"
       accent="win"
     >
@@ -73,18 +71,16 @@ function remove(uid: number): void {
             class="min-w-0 flex-1"
             data-testid="option-text"
           />
-          <NativeCheck
+          <UCheckbox
             v-show="showCorrect"
-            :checked="opt.isCorrect"
-            label-testid="option-correct-label"
+            v-model="opt.isCorrect"
+            label="Betul"
             :name="`options[${String(idx)}][is_correct]`"
             value="1"
             :disabled="disabled"
+            :ui="{ root: 'min-h-11 items-center' }"
             data-testid="option-correct"
-            @change="opt.isCorrect = ($event.target as HTMLInputElement).checked"
-          >
-            Betul
-          </NativeCheck>
+          />
           <UButton
             v-show="rows.length > MIN_OPTIONS"
             type="button"
@@ -110,6 +106,6 @@ function remove(uid: number): void {
         data-testid="option-add"
         @click="add"
       />
-    </AdminSection>
+    </DsFormSection>
   </div>
 </template>
