@@ -207,7 +207,7 @@ async function submit(): Promise<void> {
 
       <div v-if="role === 'student'" class="flex flex-col gap-3" data-testid="register-levels">
         <p class="flex items-center gap-2 text-label text-default">
-          <UIcon name="i-ph-graduation-cap-duotone" class="size-4 text-primary" />
+          <UIcon name="i-ph-graduation-cap-duotone" class="size-4 text-primary-t" />
           Pilih Tahap Anda
         </p>
         <div class="flex flex-col gap-2">
@@ -330,7 +330,7 @@ async function submit(): Promise<void> {
               picker.open.value &&
               (picker.results.value.length > 0 || picker.term.value.length >= SCHOOL_MIN_QUERY)
             "
-            tone="float"
+            behavior="float"
             class="top-full"
             data-testid="school-dropdown"
           >
@@ -400,7 +400,7 @@ async function submit(): Promise<void> {
       </UButton>
 
       <UButton to="/login" variant="link" color="neutral" class="min-h-11 justify-center">
-        <span>Sudah ada akaun? <strong class="text-primary">Log Masuk 🔑</strong></span>
+        <span>Sudah ada akaun? <strong class="text-primary-t">Log Masuk 🔑</strong></span>
       </UButton>
 
       <UButton

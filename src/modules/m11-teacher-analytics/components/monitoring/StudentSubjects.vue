@@ -10,7 +10,7 @@ defineProps<{ subjects: StudentDetail['subjects'] }>()
   <UCard data-testid="mon-panel-subject">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-label text-highlighted">
-        <UIcon name="i-ph-book" class="size-5 text-primary" />Mengikut Subjek
+        <UIcon name="i-ph-book" class="size-5 text-primary-t" />Mengikut Subjek
       </h2>
       <div class="flex flex-col gap-3">
         <div

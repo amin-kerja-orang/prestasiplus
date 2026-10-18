@@ -8,7 +8,7 @@ import { EMPTY_HREF, HEATMAP_COPY } from './heatmap-copy'
 <template>
   <DsPanel as="section" data-testid="heatmap-empty">
     <DsEmptyState
-      icon="i-ph-fire-duotone"
+      icon="fire"
       :title="HEATMAP_COPY.emptyTitle"
       :description="HEATMAP_COPY.emptyHint"
     >

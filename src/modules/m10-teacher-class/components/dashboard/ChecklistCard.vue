@@ -21,7 +21,7 @@ const ICONS = ['i-ph-laptop-duotone', 'i-ph-users-three-duotone', 'i-ph-rocket-l
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-clipboard-text-duotone" class="size-5 shrink-0 text-primary" />{{
+          <UIcon name="i-ph-clipboard-text-duotone" class="size-5 shrink-0 text-primary-t" />{{
             DASH_COPY.checklistTitle
           }}
         </h2>

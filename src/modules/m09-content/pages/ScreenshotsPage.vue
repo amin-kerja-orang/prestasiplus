@@ -63,7 +63,7 @@ async function send(list: File[]): Promise<void> {
         <DsFormSection
           title="Upload Gambar"
           description="Format: JPG, PNG, GIF, WebP, BMP. Maks 10MB setiap fail."
-          icon="i-ph-upload-simple"
+          icon="upload-simple"
           accent="action"
         >
           <form method="post" enctype="multipart/form-data" data-testid="upload-form">

@@ -106,7 +106,7 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
     </div>
 
     <template v-else-if="student">
-      <DsPanel flush data-testid="comp-card">
+      <DsPanel padding="none" data-testid="comp-card">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
           <DsIdentity
             :name="student.name"
@@ -208,7 +208,7 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
         </div>
       </DsPanel>
 
-      <DsPanel flush>
+      <DsPanel padding="none">
         <h3
           class="flex items-center gap-2 p-4 text-subheading text-highlighted"
           data-testid="comp-classes-title"

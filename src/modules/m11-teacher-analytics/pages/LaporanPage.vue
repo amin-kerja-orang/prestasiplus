@@ -182,7 +182,7 @@ const n = computed(() => d.value?.population.total ?? 0)
       <UCard v-if="expanded === 'login'" data-testid="panel-login">
         <div class="flex flex-col gap-3">
           <h2 class="flex items-center gap-2 text-label text-highlighted">
-            <UIcon name="i-ph-user-minus" class="size-4 text-primary" />{{
+            <UIcon name="i-ph-user-minus" class="size-4 text-primary-t" />{{
               loginPanelTitle(d.notLoggedIn.length)
             }}
           </h2>
@@ -199,7 +199,7 @@ const n = computed(() => d.value?.population.total ?? 0)
       <UCard v-if="expanded === 'latihan'" data-testid="panel-latihan">
         <div class="flex flex-col gap-3">
           <h2 class="flex items-center gap-2 text-label text-highlighted">
-            <UIcon name="i-ph-moon" class="size-4 text-primary" />{{
+            <UIcon name="i-ph-moon" class="size-4 text-primary-t" />{{
               practisePanelTitle(d.notPractisedAll.length)
             }}
           </h2>
@@ -222,7 +222,7 @@ const n = computed(() => d.value?.population.total ?? 0)
         <UCard class="min-w-0" data-testid="list-active">
           <div class="flex flex-col gap-3">
             <h2 class="flex items-center gap-2 text-label text-highlighted">
-              <UIcon name="i-ph-trophy" class="size-4 text-primary" />{{
+              <UIcon name="i-ph-trophy" class="size-4 text-primary-t" />{{
                 LAPORAN_COPY.mostActiveTitle
               }}
             </h2>

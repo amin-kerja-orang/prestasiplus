@@ -16,8 +16,8 @@ const cta = computed(() => (allows('/pricing') ? '🚀 Langgan Sekarang' : undef
 
 <template>
   <DsCharacterCard
-    variant="trial"
-    icon="i-ph-star-duotone"
+    accent="trial"
+    icon="star"
     title="Percubaan Percuma"
     :cta-label="cta"
     data-testid="dash-trial"

@@ -12,7 +12,7 @@ defineProps<{ chapter: ChapterDetail }>()
 <template>
   <UCard data-testid="chapter-context">
     <div class="flex items-start gap-3">
-      <DsIconChip icon="i-ph-book-open" size="lg" />
+      <DsIconChip icon="book-open" size="lg" />
       <div class="min-w-0 flex-1">
         <p class="text-overline text-muted">Bab</p>
         <h2 class="text-subheading break-words text-highlighted">

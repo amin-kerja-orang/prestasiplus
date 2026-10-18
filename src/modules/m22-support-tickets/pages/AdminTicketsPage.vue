@@ -79,7 +79,7 @@ const chipItems = computed<PillItem<string>[]>(() => [
         />
       </div>
 
-      <DsPanel v-if="tableRows.length === 0" flush>
+      <DsPanel v-if="tableRows.length === 0" padding="none">
         <DsEmptyState
           size="sm"
           icon="lifebuoy"

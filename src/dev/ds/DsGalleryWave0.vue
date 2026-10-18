@@ -38,7 +38,7 @@ async function ask(): Promise<void> {
   const ok = await confirm({
     message: 'Padam rekod ini?',
     confirmLabel: 'Padam',
-    tone: 'danger',
+    tone: 'error',
   })
   confirmed.value = ok ? 'Disahkan' : 'Dibatalkan'
 }

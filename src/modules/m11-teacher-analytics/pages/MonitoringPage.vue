@@ -212,7 +212,7 @@ async function goto(sectionId: string) {
         variant="link"
         size="lg"
         class="w-full"
-        :ui="{ list: 'overflow-x-auto', content: 'pt-6' }"
+        :ui="{ content: 'pt-6' }"
         data-testid="mon-tabs"
       >
         <template #pelajar>

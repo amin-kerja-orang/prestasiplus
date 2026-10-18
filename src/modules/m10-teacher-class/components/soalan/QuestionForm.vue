@@ -595,7 +595,7 @@ function submit(): void {
 
       <div class="mt-4 min-w-0">
         <span class="mb-2 flex items-center gap-2 text-label text-highlighted">
-          <UIcon name="i-ph-images-duotone" class="size-4 text-primary" />
+          <UIcon name="i-ph-images-duotone" class="size-4 text-primary-t" />
           Imej Soalan (Pilihan)
         </span>
         <ImageField

@@ -96,7 +96,7 @@ const series = computed(() => {
           <DsChart
             type="bar"
             title="Taburan Prestasi Per OTR"
-            :level="2"
+            :heading-level="2"
             :labels="labels"
             :series="series"
           />

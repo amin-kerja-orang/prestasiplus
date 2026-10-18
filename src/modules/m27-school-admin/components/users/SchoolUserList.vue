@@ -435,7 +435,7 @@ function openRow(row: Item): void {
         <DsEmptyState
           title="Tiada pengguna dijumpai"
           description="Cuba ubah kriteria carian anda"
-          icon="i-ph-users"
+          icon="users"
         />
       </DsPanel>
       <DsDataTable
@@ -448,7 +448,7 @@ function openRow(row: Item): void {
         :page="applied.page"
         :caption="cfg.listTitle"
         layout="fixed"
-        compact-cells
+        density="compact"
         card-title="name"
         :card-fields="cardFields"
         data-testid="user-table"

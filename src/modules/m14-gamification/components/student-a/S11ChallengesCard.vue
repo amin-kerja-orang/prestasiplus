@@ -14,7 +14,7 @@ defineProps<{ challenges: readonly ChallengeProgress[] }>()
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between gap-3">
         <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
-          <DsIconChip icon="i-ph-target-duotone" accent="heat" size="sm" />Cabaran Hari Ini
+          <DsIconChip icon="target" accent="heat" size="sm" />Cabaran Hari Ini
         </h2>
         <UButton
           to="/gamification/challenges"

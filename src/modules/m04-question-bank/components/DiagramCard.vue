@@ -68,7 +68,7 @@ async function dismiss(): Promise<void> {
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption">
           <span class="tabular text-muted">#{{ item.id }}</span>
-          <span v-if="item.subject" class="text-label text-primary">{{ item.subject.name }}</span>
+          <span v-if="item.subject" class="text-label text-primary-t">{{ item.subject.name }}</span>
           <span class="text-muted">oleh {{ item.createdBy.name ?? '—' }}</span>
         </div>
         <p

@@ -91,7 +91,7 @@ const sessions = computed(() => data.value?.sessions ?? [])
     <div class="flex min-w-0 flex-col gap-4" data-testid="cc-sessions-modal">
       <DsLoadError
         v-if="error"
-        inline
+        variant="inline"
         :message="MODAL_ERROR_COPY"
         testid="cc-modal-error"
         @retry="reload"

@@ -37,7 +37,7 @@ const { data, error, loading, reload } = useApi((signal) => fetchMyQuestionSets(
       <DsEmptyState
         :title="SET_COPY.emptyTitle"
         :description="SET_COPY.emptyText"
-        icon="i-ph-clipboard-text-duotone"
+        icon="clipboard-text"
       />
     </DsPanel>
 

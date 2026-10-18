@@ -36,7 +36,7 @@ const series = computed(() => [{ label: 'Soalan', data: counts.value }])
     <div v-else data-testid="cc-heat-chart">
       <DsChart
         title="Soalan mengikut jam"
-        :level="3"
+        :heading-level="3"
         :labels="labels"
         :series="series"
         table-label="Soalan dijawab mengikut jam (MYT)"

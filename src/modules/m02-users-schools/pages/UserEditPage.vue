@@ -197,7 +197,7 @@ async function submit(): Promise<void> {
       <DsBackLink :to="USERS_LIST_PATH" />
     </div>
 
-    <DsPanel v-else-if="!ready || loaded === null" flush data-testid="user-form-skeleton">
+    <DsPanel v-else-if="!ready || loaded === null" padding="none" data-testid="user-form-skeleton">
       <div class="flex flex-col gap-6 p-6">
         <USkeleton class="h-16 w-full" />
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
@@ -212,7 +212,7 @@ async function submit(): Promise<void> {
         @submit.prevent="submit"
       >
         <!-- FR-M02-37: profile header -->
-        <DsPanel flush data-testid="user-profile">
+        <DsPanel padding="none" data-testid="user-profile">
           <div class="flex flex-wrap items-center gap-4 p-4 sm:p-6">
             <UAvatar
               :src="loaded.avatarUrl || undefined"
@@ -429,7 +429,7 @@ async function submit(): Promise<void> {
         </DsFormSection>
 
         <!-- FR-M02-43: password reset -->
-        <DsPanel flush>
+        <DsPanel padding="none">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
             <UButton
               type="button"
@@ -495,7 +495,7 @@ async function submit(): Promise<void> {
         </DsPanel>
 
         <!-- FR-M02-44: "Nota Keselamatan" -->
-        <DsPanel flush data-testid="user-security-notes">
+        <DsPanel padding="none" data-testid="user-security-notes">
           <div class="p-4 sm:p-6">
             <h3 class="mb-4 flex items-center gap-2 text-body text-highlighted">
               <UIcon name="i-ph-info" class="size-5 text-muted" aria-hidden="true" />

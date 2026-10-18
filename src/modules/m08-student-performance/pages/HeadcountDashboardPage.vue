@@ -112,7 +112,7 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
       </DsPanel>
 
       <div v-if="configs.length === 0" data-testid="dashboard-empty">
-        <DsEmptyState title="Belum ada headcount." icon="i-ph-clipboard-text" />
+        <DsEmptyState title="Belum ada headcount." icon="clipboard-text" />
       </div>
 
       <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2" data-testid="dashboard-charts">

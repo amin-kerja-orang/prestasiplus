@@ -11,7 +11,7 @@ import { HEATMAP_COPY, LEGEND } from './heatmap-copy'
     data-testid="heatmap-hero"
   >
     <div class="flex min-w-0 items-start gap-3">
-      <DsIconChip icon="i-ph-fire-duotone" accent="heat" size="lg" />
+      <DsIconChip icon="fire" accent="heat" size="lg" />
       <div class="min-w-0">
         <h1 class="font-display text-title font-extrabold break-words text-highlighted">
           {{ HEATMAP_COPY.title }}

@@ -12,14 +12,14 @@ defineProps<{ tiers: readonly TierGridItem[]; currentKey: string }>()
   <UCard class="min-w-0" data-testid="s11-tiers">
     <div class="flex flex-col gap-3">
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
-        <DsIconChip icon="i-ph-crown-duotone" accent="trial" size="sm" />Sistem Tier
+        <DsIconChip icon="crown" accent="trial" size="sm" />Sistem Tier
       </h2>
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div
           v-for="t in tiers"
           :key="t.key"
           class="flex min-w-0 flex-col items-center gap-1 rounded-card p-3 text-center"
-          :class="t.key === currentKey ? 'bg-primary/12' : 'bg-elevated'"
+          :class="t.key === currentKey ? 'bg-primary-soft' : 'bg-elevated'"
           :aria-current="t.key === currentKey ? 'true' : undefined"
           data-testid="s11-tier"
         >

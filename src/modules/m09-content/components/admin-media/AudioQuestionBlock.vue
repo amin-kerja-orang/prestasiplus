@@ -24,7 +24,7 @@ const OPTIONS = [
 
 <template>
   <div data-testid="question-block" :data-question-no="no">
-    <DsFormSection :title="`Soalan ${String(no)}`" icon="i-ph-question" accent="heat">
+    <DsFormSection :title="`Soalan ${String(no)}`" icon="question" accent="heat">
       <template #actions>
         <UBadge color="warning" variant="subtle" label="KBAT Audio" />
       </template>

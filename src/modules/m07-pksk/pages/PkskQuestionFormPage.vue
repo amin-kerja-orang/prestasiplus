@@ -266,7 +266,7 @@ async function submit(): Promise<void> {
       <!-- Card 1: Bahagian & Domain (S6) / Domain, Sasaran, Status (S7). -->
       <DsFormSection
         title="Bahagian & Domain"
-        icon="i-ph-squares-four"
+        icon="squares-four"
         accent="friend"
         :columns="2"
       >
@@ -366,7 +366,7 @@ async function submit(): Promise<void> {
       </DsFormSection>
 
       <!-- Card 2: Soalan. -->
-      <DsFormSection title="Soalan" icon="i-ph-question" accent="heat" :columns="2">
+      <DsFormSection title="Soalan" icon="question" accent="heat" :columns="2">
         <div class="sm:col-span-2">
           <DsFormField
             native

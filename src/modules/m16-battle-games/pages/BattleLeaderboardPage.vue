@@ -56,7 +56,7 @@ const PILLS = [
     <DsEmptyState
       v-else-if="rows.length === 0"
       title="Belum ada data ranking. Mula battle untuk muncul di sini!"
-      icon="i-ph-medal-duotone"
+      icon="medal"
       data-testid="battle-leaderboard-empty"
     />
     <ul v-else class="flex flex-col gap-2" data-testid="battle-leaderboard-scroll">
@@ -85,7 +85,7 @@ const PILLS = [
         </div>
         <div class="flex flex-col">
           <dt class="text-caption text-muted">Skor</dt>
-          <dd class="tabular text-label text-primary">{{ r.skor }}</dd>
+          <dd class="tabular text-label text-primary-t">{{ r.skor }}</dd>
         </div>
       </RankedRow>
     </ul>

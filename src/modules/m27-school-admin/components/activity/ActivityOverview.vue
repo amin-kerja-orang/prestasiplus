@@ -168,7 +168,7 @@ const cards = computed<Card[]>(() => [
 
       <DsPanel data-testid="la-top">
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-trophy" class="size-5 text-primary" aria-hidden="true" />Pelajar Paling
+          <UIcon name="i-ph-trophy" class="size-5 text-primary-t" aria-hidden="true" />Pelajar Paling
           Aktif
         </h2>
         <ol class="mt-3 flex flex-col text-body">

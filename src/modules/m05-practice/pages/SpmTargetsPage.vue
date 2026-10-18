@@ -172,7 +172,7 @@ async function save(): Promise<void> {
         <UBadge color="warning" variant="subtle">50-69% (Perlu Usaha)</UBadge>
         <UBadge color="error" variant="subtle">&lt;50% (Perlu Fokus)</UBadge>
       </div>
-      <p class="mt-3 flex items-start gap-2 text-caption text-primary sm:justify-end">
+      <p class="mt-3 flex items-start gap-2 text-caption text-primary-t sm:justify-end">
         <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0" />
         Tip: Jawab lebih banyak soalan untuk ramalan gred yang lebih tepat
       </p>

@@ -43,7 +43,7 @@ const deleting = ref(false)
 const deleteError = ref<string[]>([])
 
 async function remove(id: number): Promise<void> {
-  if (deleting.value || !(await confirm({ message: COPY.confirmDelete(id), tone: 'danger' })))
+  if (deleting.value || !(await confirm({ message: COPY.confirmDelete(id), tone: 'error' })))
     return
   deleting.value = true
   deleteError.value = []

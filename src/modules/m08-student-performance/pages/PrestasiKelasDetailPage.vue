@@ -146,7 +146,7 @@ const cardFields = [
           <DsBackLink to="/prestasi/kelas" label="Kembali ke senarai kelas" title="Kembali ke senarai kelas" data-testid="back-link" />
         </template>
         <template #subtitle>
-          {{ subtitle }} · Kod: <b class="tabular text-primary">{{ data.class.joinCode }}</b>
+          {{ subtitle }} · Kod: <b class="tabular text-primary-t">{{ data.class.joinCode }}</b>
         </template>
         <template #actions>
           <USelect
@@ -222,7 +222,7 @@ const cardFields = [
               />
             </div>
             <div v-else data-testid="trend-empty">
-              <DsEmptyState title="Belum ada aktiviti dalam 30 hari terakhir." icon="i-ph-tray" />
+              <DsEmptyState title="Belum ada aktiviti dalam 30 hari terakhir." icon="tray" />
             </div>
           </div>
         </DsPanel>

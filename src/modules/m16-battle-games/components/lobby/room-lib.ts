@@ -63,13 +63,13 @@ export interface TileView {
 
 /** One board tile (BR-M16-20): kinds `start`, `finish`, `plain`, `quiz`, `bonus`, `trap`, `ladder:N`, `snake:N`. */
 export function tileView(kind: string): TileView {
-  if (kind === 'start') return { emoji: '🚩', className: 'bg-success/12' }
+  if (kind === 'start') return { emoji: '🚩', className: 'bg-success-soft' }
   if (kind === 'finish') return { emoji: '🏆', className: 'bg-highlight' }
-  if (kind === 'quiz') return { emoji: '❓', className: 'bg-primary/12' }
+  if (kind === 'quiz') return { emoji: '❓', className: 'bg-primary-soft' }
   if (kind === 'bonus') return { emoji: '🎁', className: 'bg-secondary/12' }
-  if (kind === 'trap') return { emoji: '⚠️', className: 'bg-warning/12' }
-  if (kind.startsWith('ladder:')) return { emoji: '🪜', className: 'bg-info/12' }
-  if (kind.startsWith('snake:')) return { emoji: '🐍', className: 'bg-error/12' }
+  if (kind === 'trap') return { emoji: '⚠️', className: 'bg-warning-soft' }
+  if (kind.startsWith('ladder:')) return { emoji: '🪜', className: 'bg-info-soft' }
+  if (kind.startsWith('snake:')) return { emoji: '🐍', className: 'bg-error-soft' }
   return { emoji: '', className: 'bg-elevated' }
 }
 

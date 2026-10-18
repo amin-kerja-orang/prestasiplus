@@ -44,7 +44,7 @@ const TIPS = [
 
     <template v-if="data">
       <DsCharacterCard
-        variant="warning"
+        accent="heat"
         icon="i-ph-arrow-counter-clockwise-duotone"
         :title="`${data.total} soalan perlu diulang kaji`"
         data-testid="revision-total"

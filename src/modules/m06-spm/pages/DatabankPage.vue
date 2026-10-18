@@ -70,7 +70,7 @@ const { data, error, reload } = useApi((signal) => fetchDatabank({ signal }))
               :data-testid="`databank-set-${s.code}-${String(n)}`"
               >{{ n }}</UButton
             >
-            <span class="ms-auto text-label text-primary" data-testid="databank-mula">Mula</span>
+            <span class="ms-auto text-label text-primary-t" data-testid="databank-mula">Mula</span>
           </div>
         </UCard>
       </li>

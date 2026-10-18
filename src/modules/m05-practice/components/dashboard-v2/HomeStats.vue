@@ -22,13 +22,13 @@ const accuracy = useDisplayCount(() => props.week.accuracyPct, COUNT_RULES.accur
     data-testid="dash-stats"
   >
     <li class="min-w-0" data-testid="dash-stat-coins">
-      <DsStatTile :value="coins" unit="Syiling Kamu" icon="i-ph-coins-duotone" accent="win" />
+      <DsStatTile :value="coins" unit="Syiling Kamu" icon="coins" accent="win" />
     </li>
     <li class="min-w-0" data-testid="dash-stat-points">
       <DsStatTile
         :value="points"
         :unit="`Mata (Lvl ${wallet.level})`"
-        icon="i-ph-lightning-duotone"
+        icon="lightning"
         accent="action"
       />
       <UProgress
@@ -41,13 +41,13 @@ const accuracy = useDisplayCount(() => props.week.accuracyPct, COUNT_RULES.accur
       />
     </li>
     <li class="min-w-0" data-testid="dash-stat-streak">
-      <DsStatTile :value="streak" unit="Hari Berturut" icon="i-ph-fire-duotone" accent="heat" />
+      <DsStatTile :value="streak" unit="Hari Berturut" icon="fire" accent="heat" />
     </li>
     <li class="min-w-0" data-testid="dash-stat-sessions">
       <DsStatTile
         :value="sessions"
         unit="Sesi Minggu Ini"
-        icon="i-ph-books-duotone"
+        icon="books"
         accent="friend"
       />
     </li>
@@ -55,7 +55,7 @@ const accuracy = useDisplayCount(() => props.week.accuracyPct, COUNT_RULES.accur
       <DsStatTile
         :value="`${accuracy}%`"
         unit="Ketepatan"
-        icon="i-ph-star-duotone"
+        icon="star"
         accent="trial"
       />
     </li>

@@ -44,7 +44,7 @@ const items = computed(() => data.value?.data ?? [])
           <UCard :data-testid="`remedial-card-${String(t.id)}`">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex min-w-0 items-start gap-3">
-                <DsIconChip icon="i-ph-lifebuoy-duotone" accent="heat" size="lg" />
+                <DsIconChip icon="lifebuoy" accent="heat" size="lg" />
                 <div class="flex min-w-0 flex-col gap-1">
                   <div class="flex flex-wrap items-center gap-2">
                     <h2

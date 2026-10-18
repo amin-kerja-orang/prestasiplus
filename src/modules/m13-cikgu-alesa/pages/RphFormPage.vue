@@ -117,7 +117,7 @@ async function onSubmit(): Promise<void> {
       <DsFormSection
         title="Butiran Pengajaran"
         description="Subjek, tahap dan tajuk untuk RPH yang akan dijana."
-        icon="i-ph-robot"
+        icon="robot"
         :columns="2"
       >
         <DsFormField v-if="ownClasses.length > 0" native for="rph-class-pick" :label="C.classLabel">
@@ -186,7 +186,7 @@ async function onSubmit(): Promise<void> {
       <DsFormSection
         title="Jadual dan Keperluan"
         description="Kelas, tarikh, tempoh dan keperluan khas."
-        icon="i-ph-calendar-blank"
+        icon="calendar-blank"
         :columns="2"
       >
         <DsFormField native for="class_name" label="Kelas">

@@ -49,7 +49,7 @@ const LEGEND = ['0', '1-1', '2-2', '3-3', '4+']
   <DsPanel data-testid="heatmap-card">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-        <UIcon :name="icon('calendar-dots')" class="size-5 text-primary" />Peta Aktiviti (90 Hari)
+        <UIcon :name="icon('calendar-dots')" class="size-5 text-primary-t" />Peta Aktiviti (90 Hari)
       </h2>
       <div class="flex flex-wrap gap-1" data-testid="heatmap">
         <UButton

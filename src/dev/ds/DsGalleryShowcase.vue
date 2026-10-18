@@ -138,13 +138,13 @@ const drilled = ref('')
     <section class="flex flex-col gap-3" aria-labelledby="g-chip">
       <h3 id="g-chip" class="text-subheading">DsIconChip dan DsArt3D</h3>
       <div class="flex flex-wrap items-center gap-3">
-        <DsIconChip icon="i-ph-lightning-duotone" accent="action" />
-        <DsIconChip icon="i-ph-trophy-duotone" accent="win" />
-        <DsIconChip icon="i-ph-fire-duotone" accent="heat" />
-        <DsIconChip icon="i-ph-sparkle-duotone" accent="friend" />
-        <DsIconChip icon="i-ph-star-duotone" accent="trial" />
-        <DsIconChip icon="i-ph-fire-duotone" accent="heat" size="xs" />
-        <DsIconChip icon="i-ph-fire-duotone" accent="heat" size="lg" />
+        <DsIconChip icon="lightning" accent="action" />
+        <DsIconChip icon="trophy" accent="win" />
+        <DsIconChip icon="fire" accent="heat" />
+        <DsIconChip icon="sparkle" accent="friend" />
+        <DsIconChip icon="star" accent="trial" />
+        <DsIconChip icon="fire" accent="heat" size="xs" />
+        <DsIconChip icon="fire" accent="heat" size="lg" />
       </div>
       <div class="flex flex-wrap items-end gap-3">
         <DsArt3D v-for="name in art3dNames" :key="name" :name="name" size="lg" />
@@ -154,9 +154,9 @@ const drilled = ref('')
     <section class="flex flex-col gap-3" aria-labelledby="g-stat">
       <h3 id="g-stat" class="text-subheading">DsStatTile</h3>
       <div class="grid grid-cols-3 gap-3">
-        <DsStatTile value="12" unit="hari" icon="i-ph-fire-duotone" accent="heat" />
-        <DsStatTile value="1,240" unit="mata" icon="i-ph-lightning-duotone" accent="action" />
-        <DsStatTile value="86" unit="koin" icon="i-ph-coins-duotone" accent="win" />
+        <DsStatTile value="12" unit="hari" icon="fire" accent="heat" />
+        <DsStatTile value="1,240" unit="mata" icon="lightning" accent="action" />
+        <DsStatTile value="86" unit="koin" icon="coins" accent="win" />
       </div>
       <div class="grid grid-cols-3 gap-3">
         <DsStatTile value="12" unit="hari" art="fire" />
@@ -200,38 +200,38 @@ const drilled = ref('')
     <section class="flex flex-col gap-3" aria-labelledby="g-card">
       <h3 id="g-card" class="text-subheading">DsCharacterCard</h3>
       <DsCharacterCard
-        variant="trial"
+        accent="trial"
         title="Percubaan Percuma"
         description="Cuba semua ciri selama 7 hari."
-        icon="i-ph-gift-duotone"
+        icon="gift"
         cta-label="Mulakan percubaan"
       />
       <DsCharacterCard
-        variant="warning"
+        accent="heat"
         title="Streak hampir putus"
         description="Satu latihan sahaja untuk jaga streak hari ini."
         art="fire"
         cta-label="Jom berlatih"
       />
       <DsCharacterCard
-        variant="info"
+        accent="friend"
         title="Tahukah awak?"
         description="Ulang kaji sedikit setiap hari lebih berkesan."
-        icon="i-ph-lightbulb-duotone"
+        icon="lightbulb"
         cta-label="Baca lagi"
       />
       <DsCharacterCard
-        variant="win"
+        accent="win"
         title="Pencapaian baharu"
         description="Awak sudah siapkan 10 latihan."
         art="trophy"
         cta-label="Lihat pencapaian"
       />
       <DsCharacterCard
-        variant="action"
+        accent="action"
         title="Teruskan latihan"
         description="Bab 3 menunggu awak."
-        icon="i-ph-rocket-launch-duotone"
+        icon="rocket-launch"
         cta-label="Teruskan"
       />
     </section>
@@ -337,7 +337,7 @@ const drilled = ref('')
       </div>
       <DsFeedbackSheet
         v-if="checked && chosen === correctIndex"
-        tone="good"
+        tone="success"
         title="Betul!"
         body="6 × 7 = 42."
         ai-label="AI"
@@ -348,7 +348,7 @@ const drilled = ref('')
       />
       <DsFeedbackSheet
         v-else-if="checked"
-        tone="bad"
+        tone="error"
         title="Hampir!"
         body="Cuba lihat semula jadual darab tujuh."
         ai-label="AI"
@@ -366,7 +366,7 @@ const drilled = ref('')
           :value="5"
           :max="5"
           size="lg"
-          tone="win"
+          accent="win"
           label="Skor 5 daripada 5"
           unit="daripada 5"
         />
@@ -374,14 +374,14 @@ const drilled = ref('')
           :value="2"
           :max="5"
           size="md"
-          tone="action"
+          accent="action"
           label="Skor 2 daripada 5"
           unit="daripada 5"
         />
         <DsScoreRing
           :value="64"
           size="sm"
-          tone="action"
+          accent="action"
           display="64%"
           label="Kemajuan 64 peratus"
         />
@@ -390,7 +390,7 @@ const drilled = ref('')
         <DsSticker art="fire">Streak 5 hari!</DsSticker>
         <DsSticker>Tahap naik!</DsSticker>
       </div>
-      <DsWinHero art="books" tone="keep" title="Teruskan, Murid Contoh!" />
+      <DsWinHero art="books" accent="action" title="Teruskan, Murid Contoh!" />
     </section>
 
     <section class="flex flex-col gap-3" aria-labelledby="g-winscreen">
@@ -422,10 +422,10 @@ const drilled = ref('')
       <DsCarousel :items="slides" label="Petua pembelajaran">
         <template #item="{ item }">
           <DsCharacterCard
-            variant="info"
+            accent="friend"
             :title="item.title"
             :description="item.text"
-            icon="i-ph-lightbulb-duotone"
+            icon="lightbulb"
           />
         </template>
       </DsCarousel>
@@ -451,7 +451,7 @@ const drilled = ref('')
           }}</UButton>
         </template>
       </DsDrillTable>
-      <DsEmptyState title="Tiada rekod" description="Cuba ubah penapis anda." icon="i-ph-tray" />
+      <DsEmptyState title="Tiada rekod" description="Cuba ubah penapis anda." icon="tray" />
       <DsEmptyState
         title="Belum ada latihan"
         description="Mulakan latihan pertama awak."

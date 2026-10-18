@@ -100,7 +100,7 @@ async function open(boxId: number): Promise<void> {
             <UCard>
               <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span class="text-label text-highlighted">Kotak Misteri: {{ h.boxName }}</span>
-                <span class="text-label text-primary">+{{ h.coins }} 🪙 · +{{ h.xp }} XP</span>
+                <span class="text-label text-primary-t">+{{ h.coins }} 🪙 · +{{ h.xp }} XP</span>
                 <span class="text-caption text-muted">{{ formatDayMonthTime(h.createdAt) }}</span>
               </div>
             </UCard>

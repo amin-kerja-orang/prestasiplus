@@ -146,7 +146,7 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
       <UProgress class="w-16" aria-hidden="true" />Memuatkan...
     </p>
     <template v-else>
-      <DsStatRow :items="cards" prefix="cc-stat" :cols="5" roomy data-testid="cc-student-cards" />
+      <DsStatRow :items="cards" prefix="cc-stat" :cols="5" density="roomy" data-testid="cc-student-cards" />
 
       <div class="grid gap-4 md:grid-cols-2">
         <DsPanel icon="i-ph-chart-bar" title="Pecahan Subjek">
@@ -278,7 +278,7 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
 
       <DsPanel icon="i-ph-sparkle" title="ALESA AI Insight">
         <div class="flex flex-col gap-2 bg-soft p-4" data-testid="cc-insight">
-          <div class="text-overline text-primary">Analisis ALESA</div>
+          <div class="text-overline text-primary-t">Analisis ALESA</div>
           <p class="text-body text-highlighted" data-testid="cc-insight-text">
             {{ data.insight.texts.join(' ') }}
           </p>

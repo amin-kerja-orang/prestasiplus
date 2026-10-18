@@ -116,7 +116,7 @@ const cards = computed<StatItem[]>(() => {
       label: 'Pernah Aktif',
       value: count(c.engaged),
       icon: 'i-ph-check-circle', accent: 'win',
-      valueClass: 'text-success',
+      valueTone: 'success',
     },
     {
       key: 'answers',
@@ -129,7 +129,7 @@ const cards = computed<StatItem[]>(() => {
       label: 'Guru Berdaftar',
       value: count(c.teachers),
       icon: 'i-ph-chalkboard-teacher', accent: 'action',
-      valueClass: 'text-primary',
+      valueTone: 'primary',
     },
     {
       key: 'teachersLoggedIn',
@@ -247,7 +247,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
           :items="cards"
           prefix="mon-stat"
           :cols="5"
-          roomy
+          density="roomy"
           data-testid="mon-school-cards"
         />
 
@@ -258,13 +258,13 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
           variant="link"
           size="lg"
           class="w-full"
-          :ui="{ list: 'overflow-x-auto', content: 'pt-6' }"
+          :ui="{ content: 'pt-6' }"
         >
           <template #pelajar>
             <section class="flex flex-col gap-6" data-testid="mon-students">
               <div class="flex flex-wrap items-center justify-between gap-4">
                 <h2 class="flex items-center gap-2 text-heading text-highlighted">
-                  <UIcon name="i-ph-graduation-cap" class="size-6 text-primary" />Senarai Pelajar
+                  <UIcon name="i-ph-graduation-cap" class="size-6 text-primary-t" />Senarai Pelajar
                   T4/T5
                 </h2>
                 <DsPillNav
@@ -337,7 +337,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                         "
                         :class="[
                           'line-clamp-2 text-label',
-                          row.original.answers > 0 ? 'text-primary' : 'text-muted',
+                          row.original.answers > 0 ? 'text-primary-t' : 'text-muted',
                         ]"
                         data-testid="mon-student-link"
                         >{{ row.original.name }}</RouterLink
@@ -408,7 +408,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                                 ? paths.student(schoolId, (row as StudentRow).id)
                                 : (paths.kirkpatrickStudent((row as StudentRow).id) ?? '')
                             "
-                            class="line-clamp-2 text-label text-primary"
+                            class="line-clamp-2 text-label text-primary-t"
                             >{{ (row as StudentRow).name }}</RouterLink
                           >
                           <span v-else class="line-clamp-2 text-label text-muted">{{
@@ -452,7 +452,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
             <section class="flex flex-col gap-6" data-testid="mon-teachers">
               <div class="flex flex-wrap items-center justify-between gap-4">
                 <h2 class="flex items-center gap-2 text-heading text-highlighted">
-                  <UIcon name="i-ph-chalkboard-teacher" class="size-6 text-primary" />Senarai Guru
+                  <UIcon name="i-ph-chalkboard-teacher" class="size-6 text-primary-t" />Senarai Guru
                   ({{ count(data.teachers.length) }})
                 </h2>
                 <DsPillNav
@@ -490,7 +490,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                     <div class="flex min-w-48 flex-col gap-1" data-testid="mon-teacher-row">
                       <RouterLink
                         :to="paths.teacher(schoolId, row.original.id)"
-                        class="line-clamp-2 text-label text-primary"
+                        class="line-clamp-2 text-label text-primary-t"
                         data-testid="mon-teacher-link"
                         >{{ row.original.name }}</RouterLink
                       >
@@ -521,7 +521,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                         <div class="flex min-w-0 flex-col gap-1">
                           <RouterLink
                             :to="paths.teacher(schoolId, (row as TeacherRow).id)"
-                            class="line-clamp-2 text-label text-primary"
+                            class="line-clamp-2 text-label text-primary-t"
                             >{{ (row as TeacherRow).name }}</RouterLink
                           >
                           <span class="truncate text-body text-muted">{{

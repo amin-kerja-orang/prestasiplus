@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
       <header
         class="flex min-w-0 items-center gap-3 self-start rounded-card bg-default p-4 shadow-lift xl:sticky xl:top-4 xl:col-span-4 xl:flex-col xl:items-start"
       >
-        <DsIconChip icon="i-ph-sparkle-duotone" accent="friend" size="lg" />
+        <DsIconChip icon="sparkle" accent="friend" size="lg" />
         <div class="min-w-0">
           <h1
             class="flex flex-wrap items-center gap-2 font-display text-title font-extrabold text-highlighted"

@@ -59,7 +59,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
   <section id="section-mingguan" class="flex flex-col gap-6" data-testid="mon-weekly">
     <div class="flex flex-col gap-1">
       <h2 class="flex items-center gap-2 text-heading text-highlighted">
-        <UIcon name="i-ph-calendar-dots" class="size-6 text-primary" />Tracking Mingguan
+        <UIcon name="i-ph-calendar-dots" class="size-6 text-primary-t" />Tracking Mingguan
       </h2>
       <p class="text-body text-muted">
         Jumlah soalan dijawab mengikut minggu — warna menunjukkan trend naik/turun
@@ -80,7 +80,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
           <RouterLink
             :to="paths.school(row.original.schoolId)"
             :title="row.original.name"
-            class="line-clamp-2 text-label text-primary"
+            class="line-clamp-2 text-label text-primary-t"
             >{{ row.original.name }}</RouterLink
           >
           <span class="text-body text-muted">{{ row.original.code ?? '-' }}</span>
@@ -139,7 +139,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
             <div class="flex min-w-0 flex-col gap-1">
               <RouterLink
                 :to="paths.school((row as Row).schoolId)"
-                class="line-clamp-2 text-label text-primary"
+                class="line-clamp-2 text-label text-primary-t"
                 >{{ (row as Row).name }}</RouterLink
               >
               <span class="text-body text-muted">{{ (row as Row).code ?? '-' }}</span>

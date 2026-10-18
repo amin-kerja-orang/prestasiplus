@@ -28,7 +28,7 @@ defineProps<{ wallet: GamificationWallet }>()
       sub-testid="s11-stat-rate"
     />
     <DsStatTile
-      icon="i-ph-stack-duotone"
+      icon="stack"
       accent="friend"
       :value="wallet.level"
       unit="Level"

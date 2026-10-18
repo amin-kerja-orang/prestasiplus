@@ -32,7 +32,7 @@ function clear(): void {
 <template>
   <DsPanel data-testid="school-picker">
     <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
-      <UIcon name="i-ph-buildings-duotone" class="size-5 text-primary" />{{
+      <UIcon name="i-ph-buildings-duotone" class="size-5 text-primary-t" />{{
         KELAS_COPY.chooseSchool
       }}
     </h2>

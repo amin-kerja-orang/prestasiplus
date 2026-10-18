@@ -127,7 +127,7 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
       <UCard data-testid="config-card">
         <div class="flex flex-col gap-6">
           <h2 class="flex items-center gap-2 text-heading text-highlighted">
-            <UIcon name="i-ph-gear-six-duotone" class="size-6 text-primary" aria-hidden="true" />
+            <UIcon name="i-ph-gear-six-duotone" class="size-6 text-primary-t" aria-hidden="true" />
             Tetapan Kuiz
           </h2>
 

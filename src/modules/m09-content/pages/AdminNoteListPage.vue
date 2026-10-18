@@ -150,7 +150,7 @@ const deleting = ref(false)
 
 async function remove(row: AdminNoteItem): Promise<void> {
   if (deleting.value) return
-  if (!(await confirm({ message: COPY.confirmDeleteNote, tone: 'danger' }))) return
+  if (!(await confirm({ message: COPY.confirmDeleteNote, tone: 'error' }))) return
   deleting.value = true
   try {
     const result = await deleteAdminNote(row.id)

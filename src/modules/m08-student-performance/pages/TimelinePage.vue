@@ -60,7 +60,7 @@ onBeforeUnmount(() => {
         <DsEmptyState
           title="Timeline Kosong"
           description="Mula kongsi pencapaian, sijil, dan cerita anda untuk ditunjukkan pada profil awam anda!"
-          icon="i-ph-images"
+          icon="images"
           friend="aisyah"
         >
           <template #actions>
@@ -90,7 +90,7 @@ onBeforeUnmount(() => {
           <ULink
             :href="publicUrl"
             target="_blank"
-            class="block min-h-6 text-caption break-all text-primary"
+            class="block min-h-6 text-caption break-all text-primary-t"
             data-testid="public-url"
             >{{ publicUrl }}</ULink
           >

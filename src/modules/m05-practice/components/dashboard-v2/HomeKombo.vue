@@ -10,7 +10,7 @@ const router = useRouter()
 
 <template>
   <DsCharacterCard
-    variant="warning"
+    accent="heat"
     art="fire"
     :title="`Kombo ${count} hari akan putus!`"
     description="Jangan lepaskan! Buat sekurang-kurangnya 1 latihan hari ini."

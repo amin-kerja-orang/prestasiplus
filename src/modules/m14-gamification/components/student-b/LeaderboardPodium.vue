@@ -23,7 +23,7 @@ const slots = computed(() => podiumSlots(props.podium))
       v-for="slot in slots"
       :key="slot.entry.rank"
       class="min-w-0"
-      :class="slot.raised ? 'bg-highlight/12' : ''"
+      :class="slot.raised ? 'bg-highlight-soft' : ''"
       :data-rank="slot.entry.rank"
       data-testid="lb-podium-card"
     >

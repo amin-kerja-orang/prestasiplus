@@ -111,7 +111,7 @@ const add = (studentId: number): Promise<void> =>
   )
 
 async function remove(studentId: number, classId: number): Promise<void> {
-  if (!(await confirm({ message: PELAJAR_COPY.removeConfirm, tone: 'danger' }))) return
+  if (!(await confirm({ message: PELAJAR_COPY.removeConfirm, tone: 'error' }))) return
   await act(() => removeStudentFromClass(studentId, classId), PELAJAR_COPY.removed)
 }
 </script>
@@ -199,7 +199,7 @@ async function remove(studentId: number, classId: number): Promise<void> {
       <DsPanel data-testid="pelajar-add-bar">
         <div class="flex flex-wrap items-center gap-3">
           <label for="pelajar-target" class="flex items-center gap-2 text-label text-highlighted">
-            <UIcon name="i-ph-plus-circle-duotone" class="size-4 text-primary" />{{
+            <UIcon name="i-ph-plus-circle-duotone" class="size-4 text-primary-t" />{{
               PELAJAR_COPY.addTo
             }}
           </label>

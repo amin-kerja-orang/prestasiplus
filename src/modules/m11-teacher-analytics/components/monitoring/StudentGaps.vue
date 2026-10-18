@@ -21,7 +21,7 @@ const SEVERITY: Record<GapSeverity, UiColor> = {
     <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-1">
         <h2 class="flex items-center gap-2 text-label text-highlighted">
-          <UIcon name="i-ph-crosshair" class="size-5 text-primary" />Gap Analysis &amp; Cadangan
+          <UIcon name="i-ph-crosshair" class="size-5 text-primary-t" />Gap Analysis &amp; Cadangan
           Latihan
         </h2>
         <p class="text-caption text-muted">

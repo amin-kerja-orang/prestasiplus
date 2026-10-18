@@ -25,7 +25,7 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
     <DsPanel data-testid="audio-kbat-card">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex min-w-0 items-start gap-3">
-          <DsIconChip icon="i-ph-headphones-duotone" size="lg" />
+          <DsIconChip icon="headphones" size="lg" />
           <div class="min-w-0">
             <h2 class="text-subheading text-highlighted">
               Sumbang Set Audio KBAT / Ujian Mendengar
@@ -82,7 +82,7 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
 
     <DsPanel data-testid="ai-card">
       <div class="flex min-w-0 items-center gap-3">
-        <DsIconChip icon="i-ph-sparkle-duotone" size="lg" />
+        <DsIconChip icon="sparkle" size="lg" />
         <div class="min-w-0">
           <h2 class="text-subheading text-highlighted">AI Auto-Generate Soalan</h2>
           <p class="text-body text-muted">Upload dokumen DOCX/PDF, AI extract soalan automatik</p>

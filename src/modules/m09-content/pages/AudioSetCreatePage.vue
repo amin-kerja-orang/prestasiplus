@@ -149,7 +149,7 @@ async function submit(): Promise<void> {
         </UAlert>
       </div>
 
-      <DsFormSection title="Maklumat Set" icon="i-ph-list-checks" accent="action">
+      <DsFormSection title="Maklumat Set" icon="list-checks" accent="action">
         <DsFormField native for="set-title" label="Tajuk Set" :error="errors.title">
           <UInput
             id="set-title"

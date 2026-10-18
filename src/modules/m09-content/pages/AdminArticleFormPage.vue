@@ -341,7 +341,7 @@ async function submit(): Promise<void> {
         </div>
       </DsFormSection>
 
-      <DsFormSection title="Penerbitan" icon="i-ph-rocket-launch" accent="win">
+      <DsFormSection title="Penerbitan" icon="rocket-launch" accent="win">
         <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
           <USwitch
             v-model="form.isPublished"

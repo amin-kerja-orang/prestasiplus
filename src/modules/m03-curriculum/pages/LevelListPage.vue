@@ -173,13 +173,13 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
         </template>
       </DsPageHeader>
 
-      <DsStatRow :items="kpiItems" compact :cols="4" aria-label="Ringkasan tahap" />
+      <DsStatRow :items="kpiItems" density="compact" :cols="4" aria-label="Ringkasan tahap" />
 
       <DsDataTable
         :data="tableRows"
         :columns="columns"
         caption="Senarai tahap pendidikan"
-        compact-cells
+        density="compact"
         :page-size="Math.max(tableRows.length, 1)"
         card-title="name"
         :card-fields="cardFields"

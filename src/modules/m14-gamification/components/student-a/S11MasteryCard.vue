@@ -16,7 +16,7 @@ const isActive = (r: DashboardMastery) => gamStageLabel(r.stage) === 'Aktif'
   <UCard class="min-w-0" data-testid="s11-mastery">
     <div class="flex flex-col gap-3">
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
-        <DsIconChip icon="i-ph-stack-duotone" accent="win" size="sm" />Tahap Penguasaan Subjek
+        <DsIconChip icon="stack" accent="win" size="sm" />Tahap Penguasaan Subjek
       </h2>
       <ul class="grid grid-cols-1 gap-2 md:grid-cols-2">
         <li

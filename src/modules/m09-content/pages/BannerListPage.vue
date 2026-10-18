@@ -45,7 +45,7 @@ const deleting = ref(false)
 
 async function remove(banner: AdminBanner): Promise<void> {
   if (deleting.value) return
-  if (!(await confirm({ message: COPY.confirmDeleteBanner, tone: 'danger' }))) return
+  if (!(await confirm({ message: COPY.confirmDeleteBanner, tone: 'error' }))) return
   deleting.value = true
   try {
     const result = await deleteBanner(banner.id)
@@ -156,7 +156,7 @@ const cardFields: CardField[] = [
       v-else
       variant="flush"
       layout="fixed"
-      compact-cells
+      density="compact"
       :data="tableRows"
       :columns="columns"
       caption="Senarai banner"

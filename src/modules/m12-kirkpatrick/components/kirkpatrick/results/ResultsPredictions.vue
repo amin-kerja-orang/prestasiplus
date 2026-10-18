@@ -88,7 +88,7 @@ const pageSize = ref(50)
         <span data-testid="res-pred-row">
           <RouterLink
             :to="`${schoolPath(row.original.schoolId)}/pelajar/${row.original.userId}`"
-            class="text-label text-primary"
+            class="text-label text-primary-t"
             data-testid="pred-student"
             >{{ row.original.name }}</RouterLink
           >
@@ -97,7 +97,7 @@ const pageSize = ref(50)
       <template #schoolName-cell="{ row }">
         <RouterLink
           :to="schoolPath(row.original.schoolId)"
-          class="text-primary"
+          class="text-primary-t"
           data-testid="pred-school"
           >{{ row.original.schoolName }}</RouterLink
         >

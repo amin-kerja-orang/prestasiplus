@@ -164,9 +164,9 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
       <p class="sr-only" data-testid="questions-total">
         Jumlah: <strong>{{ formatCount(summary.total) }}</strong> soalan
       </p>
-      <DsStatRow :items="kpis" roomy data-testid="questions-kpis" />
+      <DsStatRow :items="kpis" density="roomy" data-testid="questions-kpis" />
 
-      <DsPanel flush title="Pecahan mengikut subjek" icon="i-ph-list-numbers">
+      <DsPanel padding="none" title="Pecahan mengikut subjek" icon="i-ph-list-numbers">
         <template #actions>
           <div class="flex flex-wrap items-center gap-2">
             <UButton

@@ -45,7 +45,7 @@ const balance = computed(() => wallet.data.value?.tokenBalance ?? null)
       <DsEmptyState
         :title="SHOP_COPY.emptyTitle"
         :description="SHOP_COPY.emptyBody"
-        icon="i-ph-gift-duotone"
+        icon="gift"
       />
     </section>
   </DsPage>

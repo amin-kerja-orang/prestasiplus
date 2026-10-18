@@ -100,7 +100,7 @@ const usageRate = computed(() => {
 const busy = ref(false)
 
 async function remove(): Promise<void> {
-  if (busy.value || !(await confirm({ message: DELETE_CONFIRM, tone: 'danger' }))) return
+  if (busy.value || !(await confirm({ message: DELETE_CONFIRM, tone: 'error' }))) return
   busy.value = true
   try {
     const result = await deleteQuestion(props.id)

@@ -238,8 +238,8 @@ describe('S5 subject GPS and trend (AC-M12-21.1 ... 21.4)', () => {
       'Trend',
     ])
     const names = all(w, 'res-trend-row')
-    expect(names[0]?.classes()).toContain('text-primary')
-    expect(names[1]?.classes()).not.toContain('text-primary')
+    expect(names[0]?.classes()).toContain('text-primary-t')
+    expect(names[1]?.classes()).not.toContain('text-primary-t')
     const rows = names.map(rowOf)
     const cells = rows[0]!.findAll('[data-testid="res-trend-cell"]')
     expect(cells.map((c) => c.text())).toEqual(['5.20', '4.80', '4.50', '4.30', '-'])

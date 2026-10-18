@@ -66,7 +66,7 @@ function onSubmit(): void {
 
 <template>
   <form method="post" class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="chapter-form" @submit.prevent="onSubmit">
-    <DsFormSection title="Maklumat Bab" icon="i-ph-book-bookmark">
+    <DsFormSection title="Maklumat Bab" icon="book-bookmark">
       <DsFormField v-slot="{ id }" native for="chapter-subject" label="Subjek" required>
         <DsNativeSelect
           :id="id"

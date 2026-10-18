@@ -197,7 +197,7 @@ const COLUMNS: TableColumn<SubRow>[] = [
       prefix="subs-stat"
       :items="stats"
       :loading="counts === null"
-      compact
+      density="compact"
       :cols="4"
       aria-label="Ringkasan langganan"
     />
@@ -255,7 +255,7 @@ const COLUMNS: TableColumn<SubRow>[] = [
       @retry="reload()"
     />
 
-    <DsPanel v-else-if="firstLoad" flush data-testid="subs-table">
+    <DsPanel v-else-if="firstLoad" padding="none" data-testid="subs-table">
       <div class="flex flex-col gap-3 p-4">
         <USkeleton v-for="n in 5" :key="n" class="h-12 w-full" data-testid="subs-skeleton" />
       </div>
@@ -266,7 +266,7 @@ const COLUMNS: TableColumn<SubRow>[] = [
       :data="tableRows"
       :columns="COLUMNS"
       variant="flush"
-      compact-cells
+      density="compact"
       caption="Senarai langganan sekolah"
       :page-size="Math.max(tableRows.length, 1)"
       data-testid="subs-table"

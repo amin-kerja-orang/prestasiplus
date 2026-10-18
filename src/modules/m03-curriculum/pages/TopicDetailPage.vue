@@ -91,7 +91,7 @@ const BADGES = [
               {{ topic.description }}
             </p>
           </div>
-          <DsIconChip icon="i-ph-books-duotone" accent="win" size="lg" />
+          <DsIconChip icon="books" accent="win" size="lg" />
         </div>
       </section>
 
@@ -99,7 +99,7 @@ const BADGES = [
         <div class="rounded-card bg-default p-3 text-center shadow-lift sm:p-4">
           <UIcon
             name="i-ph-list-bullets-duotone"
-            class="mx-auto size-6 text-primary"
+            class="mx-auto size-6 text-primary-t"
             aria-hidden="true"
             data-testid="stat-icon-subtopik"
           />
@@ -181,7 +181,7 @@ const BADGES = [
             <div class="mt-3">
               <div class="flex items-center justify-between text-label">
                 <span class="text-muted">Kemajuan</span>
-                <span class="font-bold text-primary" data-testid="subtopic-progress"
+                <span class="font-bold text-primary-t" data-testid="subtopic-progress"
                   >{{ s.progress }}%</span
                 >
               </div>

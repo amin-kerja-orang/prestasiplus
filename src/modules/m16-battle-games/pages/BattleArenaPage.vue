@@ -209,7 +209,7 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
             <p class="max-w-full truncate text-caption text-muted">{{ view.players[side].school }}</p>
             <p class="mt-2 text-overline text-muted">Skor</p>
             <p
-              class="tabular text-title text-primary"
+              class="tabular text-title text-primary-t"
               :data-testid="`battle-arena-score-${side}`"
             >
               {{ scores[side] }}

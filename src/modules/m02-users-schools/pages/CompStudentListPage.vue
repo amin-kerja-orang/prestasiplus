@@ -166,13 +166,13 @@ const COLUMNS: TableColumn<CompRow>[] = [
     <DsStatRow
       :items="stats"
       :loading="counts === null"
-      compact
+      density="compact"
       :cols="3"
       aria-label="Ringkasan pelajar komplimen"
     />
 
     <!-- Sticky bulk bar (FR-M02-67): only while at least one row is ticked. -->
-    <DsPanel v-if="selected.length > 0" tone="bulk" data-testid="comp-bulk-bar">
+    <DsPanel v-if="selected.length > 0" behavior="bulk" data-testid="comp-bulk-bar">
       <div class="flex flex-wrap items-center gap-3">
         <span class="mr-2 text-body text-highlighted">
           <span data-testid="comp-selected-count">{{ selected.length }}</span> dipilih
@@ -208,7 +208,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
       @retry="reload()"
     />
 
-    <DsPanel v-else-if="firstLoad" flush data-testid="comp-table">
+    <DsPanel v-else-if="firstLoad" padding="none" data-testid="comp-table">
       <div class="flex flex-col gap-3 p-4">
         <USkeleton v-for="n in 5" :key="n" class="h-12 w-full" data-testid="comp-skeleton" />
       </div>
@@ -247,7 +247,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
           <template #name>
             <RouterLink
               :to="compDetailPath(row.original.id)"
-              class="text-primary"
+              class="text-primary-t"
               data-testid="comp-name"
               >{{ row.original.name }}</RouterLink
             >
@@ -293,7 +293,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
         <!-- Empty page (FR-M02-69). -->
         <p class="px-4 py-12 text-center text-body text-muted" data-testid="comp-empty">
           Tiada pelajar komplimen lagi.
-          <RouterLink :to="COMP_CREATE_PATH" class="text-primary" data-testid="comp-empty-link"
+          <RouterLink :to="COMP_CREATE_PATH" class="text-primary-t" data-testid="comp-empty-link"
             >Daftar baru.</RouterLink
           >
         </p>
@@ -309,7 +309,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
           <div class="flex min-w-0 flex-col gap-1">
             <RouterLink
               :to="compDetailPath(row.id as number)"
-              class="text-primary"
+              class="text-primary-t"
               data-testid="comp-name"
               >{{ row.name }}</RouterLink
             >

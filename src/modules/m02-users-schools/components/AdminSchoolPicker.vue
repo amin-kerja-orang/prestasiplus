@@ -83,7 +83,7 @@ function clear(): void {
     <DsFormField native for="admin-school-search" label="Sekolah" :required="required">
       <DsPanel v-if="school" tone="tint" data-testid="admin-school-chip">
         <div class="flex min-h-14 items-center gap-3">
-          <UIcon name="i-ph-buildings" class="size-6 shrink-0 text-primary" aria-hidden="true" />
+          <UIcon name="i-ph-buildings" class="size-6 shrink-0 text-primary-t" aria-hidden="true" />
           <span class="min-w-0 flex-1">
             <span
               class="block truncate text-label text-highlighted"
@@ -133,7 +133,7 @@ function clear(): void {
           <span v-if="searching" class="sr-only" data-testid="admin-school-loading"
             >Mencari...</span
           >
-          <DsPanel v-if="showDropdown" tone="float" flush data-testid="admin-school-dropdown">
+          <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="admin-school-dropdown">
             <UButton
               v-for="item in results"
               :key="item.id"

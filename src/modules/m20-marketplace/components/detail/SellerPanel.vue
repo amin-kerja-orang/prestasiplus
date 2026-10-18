@@ -25,7 +25,7 @@ defineProps<{ seller: SellerCard | null }>()
             <UIcon
               v-if="seller.verified"
               name="i-ph-seal-check-duotone"
-              class="size-4 shrink-0 text-primary"
+              class="size-4 shrink-0 text-primary-t"
               aria-hidden="true"
               data-testid="seller-verified"
             />

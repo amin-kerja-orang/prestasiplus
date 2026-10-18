@@ -19,7 +19,7 @@ const icon = usePhIcon()
   <DsPanel class="lg:col-span-2" data-testid="mastery-card">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-        <UIcon :name="icon('books')" class="size-5 text-primary" />Penguasaan Subjek
+        <UIcon :name="icon('books')" class="size-5 text-primary-t" />Penguasaan Subjek
       </h2>
       <div v-if="mastery.length === 0" data-testid="mastery-empty">
         <DsEmptyState title="Belum ada data latihan." icon="i-ph-chart-pie">

@@ -145,7 +145,7 @@ function goToPage(page: number): void {
         v-if="rows.length === 0"
         :title="ARTIKEL_COPY.emptyTitle"
         :description="ARTIKEL_COPY.emptyBody"
-        icon="i-ph-newspaper-duotone"
+        icon="newspaper"
         data-testid="artikel-empty"
       >
         <template #actions>

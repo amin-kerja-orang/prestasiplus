@@ -102,7 +102,7 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
         <DsEmptyState
           title="Belum Ada Data"
           description="Mula buat latihan untuk lihat kemajuan kamu di sini!"
-          icon="i-ph-chart-bar"
+          icon="chart-bar"
         >
           <template #actions>
             <UButton to="/practice" size="lg" class="min-h-11">Mula Latihan</UButton>
@@ -170,7 +170,7 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
                   <svg
                     v-if="s.trend.length > 0"
                     viewBox="0 0 120 30"
-                    class="h-8 w-30 text-primary"
+                    class="h-8 w-30 text-primary-t"
                     aria-hidden="true"
                   >
                     <polyline

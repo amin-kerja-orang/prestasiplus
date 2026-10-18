@@ -37,7 +37,7 @@ const BASE: Record<number, string> = {
       :data-testid="`podium-${String(row.rank)}`"
     >
       <div v-if="row.rank === 1" class="leading-none" aria-hidden="true">
-        <UIcon name="i-ph-crown-simple-duotone" class="size-7 text-primary sm:size-8" />
+        <UIcon name="i-ph-crown-simple-duotone" class="size-7 text-primary-t sm:size-8" />
         <span class="sr-only">👑</span>
       </div>
       <UAvatar

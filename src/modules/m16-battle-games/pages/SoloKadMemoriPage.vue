@@ -113,7 +113,7 @@ const CARD_VARIANT = { matched: 'soft', wrong: 'soft', flipped: 'soft', '': 'sol
 
 const resultTiles = computed(() => [
   { label: 'Masa', value: formatClock(result.value.time), tone: 'text-info' },
-  { label: 'Langkah', value: String(moves.value), tone: 'text-primary' },
+  { label: 'Langkah', value: String(moves.value), tone: 'text-primary-t' },
   { label: 'Ketepatan', value: `${String(result.value.accuracy)}%`, tone: 'text-success' },
   { label: 'Syiling 🪙', value: `+${String(result.value.coins)}`, tone: 'text-warning' },
 ])

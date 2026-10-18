@@ -131,7 +131,7 @@ const actions: TreeActions = {
   async deleteChapter(chapter) {
     if (
       busy.value ||
-      !(await confirm({ message: 'Adakah anda pasti mahu padam bab ini?', tone: 'danger' }))
+      !(await confirm({ message: 'Adakah anda pasti mahu padam bab ini?', tone: 'error' }))
     )
       return
     await mutate(() => deleteChapter(chapter.id))
@@ -139,7 +139,7 @@ const actions: TreeActions = {
   async deleteTopic(topic) {
     if (
       busy.value ||
-      !(await confirm({ message: 'Adakah anda pasti mahu padam topik ini?', tone: 'danger' }))
+      !(await confirm({ message: 'Adakah anda pasti mahu padam topik ini?', tone: 'error' }))
     )
       return
     await mutate(() => deleteTopic(topic.id))
@@ -147,7 +147,7 @@ const actions: TreeActions = {
   async deleteSubtopic(subtopicId) {
     if (
       busy.value ||
-      !(await confirm({ message: 'Adakah anda pasti mahu padam subtopik ini?', tone: 'danger' }))
+      !(await confirm({ message: 'Adakah anda pasti mahu padam subtopik ini?', tone: 'error' }))
     )
       return
     await mutate(() => deleteSubtopic(subtopicId))
@@ -183,7 +183,7 @@ provide(TREE_ACTIONS, actions)
 
     <template v-if="optionsReady">
       <DsPanel
-        flush
+        padding="none"
         as="form"
         method="get"
         data-testid="curriculum-filter"
@@ -231,12 +231,12 @@ provide(TREE_ACTIONS, actions)
         </div>
       </DsPanel>
 
-      <DsPanel v-if="!hasPair" flush data-testid="curriculum-prompt">
+      <DsPanel v-if="!hasPair" padding="none" data-testid="curriculum-prompt">
         <div class="p-6">
           <DsEmptyState
             title="Sila pilih subjek dan tahap pendidikan"
             description="Gunakan penapis di atas"
-            icon="i-ph-info"
+            icon="info"
           />
         </div>
       </DsPanel>
@@ -245,9 +245,9 @@ provide(TREE_ACTIONS, actions)
         <CurriculumStatCards :tree="tree" />
 
         <div class="flex flex-col gap-4" data-testid="curriculum-tree">
-          <DsPanel v-if="tree.chapters.length === 0" flush data-testid="tree-empty">
+          <DsPanel v-if="tree.chapters.length === 0" padding="none" data-testid="tree-empty">
             <div class="p-6">
-              <DsEmptyState title="Tiada bab dijumpai untuk subjek dan tahap ini." icon="i-ph-tray">
+              <DsEmptyState title="Tiada bab dijumpai untuk subjek dan tahap ini." icon="tray">
                 <template #actions>
                   <UButton
                     :to="chapterCreateTo(subjectParam, levelParam)"

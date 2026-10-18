@@ -161,7 +161,7 @@ const ROLE_ICONS: Record<string, string> = {
               orientation="horizontal"
               :ui="{
                 fieldset: 'grid grid-cols-2 gap-3 md:grid-cols-4',
-                item: 'min-h-11 items-center justify-center bg-elevated p-2 text-center',
+                item: 'min-h-11 items-center justify-center p-2 text-center',
                 wrapper: 'w-full text-center',
                 legend: 'sr-only',
               }"
@@ -237,7 +237,7 @@ const ROLE_ICONS: Record<string, string> = {
       </form>
 
       <aside class="flex min-w-0 flex-col gap-6">
-        <DsPanel flush data-testid="bulk-hero">
+        <DsPanel padding="none" data-testid="bulk-hero">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
             <div class="flex items-center gap-4">
               <DsIconChip icon="users-three" size="lg" />
@@ -269,7 +269,7 @@ const ROLE_ICONS: Record<string, string> = {
           </div>
         </DsPanel>
 
-        <DsPanel flush data-testid="bulk-notes">
+        <DsPanel padding="none" data-testid="bulk-notes">
           <div class="p-4 sm:p-6">
             <h3 class="mb-3 flex items-center gap-2 text-body text-highlighted">
               <UIcon name="i-ph-lightbulb" class="size-5 text-muted" aria-hidden="true" />
@@ -283,7 +283,7 @@ const ROLE_ICONS: Record<string, string> = {
                 • Pelajar DELIMa &rarr;
                 <ULink
                   :to="STUDENT_IMPORT_PATH"
-                  class="text-primary"
+                  class="text-primary-t"
                   data-testid="bulk-students-link"
                 >
                   Import Pelajar

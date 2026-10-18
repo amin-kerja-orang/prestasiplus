@@ -212,7 +212,7 @@ function removeTag(): void {
   <UCard variant="subtle" data-testid="dskp-block">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
       <h3 class="flex items-center gap-2 text-label text-highlighted">
-        <UIcon name="i-ph-tag" class="size-5 text-primary" />
+        <UIcon name="i-ph-tag" class="size-5 text-primary-t" />
         DSKP Tagging <span class="text-caption text-muted">(Pilihan)</span>
       </h3>
       <UButton
@@ -267,7 +267,7 @@ function removeTag(): void {
     </div>
     <DsLoadError
       v-if="failed"
-      inline
+      variant="inline"
       class="mt-3"
       :message="LOAD_ERROR"
       testid="dskp-load-error"

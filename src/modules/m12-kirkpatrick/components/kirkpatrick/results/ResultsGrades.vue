@@ -25,7 +25,7 @@ const series = computed(() => [
       <DsChart
         type="bar"
         horizontal
-        :level="2"
+        :heading-level="2"
         :title="`Taburan Gred (${distribution.year})`"
         :labels="labels"
         :series="series"

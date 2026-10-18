@@ -85,7 +85,7 @@ const loaded = computed(() => data.value !== null)
         class="rounded-card bg-default p-6 shadow-lift"
         data-testid="topics-empty"
       >
-        <DsEmptyState icon="i-ph-books-duotone" :title="EMPTY_TOPICS" />
+        <DsEmptyState icon="books" :title="EMPTY_TOPICS" />
       </div>
 
       <div

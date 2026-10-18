@@ -104,7 +104,7 @@ function clear(): void {
           @focus="picker.onFocus()"
         />
         <span v-if="searching" class="sr-only" data-testid="sub-school-loading">Mencari...</span>
-        <DsPanel v-if="showDropdown" tone="float" flush data-testid="sub-school-dropdown">
+        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="sub-school-dropdown">
           <UButton
             v-for="item in results"
             :key="item.id"

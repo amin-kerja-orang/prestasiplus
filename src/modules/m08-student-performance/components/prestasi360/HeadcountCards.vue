@@ -35,7 +35,7 @@ const chipText = (chip: Chip): string =>
   <DsPanel data-testid="headcount-block">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-        <UIcon :name="icon('chart-line-up')" class="size-5 text-primary" />Headcount — Prestasi SPM
+        <UIcon :name="icon('chart-line-up')" class="size-5 text-primary-t" />Headcount — Prestasi SPM
       </h2>
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <article

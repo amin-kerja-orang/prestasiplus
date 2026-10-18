@@ -144,7 +144,7 @@ const podiumOrder = computed(() => {
             <p class="text-caption text-muted">{{ p.state }}</p>
             <p
               class="tabular text-heading"
-              :class="p.column === 1 ? 'text-primary' : 'text-highlighted'"
+              :class="p.column === 1 ? 'text-primary-t' : 'text-highlighted'"
             >
               {{ p.skor }}
             </p>
@@ -155,13 +155,13 @@ const podiumOrder = computed(() => {
 
       <UCard>
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-list-numbers-duotone" class="size-5 text-primary" aria-hidden="true" />
+          <UIcon name="i-ph-list-numbers-duotone" class="size-5 text-primary-t" aria-hidden="true" />
           Senarai Penuh
         </h3>
         <DsEmptyState
           v-if="rows.length === 0"
           title="Belum ada data ranking. Mula battle untuk melihat ranking sekolah!"
-          icon="i-ph-trophy-duotone"
+          icon="trophy"
           data-testid="battle-schools-empty"
         />
         <ul v-else class="mt-3 flex flex-col gap-2" data-testid="battle-schools-scroll">
@@ -196,7 +196,7 @@ const podiumOrder = computed(() => {
             </div>
             <div class="flex flex-col">
               <dt class="text-caption text-muted">Skor</dt>
-              <dd class="tabular text-label text-primary">{{ r.skor }}</dd>
+              <dd class="tabular text-label text-primary-t">{{ r.skor }}</dd>
             </div>
           </RankedRow>
         </ul>

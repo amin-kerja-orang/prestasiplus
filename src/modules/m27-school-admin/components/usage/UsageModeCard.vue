@@ -98,14 +98,14 @@ const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.s
         Belum ada pelajar buat latihan hari ini. Cuba lihat
         <RouterLink
           :to="{ path: USAGE_PATH, query: { period: '7days' } }"
-          class="inline-flex min-h-11 items-center text-label text-primary"
+          class="inline-flex min-h-11 items-center text-label text-primary-t"
           data-testid="su-empty-7days"
           >7 Hari</RouterLink
         >
         atau
         <RouterLink
           :to="{ path: USAGE_PATH, query: { period: '30days' } }"
-          class="inline-flex min-h-11 items-center text-label text-primary"
+          class="inline-flex min-h-11 items-center text-label text-primary-t"
           data-testid="su-empty-30days"
           >30 Hari</RouterLink
         >.

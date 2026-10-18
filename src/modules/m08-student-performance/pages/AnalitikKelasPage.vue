@@ -238,7 +238,7 @@ const cardFields = [
       <div v-if="data.summary === null" data-testid="analitik-empty">
         <DsEmptyState
           title="Tiada data analitik untuk kelas dan subjek ini."
-          icon="i-ph-chart-line-up"
+          icon="chart-line-up"
         />
       </div>
 

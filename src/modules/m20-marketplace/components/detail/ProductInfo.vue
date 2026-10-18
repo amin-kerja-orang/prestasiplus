@@ -87,7 +87,7 @@ const inStock = computed(() => props.product.stockStatus === 'available')
         <p class="flex items-center gap-2 text-label break-words" data-testid="product-shipping-line">
           <UIcon
             name="i-ph-truck-duotone"
-            class="size-4 shrink-0 text-primary"
+            class="size-4 shrink-0 text-primary-t"
             aria-hidden="true"
             data-testid="product-shipping-icon"
           />{{ product.shippingLine }}

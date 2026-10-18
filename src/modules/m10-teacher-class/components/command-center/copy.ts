@@ -157,7 +157,7 @@ export function rarityOf(holders: number): { label: string; tone: string } {
   if (holders >= 20) return { label: 'Common', tone: 'text-muted' }
   if (holders >= 10) return { label: 'Uncommon', tone: 'text-success' }
   if (holders >= 5) return { label: 'Rare', tone: 'text-info' }
-  if (holders >= 1) return { label: 'Epic', tone: 'text-primary' }
+  if (holders >= 1) return { label: 'Epic', tone: 'text-primary-t' }
   return { label: 'Legendary', tone: 'text-warning' }
 }
 

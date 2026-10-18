@@ -65,11 +65,11 @@ const kpis: StatItem[] = [
     <section class="flex flex-col gap-3" aria-labelledby="s-stat">
       <h3 id="s-stat" class="text-subheading">DsStatRow, DsStatTile</h3>
       <DsStatRow prefix="gal" :items="kpis" />
-      <DsStatRow :items="kpis.slice(0, 3)" roomy />
+      <DsStatRow :items="kpis.slice(0, 3)" density="roomy" />
       <DsStatRow :items="kpis.slice(0, 4)" loading />
       <DsStatRow
         :items="kpis.slice(0, 4).map((k, i) => ({ ...k, to: '/__ds', active: i === 1 }))"
-        compact
+        density="compact"
       />
     </section>
 
@@ -109,7 +109,7 @@ const kpis: StatItem[] = [
       <h3 id="s-error" class="text-subheading">DsLoadError</h3>
       <DsLoadError />
       <DsLoadError title="Soalan" message="Tidak dapat memuatkan soalan. Sila cuba semula." />
-      <DsLoadError inline />
+      <DsLoadError variant="inline" />
     </section>
 
     <section class="flex flex-col gap-3" aria-labelledby="s-empty">

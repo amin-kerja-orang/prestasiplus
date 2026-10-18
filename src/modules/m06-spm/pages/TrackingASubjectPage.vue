@@ -140,7 +140,7 @@ const size = computed(() => setSize(subject.value?.targetSize ?? null))
 
       <template v-if="subject.sets.length > 0">
         <h2 class="flex items-center gap-2 text-heading text-highlighted" data-testid="year-heading">
-          <UIcon name="i-ph-calendar-blank-duotone" class="size-6 text-primary" aria-hidden="true" />
+          <UIcon name="i-ph-calendar-blank-duotone" class="size-6 text-primary-t" aria-hidden="true" />
           Tracking A 2026
         </h2>
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4" data-testid="set-grid">
@@ -207,7 +207,7 @@ const size = computed(() => setSize(subject.value?.targetSize ?? null))
         <DsEmptyState
           title="Belum Ada Set Tracking A"
           description="Set Tracking A untuk subjek ini akan ditambah tidak lama lagi."
-          icon="i-ph-tray"
+          icon="tray"
         />
       </UCard>
     </template>

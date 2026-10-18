@@ -28,7 +28,7 @@ const { data: access } = useApi((signal) => fetchPkskAccess({ signal }))
 
     <section class="flex min-w-0 flex-col gap-3" data-testid="format-card">
       <h2 class="flex items-center gap-2 text-heading text-highlighted">
-        <DsIconChip icon="i-ph-clipboard-text-duotone" accent="action" size="sm" /> Format
+        <DsIconChip icon="clipboard-text" accent="action" size="sm" /> Format
         Peperiksaan
       </h2>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -54,7 +54,7 @@ const { data: access } = useApi((signal) => fetchPkskAccess({ signal }))
 
     <section class="flex min-w-0 flex-col gap-3" data-testid="level-section">
       <h2 class="flex items-center gap-2 text-heading text-highlighted">
-        <DsIconChip icon="i-ph-stack-duotone" accent="action" size="sm" /> Pilih Tingkatan Anda
+        <DsIconChip icon="stack" accent="action" size="sm" /> Pilih Tingkatan Anda
       </h2>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <UCard

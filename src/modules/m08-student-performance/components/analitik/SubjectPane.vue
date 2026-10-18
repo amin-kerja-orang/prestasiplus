@@ -85,7 +85,7 @@ const dots = () =>
               <span class="text-caption text-muted">Trend 30 Hari</span>
             </li>
             <li class="flex flex-col gap-1">
-              <span class="tabular text-title text-primary" data-testid="kpi-grade"
+              <span class="tabular text-title text-primary-t" data-testid="kpi-grade"
                 >{{ subject.projection.low }} – {{ subject.projection.high }}</span
               >
               <span class="text-caption text-muted">Unjuran Gred</span>
@@ -106,7 +106,7 @@ const dots = () =>
     <DsPanel data-testid="dskp-map">
       <div class="flex flex-col gap-4">
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon :name="icon('map-trifold')" class="size-5 text-primary" />Peta DSKP — Standard
+          <UIcon :name="icon('map-trifold')" class="size-5 text-primary-t" />Peta DSKP — Standard
           Pembelajaran
         </h3>
         <p class="text-overline text-muted" data-testid="map-caption">

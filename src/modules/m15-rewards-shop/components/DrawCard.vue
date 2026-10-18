@@ -25,7 +25,7 @@ const canBuy = computed(
   <UCard :data-testid="`draw-${String(draw.id)}`">
     <article class="flex min-w-0 flex-col gap-3">
       <div class="flex min-w-0 items-start gap-3">
-        <DsIconChip icon="i-ph-ticket-duotone" accent="heat" size="lg" />
+        <DsIconChip icon="ticket" accent="heat" size="lg" />
         <div class="flex min-w-0 flex-col gap-1">
           <h3 class="text-heading break-words text-highlighted">{{ draw.title }}</h3>
           <p v-if="draw.description" class="text-body break-words text-muted">

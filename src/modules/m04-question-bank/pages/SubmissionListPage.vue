@@ -229,7 +229,7 @@ async function resetFilter(): Promise<void> {
             }}</span>
             <span class="text-caption text-muted"> ({{ row.original.raw.year }})</span>
           </div>
-          <div class="text-caption text-primary">{{ row.original.raw.paperType }}</div>
+          <div class="text-caption text-primary-t">{{ row.original.raw.paperType }}</div>
           <div class="text-caption text-muted">Oleh: {{ row.original.raw.authorCredit }}</div>
           <div v-if="row.original.raw.note" class="mt-1 line-clamp-2 text-caption text-muted">
             {{ row.original.raw.note }}

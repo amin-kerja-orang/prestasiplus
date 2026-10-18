@@ -92,7 +92,7 @@ const cardFields = [
 
     <template v-else-if="data">
       <div v-if="data.length === 0" data-testid="headcount-empty">
-        <DsEmptyState title="Belum ada headcount." icon="i-ph-clipboard-text">
+        <DsEmptyState title="Belum ada headcount." icon="clipboard-text">
           <template #actions>
             <UButton
               to="/headcount/create"

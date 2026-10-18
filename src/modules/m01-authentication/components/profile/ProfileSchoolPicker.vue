@@ -51,7 +51,7 @@ function detail(school: SchoolSummary): string {
       class="flex items-center gap-3 bg-elevated p-3"
       data-testid="school-chip"
     >
-      <DsIconChip icon="i-ph-buildings" accent="win" />
+      <DsIconChip icon="buildings" accent="win" />
       <div class="min-w-0 flex-1">
         <div class="text-label break-words text-highlighted" data-testid="school-chip-name">
           {{ picker.selected.value.name }}
@@ -112,7 +112,7 @@ function detail(school: SchoolSummary): string {
               data-testid="school-option"
               @click="picker.select(school)"
             >
-              <DsIconChip icon="i-ph-buildings" size="sm" />
+              <DsIconChip icon="buildings" size="sm" />
               <span class="min-w-0 flex-1">
                 <span class="block text-label break-words text-highlighted">{{ school.name }}</span>
                 <span class="block text-caption text-muted">{{ detail(school) }}</span>

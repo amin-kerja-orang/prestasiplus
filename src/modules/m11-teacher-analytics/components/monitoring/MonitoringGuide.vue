@@ -51,7 +51,7 @@ function scrollTo(event: MouseEvent, id: string) {
       <div class="flex flex-col gap-6">
         <div class="flex items-start justify-between gap-2">
           <h2 class="flex items-center gap-2 text-heading text-highlighted">
-            <UIcon name="i-ph-book-open" class="size-6 text-primary" />Panduan Monitoring
+            <UIcon name="i-ph-book-open" class="size-6 text-primary-t" />Panduan Monitoring
             Penglibatan
           </h2>
           <UButton
@@ -71,7 +71,7 @@ function scrollTo(event: MouseEvent, id: string) {
           >
             <ULink
               href="#section-ringkasan"
-              class="flex items-center gap-2 text-label text-primary"
+              class="flex items-center gap-2 text-label text-primary-t"
               @click="scrollTo($event, 'section-ringkasan')"
             >
               <UIcon name="i-ph-squares-four" class="size-4" />Kad Ringkasan
@@ -88,7 +88,7 @@ function scrollTo(event: MouseEvent, id: string) {
           >
             <ULink
               href="#section-pelajar"
-              class="flex items-center gap-2 text-label text-primary"
+              class="flex items-center gap-2 text-label text-primary-t"
               @click="scrollTo($event, 'section-pelajar')"
             >
               <UIcon name="i-ph-chart-bar" class="size-4" />Table Pelajar
@@ -111,7 +111,7 @@ function scrollTo(event: MouseEvent, id: string) {
           >
             <ULink
               href="#section-guru"
-              class="flex items-center gap-2 text-label text-primary"
+              class="flex items-center gap-2 text-label text-primary-t"
               @click="scrollTo($event, 'section-guru')"
             >
               <UIcon name="i-ph-chalkboard-teacher" class="size-4" />Table Guru
@@ -127,7 +127,7 @@ function scrollTo(event: MouseEvent, id: string) {
           >
             <ULink
               href="#section-mingguan"
-              class="flex items-center gap-2 text-label text-primary"
+              class="flex items-center gap-2 text-label text-primary-t"
               @click="scrollTo($event, 'section-mingguan')"
             >
               <UIcon name="i-ph-calendar-dots" class="size-4" />Tracking Mingguan
@@ -144,7 +144,7 @@ function scrollTo(event: MouseEvent, id: string) {
           >
             <ULink
               href="#section-perhatian"
-              class="flex items-center gap-2 text-label text-primary"
+              class="flex items-center gap-2 text-label text-primary-t"
               @click="scrollTo($event, 'section-perhatian')"
             >
               <UIcon name="i-ph-warning" class="size-4" />Perhatian &amp; Cadangan
@@ -160,7 +160,7 @@ function scrollTo(event: MouseEvent, id: string) {
           >
             <ULink
               href="#section-pelajar"
-              class="flex items-center gap-2 text-label text-primary"
+              class="flex items-center gap-2 text-label text-primary-t"
               @click="scrollTo($event, 'section-pelajar')"
             >
               <UIcon name="i-ph-cursor-click" class="size-4" />Drill-Down
@@ -173,7 +173,7 @@ function scrollTo(event: MouseEvent, id: string) {
           </div>
         </div>
         <p class="flex items-start gap-2 text-body text-muted" data-testid="mon-guide-tip">
-          <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0 text-primary" />
+          <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0 text-primary-t" />
           <span
             ><strong class="text-highlighted">Tip:</strong> Guna Filter untuk tapis
             negeri/tempoh/tahap. Export PDF/CSV untuk pembentangan.</span

@@ -11,14 +11,14 @@ import { MOHON_COPY } from './mohon-copy'
     data-testid="mohon-info"
   >
     <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-      <DsIconChip icon="i-ph-list-checks-duotone" accent="friend" size="sm" />
+      <DsIconChip icon="list-checks" accent="friend" size="sm" />
       {{ MOHON_COPY.afterTitle }}
     </h2>
     <ol class="flex flex-col gap-1 ps-4">
       <li v-for="(step, i) in MOHON_COPY.afterSteps" :key="step">{{ i + 1 }}. {{ step }}</li>
     </ol>
     <h2 class="mt-2 flex items-center gap-2 text-subheading text-highlighted">
-      <DsIconChip icon="i-ph-users-duotone" accent="friend" size="sm" />
+      <DsIconChip icon="users" accent="friend" size="sm" />
       {{ MOHON_COPY.whoTitle }}
     </h2>
     <ul class="flex flex-col gap-1 ps-4">

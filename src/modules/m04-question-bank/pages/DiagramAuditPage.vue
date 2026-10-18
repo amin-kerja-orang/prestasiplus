@@ -161,7 +161,7 @@ const filterCount = computed(
 <template>
   <DsPage data-testid="diagrams-page">
     <!-- Stat cards: 2 across below md, 3 across from md. -->
-    <DsStatRow :items="statItems" :cols="3" :loading="!stats" roomy prefix="diagrams-stat" />
+    <DsStatRow :items="statItems" :cols="3" :loading="!stats" density="roomy" prefix="diagrams-stat" />
 
     <!-- Top-10 subjects by flagged MCQ count (global). -->
     <DsPanel title="MCQ Perlu Gambar Mengikut Mata Pelajaran" data-testid="diagrams-by-subject">
@@ -234,7 +234,7 @@ const filterCount = computed(
 
       <section v-if="mcq && mcq.meta.totalItems > 0" class="flex flex-col gap-3" data-testid="diagrams-mcq">
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-list-numbers" class="size-5 text-primary" />
+          <UIcon name="i-ph-list-numbers" class="size-5 text-primary-t" />
           MCQ ({{ mcq.meta.totalItems }})
         </h2>
         <DiagramCard
@@ -263,7 +263,7 @@ const filterCount = computed(
         data-testid="diagrams-structured"
       >
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-pen-nib" class="size-5 text-primary" />
+          <UIcon name="i-ph-pen-nib" class="size-5 text-primary-t" />
           Struktur ({{ structured.meta.totalItems }})
         </h2>
         <DiagramCard

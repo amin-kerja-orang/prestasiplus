@@ -84,7 +84,7 @@ function medalOf(rank: number): string | null {
           </div>
           <div class="text-end">
             <p class="text-caption text-muted">{{ COPY.countdownLabel }}</p>
-            <p class="tabular text-label text-primary" data-testid="pertandingan-countdown">
+            <p class="tabular text-label text-primary-t" data-testid="pertandingan-countdown">
               {{ countdown }}
             </p>
           </div>

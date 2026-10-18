@@ -139,7 +139,7 @@ async function finish(): Promise<void> {
 }
 
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-primary' },
+  { label: 'Skor Total', value: String(score.value), tone: 'text-primary-t' },
   {
     label: 'Selesai',
     value: `${String(solved.value)}/${String(puzzles.value.length)}`,
@@ -203,7 +203,7 @@ watch(darjah, () => void start(), { immediate: true })
         </div>
 
         <UCard class="text-center" data-testid="solo-card">
-          <p class="text-overline text-primary">
+          <p class="text-overline text-primary-t">
             Soalan {{ index + 1 }} daripada {{ puzzles.length }}
           </p>
           <p class="mt-2 text-subheading break-words text-highlighted">

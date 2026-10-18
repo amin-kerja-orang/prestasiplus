@@ -197,7 +197,7 @@ async function afterMutation(message: string): Promise<void> {
 
 async function bulk(action: BulkAction): Promise<void> {
   if (busy.value || selectedIds.value.length === 0) return
-  if (action === 'delete' && !(await confirm({ message: COPY.confirmBulkDelete, tone: 'danger' })))
+  if (action === 'delete' && !(await confirm({ message: COPY.confirmBulkDelete, tone: 'error' })))
     return
   busy.value = true
   try {
@@ -212,7 +212,7 @@ async function bulk(action: BulkAction): Promise<void> {
 
 async function remove(row: PkskQuestionListItem): Promise<void> {
   if (busy.value) return
-  if (!(await confirm({ message: COPY.confirmDelete, tone: 'danger' }))) return
+  if (!(await confirm({ message: COPY.confirmDelete, tone: 'error' }))) return
   busy.value = true
   try {
     await deletePkskQuestion(row.id)
@@ -387,10 +387,10 @@ const cardFields: CardField[] = [
 
     <div v-else class="flex flex-col gap-4">
       <!-- Bulk bar: only while at least one row is ticked. -->
-      <DsPanel v-if="selectedIds.length > 0" tone="bulk" data-testid="pksk-bulk-bar">
+      <DsPanel v-if="selectedIds.length > 0" behavior="bulk" data-testid="pksk-bulk-bar">
         <div class="flex flex-wrap items-center gap-3">
           <span class="inline-flex items-center gap-2 text-label text-highlighted">
-            <UIcon name="i-ph-check-square" class="size-5 text-primary" aria-hidden="true" />
+            <UIcon name="i-ph-check-square" class="size-5 text-primary-t" aria-hidden="true" />
             <span class="tabular" data-testid="bulk-count">{{ selectedIds.length }} dipilih</span>
           </span>
           <UButton

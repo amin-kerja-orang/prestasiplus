@@ -57,7 +57,7 @@ const initials = computed(
 const NAV_UI = {
   root: 'gap-0',
   label: 'px-2.5 pt-5 pb-1.5 text-overline font-semibold text-muted uppercase',
-  link: 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/10 aria-[current=page]:text-primary aria-[current=page]:font-semibold',
+  link: 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:font-semibold',
   linkLabel: 'truncate',
   linkTrailing: 'shrink-0',
 }
@@ -147,7 +147,6 @@ const accountItems = computed(() => [
           :max-size="20"
           :collapsed-size="4.5"
           :ui="{
-            root: 'bg-default',
             header: 'h-16 shrink-0 px-4',
             body: 'px-3 pt-1 pb-3',
             footer: 'p-2 border-t border-default',
@@ -214,7 +213,7 @@ const accountItems = computed(() => [
                 >
                 <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
                   <span
-                    class="block truncate text-label font-semibold text-highlighted"
+                    class="block truncate text-label text-highlighted"
                     :title="name || 'Akaun'"
                     >{{ name || 'Akaun' }}</span
                   >
@@ -236,7 +235,7 @@ const accountItems = computed(() => [
             <UDashboardNavbar
               :toggle="false"
               :as="{ title: 'div' }"
-              :ui="{ root: 'h-16 bg-default shadow-bar', title: 'min-w-0', right: 'gap-2' }"
+              :ui="{ title: 'min-w-0', right: 'gap-2' }"
               data-testid="pentadbiran-header"
             >
               <template #leading>

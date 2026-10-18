@@ -31,7 +31,7 @@ const href = (t: WeakTopic): string =>
         <UIcon :name="icon('warning')" class="size-5 text-warning" />Topik Perlu Perhatian
       </h2>
       <div v-if="topics.length === 0" data-testid="weak-empty">
-        <DsEmptyState title="Tiada topik lemah! Teruskan usaha." icon="i-ph-check-circle" />
+        <DsEmptyState title="Tiada topik lemah! Teruskan usaha." icon="check-circle" />
       </div>
       <template v-else>
         <ul class="flex flex-col gap-2" data-testid="weak-list">

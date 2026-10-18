@@ -27,7 +27,7 @@ const joined = computed(() => `${SHOP_COPY.joined} ${diffForHumans(props.shop.cr
           <UIcon
             v-if="shop.verified"
             name="i-ph-seal-check-duotone"
-            class="size-6 shrink-0 text-primary"
+            class="size-6 shrink-0 text-primary-t"
             aria-hidden="true"
             data-testid="shop-verified"
           />

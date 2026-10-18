@@ -60,7 +60,7 @@ defineProps<{ data: CcDailyActivity | null; status: LoadStatus }>()
           class="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 bg-soft px-3 py-2 text-body"
           data-testid="cc-badge-row"
         >
-          <UIcon name="i-ph-medal" class="size-5 shrink-0 text-primary" aria-hidden="true" />
+          <UIcon name="i-ph-medal" class="size-5 shrink-0 text-primary-t" aria-hidden="true" />
           <span class="min-w-0 text-label break-words text-highlighted">{{ b.name }}</span>
           <span class="text-caption text-muted">{{ b.badgeName }}</span>
         </li>

@@ -46,7 +46,7 @@ const openTab = useOpenTab()
           :key="i"
           class="flex min-w-0 items-center gap-2 text-body text-toned"
         >
-          <UIcon name="i-ph-medal" class="size-5 shrink-0 text-primary" />
+          <UIcon name="i-ph-medal" class="size-5 shrink-0 text-primary-t" />
           <span class="min-w-0 break-words">{{ b.student }} — {{ b.badge }}</span>
         </li>
       </ul>

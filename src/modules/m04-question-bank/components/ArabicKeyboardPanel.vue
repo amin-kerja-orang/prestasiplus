@@ -74,7 +74,7 @@ const panelStyle = computed(() => {
 })
 
 const KEY =
-  'inline-flex min-h-11 min-w-10 items-center justify-center rounded-chip bg-elevated px-2 font-jawi text-xl text-highlighted transition select-none hover:bg-accented active:bg-accented'
+  'inline-flex min-h-11 min-w-10 items-center justify-center rounded-chip bg-elevated px-2 font-jawi text-heading text-highlighted transition select-none hover:bg-accented active:bg-accented'
 const MODE_BASE =
   'relative min-h-11 rounded-chip px-3 font-jawi text-base font-bold transition select-none sm:min-h-9'
 </script>
@@ -162,7 +162,7 @@ const MODE_BASE =
             :key="h.title"
             type="button"
             :title="h.title"
-            :class="[KEY, 'bg-warning/10']"
+            :class="[KEY, 'bg-warning-soft']"
             data-testid="vkb-harakat"
             @mousedown.prevent
             @click="emit('insert', h.mark)"
@@ -188,7 +188,7 @@ const MODE_BASE =
           </button>
           <button
             type="button"
-            :class="[KEY, 'bg-error/10 text-error']"
+            :class="[KEY, 'bg-error-soft text-error']"
             data-testid="vkb-backspace"
             @mousedown.prevent
             @click="emit('backspace')"

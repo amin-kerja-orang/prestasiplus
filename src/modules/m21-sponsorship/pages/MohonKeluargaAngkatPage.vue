@@ -148,7 +148,7 @@ async function onSubmit(): Promise<void> {
         />
         <p id="student_email_hint" class="mt-1 text-caption text-muted">
           {{ MOHON_COPY.hintBefore
-          }}<RouterLink to="/register" class="font-semibold text-primary underline">{{
+          }}<RouterLink to="/register" class="font-semibold text-primary-t underline">{{
             MOHON_COPY.hintLink
           }}</RouterLink
           >{{ MOHON_COPY.hintAfter }}

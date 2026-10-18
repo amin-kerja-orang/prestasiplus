@@ -23,8 +23,8 @@ const BADGE_COLOR = { easy: 'success', medium: 'warning', hard: 'error' } as con
 
 <template>
   <DsCharacterCard
-    variant="win"
-    icon="i-ph-lightning-duotone"
+    accent="win"
+    icon="lightning"
     title="📱 Misi Harian"
     description="Selesaikan semua misi → buka Peti Harian! 🎁"
     data-testid="dash-quests"
@@ -102,7 +102,7 @@ const BADGE_COLOR = { easy: 'success', medium: 'warning', hard: 'error' } as con
         <li
           v-for="(done, i) in dots"
           :key="i"
-          :class="done ? 'text-primary' : 'text-dimmed'"
+          :class="done ? 'text-primary-t' : 'text-dimmed'"
           :data-done="done ? 'true' : 'false'"
         >
           ●

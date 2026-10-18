@@ -64,7 +64,7 @@ async function buy(drawId: number): Promise<void> {
       <DsLoadError v-if="view.error.value" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="view.reload()" />
       <LoadSkeleton v-else-if="!view.data.value" testid="cabutan-loading" />
       <div v-else-if="draws.length === 0" data-testid="cabutan-empty">
-        <DsEmptyState :title="DRAW_COPY.empty" icon="i-ph-ticket-duotone" />
+        <DsEmptyState :title="DRAW_COPY.empty" icon="ticket" />
       </div>
       <div v-else class="grid gap-4" data-testid="cabutan-list">
         <DrawCard

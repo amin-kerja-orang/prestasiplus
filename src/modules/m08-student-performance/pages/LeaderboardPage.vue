@@ -114,7 +114,7 @@ const columns: TableColumn<Row>[] = [
       <!-- Kedudukan Anda -->
       <section class="flex flex-col gap-3" data-testid="leaderboard-me">
         <h2 class="flex items-center gap-2 text-heading text-highlighted">
-          <UIcon name="i-ph-user-circle" class="size-5 text-primary" aria-hidden="true" />
+          <UIcon name="i-ph-user-circle" class="size-5 text-primary-t" aria-hidden="true" />
           Kedudukan Anda
         </h2>
         <DsStatRow :items="meTiles" prefix="me" :cols="4" />

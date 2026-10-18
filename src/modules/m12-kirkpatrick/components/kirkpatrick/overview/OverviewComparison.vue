@@ -83,14 +83,14 @@ const deltas = computed(() => {
         </UCard>
         <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-after">
           <div class="mb-2 flex flex-wrap items-center justify-between gap-1">
-            <p class="text-label text-primary">SELEPAS</p>
+            <p class="text-label text-primary-t">SELEPAS</p>
             <p class="text-body text-muted" data-testid="kirk-panel-range">
               {{ range(comparison.after) }}
             </p>
           </div>
           <div class="grid grid-cols-2 gap-3 text-center">
             <div v-for="m in metrics(comparison.after)" :key="m.key" class="min-w-0">
-              <p class="tabular text-heading text-primary" data-testid="kirk-panel-value">
+              <p class="tabular text-heading text-primary-t" data-testid="kirk-panel-value">
                 {{ m.value }}
               </p>
               <p class="text-body text-muted">{{ m.label }}</p>

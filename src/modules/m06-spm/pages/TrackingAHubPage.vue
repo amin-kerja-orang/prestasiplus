@@ -47,13 +47,13 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
       <!-- Lanes -->
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4" data-testid="lanes">
         <DsCharacterCard
-          variant="action"
+          accent="action"
           art="rocket"
           title="Subjek objektif penuh"
           description="Khusus untuk kertas objektif penuh yang boleh terus berjalan ikut set."
           data-testid="lane-objektif"
         >
-          <p class="text-overline text-primary">Tracking A Objektif</p>
+          <p class="text-overline text-primary-t">Tracking A Objektif</p>
           <div class="flex flex-wrap gap-2">
             <UBadge color="neutral" variant="soft" data-testid="lane-badge"
               >{{ data.objectiveLane.subjects }} subjek</UBadge
@@ -71,13 +71,13 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
           </div>
         </DsCharacterCard>
         <DsCharacterCard
-          variant="info"
+          accent="friend"
           art="books"
           title="BM dan BI format sebenar"
           description="Lane khas untuk kertas bahasa tanpa memaksa format menjadi 40 MCQ."
           data-testid="lane-bahasa"
         >
-          <p class="text-overline text-primary">Tracking A Bahasa</p>
+          <p class="text-overline text-primary-t">Tracking A Bahasa</p>
           <div class="flex flex-wrap gap-2">
             <UBadge color="neutral" variant="soft" data-testid="lane-badge"
               >{{ data.bahasaLane.subjects }} subjek</UBadge
@@ -161,7 +161,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
                 </div>
                 <div class="min-w-0">
                   <dt class="text-caption text-muted">Readiness</dt>
-                  <dd class="tabular text-heading text-primary" data-testid="tile-readiness">
+                  <dd class="tabular text-heading text-primary-t" data-testid="tile-readiness">
                     {{ t.readiness }}%
                   </dd>
                 </div>
@@ -191,7 +191,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
       <!-- Bahasa section -->
       <section class="flex flex-col gap-3" data-testid="bahasa-section">
         <div class="flex flex-col gap-1">
-          <p class="text-overline text-primary">Tracking A Bahasa</p>
+          <p class="text-overline text-primary-t">Tracking A Bahasa</p>
           <div class="flex flex-wrap items-center gap-2">
             <h2 class="text-heading text-highlighted">BM dan BI ikut format kertas sebenar</h2>
             <UBadge color="secondary" variant="soft" data-testid="bahasa-paper-pill"
@@ -215,7 +215,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
                 :ui="{ body: 'flex h-full flex-col gap-3 p-4' }"
               >
                 <div class="flex items-center gap-3">
-                  <DsIconChip icon="i-ph-translate-duotone" accent="friend" size="lg" />
+                  <DsIconChip icon="translate" accent="friend" size="lg" />
                   <div class="min-w-0">
                     <h3 class="text-subheading break-words text-highlighted" data-testid="bahasa-name">
                       {{ b.name }}
@@ -232,7 +232,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
                   <UBadge color="neutral" variant="soft">Berstruktur / respons sebenar</UBadge>
                 </div>
                 <span
-                  class="mt-auto inline-flex items-center gap-1 text-label text-primary"
+                  class="mt-auto inline-flex items-center gap-1 text-label text-primary-t"
                   data-testid="bahasa-cta"
                 >
                   Buka Tracking A Bahasa
@@ -262,7 +262,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
               >
                 <div class="flex flex-col gap-3">
                   <div class="flex items-center gap-3">
-                    <DsIconChip icon="i-ph-target-duotone" accent="action" size="lg" />
+                    <DsIconChip icon="target" accent="action" size="lg" />
                     <div class="min-w-0">
                       <h3 class="text-subheading break-words text-highlighted" data-testid="open-name">
                         {{ c.name }}
@@ -318,7 +318,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
                   </div>
                 </div>
                 <span
-                  class="flex items-center justify-between pt-1 text-label text-primary"
+                  class="flex items-center justify-between pt-1 text-label text-primary-t"
                   data-testid="open-footer"
                 >
                   Pilih Set

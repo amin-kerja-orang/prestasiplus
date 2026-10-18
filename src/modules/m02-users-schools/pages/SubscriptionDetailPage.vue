@@ -210,7 +210,7 @@ async function confirmUpgrade(): Promise<void> {
 
 async function cancel(): Promise<void> {
   if (
-    !(await confirm({ message: 'Adakah anda pasti mahu batalkan langganan ini?', tone: 'danger' }))
+    !(await confirm({ message: 'Adakah anda pasti mahu batalkan langganan ini?', tone: 'error' }))
   )
     return
   await run(() => cancelSubscription(props.id))
@@ -319,7 +319,7 @@ const tiles = computed<StatItem[]>(() => {
       </div>
 
       <!-- Summary card -->
-      <DsPanel flush data-testid="sub-summary-card">
+      <DsPanel padding="none" data-testid="sub-summary-card">
         <div class="p-4 sm:p-6">
           <div class="flex flex-col gap-4">
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -385,7 +385,7 @@ const tiles = computed<StatItem[]>(() => {
             <DsStatRow
               prefix="sub"
               :items="tiles"
-              compact
+              density="compact"
               :cols="4"
               aria-label="Butiran langganan"
               data-testid="sub-tiles"
@@ -408,7 +408,7 @@ const tiles = computed<StatItem[]>(() => {
       </DsPanel>
 
       <!-- Actions -->
-      <DsPanel flush data-testid="sub-actions">
+      <DsPanel padding="none" data-testid="sub-actions">
         <div class="p-4 sm:p-6">
           <div class="flex flex-col gap-4">
             <h3 class="flex items-center gap-2 text-subheading text-highlighted">

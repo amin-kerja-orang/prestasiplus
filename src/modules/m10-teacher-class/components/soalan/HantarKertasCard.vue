@@ -85,7 +85,7 @@ async function submit(): Promise<void> {
     <div class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
       <DsPanel tone="inset" data-testid="paper-types">
         <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
-          <UIcon name="i-ph-info-duotone" class="size-4 text-primary" />
+          <UIcon name="i-ph-info-duotone" class="size-4 text-primary-t" />
           Jenis Soalan Yang Diterima
         </p>
         <ul class="flex flex-col gap-1">
@@ -251,7 +251,7 @@ async function submit(): Promise<void> {
                       ? 'i-ph-file-xls-duotone'
                       : 'i-ph-file-duotone'
               "
-              class="size-4 shrink-0 text-primary"
+              class="size-4 shrink-0 text-primary-t"
             />
             <span class="min-w-0 truncate">{{ f.name }}</span>
             <span class="tabular shrink-0 text-muted">{{ megabytes(f.size) }}</span>

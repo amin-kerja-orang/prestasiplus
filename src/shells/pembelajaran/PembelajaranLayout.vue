@@ -208,7 +208,7 @@ const navUi = computed(() => ({
   root: 'gap-0',
   link: learner.value
     ? 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:font-semibold'
-    : 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary/10 aria-[current=page]:text-primary aria-[current=page]:font-semibold',
+    : 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:font-semibold',
   linkLeadingIcon: 'size-4',
   linkLabel: 'truncate',
   linkTrailing: 'shrink-0',
@@ -329,7 +329,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 >
                 <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
                   <span
-                    class="block truncate text-label font-semibold text-highlighted"
+                    class="block truncate text-label text-highlighted"
                     :title="name || 'Akaun'"
                     >{{ name || 'Akaun' }}</span
                   >
@@ -355,7 +355,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
               :toggle="false"
               :as="{ title: 'div' }"
               :ui="{
-                root: 'h-16 bg-default pt-[env(safe-area-inset-top)] shadow-bar',
+                root: 'pt-[env(safe-area-inset-top)]',
                 title: 'min-w-0',
                 right: 'gap-2',
               }"
@@ -512,7 +512,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 tabActive(tab, route.path)
                   ? learner
                     ? 'bg-gradient-primary font-semibold text-primary-on'
-                    : 'bg-primary/10 font-semibold text-highlighted'
+                    : 'bg-primary-soft font-semibold text-highlighted'
                   : 'text-muted'
               "
               :aria-current="tabActive(tab, route.path) ? 'page' : undefined"
@@ -561,7 +561,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
               >{{ initials }}</span
             >
             <span class="min-w-0">
-              <span class="block break-words text-label font-semibold text-highlighted">{{ name }}</span>
+              <span class="block break-words text-label text-highlighted">{{ name }}</span>
               <span v-if="schoolName" class="block break-words text-caption text-muted">{{
                 schoolName
               }}</span>

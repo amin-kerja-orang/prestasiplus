@@ -58,7 +58,7 @@ function onSubmit(): void {
   <UCard class="min-w-0" data-testid="s12-form-card">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
-        <DsIconChip icon="i-ph-arrows-clockwise-duotone" size="sm" />Penukaran
+        <DsIconChip icon="arrows-clockwise" size="sm" />Penukaran
       </h2>
       <form id="convertForm" class="flex flex-col gap-4" data-testid="s12-form" @submit.prevent="onSubmit">
         <UFormField label="Syiling untuk ditukar" for="syilingInput">
@@ -110,12 +110,12 @@ function onSubmit(): void {
           >
         </div>
 
-        <div class="flex justify-center text-primary" aria-hidden="true">
+        <div class="flex justify-center text-primary-t" aria-hidden="true">
           <UIcon name="i-ph-arrow-down-bold" class="size-6" />
         </div>
 
         <div
-          class="flex flex-col items-center gap-1 rounded-card bg-primary/12 p-4 text-center"
+          class="flex flex-col items-center gap-1 rounded-card bg-primary-soft p-4 text-center"
           data-testid="s12-preview"
         >
           <p class="text-label text-muted">Anda akan terima</p>

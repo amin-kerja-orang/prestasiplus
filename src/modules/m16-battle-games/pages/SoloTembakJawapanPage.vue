@@ -236,11 +236,11 @@ watch(darjah, () => void start(), { immediate: true })
         <div class="grid grid-cols-4 gap-2" data-testid="solo-hud">
           <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
             <p class="text-caption text-muted">Skor</p>
-            <p class="tabular text-heading text-primary" data-testid="solo-score">{{ score }}</p>
+            <p class="tabular text-heading text-primary-t" data-testid="solo-score">{{ score }}</p>
           </UCard>
           <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
             <p class="text-caption text-muted">Level</p>
-            <p class="tabular text-heading text-primary" data-testid="solo-level">{{ level }}</p>
+            <p class="tabular text-heading text-primary-t" data-testid="solo-level">{{ level }}</p>
           </UCard>
           <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
             <p class="sr-only">Nyawa</p>

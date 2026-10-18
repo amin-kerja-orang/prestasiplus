@@ -101,7 +101,7 @@ const groups = computed(() => {
 
     <div v-else-if="tx.data.value.data.length === 0" data-testid="s17-empty">
       <DsEmptyState
-        icon="i-ph-clipboard-text-duotone"
+        icon="clipboard-text"
         title="Belum ada transaksi"
         description="Mula latih tubi untuk dapatkan syiling!"
       />

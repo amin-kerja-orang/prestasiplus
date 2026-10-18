@@ -148,7 +148,7 @@ function reset(): void {
     <DsEmptyState
       v-else-if="data && data.data.length === 0"
       :title="LIST_COPY.empty"
-      icon="i-ph-headphones-duotone"
+      icon="headphones"
       data-testid="audio-empty"
     />
 
@@ -156,7 +156,7 @@ function reset(): void {
       <li v-for="set in data.data" :key="set.id" class="min-w-0" data-testid="audio-set">
         <UCard>
           <div class="flex items-center gap-3">
-            <DsIconChip icon="i-ph-headphones-duotone" size="lg" />
+            <DsIconChip icon="headphones" size="lg" />
             <div class="min-w-0 grow">
               <p class="text-label break-words text-highlighted" data-testid="set-title">
                 {{ set.title }}

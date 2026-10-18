@@ -13,7 +13,7 @@ defineEmits<{ qr: [id: number] }>()
   <li class="min-w-0" data-testid="class-card" :data-class-id="item.id">
     <DsPanel class="h-full">
       <div class="flex items-start gap-3">
-        <DsIconChip icon="i-ph-chalkboard-teacher-duotone" />
+        <DsIconChip icon="chalkboard-teacher" />
         <div class="flex min-w-0 grow flex-col gap-1">
           <div class="flex items-start justify-between gap-3">
             <h2

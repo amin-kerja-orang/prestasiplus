@@ -91,7 +91,7 @@ const shortcuts = computed(
           <DsStatTile
             :value="`${data.bahagianBAvgPct.toFixed(1)}%`"
             unit="Purata Bahagian B"
-            icon="i-ph-chart-line-up-duotone"
+            icon="chart-line-up"
             accent="win"
             data-testid="avg-b"
           />
@@ -121,7 +121,7 @@ const shortcuts = computed(
 
       <section class="flex min-w-0 flex-col gap-3" data-testid="mastery-section">
         <h2 class="flex items-center gap-2 text-heading text-highlighted">
-          <DsIconChip icon="i-ph-chart-line-up-duotone" accent="action" size="sm" /> Penguasaan
+          <DsIconChip icon="chart-line-up" accent="action" size="sm" /> Penguasaan
           Domain
         </h2>
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -134,7 +134,7 @@ const shortcuts = computed(
             <div class="flex min-w-0 flex-col gap-3">
               <div class="flex min-w-0 items-center gap-3">
                 <DsIconChip
-                  icon="i-ph-target-duotone"
+                  icon="target"
                   accent="friend"
                   size="lg"
                   data-testid="domain-icon"

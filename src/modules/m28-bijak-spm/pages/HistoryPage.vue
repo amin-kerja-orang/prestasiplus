@@ -60,7 +60,7 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
           <DsStatTile
             :value="`${average}%`"
             unit="Purata"
-            icon="i-ph-chart-line-up"
+            icon="chart-line-up"
             accent="win"
           />
         </li>

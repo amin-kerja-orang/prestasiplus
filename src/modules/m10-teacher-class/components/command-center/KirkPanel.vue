@@ -50,7 +50,7 @@ const rows = computed(() => {
             })
           "
         >
-          <span class="w-7 shrink-0 text-label text-primary">{{ r.id.toUpperCase() }}</span>
+          <span class="w-7 shrink-0 text-label text-primary-t">{{ r.id.toUpperCase() }}</span>
           <UProgress class="min-w-6 flex-1" :model-value="r.width" :max="100" aria-hidden="true" />
           <span class="tabular shrink-0 text-end text-body text-toned" data-testid="cc-kirk-text">{{
             r.text

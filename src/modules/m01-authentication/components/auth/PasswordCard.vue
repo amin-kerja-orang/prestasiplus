@@ -27,7 +27,7 @@ useThemeMode('learner')
         <UCard>
           <div class="mb-6 flex flex-col items-center gap-2 text-center">
             <div
-              class="flex size-16 items-center justify-center rounded-card bg-primary/10 text-title leading-none text-primary"
+              class="flex size-16 items-center justify-center rounded-card bg-primary-soft text-title leading-none text-primary-t"
               aria-hidden="true"
             >
               <slot name="icon" />

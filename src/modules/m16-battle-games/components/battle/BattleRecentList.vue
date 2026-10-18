@@ -27,7 +27,7 @@ defineProps<{
         <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 text-body">
           <span
             class="text-label"
-            :class="homeColour && row.playerA.homeHere ? 'text-highlighted' : 'text-primary'"
+            :class="homeColour && row.playerA.homeHere ? 'text-highlighted' : 'text-primary-t'"
             data-testid="battle-player-a"
             >{{ row.playerA.name }}</span
           >
@@ -44,7 +44,7 @@ defineProps<{
             data-testid="battle-score-b"
             >{{ row.scoreB }}</span
           >
-          <span class="text-label text-primary" data-testid="battle-player-b">{{
+          <span class="text-label text-primary-t" data-testid="battle-player-b">{{
             row.playerB.name
           }}</span>
         </span>

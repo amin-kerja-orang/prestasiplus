@@ -43,7 +43,7 @@ const items = computed(() => data.value?.data ?? [])
         <li v-for="(m, i) in items" :key="m.id" class="min-w-0">
           <DsPanel class="flex flex-col gap-2" :data-testid="`mission-card-${String(m.id)}`">
             <div class="flex flex-wrap items-center gap-3">
-              <DsIconChip icon="i-ph-target-duotone" :accent="ACCENTS[i % ACCENTS.length]" />
+              <DsIconChip icon="target" :accent="ACCENTS[i % ACCENTS.length]" />
               <h2
                 class="min-w-0 text-subheading break-words text-highlighted"
                 data-testid="mission-title"
@@ -72,7 +72,7 @@ const items = computed(() => data.value?.data ?? [])
                 :href="safeResourceUrl(m.resourceUrl) ?? undefined"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex min-h-11 items-center break-all text-primary"
+                class="inline-flex min-h-11 items-center break-all text-primary-t"
                 data-testid="mission-link"
                 >{{ m.resourceTitle || m.resourceUrl }}</ULink
               >

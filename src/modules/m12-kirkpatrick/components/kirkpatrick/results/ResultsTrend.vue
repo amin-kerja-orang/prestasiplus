@@ -65,7 +65,7 @@ const pageSize = ref(20)
     >
       <template #name-cell="{ row }">
         <span
-          :class="['text-label', row.original.first ? 'text-primary' : 'text-highlighted']"
+          :class="['text-label', row.original.first ? 'text-primary-t' : 'text-highlighted']"
           data-testid="res-trend-row"
           >{{ row.original.name }}</span
         >

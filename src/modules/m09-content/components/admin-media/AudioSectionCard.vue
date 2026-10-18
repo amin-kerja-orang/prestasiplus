@@ -28,7 +28,7 @@ const audio = computed<File | null>({
     <DsFormSection
       :title="`Bahagian ${String(no)} · Soalan ${String(from)}-${String(to)}`"
       description="Audio section ini akan kekal bersama semua soalan dalam range ini."
-      icon="i-ph-headphones"
+      icon="headphones"
       accent="heat"
       :columns="2"
     >

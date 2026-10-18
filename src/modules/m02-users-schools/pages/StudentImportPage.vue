@@ -215,7 +215,7 @@ async function submit(): Promise<void> {
                 orientation="horizontal"
                 :ui="{
                   fieldset: 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6',
-                  item: 'min-h-11 items-center justify-center bg-elevated p-2 text-center',
+                  item: 'min-h-11 items-center justify-center p-2 text-center',
                   wrapper: 'w-full text-center',
                   legend: 'sr-only',
                 }"
@@ -242,7 +242,7 @@ async function submit(): Promise<void> {
                 orientation="horizontal"
                 :ui="{
                   fieldset: 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6',
-                  item: 'min-h-11 items-center justify-center bg-elevated p-2 text-center',
+                  item: 'min-h-11 items-center justify-center p-2 text-center',
                   wrapper: 'w-full text-center',
                   legend: 'sr-only',
                 }"
@@ -307,7 +307,7 @@ async function submit(): Promise<void> {
       </form>
 
       <aside class="flex min-w-0 flex-col gap-6">
-        <DsPanel flush data-testid="student-hero">
+        <DsPanel padding="none" data-testid="student-hero">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
             <div class="flex items-center gap-4">
               <DsIconChip icon="identification-card" accent="trial" size="lg" />
@@ -332,7 +332,7 @@ async function submit(): Promise<void> {
           </div>
         </DsPanel>
 
-        <DsPanel flush data-testid="student-notes">
+        <DsPanel padding="none" data-testid="student-notes">
           <div class="p-4 sm:p-6">
             <h3 class="mb-3 flex items-center gap-2 text-body text-highlighted">
               <UIcon name="i-ph-lightbulb" class="size-5 text-muted" aria-hidden="true" />

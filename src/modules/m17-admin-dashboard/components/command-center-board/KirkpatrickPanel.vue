@@ -56,7 +56,7 @@ const rows = computed(() => {
         class="flex flex-wrap items-center gap-x-3 gap-y-1"
         :data-testid="`cc-kirk-${r.id}`"
       >
-        <span class="w-8 shrink-0 text-label text-primary">{{ r.label }}</span>
+        <span class="w-8 shrink-0 text-label text-primary-t">{{ r.label }}</span>
         <UProgress
           class="min-w-24 flex-1"
           :model-value="r.width"

@@ -112,7 +112,7 @@ const statuses = ['Aktif', 'Tidak Aktif']
         </template>
       </DsFilterBar>
       <h3 class="text-label text-muted">Tone plain, tanpa penapis aktif</h3>
-      <DsFilterBar tone="plain" :active-count="0">
+      <DsFilterBar surface="plain" :active-count="0">
         <template #search>
           <UInput placeholder="Cari soalan..." aria-label="Cari soalan" class="min-w-0 grow" />
         </template>

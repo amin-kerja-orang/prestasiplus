@@ -15,7 +15,7 @@ defineProps<{ challenge: ChallengeProgress }>()
 
 <template>
   <UCard
-    :class="challenge.completed ? 'bg-success/12' : ''"
+    :class="challenge.completed ? 'bg-success-soft' : ''"
     :data-completed="challenge.completed ? 'true' : 'false'"
     data-testid="s13-card"
   >
@@ -48,7 +48,7 @@ defineProps<{ challenge: ChallengeProgress }>()
             data-testid="s13-reward-syiling"
           />
           <DsRewardChip
-            icon="i-ph-star-duotone"
+            icon="star"
             :value="`+${challenge.rewardXp}`"
             label="XP"
             data-testid="s13-reward-xp"

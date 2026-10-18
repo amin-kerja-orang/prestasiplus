@@ -26,7 +26,7 @@ const ICON: Record<string, PhIcon> = {
   <DsPanel data-testid="suggestions">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-        <UIcon :name="icon('lightbulb')" class="size-5 text-primary" />Cadangan
+        <UIcon :name="icon('lightbulb')" class="size-5 text-primary-t" />Cadangan
       </h2>
       <ul class="flex flex-col gap-2">
         <li

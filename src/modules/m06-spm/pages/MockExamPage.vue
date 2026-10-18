@@ -165,7 +165,7 @@ async function generate(): Promise<void> {
                     ? `/spm-mock/${String(m.id)}`
                     : `/spm-mock/${String(m.id)}/result`
                 "
-                class="inline-flex min-h-11 items-center px-2 text-label text-primary"
+                class="inline-flex min-h-11 items-center px-2 text-label text-primary-t"
                 data-testid="mock-row-link"
                 >{{ m.status === 'in_progress' ? 'Sambung →' : 'Lihat →' }}</RouterLink
               >

@@ -48,7 +48,7 @@ const students = computed(() => data.value?.students ?? [])
 <template>
   <DsDialog v-model:open="open" :title="`HeadCount: ${subject}`" class="sm:max-w-2xl">
     <div class="flex min-w-0 flex-col gap-4" data-testid="cc-headcount-modal">
-      <DsLoadError v-if="error" inline message="Ralat" testid="cc-modal-error" @retry="reload" />
+      <DsLoadError v-if="error" variant="inline" message="Ralat" testid="cc-modal-error" @retry="reload" />
       <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
         Memuatkan...
       </p>

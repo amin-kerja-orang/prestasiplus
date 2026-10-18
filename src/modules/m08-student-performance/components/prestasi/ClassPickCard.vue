@@ -30,7 +30,7 @@ const icon = usePhIcon()
           <span class="tabular text-caption text-muted"
             >{{ item.students }} pelajar · {{ item.year }} · {{ item.joinCode }}</span
           >
-          <span class="text-label text-primary">{{ action }}</span>
+          <span class="text-label text-primary-t">{{ action }}</span>
         </div>
         <UIcon :name="icon('caret-right')" class="size-5 shrink-0 text-dimmed" />
       </div>

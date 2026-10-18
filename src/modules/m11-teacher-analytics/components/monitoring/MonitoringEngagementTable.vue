@@ -63,7 +63,7 @@ const LEGEND: readonly [UiColor, string][] = [
         <h2 class="flex items-center gap-2 text-heading text-highlighted">
           <UIcon
             :name="isStudent ? 'i-ph-chart-bar' : 'i-ph-chalkboard-teacher'"
-            class="size-6 text-primary"
+            class="size-6 text-primary-t"
           />{{ title }}
         </h2>
         <p class="text-body text-muted">
@@ -100,7 +100,7 @@ const LEGEND: readonly [UiColor, string][] = [
         >
           <RouterLink
             :to="paths.school(row.original.schoolId)"
-            class="line-clamp-2 text-label text-primary"
+            class="line-clamp-2 text-label text-primary-t"
             data-testid="mon-school-link"
             >{{ row.original.name }}</RouterLink
           >
@@ -147,7 +147,7 @@ const LEGEND: readonly [UiColor, string][] = [
             <div class="flex min-w-0 flex-col gap-1">
               <RouterLink
                 :to="paths.school((row as Row).schoolId)"
-                class="line-clamp-2 text-label text-primary"
+                class="line-clamp-2 text-label text-primary-t"
                 data-testid="mon-school-link"
                 >{{ (row as Row).name }}</RouterLink
               >

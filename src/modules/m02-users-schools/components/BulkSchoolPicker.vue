@@ -87,7 +87,7 @@ function clear(): void {
           @update:model-value="onInput"
           @focus="picker.onFocus()"
         />
-        <DsPanel v-if="showDropdown" tone="float" flush data-testid="bulk-school-dropdown">
+        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="bulk-school-dropdown">
           <p v-if="searching" class="p-3" data-testid="bulk-school-loading">
             <USkeleton class="h-4 w-full" />
           </p>

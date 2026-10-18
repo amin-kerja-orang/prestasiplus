@@ -224,7 +224,7 @@ onMounted(() => win.value?.focus())
           >
             <span
               class="pointer-events-none absolute inset-0"
-              :class="answer.isCorrect ? 'bg-success/14' : 'bg-error/12'"
+              :class="answer.isCorrect ? 'bg-success-soft' : 'bg-error-soft'"
               aria-hidden="true"
             />
             <div class="relative flex items-start gap-3">

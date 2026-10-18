@@ -23,7 +23,7 @@ async function leave(): Promise<void> {
 <template>
   <div
     v-if="active"
-    class="fixed inset-x-0 top-0 z-40 flex h-10 items-center gap-3 bg-highlight px-3 text-label font-semibold text-on-highlight sm:px-4"
+    class="fixed inset-x-0 top-0 z-40 flex h-10 items-center gap-3 bg-highlight px-3 text-label text-on-highlight sm:px-4"
     role="status"
     data-testid="mod-pelajar-banner"
   >

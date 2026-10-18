@@ -156,7 +156,7 @@ async function submit(): Promise<void> {
       @retry="reloadSchool()"
     />
 
-    <DsPanel v-else-if="!ready && !notFound" flush data-testid="school-form-skeleton">
+    <DsPanel v-else-if="!ready && !notFound" padding="none" data-testid="school-form-skeleton">
       <div class="flex flex-col gap-6 p-6">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
       </div>

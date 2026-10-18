@@ -42,7 +42,7 @@ const saving = ref(false)
           v-model="tahap"
           :aria-describedby="describedby"
           :invalid="invalid"
-          placeholder
+          blank
           required
           :items="[
             { label: 'Tahun 4', value: '4' },
@@ -51,7 +51,7 @@ const saving = ref(false)
         />
       </DsFormField>
       <DsFormField v-slot="{ id, invalid }" label="Tahap (ralat)" native error="Sila pilih tahap">
-        <DsNativeSelect :id="id" model-value="" :invalid="invalid" placeholder />
+        <DsNativeSelect :id="id" model-value="" :invalid="invalid" blank />
       </DsFormField>
     </DsFormSection>
 
@@ -67,7 +67,7 @@ const saving = ref(false)
       </DsRtlScope>
     </DsFormSection>
 
-    <DsFormSection title="Zon Bahaya" icon="i-ph-warning" tone="danger">
+    <DsFormSection title="Zon Bahaya" icon="warning" tone="error">
       <p class="text-body text-muted">Tindakan di sini tidak boleh dibatalkan.</p>
       <template #actions>
         <UButton color="error" variant="soft" label="Padam Akaun" />

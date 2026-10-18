@@ -86,7 +86,7 @@ async function submit(): Promise<void> {
 
       <DsPanel>
         <h2 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-laptop-duotone" class="size-5 text-primary" />{{ KELAS_COPY.info }}
+          <UIcon name="i-ph-laptop-duotone" class="size-5 text-primary-t" />{{ KELAS_COPY.info }}
         </h2>
 
         <div class="flex flex-col gap-4">
@@ -131,7 +131,6 @@ async function submit(): Promise<void> {
             :legend="`${KELAS_COPY.level} *`"
             :items="tiles.map((t) => ({ label: t.label, value: t.slug }))"
             variant="card"
-            :ui="{ item: 'bg-elevated' }"
             orientation="horizontal"
             name="education_level"
             class="min-w-0"

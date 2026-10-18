@@ -21,7 +21,7 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
 <template>
   <DsPanel data-testid="sd-performance">
     <div class="flex min-w-0 items-center gap-3">
-      <DsIconChip icon="i-ph-chart-bar-duotone" size="lg" />
+      <DsIconChip icon="chart-bar" size="lg" />
       <div class="min-w-0">
         <h2 class="text-subheading text-highlighted" data-testid="sd-performance-title">
           Ringkasan Prestasi

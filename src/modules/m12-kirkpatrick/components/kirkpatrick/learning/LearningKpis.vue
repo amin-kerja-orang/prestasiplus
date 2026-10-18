@@ -50,5 +50,5 @@ const items = computed<StatItem[]>(() => [
 </script>
 
 <template>
-  <DsStatRow :items="items" prefix="kirk-kpi" :cols="3" roomy data-testid="kirk-learning-kpis" />
+  <DsStatRow :items="items" prefix="kirk-kpi" :cols="3" density="roomy" data-testid="kirk-learning-kpis" />
 </template>

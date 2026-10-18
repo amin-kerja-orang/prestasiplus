@@ -439,7 +439,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
     </DsFilterBar>
 
     <!-- Bulk bar (FR-M02-15): only while at least one row is ticked. -->
-    <DsPanel v-if="selected.length > 0" tone="bulk" data-testid="users-bulk-bar">
+    <DsPanel v-if="selected.length > 0" behavior="bulk" data-testid="users-bulk-bar">
       <div class="flex items-center justify-between gap-4">
         <span class="flex items-center gap-2 text-body text-default">
           <UIcon name="i-ph-check-square" class="size-5" aria-hidden="true" />
@@ -463,7 +463,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
       @retry="reload()"
     />
 
-    <DsPanel v-else-if="firstLoad" flush data-testid="users-table">
+    <DsPanel v-else-if="firstLoad" padding="none" data-testid="users-table">
       <div class="flex flex-col gap-3 p-4">
         <USkeleton
           v-for="n in SKELETON_ROWS"

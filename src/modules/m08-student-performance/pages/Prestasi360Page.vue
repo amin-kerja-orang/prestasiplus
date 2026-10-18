@@ -140,7 +140,7 @@ const activity = computed(() => {
           <DsPanel class="min-w-0" data-testid="activity-card">
             <div class="flex flex-col gap-4">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon :name="icon('fire')" class="size-5 text-primary" />Aktiviti
+                <UIcon :name="icon('fire')" class="size-5 text-primary-t" />Aktiviti
               </h2>
               <ul class="grid grid-cols-2 gap-3">
                 <li v-for="a in activity" :key="a.id" class="min-w-0">
@@ -159,7 +159,7 @@ const activity = computed(() => {
           <DsPanel v-if="data.badges.length > 0" class="min-w-0" data-testid="badges-card">
             <div class="flex flex-col gap-4">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon :name="icon('medal')" class="size-5 text-primary" />Lencana ({{
+                <UIcon :name="icon('medal')" class="size-5 text-primary-t" />Lencana ({{
                   data.badges.length
                 }})
               </h2>

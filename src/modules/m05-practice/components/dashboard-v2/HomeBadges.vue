@@ -10,7 +10,7 @@ defineProps<{ badges: DashboardBadge[] }>()
 <template>
   <DsCharacterCard
     v-if="badges.length === 0"
-    variant="win"
+    accent="win"
     art="trophy"
     title="Belum Ada Lencana Lagi!"
     description="Jom kumpul lencana pertama dengan menjawab soalan! 🚀"

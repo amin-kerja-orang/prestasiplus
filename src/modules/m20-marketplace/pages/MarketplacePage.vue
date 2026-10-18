@@ -106,7 +106,7 @@ const pagerQuery = computed(() => ({
         <DsEmptyState
           :title="MARKETPLACE_COPY.emptyTitle"
           :description="MARKETPLACE_COPY.emptyHint"
-          icon="i-ph-storefront-duotone"
+          icon="storefront"
         />
       </div>
       <template v-else>

@@ -66,7 +66,7 @@ const icon = usePhIcon()
         </span>
         <RouterLink
           :to="`/headcount/${block.configId}/summary`"
-          class="inline-flex min-h-11 items-center text-label text-primary"
+          class="inline-flex min-h-11 items-center text-label text-primary-t"
           data-testid="hc-full"
           >Lihat Penuh →</RouterLink
         >

@@ -256,7 +256,7 @@ const rowTestId =(r: Row, i: number): string =>
           :labels="section.chart.labels"
           :series="series"
           unit="%"
-          :level="3"
+          :heading-level="3"
           :data-testid="`student-chart-${section.configId}`"
         />
       </div>

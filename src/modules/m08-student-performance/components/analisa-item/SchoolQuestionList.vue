@@ -128,7 +128,7 @@ function toggle(id: number): void {
                   <span>{{ q.attempts }} pelajar cuba</span>
                   <span>{{ formatNumber(q.pupilsPct, { decimals: 1 }) }}% pelajar terlibat</span>
                 </span>
-                <span v-if="q.wrongPupils.length > 0" class="text-caption text-primary">
+                <span v-if="q.wrongPupils.length > 0" class="text-caption text-primary-t">
                   {{ q.wrongPupils.length }} pelajar salah — klik untuk lihat
                 </span>
               </span>

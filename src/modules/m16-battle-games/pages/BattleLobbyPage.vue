@@ -389,7 +389,7 @@ onBeforeUnmount(() => {
                 : 'Menunggu pelajar sama darjah & subjek'
             }}
           </p>
-          <p class="tabular text-title text-primary" data-testid="battle-timer">
+          <p class="tabular text-title text-primary-t" data-testid="battle-timer">
             {{ search.elapsedText.value }}
           </p>
           <UButton
@@ -410,7 +410,7 @@ onBeforeUnmount(() => {
         data-testid="battle-incoming"
       >
         <div class="flex flex-col items-center gap-2 text-center">
-          <DsIconChip icon="i-ph-user-plus-duotone" accent="heat" size="lg" />
+          <DsIconChip icon="user-plus" accent="heat" size="lg" />
           <h3 class="text-subheading text-highlighted">Cabaran Masuk!</h3>
           <p class="text-body text-muted">
             {{ search.challenger.value.name }} ingin menyertai battle anda

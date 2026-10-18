@@ -39,7 +39,7 @@ const home = computed(() => {
       <DsEmptyState
         :title="SCOPE_PAGE_HEADING"
         :description="SCOPE_PAGE_MESSAGE"
-        icon="i-ph-flask"
+        icon="flask"
         :friend="personality === 'learner' ? 'aiman' : undefined"
       >
         <template #actions>

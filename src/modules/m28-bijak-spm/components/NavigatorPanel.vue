@@ -36,7 +36,7 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
       Dijawab {{ counts.answered }} · Ditanda {{ counts.flagged }} · Belum {{ counts.none }}
     </p>
     <section v-for="s in sections" :key="s.id" class="flex flex-col gap-2">
-      <h3 class="text-label font-semibold text-highlighted">
+      <h3 class="text-label text-highlighted">
         {{ s.label }}
         <span v-if="s.rule.type === 'choose'" class="text-caption text-muted">
           · pilih {{ s.rule.n }}</span

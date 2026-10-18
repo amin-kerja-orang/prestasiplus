@@ -30,7 +30,7 @@ function set(value: boolean): void {
     <DsPanel v-else data-testid="guide-card">
       <div class="flex items-start justify-between gap-3">
         <div class="flex min-w-0 items-center gap-3">
-          <DsIconChip icon="i-ph-rocket-launch-duotone" />
+          <DsIconChip icon="rocket-launch" />
           <h2 class="text-subheading text-highlighted" data-testid="guide-title">
             {{ DASH_COPY.guideTitle }}
           </h2>
@@ -67,7 +67,7 @@ function set(value: boolean): void {
         </li>
       </ol>
       <p class="mt-3 flex items-start gap-2 text-body text-muted">
-        <UIcon name="i-ph-lightbulb-duotone" class="mt-1 size-4 shrink-0 text-primary" />
+        <UIcon name="i-ph-lightbulb-duotone" class="mt-1 size-4 shrink-0 text-primary-t" />
         <span
           ><strong>{{ DASH_COPY.tipLabel }}</strong> {{ DASH_COPY.tipText }}</span
         >

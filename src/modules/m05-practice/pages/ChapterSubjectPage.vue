@@ -86,7 +86,7 @@ function onLevelChange(id: unknown): void {
         >
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="flex min-w-0 flex-col gap-1">
-            <p class="text-overline text-primary">Progressive Unlock</p>
+            <p class="text-overline text-primary-t">Progressive Unlock</p>
             <h1 class="text-title text-highlighted" data-testid="chapter-subject-name">
               {{ data.subject.name }}
             </h1>
@@ -112,7 +112,7 @@ function onLevelChange(id: unknown): void {
         <DsEmptyState
           v-if="data.chapters.length === 0"
           title="Tiada bab tersedia untuk tahap ini."
-          icon="i-ph-stack-duotone"
+          icon="stack"
           data-testid="chapter-empty"
         />
       </div>

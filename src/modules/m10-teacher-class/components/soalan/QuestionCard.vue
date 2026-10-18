@@ -106,7 +106,7 @@ const open = ref(false)
           data-testid="question-explanation"
         >
           <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
-            <UIcon name="i-ph-lightbulb-duotone" class="size-4 text-primary" />
+            <UIcon name="i-ph-lightbulb-duotone" class="size-4 text-primary-t" />
             Penjelasan
           </p>
           <p class="text-body break-words text-default">{{ question.explanation }}</p>

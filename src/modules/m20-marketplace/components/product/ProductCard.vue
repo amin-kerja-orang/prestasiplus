@@ -88,7 +88,7 @@ const shipping = computed(() => SHIPPING_ICONS[shippingKindOf(props.product.ship
           <UIcon
             v-if="product.seller.verified"
             name="i-ph-seal-check-duotone"
-            class="size-4 shrink-0 text-primary"
+            class="size-4 shrink-0 text-primary-t"
             aria-hidden="true"
             data-testid="product-card-verified"
           />

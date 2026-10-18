@@ -6,7 +6,7 @@ import { DsEmptyState } from '@/ds'
 <template>
   <UCard class="min-w-0" data-testid="kirk-gain-card">
     <DsEmptyState
-      icon="i-ph-flask"
+      icon="flask"
       title="Pre-Test / Post-Test belum dimulakan"
       description="Apabila ujian diagnostik dimulakan, Hake's Normalized Learning Gain akan dikira secara automatik."
     />

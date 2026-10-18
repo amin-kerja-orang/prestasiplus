@@ -174,7 +174,7 @@ async function submit(): Promise<void> {
               orientation="horizontal"
               :ui="{
                 fieldset: 'grid grid-cols-1 gap-3 sm:grid-cols-2',
-                item: 'min-h-11 items-center justify-center bg-elevated p-4 text-center',
+                item: 'min-h-11 items-center justify-center p-4 text-center',
                 wrapper: 'w-full text-center',
                 label: 'text-body',
                 description: 'whitespace-pre-line text-label',
@@ -207,7 +207,7 @@ async function submit(): Promise<void> {
               orientation="horizontal"
               :ui="{
                 fieldset: 'grid grid-cols-1 gap-3 sm:grid-cols-2',
-                item: 'min-h-11 items-center justify-center bg-elevated p-4 text-center',
+                item: 'min-h-11 items-center justify-center p-4 text-center',
                 wrapper: 'w-full text-center',
                 label: 'text-body',
                 description: 'whitespace-pre-line text-label',
@@ -268,7 +268,7 @@ async function submit(): Promise<void> {
       </div>
 
       <aside class="flex min-w-0 flex-col gap-6 xl:sticky xl:top-6">
-        <DsPanel flush>
+        <DsPanel padding="none">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
             <DsPanel v-if="summary" tone="inset" data-testid="sub-summary">
               <div class="flex flex-col gap-2">

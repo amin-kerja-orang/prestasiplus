@@ -52,7 +52,7 @@ watch(
     <template v-if="data">
       <RouterLink to="/practice/chapter" class="block" data-testid="chapter-banner">
         <DsCharacterCard
-          variant="action"
+          accent="action"
           art="books"
           title="Soalan by Chapter"
           description="Jawab bab demi bab ikut buku teks dan DSKP. Bab seterusnya terkunci sehingga bab semasa lengkap."

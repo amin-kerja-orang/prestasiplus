@@ -283,7 +283,7 @@ async function submit(): Promise<void> {
         </div>
       </DsFormSection>
 
-      <DsFormSection title="Pautan & Sasaran" icon="i-ph-link" accent="friend">
+      <DsFormSection title="Pautan & Sasaran" icon="link" accent="friend">
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
           <DsFormField
             native

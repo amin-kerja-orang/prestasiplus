@@ -26,7 +26,7 @@ export const CURATED = {
   /** `--ui-bg-*` names pages may use as `bg-*`. */
   pageUiBg: ['default', 'muted', 'elevated'],
   /** Semantic colours pages may use as `text-*`. */
-  pageSemanticText: ['primary', 'success', 'info', 'warning', 'error'],
+  pageSemanticText: ['primary', 'primary-t', 'success', 'info', 'warning', 'error'],
   /** `--color-*` bridge tokens pages may use as `bg-*` / `text-*`. */
   pageColor: ['soft', 'cat-1', 'cat-2', 'cat-3', 'cat-4', 'cat-5', 'cat-6', 'cat-7', 'cat-8'],
   /** `--color-*` bridge tokens only composites may use. */

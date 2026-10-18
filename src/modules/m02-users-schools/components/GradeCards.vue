@@ -44,7 +44,7 @@ function pick(value: unknown): void {
         name="grade"
         :ui="{
           fieldset: 'grid grid-cols-3 gap-2 sm:grid-cols-6',
-          item: 'min-h-11 items-center justify-center bg-elevated p-2 text-center',
+          item: 'min-h-11 items-center justify-center p-2 text-center',
           wrapper: 'w-full text-center',
           legend: 'sr-only',
         }"

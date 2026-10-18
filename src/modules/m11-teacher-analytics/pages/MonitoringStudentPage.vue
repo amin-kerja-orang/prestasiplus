@@ -91,7 +91,7 @@ const cards = computed<StatItem[]>(() => {
       value: count(c.correct),
       icon: 'i-ph-check-circle', accent: 'win',
       tone: 'success',
-      valueClass: 'text-success',
+      valueTone: 'success',
     },
     {
       key: 'wrong',
@@ -99,7 +99,7 @@ const cards = computed<StatItem[]>(() => {
       value: count(c.wrong),
       icon: 'i-ph-x-circle',
       tone: 'error',
-      valueClass: 'text-error',
+      valueTone: 'error',
     },
     {
       key: 'accuracy',
@@ -142,7 +142,7 @@ const observations = computed(() =>
       <template v-if="data">
         <UCard data-testid="mon-student-header">
           <div class="flex items-center gap-4">
-            <DsIconChip icon="i-ph-graduation-cap" size="lg" />
+            <DsIconChip icon="graduation-cap" size="lg" />
             <div class="flex min-w-0 flex-col gap-1">
               <h2 class="text-title break-words text-highlighted" data-testid="mon-student-name">
                 {{ data.student.name }}
@@ -161,7 +161,7 @@ const observations = computed(() =>
           :items="cards"
           prefix="mon-stat"
           :cols="4"
-          roomy
+          density="roomy"
           data-testid="mon-student-cards"
         />
 

@@ -22,7 +22,7 @@ const BARS: { key: ScoreKey; label: string; icon: string }[] = [
   <UCard data-testid="panel-skor">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-label text-highlighted">
-        <UIcon name="i-ph-chart-bar" class="size-4 text-primary" />{{ LAPORAN_COPY.scoreBreakdown }}
+        <UIcon name="i-ph-chart-bar" class="size-4 text-primary-t" />{{ LAPORAN_COPY.scoreBreakdown }}
       </h2>
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div

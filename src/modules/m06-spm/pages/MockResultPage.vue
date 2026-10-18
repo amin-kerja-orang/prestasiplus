@@ -128,7 +128,7 @@ class="text-display" :class="
           </ul>
           <p class="text-body text-muted" data-testid="result-tip">
             💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu. Boleh start dengan
-            <ULink to="/pusat-nota-ringkas" class="text-primary">jana nota ringkas</ULink>
+            <ULink to="/pusat-nota-ringkas" class="text-primary-t">jana nota ringkas</ULink>
             untuk topik tersebut.
           </p>
         </div>

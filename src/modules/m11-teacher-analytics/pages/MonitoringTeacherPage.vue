@@ -64,14 +64,14 @@ const cards = computed<StatItem[]>(() => {
       label: 'Pelajar Aktif',
       value: count(c.engaged),
       icon: 'i-ph-check-circle', accent: 'win',
-      valueClass: 'text-success',
+      valueTone: 'success',
     },
     {
       key: 'pct',
       label: '% Aktif',
       value: pct(c.pct),
       icon: 'i-ph-percent', accent: 'action',
-      valueClass: 'text-primary',
+      valueTone: 'primary',
     },
     {
       key: 'attention',
@@ -122,7 +122,7 @@ const columns: TableColumn<PupilRow>[] = [
         <UCard data-testid="mon-teacher-header">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex min-w-0 items-center gap-4">
-              <DsIconChip icon="i-ph-chalkboard-teacher" size="lg" />
+              <DsIconChip icon="chalkboard-teacher" size="lg" />
               <div class="flex min-w-0 flex-col gap-1">
                 <h2 class="text-title break-words text-highlighted" data-testid="mon-teacher-name">
                   {{ data.teacher.name }}
@@ -147,14 +147,14 @@ const columns: TableColumn<PupilRow>[] = [
           :items="cards"
           prefix="mon-stat"
           :cols="4"
-          roomy
+          density="roomy"
           data-testid="mon-teacher-cards"
         />
 
         <UCard data-testid="mon-teacher-students">
           <div class="flex flex-col gap-6">
             <h2 class="flex items-center gap-2 text-heading text-highlighted">
-              <UIcon name="i-ph-graduation-cap" class="size-6 text-primary" />Prestasi Pelajar
+              <UIcon name="i-ph-graduation-cap" class="size-6 text-primary-t" />Prestasi Pelajar
             </h2>
             <div data-testid="mon-teacher-students-scroller">
               <DsDataTable
@@ -178,7 +178,7 @@ const columns: TableColumn<PupilRow>[] = [
                     <RouterLink
                       v-if="row.original.answers > 0"
                       :to="paths.student(schoolId, row.original.id)"
-                      class="line-clamp-2 text-label text-primary"
+                      class="line-clamp-2 text-label text-primary-t"
                       data-testid="mon-teacher-student-link"
                       >{{ row.original.name }}</RouterLink
                     >
@@ -215,7 +215,7 @@ const columns: TableColumn<PupilRow>[] = [
                       <RouterLink
                         v-if="(row as PupilRow).answers > 0"
                         :to="paths.student(schoolId, (row as PupilRow).id)"
-                        class="line-clamp-2 text-label text-primary"
+                        class="line-clamp-2 text-label text-primary-t"
                         >{{ (row as PupilRow).name }}</RouterLink
                       >
                       <span v-else class="line-clamp-2 text-label text-muted">{{

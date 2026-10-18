@@ -29,7 +29,7 @@ const crumbs = computed(() => [
 
   <DsPanel data-testid="sd-banner">
     <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
-      <DsIconChip icon="i-ph-buildings-duotone" size="lg" data-testid="sd-banner-icon" />
+      <DsIconChip icon="buildings" size="lg" data-testid="sd-banner-icon" />
       <div class="flex min-w-0 flex-col gap-1">
         <h2 class="text-title break-words text-highlighted" data-testid="sd-banner-name">
           {{ school.name }}

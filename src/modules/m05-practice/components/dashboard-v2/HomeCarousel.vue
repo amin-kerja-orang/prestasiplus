@@ -32,7 +32,7 @@ const items = computed(() =>
           :ui="{ body: 'flex items-start gap-3 p-4' }"
           :data-testid="`dash-slide-${item.index}`"
         >
-          <DsIconChip icon="i-ph-sparkle-duotone" accent="friend" size="lg" />
+          <DsIconChip icon="sparkle" accent="friend" size="lg" />
           <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
             <UBadge color="neutral" variant="subtle" data-testid="dash-slide-badge">{{
               item.type

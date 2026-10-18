@@ -24,7 +24,7 @@ const series = computed(() => [{ label: 'Jawapan', data: rows.value.map((r) => r
     <div v-else data-testid="cc-subjects-chart">
       <DsChart
         title="Jawapan mengikut subjek"
-        :level="3"
+        :heading-level="3"
         horizontal
         :labels="labels"
         :series="series"

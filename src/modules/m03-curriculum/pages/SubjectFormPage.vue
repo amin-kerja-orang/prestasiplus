@@ -197,7 +197,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
       <DsFormSection
         title="Maklumat Subjek"
         description="Nama, kod dan susunan paparan."
-        icon="i-ph-book"
+        icon="book"
         :columns="2"
       >
         <DsFormField
@@ -294,7 +294,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
               :href="FONT_AWESOME_URL"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-primary"
+              class="text-primary-t"
               data-testid="subject-icon-link"
               >Font Awesome</ULink
             >
@@ -338,7 +338,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
       <DsFormSection
         title="Tahap Pendidikan Berkaitan"
         description="Pilih tahap yang mempunyai subjek ini."
-        icon="i-ph-graduation-cap"
+        icon="graduation-cap"
         :columns="2"
       >
         <fieldset class="min-w-0 md:col-span-2">

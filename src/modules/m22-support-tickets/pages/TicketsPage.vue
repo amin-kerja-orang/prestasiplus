@@ -222,7 +222,7 @@ watch(
 
     <template v-if="data">
       <div v-if="tickets.length === 0" data-testid="tk-empty">
-        <DsEmptyState title="Tiada tiket lagi." icon="i-ph-lifebuoy">
+        <DsEmptyState title="Tiada tiket lagi." icon="lifebuoy">
           <template #actions>
             <UButton
               type="button"

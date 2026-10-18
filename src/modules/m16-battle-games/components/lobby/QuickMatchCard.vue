@@ -155,7 +155,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-else class="mt-4 flex flex-col items-center gap-3 text-center" data-testid="qm-searching">
-      <div class="flex items-center justify-center gap-2 text-primary">
+      <div class="flex items-center justify-center gap-2 text-primary-t">
         <UIcon name="i-ph-spinner-gap-bold" class="size-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
         <span class="text-label" data-testid="qm-elapsed">Mencari lawan... {{ elapsed }}s</span>
       </div>

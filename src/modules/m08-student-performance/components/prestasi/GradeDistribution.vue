@@ -25,7 +25,7 @@ const series = computed(() => [
     <div class="flex flex-col gap-4">
       <DsChart
         title="📈 Taburan Gred (Anggaran)"
-        :level="2"
+        :heading-level="2"
         :labels="labels"
         :series="series"
         table-label="Taburan gred anggaran"

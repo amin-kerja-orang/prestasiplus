@@ -15,7 +15,7 @@ const low = computed(() => props.value <= 10)
       :value="value"
       :max="max"
       size="sm"
-      tone="action"
+      accent="action"
       :label="`Masa berbaki ${String(value)} saat`"
     >
       <span class="tabular text-heading" :class="low ? 'text-error' : 'text-highlighted'" data-testid="solo-clock">{{

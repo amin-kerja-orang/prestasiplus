@@ -512,7 +512,7 @@ const cardFields: CardField[] = [
     </DsPanel>
 
     <div v-else class="flex flex-col gap-4">
-      <DsPanel v-if="selected.length > 0" tone="bulk">
+      <DsPanel v-if="selected.length > 0" behavior="bulk">
         <form
           method="post"
           class="flex flex-wrap items-center gap-3"
@@ -520,7 +520,7 @@ const cardFields: CardField[] = [
           @submit.prevent="submitBulk"
         >
           <span class="inline-flex items-center gap-2 ps-2 text-label text-highlighted">
-            <UIcon name="i-ph-check-square" class="size-5 text-primary" />
+            <UIcon name="i-ph-check-square" class="size-5 text-primary-t" />
             <span class="tabular" data-testid="questions-selected-count">{{ selected.length }}</span>
             soalan dipilih
           </span>

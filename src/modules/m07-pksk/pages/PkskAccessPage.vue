@@ -171,7 +171,7 @@ const revoking = ref(false)
 
 async function revoke(row: PkskAccessItem): Promise<void> {
   if (revoking.value) return
-  if (!(await confirm({ message: COPY.confirmRevoke, tone: 'danger' }))) return
+  if (!(await confirm({ message: COPY.confirmRevoke, tone: 'error' }))) return
   revoking.value = true
   try {
     const result = await revokePkskAccess(row.id)

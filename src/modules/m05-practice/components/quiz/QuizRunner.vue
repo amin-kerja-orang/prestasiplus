@@ -433,7 +433,7 @@ const feedbackExplanation = computed(() =>
                 body: 'feedback-text',
                 ai: 'feedback-explanation',
               }"
-              :tone="result.isCorrect ? 'good' : 'bad'"
+              :tone="result.isCorrect ? 'success' : 'error'"
               :title="result.isCorrect ? labels.correctTitle : labels.wrongTitle"
               :body="result.feedback || undefined"
               :ai-line="feedbackExplanation"

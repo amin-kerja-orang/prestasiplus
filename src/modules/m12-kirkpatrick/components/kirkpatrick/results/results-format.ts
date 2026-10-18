@@ -24,7 +24,7 @@ export const GRADE_PILL: Record<SpmGrade, KirkColor> = {
 
 /** Text token of a colour (accuracy in the prediction table follows the grade band, FN-M12-6.6.1). */
 export const COLOR_TEXT: Record<KirkColor, string> = {
-  primary: 'text-primary',
+  primary: 'text-primary-t',
   success: 'text-success',
   info: 'text-info',
   warning: 'text-warning',

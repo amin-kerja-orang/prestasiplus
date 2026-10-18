@@ -191,12 +191,12 @@ describe('BattleRecentList colours (BR-M16-14)', () => {
     expect(w.get('[data-testid="battle-player-a"]').classes()).toContain('text-highlighted')
     expect(w.get('[data-testid="battle-score-a"]').classes()).toContain('text-success')
     expect(w.get('[data-testid="battle-score-b"]').classes()).not.toContain('text-success')
-    expect(w.get('[data-testid="battle-player-b"]').classes()).toContain('text-primary')
+    expect(w.get('[data-testid="battle-player-b"]').classes()).toContain('text-primary-t')
   })
 
   it('a visiting player A is blue; a 0-0 row greens player B; a tie greens neither', () => {
     let w = render(row({ playerA: { id: 1, name: 'x', homeHere: false } }))
-    expect(w.get('[data-testid="battle-player-a"]').classes()).toContain('text-primary')
+    expect(w.get('[data-testid="battle-player-a"]').classes()).toContain('text-primary-t')
     w.unmount()
     w = render(row({ scoreA: 0, scoreB: 0, winner: 'B' }))
     expect(w.get('[data-testid="battle-score-b"]').classes()).toContain('text-success')

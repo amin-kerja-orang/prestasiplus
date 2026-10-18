@@ -110,7 +110,7 @@ const { data: map, error } = useApi(
       >
         <div class="text-center text-display" aria-hidden="true">🗺️</div>
         <DsEmptyState
-          icon="i-ph-map-trifold-duotone"
+          icon="map-trifold"
           title="Tiada Topik Dijumpai"
           description="Pilih subjek dan darjah yang lain untuk melihat peta belajar"
         />

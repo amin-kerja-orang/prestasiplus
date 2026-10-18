@@ -114,7 +114,7 @@ async function downloadTemplate(): Promise<void> {
         data-testid="import-form"
         @submit.prevent="submit"
       >
-        <DsFormSection title="Muat Naik Fail CSV" icon="i-ph-file-arrow-up">
+        <DsFormSection title="Muat Naik Fail CSV" icon="file-arrow-up">
           <div ref="alertBox">
             <UAlert
               v-if="errors.length > 0"
@@ -217,7 +217,7 @@ async function downloadTemplate(): Promise<void> {
         <DsFormBar :show-cancel="false" :sticky="false">
           <template #status>
             <span class="flex items-center gap-2 text-body text-muted">
-              <UIcon name="i-ph-shield-check" class="size-4 text-primary" />
+              <UIcon name="i-ph-shield-check" class="size-4 text-primary-t" />
               Soalan disimpan sebagai draf
             </span>
           </template>
@@ -239,7 +239,7 @@ async function downloadTemplate(): Promise<void> {
       <div class="flex min-w-0 flex-col gap-4 md:gap-6">
         <DsPanel data-testid="import-template-card">
           <div class="flex flex-col items-center gap-2 text-center">
-            <UIcon name="i-ph-download-simple" class="size-8 text-primary" />
+            <UIcon name="i-ph-download-simple" class="size-8 text-primary-t" />
             <h3 class="text-subheading text-highlighted">Muat Turun Template</h3>
             <p class="text-body text-muted">Template CSV dengan contoh soalan</p>
             <UButton

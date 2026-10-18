@@ -98,7 +98,7 @@ const pageSize = ref(20)
           :to="schoolPath(row.original.schoolId)"
           :class="[
             'line-clamp-2 max-w-72 text-label',
-            row.original.faded ? 'text-dimmed' : 'text-primary',
+            row.original.faded ? 'text-dimmed' : 'text-primary-t',
           ]"
           :data-faded="row.original.faded ? 'true' : 'false'"
           data-testid="res-school-link"

@@ -68,7 +68,7 @@ const cardFields = [
     <DsPanel data-testid="discrimination-guide">
       <div class="flex flex-col gap-3">
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon :name="icon('info')" class="size-5 text-primary" />Panduan Indeks Diskriminasi
+          <UIcon :name="icon('info')" class="size-5 text-primary-t" />Panduan Indeks Diskriminasi
         </h3>
         <ul class="flex flex-wrap gap-2">
           <li v-for="g in GUIDE" :key="g.range">
@@ -126,7 +126,7 @@ const cardFields = [
       <DsEmptyState
         title="Data Tidak Mencukupi"
         description="Perlu sekurang-kurangnya 4 pelajar dengan sesi latihan selesai untuk mengira indeks diskriminasi."
-        icon="i-ph-chart-line-up"
+        icon="chart-line-up"
       />
     </div>
   </div>

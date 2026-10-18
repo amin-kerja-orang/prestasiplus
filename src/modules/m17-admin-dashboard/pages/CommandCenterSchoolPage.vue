@@ -82,7 +82,7 @@ function open(userId: number) {
       <UProgress class="w-16" aria-hidden="true" />Memuatkan...
     </p>
     <template v-else>
-      <DsStatRow :items="cards" prefix="cc-stat" :cols="4" roomy data-testid="cc-school-cards" />
+      <DsStatRow :items="cards" prefix="cc-stat" :cols="4" density="roomy" data-testid="cc-school-cards" />
 
       <DsPanel icon="i-ph-chalkboard-teacher" :title="`Senarai Guru (${data.teachers.length})`">
         <div data-testid="cc-table-scroller">

@@ -12,7 +12,7 @@ defineProps<{ moodCount: number }>()
 <template>
   <UCard v-if="moodCount === 0" class="min-w-0" data-testid="beh-mood">
     <DsEmptyState
-      icon="i-ph-chat-circle-dots"
+      icon="chat-circle-dots"
       title="Data Mood Belum Mencukupi"
       description="Pelajar perlu check-in mood harian untuk analisis kesejahteraan vs prestasi."
     />

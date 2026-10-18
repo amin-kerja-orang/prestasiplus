@@ -50,7 +50,7 @@ const { data, error, loading, reload } = useApi((signal) => fetchJoinedClasses({
       <DsEmptyState
         :title="KELAS_COPY.emptyTitle"
         :description="KELAS_COPY.emptyText"
-        icon="i-ph-chalkboard-teacher-duotone"
+        icon="chalkboard-teacher"
       />
     </DsPanel>
 

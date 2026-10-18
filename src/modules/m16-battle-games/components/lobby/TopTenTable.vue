@@ -44,7 +44,7 @@ defineProps<{ rows: NonNullable<GameLobby['top10']> }>()
         </div>
         <div class="flex flex-col">
           <dt class="text-caption text-muted">⭐ Skor</dt>
-          <dd class="tabular text-label text-primary">{{ row.skor }}</dd>
+          <dd class="tabular text-label text-primary-t">{{ row.skor }}</dd>
         </div>
         <div class="flex flex-col">
           <dt class="text-caption text-muted">✅ Betul</dt>

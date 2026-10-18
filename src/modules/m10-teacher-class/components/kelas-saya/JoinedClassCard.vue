@@ -11,7 +11,7 @@ defineProps<{ item: JoinedClass }>()
   <li class="min-w-0" data-testid="joined-class">
     <DsPanel>
       <div class="flex min-w-0 items-start gap-3">
-        <DsIconChip icon="i-ph-chalkboard-teacher-duotone" accent="action" size="lg" />
+        <DsIconChip icon="chalkboard-teacher" accent="action" size="lg" />
         <div class="flex min-w-0 flex-col gap-2">
           <h3 class="text-subheading break-words text-highlighted" data-testid="class-name">
             {{ item.name }}

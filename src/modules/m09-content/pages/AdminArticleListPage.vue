@@ -156,7 +156,7 @@ const deleting = ref(false)
 
 async function remove(row: AdminArticleItem): Promise<void> {
   if (deleting.value) return
-  if (!(await confirm({ message: COPY.confirmDeleteArticle, tone: 'danger' }))) return
+  if (!(await confirm({ message: COPY.confirmDeleteArticle, tone: 'error' }))) return
   deleting.value = true
   try {
     const result = await deleteAdminArticle(row.id)
@@ -321,7 +321,7 @@ const cardFields: CardField[] = [
     />
 
     <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="admin-articles-empty">
-      <DsEmptyState :title="COPY.articleEmpty" icon="i-ph-newspaper" />
+      <DsEmptyState :title="COPY.articleEmpty" icon="newspaper" />
     </DsPanel>
 
     <DsDataTable

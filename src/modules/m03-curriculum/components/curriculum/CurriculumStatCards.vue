@@ -41,7 +41,7 @@ const items = computed<StatItem[]>(() => [
   <DsStatRow
     prefix="stat"
     :items="items"
-    compact
+    density="compact"
     :cols="4"
     aria-label="Ringkasan kurikulum"
     data-testid="curriculum-stats"

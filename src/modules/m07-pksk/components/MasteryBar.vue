@@ -18,7 +18,7 @@ const bar: Record<DsAccent, string> = {
     :max="100"
     size="sm"
     aria-label="Penguasaan"
-    :ui="{ base: 'bg-elevated rounded-full', indicator: bar[accent] }"
+    :ui="{ indicator: bar[accent] }"
     data-testid="mastery-bar"
   />
 </template>

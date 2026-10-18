@@ -32,7 +32,7 @@ defineProps<{ heading: string; subjects: NonNullable<JutawanPage['subjects']>; d
           <span class="truncate text-label text-highlighted">{{ s.name }}</span>
           <span class="text-caption text-muted">{{ questionCountLabel(s.count) }}</span>
         </span>
-        <UIcon name="i-ph-caret-right-bold" class="size-5 shrink-0 text-primary" aria-hidden="true" />
+        <UIcon name="i-ph-caret-right-bold" class="size-5 shrink-0 text-primary-t" aria-hidden="true" />
       </UButton>
     </div>
   </section>

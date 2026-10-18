@@ -31,7 +31,7 @@ const open = ref(true)
         data-testid="chapter-toggle"
         @click="open = !open"
       />
-      <UIcon name="i-ph-book-open" class="mt-3 size-5 shrink-0 text-primary" />
+      <UIcon name="i-ph-book-open" class="mt-3 size-5 shrink-0 text-primary-t" />
       <div class="min-w-0 flex-1 py-2">
         <h3 class="text-body break-words text-highlighted" data-testid="chapter-heading">
           {{ chapterHeading(chapter) }}

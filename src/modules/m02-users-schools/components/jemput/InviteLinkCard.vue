@@ -43,7 +43,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="rounded-card bg-default p-5 shadow-lift sm:p-6" data-testid="jemput-link-card">
     <h2 class="flex items-center gap-2 text-heading text-highlighted">
-      <UIcon name="i-ph-link-duotone" class="size-5 text-primary" aria-hidden="true" />
+      <UIcon name="i-ph-link-duotone" class="size-5 text-primary-t" aria-hidden="true" />
       Link Jemputan
     </h2>
     <p class="mt-2 text-body text-muted">

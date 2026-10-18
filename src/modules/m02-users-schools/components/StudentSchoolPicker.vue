@@ -53,7 +53,7 @@ function onInput(value: string): void {
           @update:model-value="onInput"
           @focus="picker.onFocus()"
         />
-        <DsPanel v-if="showDropdown" tone="float" flush data-testid="std-school-dropdown">
+        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="std-school-dropdown">
           <UButton
             v-for="item in results"
             :key="item.id"

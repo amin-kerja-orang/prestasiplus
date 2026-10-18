@@ -42,7 +42,7 @@ function remove(uid: number): void {
   <div v-show="shown" data-testid="options-card">
     <DsFormSection
       :title="suffix ? 'Pilihan Jawapan (Tiada jawapan betul/salah)' : 'Pilihan Jawapan'"
-      icon="i-ph-list-numbers"
+      icon="list-numbers"
       accent="win"
     >
       <div class="flex flex-col gap-3">

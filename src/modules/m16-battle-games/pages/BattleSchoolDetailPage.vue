@@ -147,12 +147,12 @@ const boxes = computed(() => {
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <UCard v-for="b in boxes" :key="b.id" :data-testid="`battle-period-box-${b.id}`">
           <h3 class="flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon :name="b.icon" class="size-5 text-primary" aria-hidden="true" /> {{ b.title }}
+            <UIcon :name="b.icon" class="size-5 text-primary-t" aria-hidden="true" /> {{ b.title }}
           </h3>
           <dl v-if="b.box" class="mt-3 flex flex-col gap-2">
             <div class="flex items-center justify-between gap-3">
               <dt class="text-body text-muted">Ranking Nasional</dt>
-              <dd class="tabular text-label text-primary" data-testid="battle-box-rank">
+              <dd class="tabular text-label text-primary-t" data-testid="battle-box-rank">
                 #{{ b.box.rank }}
               </dd>
             </div>
@@ -170,7 +170,7 @@ const boxes = computed(() => {
             </div>
             <div class="flex items-center justify-between gap-3">
               <dt class="text-body text-muted">Skor</dt>
-              <dd class="tabular text-label text-primary" data-testid="battle-box-skor">
+              <dd class="tabular text-label text-primary-t" data-testid="battle-box-skor">
                 {{ b.box.skor }}
               </dd>
             </div>
@@ -183,7 +183,7 @@ const boxes = computed(() => {
 
       <UCard>
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-medal-duotone" class="size-5 text-primary" aria-hidden="true" />
+          <UIcon name="i-ph-medal-duotone" class="size-5 text-primary-t" aria-hidden="true" />
           Pejuang Terbaik Minggu Ini
         </h3>
         <ul v-if="data.fighters.length > 0" class="mt-3 flex flex-col gap-2" data-testid="battle-fighters">
@@ -203,7 +203,7 @@ const boxes = computed(() => {
 
       <UCard>
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-clock-counter-clockwise-duotone" class="size-5 text-primary" aria-hidden="true" />
+          <UIcon name="i-ph-clock-counter-clockwise-duotone" class="size-5 text-primary-t" aria-hidden="true" />
           Battle Terkini
         </h3>
         <div class="mt-3">

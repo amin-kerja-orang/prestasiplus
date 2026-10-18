@@ -27,7 +27,7 @@ withDefaults(
       accent="win"
       :value="score"
       :unit="caps ? 'SKOR' : 'Skor'"
-      value-class="text-primary"
+      value-tone="primary"
       value-testid="solo-score"
     />
     <RingTimer :value="timeLeft" :max="max" />
@@ -37,7 +37,7 @@ withDefaults(
       accent="friend"
       :value="correct"
       :unit="caps ? 'BETUL' : 'Betul'"
-      value-class="text-success"
+      value-tone="success"
       value-testid="solo-correct"
     />
   </div>

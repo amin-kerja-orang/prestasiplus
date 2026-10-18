@@ -48,7 +48,7 @@ const stats = computed(() => {
       </p>
       <DsLoadError
         v-if="error"
-        inline
+        variant="inline"
         :message="MODAL_ERROR_COPY"
         testid="cc-modal-error"
         @retry="reload"

@@ -28,7 +28,7 @@ const subjects = computed(() => data.value?.data ?? [])
     data-testid="chapter-index-page"
   >
     <template #breadcrumb>
-      <p class="text-overline text-primary">Mode Sistematik</p>
+      <p class="text-overline text-primary-t">Mode Sistematik</p>
     </template>
     <template #actions>
       <UButton
@@ -71,7 +71,7 @@ const subjects = computed(() => data.value?.data ?? [])
                 <p class="text-caption text-muted" data-testid="chapter-subject-chapters">
                   {{ s.chapterCount }} bab tersedia
                 </p>
-                <p class="text-label text-primary" data-testid="chapter-subject-questions">
+                <p class="text-label text-primary-t" data-testid="chapter-subject-questions">
                   {{ formatCount(s.questionCount) }} soalan chapter
                 </p>
               </div>

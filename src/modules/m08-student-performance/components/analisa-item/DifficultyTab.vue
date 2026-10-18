@@ -102,7 +102,7 @@ function reset(): void {
       <DsEmptyState
         title="Tiada Data Lagi"
         description="Pelajar dalam kelas ini belum menjawab sebarang soalan lagi."
-        icon="i-ph-tray"
+        icon="tray"
       />
     </div>
 

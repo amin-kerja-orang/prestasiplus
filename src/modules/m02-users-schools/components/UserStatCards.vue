@@ -40,7 +40,7 @@ const items = computed<StatItem[]>(() =>
     prefix="users-stat"
     :items="items"
     :loading="counts === null"
-    compact
+    density="compact"
     :cols="4"
     aria-label="Ringkasan pengguna mengikut peranan"
     data-testid="users-stats"

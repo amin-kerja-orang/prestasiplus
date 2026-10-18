@@ -169,7 +169,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
           <UCard data-testid="config-levels">
             <div class="flex flex-col gap-3">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon name="i-ph-graduation-cap-duotone" class="size-6 text-primary" aria-hidden="true" />
+                <UIcon name="i-ph-graduation-cap-duotone" class="size-6 text-primary-t" aria-hidden="true" />
                 Pilih Tahap Pendidikan
               </h2>
               <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
@@ -209,7 +209,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
           <UCard data-testid="config-difficulties">
             <div class="flex flex-col gap-3">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon name="i-ph-chart-bar-duotone" class="size-6 text-primary" aria-hidden="true" />
+                <UIcon name="i-ph-chart-bar-duotone" class="size-6 text-primary-t" aria-hidden="true" />
                 Pilih Tahap Kesukaran
               </h2>
               <div class="grid grid-cols-2 gap-2 sm:gap-3">
@@ -255,7 +255,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
           <UCard data-testid="config-counts">
             <div class="flex flex-col gap-3">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon name="i-ph-list-numbers-duotone" class="size-6 text-primary" aria-hidden="true" />
+                <UIcon name="i-ph-list-numbers-duotone" class="size-6 text-primary-t" aria-hidden="true" />
                 Bilangan Soalan
               </h2>
               <div class="grid grid-cols-4 gap-2 sm:gap-3">
@@ -282,7 +282,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
           <UCard data-testid="config-summary">
             <div class="flex flex-col gap-4">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon name="i-ph-info-duotone" class="size-6 text-primary" aria-hidden="true" />
+                <UIcon name="i-ph-info-duotone" class="size-6 text-primary-t" aria-hidden="true" />
                 Ringkasan
               </h2>
               <dl class="flex flex-col gap-2">
@@ -306,7 +306,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                 </div>
                 <div class="flex items-center justify-between gap-3">
                   <dt class="text-label text-muted">Soalan Tersedia:</dt>
-                  <dd class="tabular text-heading text-primary" data-testid="summary-available">
+                  <dd class="tabular text-heading text-primary-t" data-testid="summary-available">
                     {{ formatCount(available) }}
                   </dd>
                 </div>

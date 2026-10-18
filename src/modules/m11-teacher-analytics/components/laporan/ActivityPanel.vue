@@ -21,7 +21,7 @@ const TILES: { key: ActivityKey | 'jumlah'; label: string; icon: string }[] = [
   <UCard data-testid="panel-aktiviti">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-label text-highlighted">
-        <UIcon name="i-ph-chart-pie" class="size-4 text-primary" />
+        <UIcon name="i-ph-chart-pie" class="size-4 text-primary-t" />
         <span data-testid="panel-title">{{ activityPanelTitle(range) }}</span>
       </h2>
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">

@@ -143,7 +143,7 @@ async function submit(): Promise<void> {
       </UButton>
 
       <UButton to="/register" variant="link" color="neutral" class="min-h-11 justify-center">
-        <span>Belum ada akaun? <strong class="text-primary">Daftar Sekarang 🚀</strong></span>
+        <span>Belum ada akaun? <strong class="text-primary-t">Daftar Sekarang 🚀</strong></span>
       </UButton>
 
       <UButton

@@ -223,7 +223,7 @@ const columns: TableColumn<Row>[] = [
       <DsEmptyState
         title="Tiada data kedudukan"
         description="Mula menjawab soalan untuk muncul di papan kedudukan!"
-        icon="i-ph-trophy"
+        icon="trophy"
         friend="aiman"
       >
         <template #actions>

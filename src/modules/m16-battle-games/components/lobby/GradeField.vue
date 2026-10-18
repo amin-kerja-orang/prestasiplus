@@ -40,7 +40,7 @@ function switchToAuto(): void {
   <UFormField :label="label" data-testid="grade-field">
     <div v-if="!manual" class="flex items-center gap-2" data-testid="grade-auto-row">
       <div
-        class="flex min-h-12 min-w-0 flex-1 items-center rounded-card bg-primary/12 px-4"
+        class="flex min-h-12 min-w-0 flex-1 items-center rounded-card bg-primary-soft px-4"
         data-testid="grade-auto"
       >
         <span class="text-label text-highlighted"

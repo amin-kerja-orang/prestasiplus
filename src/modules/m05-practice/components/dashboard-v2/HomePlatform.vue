@@ -23,13 +23,13 @@ const approved = useDisplayCount(() => props.stats.approvedQuestions, COUNT_RULE
     <h2 id="dash-platform-h" class="text-heading text-highlighted">📊 Statistik Platform</h2>
     <ul class="grid grid-cols-2 gap-3 md:grid-cols-4">
       <li class="min-w-0" data-testid="dash-platform-total">
-        <DsStatTile :value="total" unit="Total Soalan" icon="i-ph-books-duotone" />
+        <DsStatTile :value="total" unit="Total Soalan" icon="books" />
       </li>
       <li class="min-w-0" data-testid="dash-platform-subjects">
         <DsStatTile
           :value="subjects"
           unit="Subjek Aktif"
-          icon="i-ph-book-open-text-duotone"
+          icon="book-open-text"
           accent="friend"
         />
       </li>
@@ -37,7 +37,7 @@ const approved = useDisplayCount(() => props.stats.approvedQuestions, COUNT_RULE
         <DsStatTile
           :value="levels"
           unit="Tahap Pendidikan"
-          icon="i-ph-graduation-cap-duotone"
+          icon="graduation-cap"
           accent="heat"
         />
       </li>
@@ -45,7 +45,7 @@ const approved = useDisplayCount(() => props.stats.approvedQuestions, COUNT_RULE
         <DsStatTile
           :value="approved"
           unit="Soalan Approved"
-          icon="i-ph-check-duotone"
+          icon="check"
           accent="win"
         />
       </li>

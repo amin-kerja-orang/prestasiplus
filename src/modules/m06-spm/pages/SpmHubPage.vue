@@ -217,7 +217,7 @@ const mine = computed<Tile[]>(() => {
                   data-testid="module-chip"
                   >{{ m.chip }}</UBadge
                 >
-                <span class="inline-flex items-center gap-1 text-label text-primary">
+                <span class="inline-flex items-center gap-1 text-label text-primary-t">
                   Mula
                   <UIcon name="i-ph-arrow-right-bold" class="size-4" aria-hidden="true" />
                 </span>

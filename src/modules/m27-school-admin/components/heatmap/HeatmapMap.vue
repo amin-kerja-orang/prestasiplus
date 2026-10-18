@@ -55,7 +55,7 @@ function titleOf(rowId: string, column: number): string {
   <DsPanel data-testid="dh-card">
     <div class="flex min-w-0 flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted" data-testid="dh-heading">
-        <UIcon name="i-ph-map-trifold" class="size-5 shrink-0 text-primary" aria-hidden="true" />Peta
+        <UIcon name="i-ph-map-trifold" class="size-5 shrink-0 text-primary-t" aria-hidden="true" />Peta
         DSKP — Standard Pembelajaran
       </h2>
 

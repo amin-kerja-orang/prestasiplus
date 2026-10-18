@@ -173,7 +173,7 @@ async function submit(): Promise<void> {
       <DsFormSection
         title="Maklumat Tahap"
         description="Nama, kod, peringkat dan kurikulum."
-        icon="i-ph-graduation-cap"
+        icon="graduation-cap"
         :columns="2"
       >
         <DsFormField

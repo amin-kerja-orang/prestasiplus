@@ -26,7 +26,7 @@ const line = computed(() =>
 
 <template>
   <DsCharacterCard
-    variant="info"
+    accent="friend"
     art="cap"
     :title="title"
     description="Jom teruskan latihan hari ini! 🚀"

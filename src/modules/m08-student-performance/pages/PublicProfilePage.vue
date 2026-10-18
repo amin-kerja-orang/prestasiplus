@@ -78,7 +78,7 @@ const share = (): void => {
     <header class="sticky top-0 bg-default">
       <div class="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
         <ULink to="/" class="flex min-h-11 min-w-0 items-center gap-2 text-heading text-highlighted" data-testid="logo">
-          <UIcon name="i-ph-graduation-cap" class="size-6 shrink-0 text-primary" /> PRESTASIPLUS
+          <UIcon name="i-ph-graduation-cap" class="size-6 shrink-0 text-primary-t" /> PRESTASIPLUS
         </ULink>
         <div class="flex shrink-0 items-center gap-2">
           <UButton
@@ -229,7 +229,7 @@ const share = (): void => {
 
             <DsPanel data-testid="activity-summary">
               <h2 class="flex items-center gap-2 text-heading text-highlighted">
-                <UIcon name="i-ph-info" class="size-5 text-primary" /> Ringkasan Aktiviti
+                <UIcon name="i-ph-info" class="size-5 text-primary-t" /> Ringkasan Aktiviti
               </h2>
               <ul class="mt-3 flex flex-col gap-2">
                 <li
@@ -254,7 +254,7 @@ const share = (): void => {
 
             <DsPanel data-testid="sponsor-cta">
               <div class="flex flex-col items-center gap-3 text-center">
-                <DsIconChip icon="i-ph-hand-heart" accent="friend" size="lg" />
+                <DsIconChip icon="hand-heart" accent="friend" size="lg" />
                 <h3 class="text-heading text-highlighted">Ingin menyokong pelajar ini?</h3>
                 <p class="text-body text-muted">
                   Jadilah penaja "Anak Angkat" dan bantu pelajar cemerlang!
@@ -274,7 +274,7 @@ const share = (): void => {
         <footer class="flex flex-col items-center gap-6 text-center" data-testid="profile-footer">
           <DsPanel class="w-full max-w-sm">
             <div class="flex items-center gap-3 text-start">
-              <DsIconChip icon="i-ph-star" accent="win" size="lg" />
+              <DsIconChip icon="star" accent="win" size="lg" />
               <div class="min-w-0">
                 <p class="text-label break-words text-highlighted" data-testid="footer-line">
                   Teruskan usaha {{ data.firstName }}!

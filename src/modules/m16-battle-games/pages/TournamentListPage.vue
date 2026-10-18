@@ -67,7 +67,7 @@ const view = useApi((signal) => fetchTournaments({ signal }))
     <DsEmptyState
       v-else-if="view.data.value.length === 0"
       :title="COPY.empty"
-      icon="i-ph-trophy-duotone"
+      icon="trophy"
       data-testid="tournament-empty"
     />
     <div v-else class="flex flex-col gap-3" data-testid="tournament-list">

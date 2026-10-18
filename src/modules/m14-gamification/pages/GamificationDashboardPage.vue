@@ -58,8 +58,8 @@ const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
 
       <DsCharacterCard
         v-if="dashboard.data.value.wallet.nextTitle"
-        variant="win"
-        icon="i-ph-medal-duotone"
+        accent="win"
+        icon="medal"
         title="Gelaran Seterusnya"
         data-testid="s11-next-title"
       >
@@ -81,8 +81,8 @@ const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
 
       <RouterLink to="/gamification/kad-kongsi" class="block min-h-11" data-testid="s11-share-link">
         <DsCharacterCard
-          variant="info"
-          icon="i-ph-share-network-duotone"
+          accent="friend"
+          icon="share-network"
           title="Kad Kongsi"
           description="Kongsi pencapaian anda di WhatsApp!"
         />

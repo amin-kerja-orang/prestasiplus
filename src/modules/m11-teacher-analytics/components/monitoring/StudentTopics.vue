@@ -29,7 +29,7 @@ const rowsOf = (g: StudentDetail['topics'][number]): Row[] => g.rows.map((r) => 
   <UCard data-testid="mon-panel-topic">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-label text-highlighted">
-        <UIcon name="i-ph-stack" class="size-5 text-primary" />Mengikut Tajuk
+        <UIcon name="i-ph-stack" class="size-5 text-primary-t" />Mengikut Tajuk
       </h2>
       <div
         v-for="g in topics"
@@ -37,7 +37,7 @@ const rowsOf = (g: StudentDetail['topics'][number]): Row[] => g.rows.map((r) => 
         class="flex flex-col gap-1"
         data-testid="mon-topic-group"
       >
-        <h3 class="text-overline text-primary">{{ g.subjectName }}</h3>
+        <h3 class="text-overline text-primary-t">{{ g.subjectName }}</h3>
         <DsDrillTable :data="rowsOf(g)" :columns="columns" :caption="g.subjectName">
           <template #bab-cell="{ row }">
             <span class="text-caption whitespace-nowrap text-muted" data-testid="mon-topic-row">{{

@@ -38,7 +38,7 @@ const daySeries = computed(() => [
     <div v-else-if="!school" data-testid="cc-engagement-bands">
       <DsChart
         title="Engagement"
-        :level="3"
+        :heading-level="3"
         horizontal
         :labels="bandLabels"
         :series="bandSeries"
@@ -48,7 +48,7 @@ const daySeries = computed(() => [
     <div v-else data-testid="cc-engagement-days">
       <DsChart
         title="Jawapan 7 hari"
-        :level="3"
+        :heading-level="3"
         :labels="dayLabels"
         :series="daySeries"
         table-label="Jawapan sekolah dalam 7 hari"

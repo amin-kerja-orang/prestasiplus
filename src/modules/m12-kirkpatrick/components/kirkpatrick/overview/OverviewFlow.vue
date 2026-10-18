@@ -96,7 +96,7 @@ const steps = computed<Step[]>(() => [
             <span class="block text-label text-highlighted">{{ s.label }}</span>
             <span class="block text-body text-muted">{{ s.sub }}</span>
           </span>
-          <span class="shrink-0 text-body text-primary" data-testid="kirk-flow-pill">{{
+          <span class="shrink-0 text-body text-primary-t" data-testid="kirk-flow-pill">{{
             s.pill
           }}</span>
           <UIcon v-if="s.to !== null" name="i-ph-caret-right" class="size-4 shrink-0 text-dimmed" />

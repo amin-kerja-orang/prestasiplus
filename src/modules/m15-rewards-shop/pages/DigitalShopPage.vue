@@ -108,7 +108,7 @@ function retry(): void {
     <DsLoadError v-if="failed" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="retry" />
     <LoadSkeleton v-else-if="!ready" testid="digital-loading" />
     <div v-else data-testid="digital-empty">
-      <DsEmptyState :title="DIGITAL_COPY.empty" icon="i-ph-gift-duotone" />
+      <DsEmptyState :title="DIGITAL_COPY.empty" icon="gift" />
     </div>
   </DsPage>
 </template>

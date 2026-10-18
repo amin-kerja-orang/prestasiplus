@@ -19,7 +19,7 @@ const row1 = computed<StatItem[]>(() => [
     value: count(props.kpi.schools),
     icon: 'i-ph-buildings', accent: 'action',
 
-    valueClass: 'text-primary',
+    valueTone: 'primary',
   },
   {
     key: 'students',
@@ -27,7 +27,7 @@ const row1 = computed<StatItem[]>(() => [
     value: count(props.kpi.students),
     icon: 'i-ph-graduation-cap', accent: 'friend',
 
-    valueClass: 'text-highlighted',
+    valueTone: 'highlighted',
   },
   {
     key: 'engaged',
@@ -35,7 +35,7 @@ const row1 = computed<StatItem[]>(() => [
     value: count(props.kpi.engaged),
     icon: 'i-ph-check-circle', accent: 'win',
 
-    valueClass: 'text-success',
+    valueTone: 'success',
   },
   {
     key: 'engagement',
@@ -43,7 +43,7 @@ const row1 = computed<StatItem[]>(() => [
     value: pct(props.kpi.engagementPct),
     icon: 'i-ph-chart-line-up', accent: 'heat',
 
-    valueClass: 'text-primary',
+    valueTone: 'primary',
   },
   {
     key: 'answers',
@@ -51,7 +51,7 @@ const row1 = computed<StatItem[]>(() => [
     value: count(props.kpi.answers),
     icon: 'i-ph-pencil-simple', accent: 'trial',
 
-    valueClass: 'text-highlighted',
+    valueTone: 'highlighted',
   },
   {
     key: 'average',
@@ -59,7 +59,7 @@ const row1 = computed<StatItem[]>(() => [
     value: avg(props.kpi.avgPerStudent),
     icon: 'i-ph-calculator', accent: 'action',
 
-    valueClass: 'text-highlighted',
+    valueTone: 'highlighted',
   },
 ])
 
@@ -70,7 +70,7 @@ const row2 = computed<StatItem[]>(() => [
     value: count(props.kpi.teachers),
     icon: 'i-ph-chalkboard-teacher', accent: 'friend',
 
-    valueClass: 'text-highlighted',
+    valueTone: 'highlighted',
   },
   {
     key: 'teachersLoggedIn',
@@ -78,7 +78,7 @@ const row2 = computed<StatItem[]>(() => [
     value: count(props.kpi.teachersLoggedIn),
     icon: 'i-ph-sign-in', accent: 'win',
 
-    valueClass: 'text-success',
+    valueTone: 'success',
   },
   {
     key: 'teacherPct',
@@ -86,14 +86,14 @@ const row2 = computed<StatItem[]>(() => [
     value: pct(props.kpi.teacherPct),
     icon: 'i-ph-percent', accent: 'heat',
 
-    valueClass: 'text-primary',
+    valueTone: 'primary',
   },
 ])
 </script>
 
 <template>
   <section id="section-ringkasan" class="flex flex-col gap-4" data-testid="mon-kpis">
-    <DsStatRow :items="row1" prefix="mon-kpi" :cols="3" roomy />
-    <DsStatRow :items="row2" prefix="mon-kpi" :cols="3" roomy />
+    <DsStatRow :items="row1" prefix="mon-kpi" :cols="3" density="roomy" />
+    <DsStatRow :items="row2" prefix="mon-kpi" :cols="3" density="roomy" />
   </section>
 </template>

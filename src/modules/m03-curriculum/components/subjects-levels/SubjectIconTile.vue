@@ -17,7 +17,7 @@ const style = computed(() => ({ backgroundColor: tileBackground(props.color), co
 
 <template>
   <span
-    class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base leading-none"
+    class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-body leading-none"
     :style="style"
     data-testid="subject-icon"
   >

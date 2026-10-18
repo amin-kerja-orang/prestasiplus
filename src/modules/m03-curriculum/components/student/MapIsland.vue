@@ -40,7 +40,7 @@ const CARD: Record<string, string> = {
 }
 const LABEL: Record<string, string> = {
   mastered: 'text-success',
-  started: 'text-primary',
+  started: 'text-primary-t',
   unlocked: 'text-heat',
   locked: 'text-muted',
 }

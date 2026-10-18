@@ -62,7 +62,7 @@ async function regenerate(): Promise<void> {
   <UCard id="penjelasan-ai-card" data-testid="ai-card">
     <div class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-        <UIcon name="i-ph-robot" class="size-5 text-primary" />
+        <UIcon name="i-ph-robot" class="size-5 text-primary-t" />
         Penjelasan AI
       </h2>
       <span class="text-caption text-muted"

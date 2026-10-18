@@ -74,7 +74,7 @@ const items = computed<StatItem[]>(() => {
       :items="items"
       prefix="kirk"
       :cols="4"
-      roomy
+      density="roomy"
       data-testid="kirk-reaction-cards"
     />
   </DsPage>

@@ -73,7 +73,7 @@ async function copyLink(): Promise<void> {
       </div>
 
       <DsCharacterCard
-        variant="action"
+        accent="action"
         icon="i-ph-users-three-duotone"
         :title="REFERRAL_COPY.codeLabel"
         data-testid="referral-code-box"
@@ -145,14 +145,14 @@ async function copyLink(): Promise<void> {
         <div class="grid grid-cols-3 gap-3">
           <div data-testid="stat-referrals">
             <DsStatTile
-              icon="i-ph-users-duotone"
+              icon="users"
               :value="formatNumber(data.stats.referrals)"
               :unit="REFERRAL_COPY.referrals"
             />
           </div>
           <div data-testid="stat-rewarded">
             <DsStatTile
-              icon="i-ph-gift-duotone"
+              icon="gift"
               accent="win"
               :value="formatNumber(data.stats.rewarded)"
               :unit="REFERRAL_COPY.rewarded"

@@ -98,7 +98,7 @@ function metaLine(s: SchoolSummary): string {
           @focus="picker.onFocus()"
         />
         <span v-if="searching" class="sr-only" data-testid="gen-loading">Mencari...</span>
-        <DsPanel v-if="showDropdown" tone="float" flush data-testid="gen-dropdown">
+        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="gen-dropdown">
           <UButton
             v-for="item in results"
             :key="item.id"
@@ -132,7 +132,7 @@ function metaLine(s: SchoolSummary): string {
       <div class="flex items-start gap-3">
         <div class="flex min-w-0 flex-1 flex-col gap-1">
           <div class="flex flex-wrap items-center gap-2">
-            <span class="text-overline text-primary">Sekolah Dipilih</span>
+            <span class="text-overline text-primary-t">Sekolah Dipilih</span>
             <UBadge v-if="school.code !== ''" :label="school.code" />
           </div>
           <p class="text-body break-words text-highlighted">{{ school.name }}</p>

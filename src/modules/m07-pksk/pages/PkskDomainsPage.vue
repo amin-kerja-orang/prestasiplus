@@ -74,7 +74,7 @@ const loadFailed = computed(() => isLoadError(error.value))
               <div class="flex min-w-0 flex-col gap-3">
                 <div class="flex min-w-0 items-center gap-3">
                   <DsIconChip
-                    icon="i-ph-target-duotone"
+                    icon="target"
                     :accent="SECTION_STYLE[s.bahagian].accent"
                     size="lg"
                     data-testid="domain-icon"

@@ -26,7 +26,7 @@ function onButton(id: 'chat' | 'lagi'): void {
 }
 
 const ITEM = 'mobile-nav-item flex flex-col items-center justify-center flex-1 py-2'
-const ICON = 'text-lg sm:text-xl mb-0.5 sm:mb-1'
+const ICON = 'text-subheading sm:text-heading mb-0.5 sm:mb-1'
 </script>
 
 <template>
@@ -43,7 +43,7 @@ const ICON = 'text-lg sm:text-xl mb-0.5 sm:mb-1'
           :data-nav-id="`bottom-${entry.id}`"
         >
           <NavIcon :fa="entry.fa" :class="ICON" :style="entry.iconStyle" />
-          <span class="text-[9px] font-bold sm:text-xs">{{ entry.label }}</span>
+          <span class="text-[9px] font-bold sm:text-caption">{{ entry.label }}</span>
         </ShellLink>
         <button
           v-else
@@ -53,7 +53,7 @@ const ICON = 'text-lg sm:text-xl mb-0.5 sm:mb-1'
           @click="onButton(entry.id)"
         >
           <NavIcon :fa="entry.fa" :class="ICON" :style="entry.iconStyle" />
-          <span class="text-[9px] font-bold sm:text-xs">{{ entry.label }}</span>
+          <span class="text-[9px] font-bold sm:text-caption">{{ entry.label }}</span>
         </button>
       </template>
     </div>

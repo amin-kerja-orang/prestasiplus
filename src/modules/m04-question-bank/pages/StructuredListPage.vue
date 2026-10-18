@@ -218,7 +218,7 @@ async function resetFilter(): Promise<void> {
     </template>
 
     <!-- Stat cards + subject distribution (whole store). -->
-    <DsStatRow :items="statItems" :cols="2" :loading="!stats" roomy prefix="structured-stat" />
+    <DsStatRow :items="statItems" :cols="2" :loading="!stats" density="roomy" prefix="structured-stat" />
     <DsPanel title="Agihan Mengikut Subjek" data-testid="structured-by-subject">
         <div v-if="stats" class="flex flex-wrap gap-2">
           <UBadge

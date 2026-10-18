@@ -162,7 +162,7 @@ const correctItems = (i: number, letter: string) => [
     <div class="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-2">
       <div class="flex min-w-0 flex-col gap-4 md:gap-6">
         <!-- Section "Maklumat Soalan" -->
-        <DsFormSection title="Maklumat Soalan" icon="i-ph-question" data-testid="info-card">
+        <DsFormSection title="Maklumat Soalan" icon="question" data-testid="info-card">
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DsFormField
               v-slot="{ id, describedby, invalid }"
@@ -233,7 +233,6 @@ const correctItems = (i: number, letter: string) => [
               :items="DIFFICULTY_ITEMS"
               :ui="{
                 fieldset: 'grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5',
-                item: 'bg-elevated',
               }"
               class="w-full"
             >
@@ -346,7 +345,7 @@ const correctItems = (i: number, letter: string) => [
         <DsFormSection
           v-show="isMcq"
           title="Pilihan Jawapan"
-          icon="i-ph-list-checks"
+          icon="list-checks"
           data-testid="mcq-card"
         >
           <div class="flex min-w-0 flex-col gap-3">
@@ -435,7 +434,7 @@ const correctItems = (i: number, letter: string) => [
             color="info"
             indicator="hidden"
             :items="TF_ITEMS"
-            :ui="{ fieldset: 'grid grid-cols-2 gap-3', item: 'bg-elevated' }"
+            :ui="{ fieldset: 'grid grid-cols-2 gap-3' }"
             class="w-full"
           >
             <template #label="{ item }">
@@ -454,7 +453,7 @@ const correctItems = (i: number, letter: string) => [
         <DsFormSection
           v-show="isShortOrFill"
           :title="values.questionType === 'fill_blank' ? 'Jawapan Isi Tempat Kosong' : 'Jawapan Pendek'"
-          icon="i-ph-pen-nib"
+          icon="pen-nib"
           data-testid="short-card"
         >
           <DsFormField
@@ -499,7 +498,7 @@ const correctItems = (i: number, letter: string) => [
         <DsFormSection
           v-show="values.questionType === 'essay'"
           title="Jawapan Contoh (Esei)"
-          icon="i-ph-file-text"
+          icon="file-text"
           data-testid="essay-card"
         >
           <DsFormField
@@ -521,7 +520,7 @@ const correctItems = (i: number, letter: string) => [
         </DsFormSection>
 
         <!-- Section "Maklumat Tambahan" -->
-        <DsFormSection title="Maklumat Tambahan" icon="i-ph-info" data-testid="extra-card">
+        <DsFormSection title="Maklumat Tambahan" icon="info" data-testid="extra-card">
           <DsFormField
             v-slot="{ id }"
             native

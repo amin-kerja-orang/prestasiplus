@@ -111,7 +111,7 @@ function remove(id: number): void {
           @focus="picker.onFocus()"
         />
 
-        <DsPanel v-if="showDropdown" tone="float" flush data-testid="linker-dropdown">
+        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="linker-dropdown">
           <div
             v-if="searching"
             class="flex min-h-11 items-center justify-center py-3 text-muted"

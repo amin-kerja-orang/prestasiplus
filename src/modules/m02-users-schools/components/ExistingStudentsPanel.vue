@@ -154,7 +154,7 @@ watch(classLevel, () => {
             <template #email-cell="{ row }">
               <span class="break-all">
                 {{ row.original.email }}
-                <span v-if="row.original.idDelima" class="text-primary">{{
+                <span v-if="row.original.idDelima" class="text-primary-t">{{
                   row.original.idDelima
                 }}</span>
               </span>
@@ -171,7 +171,7 @@ watch(classLevel, () => {
               <p class="text-label text-highlighted">{{ row.name }}</p>
               <p class="text-caption break-all text-muted">
                 {{ row.email }}
-                <span v-if="row.idDelima" class="text-primary">{{ row.idDelima }}</span>
+                <span v-if="row.idDelima" class="text-primary-t">{{ row.idDelima }}</span>
               </p>
               <UBadge
                 v-if="row.classLevel"

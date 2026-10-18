@@ -28,7 +28,7 @@ const { data, error, reload } = useApi((signal) => fetchBattleHistory({ signal }
       v-else-if="data.length === 0"
       title="Tiada sejarah battle"
       description="Mulakan pertandingan pertama anda sekarang!"
-      icon="i-ph-lightning-duotone"
+      icon="lightning"
       data-testid="battle-history-empty"
     >
       <template #actions>

@@ -101,7 +101,7 @@ const levels = computed<Level[]>(() => {
           {{ l.value }}<span v-if="l.suffix" class="text-label text-muted">{{ l.suffix }}</span>
         </p>
         <p class="text-body text-muted" data-testid="kirk-level-caption">{{ l.caption }}</p>
-        <p v-if="detail" class="mt-2 flex items-center gap-1 text-body text-primary">
+        <p v-if="detail" class="mt-2 flex items-center gap-1 text-body text-primary-t">
           Lihat detail <UIcon name="i-ph-arrow-right" class="size-4" />
         </p>
       </UCard>

@@ -18,7 +18,7 @@ defineProps<{ tiers: readonly TierGridItem[] }>()
           v-for="t in tiers"
           :key="t.key"
           class="flex min-w-0 items-center gap-3 rounded-card p-3"
-          :class="t.isMine ? 'bg-primary/12' : 'bg-elevated'"
+          :class="t.isMine ? 'bg-primary-soft' : 'bg-elevated'"
           data-testid="s12-tier"
         >
           <span class="text-title" aria-hidden="true">{{ t.icon }}</span>

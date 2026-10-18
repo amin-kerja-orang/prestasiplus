@@ -224,7 +224,7 @@ function goPage(page: number): void {
         v-if="items.length === 0"
         title="Tiada soalan berstruktur buat masa ini"
         description="Soalan akan ditambah oleh guru dan admin"
-        icon="i-ph-clipboard-text-duotone"
+        icon="clipboard-text"
         data-testid="structured-empty"
       />
 

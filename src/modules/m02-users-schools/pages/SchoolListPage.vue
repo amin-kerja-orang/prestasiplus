@@ -222,7 +222,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
       prefix="schools-stat"
       :items="stats"
       :loading="counts === null"
-      compact
+      density="compact"
       :cols="3"
       aria-label="Ringkasan sekolah"
     />
@@ -276,7 +276,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
       @retry="reload()"
     />
 
-    <DsPanel v-else-if="firstLoad" flush data-testid="schools-table">
+    <DsPanel v-else-if="firstLoad" padding="none" data-testid="schools-table">
       <div class="flex flex-col gap-3 p-4">
         <USkeleton v-for="n in 5" :key="n" class="h-12 w-full" data-testid="schools-skeleton" />
       </div>

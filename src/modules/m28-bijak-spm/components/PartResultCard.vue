@@ -39,14 +39,14 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
     :data-status="result.status"
   >
     <header class="flex flex-wrap items-center justify-between gap-2">
-      <h4 class="text-label font-semibold text-highlighted">
+      <h4 class="text-label text-highlighted">
         {{ title ?? (result.label ? `Bahagian ${result.label}` : 'Jawapan anda') }}
       </h4>
       <div class="flex items-center gap-2">
         <UBadge :color="status.color" variant="soft" size="md" data-testid="part-status">{{
           status.text
         }}</UBadge>
-        <span class="tabular text-label font-semibold text-highlighted" data-testid="part-marks">
+        <span class="tabular text-label text-highlighted" data-testid="part-marks">
           {{ result.awarded }} / {{ result.marks }}
         </span>
       </div>
@@ -133,7 +133,7 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
     <p v-if="result.ecf" class="text-caption text-info" data-testid="ecf-note">{{ result.ecf }}</p>
 
     <div class="rounded-xl bg-elevated p-3 text-body text-default" data-testid="scheme">
-      <p class="text-label font-semibold text-highlighted">
+      <p class="text-label text-highlighted">
         Skema Pemarkahan · {{ result.scheme.marks }} markah
       </p>
       <p v-if="result.scheme.explanation" class="mt-1">

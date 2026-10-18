@@ -286,7 +286,7 @@ const meters = computed(() => {
               {{ meta.emoji }} {{ meta.title }}
             </h1>
             <p class="text-body text-muted" data-testid="room-code">
-              Kod Bilik: <span class="tabular text-heading text-primary">{{ room.code }}</span>
+              Kod Bilik: <span class="tabular text-heading text-primary-t">{{ room.code }}</span>
             </p>
           </div>
           <DsArt3D :name="theme.art" size="hero" float class="hidden sm:block" />
@@ -340,7 +340,7 @@ const meters = computed(() => {
           <!-- playing -->
           <div v-else-if="room.status === 'playing'" class="flex flex-col gap-4" data-testid="room-playing">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <p v-if="round" class="text-label text-primary" data-testid="room-round">
+              <p v-if="round" class="text-label text-primary-t" data-testid="room-round">
                 {{ round }}
               </p>
               <p
@@ -417,7 +417,7 @@ const meters = computed(() => {
                 {{ headline?.title }}
               </p>
             </div>
-            <p v-if="headline?.mvp" class="text-label text-primary" data-testid="room-mvp">
+            <p v-if="headline?.mvp" class="text-label text-primary-t" data-testid="room-mvp">
               {{ headline.mvp }}
             </p>
             <ul v-if="room.result" class="flex flex-col gap-2" data-testid="room-scores">

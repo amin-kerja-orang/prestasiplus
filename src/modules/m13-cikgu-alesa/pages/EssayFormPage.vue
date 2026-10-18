@@ -72,7 +72,7 @@ function submitToChat(): void {
       <DsFormSection
         title="Maklumat Karangan"
         description="Rubric, subjek, tahap, nama pelajar dan tajuk."
-        icon="i-ph-pen-nib"
+        icon="pen-nib"
         :columns="2"
       >
         <DsFormField native for="rubric_key" :label="C.rubric">

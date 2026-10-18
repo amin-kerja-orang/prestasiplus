@@ -59,7 +59,7 @@ function back() {
       </DsPageHeader>
 
       <div v-if="data.sections.length === 0" data-testid="student-empty">
-        <DsEmptyState title="Belum ada headcount." icon="i-ph-clipboard-text" />
+        <DsEmptyState title="Belum ada headcount." icon="clipboard-text" />
       </div>
 
       <StudentSection v-for="s in data.sections" :key="s.configId" :section="s" />
