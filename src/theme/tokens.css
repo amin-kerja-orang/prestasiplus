@@ -164,6 +164,11 @@
   --text-badge--font-weight: 600;
 
   --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-ds-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Duration roles (utilities duration-fast|base|slow): hover and press, state changes, entrances. */
+  --transition-duration-fast: 100ms;
+  --transition-duration-base: 200ms;
+  --transition-duration-slow: 400ms;
 
   --animate-ds-rise: ds-rise 600ms var(--ease-pop) both;
   --animate-ds-rise-quick: ds-rise 400ms ease-out both;
@@ -307,6 +312,35 @@
   --color-cat-7: var(--ds-cat-7);
   --color-cat-8: var(--ds-cat-8);
 
+  /* Scrim behind modal, slideover and drawer (bg-overlay). */
+  --color-overlay: var(--ds-overlay);
+
+  /* Tint tokens (hardening 2.3): two steps only, replacing the nine ad-hoc alphas.
+     soft 12% = chips, panel tint, row highlight | strong 20% = verdict fills, selected cards.
+     error-field is the invalid-field fill. They follow the live colour, so they swap per
+     personality and colour mode. */
+  --color-primary-soft: var(--ds-tint-primary-soft);
+  --color-primary-strong: var(--ds-tint-primary-strong);
+  --color-highlight-soft: var(--ds-tint-highlight-soft);
+  --color-highlight-strong: var(--ds-tint-highlight-strong);
+  --color-success-soft: var(--ds-tint-success-soft);
+  --color-success-strong: var(--ds-tint-success-strong);
+  --color-warning-soft: var(--ds-tint-warning-soft);
+  --color-warning-strong: var(--ds-tint-warning-strong);
+  --color-error-soft: var(--ds-tint-error-soft);
+  --color-error-strong: var(--ds-tint-error-strong);
+  --color-info-soft: var(--ds-tint-info-soft);
+  --color-info-strong: var(--ds-tint-info-strong);
+  --color-error-field: var(--ds-tint-error-field);
+
+  /* Sequential data ramp (heat map, intensity): four steps of the primary, a scale not a tint. */
+  --color-ramp-1: var(--ds-ramp-1);
+  --color-ramp-2: var(--ds-ramp-2);
+  --color-ramp-3: var(--ds-ramp-3);
+  --color-ramp-4: var(--ds-ramp-4);
+  /* Empty track of rings and bars (text-track, bg-track). */
+  --color-track: var(--ds-track);
+
   /* Named shadows. `--shadow-xs` is deliberately not redefined (legacy `shadow-xs` stays Tailwind's);
      the design name `shadow-xs` is `shadow-ds-xs` here. */
   --shadow-ds-xs: var(--ds-shadow-xs);
@@ -317,6 +351,8 @@
   --shadow-bar-up: var(--ds-shadow-bar-up);
   --shadow-cta: var(--ds-shadow-cta);
   --shadow-hero: var(--ds-shadow-hero);
+  /* Resting raised surface; resolves per personality (staff: soft, learner: lifted). */
+  --shadow-raised: var(--ds-shadow-raised);
 
   /* The only allowed gradient. Staff: flat primary (c1 = primary-2). */
   --background-image-gradient-primary: linear-gradient(135deg, var(--ds-c1), var(--ds-primary-2));
@@ -338,6 +374,30 @@
 [data-personality] {
   --ui-radius: 0.5rem;
   --ds-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ds-duration-fast: 100ms;
+  --ds-duration-base: 200ms;
+  --ds-duration-slow: 400ms;
+  /* One disabled look for every control and tile. */
+  --ds-disabled-opacity: 0.4;
+  --ds-track: color-mix(in oklab, var(--ui-text-muted) 22%, transparent);
+  /* Tints and ramp (see the bridge): color-mix on the live colour. */
+  --ds-tint-primary-soft: color-mix(in oklab, var(--ui-primary) 12%, transparent);
+  --ds-tint-primary-strong: color-mix(in oklab, var(--ui-primary) 20%, transparent);
+  --ds-tint-highlight-soft: color-mix(in oklab, var(--ds-highlight, var(--ui-secondary)) 12%, transparent);
+  --ds-tint-highlight-strong: color-mix(in oklab, var(--ds-highlight, var(--ui-secondary)) 20%, transparent);
+  --ds-tint-success-soft: color-mix(in oklab, var(--ui-success) 12%, transparent);
+  --ds-tint-success-strong: color-mix(in oklab, var(--ui-success) 20%, transparent);
+  --ds-tint-warning-soft: color-mix(in oklab, var(--ui-warning) 12%, transparent);
+  --ds-tint-warning-strong: color-mix(in oklab, var(--ui-warning) 20%, transparent);
+  --ds-tint-error-soft: color-mix(in oklab, var(--ui-error) 12%, transparent);
+  --ds-tint-error-strong: color-mix(in oklab, var(--ui-error) 20%, transparent);
+  --ds-tint-info-soft: color-mix(in oklab, var(--ui-info) 12%, transparent);
+  --ds-tint-info-strong: color-mix(in oklab, var(--ui-info) 20%, transparent);
+  --ds-tint-error-field: color-mix(in oklab, var(--ui-error) 10%, transparent);
+  --ds-ramp-1: color-mix(in oklab, var(--ui-primary) 15%, transparent);
+  --ds-ramp-2: color-mix(in oklab, var(--ui-primary) 35%, transparent);
+  --ds-ramp-3: color-mix(in oklab, var(--ui-primary) 60%, transparent);
+  --ds-ramp-4: var(--ui-primary);
   --ds-ink: #0b0d12;
   --ds-primary-gradient: linear-gradient(135deg, var(--ds-c1), var(--ds-primary-2));
   /* Radius scale (ratio 1 : 2 : 3 : 4 : 6 on a 4px base). Size follows importance, and an inner
@@ -449,6 +509,7 @@
   --ds-shadow-bar-up: 0 -2px 12px rgb(13 17 32 / 0.06);
   --ds-shadow-cta: 0 4px 12px rgb(36 64 240 / 0.28);
   --ds-shadow-hero: 0 14px 40px -14px rgb(36 64 240 / 0.7);
+  --ds-shadow-raised: var(--ds-shadow-xs);
   /* Strict staff scale: 12 badge / 13 caption + table header / 14 body + label / 16 / 18 card title /
      20 section / 24 page title / 28 KPI. Fixed sizes (no fluid clamp): a data UI reads the same at
      every width. One family: the display face is the UI face. */
@@ -589,6 +650,7 @@
   --ds-shadow-bar-up: 0 -2px 12px rgb(11 13 18 / 0.06);
   --ds-shadow-cta: 0 6px 18px -4px color-mix(in srgb, var(--ds-c1) 60%, transparent);
   --ds-shadow-hero: 0 14px 40px -14px color-mix(in srgb, var(--ds-c1) 70%, transparent);
+  --ds-shadow-raised: var(--ds-shadow-lift);
 }
 
 /* ---- Learner, dark (default for Murid) ---- */
@@ -609,7 +671,11 @@
   --ui-text-dimmed: #7e8594;
   --ui-text-inverted: #0b0d12;
 
-  --ds-primary-t: #4d7cff;
+  /* AA fix: stock #2f5bff is 3.4:1 on the dark surfaces. #5b86ff is 5.8:1 on the page and 4.8:1 on
+     elevated fields. Solid fills keep the gradient from --ds-c1 (white label 5.2:1). */
+  --ui-primary: #5b86ff;
+  --ds-primary-t: #5b86ff;
+  --ui-info: #a98bff;
   --ds-on-sem: #0b0d12;
   --ui-success: #34d17f;
   --ui-warning: #ff7a1a;

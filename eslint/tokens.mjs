@@ -45,6 +45,15 @@ export const CURATED = {
     'ai',
     'flame',
     'ic-theme',
+    // Tint, ramp, overlay and track tokens (hardening T-H0): composites only; pages go through DsText/DsSurface props.
+    ...['primary','highlight','success','warning','error','info'].flatMap((n) => [n + '-soft', n + '-strong']),
+    'error-field',
+    'overlay',
+    'ramp-1',
+    'ramp-2',
+    'ramp-3',
+    'ramp-4',
+    'track',
   ],
   /** `--ui-bg-*` names only composites may use. */
   dsUiBg: ['accented', 'inverted'],
@@ -80,7 +89,7 @@ export function loadTokens(file = TOKENS_CSS) {
     } else if ((m = /^--ui-text(?:-(.+))?$/.exec(name))) fam.uiText.add(m[1] ?? 'default')
     else if ((m = /^--ui-bg(?:-(.+))?$/.exec(name))) fam.uiBg.add(m[1] ?? 'default')
     else if ((m = /^--ui-border(?:-(.+))?$/.exec(name))) fam.uiBorder.add(m[1] ?? 'default')
-    else if (/^--ui-/.test(name) || /^--ds-/.test(name)) continue
+    else if (/^--ui-/.test(name) || /^--ds-/.test(name) || /^--transition-duration-/.test(name)) continue
     else if ((m = /^--text-(.+)$/.exec(name))) fam.type.add(m[1])
     else if ((m = /^--shadow-(.+)$/.exec(name))) fam.shadow.add(m[1])
     else if ((m = /^--radius-(.+)$/.exec(name))) fam.radius.add(m[1])
