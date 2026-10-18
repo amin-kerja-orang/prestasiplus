@@ -3,6 +3,7 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import {
   DsFriendPicker,
@@ -280,7 +281,11 @@ describe('keyboard', () => {
 
 describe('no inline colour', () => {
   it('the whole gallery renders no inline style with a colour', async () => {
-    mount(DsGalleryShowcase, { attachTo: document.body })
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<div />' } }],
+    })
+    mount(DsGalleryShowcase, { attachTo: document.body, global: { plugins: [router] } })
     await wait(50)
     const styled = [...document.querySelectorAll('[style]')].map(
       (e) => e.getAttribute('style') ?? '',
