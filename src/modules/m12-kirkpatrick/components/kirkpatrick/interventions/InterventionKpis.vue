@@ -9,9 +9,29 @@ defineProps<{ kpi: InterventionList['kpi'] }>()
 
 <template>
   <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="int-kpis">
-    <KirkpatrickStatCard label="Jumlah Intervensi" :value="plain(kpi.total)" />
-    <KirkpatrickStatCard label="Menunggu Semakan" :value="plain(kpi.pending)" />
-    <KirkpatrickStatCard label="Meningkat" :value="plain(kpi.up)" />
-    <KirkpatrickStatCard label="Menurun" :value="plain(kpi.down)" />
+    <KirkpatrickStatCard
+      label="Jumlah Intervensi"
+      icon="i-ph-hand-heart"
+      accent="action"
+      :value="plain(kpi.total)"
+    />
+    <KirkpatrickStatCard
+      label="Menunggu Semakan"
+      icon="i-ph-hourglass"
+      accent="heat"
+      :value="plain(kpi.pending)"
+    />
+    <KirkpatrickStatCard
+      label="Meningkat"
+      icon="i-ph-trend-up"
+      accent="win"
+      :value="plain(kpi.up)"
+    />
+    <KirkpatrickStatCard
+      label="Menurun"
+      icon="i-ph-trend-down"
+      accent="heat"
+      :value="plain(kpi.down)"
+    />
   </div>
 </template>

@@ -8,6 +8,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import BannerFormPage from '../../pages/BannerFormPage.vue'
 import BannerListPage from '../../pages/BannerListPage.vue'
+import { chooseRowAction, menuItem, openRowMenu } from '../menu'
 import { banner, makeRouter, mountAt, t } from './harness'
 
 const api = vi.hoisted(() => ({
@@ -18,9 +19,6 @@ const api = vi.hoisted(() => ({
   deleteBanner: vi.fn(),
 }))
 vi.mock('../../api/admin-media', () => api)
-
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn(() => true), alertNative: vi.fn() }))
-vi.mock('@/components/overlay/native-dialogs', () => dialogs)
 
 const FIVE = [
   banner(1, {
@@ -35,15 +33,17 @@ const FIVE = [
 ]
 
 let wrapper: VueWrapper | null = null
+let confirmSpy: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
   setActivePinia(createPinia())
   for (const fn of Object.values(api)) fn.mockReset()
-  dialogs.confirmNative.mockReset().mockReturnValue(true)
+  confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
   api.fetchAdminBanners.mockResolvedValue(FIVE)
 })
 
 afterEach(() => {
+  confirmSpy.mockRestore()
   wrapper?.unmount()
   wrapper = null
 })
@@ -52,11 +52,10 @@ describe('BannerListPage (S9)', () => {
   it('shows the heading, the count, "Tambah" and the columns', async () => {
     wrapper = (await mountAt(BannerListPage, '/page')).wrapper
     const w = wrapper
-    expect(w.text()).toContain('Senarai Banner')
     expect(t(w, 'banners-count').text()).toBe('Jumlah: 5 banner')
     expect(t(w, 'banners-add').attributes('href')).toBe('/admin/banners/create')
     expect(t(w, 'banners-add').text()).toBe('Tambah')
-    expect(w.findAll('[data-testid=banners-th]').map((th) => th.text())).toEqual([
+    expect(w.findAll('thead th').map((th) => th.text())).toEqual([
       '#',
       'Tajuk',
       'Jenis',
@@ -78,30 +77,30 @@ describe('BannerListPage (S9)', () => {
     expect(first.get('[data-testid=banner-description]').text()).toBe(
       'Platform pembelajaran interaktif untuk pelajar sek...',
     )
-    expect(first.get('[data-testid=banner-type]').text()).toBe('HERO')
-    expect(first.get('[data-testid=banner-audience]').text()).toBe('ALL')
-    expect(first.get('[data-testid=banner-order]').classes()).toContain('rounded-md')
-    expect(first.get('[data-testid=banner-start]').text()).toBe('01/01/2026')
-    expect(first.get('[data-testid=banner-end]').text()).toBe('31/12/2026')
-    expect(first.get('[data-testid=banner-active]').text()).toBe('Aktif')
-    expect(rows.map((r) => r.get('[data-testid=banner-type]').text())).toEqual([
+    const cells = wrapper.findAll('tbody tr')
+    const text = (testid: string) =>
+      wrapper!.findAll(`[data-testid=${testid}]`).map((e) => e.text())
+    expect(text('banner-type')).toEqual([
       'HERO',
       'FEATURE',
       'PROMOTIONAL',
       'ANNOUNCEMENT',
       'FEATURE',
     ])
+    expect(text('banner-audience')[0]).toBe('ALL')
+    expect(text('banner-start')[0]).toBe('01/01/2026')
+    expect(text('banner-end')[0]).toBe('31/12/2026')
+    expect(text('banner-active')[0]).toBe('Aktif')
     // The row number is the position, not the id.
-    expect(first.findAll('td')[0]?.text()).toBe('1')
+    expect(cells[0]?.findAll('td')[0]?.text()).toBe('1')
   })
 
-  it('has an edit link and a delete button per row and no view action', async () => {
+  it('has an edit link and a delete action per row and no view action', async () => {
     wrapper = (await mountAt(BannerListPage, '/page')).wrapper
-    const edits = wrapper.findAll('[data-testid=banner-edit]')
-    expect(edits[1]?.attributes('href')).toBe('/admin/banners/2/edit')
-    expect(edits[1]?.attributes('title')).toBe('Edit')
-    expect(wrapper.findAll('[data-testid=banner-delete]')[0]?.attributes('title')).toBe('Padam')
-    expect(wrapper.find('[title=Lihat]').exists()).toBe(false)
+    const items = await openRowMenu(wrapper, 1)
+    expect(menuItem(items, 'Edit')?.getAttribute('href')).toBe('/admin/banners/2/edit')
+    expect(menuItem(items, 'Padam')).toBeDefined()
+    expect(menuItem(items, 'Lihat')).toBeUndefined()
   })
 
   it('marks an inactive banner with the placeholder pill', async () => {
@@ -115,10 +114,10 @@ describe('BannerListPage (S9)', () => {
   })
 
   it('delete: dismissing the confirm sends nothing', async () => {
-    dialogs.confirmNative.mockReturnValue(false)
+    confirmSpy.mockReturnValue(false)
     wrapper = (await mountAt(BannerListPage, '/page')).wrapper
-    await wrapper.findAll('[data-testid=banner-delete]')[0]!.trigger('click')
-    expect(dialogs.confirmNative).toHaveBeenCalledWith('Adakah anda pasti mahu padam banner ini?')
+    await chooseRowAction(wrapper, 0, 'Padam')
+    expect(confirmSpy).toHaveBeenCalledWith('Adakah anda pasti mahu padam banner ini?')
     expect(api.deleteBanner).not.toHaveBeenCalled()
   })
 
@@ -129,7 +128,7 @@ describe('BannerListPage (S9)', () => {
     })
     wrapper = (await mountAt(BannerListPage, '/page')).wrapper
     api.fetchAdminBanners.mockResolvedValue(FIVE.slice(1))
-    await wrapper.findAll('[data-testid=banner-delete]')[0]!.trigger('click')
+    await chooseRowAction(wrapper, 0, 'Padam')
     await flushPromises()
     expect(api.deleteBanner).toHaveBeenCalledWith(1)
     expect(t(wrapper, 'banners-count').text()).toBe('Jumlah: 4 banner')
@@ -153,14 +152,15 @@ async function form(mode: 'create' | 'edit', id = 1) {
   return mounted
 }
 
-const shown = (el: Element): boolean => (el as HTMLElement).style.display !== 'none'
+const shown = (el: Element): boolean =>
+  el.closest<HTMLElement>('div[style]')?.style.display !== 'none'
 const val = (w: VueWrapper, id: string) => (t(w, id).element as HTMLInputElement).value
 
 describe('BannerFormPage create (S10)', () => {
   it('shows the labels, placeholders, hints and defaults', async () => {
     const { wrapper: w } = await form('create')
-    expect(t(w, 'banner-back').text()).toBe('Kembali ke Senarai')
-    expect(t(w, 'banner-back').attributes('href')).toBe('/admin/banners')
+    expect(t(w, 'back-link').text()).toBe('Kembali ke Senarai')
+    expect(t(w, 'back-link').attributes('href')).toBe('/admin/banners')
     expect(t(w, 'banner-title').attributes('placeholder')).toBe('cth: Promosi SPM 2024')
     expect(t(w, 'banner-title').attributes('required')).toBeDefined()
     expect(t(w, 'banner-description').attributes('placeholder')).toBe(

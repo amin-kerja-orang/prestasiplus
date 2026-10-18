@@ -127,26 +127,26 @@
   --text-display--line-height: 1.05;
   --text-display--letter-spacing: -0.02em;
   --text-display--font-weight: 800;
-  --text-title: clamp(1.75rem, 1.543rem + 0.88vw, 2.25rem);
+  --text-title: clamp(1.875rem, 1.668rem + 0.88vw, 2.5rem);
   --text-title--line-height: 1.15;
   --text-title--letter-spacing: -0.015em;
   --text-title--font-weight: 700;
-  --text-heading: clamp(1.25rem, 1.198rem + 0.22vw, 1.5rem);
+  --text-heading: clamp(1.375rem, 1.323rem + 0.22vw, 1.625rem);
   --text-heading--line-height: 1.25;
   --text-heading--letter-spacing: -0.01em;
   --text-heading--font-weight: 700;
-  --text-subheading: clamp(1.125rem, 1.073rem + 0.22vw, 1.25rem);
+  --text-subheading: clamp(1.1875rem, 1.135rem + 0.22vw, 1.375rem);
   --text-subheading--line-height: 1.35;
   --text-subheading--font-weight: 700;
   --text-body: 1rem;
-  --text-body--line-height: 1.5;
-  --text-label: 0.875rem;
+  --text-body--line-height: 1.55;
+  --text-label: 0.9375rem;
   --text-label--line-height: 1.4;
   --text-label--font-weight: 600;
-  --text-caption: 0.75rem;
+  --text-caption: 0.8125rem;
   --text-caption--line-height: 1.35;
   --text-caption--font-weight: 500;
-  --text-overline: 0.75rem;
+  --text-overline: 0.8125rem;
   --text-overline--line-height: 1.3;
   --text-overline--letter-spacing: 0.08em;
   --text-overline--font-weight: 700;
@@ -602,12 +602,4 @@
     animation-duration: 1s !important;
     animation-iteration-count: infinite !important;
   }
-}
-
-/* Brand logo: dark blue lettering, so it gets a light backing chip in dark mode (or when `backed`). */
-[data-ds='brand-logo'][data-backed='true'],
-.dark [data-ds='brand-logo'] {
-  background: #ffffff;
-  border-radius: var(--ds-r-chip);
-  padding: 0.25rem 0.5rem;
 }

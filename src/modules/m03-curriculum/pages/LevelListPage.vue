@@ -153,7 +153,7 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
         :data="tableRows"
         :columns="columns"
         caption="Senarai tahap pendidikan"
-        dense
+        compact-cells
         :page-size="Math.max(tableRows.length, 1)"
         card-title="name"
         :card-fields="cardFields"

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * S6 `/admin/pksk/questions/create` "Tambah Soalan PKSK" and S7 `/admin/pksk/questions/:id/edit`
- * "Edit Soalan PKSK" (M07-T3; FR-M07-33..44). One page for both: `mode="create"` posts a new
+ * "Edit Soalan PKSK" (M07-T3; FR-M07-33..44), v2 staff theme. One page for both: `mode="create"` posts a new
  * question ("Simpan Soalan"), `mode="edit"` loads #9 and pre-fills the form ("Kemaskini").
  *
- * - Native HTML validation only (`required`, no `novalidate`, no custom message, FR-M07-38).
+ * - Native HTML validation only (`required`, no `novalidate`, no custom message, FR-M07-38). Fields are grouped
+ *   in cards (two columns from `md`); "Kembali" and the submit button sit in a sticky action bar.
  * - S6: changing Bahagian refilters the domain list and resets the domain only (DV-M07-08); while
  *   Bahagian is C the options card is hidden and its inputs are disabled, so a C question can be
  *   saved (DV-M07-05). Options 2-6, "Betul" only for B.
@@ -13,20 +14,13 @@
  * - 422: the field messages show under the fields in red and the input is kept (L-5, INFERRED).
  *   Success queues the flash and opens S5.
  */
-import { ArrowLeft, CircleHelp, Layers, Save } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
-import { AlertBox, LoadingSpinner } from '@/components/feedback'
-import {
-  FORM_ERROR_MODIFIER,
-  FORM_INPUT_CLASS,
-  FORM_SELECT_CLASS,
-  FORM_TEXTAREA_CLASS,
-} from '@/components/form'
 import { useApi, useFlash, usePageMeta } from '@/composables'
+import { DsPage } from '@/ds'
 
 import {
   createPkskQuestion,
@@ -37,15 +31,16 @@ import {
 } from '../api/admin'
 import { fetchPkskDomains } from '../api/pksk'
 import type { Bahagian, PkskLevel } from '../api/types'
-import FormField from '../components/admin/FormField.vue'
+import AdminAlert from '../components/admin/AdminAlert.vue'
+import AdminField from '../components/admin/AdminField.vue'
+import AdminFormBar from '../components/admin/AdminFormBar.vue'
+import AdminSection from '../components/admin/AdminSection.vue'
+import NativeSelect from '../components/admin/native/NativeSelect.vue'
 import OptionsCard from '../components/admin/OptionsCard.vue'
 import {
-  BACK_BUTTON_CLASS,
   BAHAGIAN_CREATE_OPTIONS,
-  CARD_CLASS,
   DIFFICULTY_CREATE_OPTIONS,
   LEVEL_CREATE_OPTIONS,
-  PRIMARY_BUTTON_CLASS,
   QUESTIONS_PATH,
   STATUS_OPTIONS,
   errorLines,
@@ -166,9 +161,7 @@ const FIELD_NAMES = [
   'difficultyLevel',
 ]
 
-function inputClass(name: string, base: string = FORM_INPUT_CLASS): string[] {
-  return [base, 'min-h-11', ...(fieldMessages.value[name] ? [FORM_ERROR_MODIFIER] : [])]
-}
+const invalid = (name: string): boolean => fieldMessages.value[name] !== undefined
 
 /** S6: a correct flag is only posted for Bahagian B (a tick kept after switching to A is dropped). */
 function optionBody(onlyB = false): PkskOptionInput[] {
@@ -222,41 +215,43 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="max-w-4xl min-w-0" data-testid="pksk-question-form-page">
-    <AlertBox
+  <DsPage data-testid="pksk-question-form-page">
+    <AdminAlert
       v-if="loadFailed || domainsError"
       :messages="errorLines(loadError ?? domainsError)"
       data-testid="pksk-form-load-error"
     />
 
+    <UCard v-else-if="!ready" data-testid="pksk-form-skeleton">
+      <div class="flex flex-col gap-6">
+        <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
+      </div>
+    </UCard>
+
     <form
-      v-else-if="ready"
+      v-else
       method="post"
-      class="space-y-4 sm:space-y-6"
+      class="flex min-w-0 flex-col gap-6"
       data-testid="pksk-question-form"
       @submit.prevent="submit"
     >
-      <AlertBox :messages="topErrors" data-testid="pksk-form-alert" />
+      <AdminAlert :messages="topErrors" data-testid="pksk-form-alert" />
 
       <!-- Card 1: Bahagian & Domain (S6) / Domain, Sasaran, Status (S7). -->
-      <section :class="CARD_CLASS">
-        <h2 class="mb-4 flex items-center gap-2 font-heading text-lg font-bold text-slate-800">
-          <Layers class="h-5 w-5 text-indigo-500" aria-hidden="true" />
-          Bahagian &amp; Domain
-        </h2>
-        <div class="grid gap-4 md:grid-cols-3">
-          <FormField
+      <AdminSection title="Bahagian & Domain" icon="i-ph-squares-four" accent="friend">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <AdminField
             v-if="!editing"
-            id="q-bahagian"
+            for="q-bahagian"
             label="Bahagian"
             :error="fieldMessages.bahagian"
           >
-            <select
+            <NativeSelect
               id="q-bahagian"
               v-model="form.bahagian"
               name="bahagian"
               required
-              :class="inputClass('bahagian', FORM_SELECT_CLASS)"
+              :aria-invalid="invalid('bahagian') ? 'true' : undefined"
               data-testid="q-bahagian"
               @change="onBahagianChange"
             >
@@ -264,16 +259,16 @@ async function submit(): Promise<void> {
               <option v-for="o in BAHAGIAN_CREATE_OPTIONS" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
-            </select>
-          </FormField>
+            </NativeSelect>
+          </AdminField>
 
-          <FormField id="q-domain" label="Domain" :error="fieldMessages.pkskDomainId">
-            <select
+          <AdminField for="q-domain" label="Domain" :error="fieldMessages.pkskDomainId">
+            <NativeSelect
               id="q-domain"
               v-model="form.domainId"
               name="pksk_domain_id"
               required
-              :class="inputClass('pkskDomainId', FORM_SELECT_CLASS)"
+              :aria-invalid="invalid('pkskDomainId') ? 'true' : undefined"
               data-testid="q-domain"
             >
               <template v-if="editing">
@@ -287,16 +282,16 @@ async function submit(): Promise<void> {
                   {{ d.name }}
                 </option>
               </template>
-            </select>
-          </FormField>
+            </NativeSelect>
+          </AdminField>
 
-          <FormField id="q-level" label="Sasaran" :error="fieldMessages.pkskTargetLevel">
-            <select
+          <AdminField for="q-level" label="Sasaran" :error="fieldMessages.pkskTargetLevel">
+            <NativeSelect
               id="q-level"
               v-model="form.level"
               name="pksk_target_level"
               required
-              :class="inputClass('pkskTargetLevel', FORM_SELECT_CLASS)"
+              :aria-invalid="invalid('pkskTargetLevel') ? 'true' : undefined"
               data-testid="q-level"
             >
               <template v-if="editing">
@@ -308,93 +303,90 @@ async function submit(): Promise<void> {
                   {{ o.label }}
                 </option>
               </template>
-            </select>
-          </FormField>
+            </NativeSelect>
+          </AdminField>
 
-          <FormField v-if="editing" id="q-status" label="Status" :error="fieldMessages.status">
-            <select
+          <AdminField v-if="editing" for="q-status" label="Status" :error="fieldMessages.status">
+            <NativeSelect
               id="q-status"
               v-model="form.status"
               name="status"
               required
-              :class="inputClass('status', FORM_SELECT_CLASS)"
+              :aria-invalid="invalid('status') ? 'true' : undefined"
               data-testid="q-status"
             >
               <option v-for="o in STATUS_OPTIONS" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
-            </select>
-          </FormField>
+            </NativeSelect>
+          </AdminField>
         </div>
-      </section>
+      </AdminSection>
 
       <!-- Card 2: Soalan. -->
-      <section :class="CARD_CLASS">
-        <h2 class="mb-4 flex items-center gap-2 font-heading text-lg font-bold text-slate-800">
-          <CircleHelp class="h-5 w-5 text-amber-500" aria-hidden="true" />
-          Soalan
-        </h2>
-        <div class="space-y-4">
-          <FormField
+      <AdminSection title="Soalan" icon="i-ph-question" accent="heat">
+        <AdminField
+          for="q-text"
+          :label="editing ? 'Soalan' : 'Teks Soalan'"
+          :error="fieldMessages.questionText"
+        >
+          <UTextarea
             id="q-text"
-            :label="editing ? undefined : 'Teks Soalan'"
-            :error="fieldMessages.questionText"
+            v-model="form.text"
+            name="question_text"
+            :rows="5"
+            required
+            :placeholder="editing ? undefined : 'Tulis soalan di sini...'"
+            size="md"
+            class="w-full"
+            :color="invalid('questionText') ? 'error' : undefined"
+            data-testid="q-text"
+          />
+        </AdminField>
+
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <AdminField
+            for="q-difficulty"
+            :label="editing ? 'Kesukaran' : 'Tahap Kesukaran (1-5)'"
+            :error="fieldMessages.difficultyLevel"
           >
-            <textarea
-              id="q-text"
-              v-model="form.text"
-              name="question_text"
-              rows="4"
-              required
-              :placeholder="editing ? undefined : 'Tulis soalan di sini...'"
-              :class="[FORM_TEXTAREA_CLASS, fieldMessages.questionText ? FORM_ERROR_MODIFIER : '']"
-              data-testid="q-text"
-            ></textarea>
-          </FormField>
-
-          <div :class="editing ? 'grid grid-cols-2 gap-4' : 'grid gap-4 md:grid-cols-2'">
-            <FormField
+            <NativeSelect
               id="q-difficulty"
-              :label="editing ? 'Kesukaran' : 'Tahap Kesukaran (1-5)'"
-              :error="fieldMessages.difficultyLevel"
+              v-model="form.difficulty"
+              name="difficulty_level"
+              :required="!editing"
+              :aria-invalid="invalid('difficultyLevel') ? 'true' : undefined"
+              data-testid="q-difficulty"
             >
-              <select
-                id="q-difficulty"
-                v-model="form.difficulty"
-                name="difficulty_level"
-                :required="!editing"
-                :class="inputClass('difficultyLevel', FORM_SELECT_CLASS)"
-                data-testid="q-difficulty"
-              >
-                <template v-if="editing">
-                  <option v-for="n in 5" :key="n" :value="String(n)">{{ n }}</option>
-                </template>
-                <template v-else>
-                  <option
-                    v-for="o in DIFFICULTY_CREATE_OPTIONS"
-                    :key="o.value"
-                    :value="String(o.value)"
-                  >
-                    {{ o.label }}
-                  </option>
-                </template>
-              </select>
-            </FormField>
-          </div>
-
-          <FormField id="q-explanation" :label="editing ? 'Penjelasan' : 'Penjelasan (Opsional)'">
-            <textarea
-              id="q-explanation"
-              v-model="form.explanation"
-              name="explanation"
-              rows="2"
-              :placeholder="editing ? undefined : 'Penjelasan jawapan...'"
-              :class="FORM_TEXTAREA_CLASS"
-              data-testid="q-explanation"
-            ></textarea>
-          </FormField>
+              <template v-if="editing">
+                <option v-for="n in 5" :key="n" :value="String(n)">{{ n }}</option>
+              </template>
+              <template v-else>
+                <option
+                  v-for="o in DIFFICULTY_CREATE_OPTIONS"
+                  :key="o.value"
+                  :value="String(o.value)"
+                >
+                  {{ o.label }}
+                </option>
+              </template>
+            </NativeSelect>
+          </AdminField>
         </div>
-      </section>
+
+        <AdminField for="q-explanation" :label="editing ? 'Penjelasan' : 'Penjelasan (Opsional)'">
+          <UTextarea
+            id="q-explanation"
+            v-model="form.explanation"
+            name="explanation"
+            :rows="3"
+            :placeholder="editing ? undefined : 'Penjelasan jawapan...'"
+            size="md"
+            class="w-full"
+            data-testid="q-explanation"
+          />
+        </AdminField>
+      </AdminSection>
 
       <!-- Card 3: Pilihan Jawapan (S7: not rendered for a saved Bahagian C). -->
       <OptionsCard
@@ -407,23 +399,13 @@ async function submit(): Promise<void> {
         :placeholder="editing ? undefined : 'Teks pilihan'"
       />
 
-      <!-- Footer: one row at every width. -->
-      <div class="flex items-center justify-between gap-3">
-        <RouterLink :to="QUESTIONS_PATH" :class="BACK_BUTTON_CLASS" data-testid="form-back">
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          Kembali
-        </RouterLink>
-        <button
-          type="submit"
-          :disabled="saving"
-          :class="[PRIMARY_BUTTON_CLASS, 'disabled:cursor-not-allowed disabled:opacity-50']"
-          data-testid="form-submit"
-        >
-          <LoadingSpinner v-if="saving" class="h-4 w-4" />
-          <Save v-else class="h-4 w-4" aria-hidden="true" />
-          {{ editing ? 'Kemaskini' : 'Simpan Soalan' }}
-        </button>
-      </div>
+      <AdminFormBar
+        :cancel-to="QUESTIONS_PATH"
+        cancel-label="Kembali"
+        cancel-testid="form-back"
+        :submit-label="editing ? 'Kemaskini' : 'Simpan Soalan'"
+        :saving="saving"
+      />
     </form>
-  </div>
+  </DsPage>
 </template>

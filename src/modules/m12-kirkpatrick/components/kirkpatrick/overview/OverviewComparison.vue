@@ -59,14 +59,14 @@ const deltas = computed(() => {
     data-testid="kirk-comparison"
   >
     <div class="flex flex-col gap-3">
-      <p class="text-caption text-muted" data-testid="kirk-comparison-subtitle">
+      <p class="text-body text-muted" data-testid="kirk-comparison-subtitle">
         {{ comparison.subtitle }}
       </p>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-before">
           <div class="mb-2 flex flex-wrap items-center justify-between gap-1">
             <p class="text-label text-highlighted">SEBELUM</p>
-            <p class="text-caption text-muted" data-testid="kirk-panel-range">
+            <p class="text-body text-muted" data-testid="kirk-panel-range">
               {{ range(comparison.before) }}
             </p>
           </div>
@@ -75,14 +75,14 @@ const deltas = computed(() => {
               <p class="tabular text-heading text-highlighted" data-testid="kirk-panel-value">
                 {{ m.value }}
               </p>
-              <p class="text-caption text-muted">{{ m.label }}</p>
+              <p class="text-body text-muted">{{ m.label }}</p>
             </div>
           </div>
         </UCard>
         <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-after">
           <div class="mb-2 flex flex-wrap items-center justify-between gap-1">
             <p class="text-label text-primary">SELEPAS</p>
-            <p class="text-caption text-muted" data-testid="kirk-panel-range">
+            <p class="text-body text-muted" data-testid="kirk-panel-range">
               {{ range(comparison.after) }}
             </p>
           </div>
@@ -91,7 +91,7 @@ const deltas = computed(() => {
               <p class="tabular text-heading text-primary" data-testid="kirk-panel-value">
                 {{ m.value }}
               </p>
-              <p class="text-caption text-muted">{{ m.label }}</p>
+              <p class="text-body text-muted">{{ m.label }}</p>
             </div>
           </div>
         </UCard>
@@ -117,7 +117,7 @@ const deltas = computed(() => {
             >
               {{ d.text }}
             </p>
-            <p class="text-caption text-muted">{{ d.label }}</p>
+            <p class="text-body text-muted">{{ d.label }}</p>
           </div>
         </UCard>
       </div>

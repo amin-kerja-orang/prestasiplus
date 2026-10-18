@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * PHASE 1: fold into DsStatRow (with DsStatTile compact/roomy) (docs/design/v2-ds-consolidation.md). Interim kit for the M02/M22/M03
+ * admin revamp; do not build new screens on it.
+ */
 /** A strip of KPI tiles (`DsStatTile compact`): 1 / 2 / 3 / 4 columns, 6 on very wide screens. */
 defineProps<{ label?: string }>()
 </script>

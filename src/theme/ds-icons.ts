@@ -9,6 +9,7 @@ export const dsIconBaseNames = [
   'arrow-right',
   'book-open',
   'caret-down',
+  'caret-up-down',
   'gear',
   'list',
   'pulse',

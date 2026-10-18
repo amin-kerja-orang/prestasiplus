@@ -203,7 +203,8 @@ async function resetFilter(): Promise<void> {
     </div>
 
     <DsDataTable
-      v-else
+        v-else
+      dense
       :data="tableRows"
       :columns="columns"
       caption="Kertas soalan guru"

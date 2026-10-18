@@ -61,6 +61,8 @@ export interface QuestionListQuery {
   sourceFilter?: string | null
   search?: string | null
   page?: number
+  /** Rows per page (v2 admin list; the server caps it at 100). */
+  pageSize?: number | null
   signal?: AbortSignal
 }
 
@@ -256,6 +258,7 @@ export function fetchQuestions(query: QuestionListQuery = {}): Promise<ListResul
       sourceFilter: query.sourceFilter ?? null,
       search: query.search ?? null,
       page: query.page ?? null,
+      pageSize: query.pageSize ?? null,
     },
     ...(query.signal ? { signal: query.signal } : {}),
   })

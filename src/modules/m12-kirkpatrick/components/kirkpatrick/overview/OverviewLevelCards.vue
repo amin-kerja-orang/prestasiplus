@@ -78,7 +78,10 @@ const levels = computed<Level[]>(() => {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-4" data-testid="kirk-levels">
+  <div
+    class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-4"
+    data-testid="kirk-levels"
+  >
     <KirkpatrickLink
       v-for="l in levels"
       :key="l.key"
@@ -88,18 +91,18 @@ const levels = computed<Level[]>(() => {
     >
       <UCard class="h-full">
         <div class="flex items-start justify-between gap-2">
-          <p class="text-overline text-muted">{{ l.label }}</p>
+          <p class="text-label text-muted">{{ l.label }}</p>
           <DsIconChip :icon="l.icon" size="sm" />
         </div>
         <p
-          :class="['mt-2 tabular text-heading', l.muted ? 'text-dimmed' : 'text-highlighted']"
+          :class="['tabular mt-2 text-title', l.muted ? 'text-dimmed' : 'text-highlighted']"
           data-testid="kirk-level-value"
         >
           {{ l.value }}<span v-if="l.suffix" class="text-label text-muted">{{ l.suffix }}</span>
         </p>
-        <p class="text-caption text-muted" data-testid="kirk-level-caption">{{ l.caption }}</p>
-        <p v-if="detail" class="mt-2 flex items-center gap-1 text-caption text-primary">
-          Lihat detail <UIcon name="i-ph-arrow-right" class="size-3" />
+        <p class="text-body text-muted" data-testid="kirk-level-caption">{{ l.caption }}</p>
+        <p v-if="detail" class="mt-2 flex items-center gap-1 text-body text-primary">
+          Lihat detail <UIcon name="i-ph-arrow-right" class="size-4" />
         </p>
       </UCard>
     </KirkpatrickLink>

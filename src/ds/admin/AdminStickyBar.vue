@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * PHASE 1: fold into DsFormBar (docs/design/v2-ds-consolidation.md). Interim kit for the M02/M22/M03
+ * admin revamp; do not build new screens on it.
+ */
 /** Sticky Simpan / Batal bar at the bottom of a form: Batal first on mobile, buttons to the right. */
 </script>
 

@@ -12,7 +12,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsPanel, DsStatTile } from '@/ds'
 
 import { fetchMasterNotes, type MasterNoteTab } from '../api/master-notes'
 import ErrorBox from '../components/ErrorBox.vue'
@@ -54,7 +54,26 @@ function goToPage(next: number): void {
 
 <template>
   <DsPage data-testid="notes-page">
-    <UCard data-testid="notes-header">
+    <div
+      v-if="summary"
+      class="grid grid-cols-1 gap-3 sm:grid-cols-3"
+      data-testid="notes-kpis"
+    >
+      <DsStatTile
+        :value="summary.flagged"
+        unit="Flagged (perlu semakan)"
+        icon="i-ph-flag"
+        accent="heat"
+      />
+      <DsStatTile
+        :value="summary.teacherApproved"
+        unit="Teacher-approved"
+        icon="i-ph-check-circle"
+        accent="win"
+      />
+      <DsStatTile :value="summary.total" unit="Jumlah nota" icon="i-ph-notebook" accent="action" />
+    </div>
+    <UCard data-testid="notes-header" class="sr-only">
       <p class="text-body text-default" data-testid="notes-summary">
         <template v-if="summary">
           Self-healing nota AI: {{ summary.flagged }} flagged ·
@@ -65,6 +84,7 @@ function goToPage(next: number): void {
       </p>
     </UCard>
 
+    <DsPanel>
     <nav class="flex max-w-full flex-wrap gap-2" aria-label="Tab nota" data-testid="notes-tabs">
       <UButton
         v-for="t in TABS"
@@ -79,6 +99,7 @@ function goToPage(next: number): void {
         {{ t.label }}
       </UButton>
     </nav>
+    </DsPanel>
 
     <div v-if="error" class="flex flex-col gap-3" data-testid="notes-error">
       <ErrorBox :messages="LOAD_ERROR" />

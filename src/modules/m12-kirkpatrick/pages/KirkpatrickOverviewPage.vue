@@ -64,7 +64,10 @@ async function apply(value: { schoolId: string; state: string }) {
 </script>
 
 <template>
-  <DsPage data-testid="kirk-overview-page">
+  <DsPage
+    data-testid="kirk-overview-page"
+    subtitle="Analisis Keberkesanan Platform — Model Penilaian 4 Tahap"
+  >
     <KirkpatrickFilterBar
       :options="options"
       :school-id="schoolId"

@@ -359,6 +359,11 @@ async function mountAt(component: Component, path: string, props: Record<string,
 const settle = () => new Promise((r) => setTimeout(r, 80)).then(() => flushPromises())
 const tid = (id: string) => wrapper?.find(`[data-testid="${id}"]`)
 const all = (id: string) => wrapper?.findAll(`[data-testid="${id}"]`) ?? []
+/** The big numbers of the `DsStatTile`s under a test id (the tile root, or a strip holding tiles). */
+const valuesIn = (id: string) =>
+  all(id)
+    .flatMap((n) => (n.classes().includes('tabular') ? [n] : n.findAll('.tabular')))
+    .map((n) => n.text())
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -380,7 +385,7 @@ describe('S2 Monitoring Penglibatan', () => {
 
   it('renders KPIs with live formats and the two tables with prefix links', async () => {
     await mountAt(MonitoringPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
-    const values = all('mon-kpi-value').map((n) => n.text())
+    const values = valuesIn('mon-kpis')
     expect(values).toEqual([
       '57',
       '4,158',
@@ -546,7 +551,7 @@ describe('S3 Detail Sekolah', () => {
     expect(tid('mon-school-name')?.text()).toBe('SMK Contoh')
     expect(tid('mon-school-tahap')?.text()).toBe('Cemerlang — 89.7%')
     expect(tid('mon-subscription')?.text()).toContain('Active — sehingga 12 May 2027')
-    expect(all('mon-stat-value').map((n) => n.text())).toEqual(['4', '2', '53,494', '2', '1'])
+    expect(valuesIn('mon-stat')).toEqual(['4', '2', '53,494', '2', '1'])
     expect(tid('mon-warning')?.text().replace(/ {2,}/g, ' ')).toBe(
       '⚠ 2 akaun menunjukkan aktiviti luar biasa (kelajuan menjawab tidak munasabah — perlu semak). 1 daripadanya dikecualikan dari peratus penglibatan kerana corak seperti automasi. Angka penglibatan di atas ialah nilai tulen selepas tapis.',
     )
@@ -687,7 +692,7 @@ describe('S4 Detail Pelajar', () => {
     await open()
     expect(tid('mon-student-meta')?.text()).toBe('adam@demo.test · T5')
     expect(tid('mon-student-last')?.text()).toBe('Aktiviti Terakhir: 16/06/2026 14:19')
-    expect(all('mon-stat-value').map((n) => n.text())).toEqual(['71', '53', '18', '74.6%'])
+    expect(valuesIn('mon-stat')).toEqual(['71', '53', '18', '74.6%'])
     expect(tid('mon-crumb-school')?.attributes('href')).toBe('/guru/monitoring/sekolah/8080')
     expect(tid('mon-crumb-person')?.text()).toBe('Adam Demo')
     expect(all('mon-tab-chip').map((n) => n.text())).toEqual(['45', '1'])
@@ -815,7 +820,7 @@ describe('S4 Detail Pelajar', () => {
       userId: 4664,
     })
     expect(tid('mon-student-last')?.text()).toBe('Aktiviti Terakhir: -')
-    expect(all('mon-stat-value').map((n) => n.text())).toEqual(['0', '0', '0', '0%'])
+    expect(valuesIn('mon-stat')).toEqual(['0', '0', '0', '0%'])
     await tid('mon-tab-list')?.trigger('click')
     expect(tid('mon-list-heading')?.text()).toBe('Senarai Soalan (0 tersedia daripada 0)')
     expect(tid('mon-list-more')?.exists()).toBe(false)
@@ -848,7 +853,7 @@ describe('S5 Detail Guru', () => {
     await open()
     expect(tid('mon-teacher-last')?.text()).toBe('Login Terakhir: 20/09/2026 08:00')
     expect(tid('mon-teacher-pill')?.text()).toBe('Pernah Login')
-    expect(all('mon-stat-value').map((n) => n.text())).toEqual(['3', '2', '66.7%', '1'])
+    expect(valuesIn('mon-stat')).toEqual(['3', '2', '66.7%', '1'])
     const rows = all('mon-teacher-student-row')
     expect(rows).toHaveLength(3)
     expect(rows[0]?.find('a').attributes('href')).toBe('/guru/monitoring/sekolah/8080/pelajar/1')

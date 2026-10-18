@@ -2,14 +2,15 @@
 /**
  * Card "Pilihan Jawapan" of S6 and S7 (FR-M07-36, FR-M07-37, FR-M07-43; FN-M07-2.2.4..2.2.6).
  *
- * Rows hold a letter circle (recomputed from the position), the text input, the "Betul" checkbox
- * (`showCorrect`) and `fa-times` (hidden at 2 rows); "Tambah Pilihan" is hidden at 6 rows. The
+ * Rows hold a letter badge (recomputed from the position), the text input, the "Betul" checkbox
+ * (`showCorrect`) and a remove button (hidden at 2 rows); "Tambah Pilihan" is hidden at 6 rows. The
  * checkbox and the whole card are only hidden (`v-show`), never removed, so their state is kept. A
  * `disabled` card (Bahagian C on S6) is neither validated nor sent (DV-M07-05).
  */
-import { ListOrdered, Plus, X } from '@lucide/vue'
-
 import { MAX_OPTIONS, MIN_OPTIONS, newOption, optionLetter, type OptionRow } from '../../lib/admin'
+
+import AdminSection from './AdminSection.vue'
+import NativeCheck from './native/NativeCheck.vue'
 
 withDefaults(
   defineProps<{
@@ -39,73 +40,76 @@ function remove(uid: number): void {
 </script>
 
 <template>
-  <section v-show="shown" class="rounded-2xl bg-white p-4 shadow sm:p-6" data-testid="options-card">
-    <h2
-      class="mb-4 flex flex-wrap items-center gap-2 font-heading text-lg font-bold text-slate-800"
+  <div v-show="shown" data-testid="options-card">
+    <AdminSection
+      :title="suffix ? 'Pilihan Jawapan (Tiada jawapan betul/salah)' : 'Pilihan Jawapan'"
+      title-testid="options-title"
+      icon="i-ph-list-numbers"
+      accent="win"
     >
-      <ListOrdered class="h-5 w-5 text-green-500" aria-hidden="true" />
-      <span data-testid="options-title"
-        >Pilihan Jawapan<template v-if="suffix"> (Tiada jawapan betul/salah)</template></span
-      >
-    </h2>
-    <div class="space-y-3">
-      <div
-        v-for="(opt, idx) in rows"
-        :key="opt.uid"
-        class="flex items-center gap-2 sm:gap-3"
-        data-testid="option-row"
-      >
-        <span
-          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600"
-          data-testid="option-letter"
-          >{{ optionLetter(idx) }}</span
+      <div class="flex flex-col gap-3">
+        <div
+          v-for="(opt, idx) in rows"
+          :key="opt.uid"
+          class="flex items-center gap-3"
+          data-testid="option-row"
         >
-        <input
-          v-model="opt.text"
-          type="text"
-          :name="`options[${String(idx)}][text]`"
-          :placeholder="placeholder"
-          :required="!disabled"
-          :disabled="disabled"
-          class="min-h-11 min-w-0 flex-1 rounded-xl border-2 border-slate-200 px-3.5 py-2.5 text-sm transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-300"
-          data-testid="option-text"
-        />
-        <label
-          v-show="showCorrect"
-          class="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 text-sm text-slate-700"
-          data-testid="option-correct-label"
-        >
-          <input
-            v-model="opt.isCorrect"
-            type="checkbox"
+          <UBadge
+            color="neutral"
+            variant="soft"
+            size="lg"
+            :label="optionLetter(idx)"
+            data-testid="option-letter"
+          />
+          <UInput
+            v-model="opt.text"
+            type="text"
+            :name="`options[${String(idx)}][text]`"
+            :aria-label="`Pilihan ${optionLetter(idx)}`"
+            :placeholder="placeholder"
+            :required="!disabled"
+            :disabled="disabled"
+            size="md"
+            class="min-w-0 flex-1"
+            data-testid="option-text"
+          />
+          <NativeCheck
+            v-show="showCorrect"
+            :checked="opt.isCorrect"
+            label-testid="option-correct-label"
             :name="`options[${String(idx)}][is_correct]`"
             value="1"
             :disabled="disabled"
-            class="h-4 w-4 rounded border-slate-300 accent-green-600"
             data-testid="option-correct"
+            @change="opt.isCorrect = ($event.target as HTMLInputElement).checked"
+          >
+            Betul
+          </NativeCheck>
+          <UButton
+            v-show="rows.length > MIN_OPTIONS"
+            type="button"
+            color="error"
+            variant="ghost"
+            icon="i-ph-x"
+            aria-label="Buang pilihan"
+            class="min-h-11 min-w-11 justify-center"
+            data-testid="option-remove"
+            @click="remove(opt.uid)"
           />
-          Betul
-        </label>
-        <button
-          v-show="rows.length > MIN_OPTIONS"
-          type="button"
-          class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
-          data-testid="option-remove"
-          @click="remove(opt.uid)"
-        >
-          <X class="h-4 w-4" aria-hidden="true" />
-        </button>
+        </div>
       </div>
-    </div>
-    <button
-      v-show="rows.length < MAX_OPTIONS"
-      type="button"
-      class="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-indigo-400 hover:text-indigo-600"
-      data-testid="option-add"
-      @click="add"
-    >
-      <Plus class="h-4 w-4" aria-hidden="true" />
-      Tambah Pilihan
-    </button>
-  </section>
+      <UButton
+        v-show="rows.length < MAX_OPTIONS"
+        type="button"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-plus"
+        label="Tambah Pilihan"
+        block
+        class="min-h-11"
+        data-testid="option-add"
+        @click="add"
+      />
+    </AdminSection>
+  </div>
 </template>

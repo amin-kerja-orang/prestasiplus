@@ -26,10 +26,10 @@ defineProps<{ bands: BandCount[]; monitoringPath: string }>()
         <p :class="['tabular text-subheading', BAND[b.key].text]" data-testid="band-count">
           {{ plain(b.count) }}
         </p>
-        <p class="text-caption break-words text-highlighted" data-testid="band-label">
+        <p class="text-body break-words text-highlighted" data-testid="band-label">
           {{ BAND[b.key].label }}
         </p>
-        <p class="text-caption text-muted" data-testid="band-caption">
+        <p class="text-body text-muted" data-testid="band-caption">
           {{ BAND_CAPTION[b.key] }}
         </p>
         <UProgress
@@ -41,7 +41,7 @@ defineProps<{ bands: BandCount[]; monitoringPath: string }>()
           :aria-label="`${BAND[b.key].label} ${pct(b.pct)}`"
           data-testid="band-bar"
         />
-        <p :class="['tabular text-caption', BAND[b.key].text]" data-testid="band-pct">
+        <p :class="['tabular text-body', BAND[b.key].text]" data-testid="band-pct">
           {{ pct(b.pct) }}
         </p>
       </RouterLink>

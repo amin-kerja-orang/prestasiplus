@@ -150,7 +150,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
         :data="tableRows"
         :columns="columns"
         caption="Senarai subjek"
-        dense
+        compact-cells
         :page-size="Math.max(tableRows.length, 1)"
         card-title="name"
         :card-fields="cardFields"

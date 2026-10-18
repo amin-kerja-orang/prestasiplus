@@ -7,7 +7,9 @@
 import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState } from '@/ds'
+import { DsEmptyState } from '@/ds'
+
+import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 import type { InterventionRow } from '../../../api/types'
 import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
@@ -17,7 +19,8 @@ import { alertLabel, moodLabel, STATUS_COLOR } from './intervention-format'
 const props = defineProps<{ rows: InterventionRow[] }>()
 
 /** Slot rows are untyped; this narrows the status for the badge colour. */
-const statusColor = (status: unknown) => STATUS_COLOR[status as NonNullable<InterventionRow['status']>]
+const statusColor = (status: unknown) =>
+  STATUS_COLOR[status as NonNullable<InterventionRow['status']>]
 
 /** "55.5% · Gembira" / "-" (accuracy then mood, as option labels). */
 function accuracyCell(accuracy: number | null, mood: InterventionRow['beforeMood']): string {
@@ -84,19 +87,18 @@ const cardFields = [
     <UCard v-if="rows.length === 0" data-testid="int-empty">
       <DsEmptyState icon="i-ph-clipboard" title="Tiada intervensi direkodkan lagi." />
     </UCard>
-    <DsDataTable
+    <KirkpatrickTable
       v-else
       :data="data"
       :columns="columns"
       caption="Senarai intervensi"
       card-title="date"
       :card-fields="cardFields"
-      :page-size="1000"
     >
       <template #studentId-cell="{ row }">
         <span class="flex flex-col" data-testid="int-row-student">
           <span>{{ row.original.studentId }}</span>
-          <span v-if="row.original.studentName" class="text-caption text-muted">{{
+          <span v-if="row.original.studentName" class="text-body text-muted">{{
             row.original.studentName
           }}</span>
         </span>
@@ -122,6 +124,6 @@ const cardFields = [
           data-testid="int-row-status"
         />
       </template>
-    </DsDataTable>
+    </KirkpatrickTable>
   </KirkpatrickTableSection>
 </template>

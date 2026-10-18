@@ -96,7 +96,8 @@ const cardFields: CardField[] = [
     </div>
 
     <DsDataTable
-      v-else
+        v-else
+      dense
       :data="tableRows"
       :columns="columns"
       caption="Sejarah import"

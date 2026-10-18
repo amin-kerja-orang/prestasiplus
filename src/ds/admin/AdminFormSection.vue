@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * PHASE 1: fold into DsFormSection (docs/design/v2-ds-consolidation.md). Interim kit for the M02/M22/M03
+ * admin revamp; do not build new screens on it.
+ */
 /** A form section card: icon chip + title + hint, then a two-column grid on desktop (20-24px padding). */
 import DsIconChip from '../DsIconChip.vue'
 

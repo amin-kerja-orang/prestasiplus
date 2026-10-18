@@ -14,7 +14,7 @@ defineProps<{ title: string; subtitle?: string; icon: string; footnote?: string 
       <DsIconChip :icon="icon" size="sm" />
       <div class="flex min-w-0 flex-col gap-1">
         <h2 class="text-subheading text-highlighted">{{ title }}</h2>
-        <p v-if="subtitle" class="text-caption text-muted">{{ subtitle }}</p>
+        <p v-if="subtitle" class="text-body text-muted">{{ subtitle }}</p>
       </div>
     </div>
     <slot />

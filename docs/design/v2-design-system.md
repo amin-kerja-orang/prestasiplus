@@ -444,6 +444,30 @@ The old FA→Lucide table (`fa-to-lucide.ts`, ~280 rows) is converted by a scrip
 | Friend / 3D / confetti | yes | no |
 | Header height | 4rem | 3.5rem |
 
+
+### Density scale (cozy), 2026-10-18 (supersedes the "Staff" sizes above)
+
+The user found both portals too compact and small. The scale below is set centrally in
+`src/theme/tokens.css` and `src/theme/ui.config.ts`; pages inherit it.
+
+| Property | Value |
+|---|---|
+| Body | 16px, line-height 1.55 |
+| Label (dense tables, nav, chips) | 15px (was 14px), weight 600 |
+| Caption / overline | 13px (was 12px) |
+| Heading / subheading / title | 22-26px / 19-22px / 30-40px (one step up) |
+| Button `md` (default) | min-height 44px, padding 16px, text 16px; `lg` 48px; `sm` 40px; `xs` 36px |
+| Inputs, selects | min-height 44px (learner 52px), padding 14px, text 16px |
+| Card padding | 20px (24px from `sm`) |
+| Section gaps (`DsPage`) | 20px, 24px from `md`, 32px from `lg` |
+| Table cell | padding 16px x 14px, text 16px; header 15px caps 13px; rows about 56px |
+| Badge `md` | 15px text, padding 12px x 4px; `sm` 13px |
+| Sidebar item | 44px high, 15px text, 20px icons |
+| Navbar | 64px |
+| Icons in nav and buttons | 20px |
+
+Checked at 1280, 1440, 1920 and 375 on Bank Soalan and the learner dashboard.
+
 ---
 
 ## 12. Mapping: current components → Nuxt UI → DS patterns

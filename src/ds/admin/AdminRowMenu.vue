@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * PHASE 1: fold into DsRowActions (docs/design/v2-ds-consolidation.md). Interim kit for the M02/M22/M03
+ * admin revamp; do not build new screens on it.
+ */
 /** The "..." row-actions menu (`UDropdownMenu`): a 44px icon trigger, items from the caller. */
 import type { DropdownMenuItem } from '@nuxt/ui'
 

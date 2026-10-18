@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * PHASE 1: fold into DsDataTable cell helper (identity cell); no canonical yet (docs/design/v2-ds-consolidation.md). Interim kit for the M02/M22/M03
+ * admin revamp; do not build new screens on it.
+ */
 /** Avatar + name + muted second line (email, code) in one table cell. */
 defineProps<{
   name: string

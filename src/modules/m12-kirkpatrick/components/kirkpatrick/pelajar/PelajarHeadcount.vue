@@ -8,7 +8,11 @@ defineProps<{ headcount: StudentKirkpatrick['headcount'] }>()
 </script>
 
 <template>
-  <KirkpatrickPanel title="Tahap 2 — Head Count" icon="i-ph-users-three" data-testid="pel-headcount">
+  <KirkpatrickPanel
+    title="Tahap 2 — Head Count"
+    icon="i-ph-users-three"
+    data-testid="pel-headcount"
+  >
     <p class="mb-2 text-label text-highlighted" data-testid="pel-hc-heading">
       {{ headcount.year }} — Head Count
     </p>

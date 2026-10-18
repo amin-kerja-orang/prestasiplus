@@ -1,5 +1,9 @@
 <script setup lang="ts">
 /**
+ * PHASE 1: fold into DsFilterBar (evolved: chips, popover) + DsActiveFilters (docs/design/v2-ds-consolidation.md). Interim kit for the M02/M22/M03
+ * admin revamp; do not build new screens on it.
+ */
+/**
  * Filter toolbar: ONE row from `md` (the `search` slot grows, the filters sit next to it, then "Cari"
  * and "Set Semula"); below `md` the search stays inline and the filters move into a "Penapis" bottom
  * sheet. Active filters show as removable chips under the row. Callers own the fields (bound to query

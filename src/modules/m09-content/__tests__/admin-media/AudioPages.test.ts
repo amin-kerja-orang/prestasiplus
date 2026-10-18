@@ -63,7 +63,6 @@ describe('AudioSetListPage (S12)', () => {
     wrapper = (await mountAt(AudioSetListPage, '/page')).wrapper
     const w = wrapper
     expect(w.text()).toContain('Ujian Mendengar')
-    expect(w.get('h1').text()).toBe('Set Audio KBAT')
     expect(w.text()).toContain('Senarai set soalan audio fixed sequence, bukan rawak.')
     expect(t(w, 'template-xlsx').attributes('href')).toBe('/admin/audio-kbat/template')
     expect(t(w, 'template-word').attributes('href')).toBe('/admin/audio-kbat/template-word')
@@ -73,7 +72,9 @@ describe('AudioSetListPage (S12)', () => {
     )
     expect(t(w, 'audio-guide').text()).toContain('Set ini bukan soalan rawak.')
     expect(t(w, 'audio-guide').text()).toContain('Jika cikgu mahu bahan yang mudah ditaip')
-    expect(w.findAll('[data-testid=stat-value]').map((s) => s.text())).toEqual(['0', '0', '0', '0'])
+    for (const key of ['sets', 'approved', 'draftPending', 'questions']) {
+      expect(t(w, `stat-${key}`).text()).toMatch(/^0/)
+    }
     expect(t(w, 'audio-stats').text()).toContain('Draft/Pending')
     expect(t(w, 'audio-empty').text()).toBe('Belum ada set Audio KBAT.')
   })
@@ -97,7 +98,7 @@ describe('AudioSetListPage (S12)', () => {
         .map((o) => o.text()),
     ).toEqual(['Semua Status', 'Draft', 'Pending Review', 'Approved', 'Archived'])
     expect(t(w, 'filter-search').attributes('placeholder')).toBe('Cari tajuk/sumber...')
-    expect(t(w, 'filter-submit').text()).toBe('Tapis')
+    expect(w.get('form[role=search] button[type=submit]').text()).toBe('Tapis')
   })
 
   it('"Tapis" goes to the same path with the values and keeps them selected', async () => {
@@ -154,13 +155,12 @@ describe('AudioSetListPage (S12)', () => {
     })
     wrapper = (await mountAt(AudioSetListPage, '/page')).wrapper
     const w = wrapper
-    expect(w.findAll('[data-testid=stat-value]').map((s) => s.text())).toEqual([
-      '2',
-      '1',
-      '1',
-      '60',
-    ])
-    const row = t(w, 'audio-set')
+    expect(
+      ['sets', 'approved', 'draftPending', 'questions'].map(
+        (key) => t(w, `stat-${key}`).text().match(/^\d+/)?.[0],
+      ),
+    ).toEqual(['2', '1', '1', '60'])
+    const row = w.get('tbody tr')
     expect(row.get('[data-testid=set-title]').text()).toBe('BM T4 Set 1')
     expect(row.get('[data-testid=set-level]').text()).toBe('Tingkatan 4')
     expect(row.get('[data-testid=set-subject]').text()).toBe('Bahasa Melayu')
@@ -210,9 +210,8 @@ function fillRequired(w: VueWrapper): Promise<void[]> {
 describe('AudioSetCreatePage (S13)', () => {
   it('renders the header, guide, "Maklumat Set" defaults and no "Batal"', async () => {
     const { wrapper: w } = await create()
-    expect(w.get('h1').text()).toBe('Cipta Set Audio KBAT')
-    expect(t(w, 'audio-back').text()).toBe('Kembali')
-    expect(t(w, 'audio-back').attributes('href')).toBe('/admin/audio-kbat')
+    expect(t(w, 'back-link').text()).toBe('Kembali')
+    expect(t(w, 'back-link').attributes('href')).toBe('/admin/audio-kbat')
     expect(w.text()).toContain(
       'Format fixed: 4 audio section, 30 soalan MCQ, soalan dipaparkan serentak mengikut section.',
     )

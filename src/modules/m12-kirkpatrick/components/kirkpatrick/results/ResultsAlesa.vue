@@ -7,12 +7,11 @@
 import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable } from '@/ds'
-
 import type { Results, SpmGrade } from '../../../api/types'
 import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { pct, plain } from '../common/kirkpatrick-format'
 import { CADANGAN, CONFIDENCE, GRADE_PILL } from './results-format'
+import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ alesa: Results['alesa'] }>()
 
@@ -75,35 +74,34 @@ const cardFields = [
         <p class="tabular text-heading text-success" data-testid="tile-value">
           {{ plain(alesa.lulus) }}
         </p>
-        <p class="text-caption text-muted">Dijangka Lulus</p>
+        <p class="text-body text-muted">Dijangka Lulus</p>
       </UCard>
       <UCard variant="soft" class="min-w-0 text-center" data-testid="alesa-gagal">
         <p class="tabular text-heading text-error" data-testid="tile-value">
           {{ plain(alesa.gagal) }}
         </p>
-        <p class="text-caption text-muted">Dijangka Gagal</p>
+        <p class="text-body text-muted">Dijangka Gagal</p>
       </UCard>
       <UCard variant="soft" class="min-w-0 text-center" data-testid="alesa-intervensi">
         <p class="tabular text-heading text-warning" data-testid="tile-value">
           {{ plain(alesa.intervensi) }}
         </p>
-        <p class="text-caption text-muted">Perlu Intervensi</p>
+        <p class="text-body text-muted">Perlu Intervensi</p>
       </UCard>
     </div>
-    <DsDataTable
+    <KirkpatrickTable
       :data="data"
       :columns="columns"
       caption="Ramalan ALESA"
       card-title="name"
       :card-fields="cardFields"
-      :page-size="Math.max(data.length, 1)"
     >
       <template #name-cell="{ row }">
         <span class="flex flex-col" data-testid="alesa-row">
           <span class="text-label text-highlighted" data-testid="alesa-name">{{
             row.original.name
           }}</span>
-          <span class="text-caption text-muted">{{ row.original.schoolName }}</span>
+          <span class="text-body text-muted">{{ row.original.schoolName }}</span>
         </span>
       </template>
       <template #grade-cell="{ row }">
@@ -123,11 +121,11 @@ const cardFields = [
         />
       </template>
       <template #cadangan-cell="{ row }">
-        <span class="block min-w-56 text-caption whitespace-normal" data-testid="alesa-cadangan">{{
+        <span class="block min-w-56 text-body whitespace-normal" data-testid="alesa-cadangan">{{
           row.original.cadangan
         }}</span>
       </template>
-    </DsDataTable>
+    </KirkpatrickTable>
     <UAlert color="primary" variant="soft" icon="i-ph-info" data-testid="alesa-footer">
       <template #description>
         <strong>{{ plain(alesa.lulus) }} pelajar dijangka lulus</strong>,

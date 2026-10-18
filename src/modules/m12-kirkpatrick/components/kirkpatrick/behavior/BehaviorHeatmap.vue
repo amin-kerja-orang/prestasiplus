@@ -26,16 +26,16 @@ defineProps<{ heat: Behavior['heat'] }>()
     >
       <div class="grid w-max grid-cols-19 gap-1">
         <span aria-hidden="true" />
-        <span v-for="h in HEAT_HOURS" :key="h" class="text-center text-caption text-muted">{{
+        <span v-for="h in HEAT_HOURS" :key="h" class="text-center text-body text-muted">{{
           h
         }}</span>
         <template v-for="(day, d) in HEAT_DAYS" :key="day">
-          <span class="pe-2 text-caption whitespace-nowrap text-muted">{{ day }}</span>
+          <span class="pe-2 text-body whitespace-nowrap text-muted">{{ day }}</span>
           <span
             v-for="(hour, c) in HEAT_HOURS"
             :key="hour"
             :class="[
-              'tabular flex size-6 items-center justify-center text-caption sm:size-8',
+              'tabular flex size-6 items-center justify-center text-body sm:size-8',
               heatClass(heat.cells[d]?.[c] ?? 0, heat.max),
             ]"
             :title="heatTitle(day, hour, heat.cells[d]?.[c] ?? 0)"

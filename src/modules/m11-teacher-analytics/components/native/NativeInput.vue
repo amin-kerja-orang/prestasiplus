@@ -7,6 +7,6 @@ const model = defineModel<string>({ required: true })
   <input
     v-model="model"
     type="text"
-    class="min-h-11 w-full min-w-0 rounded-card bg-elevated px-3 text-body text-default placeholder:text-dimmed"
+    class="min-h-11 w-full min-w-0 rounded-(--ds-r-md) bg-elevated px-4 text-body text-default placeholder:text-dimmed"
   />
 </template>

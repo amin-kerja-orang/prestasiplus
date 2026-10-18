@@ -9,11 +9,10 @@ import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
-import { DsDataTable } from '@/ds'
-
 import type { BandKey, ResultsSchoolRow } from '../../../api/types'
 import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { BAND, count, mean, pct, plain } from '../common/kirkpatrick-format'
+import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ rows: ResultsSchoolRow[]; schoolPath: (id: number) => string }>()
 
@@ -80,18 +79,17 @@ const cardFields = [
     icon="i-ph-buildings"
     data-testid="res-schools"
   >
-    <DsDataTable
+    <KirkpatrickTable
       :data="data"
       :columns="columns"
       caption="Prestasi mengikut sekolah"
       card-title="name"
       :card-fields="cardFields"
-      :page-size="1000"
     >
       <template #name-cell="{ row }">
         <RouterLink
           :to="schoolPath(row.original.schoolId)"
-          :class="['text-label', row.original.faded ? 'text-dimmed' : 'text-primary']"
+          :class="['line-clamp-2 max-w-72 text-label', row.original.faded ? 'text-dimmed' : 'text-primary']"
           :data-faded="row.original.faded ? 'true' : 'false'"
           data-testid="res-school-link"
           >{{ row.original.name }}</RouterLink
@@ -117,17 +115,18 @@ const cardFields = [
                 : 'text-warning'
           "
           data-testid="cell-accuracy"
-          >{{
-          row.original.accuracyText
-        }}</span>
+          >{{ row.original.accuracyText }}</span
+        >
       </template>
       <template #answers-cell="{ row }">
         <span data-testid="cell-answers">{{ row.original.answers }}</span>
       </template>
       <template #engagement-cell="{ row }">
-        <span :class="['text-label', band(row.original.tahap).text]" data-testid="cell-engagement">{{
-          row.original.engagement
-        }}</span>
+        <span
+          :class="['text-label', band(row.original.tahap).text]"
+          data-testid="cell-engagement"
+          >{{ row.original.engagement }}</span
+        >
       </template>
       <template #tahapText-cell="{ row }">
         <UBadge
@@ -137,6 +136,6 @@ const cardFields = [
           data-testid="cell-tahap"
         />
       </template>
-    </DsDataTable>
+    </KirkpatrickTable>
   </KirkpatrickTableSection>
 </template>

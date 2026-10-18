@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * PHASE 1: fold into DsDataTable built-in pager (pageSizeOptions) (docs/design/v2-ds-consolidation.md). Interim kit for the M02/M22/M03
+ * admin revamp; do not build new screens on it.
+ */
 /** Footer strip of a list card: "Menunjukkan a-b daripada n hasil" plus `UPagination` (BM labels). */
 defineProps<{
   summary: string

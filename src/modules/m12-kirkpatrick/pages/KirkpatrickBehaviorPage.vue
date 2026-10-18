@@ -54,7 +54,10 @@ function apply(value: { schoolId: string }) {
 </script>
 
 <template>
-  <DsPage data-testid="kirk-behavior">
+  <DsPage
+    data-testid="kirk-behavior"
+    subtitle="Konsistensi penggunaan, engagement score, dan corak tingkah laku pelajar"
+  >
     <KirkpatrickTabs :base-path="basePath" current="behavior" />
     <KirkpatrickFilterBar
       :options="options"

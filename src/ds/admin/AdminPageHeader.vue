@@ -1,5 +1,9 @@
 <script setup lang="ts">
 /**
+ * PHASE 1: fold into DsPageHeader (docs/design/v2-ds-consolidation.md). Interim kit for the M02/M22/M03
+ * admin revamp; do not build new screens on it.
+ */
+/**
  * Compact page header of the Portal Pentadbiran pages: a one-line muted subtitle on the left and the
  * primary actions on the right. The shell prints the page title, so `title` is optional (screen
  * readers get it as a visually hidden `h1`).

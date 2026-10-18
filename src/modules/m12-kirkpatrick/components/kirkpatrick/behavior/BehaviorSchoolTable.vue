@@ -8,11 +8,10 @@ import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
-import { DsDataTable } from '@/ds'
-
 import type { BandKey, BehaviorSchoolRow } from '../../../api/types'
 import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { BAND, count, mean, plain } from '../common/kirkpatrick-format'
+import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ rows: BehaviorSchoolRow[]; schoolPath: (id: number) => string }>()
 
@@ -81,23 +80,22 @@ const cardFields = [
     icon="i-ph-buildings"
     data-testid="beh-schools"
   >
-    <DsDataTable
+    <KirkpatrickTable
       :data="data"
       :columns="columns"
       caption="Engagement mengikut sekolah"
       card-title="name"
       :card-fields="cardFields"
-      :page-size="1000"
     >
       <template #name-cell="{ row }">
         <span class="flex flex-col">
           <RouterLink
             :to="schoolPath(row.original.schoolId)"
-            class="text-label text-primary"
+            class="line-clamp-2 max-w-72 text-label text-primary"
             data-testid="beh-school-link"
             >{{ row.original.name }}</RouterLink
           >
-          <span class="text-caption text-muted" data-testid="beh-school-code">{{
+          <span class="text-body text-muted" data-testid="beh-school-code">{{
             row.original.code
           }}</span>
         </span>
@@ -134,6 +132,6 @@ const cardFields = [
           data-testid="cell-tahap"
         />
       </template>
-    </DsDataTable>
+    </KirkpatrickTable>
   </KirkpatrickTableSection>
 </template>

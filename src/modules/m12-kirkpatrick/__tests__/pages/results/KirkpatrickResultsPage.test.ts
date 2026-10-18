@@ -264,7 +264,7 @@ describe('S5 subject GPS and trend (AC-M12-21.1 ... 21.4)', () => {
       'res-predictions',
       'res-alesa',
     ]) {
-      expect(t(w, id).find('.overflow-x-auto').exists()).toBe(true)
+      expect(t(w, id).find('[data-ds="paged-table"]').exists()).toBe(true)
     }
   })
 })

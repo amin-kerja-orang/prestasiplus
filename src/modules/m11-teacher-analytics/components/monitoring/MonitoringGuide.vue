@@ -3,7 +3,7 @@
  * S2 guide card (FN-M11-3.1.1..3.1.4; FR-M11-26..29). Visibility is read from
  * `localStorage.hideMonitoringGuide` (`'true'` = hidden); ✕ hides and stores it; "Tunjuk panduan
  * penggunaan" shows it again and removes the key. A storage failure falls back to "shown".
- * Tile titles are in-page anchors that scroll smoothly.
+ * Tile titles are in-page anchors: the page switches to the tab that holds the section and scrolls to it.
  */
 import { ref } from 'vue'
 
@@ -37,36 +37,36 @@ function show() {
   }
 }
 
+const emit = defineEmits<{ goto: [sectionId: string] }>()
+
 function scrollTo(event: MouseEvent, id: string) {
-  const target = document.getElementById(id)
-  if (!target) return
   event.preventDefault()
-  target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  emit('goto', id)
 }
 </script>
 
 <template>
   <div data-testid="mon-guide-area">
     <UCard v-if="!hidden" data-testid="mon-guide">
-      <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-6">
         <div class="flex items-start justify-between gap-2">
-          <h2 class="flex items-center gap-2 text-label text-highlighted">
-            <UIcon name="i-ph-book-open" class="size-5 text-primary" />Panduan Monitoring
+          <h2 class="flex items-center gap-2 text-heading text-highlighted">
+            <UIcon name="i-ph-book-open" class="size-6 text-primary" />Panduan Monitoring
             Penglibatan
           </h2>
           <UButton
             color="neutral"
             variant="ghost"
-            size="lg"
+            size="md"
             icon="i-ph-x"
             aria-label="Tutup panduan"
             data-testid="mon-guide-close"
             @click="hide"
           />
         </div>
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div
-            class="flex flex-col gap-1 bg-soft p-3 text-body text-muted"
+            class="flex flex-col gap-2 bg-soft p-4 text-body text-muted"
             data-testid="mon-guide-tile"
           >
             <ULink
@@ -83,7 +83,7 @@ function scrollTo(event: MouseEvent, id: string) {
             </p>
           </div>
           <div
-            class="flex flex-col gap-1 bg-soft p-3 text-body text-muted"
+            class="flex flex-col gap-2 bg-soft p-4 text-body text-muted"
             data-testid="mon-guide-tile"
           >
             <ULink
@@ -106,7 +106,7 @@ function scrollTo(event: MouseEvent, id: string) {
             </p>
           </div>
           <div
-            class="flex flex-col gap-1 bg-soft p-3 text-body text-muted"
+            class="flex flex-col gap-2 bg-soft p-4 text-body text-muted"
             data-testid="mon-guide-tile"
           >
             <ULink
@@ -122,7 +122,7 @@ function scrollTo(event: MouseEvent, id: string) {
             </p>
           </div>
           <div
-            class="flex flex-col gap-1 bg-soft p-3 text-body text-muted"
+            class="flex flex-col gap-2 bg-soft p-4 text-body text-muted"
             data-testid="mon-guide-tile"
           >
             <ULink
@@ -139,7 +139,7 @@ function scrollTo(event: MouseEvent, id: string) {
             </p>
           </div>
           <div
-            class="flex flex-col gap-1 bg-soft p-3 text-body text-muted"
+            class="flex flex-col gap-2 bg-soft p-4 text-body text-muted"
             data-testid="mon-guide-tile"
           >
             <ULink
@@ -155,7 +155,7 @@ function scrollTo(event: MouseEvent, id: string) {
             </p>
           </div>
           <div
-            class="flex flex-col gap-1 bg-soft p-3 text-body text-muted"
+            class="flex flex-col gap-2 bg-soft p-4 text-body text-muted"
             data-testid="mon-guide-tile"
           >
             <ULink
@@ -186,7 +186,7 @@ function scrollTo(event: MouseEvent, id: string) {
       type="button"
       color="primary"
       variant="link"
-      size="lg"
+      size="md"
       icon="i-ph-question"
       label="Tunjuk panduan penggunaan"
       data-testid="mon-guide-show"

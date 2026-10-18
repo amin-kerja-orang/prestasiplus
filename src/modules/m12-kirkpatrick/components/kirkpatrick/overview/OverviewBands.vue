@@ -24,7 +24,11 @@ const ordered = () =>
 </script>
 
 <template>
-  <KirkpatrickPanel title="Taburan Engagement Pelajar" icon="i-ph-chart-pie" data-testid="kirk-bands">
+  <KirkpatrickPanel
+    title="Taburan Engagement Pelajar"
+    icon="i-ph-chart-pie"
+    data-testid="kirk-bands"
+  >
     <div class="grid grid-cols-5 gap-1 sm:gap-3">
       <KirkpatrickLink
         v-for="b in ordered()"
@@ -34,11 +38,13 @@ const ordered = () =>
         :data-testid="`kirk-band-${b.key}`"
       >
         <DsIconChip :icon="ICON[b.key]" size="sm" />
-        <span :class="['tabular text-subheading', BAND[b.key].text]" data-testid="kirk-band-count">{{
-          plain(b.count)
-        }}</span>
-        <span class="text-caption break-words text-muted">{{ BAND[b.key].label }}</span>
-        <span :class="['tabular text-caption', BAND[b.key].text]" data-testid="kirk-band-pct">{{
+        <span
+          :class="['tabular text-subheading', BAND[b.key].text]"
+          data-testid="kirk-band-count"
+          >{{ plain(b.count) }}</span
+        >
+        <span class="text-body break-words text-muted">{{ BAND[b.key].label }}</span>
+        <span :class="['tabular text-body', BAND[b.key].text]" data-testid="kirk-band-pct">{{
           pct(b.pct)
         }}</span>
       </KirkpatrickLink>

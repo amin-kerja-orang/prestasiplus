@@ -8,13 +8,12 @@ import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
-import { DsDataTable } from '@/ds'
-
 import type { SpmGrade } from '../../../api/types'
 import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { count, pct } from '../common/kirkpatrick-format'
 import { COLOR_TEXT, GRADE_PILL } from './results-format'
 import type { ResultsPrediction } from './results-types'
+import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{
   rows: ResultsPrediction[]
@@ -72,7 +71,7 @@ const cardFields = [
     footnote="Ramalan ini berdasarkan ketepatan menjawab soalan dalam platform sahaja. Ramalan penuh memerlukan lebih banyak data termasuk keputusan peperiksaan terdahulu."
     data-testid="res-predictions"
   >
-    <DsDataTable
+    <KirkpatrickTable
       :data="data"
       :columns="columns"
       caption="Ramalan prestasi pelajar aktif"
@@ -113,6 +112,6 @@ const cardFields = [
           data-testid="pred-grade"
         />
       </template>
-    </DsDataTable>
+    </KirkpatrickTable>
   </KirkpatrickTableSection>
 </template>

@@ -6,7 +6,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsPage } from '@/ds'
+import { DsIconChip, DsPage } from '@/ds'
 
 import { fetchStudentDetail } from '../api'
 import type { StudentAnswerRow } from '../api/types'
@@ -106,32 +106,55 @@ const observations = computed(() =>
         class="flex items-center gap-2 text-body text-muted"
         data-testid="mon-loading"
       >
-        <UIcon name="i-ph-circle-notch" class="size-4" />Memuatkan...
+        <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
       </p>
 
       <template v-if="data">
         <UCard data-testid="mon-student-header">
           <div class="flex items-center gap-4">
-            <UIcon name="i-ph-graduation-cap" class="size-8 shrink-0 text-primary" />
+            <DsIconChip icon="i-ph-graduation-cap" size="lg" />
             <div class="flex min-w-0 flex-col gap-1">
-              <h2 class="text-heading break-words text-highlighted" data-testid="mon-student-name">
+              <h2 class="text-title break-words text-highlighted" data-testid="mon-student-name">
                 {{ data.student.name }}
               </h2>
               <p class="text-body break-all text-muted" data-testid="mon-student-meta">
                 {{ data.student.email }} · {{ data.student.level }}
               </p>
-              <p class="text-caption text-muted" data-testid="mon-student-last">
+              <p class="text-body text-muted" data-testid="mon-student-last">
                 Aktiviti Terakhir: {{ dmyHm(data.student.lastActivityAt) }}
               </p>
             </div>
           </div>
         </UCard>
 
-        <section class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="mon-student-cards">
-          <MonitoringStatCard label="Soalan Dijawab" :value="count(data.cards.answered)" />
-          <MonitoringStatCard label="Betul" :value="count(data.cards.correct)" />
-          <MonitoringStatCard label="Salah" :value="count(data.cards.wrong)" />
-          <MonitoringStatCard label="Ketepatan" :value="accuracy" :value-class="accuracyColour" />
+        <section class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-testid="mon-student-cards">
+          <MonitoringStatCard
+            label="Soalan Dijawab"
+            :value="count(data.cards.answered)"
+            icon="i-ph-pencil-simple"
+            accent="trial"
+          />
+          <MonitoringStatCard
+            label="Betul"
+            :value="count(data.cards.correct)"
+            icon="i-ph-check-circle"
+            accent="win"
+            value-class="text-success"
+          />
+          <MonitoringStatCard
+            label="Salah"
+            :value="count(data.cards.wrong)"
+            icon="i-ph-x-circle"
+            accent="heat"
+            value-class="text-error"
+          />
+          <MonitoringStatCard
+            label="Ketepatan"
+            :value="accuracy"
+            icon="i-ph-target"
+            accent="friend"
+            :value-class="accuracyColour"
+          />
         </section>
 
         <div class="flex flex-wrap gap-2" data-testid="mon-tabs">
@@ -139,7 +162,7 @@ const observations = computed(() =>
             v-for="t in tabs"
             :key="t.key"
             type="button"
-            size="lg"
+            size="md"
             :color="tab === t.key ? 'primary' : 'neutral'"
             :variant="tab === t.key ? 'soft' : 'ghost'"
             :icon="t.icon"
@@ -152,7 +175,7 @@ const observations = computed(() =>
               v-if="t.chip"
               :color="t.chip.color"
               variant="subtle"
-              size="sm"
+              size="md"
               data-testid="mon-tab-chip"
               :label="String(t.chip.n)"
             />
@@ -170,14 +193,14 @@ const observations = computed(() =>
         <StudentGaps v-else :gaps="data.gaps" />
 
         <UCard data-testid="mon-observations">
-          <div class="flex flex-col gap-3">
-            <h2 class="flex items-center gap-2 text-label text-highlighted">
-              <UIcon name="i-ph-lightbulb" class="size-5 text-info" />Pemerhatian
+          <div class="flex flex-col gap-4">
+            <h2 class="flex items-center gap-2 text-heading text-highlighted">
+              <UIcon name="i-ph-lightbulb" class="size-6 text-info" />Pemerhatian
             </h2>
             <p
               v-for="(o, i) in observations"
               :key="i"
-              class="bg-soft p-3 text-body text-default"
+              class="bg-soft p-4 text-body text-default"
               data-testid="mon-observation"
             >
               {{ o }}

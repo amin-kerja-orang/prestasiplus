@@ -163,9 +163,14 @@
     { "glob": "src/modules/m03-curriculum/components/curriculum/*.vue", "level": "page" },
     { "glob": "src/modules/m03-curriculum/components/ErrorBox.vue", "level": "page" },
     { "glob": "src/modules/m03-curriculum/components/subjects-levels/{ActiveSwitch,FormActions}.vue", "level": "page" },
+    { "glob": "src/modules/m07-pksk/pages/Pksk{Access,QuestionForm,QuestionList}Page.vue", "level": "page" },
+    { "glob": "src/modules/m07-pksk/components/admin/*.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/pages/{Admin*,Banner*,AudioSet*,AudioTemplate,Screenshots}Page.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/components/admin-kit/*.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/components/admin-articles-notes/**", "level": "page" },
+    { "glob": "src/modules/m09-content/components/admin-media/**", "level": "page" },
     { "glob": "src/modules/m02-users-schools/pages/CompStudent*.vue", "level": "page" },
-    { "glob": "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue", "level": "page" },
-    { "glob": "src/components/admin/Admin{PageHeader,KpiStrip,Toolbar,Pager,RowMenu,FormSection,StickyBar,Identity,Row}.vue", "level": "ds" }
+    { "glob": "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

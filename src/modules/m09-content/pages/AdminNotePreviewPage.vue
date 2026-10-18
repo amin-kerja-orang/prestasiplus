@@ -1,24 +1,25 @@
 <script setup lang="ts">
 /**
- * S8 `/admin/notes/:id` "Lihat Nota - Admin PRESTASIPLUS" (FR-M09-49, FR-M09-20; DV-M09-04,
- * DV-M09-05). Shell header = the note title / "Paparan nota". Card: title, author, date, views,
- * downloads, status, summary, the Subjek / Tahap / Jenis grid and the stored body printed as escaped
- * text that wraps anywhere inside the card. An unknown id returns to S5 without a flash.
+ * S8 `/admin/notes/:id` "Lihat Nota - Admin PRESTASIPLUS" (FR-M09-47..49; DV-M09-04, DV-M09-05), v2 staff theme.
+ *
+ * - Shell header = the note title / "Paparan nota" (set once the note has loaded).
+ * - Card: title, author, created date, views, downloads, status badge, summary, the Subjek / Tahap / Jenis
+ *   details and the stored body printed as escaped text (never rendered as HTML).
+ * - An unknown id (or a non-numeric one) returns to S5 without a flash.
  */
-import { Calendar, Download, Eye, SquarePen, User } from '@lucide/vue'
 import { computed, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi, usePageMeta } from '@/composables'
+import { DsPage } from '@/ds'
 
 import { fetchAdminNote } from '../api/admin-articles-notes'
 import AdminBackLink from '../components/admin-articles-notes/AdminBackLink.vue'
 import AdminStatusPill from '../components/admin-articles-notes/AdminStatusPill.vue'
+import AdminAlert from '../components/admin-kit/AdminAlert.vue'
 import {
   COPY,
   NOTES_LIST_PATH,
-  PRIMARY_BUTTON_CLASS,
   isNotFoundError,
   noteGradeText,
   noteSubjectText,
@@ -53,99 +54,92 @@ watch(note, (loaded) => {
 })
 
 const failed = computed(() => error.value !== null && !isNotFoundError(error.value))
-
-const LABEL = 'text-xs font-bold tracking-wide text-slate-500 uppercase'
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="admin-note-preview-page">
+  <DsPage data-testid="admin-note-preview-page">
     <AdminBackLink :to="NOTES_LIST_PATH" />
 
-    <AlertBox v-if="failed" :messages="COPY.loadFailed" data-testid="admin-note-load-error" />
+    <AdminAlert v-if="failed" :messages="[COPY.loadFailed]" data-testid="admin-note-load-error" />
 
-    <article
-      v-else-if="note"
-      class="min-w-0 space-y-4 rounded-2xl bg-white p-5 shadow sm:p-6"
-      data-testid="admin-note-card"
-    >
-      <h1
-        class="font-heading text-2xl font-bold [overflow-wrap:anywhere] text-slate-800"
-        data-testid="preview-title"
-      >
-        {{ note.title }}
-      </h1>
+    <UCard v-else-if="note" data-testid="admin-note-card">
+      <article class="flex min-w-0 flex-col gap-6">
+        <div class="flex flex-col gap-3">
+          <div><AdminStatusPill :published="note.isPublished" /></div>
+          <h1 class="text-title break-words text-highlighted" data-testid="preview-title">
+            {{ note.title }}
+          </h1>
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-body text-muted">
+            <span
+              v-if="note.author"
+              class="inline-flex items-center gap-2"
+              data-testid="preview-author"
+            >
+              <UIcon name="i-ph-user" class="size-5" aria-hidden="true" />{{ note.author.name }}
+            </span>
+            <span class="inline-flex items-center gap-2" data-testid="preview-date">
+              <UIcon name="i-ph-calendar-blank" class="size-5" aria-hidden="true" />{{
+                previewDate(note.createdAt)
+              }}
+            </span>
+            <span class="inline-flex items-center gap-2" data-testid="preview-views">
+              <UIcon name="i-ph-eye" class="size-5" aria-hidden="true" />{{ note.views }} tontonan
+            </span>
+            <span class="inline-flex items-center gap-2" data-testid="preview-downloads">
+              <UIcon name="i-ph-download-simple" class="size-5" aria-hidden="true" />{{
+                note.downloads
+              }}
+              muat turun
+            </span>
+          </div>
+        </div>
 
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">
-        <span
-          v-if="note.author"
-          class="inline-flex items-center gap-1.5"
-          data-testid="preview-author"
+        <p
+          v-if="note.summary"
+          class="text-body break-words text-muted"
+          data-testid="preview-summary"
         >
-          <User class="h-4 w-4" aria-hidden="true" />{{ note.author.name }}
-        </span>
-        <span class="inline-flex items-center gap-1.5" data-testid="preview-date">
-          <Calendar class="h-4 w-4" aria-hidden="true" />{{ previewDate(note.createdAt) }}
-        </span>
-        <span class="inline-flex items-center gap-1.5" data-testid="preview-views">
-          <Eye class="h-4 w-4" aria-hidden="true" />{{ note.views }} tontonan
-        </span>
-        <span class="inline-flex items-center gap-1.5" data-testid="preview-downloads">
-          <Download class="h-4 w-4" aria-hidden="true" />{{ note.downloads }} muat turun
-        </span>
-      </div>
+          {{ note.summary }}
+        </p>
 
-      <div><AdminStatusPill :published="note.isPublished" /></div>
+        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="preview-details">
+          <div class="flex min-w-0 flex-col gap-1">
+            <dt class="text-overline text-muted">Subjek</dt>
+            <dd class="text-label break-words text-highlighted" data-testid="preview-subject">
+              {{ noteSubjectText(note.subject) }}
+            </dd>
+          </div>
+          <div class="flex min-w-0 flex-col gap-1">
+            <dt class="text-overline text-muted">Tahap</dt>
+            <dd class="text-label break-words text-highlighted" data-testid="preview-grade">
+              {{ noteGradeText(note.grade) }}
+            </dd>
+          </div>
+          <div class="flex min-w-0 flex-col gap-1">
+            <dt class="text-overline text-muted">Jenis</dt>
+            <dd class="text-label break-words text-highlighted" data-testid="preview-type">
+              {{ note.noteType }}
+            </dd>
+          </div>
+        </dl>
 
-      <p
-        v-if="note.summary"
-        class="[overflow-wrap:anywhere] text-slate-600"
-        data-testid="preview-summary"
-      >
-        {{ note.summary }}
-      </p>
+        <USeparator />
 
-      <dl class="grid grid-cols-3 gap-4 rounded-xl bg-slate-50 p-4" data-testid="preview-details">
-        <div class="min-w-0">
-          <dt :class="LABEL">Subjek</dt>
-          <dd
-            class="text-sm font-semibold break-words text-slate-800"
-            data-testid="preview-subject"
-          >
-            {{ noteSubjectText(note.subject) }}
-          </dd>
+        <!-- Escaped text, never rendered (DV-M09-04); wraps anywhere (DV-M09-05). -->
+        <div class="text-body break-words" data-testid="preview-body">
+          {{ note.content }}
         </div>
-        <div class="min-w-0">
-          <dt :class="LABEL">Tahap</dt>
-          <dd class="text-sm font-semibold break-words text-slate-800" data-testid="preview-grade">
-            {{ noteGradeText(note.grade) }}
-          </dd>
-        </div>
-        <div class="min-w-0">
-          <dt :class="LABEL">Jenis</dt>
-          <dd class="text-sm font-semibold break-words text-slate-800" data-testid="preview-type">
-            {{ note.noteType }}
-          </dd>
-        </div>
-      </dl>
 
-      <!-- Escaped text, never rendered (DV-M09-04); wraps anywhere (DV-M09-05). -->
-      <div
-        class="border-t border-slate-100 pt-4 text-sm [overflow-wrap:anywhere] text-slate-700"
-        data-testid="preview-body"
-      >
-        {{ note.content }}
-      </div>
-
-      <div>
-        <RouterLink
-          :to="`${NOTES_LIST_PATH}/${note.id}/edit`"
-          :class="PRIMARY_BUTTON_CLASS"
-          data-testid="preview-edit"
-        >
-          <SquarePen class="h-4 w-4" aria-hidden="true" />
-          Edit Nota
-        </RouterLink>
-      </div>
-    </article>
-  </div>
+        <div>
+          <UButton
+            :to="`${NOTES_LIST_PATH}/${note.id}/edit`"
+            icon="i-ph-pencil-simple"
+            label="Edit Nota"
+            class="min-h-11"
+            data-testid="preview-edit"
+          />
+        </div>
+      </article>
+    </UCard>
+  </DsPage>
 </template>
