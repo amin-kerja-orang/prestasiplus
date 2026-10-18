@@ -62,12 +62,6 @@ const props = withDefaults(
     selectable?: boolean
     /** Tighter horizontal cell padding (px-2) for wide tables with many columns. */
     compactCells?: boolean
-    /** @deprecated use `variant="flush"` */
-    dense?: boolean
-    /** @deprecated use `layout="fixed"` */
-    fixedLayout?: boolean
-    /** @deprecated use `emptyTitle` */
-    emptyLabel?: string
   }>(),
   {
     caption: undefined,
@@ -91,9 +85,6 @@ const props = withDefaults(
     sortLabel: dsCopy.sort,
     selectable: false,
     compactCells: false,
-    dense: false,
-    fixedLayout: false,
-    emptyLabel: undefined,
   },
 )
 
@@ -105,12 +96,12 @@ const emit = defineEmits<{ retry: []; 'row-click': [row: T] }>()
 
 const wide = useMedia('(min-width: 768px)')
 
-const kind = computed(() => (props.dense && props.variant === 'card' ? 'flush' : props.variant))
-const fixed = computed(() => props.layout === 'fixed' || (props.dense && props.fixedLayout))
+const kind = computed(() => props.variant)
+const fixed = computed(() => props.layout === 'fixed')
 const bare = computed(() => kind.value === 'bare')
 const flush = computed(() => kind.value === 'flush')
 const tight = computed(() => props.density === 'tight')
-const title = computed(() => props.emptyTitle ?? props.emptyLabel)
+const title = computed(() => props.emptyTitle)
 
 const count = computed(() => props.total ?? props.data.length)
 const rows = computed(() =>

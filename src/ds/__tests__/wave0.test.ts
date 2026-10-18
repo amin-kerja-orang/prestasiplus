@@ -11,7 +11,6 @@ import {
   DsErrorPage,
   DsFilterBar,
   DsPage,
-  DsPagedTable,
   DsThemeScope,
   useConfirm,
 } from '@/ds'
@@ -104,14 +103,14 @@ describe('DsDataTable', () => {
   })
 })
 
-describe('DsPagedTable', () => {
+describe('DsDataTable bare', () => {
   const data = Array.from({ length: 45 }, (_, i) => ({ nama: `Murid #${i + 1}.`, skor: 'x' }))
   const columns = [
     { accessorKey: 'nama', header: 'Nama' },
     { accessorKey: 'skor', header: 'Skor' },
   ]
   it('pages 20 rows by default with the BM summary and a page-size selector', async () => {
-    const w = mount(DsPagedTable, { props: { data, columns } })
+    const w = mount(DsDataTable, { props: { data, columns, variant: 'bare', pageSize: 20, pageSizeOptions: [10, 20, 50] } })
     await wait()
     expect(w.text()).toContain('Menunjukkan 1-20 daripada 45 hasil')
     expect(w.text()).toContain('Murid #20.')
@@ -119,7 +118,7 @@ describe('DsPagedTable', () => {
     expect(w.find('[aria-label="Baris setiap halaman"]').exists()).toBe(true)
   })
   it('keeps the header and shows the empty label when there are no rows', async () => {
-    const w = mount(DsPagedTable, { props: { data: [], columns, emptyLabel: 'Tiada pelajar' } })
+    const w = mount(DsDataTable, { props: { data: [], columns, variant: 'bare', emptyTitle: 'Tiada pelajar' } })
     await wait()
     expect(w.find('thead').exists()).toBe(true)
     expect(w.text()).toContain('Tiada pelajar')

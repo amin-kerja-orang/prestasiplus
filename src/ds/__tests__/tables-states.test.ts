@@ -14,7 +14,6 @@ import {
   DsFilterBar,
   DsIconChip,
   DsLoadError,
-  DsPagedTable,
   DsRowActions,
   DsStatRow,
   DsStatTile,
@@ -87,12 +86,6 @@ describe('DsDataTable API', () => {
     expect(bare.classes()).toContain('flex-col')
     expect(card.classes()).not.toContain('flex-col')
   })
-  it('deprecated dense maps to flush; empty-label to the title', async () => {
-    const w = mount(DsDataTable, { props: { data: [], columns, dense: true, emptyLabel: 'Tiada pelajar' } })
-    await wait()
-    expect(w.attributes('data-variant')).toBe('flush')
-    expect(w.text()).toContain('Tiada pelajar')
-  })
   it('empty copy follows filtered', async () => {
     const never = mount(DsDataTable, { props: { data: [], columns } })
     const none = mount(DsDataTable, { props: { data: [], columns, filtered: true } })
@@ -149,17 +142,6 @@ describe('DsDataTable API', () => {
     await wait()
     expect(w.text()).toContain('Cuba Semula')
     expect(w.text()).not.toContain('Cuba Lagi')
-  })
-})
-
-describe('DsPagedTable wrapper', () => {
-  it('is a bare DsDataTable that keeps its data-ds and size options', async () => {
-    const w = mount(DsPagedTable, { props: { data: rows, columns } })
-    await wait()
-    expect(w.attributes('data-ds')).toBe('paged-table')
-    expect(w.attributes('data-variant')).toBe('bare')
-    expect(w.text()).toContain('Menunjukkan 1-20 daripada 45 hasil')
-    expect(w.text()).toContain('20 / halaman')
   })
 })
 

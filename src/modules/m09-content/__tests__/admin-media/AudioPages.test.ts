@@ -250,7 +250,7 @@ describe('AudioSetCreatePage (S13)', () => {
     expect(
       w.findAll('[data-testid=section-title]').map((i) => (i.element as HTMLInputElement).value),
     ).toEqual(['Audio 1', 'Audio 2', 'Audio 3', 'Audio 4'])
-    const audio = w.get('[data-testid=section-audio] input[type="file"]')
+    const audio = w.get('input[data-testid=section-audio]')
     expect(audio.attributes('accept')).toBe('.mp3,.m4a,.wav,.ogg,.aac,.mp4,audio/*')
     expect(audio.attributes('required')).toBeUndefined()
     expect(w.get('[data-testid=section-transcript]').attributes('placeholder')).toBe(

@@ -47,8 +47,8 @@ describe('ScreenshotsPage (S14)', () => {
     const w = wrapper
     expect(w.text()).toContain('Upload Gambar')
     expect(w.text()).toContain('Format: JPG, PNG, GIF, WebP, BMP. Maks 10MB setiap fail.')
-    expect(t(w, 'drop-zone').text()).toContain('Klik atau seret fail ke sini')
-    expect(t(w, 'drop-zone').text()).toContain('Boleh pilih banyak fail')
+    expect(w.get('[data-ds=file-field]').text()).toContain('Klik atau seret fail ke sini')
+    expect(w.get('[data-ds=file-field]').text()).toContain('Boleh pilih banyak fail')
     expect(w.text()).toContain(
       'Tip: guna nama fail yang ringkas. Sistem akan auto-sanitize nama fail.',
     )

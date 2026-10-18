@@ -39,7 +39,15 @@ const MOCK_TESTING_PRIVATE = {
   message: '`@/mock/testing` is private to the mock core (test hooks, dev/e2e only).',
 }
 
+/** L3 (consolidation plan): deprecated design-system and legacy table imports are banned. */
+const DEPRECATED_DS_IMPORTS = {
+  regex: String.raw`(?:(?:^|/)DsPagedTable(?:.vue)?$|^(?:@|/src)/components/data(?:/|$))`,
+  message:
+    '`DsPagedTable` and `@/components/data/*` are removed (L3). Use `DsDataTable variant="bare"` from `@/ds`.',
+}
+
 const uiBoundaryPatterns = [
+  DEPRECATED_DS_IMPORTS,
   {
     regex: String.raw`^(?:@|/src)/modules/[^/]+/.+`,
     message:
@@ -81,6 +89,7 @@ const DATASET_TESTING_TEST_ONLY = {
 }
 
 const testBoundaryPatterns = [
+  DEPRECATED_DS_IMPORTS,
   {
     regex: String.raw`^(?:@|/src)/modules/[^/]+/(?!mock$).+`,
     message:
