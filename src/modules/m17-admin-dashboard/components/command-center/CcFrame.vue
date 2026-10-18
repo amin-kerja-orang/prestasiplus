@@ -30,7 +30,7 @@ const bare = computed(() => route.meta.layout === 'bare')
     <DsPage
       data-testid="cc-page"
       title="PrestasiPlus Command Center"
-      :show-title="true"
+      show-title="auto"
       title-testid="cc-title"
     >
       <template #breadcrumb>

@@ -69,7 +69,15 @@ const theme = useThemeMode(personality)
 // One rule for every role: the navbar prints the page title (h1); DsPageHeader leaves its own out.
 provideShellTitle()
 
-const { friend, pickerOpen, choose, openPicker } = useFriend()
+const { friend, pickerOpen, promptOpen, dismissPrompt, choose, openPicker } = useFriend()
+// The first-run prompt belongs to the dashboard only: leaving it closes the prompt for good.
+const promptShown = computed(() => learner.value && promptOpen.value && route.path === '/dashboard')
+watch(
+  () => route.path,
+  (path) => {
+    if (path !== '/dashboard' && promptOpen.value) dismissPrompt()
+  },
+)
 const { summary, refresh: refreshSummary } = useGamificationSummary()
 
 const lagiOpen = ref(false)
@@ -594,6 +602,39 @@ const chipClass = (chip: unknown, active: boolean): string =>
         group-label="Rakan belajar"
         @confirm="onPicked"
       />
+      <aside
+        v-if="promptShown"
+        class="fixed inset-x-3 bottom-20 z-40 mx-auto flex max-w-sm flex-col gap-3 rounded-card bg-default p-4 shadow-lg ring ring-default lg:inset-x-auto lg:right-6 lg:bottom-6"
+        aria-label="Pilih rakan belajar"
+        data-testid="friend-prompt"
+      >
+        <div class="flex items-start gap-2">
+          <div class="min-w-0 flex-1">
+            <p class="text-label text-highlighted">Pilih rakan belajar awak</p>
+            <p class="text-caption text-muted">Dia akan temankan awak sepanjang latihan.</p>
+          </div>
+          <UButton
+            color="neutral"
+            variant="ghost"
+            icon="i-ph-x"
+            aria-label="Tutup"
+            data-testid="friend-prompt-close"
+            @click="dismissPrompt"
+          />
+        </div>
+        <div class="flex gap-2">
+          <UButton
+            v-for="f in FRIEND_OPTIONS"
+            :key="f.value"
+            class="min-h-11 flex-1 justify-center"
+            color="primary"
+            variant="soft"
+            :label="f.name"
+            :data-testid="`friend-prompt-${f.value}`"
+            @click="onPicked(f.value)"
+          />
+        </div>
+      </aside>
       <DsConfirmHost />
     </div>
   </UApp>

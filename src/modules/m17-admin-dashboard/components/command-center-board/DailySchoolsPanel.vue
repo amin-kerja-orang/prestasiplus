@@ -66,12 +66,12 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
           @click="$emit('toggle', s.schoolId)"
         >
           <span
-            class="min-w-0 basis-full text-label break-words text-highlighted sm:flex-1 sm:basis-0"
+            class="min-w-0 basis-full text-label break-words text-highlighted"
             data-testid="cc-school-name"
             :title="s.schoolName"
             >{{ i + 1 }}. {{ shortSchool(s.schoolName) }}</span
           >
-          <span class="tabular flex shrink-0 items-center gap-4 text-center">
+          <span class="tabular flex flex-wrap items-center gap-x-4 gap-y-1 text-center">
             <span data-testid="cc-school-teachers">
               <b class="block text-label text-highlighted">{{
                 hasAnswers(s) ? formatCount(s.activeTeachers) : formatCount(s.loginCount)

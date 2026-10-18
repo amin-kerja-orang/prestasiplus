@@ -3,7 +3,7 @@
  * `localStorage['pp.friend']` (try/catch: blocked storage keeps it for this page view only). One
  * shared state, so the header avatar, the Home greeting and the picker stay in step.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { FriendId, FriendOption } from '@/ds'
 
@@ -25,11 +25,14 @@ function read(): FriendId | null {
 
 const stored = ref<FriendId | null>(read())
 const pickerOpen = ref(false)
+/** First-run prompt: a small non-modal card on the dashboard, never a sheet over the page. */
+const promptOpen = ref(false)
 let offered = false
 
 export function resetFriendForTests(): void {
   stored.value = read()
   pickerOpen.value = false
+  promptOpen.value = false
   offered = false
 }
 
@@ -53,17 +56,17 @@ export function useFriend() {
     pickerOpen.value = true
   }
 
-  /** First visit: offer the picker once per page view when no friend was ever chosen. */
+  /** First visit: offer the prompt once per page view when no friend was ever chosen. */
   function offerFirstRun(): void {
     if (offered || stored.value !== null) return
     offered = true
-    pickerOpen.value = true
-    // Dismissing without a choice also ends the first run: persist the default (Aiman).
-    const stop = watch(pickerOpen, (open) => {
-      if (open) return
-      stop()
-      if (stored.value === null) choose('aiman')
-    })
+    promptOpen.value = true
+  }
+
+  /** Closing the prompt without a choice also ends the first run: persist the default (Aiman). */
+  function dismissPrompt(): void {
+    promptOpen.value = false
+    if (stored.value === null) choose('aiman')
   }
 
   return {
@@ -71,6 +74,8 @@ export function useFriend() {
     friendName,
     hasChosen: computed(() => stored.value !== null),
     pickerOpen,
+    promptOpen,
+    dismissPrompt,
     choose,
     openPicker,
     offerFirstRun,
