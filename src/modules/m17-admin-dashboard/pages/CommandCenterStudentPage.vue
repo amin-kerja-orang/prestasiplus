@@ -93,25 +93,25 @@ const cards = computed<StatItem[]>(() => {
       key: 'answers',
       label: 'Jumlah Jawapan',
       value: count(c.answers),
-      icon: 'i-ph-clipboard-text',
+      icon: 'i-ph-clipboard-text', accent: 'action',
       clickTitle: 'Klik untuk lihat semua sesi',
       onClick: () => {
         sessionsSource.value = { kind: 'all' }
       },
     },
-    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target' },
+    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target', accent: 'win' },
     {
       key: 'activeDays',
       label: 'Hari Aktif',
       value: String(c.activeDays),
-      icon: 'i-ph-calendar-check',
+      icon: 'i-ph-calendar-check', accent: 'friend',
     },
-    { key: 'streak', label: 'Streak', value: String(c.streak), icon: 'i-ph-fire' },
+    { key: 'streak', label: 'Streak', value: String(c.streak), icon: 'i-ph-fire', accent: 'heat' },
     {
       key: 'consistency',
       label: 'Konsistensi',
       value: `${String(c.consistency)}%`,
-      icon: 'i-ph-chart-line-up',
+      icon: 'i-ph-chart-line-up', accent: 'trial',
     },
   ]
 })

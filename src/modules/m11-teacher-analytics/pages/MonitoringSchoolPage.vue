@@ -109,33 +109,33 @@ const cards = computed<StatItem[]>(() => {
       key: 'students',
       label: 'Pelajar T4/T5',
       value: count(c.students),
-      icon: 'i-ph-graduation-cap',
+      icon: 'i-ph-graduation-cap', accent: 'friend',
     },
     {
       key: 'engaged',
       label: 'Pernah Aktif',
       value: count(c.engaged),
-      icon: 'i-ph-check-circle',
+      icon: 'i-ph-check-circle', accent: 'win',
       valueClass: 'text-success',
     },
     {
       key: 'answers',
       label: 'Soalan Dijawab',
       value: count(c.answers),
-      icon: 'i-ph-pencil-simple',
+      icon: 'i-ph-pencil-simple', accent: 'trial',
     },
     {
       key: 'teachers',
       label: 'Guru Berdaftar',
       value: count(c.teachers),
-      icon: 'i-ph-chalkboard-teacher',
+      icon: 'i-ph-chalkboard-teacher', accent: 'action',
       valueClass: 'text-primary',
     },
     {
       key: 'teachersLoggedIn',
       label: 'Guru Pernah Login',
       value: count(c.teachersLoggedIn),
-      icon: 'i-ph-sign-in',
+      icon: 'i-ph-sign-in', accent: 'heat',
     },
   ]
 })

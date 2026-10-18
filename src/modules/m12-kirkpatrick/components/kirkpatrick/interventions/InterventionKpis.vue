@@ -14,16 +14,16 @@ const items = computed<StatItem[]>(() => [
     key: 'total',
     label: 'Jumlah Intervensi',
     value: plain(props.kpi.total),
-    icon: 'i-ph-hand-heart',
+    icon: 'i-ph-hand-heart', accent: 'action',
   },
   {
     key: 'pending',
     label: 'Menunggu Semakan',
     value: plain(props.kpi.pending),
-    icon: 'i-ph-hourglass',
+    icon: 'i-ph-hourglass', accent: 'heat',
   },
-  { key: 'up', label: 'Meningkat', value: plain(props.kpi.up), icon: 'i-ph-trend-up' },
-  { key: 'down', label: 'Menurun', value: plain(props.kpi.down), icon: 'i-ph-trend-down' },
+  { key: 'up', label: 'Meningkat', value: plain(props.kpi.up), icon: 'i-ph-trend-up', accent: 'win' },
+  { key: 'down', label: 'Menurun', value: plain(props.kpi.down), icon: 'i-ph-trend-down', accent: 'trial' },
 ])
 </script>
 

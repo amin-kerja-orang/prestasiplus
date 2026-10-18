@@ -55,7 +55,7 @@ const tabs = computed<
   {
     key: 'wrong',
     label: 'Jawapan Salah',
-    icon: 'i-ph-x-circle',
+    icon: 'i-ph-x-circle', accent: 'heat',
     chip: { n: data.value?.wrong.count ?? 0, color: 'error' },
   },
   {
@@ -83,13 +83,13 @@ const cards = computed<StatItem[]>(() => {
       key: 'answered',
       label: 'Soalan Dijawab',
       value: count(c.answered),
-      icon: 'i-ph-pencil-simple',
+      icon: 'i-ph-pencil-simple', accent: 'trial',
     },
     {
       key: 'correct',
       label: 'Betul',
       value: count(c.correct),
-      icon: 'i-ph-check-circle',
+      icon: 'i-ph-check-circle', accent: 'win',
       tone: 'success',
       valueClass: 'text-success',
     },
@@ -105,7 +105,7 @@ const cards = computed<StatItem[]>(() => {
       key: 'accuracy',
       label: 'Ketepatan',
       value: accuracy.value,
-      icon: 'i-ph-target',
+      icon: 'i-ph-target', accent: 'friend',
       valueClass: accuracyColour.value,
     },
   ]

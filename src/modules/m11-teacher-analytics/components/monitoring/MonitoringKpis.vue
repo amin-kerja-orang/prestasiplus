@@ -17,7 +17,7 @@ const row1 = computed<StatItem[]>(() => [
     key: 'schools',
     label: 'Jumlah Sekolah · Berdaftar',
     value: count(props.kpi.schools),
-    icon: 'i-ph-buildings',
+    icon: 'i-ph-buildings', accent: 'action',
 
     valueClass: 'text-primary',
   },
@@ -25,7 +25,7 @@ const row1 = computed<StatItem[]>(() => [
     key: 'students',
     label: 'Pelajar T4/T5 · Berdaftar',
     value: count(props.kpi.students),
-    icon: 'i-ph-graduation-cap',
+    icon: 'i-ph-graduation-cap', accent: 'friend',
 
     valueClass: 'text-highlighted',
   },
@@ -33,7 +33,7 @@ const row1 = computed<StatItem[]>(() => [
     key: 'engaged',
     label: 'Pernah Aktif · Min. 1 soalan',
     value: count(props.kpi.engaged),
-    icon: 'i-ph-check-circle',
+    icon: 'i-ph-check-circle', accent: 'win',
 
     valueClass: 'text-success',
   },
@@ -41,7 +41,7 @@ const row1 = computed<StatItem[]>(() => [
     key: 'engagement',
     label: '% Penglibatan · Keseluruhan',
     value: pct(props.kpi.engagementPct),
-    icon: 'i-ph-chart-line-up',
+    icon: 'i-ph-chart-line-up', accent: 'heat',
 
     valueClass: 'text-primary',
   },
@@ -49,7 +49,7 @@ const row1 = computed<StatItem[]>(() => [
     key: 'answers',
     label: 'Soalan Dijawab · Total',
     value: count(props.kpi.answers),
-    icon: 'i-ph-pencil-simple',
+    icon: 'i-ph-pencil-simple', accent: 'trial',
 
     valueClass: 'text-highlighted',
   },
@@ -57,7 +57,7 @@ const row1 = computed<StatItem[]>(() => [
     key: 'average',
     label: 'Purata/Pelajar · Soalan/pelajar aktif',
     value: avg(props.kpi.avgPerStudent),
-    icon: 'i-ph-calculator',
+    icon: 'i-ph-calculator', accent: 'action',
 
     valueClass: 'text-highlighted',
   },
@@ -68,7 +68,7 @@ const row2 = computed<StatItem[]>(() => [
     key: 'teachers',
     label: 'Guru Berdaftar',
     value: count(props.kpi.teachers),
-    icon: 'i-ph-chalkboard-teacher',
+    icon: 'i-ph-chalkboard-teacher', accent: 'friend',
 
     valueClass: 'text-highlighted',
   },
@@ -76,7 +76,7 @@ const row2 = computed<StatItem[]>(() => [
     key: 'teachersLoggedIn',
     label: 'Guru Pernah Login',
     value: count(props.kpi.teachersLoggedIn),
-    icon: 'i-ph-sign-in',
+    icon: 'i-ph-sign-in', accent: 'win',
 
     valueClass: 'text-success',
   },
@@ -84,7 +84,7 @@ const row2 = computed<StatItem[]>(() => [
     key: 'teacherPct',
     label: '% Penglibatan Guru',
     value: pct(props.kpi.teacherPct),
-    icon: 'i-ph-percent',
+    icon: 'i-ph-percent', accent: 'heat',
 
     valueClass: 'text-primary',
   },

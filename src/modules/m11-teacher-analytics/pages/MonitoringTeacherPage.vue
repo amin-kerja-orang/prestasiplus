@@ -57,27 +57,27 @@ const cards = computed<StatItem[]>(() => {
       key: 'students',
       label: 'Pelajar T4/T5',
       value: count(c.students),
-      icon: 'i-ph-graduation-cap',
+      icon: 'i-ph-graduation-cap', accent: 'friend',
     },
     {
       key: 'engaged',
       label: 'Pelajar Aktif',
       value: count(c.engaged),
-      icon: 'i-ph-check-circle',
+      icon: 'i-ph-check-circle', accent: 'win',
       valueClass: 'text-success',
     },
     {
       key: 'pct',
       label: '% Aktif',
       value: pct(c.pct),
-      icon: 'i-ph-percent',
+      icon: 'i-ph-percent', accent: 'action',
       valueClass: 'text-primary',
     },
     {
       key: 'attention',
       label: 'Perlu Perhatian',
       value: count(c.needAttention),
-      icon: 'i-ph-warning',
+      icon: 'i-ph-warning', accent: 'heat',
     },
   ]
 })

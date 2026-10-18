@@ -28,25 +28,25 @@ const items = computed<StatItem[]>(() => {
       key: 'nps-student',
       label: 'NPS Pelajar',
       value: `${mean(d.npsStudent)}/10`,
-      icon: 'i-ph-smiley',
+      icon: 'i-ph-smiley', accent: 'friend',
     },
     {
       key: 'nps-teacher',
       label: 'NPS Guru',
       value: `${mean(d.npsTeacher)}/10`,
-      icon: 'i-ph-chalkboard-teacher',
+      icon: 'i-ph-chalkboard-teacher', accent: 'win',
     },
     {
       key: 'nps-admin',
       label: 'NPS Admin',
       value: `${mean(d.npsAdmin)}/10`,
-      icon: 'i-ph-user-gear',
+      icon: 'i-ph-user-gear', accent: 'trial',
     },
     {
       key: 'satisfaction',
       label: 'Kepuasan Purata',
       value: `${mean(d.satisfaction)}/5`,
-      icon: 'i-ph-heart',
+      icon: 'i-ph-heart', accent: 'heat',
     },
   ]
 })

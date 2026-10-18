@@ -41,15 +41,15 @@ const cards = computed<StatItem[]>(() => {
   const c = data.value?.cards
   if (!c) return []
   return [
-    { key: 'students', label: 'Jumlah Pelajar', value: count(c.students), icon: 'i-ph-student' },
-    { key: 'active', label: 'Pelajar Aktif', value: count(c.active), icon: 'i-ph-users-three' },
+    { key: 'students', label: 'Jumlah Pelajar', value: count(c.students), icon: 'i-ph-student', accent: 'action' },
+    { key: 'active', label: 'Pelajar Aktif', value: count(c.active), icon: 'i-ph-users-three', accent: 'friend' },
     {
       key: 'answers',
       label: 'Jumlah Jawapan',
       value: count(c.answers),
-      icon: 'i-ph-clipboard-text',
+      icon: 'i-ph-clipboard-text', accent: 'trial',
     },
-    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target' },
+    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target', accent: 'win' },
   ]
 })
 const columns: TableColumn<Row>[] = [
