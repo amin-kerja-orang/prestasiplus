@@ -17,6 +17,7 @@ const meta = (title: string, header: { title: string; subtitle: string }) => ({
   title,
   header,
   module: 'M07' as const,
+  v2: true as const,
 })
 
 const routes: RouteRecordRaw[] = [

@@ -92,7 +92,7 @@ describe('AdminArticlePreviewPage (M09 S4)', () => {
     const body = t(w, 'preview-body')
     expect(body.text().startsWith('<h2>Apa Itu Teknik Pomodoro?</h2><p>')).toBe(true)
     expect(body.find('h2').exists()).toBe(false)
-    expect(body.classes().join(' ')).toContain('[overflow-wrap:anywhere]')
+    expect(body.classes().join(' ')).toContain('break-words')
   })
 
   it('sets the shell header to the title / "Paparan artikel"', async () => {

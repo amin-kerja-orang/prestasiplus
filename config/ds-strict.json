@@ -162,7 +162,13 @@
     { "glob": "src/modules/m03-curriculum/pages/{CurriculumBrowser,Chapter{Create,Edit},Topic{Create,Edit},Subject{List,Form},Level{List,Form}}Page.vue", "level": "page" },
     { "glob": "src/modules/m03-curriculum/components/curriculum/*.vue", "level": "page" },
     { "glob": "src/modules/m03-curriculum/components/ErrorBox.vue", "level": "page" },
-    { "glob": "src/modules/m03-curriculum/components/subjects-levels/{ActiveSwitch,FormActions}.vue", "level": "page" }
+    { "glob": "src/modules/m03-curriculum/components/subjects-levels/{ActiveSwitch,FormActions}.vue", "level": "page" },
+    { "glob": "src/modules/m07-pksk/pages/Pksk{Access,QuestionForm,QuestionList}Page.vue", "level": "page" },
+    { "glob": "src/modules/m07-pksk/components/admin/*.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/pages/{Admin*,Banner*,AudioSet*,AudioTemplate,Screenshots}Page.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/components/admin-kit/*.vue", "level": "page" },
+    { "glob": "src/modules/m09-content/components/admin-articles-notes/**", "level": "page" },
+    { "glob": "src/modules/m09-content/components/admin-media/**", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

@@ -8,15 +8,13 @@ import { useFlashStore } from '@/stores/flash'
 
 import type { AdminArticleItem } from '../../api/admin-articles-notes'
 import AdminArticleListPage from '../../pages/AdminArticleListPage.vue'
+import { chooseRowAction, menuItem, openRowMenu } from '../menu'
 
 const api = vi.hoisted(() => ({
   fetchAdminArticles: vi.fn(),
   deleteAdminArticle: vi.fn(),
 }))
 vi.mock('../../api/admin-articles-notes', () => api)
-
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn(() => true), alertNative: vi.fn() }))
-vi.mock('@/components/overlay/native-dialogs', () => dialogs)
 
 function article(id: number, extra: Partial<AdminArticleItem> = {}): AdminArticleItem {
   return {
@@ -50,6 +48,7 @@ function listResult(rows: AdminArticleItem[], total = rows.length, pageSize = 20
 
 let wrapper: VueWrapper | null = null
 let router: Router
+let confirmSpy: ReturnType<typeof vi.spyOn>
 
 async function render(url = '/admin/articles'): Promise<VueWrapper> {
   router = createRouter({
@@ -78,8 +77,7 @@ function t(w: VueWrapper, id: string) {
 beforeEach(() => {
   setActivePinia(createPinia())
   for (const fn of Object.values(api)) fn.mockReset()
-  dialogs.confirmNative.mockReset()
-  dialogs.confirmNative.mockReturnValue(true)
+  confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
   api.fetchAdminArticles.mockResolvedValue(
     listResult([
       article(10, { isFeatured: true }),
@@ -95,6 +93,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  confirmSpy.mockRestore()
   wrapper?.unmount()
   wrapper = null
 })
@@ -105,7 +104,7 @@ describe('AdminArticleListPage (M09 S1)', () => {
     expect(t(w, 'admin-articles-count').text()).toBe('Jumlah: 2 artikel')
     expect(t(w, 'admin-articles-add').text()).toBe('Tambah')
     expect(t(w, 'admin-articles-add').attributes('href')).toBe('/admin/articles/create')
-    expect(w.findAll('[data-testid=admin-articles-th]').map((h) => h.text())).toEqual([
+    expect(w.findAll('thead th').map((h) => h.text())).toEqual([
       'Tajuk',
       'Kategori',
       'Tahap',
@@ -118,10 +117,11 @@ describe('AdminArticleListPage (M09 S1)', () => {
 
   it('renders the row cells: star, title cut at 50, author, raw level, status, date', async () => {
     const w = await render()
-    const rows = w.findAll('[data-testid=admin-article-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(2)
     const first = rows[0]!
     expect(first.find('[data-testid=article-featured]').attributes('title')).toBe('Featured')
+    expect(first.find('[data-testid=admin-article-row]').attributes('data-article-id')).toBe('10')
     expect(first.find('[data-testid=article-title]').text()).toBe('Artikel 10')
     expect(first.find('[data-testid=article-author]').text()).toBe('Oleh: Admin Demo')
     expect(first.find('[data-testid=article-category]').text()).toBe('Tips Belajar')
@@ -135,14 +135,12 @@ describe('AdminArticleListPage (M09 S1)', () => {
     expect(second.find('[data-testid=status-pill]').text()).toBe('Draf')
   })
 
-  it('links the row actions with their titles', async () => {
+  it('links the row actions in the row menu', async () => {
     const w = await render()
-    const row = w.get('[data-testid=admin-article-row]')
-    expect(row.get('[data-testid=row-view]').attributes('href')).toBe('/admin/articles/10')
-    expect(row.get('[data-testid=row-view]').attributes('title')).toBe('Lihat')
-    expect(row.get('[data-testid=row-edit]').attributes('href')).toBe('/admin/articles/10/edit')
-    expect(row.get('[data-testid=row-edit]').attributes('title')).toBe('Edit')
-    expect(row.get('[data-testid=row-delete]').attributes('title')).toBe('Padam')
+    const items = await openRowMenu(w, 0)
+    expect(menuItem(items, 'Lihat')?.getAttribute('href')).toBe('/admin/articles/10')
+    expect(menuItem(items, 'Edit')?.getAttribute('href')).toBe('/admin/articles/10/edit')
+    expect(menuItem(items, 'Padam')).toBeDefined()
   })
 
   it('has the filter controls and no pager for one page', async () => {
@@ -156,7 +154,6 @@ describe('AdminArticleListPage (M09 S1)', () => {
     expect(w.findAll('[data-testid=admin-articles-published] option').map((o) => o.text())).toEqual(
       ['Semua Status', 'Diterbitkan', 'Draf'],
     )
-    expect(t(w, 'admin-articles-reset').attributes('href')).toBe('/admin/articles')
     expect(w.find('nav[aria-label="Pagination Navigation"]').exists()).toBe(false)
   })
 
@@ -183,12 +180,11 @@ describe('AdminArticleListPage (M09 S1)', () => {
   it('keeps the filters on every pager link (DV-M09-03)', async () => {
     api.fetchAdminArticles.mockResolvedValue(listResult([article(1)], 21))
     const w = await render('/admin/articles?category=TIPS_BELAJAR')
-    const links = w
-      .findAll('nav[aria-label="Pagination Navigation"] a')
-      .map((a) => a.attributes('href'))
-    expect(links.length).toBeGreaterThan(0)
-    for (const href of links) expect(href).toContain('category=TIPS_BELAJAR')
-    expect(links).toContain('/admin/articles?category=TIPS_BELAJAR&page=2')
+    const next = w.findAll('button').find((b) => b.text() === '2')
+    expect(next).toBeDefined()
+    await next!.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ category: 'TIPS_BELAJAR', page: '2' })
   })
 
   it('shows the empty row and "Jumlah: 0 artikel"', async () => {
@@ -200,10 +196,10 @@ describe('AdminArticleListPage (M09 S1)', () => {
   })
 
   it('does nothing when the delete confirm is cancelled', async () => {
-    dialogs.confirmNative.mockReturnValue(false)
+    confirmSpy.mockReturnValue(false)
     const w = await render()
-    await w.get('[data-testid=row-delete]').trigger('click')
-    expect(dialogs.confirmNative).toHaveBeenCalledWith('Adakah anda pasti mahu padam artikel ini?')
+    await chooseRowAction(w, 0, 'Padam')
+    expect(confirmSpy).toHaveBeenCalledWith('Adakah anda pasti mahu padam artikel ini?')
     expect(api.deleteAdminArticle).not.toHaveBeenCalled()
   })
 
@@ -213,8 +209,7 @@ describe('AdminArticleListPage (M09 S1)', () => {
       status: 'Artikel berjaya dipadam.',
     })
     const w = await render()
-    await w.get('[data-testid=row-delete]').trigger('click')
-    await flushPromises()
+    await chooseRowAction(w, 0, 'Padam')
     expect(api.deleteAdminArticle).toHaveBeenCalledWith(10)
     expect(api.fetchAdminArticles).toHaveBeenCalledTimes(2)
     expect(useFlashStore().current).toEqual({

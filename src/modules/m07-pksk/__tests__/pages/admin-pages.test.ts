@@ -12,6 +12,7 @@ import type { PkskAccessItem, PkskQuestionDetail, PkskQuestionListItem } from '.
 import PkskAccessPage from '../../pages/PkskAccessPage.vue'
 import PkskQuestionFormPage from '../../pages/PkskQuestionFormPage.vue'
 import PkskQuestionListPage from '../../pages/PkskQuestionListPage.vue'
+import { chooseRowAction, menuItem, openRowMenu } from '../menu'
 
 const admin = vi.hoisted(() => ({
   fetchPkskQuestions: vi.fn(),
@@ -111,10 +112,17 @@ describe('PkskQuestionListPage (S5)', () => {
 
   it('renders the five global stat cards and the rows', async () => {
     const w = await render(PkskQuestionListPage, PATH, PATH)
-    const labels = w.findAll('[data-testid=stat-label]').map((e) => e.text())
-    const values = w.findAll('[data-testid=stat-value]').map((e) => e.text())
-    expect(labels).toEqual(['Jumlah', 'Diluluskan', 'Menunggu', 'Ting. 1', 'Ting. 4'])
-    expect(values).toEqual(['763', '763', '0', '383', '380'])
+    const tiles = ['total', 'approved', 'pending', 't1', 't4'].map((k) =>
+      attr(w, 'stat-' + k).text(),
+    )
+    expect(tiles.map((x) => x.replace(/^[0-9]+/, ''))).toEqual([
+      'Jumlah',
+      'Diluluskan',
+      'Menunggu',
+      'Ting. 1',
+      'Ting. 4',
+    ])
+    expect(tiles.map((x) => x.match(/^[0-9]+/)?.[0])).toEqual(['763', '763', '0', '383', '380'])
     expect(w.findAll('[data-testid=pksk-question-row]')).toHaveLength(3)
     expect(attr(w, 'pksk-add').attributes('href')).toBe('/admin/pksk/questions/create')
     expect(w.findAll('[data-testid=q-status]').map((e) => e.text())).toEqual([
@@ -174,7 +182,7 @@ describe('PkskQuestionListPage (S5)', () => {
     const w = await render(PkskQuestionListPage, PATH, PATH)
     const headLabel = attr(w, 'select-all-label')
     expect(headLabel.element.tagName).toBe('LABEL')
-    expect(headLabel.classes()).toEqual(expect.arrayContaining(['min-h-11', 'min-w-11', 'lg:min-h-0']))
+    expect(headLabel.classes()).toEqual(expect.arrayContaining(['min-h-11', 'min-w-11']))
     expect(headLabel.find('[data-testid=select-all]').exists()).toBe(true)
     const rowLabels = w.findAll('[data-testid=row-select-label]')
     expect(rowLabels).toHaveLength(3)
@@ -224,11 +232,9 @@ describe('PkskQuestionListPage (S5)', () => {
     confirmSpy.mockReturnValueOnce(false).mockReturnValueOnce(true)
     admin.deletePkskQuestion.mockResolvedValue(undefined)
     const w = await render(PkskQuestionListPage, PATH, PATH)
-    const del = w.findAll('[data-testid=q-delete]')[1]!
-    await del.trigger('click')
+    await chooseRowAction(w, 1, 'Padam')
     expect(admin.deletePkskQuestion).not.toHaveBeenCalled()
-    await del.trigger('click')
-    await flushPromises()
+    await chooseRowAction(w, 1, 'Padam')
     expect(confirmSpy).toHaveBeenCalledWith('Padam soalan ini?')
     expect(admin.deletePkskQuestion).toHaveBeenCalledWith(2)
     expect(useFlashStore().current?.message).toBe('Soalan PKSK berjaya dipadam.')
@@ -236,9 +242,8 @@ describe('PkskQuestionListPage (S5)', () => {
 
   it('links the edit icon to the edit page', async () => {
     const w = await render(PkskQuestionListPage, PATH, PATH)
-    expect(w.findAll('[data-testid=q-edit]')[0]!.attributes('href')).toBe(
-      '/admin/pksk/questions/1/edit',
-    )
+    const items = await openRowMenu(w, 0)
+    expect(menuItem(items, 'Edit')?.getAttribute('href')).toBe('/admin/pksk/questions/1/edit')
   })
 })
 
@@ -536,11 +541,13 @@ describe('PkskAccessPage (S8)', () => {
 
   it('renders the stat cards, the columns and the row cells', async () => {
     const w = await render(PkskAccessPage, PATH, PATH)
-    expect(w.findAll('[data-testid=stat-label]').map((e) => e.text())).toEqual([
-      'Jumlah Akses Aktif',
-      'Akses T1',
-      'Akses T4',
-    ])
+    expect(
+      ['active', 't1', 't4'].map((k) =>
+        attr(w, 'stat-' + k)
+          .text()
+          .replace(/^[0-9]+/, ''),
+      ),
+    ).toEqual(['Jumlah Akses Aktif', 'Akses T1', 'Akses T4'])
     expect(w.findAll('th').map((e) => e.text())).toEqual([
       'Pengguna',
       'Pakej',
@@ -550,7 +557,7 @@ describe('PkskAccessPage (S8)', () => {
       'Status',
       'Tindakan',
     ])
-    const first = w.findAll('[data-testid=access-row]')[0]!
+    const first = w.get('tbody tr')
     expect(first.get('[data-testid=a-granter]').text()).toBe('-')
     expect(first.get('[data-testid=a-granted]').text()).toBe('22/04/2026')
     expect(first.get('[data-testid=a-expires]').text()).toBe('Tiada had')
@@ -579,7 +586,6 @@ describe('PkskAccessPage (S8)', () => {
     admin.fetchPkskAccessList.mockResolvedValue(listOf([], 0))
     const w = await render(PkskAccessPage, PATH, PATH)
     expect(attr(w, 'access-empty').text()).toBe('Tiada rekod akses')
-    expect(w.findAll('th')).toHaveLength(7)
   })
 
   it('starts with the grant form hidden and keeps its values across the toggle', async () => {

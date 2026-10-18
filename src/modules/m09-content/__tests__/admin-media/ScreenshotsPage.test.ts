@@ -64,9 +64,9 @@ describe('ScreenshotsPage (S14)', () => {
     wrapper = (await mountAt(ScreenshotsPage, '/page')).wrapper
     const zone = t(wrapper, 'drop-zone')
     await zone.trigger('dragover')
-    expect(zone.classes()).toEqual(expect.arrayContaining(['border-indigo-400', 'bg-indigo-50']))
+    expect(zone.classes()).toEqual(expect.arrayContaining(['bg-primary/10', 'text-primary']))
     await zone.trigger('dragleave')
-    expect(zone.classes()).not.toContain('bg-indigo-50')
+    expect(zone.classes()).not.toContain('bg-primary/10')
   })
 
   it('choosing files uploads at once, lists them and shows the success flash', async () => {

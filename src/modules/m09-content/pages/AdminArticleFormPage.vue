@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * S2 `/admin/articles/create` "Tambah Artikel - Admin PRESTASIPLUS" and S3 `/admin/articles/:id/edit`
- * "Edit Artikel - Admin PRESTASIPLUS" (FR-M09-11..18). One form for both: `mode="create"` posts a new
- * article ("Simpan Artikel"), `mode="edit"` loads it and pre-fills the fields ("Kemaskini Artikel").
+ * "Edit Artikel - Admin PRESTASIPLUS" (FR-M09-11..18), v2 staff theme. One form for both: `mode="create"` posts
+ * a new article ("Simpan Artikel"), `mode="edit"` loads it and pre-fills the fields ("Kemaskini Artikel").
  *
- * - Native HTML validation only (`required`, no `novalidate`): the browser blocks the submit.
+ * - Native HTML validation only (`required`, no `novalidate`): the browser blocks the submit. Fields are
+ *   grouped in cards; Batal / Simpan sit in a sticky action bar.
  * - "Kandungan" is a plain textarea where the admin types HTML (DV-M09-02 rejected, SEC-M09-01).
  * - The category select has the "Pilih kategori" placeholder on create only (FR-M09-16).
  * - 422: the field messages show under the fields and the input is kept. Success queues the flash
@@ -14,14 +15,8 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
-import {
-  FORM_ERROR_MODIFIER,
-  FORM_INPUT_CLASS,
-  FORM_SELECT_CLASS,
-  FORM_TEXTAREA_CLASS,
-} from '@/components/form'
 import { useApi, useFlash } from '@/composables'
+import { DsPage } from '@/ds'
 
 import {
   createAdminArticle,
@@ -31,8 +26,12 @@ import {
 } from '../api/admin-articles-notes'
 import type { ArticleCategory, GradeLevel } from '../api/types'
 import AdminBackLink from '../components/admin-articles-notes/AdminBackLink.vue'
-import AdminFormActions from '../components/admin-articles-notes/AdminFormActions.vue'
-import AdminFormField from '../components/admin-articles-notes/AdminFormField.vue'
+import AdminAlert from '../components/admin-kit/AdminAlert.vue'
+import AdminField from '../components/admin-kit/AdminField.vue'
+import AdminFormBar from '../components/admin-kit/AdminFormBar.vue'
+import AdminSection from '../components/admin-kit/AdminSection.vue'
+import AdminSwitch from '../components/admin-kit/AdminSwitch.vue'
+import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
 import {
   ARTICLES_LIST_PATH,
   CATEGORY_OPTIONS,
@@ -124,12 +123,8 @@ function messageOf(...names: string[]): string | undefined {
   return undefined
 }
 
-function inputClass(...names: string[]): string[] {
-  return [
-    FORM_INPUT_CLASS,
-    'min-h-11',
-    ...(messageOf(...names) !== undefined ? [FORM_ERROR_MODIFIER] : []),
-  ]
+function invalid(...names: string[]): boolean {
+  return messageOf(...names) !== undefined
 }
 
 const KNOWN_FIELDS = [
@@ -180,149 +175,160 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="admin-article-form-page">
+  <DsPage data-testid="admin-article-form-page">
     <AdminBackLink :to="ARTICLES_LIST_PATH" />
 
-    <AlertBox v-if="failed" :messages="COPY.loadFailed" data-testid="admin-article-load-error" />
+    <AdminAlert
+      v-if="failed"
+      :messages="[COPY.loadFailed]"
+      data-testid="admin-article-load-error"
+    />
+
+    <UCard v-else-if="!ready" data-testid="admin-article-form-skeleton">
+      <div class="flex flex-col gap-6">
+        <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
+      </div>
+    </UCard>
 
     <form
-      v-else-if="ready"
+      v-else
       method="post"
-      class="space-y-5 rounded-2xl bg-white p-5 shadow sm:p-6"
+      class="flex min-w-0 flex-col gap-6"
       data-testid="admin-article-form"
       @submit.prevent="submit"
     >
-      <AlertBox :messages="topErrors" data-testid="admin-article-form-alert" />
+      <AdminAlert :messages="topErrors" data-testid="admin-article-form-alert" />
 
-      <AdminFormField id="article-title" label="Tajuk Artikel" required :error="messageOf('title')">
-        <input
-          id="article-title"
-          v-model="form.title"
-          type="text"
-          name="title"
-          required
-          placeholder="cth: 10 Tips Belajar Matematik"
-          :class="inputClass('title')"
-          data-testid="article-title"
-        />
-      </AdminFormField>
-
-      <AdminFormField id="article-excerpt" label="Ringkasan" :error="messageOf('excerpt')">
-        <textarea
-          id="article-excerpt"
-          v-model="form.excerpt"
-          name="excerpt"
-          rows="3"
-          placeholder="Ringkasan artikel"
-          :class="[FORM_TEXTAREA_CLASS, messageOf('excerpt') ? FORM_ERROR_MODIFIER : '']"
-          data-testid="article-excerpt"
-        ></textarea>
-      </AdminFormField>
-
-      <AdminFormField id="article-content" label="Kandungan" required :error="messageOf('content')">
-        <textarea
-          id="article-content"
-          v-model="form.content"
-          name="content"
-          rows="15"
-          required
-          placeholder="Tulis kandungan artikel di sini..."
-          :class="[FORM_TEXTAREA_CLASS, messageOf('content') ? FORM_ERROR_MODIFIER : '']"
-          data-testid="article-content"
-        ></textarea>
-      </AdminFormField>
-
-      <AdminFormField
-        id="article-image"
-        label="URL Gambar Utama"
-        :error="messageOf('featuredImage', 'featured_image')"
-      >
-        <input
-          id="article-image"
-          v-model="form.featuredImage"
-          type="url"
-          name="featured_image"
-          placeholder="https://example.com/image.jpg"
-          :class="inputClass('featuredImage', 'featured_image')"
-          data-testid="article-image"
-        />
-      </AdminFormField>
-
-      <div class="grid gap-5 md:grid-cols-2">
-        <AdminFormField
-          id="article-category"
-          label="Kategori"
-          required
-          :error="messageOf('category')"
-        >
-          <select
-            id="article-category"
-            v-model="form.category"
-            name="category"
+      <AdminSection title="Kandungan Artikel" icon="i-ph-article" accent="action">
+        <AdminField for="article-title" label="Tajuk Artikel" required :error="messageOf('title')">
+          <UInput
+            id="article-title"
+            v-model="form.title"
+            type="text"
+            name="title"
             required
-            :class="[
-              FORM_SELECT_CLASS,
-              'min-h-11',
-              messageOf('category') ? FORM_ERROR_MODIFIER : '',
-            ]"
-            data-testid="article-category"
-          >
-            <option v-if="!editing" value="">Pilih kategori</option>
-            <option v-for="o in CATEGORY_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.label }}
-            </option>
-          </select>
-        </AdminFormField>
+            placeholder="cth: 10 Tips Belajar Matematik"
+            size="md"
+            class="w-full"
+            :color="invalid('title') ? 'error' : undefined"
+            data-testid="article-title"
+          />
+        </AdminField>
 
-        <AdminFormField
-          id="article-grade"
-          label="Tahap Pendidikan"
-          :error="messageOf('gradeLevel', 'grade_level')"
-        >
-          <select
-            id="article-grade"
-            v-model="form.gradeLevel"
-            name="grade_level"
-            :class="[FORM_SELECT_CLASS, 'min-h-11']"
-            data-testid="article-grade"
-          >
-            <option v-for="o in GRADE_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.label }}
-            </option>
-          </select>
-        </AdminFormField>
-      </div>
+        <AdminField for="article-excerpt" label="Ringkasan" :error="messageOf('excerpt')">
+          <UTextarea
+            id="article-excerpt"
+            v-model="form.excerpt"
+            name="excerpt"
+            :rows="3"
+            placeholder="Ringkasan artikel"
+            size="md"
+            class="w-full"
+            :color="invalid('excerpt') ? 'error' : undefined"
+            data-testid="article-excerpt"
+          />
+        </AdminField>
 
-      <div class="flex flex-wrap gap-x-6">
-        <label class="inline-flex min-h-11 cursor-pointer items-center gap-2.5">
-          <input
+        <AdminField for="article-content" label="Kandungan" required :error="messageOf('content')">
+          <UTextarea
+            id="article-content"
+            v-model="form.content"
+            name="content"
+            :rows="15"
+            required
+            placeholder="Tulis kandungan artikel di sini..."
+            size="md"
+            class="w-full"
+            :color="invalid('content') ? 'error' : undefined"
+            data-testid="article-content"
+          />
+        </AdminField>
+      </AdminSection>
+
+      <AdminSection title="Klasifikasi & Media" icon="i-ph-tag" accent="friend">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <AdminField
+            for="article-category"
+            label="Kategori"
+            required
+            :error="messageOf('category')"
+          >
+            <NativeSelect
+              id="article-category"
+              v-model="form.category"
+              name="category"
+              required
+              :aria-invalid="invalid('category') ? 'true' : undefined"
+              data-testid="article-category"
+            >
+              <option v-if="!editing" value="">Pilih kategori</option>
+              <option v-for="o in CATEGORY_OPTIONS" :key="o.value" :value="o.value">
+                {{ o.label }}
+              </option>
+            </NativeSelect>
+          </AdminField>
+
+          <AdminField
+            for="article-grade"
+            label="Tahap Pendidikan"
+            :error="messageOf('gradeLevel', 'grade_level')"
+          >
+            <NativeSelect
+              id="article-grade"
+              v-model="form.gradeLevel"
+              name="grade_level"
+              data-testid="article-grade"
+            >
+              <option v-for="o in GRADE_OPTIONS" :key="o.value" :value="o.value">
+                {{ o.label }}
+              </option>
+            </NativeSelect>
+          </AdminField>
+
+          <div class="md:col-span-2">
+            <AdminField
+              for="article-image"
+              label="URL Gambar Utama"
+              :error="messageOf('featuredImage', 'featured_image')"
+            >
+              <UInput
+                id="article-image"
+                v-model="form.featuredImage"
+                type="url"
+                name="featured_image"
+                placeholder="https://example.com/image.jpg"
+                size="md"
+                class="w-full"
+                :color="invalid('featuredImage', 'featured_image') ? 'error' : undefined"
+                data-testid="article-image"
+              />
+            </AdminField>
+          </div>
+        </div>
+      </AdminSection>
+
+      <AdminSection title="Penerbitan" icon="i-ph-rocket-launch" accent="win">
+        <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <AdminSwitch
             v-model="form.isPublished"
-            type="checkbox"
             name="is_published"
-            value="1"
-            class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
-            data-testid="article-published"
+            label="Terbitkan Sekarang"
+            testid="article-published"
           />
-          <span class="text-sm font-semibold text-slate-700">Terbitkan Sekarang</span>
-        </label>
-        <label class="inline-flex min-h-11 cursor-pointer items-center gap-2.5">
-          <input
+          <AdminSwitch
             v-model="form.isFeatured"
-            type="checkbox"
             name="is_featured"
-            value="1"
-            class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
-            data-testid="article-featured"
+            label="Artikel Featured"
+            testid="article-featured"
           />
-          <span class="text-sm font-semibold text-slate-700">Artikel Featured</span>
-        </label>
-      </div>
+        </div>
+      </AdminSection>
 
-      <AdminFormActions
+      <AdminFormBar
         :cancel-to="ARTICLES_LIST_PATH"
         :submit-label="editing ? 'Kemaskini Artikel' : 'Simpan Artikel'"
         :saving="saving"
       />
     </form>
-  </div>
+  </DsPage>
 </template>
