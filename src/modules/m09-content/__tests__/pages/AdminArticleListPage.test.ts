@@ -138,8 +138,8 @@ describe('AdminArticleListPage (M09 S1)', () => {
   it('links the row actions in the row menu', async () => {
     const w = await render()
     const items = await openRowMenu(w, 0)
+    expect(w.find('a[href="/admin/articles/10/edit"]').exists()).toBe(true)
     expect(menuItem(items, 'Lihat')?.getAttribute('href')).toBe('/admin/articles/10')
-    expect(menuItem(items, 'Edit')?.getAttribute('href')).toBe('/admin/articles/10/edit')
     expect(menuItem(items, 'Padam')).toBeDefined()
   })
 

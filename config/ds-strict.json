@@ -172,7 +172,11 @@
     { "glob": "src/modules/m02-users-schools/pages/CompStudent*.vue", "level": "page" },
     { "glob": "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue", "level": "page" },
     { "glob": "src/modules/m06-spm/pages/**", "level": "page" },
-    { "glob": "src/modules/m06-spm/components/**", "level": "page" }
+    { "glob": "src/modules/m06-spm/components/**", "level": "page" },
+    { "glob": "src/modules/m09-content/pages/**", "level": "page" },
+    { "glob": "src/modules/m09-content/components/**", "level": "page" },
+    { "glob": "src/modules/m07-pksk/pages/**", "level": "page" },
+    { "glob": "src/modules/m07-pksk/components/**", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

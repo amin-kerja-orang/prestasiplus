@@ -223,7 +223,8 @@ export const uiConfig = {
   checkbox: {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
-      base: "relative overflow-visible rounded-xs after:absolute after:-inset-2.5 after:content-['']",
+      // Borders are transparent (layers, not lines): an unchecked box needs its own fill to show.
+      base: "relative overflow-visible rounded-xs bg-accented after:absolute after:-inset-2.5 after:content-['']",
     },
     variants: { size: { md: { base: 'size-6' }, sm: { base: 'size-6' } } },
   },

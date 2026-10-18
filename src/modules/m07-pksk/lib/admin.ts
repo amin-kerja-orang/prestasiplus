@@ -4,10 +4,10 @@
  */
 
 import { isApiError } from '@/api'
+import type { DsStatus } from '@/ds'
 import { formatDate } from '@/lib/time'
 
 import type { QuestionStatus } from '../api/admin'
-import type { Bahagian, PkskLevel } from '../api/types'
 
 export const QUESTIONS_PATH = '/admin/pksk/questions'
 export const QUESTION_CREATE_PATH = '/admin/pksk/questions/create'
@@ -57,22 +57,11 @@ export const STATUS_LABEL: Record<QuestionStatus, string> = {
   rejected: 'Ditolak',
 }
 
-/** S5 pills: "Diluluskan" OBSERVED; "Menunggu" / "Ditolak" are placeholder colours (L-6). */
-export const STATUS_PILL_CLASS: Record<QuestionStatus, string> = {
-  approved: 'bg-green-100 text-green-700',
-  pending: 'bg-amber-100 text-amber-700',
-  rejected: 'bg-red-100 text-red-700',
-}
-
-export const BAHAGIAN_PILL_CLASS: Record<Bahagian, string> = {
-  A: 'bg-purple-100 text-purple-700',
-  B: 'bg-blue-100 text-blue-700',
-  C: 'bg-pink-100 text-pink-700',
-}
-
-export const LEVEL_CHIP_CLASS: Record<PkskLevel, string> = {
-  T1: 'bg-blue-100 text-blue-700',
-  T4: 'bg-purple-100 text-purple-700',
+/** Badge status of a question; "Menunggu" is the live word and is passed as the badge label. */
+export const STATUS_BADGE: Record<QuestionStatus, DsStatus> = {
+  pending: 'awaiting-review',
+  approved: 'approved',
+  rejected: 'rejected',
 }
 
 /** S6 Bahagian select. */
@@ -101,11 +90,11 @@ export const MAX_OPTIONS = 6
 /** Access status labels: "Aktif" OBSERVED; the other two are UNVERIFIED COPY (§8.2). */
 export const ACCESS_STATUS: Record<
   'active' | 'expired' | 'revoked',
-  { label: string; pill: string }
+  { label: string; status: DsStatus }
 > = {
-  active: { label: 'Aktif', pill: 'bg-green-100 text-green-700' },
-  expired: { label: 'Tamat Tempoh', pill: 'bg-slate-100 text-slate-600' },
-  revoked: { label: 'Ditarik', pill: 'bg-red-100 text-red-700' },
+  active: { label: 'Aktif', status: 'active' },
+  expired: { label: 'Tamat Tempoh', status: 'expired' },
+  revoked: { label: 'Ditarik', status: 'rejected' },
 }
 
 /** BR-M07-23: the first 80 characters (trailing spaces trimmed) + "..." when longer. */
@@ -166,20 +155,3 @@ export function errorLines(err: unknown): string[] {
 export function fieldErrors(err: unknown): Record<string, string> {
   return isApiError(err) && err.fields ? { ...err.fields } : {}
 }
-
-export const PRIMARY_BUTTON_CLASS =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
-
-export const GREEN_BUTTON_CLASS =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white shadow transition hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-300'
-
-export const BACK_BUTTON_CLASS =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400'
-
-export const FORM_LABEL_CLASS = 'mb-1.5 block text-sm font-semibold text-slate-700'
-
-/** Row icon buttons: 44 px below `lg`, compact from `lg` (M02 / M03 / M09 precedent). */
-export const ICON_BUTTON_CLASS =
-  'inline-flex h-11 min-h-11 w-11 min-w-11 shrink-0 items-center justify-center rounded-lg transition lg:h-9 lg:min-h-9 lg:w-9 lg:min-w-9 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
-
-export const CARD_CLASS = 'rounded-2xl bg-white p-4 shadow sm:p-6'

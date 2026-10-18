@@ -78,7 +78,7 @@ describe('AdminArticlePreviewPage (M09 S4)', () => {
     expect(t(w, 'preview-excerpt').text()).toBe('Ringkas')
     expect(t(w, 'preview-edit').text()).toBe('Edit Artikel')
     expect(t(w, 'preview-edit').attributes('href')).toBe('/admin/articles/10/edit')
-    expect(t(w, 'back-link').attributes('href')).toBe('/admin/articles')
+    expect(w.get('[data-ds=back-link]').attributes('href')).toBe('/admin/articles')
   })
 
   it('omits the Featured pill for a non-featured article', async () => {

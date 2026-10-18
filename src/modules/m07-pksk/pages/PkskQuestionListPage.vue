@@ -15,8 +15,20 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, DsStatTile, useConfirm } from '@/ds'
-import type { CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsRowActions,
+  DsStatRow,
+  DsStatusBadge,
+  useConfirm,
+} from '@/ds'
+import type { CardField, RowAction, StatItem } from '@/ds'
 
 import {
   bulkPkskQuestions,
@@ -26,17 +38,14 @@ import {
   type BulkAction,
   type PkskQuestionListItem,
 } from '../api/admin'
-import AdminActiveFilters from '../components/admin/AdminActiveFilters.vue'
-import AdminAlert from '../components/admin/AdminAlert.vue'
-import AdminRowMenu from '../components/admin/AdminRowMenu.vue'
-import NativeCheck from '../components/admin/native/NativeCheck.vue'
-import NativeSelect from '../components/admin/native/NativeSelect.vue'
+import { cellClass } from '../lib/table-cols'
 import {
   BAHAGIAN_FILTER_OPTIONS,
   COPY,
   LEVEL_FILTER_OPTIONS,
   QUESTIONS_PATH,
   QUESTION_CREATE_PATH,
+  STATUS_BADGE,
   STATUS_LABEL,
   STATUS_OPTIONS,
   errorLines,
@@ -160,30 +169,14 @@ function goToPage(page: number): void {
 
 // --- selection (FR-M07-28) --------------------------------------------------------------------
 
-const selectedIds = ref<number[]>([])
-const selectAll = ref(false)
+const selection = ref<TableRow[]>([])
+const selectedIds = computed(() => selection.value.map((r) => r.id))
 
 function clearSelection(): void {
-  selectedIds.value = []
-  selectAll.value = false
+  selection.value = []
 }
 // A new page of rows starts with no selection (the live page reloads).
 watch(data, clearSelection)
-
-function toggleAll(event: Event): void {
-  const checked = (event.target as HTMLInputElement).checked
-  selectAll.value = checked
-  selectedIds.value = checked ? rows.value.map((r) => r.id) : []
-}
-
-function toggleRow(id: number, event: Event): void {
-  const checked = (event.target as HTMLInputElement).checked
-  if (checked) {
-    if (!selectedIds.value.includes(id)) selectedIds.value = [...selectedIds.value, id]
-  } else {
-    selectedIds.value = selectedIds.value.filter((x) => x !== id)
-  }
-}
 
 // --- mutations (FR-M07-29..32) ----------------------------------------------------------------
 
@@ -231,7 +224,7 @@ async function remove(row: PkskQuestionListItem): Promise<void> {
   }
 }
 
-function actionsOf(row: PkskQuestionListItem) {
+function actionsOf(row: PkskQuestionListItem): RowAction[] {
   return [
     { label: 'Edit', icon: 'i-ph-pencil-simple', to: `${QUESTIONS_PATH}/${String(row.id)}/edit` },
     {
@@ -246,20 +239,27 @@ function actionsOf(row: PkskQuestionListItem) {
 
 const BAHAGIAN_COLOR = { A: 'secondary', B: 'info', C: 'warning' } as const
 const LEVEL_COLOR = { T1: 'primary', T4: 'neutral' } as const
-const STATUS_COLOR = { approved: 'success', pending: 'warning', rejected: 'error' } as const
 
 const bahagianColor = (b: PkskQuestionListItem['bahagian']) => BAHAGIAN_COLOR[b]
 const levelColor = (l: PkskQuestionListItem['targetLevel']) => LEVEL_COLOR[l]
-const statusColor = (s: PkskQuestionListItem['status']) => STATUS_COLOR[s]
-const statusLabel = (s: PkskQuestionListItem['status']) => STATUS_LABEL[s]
 
-const STAT_TILES = [
-  { key: 'total', label: 'Jumlah', icon: 'i-ph-stack', accent: 'action' },
-  { key: 'approved', label: 'Diluluskan', icon: 'i-ph-check-circle', accent: 'win' },
-  { key: 'pending', label: 'Menunggu', icon: 'i-ph-hourglass', accent: 'heat' },
-  { key: 't1', label: 'Ting. 1', icon: 'i-ph-number-one', accent: 'friend' },
-  { key: 't4', label: 'Ting. 4', icon: 'i-ph-number-four', accent: 'trial' },
-] as const
+const statItems = computed<StatItem[]>(() => {
+  const s = stats.value
+  if (!s) return []
+  return [
+    { key: 'total', label: 'Jumlah', value: s.total, icon: 'stack', accent: 'action' },
+    {
+      key: 'approved',
+      label: 'Diluluskan',
+      value: s.approved,
+      icon: 'check-circle',
+      accent: 'win',
+    },
+    { key: 'pending', label: 'Menunggu', value: s.pending, icon: 'hourglass', accent: 'heat' },
+    { key: 't1', label: 'Ting. 1', value: s.t1, icon: 'number-one', accent: 'friend' },
+    { key: 't4', label: 'Ting. 4', value: s.t4, icon: 'number-four', accent: 'trial' },
+  ]
+})
 
 interface TableRow extends Record<string, unknown> {
   id: number
@@ -282,13 +282,12 @@ const tableRows = computed<TableRow[]>(() =>
 )
 
 const columns: TableColumn<TableRow>[] = [
-  { id: 'select', header: ' ' },
-  { accessorKey: 'text', header: 'Soalan' },
-  { accessorKey: 'bahagian', header: 'Bahagian' },
-  { accessorKey: 'domainName', header: 'Domain' },
-  { accessorKey: 'targetLevel', header: 'Level' },
-  { id: 'status', header: 'Status' },
-  { id: 'actions', header: 'Tindakan' },
+  { accessorKey: 'text', header: 'Soalan', ...cellClass('') },
+  { accessorKey: 'bahagian', header: 'Bahagian', ...cellClass('w-28') },
+  { accessorKey: 'domainName', header: 'Domain', ...cellClass('w-48 xl:w-56') },
+  { accessorKey: 'targetLevel', header: 'Level', ...cellClass('w-24') },
+  { id: 'status', header: 'Status', ...cellClass('w-44') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-48') },
 ]
 const cardFields: CardField[] = [
   { key: 'bahagian', label: 'Bahagian' },
@@ -299,93 +298,80 @@ const cardFields: CardField[] = [
 
 <template>
   <DsPage data-testid="pksk-questions-page">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <p class="min-w-0 text-body text-muted">{{ total }} soalan sepadan dengan penapis semasa</p>
+    <template #subtitle>{{ total }} soalan sepadan dengan penapis semasa</template>
+    <template #actions>
       <UButton
         :to="QUESTION_CREATE_PATH"
         icon="i-ph-plus"
         label="Tambah Soalan"
-        size="md"
         class="min-h-11"
         data-testid="pksk-add"
       />
-    </div>
+    </template>
 
     <!-- Five global stat tiles (#8). -->
-    <section v-if="stats" class="grid grid-cols-2 gap-4 lg:grid-cols-5" data-testid="pksk-stats">
-      <div v-for="t in STAT_TILES" :key="t.key" :data-testid="`stat-${t.key}`">
-        <DsStatTile :value="stats[t.key]" :unit="t.label" :icon="t.icon" :accent="t.accent" />
-      </div>
-    </section>
+    <DsStatRow v-if="stats" :items="statItems" prefix="stat" :cols="5" data-testid="pksk-stats" />
 
-    <div class="flex flex-col gap-3">
-      <DsFilterBar
-        :active-count="chips.length"
-        data-testid="pksk-filter"
-        @apply="submitFilter"
-        @reset="resetFilter"
-      >
-        <template #search>
-          <UInput
-            v-model="search"
-            type="text"
-            name="search"
-            aria-label="Cari"
-            placeholder="Cari soalan..."
-            icon="i-ph-magnifying-glass"
-            size="md"
-            class="w-full md:min-w-64 md:grow"
-            data-testid="filter-search"
-          />
-        </template>
-        <NativeSelect
-          v-model="bahagian"
-          name="bahagian"
-          aria-label="Bahagian"
-          class="md:w-48"
-          data-testid="filter-bahagian"
-          @change="submitFilter"
-        >
-          <option value="">Semua Bahagian</option>
-          <option v-for="o in BAHAGIAN_FILTER_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </NativeSelect>
-        <NativeSelect
-          v-model="level"
-          name="level"
-          aria-label="Level"
-          class="md:w-44"
-          data-testid="filter-level"
-          @change="submitFilter"
-        >
-          <option value="">Semua Level</option>
-          <option v-for="o in LEVEL_FILTER_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </NativeSelect>
-        <NativeSelect
-          v-model="status"
-          name="status"
-          aria-label="Status"
-          class="md:w-44"
-          data-testid="filter-status"
-          @change="submitFilter"
-        >
-          <option value="">Semua Status</option>
-          <option v-for="o in STATUS_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </NativeSelect>
-      </DsFilterBar>
-      <AdminActiveFilters :chips="chips" @remove="removeChip" @reset="resetFilter" />
-    </div>
+    <DsFilterBar
+      :chips="chips"
+      data-testid="pksk-filter"
+      @apply="submitFilter"
+      @reset="resetFilter"
+      @remove-chip="removeChip"
+    >
+      <template #search>
+        <UInput
+          v-model="search"
+          type="text"
+          name="search"
+          aria-label="Cari"
+          placeholder="Cari soalan..."
+          icon="i-ph-magnifying-glass"
+          class="w-full md:min-w-64 md:grow"
+          data-testid="filter-search"
+        />
+      </template>
+      <DsNativeSelect
+        v-model="bahagian"
+        name="bahagian"
+        aria-label="Bahagian"
+        placeholder="Semua Bahagian"
+        :items="BAHAGIAN_FILTER_OPTIONS"
+        class="md:w-48"
+        data-testid="filter-bahagian"
+        @change="submitFilter"
+      />
+      <DsNativeSelect
+        v-model="level"
+        name="level"
+        aria-label="Level"
+        placeholder="Semua Level"
+        :items="LEVEL_FILTER_OPTIONS"
+        class="md:w-44"
+        data-testid="filter-level"
+        @change="submitFilter"
+      />
+      <DsNativeSelect
+        v-model="status"
+        name="status"
+        aria-label="Status"
+        placeholder="Semua Status"
+        :items="STATUS_OPTIONS"
+        class="md:w-44"
+        data-testid="filter-status"
+        @change="submitFilter"
+      />
+    </DsFilterBar>
 
-    <div v-if="error" class="flex flex-col gap-4" data-testid="pksk-questions-error">
-      <AdminAlert :messages="errorLines(error)" />
-      <div><UButton label="Cuba Lagi" class="min-h-11" @click="reload()" /></div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="errorLines(error).join(' ')"
+      testid="pksk-questions-error"
+      @retry="reload()"
+    />
 
-    <UCard v-else-if="!firstLoad && rows.length === 0" data-testid="pksk-questions-empty">
-      <DsEmptyState :title="COPY.questionsEmpty" icon="i-ph-tray">
+    <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="pksk-questions-empty">
+      <DsEmptyState :title="COPY.questionsEmpty" icon="tray">
         <template #actions>
           <UButton
             :to="QUESTION_CREATE_PATH"
@@ -397,11 +383,11 @@ const cardFields: CardField[] = [
           />
         </template>
       </DsEmptyState>
-    </UCard>
+    </DsPanel>
 
     <div v-else class="flex flex-col gap-4">
       <!-- Bulk bar: only while at least one row is ticked. -->
-      <UCard v-if="selectedIds.length > 0" data-testid="pksk-bulk-bar">
+      <DsPanel v-if="selectedIds.length > 0" tone="bulk" data-testid="pksk-bulk-bar">
         <div class="flex flex-wrap items-center gap-3">
           <span class="inline-flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-check-square" class="size-5 text-primary" aria-hidden="true" />
@@ -441,9 +427,14 @@ const cardFields: CardField[] = [
             @click="bulk('delete')"
           />
         </div>
-      </UCard>
+      </DsPanel>
 
       <DsDataTable
+        v-model:selection="selection"
+        variant="flush"
+        layout="fixed"
+        selectable
+        row-key="id"
         :data="tableRows"
         :columns="columns"
         caption="Senarai soalan PKSK"
@@ -451,30 +442,13 @@ const cardFields: CardField[] = [
         :total="total"
         :page-size="data?.meta.pageSize ?? 20"
         :page="applied.page"
+        :filtered="chips.length > 0"
         card-title="text"
         :card-fields="cardFields"
-        :empty-label="COPY.questionsEmpty"
+        :empty-title="COPY.questionsEmpty"
         data-testid="pksk-questions-table"
         @update:page="goToPage"
       >
-        <template #select-header>
-          <NativeCheck
-            label-testid="select-all-label"
-            aria-label="Pilih semua soalan"
-            :checked="selectAll"
-            data-testid="select-all"
-            @change="toggleAll"
-          />
-        </template>
-        <template #select-cell="{ row }">
-          <NativeCheck
-            label-testid="row-select-label"
-            :aria-label="'Pilih soalan ' + String(row.original.id)"
-            :checked="selectedIds.includes(row.original.id)"
-            data-testid="row-select"
-            @change="toggleRow(row.original.id, $event)"
-          />
-        </template>
         <template #text-cell="{ row }">
           <p
             class="line-clamp-2 min-w-40 text-body text-highlighted"
@@ -507,25 +481,17 @@ const cardFields: CardField[] = [
           />
         </template>
         <template #status-cell="{ row }">
-          <UBadge
-            :color="statusColor(row.original.raw.status)"
-            variant="subtle"
-            :label="statusLabel(row.original.raw.status)"
+          <DsStatusBadge
+            :status="STATUS_BADGE[row.original.raw.status]"
+            :label="STATUS_LABEL[row.original.raw.status]"
             data-testid="q-status"
           />
         </template>
         <template #actions-cell="{ row }">
-          <AdminRowMenu :actions="actionsOf(row.original.raw)" />
+          <DsRowActions :actions="actionsOf(row.original.raw)" :inline="1" />
         </template>
         <template #card-actions="{ row }">
-          <div class="flex items-center gap-1">
-            <NativeCheck
-              :aria-label="'Pilih soalan ' + String(row.id)"
-              :checked="selectedIds.includes(row.id as number)"
-              @change="toggleRow(row.id as number, $event)"
-            />
-            <AdminRowMenu :actions="actionsOf((row as unknown as TableRow).raw)" />
-          </div>
+          <DsRowActions :actions="actionsOf((row as unknown as TableRow).raw)" />
         </template>
       </DsDataTable>
     </div>

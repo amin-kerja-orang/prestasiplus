@@ -9,7 +9,7 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 
 import { fetchAudioSet, submitAudioAttempt } from '../api'
 import type { AudioAttemptResult } from '../api'
@@ -23,6 +23,7 @@ const {
   data: set,
   error,
   loading,
+  reload,
 } = useApi(
   (signal) => fetchAudioSet(props.id, { signal }),
   () => props.id,
@@ -70,13 +71,11 @@ async function submit(): Promise<void> {
       >{{ PLAYER_COPY.back }}</UButton
     >
 
-    <UAlert
+    <DsLoadError
       v-if="error"
-      color="error"
-      variant="soft"
-      icon="i-ph-warning-duotone"
-      :description="loadErrors.join(' ')"
-      data-testid="player-error"
+      :message="loadErrors.join(' ')"
+      testid="player-error"
+      @retry="reload()"
     />
 
     <div
@@ -120,8 +119,8 @@ async function submit(): Promise<void> {
       <UAlert
         v-if="submitErrors.length > 0"
         color="error"
-        variant="soft"
-        icon="i-ph-warning-duotone"
+        variant="subtle"
+        icon="i-ph-warning-circle"
         :description="submitErrors.join(' ')"
         data-testid="submit-error"
       />

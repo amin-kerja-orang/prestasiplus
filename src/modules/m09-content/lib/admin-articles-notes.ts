@@ -165,17 +165,3 @@ export function fieldErrors(err: unknown): Record<string, string> {
 export function isNotFoundError(err: unknown): boolean {
   return isApiError(err) && err.status === 404
 }
-
-/** Primary admin button (S1 "Cari", "Tambah", save). */
-export const PRIMARY_BUTTON_CLASS =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
-
-/** "Reset" link (slate-100, FR-M09-02). */
-export const RESET_BUTTON_CLASS =
-  'inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
-
-export const FORM_LABEL_CLASS = 'mb-1.5 block text-sm font-semibold text-slate-700'
-
-/** Row icon buttons: 44 px below `lg`, compact from `lg` (M02/M03 precedent). */
-export const ICON_BUTTON_CLASS =
-  'inline-flex h-11 min-h-11 w-11 min-w-11 shrink-0 items-center justify-center rounded-lg transition lg:h-9 lg:min-h-9 lg:w-9 lg:min-w-9 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'

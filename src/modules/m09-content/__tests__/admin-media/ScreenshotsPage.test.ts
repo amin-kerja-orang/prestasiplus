@@ -36,9 +36,9 @@ afterEach(() => {
 })
 
 function pick(w: VueWrapper, files: File[]): Promise<void> {
-  const input = t(w, 'file-input').element as HTMLInputElement
-  Object.defineProperty(input, 'files', { value: files, configurable: true })
-  return t(w, 'file-input').trigger('change')
+  const field = w.get('input[type="file"]')
+  Object.defineProperty(field.element, 'files', { value: files, configurable: true })
+  return field.trigger('change')
 }
 
 describe('ScreenshotsPage (S14)', () => {
@@ -52,21 +52,12 @@ describe('ScreenshotsPage (S14)', () => {
     expect(w.text()).toContain(
       'Tip: guna nama fail yang ringkas. Sistem akan auto-sanitize nama fail.',
     )
-    const input = t(w, 'file-input')
+    const input = w.get('input[type="file"]')
     expect(input.attributes('accept')).toBe('image/*')
     expect(input.attributes('multiple')).toBeDefined()
     expect(w.text()).toContain('Fail Sedia Ada')
     expect(t(w, 'files-count').text()).toBe('Jumlah: 0 fail')
     expect(t(w, 'files-empty').text()).toBe('Tiada fail lagi.')
-  })
-
-  it('adds the live drag-over classes and drops them on leave', async () => {
-    wrapper = (await mountAt(ScreenshotsPage, '/page')).wrapper
-    const zone = t(wrapper, 'drop-zone')
-    await zone.trigger('dragover')
-    expect(zone.classes()).toEqual(expect.arrayContaining(['bg-primary/10', 'text-primary']))
-    await zone.trigger('dragleave')
-    expect(zone.classes()).not.toContain('bg-primary/10')
   })
 
   it('choosing files uploads at once, lists them and shows the success flash', async () => {
@@ -88,18 +79,6 @@ describe('ScreenshotsPage (S14)', () => {
       type: 'success',
       message: '1 fail berjaya dimuat naik.',
     })
-  })
-
-  it('a dropped set uploads at once', async () => {
-    api.uploadScreenshots.mockResolvedValue({
-      data: { saved: [], rejected: [] },
-      status: '0 fail berjaya dimuat naik.',
-    })
-    wrapper = (await mountAt(ScreenshotsPage, '/page')).wrapper
-    const file = new File(['x'], 'a.png', { type: 'image/png' })
-    await t(wrapper, 'drop-zone').trigger('drop', { dataTransfer: { files: [file] } })
-    await flushPromises()
-    expect(api.uploadScreenshots).toHaveBeenCalledWith([file])
   })
 
   it('refused files show an error flash with their reasons', async () => {

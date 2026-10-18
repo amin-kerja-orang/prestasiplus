@@ -12,7 +12,7 @@ import type { PkskAccessItem, PkskQuestionDetail, PkskQuestionListItem } from '.
 import PkskAccessPage from '../../pages/PkskAccessPage.vue'
 import PkskQuestionFormPage from '../../pages/PkskQuestionFormPage.vue'
 import PkskQuestionListPage from '../../pages/PkskQuestionListPage.vue'
-import { chooseRowAction, menuItem, openRowMenu } from '../menu'
+import { chooseRowAction } from '../menu'
 
 const admin = vi.hoisted(() => ({
   fetchPkskQuestions: vi.fn(),
@@ -92,6 +92,9 @@ afterEach(() => {
 })
 
 const attr = (w: VueWrapper, id: string) => w.get(`[data-testid=${id}]`)
+const headBox = (w: VueWrapper) => w.get('thead button[role="checkbox"]')
+const rowBoxes = (w: VueWrapper) => w.findAll('tbody button[role="checkbox"]')
+const revokeButtons = (w: VueWrapper) => w.findAll('[data-ds=row-actions] button')
 const value = (w: VueWrapper, id: string) =>
   (attr(w, id).element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value
 
@@ -166,35 +169,26 @@ describe('PkskQuestionListPage (S5)', () => {
     expect(router.currentRoute.value.query).toEqual({ bahagian: 'A' })
   })
 
-  it('selection: the header ticks the page ids and is not changed by a row click', async () => {
+  it('selection: the header ticks the page ids and a row untick keeps the others', async () => {
     const w = await render(PkskQuestionListPage, PATH, PATH)
     expect(w.find('[data-testid=pksk-bulk-bar]').exists()).toBe(false)
-    await attr(w, 'select-all').setValue(true)
+    await headBox(w).trigger('click')
     expect(attr(w, 'bulk-count').text()).toBe('3 dipilih')
-    await w.findAll('[data-testid=row-select]')[0]!.setValue(false)
+    await rowBoxes(w)[0]!.trigger('click')
     expect(attr(w, 'bulk-count').text()).toBe('2 dipilih')
-    expect((attr(w, 'select-all').element as HTMLInputElement).checked).toBe(true)
-    await attr(w, 'select-all').setValue(false)
+    await rowBoxes(w)[1]!.trigger('click')
+    await rowBoxes(w)[2]!.trigger('click')
     expect(w.find('[data-testid=pksk-bulk-bar]').exists()).toBe(false)
   })
 
-  it('BUG-M07-01 each checkbox sits in a 44 px label below lg and clicking the label toggles it', async () => {
+  it('every row has a checkbox and clicking it toggles the selection', async () => {
     const w = await render(PkskQuestionListPage, PATH, PATH)
-    const headLabel = attr(w, 'select-all-label')
-    expect(headLabel.element.tagName).toBe('LABEL')
-    expect(headLabel.classes()).toEqual(expect.arrayContaining(['min-h-11', 'min-w-11']))
-    expect(headLabel.find('[data-testid=select-all]').exists()).toBe(true)
-    const rowLabels = w.findAll('[data-testid=row-select-label]')
-    expect(rowLabels).toHaveLength(3)
-    for (const l of rowLabels) {
-      expect(l.classes()).toEqual(expect.arrayContaining(['min-h-11', 'min-w-11']))
-      expect(l.find('[data-testid=row-select]').exists()).toBe(true)
-    }
-    await rowLabels[1]!.trigger('click')
+    expect(rowBoxes(w)).toHaveLength(3)
+    await rowBoxes(w)[1]!.trigger('click')
     expect(attr(w, 'bulk-count').text()).toBe('1 dipilih')
-    await rowLabels[1]!.trigger('click')
+    await rowBoxes(w)[1]!.trigger('click')
     expect(w.find('[data-testid=pksk-bulk-bar]').exists()).toBe(false)
-    await headLabel.trigger('click')
+    await headBox(w).trigger('click')
     expect(attr(w, 'bulk-count').text()).toBe('3 dipilih')
   })
 
@@ -204,9 +198,9 @@ describe('PkskQuestionListPage (S5)', () => {
       status: '2 soalan telah diluluskan.',
     })
     const w = await render(PkskQuestionListPage, PATH, PATH)
-    const boxes = w.findAll('[data-testid=row-select]')
-    await boxes[0]!.setValue(true)
-    await boxes[2]!.setValue(true)
+    const boxes = rowBoxes(w)
+    await boxes[0]!.trigger('click')
+    await boxes[2]!.trigger('click')
     await attr(w, 'bulk-approve').trigger('click')
     await flushPromises()
     expect(confirmSpy).not.toHaveBeenCalled()
@@ -222,7 +216,7 @@ describe('PkskQuestionListPage (S5)', () => {
   it('bulk delete asks "Padam soalan terpilih?" and sends nothing on cancel', async () => {
     confirmSpy.mockReturnValue(false)
     const w = await render(PkskQuestionListPage, PATH, PATH)
-    await attr(w, 'select-all').setValue(true)
+    await headBox(w).trigger('click')
     await attr(w, 'bulk-delete').trigger('click')
     expect(confirmSpy).toHaveBeenCalledWith('Padam soalan terpilih?')
     expect(admin.bulkPkskQuestions).not.toHaveBeenCalled()
@@ -242,8 +236,7 @@ describe('PkskQuestionListPage (S5)', () => {
 
   it('links the edit icon to the edit page', async () => {
     const w = await render(PkskQuestionListPage, PATH, PATH)
-    const items = await openRowMenu(w, 0)
-    expect(menuItem(items, 'Edit')?.getAttribute('href')).toBe('/admin/pksk/questions/1/edit')
+    expect(w.find('a[href="/admin/pksk/questions/1/edit"]').exists()).toBe(true)
   })
 })
 
@@ -251,7 +244,7 @@ describe('PkskQuestionFormPage create (S6)', () => {
   const CREATE = '/admin/pksk/questions/create'
   const mountCreate = () => render(PkskQuestionFormPage, CREATE, CREATE, { mode: 'create' })
   const correctVisible = (w: VueWrapper) =>
-    w.findAll('[data-testid=option-correct-label]').filter((l) => l.isVisible()).length
+    w.findAll('[data-testid=option-correct]').filter((l) => l.isVisible()).length
 
   it('starts with the live defaults: 4 option rows, T1, "3 - Sederhana", all domains', async () => {
     const w = await mountCreate()
@@ -269,7 +262,7 @@ describe('PkskQuestionFormPage create (S6)', () => {
       'Sains',
       'Artikulasi Penulisan',
     ])
-    expect(attr(w, 'options-title').text()).toBe('Pilihan Jawapan')
+    expect(attr(w, 'options-card').get('h2').text()).toBe('Pilihan Jawapan')
   })
 
   it('filters the domains by Bahagian and resets only the domain (DV-M07-08)', async () => {
@@ -288,10 +281,10 @@ describe('PkskQuestionFormPage create (S6)', () => {
   it('shows the suffix only for A and "Betul" only for B', async () => {
     const w = await mountCreate()
     await attr(w, 'q-bahagian').setValue('A')
-    expect(attr(w, 'options-title').text()).toContain('(Tiada jawapan betul/salah)')
+    expect(attr(w, 'options-card').get('h2').text()).toContain('(Tiada jawapan betul/salah)')
     expect(correctVisible(w)).toBe(0)
     await attr(w, 'q-bahagian').setValue('B')
-    expect(attr(w, 'options-title').text()).toBe('Pilihan Jawapan')
+    expect(attr(w, 'options-card').get('h2').text()).toBe('Pilihan Jawapan')
     expect(correctVisible(w)).toBe(4)
   })
 
@@ -347,7 +340,7 @@ describe('PkskQuestionFormPage create (S6)', () => {
     await attr(w, 'q-text').setValue('2 + 2?')
     const texts = w.findAll('[data-testid=option-text]')
     for (const [i, t] of ['1', '2', '3', '4'].entries()) await texts[i]!.setValue(t)
-    await w.findAll('[data-testid=option-correct]')[3]!.setValue(true)
+    await w.findAll('[data-testid=option-correct]')[3]!.trigger('click')
     await attr(w, 'q-explanation').setValue('  Mudah  ')
     await w.get('form').trigger('submit')
     await flushPromises()
@@ -368,7 +361,7 @@ describe('PkskQuestionFormPage create (S6)', () => {
     admin.createPkskQuestion.mockResolvedValue({ data: {}, status: 'ok' })
     const w = await mountCreate()
     await attr(w, 'q-bahagian').setValue('B')
-    await w.findAll('[data-testid=option-correct]')[1]!.setValue(true)
+    await w.findAll('[data-testid=option-correct]')[1]!.trigger('click')
     await attr(w, 'q-bahagian').setValue('A')
     await attr(w, 'q-domain').setValue('1')
     await attr(w, 'q-text').setValue('Nilai')
@@ -437,7 +430,7 @@ describe('PkskQuestionFormPage edit (S7)', () => {
       },
     )
   const correctVisible = (w: VueWrapper) =>
-    w.findAll('[data-testid=option-correct-label]').filter((l) => l.isVisible()).length
+    w.findAll('[data-testid=option-correct]').filter((l) => l.isVisible()).length
 
   it('prefills the form from #9 with "[B] name" domain options', async () => {
     admin.fetchPkskQuestion.mockResolvedValue(detail())
@@ -457,7 +450,7 @@ describe('PkskQuestionFormPage edit (S7)', () => {
       w.findAll('[data-testid=option-text]').map((i) => (i.element as HTMLInputElement).value),
     ).toEqual(['Satu', 'Dua', 'Tiga'])
     expect(attr(w, 'form-submit').text()).toBe('Kemaskini')
-    expect(attr(w, 'options-title').text()).toBe('Pilihan Jawapan')
+    expect(attr(w, 'options-card').get('h2').text()).toBe('Pilihan Jawapan')
     expect(correctVisible(w)).toBe(3)
   })
 
@@ -562,7 +555,7 @@ describe('PkskAccessPage (S8)', () => {
     expect(first.get('[data-testid=a-granted]').text()).toBe('22/04/2026')
     expect(first.get('[data-testid=a-expires]').text()).toBe('Tiada had')
     expect(first.get('[data-testid=a-status]').text()).toBe('Aktif')
-    expect(first.get('[data-testid=a-revoke]').text()).toBe('Tarik')
+    expect(first.get('[data-ds=row-actions] button').text()).toBe('Tarik')
     expect(w.findAll('[data-testid=a-granter]')[1]!.text()).toBe('Admin Demo')
   })
 
@@ -574,7 +567,7 @@ describe('PkskAccessPage (S8)', () => {
       ]),
     )
     const w = await render(PkskAccessPage, PATH, PATH)
-    expect(w.findAll('[data-testid=a-revoke]')).toHaveLength(0)
+    expect(revokeButtons(w)).toHaveLength(0)
     expect(w.findAll('[data-testid=a-status]').map((e) => e.text())).toEqual([
       'Tamat Tempoh',
       'Ditarik',
@@ -666,7 +659,7 @@ describe('PkskAccessPage (S8)', () => {
       status: 'Akses PKSK telah ditarik balik.',
     })
     const w = await render(PkskAccessPage, PATH, PATH)
-    const button = w.findAll('[data-testid=a-revoke]')[0]!
+    const button = revokeButtons(w)[0]!
     await button.trigger('click')
     expect(confirmSpy).toHaveBeenCalledWith('Tarik balik akses?')
     expect(admin.revokePkskAccess).not.toHaveBeenCalled()
@@ -684,7 +677,7 @@ describe('PkskAccessPage (S8)', () => {
     )
     const w = await render(PkskAccessPage, PATH, PATH)
     admin.fetchPkskAccessList.mockResolvedValue(listOf([row(2)]))
-    await w.findAll('[data-testid=a-revoke]')[0]!.trigger('click')
+    await revokeButtons(w)[0]!.trigger('click')
     await flushPromises()
     expect(useFlashStore().current?.type).toBe('error')
     expect(admin.fetchPkskAccessList).toHaveBeenCalledTimes(2)

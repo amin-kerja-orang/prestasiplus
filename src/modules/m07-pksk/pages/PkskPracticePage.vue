@@ -9,14 +9,12 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { DsPage, DsQuizHeader } from '@/ds'
+import { DsLoadError, DsPage, DsQuizHeader } from '@/ds'
 
 import { fetchPkskPractice, submitPkskPractice } from '../api/pksk'
 import type { PkskAnswer, PkskLevel } from '../api/types'
-import BackLink from '../components/BackLink.vue'
-import LoadError from '../components/LoadError.vue'
 import QuestionItem from '../components/QuestionItem.vue'
-import { isLoadError, usePkskData } from '../lib/load'
+import { LOAD_ERROR, isLoadError, usePkskData } from '../lib/load'
 
 const props = defineProps<{ level: PkskLevel; code: string }>()
 const router = useRouter()
@@ -61,10 +59,14 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage class="max-w-2xl" data-testid="pksk-practice" data-provisional="L-2">
-    <BackLink :to="`/pksk/level/${level}/domains`" label="Kembali ke Domain" />
-
-    <LoadError v-if="loadFailed" @retry="reload()" />
+  <DsPage
+    :back-to="`/pksk/level/${level}/domains`"
+    back-label="Kembali ke Domain"
+    class="max-w-2xl"
+    data-testid="pksk-practice"
+    data-provisional="L-2"
+  >
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <form v-else-if="data" class="flex flex-col gap-4" novalidate @submit.prevent="submit">
       <DsQuizHeader

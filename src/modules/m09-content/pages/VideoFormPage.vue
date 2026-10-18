@@ -20,7 +20,7 @@ import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useDebounce, useFlash, usePageMeta, useSession } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsFormBar, DsFormField, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import { fetchSubjectOptions } from '../api/admin-media'
 import { createVideo, fetchVideoFormContext, updateVideo } from '../api/content'
@@ -51,7 +51,11 @@ const isEdit = computed(() => props.mode === 'edit')
 
 const { data: context } = useApi((signal) => fetchVideoFormContext({ signal }))
 const { data: subjectList } = useApi((signal) => fetchSubjectOptions({ signal }))
-const { data: video, error: videoError } = useApi(
+const {
+  data: video,
+  error: videoError,
+  reload,
+} = useApi(
   (signal) => (isEdit.value ? fetchVideoForEdit(props.id, { signal }) : Promise.resolve(null)),
   () => props.id,
 )
@@ -219,49 +223,37 @@ const visibilityItems = computed(() => [
 </script>
 
 <template>
-  <DsPage class="max-w-3xl" data-testid="video-form-page">
-    <UAlert
+  <DsPage
+    class="max-w-3xl"
+    :title="isEdit ? COPY.editHeader : COPY.addH1"
+    :subtitle="isEdit ? COPY.editSub : COPY.addSub"
+    :show-title="true"
+    :back-to="backTo"
+    title-testid="video-form-h1"
+    subtitle-testid="video-form-sub"
+    data-testid="video-form-page"
+  >
+    <DsLoadError
       v-if="videoError && !notFound"
-      color="error"
-      variant="soft"
-      icon="i-ph-warning-duotone"
-      :description="errorLines(videoError).join(' ')"
-      data-testid="video-form-load-error"
+      :message="errorLines(videoError).join(' ')"
+      testid="video-form-load-error"
+      @retry="reload()"
     />
 
     <template v-else-if="ready">
-      <div class="flex items-center gap-3">
-        <UButton
-          :to="backTo"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          aria-label="Kembali"
-          data-testid="video-form-back"
-        />
-        <div class="min-w-0">
-          <h1 class="text-heading text-highlighted" data-testid="video-form-h1">
-            {{ isEdit ? COPY.editHeader : COPY.addH1 }}
-          </h1>
-          <p class="text-label text-muted" data-testid="video-form-sub">
-            {{ isEdit ? COPY.editSub : COPY.addSub }}
-          </p>
-        </div>
-      </div>
-
       <form class="flex flex-col gap-4 md:gap-6" data-testid="video-form" @submit.prevent="submit">
         <UAlert
           v-if="failure.length"
           color="error"
-          variant="soft"
-          icon="i-ph-warning-duotone"
+          variant="subtle"
+          icon="i-ph-warning-circle"
           :description="failure.join(' ')"
           data-testid="video-form-error"
         />
 
         <!-- URL and the detected platform. -->
-        <UCard>
-          <UFormField
+        <DsPanel>
+          <DsFormField
             :label="COPY.urlLabel"
             name="video_url"
             required
@@ -280,7 +272,7 @@ const visibilityItems = computed(() => [
               data-testid="video-url"
               @update:model-value="parseUrl()"
             />
-          </UFormField>
+          </DsFormField>
           <UCard v-if="preview" variant="soft" class="mt-3" data-testid="video-preview">
             <div class="flex items-center gap-3">
               <div class="h-14 w-24 shrink-0 overflow-hidden">
@@ -299,12 +291,12 @@ const visibilityItems = computed(() => [
               </p>
             </div>
           </UCard>
-        </UCard>
+        </DsPanel>
 
         <!-- Title and description. -->
-        <UCard>
+        <DsPanel>
           <div class="flex flex-col gap-4">
-            <UFormField :label="COPY.titleLabel" name="title" required :error="errors.title">
+            <DsFormField :label="COPY.titleLabel" name="title" required :error="errors.title">
               <UInput
                 id="title"
                 v-model="form.title"
@@ -316,8 +308,8 @@ const visibilityItems = computed(() => [
                 class="w-full"
                 data-testid="video-title-input"
               />
-            </UFormField>
-            <UFormField
+            </DsFormField>
+            <DsFormField
               :label="COPY.descriptionLabel"
               name="description"
               :hint="isEdit ? undefined : COPY.optional"
@@ -333,15 +325,15 @@ const visibilityItems = computed(() => [
                 class="w-full"
                 data-testid="video-description-input"
               />
-            </UFormField>
+            </DsFormField>
           </div>
-        </UCard>
+        </DsPanel>
 
         <!-- Category, subject, visibility. -->
-        <UCard>
+        <DsPanel>
           <div class="flex flex-col gap-4">
             <div class="grid gap-4 sm:grid-cols-2">
-              <UFormField
+              <DsFormField
                 :label="COPY.categoryLabel"
                 name="category"
                 required
@@ -356,8 +348,8 @@ const visibilityItems = computed(() => [
                   class="w-full"
                   data-testid="video-category-input"
                 />
-              </UFormField>
-              <UFormField
+              </DsFormField>
+              <DsFormField
                 :label="COPY.subjectLabel"
                 name="subject_id"
                 :hint="isEdit ? undefined : COPY.optional"
@@ -369,10 +361,10 @@ const visibilityItems = computed(() => [
                   class="w-full"
                   data-testid="video-subject-input"
                 />
-              </UFormField>
+              </DsFormField>
             </div>
 
-            <UFormField
+            <DsFormField
               :label="COPY.visibilityLabel"
               name="visibility"
               required
@@ -386,9 +378,9 @@ const visibilityItems = computed(() => [
                 class="w-full"
                 data-testid="video-visibility"
               />
-            </UFormField>
+            </DsFormField>
           </div>
-        </UCard>
+        </DsPanel>
 
         <!-- Uploader strip (S20 only). -->
         <UCard v-if="!isEdit && context" variant="soft" data-testid="video-uploader-strip">
@@ -400,9 +392,7 @@ const visibilityItems = computed(() => [
                   context.uploader.name
                 }}</span>
                 <span class="mx-2 text-muted" aria-hidden="true">·</span>
-                <span data-testid="video-strip-role">{{
-                  context.uploader.roleLabel
-                }}</span>
+                <span data-testid="video-strip-role">{{ context.uploader.roleLabel }}</span>
               </p>
             </div>
             <p class="flex items-center gap-2 text-caption text-muted">
@@ -413,24 +403,15 @@ const visibilityItems = computed(() => [
         </UCard>
 
         <!-- Footer: one row at every width. -->
-        <div class="flex items-center gap-3" data-testid="video-form-footer">
-          <UButton
-            type="submit"
-            size="lg"
-            :loading="busy"
-            :icon="isEdit ? 'i-ph-floppy-disk-duotone' : 'i-ph-upload-simple-duotone'"
-            data-testid="video-form-submit"
-            >{{ isEdit ? COPY.save : COPY.publish }}</UButton
-          >
-          <UButton
-            :to="backTo"
-            size="lg"
-            color="neutral"
-            variant="soft"
-            data-testid="video-form-cancel"
-            >{{ COPY.cancel }}</UButton
-          >
-        </div>
+        <DsFormBar
+          :sticky="false"
+          :cancel-to="backTo"
+          :cancel-label="COPY.cancel"
+          :submit-label="isEdit ? COPY.save : COPY.publish"
+          :submit-icon="isEdit ? 'i-ph-floppy-disk' : 'i-ph-upload-simple'"
+          :saving="busy"
+          data-testid="video-form-footer"
+        />
       </form>
     </template>
   </DsPage>

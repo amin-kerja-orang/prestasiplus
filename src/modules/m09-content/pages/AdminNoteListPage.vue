@@ -13,14 +13,23 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, DsStatTile, useConfirm } from '@/ds'
-import type { CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsRowActions,
+  DsStatRow,
+  DsStatusBadge,
+  useConfirm,
+} from '@/ds'
+import type { CardField, RowAction, StatItem } from '@/ds'
 
 import { deleteAdminNote, fetchAdminNotes, type AdminNoteItem } from '../api/admin-articles-notes'
-import AdminActiveFilters from '../components/admin-kit/AdminActiveFilters.vue'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
-import AdminRowMenu from '../components/admin-kit/AdminRowMenu.vue'
-import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
+import { cellClass } from '../lib/table-cols'
 import {
   COPY,
   NOTES_LIST_PATH,
@@ -104,7 +113,6 @@ const chips = computed(() => {
   if (type) out.push({ key: 'note_type', label: type.label })
   return out
 })
-const activeCount = computed(() => chips.value.length)
 
 function formQuery(): Record<string, string> {
   const out: Record<string, string> = {}
@@ -161,14 +169,14 @@ async function remove(row: AdminNoteItem): Promise<void> {
   }
 }
 
-function actionsOf(row: AdminNoteItem) {
+function actionsOf(row: AdminNoteItem): RowAction[] {
   return [
-    { label: 'Lihat', icon: 'i-ph-eye', to: `${NOTES_LIST_PATH}/${String(row.id)}` },
     {
       label: 'Edit',
       icon: 'i-ph-pencil-simple',
       to: `${NOTES_LIST_PATH}/${String(row.id)}/edit`,
     },
+    { label: 'Lihat', icon: 'i-ph-eye', to: `${NOTES_LIST_PATH}/${String(row.id)}` },
     {
       label: 'Padam',
       icon: 'i-ph-trash',
@@ -178,6 +186,24 @@ function actionsOf(row: AdminNoteItem) {
     },
   ]
 }
+
+const statItems = computed<StatItem[]>(() => [
+  { key: 'k1', label: 'Jumlah nota', value: total.value, icon: 'notebook', accent: 'action' },
+  {
+    key: 'k2',
+    label: 'Diterbitkan (halaman ini)',
+    value: publishedOnPage.value,
+    icon: 'check-circle',
+    accent: 'win',
+  },
+  {
+    key: 'k3',
+    label: 'Muat turun (halaman ini)',
+    value: downloadsOnPage.value,
+    icon: 'download-simple',
+    accent: 'trial',
+  },
+])
 
 interface TableRow extends Record<string, unknown> {
   id: number
@@ -200,13 +226,13 @@ const tableRows = computed<TableRow[]>(() =>
 )
 
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'title', header: 'Tajuk' },
-  { accessorKey: 'subjectText', header: 'Subjek' },
-  { accessorKey: 'noteType', header: 'Jenis' },
-  { accessorKey: 'gradeText', header: 'Tahap' },
-  { id: 'status', header: 'Status' },
-  { id: 'stats', header: 'Statistik' },
-  { id: 'actions', header: 'Tindakan' },
+  { accessorKey: 'title', header: 'Tajuk', ...cellClass('') },
+  { accessorKey: 'subjectText', header: 'Subjek', ...cellClass('w-40') },
+  { accessorKey: 'noteType', header: 'Jenis', ...cellClass('w-28') },
+  { accessorKey: 'gradeText', header: 'Tahap', ...cellClass('w-28') },
+  { id: 'status', header: 'Status', ...cellClass('w-40') },
+  { id: 'stats', header: 'Statistik', ...cellClass('w-36') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-36') },
 ]
 const cardFields: CardField[] = [
   { key: 'subjectText', label: 'Subjek' },
@@ -216,43 +242,27 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage data-testid="admin-notes-page">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <p class="min-w-0 text-body text-muted" data-testid="admin-notes-count">
-        Jumlah: {{ total }} nota
-      </p>
+  <DsPage subtitle-testid="admin-notes-count" data-testid="admin-notes-page">
+    <template #subtitle>Jumlah: {{ total }} nota</template>
+    <template #actions>
       <UButton
         :to="{ name: NOTE_ROUTES.create }"
         icon="i-ph-plus"
         label="Tambah Nota"
-        size="md"
         class="min-h-11"
         data-testid="admin-notes-add"
       />
-    </div>
+    </template>
 
-    <section class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-      <DsStatTile :value="total" unit="Jumlah nota" icon="i-ph-notebook" accent="action" />
-      <DsStatTile
-        :value="publishedOnPage"
-        unit="Diterbitkan (halaman ini)"
-        icon="i-ph-check-circle"
-        accent="win"
-      />
-      <DsStatTile
-        :value="downloadsOnPage"
-        unit="Muat turun (halaman ini)"
-        icon="i-ph-download-simple"
-        accent="trial"
-      />
-    </section>
+    <DsStatRow :items="statItems" prefix="stat" :cols="3" />
 
     <div class="flex flex-col gap-3">
       <DsFilterBar
-        :active-count="activeCount"
+        :chips="chips"
         data-testid="admin-notes-filter"
         @apply="submitFilter"
         @reset="resetFilter"
+        @remove-chip="removeChip"
       >
         <template #search>
           <UInput
@@ -267,7 +277,7 @@ const cardFields: CardField[] = [
             data-testid="admin-notes-search"
           />
         </template>
-        <NativeSelect
+        <DsNativeSelect
           v-model="subject"
           name="subject"
           aria-label="Subjek"
@@ -278,8 +288,8 @@ const cardFields: CardField[] = [
           <option v-for="o in NOTE_SUBJECT_OPTIONS" :key="o.value" :value="o.value">
             {{ o.label }}
           </option>
-        </NativeSelect>
-        <NativeSelect
+        </DsNativeSelect>
+        <DsNativeSelect
           v-model="noteType"
           name="note_type"
           aria-label="Jenis"
@@ -289,22 +299,25 @@ const cardFields: CardField[] = [
           <option v-for="o in NOTE_TYPE_FILTER_OPTIONS" :key="o.value" :value="o.value">
             {{ o.label }}
           </option>
-        </NativeSelect>
+        </DsNativeSelect>
       </DsFilterBar>
-      <AdminActiveFilters :chips="chips" @remove="removeChip" @reset="resetFilter" />
     </div>
 
-    <div v-if="error" class="flex flex-col gap-4" data-testid="admin-notes-error">
-      <AdminAlert :messages="errorLines(error)" />
-      <div><UButton label="Cuba Lagi" class="min-h-11" @click="reload()" /></div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="errorLines(error).join(' ')"
+      testid="admin-notes-error"
+      @retry="reload()"
+    />
 
-    <UCard v-else-if="!firstLoad && rows.length === 0" data-testid="admin-notes-empty">
+    <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="admin-notes-empty">
       <DsEmptyState :title="COPY.noteEmpty" icon="i-ph-notebook" />
-    </UCard>
+    </DsPanel>
 
     <DsDataTable
       v-else
+      variant="flush"
+      layout="fixed"
       :data="tableRows"
       :columns="columns"
       caption="Senarai nota"
@@ -314,7 +327,7 @@ const cardFields: CardField[] = [
       :page="applied.page"
       card-title="title"
       :card-fields="cardFields"
-      :empty-label="COPY.noteEmpty"
+      :empty-title="COPY.noteEmpty"
       data-testid="admin-notes-table"
       @update:page="goToPage"
     >
@@ -351,10 +364,8 @@ const cardFields: CardField[] = [
         <span class="text-nowrap" data-testid="note-grade">{{ row.original.gradeText }}</span>
       </template>
       <template #status-cell="{ row }">
-        <UBadge
-          :color="row.original.raw.isPublished ? 'success' : 'neutral'"
-          variant="subtle"
-          :label="row.original.raw.isPublished ? COPY.published : COPY.draft"
+        <DsStatusBadge
+          :status="row.original.raw.isPublished ? 'published' : 'draft'"
           data-testid="status-pill"
         />
       </template>
@@ -371,10 +382,10 @@ const cardFields: CardField[] = [
         </div>
       </template>
       <template #actions-cell="{ row }">
-        <AdminRowMenu :actions="actionsOf(row.original.raw)" />
+        <DsRowActions :actions="actionsOf(row.original.raw)" :inline="1" />
       </template>
       <template #card-actions="{ row }">
-        <AdminRowMenu :actions="actionsOf((row as unknown as TableRow).raw)" />
+        <DsRowActions :actions="actionsOf((row as unknown as TableRow).raw)" :inline="1" />
       </template>
     </DsDataTable>
   </DsPage>
