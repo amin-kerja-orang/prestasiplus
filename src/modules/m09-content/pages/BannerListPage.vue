@@ -1,50 +1,40 @@
 <script setup lang="ts">
 /**
  * S9 `/admin/banners` "Pengurusan Banner - Admin PRESTASIPLUS" (M09; FR-M09-51..53, FR-M09-127,
- * BR-M09-12).
+ * BR-M09-12), v2 staff theme.
  *
- * - "Senarai Banner", "Jumlah: {n} banner" and "Tambah"; every banner in one table (no filter,
- *   search or pager), `displayOrder` then id as the API returns them.
- * - Tajuk = title with the description cut to 50 characters under it, the stored codes shown raw
- *   (DV-M09-11), dates dd/mm/yyyy, "Aktif" pill (inactive: the "Tidak Aktif" placeholder, §8.2).
- * - Delete: native confirm, DELETE, reload with the success flash. No view action.
- * - The table scrolls inside its card below the width it needs (DV-M09-16).
+ * - Header row ("Jumlah: {n} banner" and "Tambah"), a KPI strip and every banner in one table (no filter,
+ *   search or pager), `displayOrder` then id as the API returns them. Below `md` every banner is a card.
+ * - Tajuk = thumbnail, title and the description cut to 50 characters under it (2-line clamp), the stored codes
+ *   shown raw (DV-M09-11), dates dd/mm/yyyy, "Aktif" badge (inactive: the "Tidak Aktif" placeholder, 8.2).
+ * - Delete: confirm (`useConfirm`), DELETE, reload with the success flash. No view action.
  */
-import { CircleCheck, Plus, SquarePen, Trash } from '@lucide/vue'
-import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import type { TableColumn } from '@nuxt/ui'
+import { computed, ref } from 'vue'
 
-import { AlertBox } from '@/components/feedback'
-import { DataTableCard, TABLE_CLASSES as T } from '@/components/data'
-import { confirmNative, useApi, useFlash } from '@/composables'
+import { useApi, useFlash } from '@/composables'
+import { DsArt3D, DsDataTable, DsEmptyState, DsPage, DsStatTile, useConfirm } from '@/ds'
+import type { CardField } from '@/ds'
 
 import { deleteBanner, fetchAdminBanners, type AdminBanner } from '../api/admin-media'
+import AdminAlert from '../components/admin-kit/AdminAlert.vue'
+import AdminRowMenu from '../components/admin-kit/AdminRowMenu.vue'
 import { COPY, dmy, errorLines, limit50, MEDIA_ROUTES } from '../lib/admin-media/common'
 
 const flash = useFlash()
+const confirm = useConfirm()
 
 const { data, error, reload } = useApi((signal) => fetchAdminBanners({ signal }))
 
-const COLUMNS = [
-  '#',
-  'Tajuk',
-  'Jenis',
-  'Sasaran',
-  'Susunan',
-  'Mula',
-  'Tamat',
-  'Aktif?',
-  'Tindakan',
-] as const
-
-const ICON_BUTTON =
-  'inline-flex h-11 min-h-11 w-11 min-w-11 shrink-0 items-center justify-center rounded-lg transition lg:h-9 lg:min-h-9 lg:w-9 lg:min-w-9 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
+const rows = computed<AdminBanner[]>(() => data.value ?? [])
+const activeCount = computed(() => rows.value.filter((b) => b.isActive).length)
+const firstLoad = computed(() => data.value === null && error.value === null)
 
 const deleting = ref(false)
 
 async function remove(banner: AdminBanner): Promise<void> {
-  if (!confirmNative(COPY.confirmDeleteBanner)) return
   if (deleting.value) return
+  if (!(await confirm({ message: COPY.confirmDeleteBanner, tone: 'danger' }))) return
   deleting.value = true
   try {
     const result = await deleteBanner(banner.id)
@@ -56,130 +46,191 @@ async function remove(banner: AdminBanner): Promise<void> {
     deleting.value = false
   }
 }
+
+function actionsOf(banner: AdminBanner) {
+  return [
+    {
+      label: 'Edit',
+      icon: 'i-ph-pencil-simple',
+      to: `/admin/banners/${String(banner.id)}/edit`,
+    },
+    {
+      label: 'Padam',
+      icon: 'i-ph-trash',
+      danger: true,
+      disabled: deleting.value,
+      onSelect: () => void remove(banner),
+    },
+  ]
+}
+
+interface TableRow extends Record<string, unknown> {
+  id: number
+  no: number
+  title: string
+  bannerType: string
+  targetAudience: string
+  displayOrder: number
+  start: string
+  end: string
+  raw: AdminBanner
+}
+
+const tableRows = computed<TableRow[]>(() =>
+  rows.value.map((b, i) => ({
+    id: b.id,
+    no: i + 1,
+    title: b.title,
+    bannerType: b.bannerType,
+    targetAudience: b.targetAudience,
+    displayOrder: b.displayOrder,
+    start: dmy(b.startDate),
+    end: dmy(b.endDate),
+    raw: b,
+  })),
+)
+
+const columns: TableColumn<TableRow>[] = [
+  { accessorKey: 'no', header: '#' },
+  { accessorKey: 'title', header: 'Tajuk' },
+  { accessorKey: 'bannerType', header: 'Jenis' },
+  { accessorKey: 'targetAudience', header: 'Sasaran' },
+  { accessorKey: 'displayOrder', header: 'Susunan' },
+  { accessorKey: 'start', header: 'Mula' },
+  { accessorKey: 'end', header: 'Tamat' },
+  { id: 'active', header: 'Aktif?' },
+  { id: 'actions', header: 'Tindakan' },
+]
+const cardFields: CardField[] = [
+  { key: 'bannerType', label: 'Jenis' },
+  { key: 'targetAudience', label: 'Sasaran' },
+  { key: 'start', label: 'Mula' },
+  { key: 'end', label: 'Tamat' },
+]
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="banners-page">
-    <AlertBox v-if="error" :messages="COPY.loadFailed" data-testid="banners-error" />
+  <DsPage data-testid="banners-page">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <p class="min-w-0 text-body text-muted" data-testid="banners-count">
+        Jumlah: {{ rows.length }} banner
+      </p>
+      <UButton
+        :to="{ name: MEDIA_ROUTES.bannerCreate }"
+        icon="i-ph-plus"
+        label="Tambah"
+        size="md"
+        class="min-h-11"
+        data-testid="banners-add"
+      />
+    </div>
 
-    <DataTableCard v-else-if="data" :min-width="900">
-      <template #header>
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <DsStatTile :value="rows.length" unit="Jumlah banner" icon="i-ph-image" accent="action" />
+      <DsStatTile :value="activeCount" unit="Aktif" icon="i-ph-check-circle" accent="win" />
+      <DsStatTile
+        :value="rows.length - activeCount"
+        unit="Tidak aktif"
+        icon="i-ph-pause-circle"
+        accent="heat"
+      />
+    </section>
+
+    <div v-if="error" class="flex flex-col gap-4" data-testid="banners-error">
+      <AdminAlert :messages="[COPY.loadFailed]" />
+      <div><UButton label="Cuba Lagi" class="min-h-11" @click="reload()" /></div>
+    </div>
+
+    <UCard v-else-if="!firstLoad && rows.length === 0" data-testid="banners-empty">
+      <DsEmptyState title="Tiada banner" icon="i-ph-image" />
+    </UCard>
+
+    <DsDataTable
+      v-else
+      :data="tableRows"
+      :columns="columns"
+      caption="Senarai banner"
+      :loading="firstLoad"
+      :total="rows.length"
+      :page-size="Math.max(rows.length, 1)"
+      card-title="title"
+      :card-fields="cardFields"
+      data-testid="banners-table"
+    >
+      <template #no-cell="{ row }">
+        <span class="text-muted">{{ row.original.no }}</span>
+      </template>
+      <template #title-cell="{ row }">
         <div
-          class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4"
+          class="flex min-w-64 items-center gap-4"
+          data-testid="banner-row"
+          :data-banner-id="row.original.id"
         >
-          <div>
-            <h2 class="font-heading text-lg font-bold text-slate-800">Senarai Banner</h2>
-            <p class="text-sm text-slate-500" data-testid="banners-count">
-              Jumlah: {{ data.length }} banner
+          <div class="w-24 shrink-0">
+            <DsArt3D
+              v-if="row.original.raw.imageUrl"
+              variant="plain"
+              ratio="video"
+              :src="row.original.raw.imageUrl"
+              :alt="row.original.title"
+            />
+            <div
+              v-else
+              class="grid aspect-video place-items-center bg-soft text-dimmed"
+              aria-hidden="true"
+            >
+              <UIcon name="i-ph-image" class="size-6" />
+            </div>
+          </div>
+          <div class="flex min-w-0 flex-col gap-1">
+            <p class="line-clamp-2 text-label text-highlighted" data-testid="banner-title">
+              {{ row.original.title }}
+            </p>
+            <p
+              v-if="row.original.raw.description"
+              class="line-clamp-2 text-caption text-muted"
+              data-testid="banner-description"
+            >
+              {{ limit50(row.original.raw.description) }}
             </p>
           </div>
-          <RouterLink
-            :to="{ name: MEDIA_ROUTES.bannerCreate }"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow transition hover:from-indigo-600 hover:to-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            data-testid="banners-add"
-          >
-            <Plus class="h-4 w-4" aria-hidden="true" />
-            Tambah
-          </RouterLink>
         </div>
       </template>
-
-      <table :class="T.table" data-testid="banners-table">
-        <thead>
-          <tr>
-            <th
-              v-for="label in COLUMNS"
-              :key="label"
-              scope="col"
-              :class="T.th"
-              data-testid="banners-th"
-            >
-              {{ label }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(banner, index) in data"
-            :key="banner.id"
-            :class="[T.row, 'align-middle']"
-            data-testid="banner-row"
-            :data-banner-id="banner.id"
-          >
-            <td :class="[T.td, 'text-xs text-slate-500']">{{ index + 1 }}</td>
-            <td :class="[T.td, 'max-w-xs min-w-48']">
-              <div class="font-medium text-slate-800" data-testid="banner-title">
-                {{ banner.title }}
-              </div>
-              <div
-                v-if="banner.description"
-                class="mt-0.5 text-xs text-slate-500"
-                data-testid="banner-description"
-              >
-                {{ limit50(banner.description) }}
-              </div>
-            </td>
-            <td :class="T.td">
-              <span
-                class="inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium whitespace-nowrap text-slate-700"
-                data-testid="banner-type"
-                >{{ banner.bannerType }}</span
-              >
-            </td>
-            <td :class="T.td" data-testid="banner-audience">{{ banner.targetAudience }}</td>
-            <td :class="T.td">
-              <span
-                class="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
-                data-testid="banner-order"
-                >{{ banner.displayOrder }}</span
-              >
-            </td>
-            <td :class="[T.td, 'whitespace-nowrap']" data-testid="banner-start">
-              {{ dmy(banner.startDate) }}
-            </td>
-            <td :class="[T.td, 'whitespace-nowrap']" data-testid="banner-end">
-              {{ dmy(banner.endDate) }}
-            </td>
-            <td :class="T.td">
-              <span
-                v-if="banner.isActive"
-                class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium whitespace-nowrap text-emerald-700"
-                data-testid="banner-active"
-              >
-                <CircleCheck class="h-3 w-3" aria-hidden="true" />Aktif
-              </span>
-              <span
-                v-else
-                class="inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium whitespace-nowrap text-slate-700"
-                data-testid="banner-active"
-                >Tidak Aktif</span
-              >
-            </td>
-            <td :class="T.td">
-              <div class="flex items-center gap-1.5">
-                <RouterLink
-                  :to="{ name: MEDIA_ROUTES.bannerEdit, params: { id: banner.id } }"
-                  title="Edit"
-                  :class="[ICON_BUTTON, 'text-indigo-600 hover:bg-indigo-50']"
-                  data-testid="banner-edit"
-                >
-                  <SquarePen class="h-4 w-4" aria-hidden="true" />
-                </RouterLink>
-                <button
-                  type="button"
-                  title="Padam"
-                  :disabled="deleting"
-                  :class="[ICON_BUTTON, 'text-red-600 hover:bg-red-50 disabled:opacity-60']"
-                  data-testid="banner-delete"
-                  @click="remove(banner)"
-                >
-                  <Trash class="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </DataTableCard>
-  </div>
+      <template #bannerType-cell="{ row }">
+        <UBadge
+          color="neutral"
+          variant="subtle"
+          :label="row.original.bannerType"
+          data-testid="banner-type"
+        />
+      </template>
+      <template #targetAudience-cell="{ row }">
+        <span data-testid="banner-audience">{{ row.original.targetAudience }}</span>
+      </template>
+      <template #displayOrder-cell="{ row }">
+        <span data-testid="banner-order">{{ row.original.displayOrder }}</span>
+      </template>
+      <template #start-cell="{ row }">
+        <span class="text-nowrap" data-testid="banner-start">{{ row.original.start }}</span>
+      </template>
+      <template #end-cell="{ row }">
+        <span class="text-nowrap" data-testid="banner-end">{{ row.original.end }}</span>
+      </template>
+      <template #active-cell="{ row }">
+        <UBadge
+          :color="row.original.raw.isActive ? 'success' : 'neutral'"
+          variant="subtle"
+          :icon="row.original.raw.isActive ? 'i-ph-check-circle' : undefined"
+          :label="row.original.raw.isActive ? 'Aktif' : 'Tidak Aktif'"
+          data-testid="banner-active"
+        />
+      </template>
+      <template #actions-cell="{ row }">
+        <AdminRowMenu :actions="actionsOf(row.original.raw)" />
+      </template>
+      <template #card-actions="{ row }">
+        <AdminRowMenu :actions="actionsOf((row as unknown as TableRow).raw)" />
+      </template>
+    </DsDataTable>
+  </DsPage>
 </template>

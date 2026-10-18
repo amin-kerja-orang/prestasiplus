@@ -1,25 +1,31 @@
 <script setup lang="ts">
 /**
  * S10 `/admin/banners/create` "Tambah Banner - Admin PRESTASIPLUS" and S11 `/admin/banners/:id/edit`
- * "Edit Banner - Admin PRESTASIPLUS" (M09; FR-M09-54..59, BR-M09-12, BR-M09-13). One form for both:
- * `mode="create"` posts ("Simpan Banner"), `mode="edit"` loads the banner and pre-fills it
+ * "Edit Banner - Admin PRESTASIPLUS" (M09; FR-M09-54..59, BR-M09-12, BR-M09-13), v2 staff theme. One form for
+ * both: `mode="create"` posts ("Simpan Banner"), `mode="edit"` loads the banner and pre-fills it
  * ("Kemaskini Banner").
  *
- * - Native HTML5 validation only (`title`, `banner_type` required; no `novalidate`).
+ * - Native HTML5 validation only (`title`, `banner_type` required; no `novalidate`). Fields sit in cards
+ *   (Maklumat, Pautan & Sasaran, Jadual); Batal / Simpan are in a sticky action bar.
  * - "Jenis Pautan" drives `linkType`: only "Pautan Luar" shows the unlabelled URL input; hiding it keeps
  *   its value; the URL is sent only for "Pautan Luar".
  * - S11 selects show the stored values (DV-M09-07, BR-M09-13); an unknown id returns to S9 with the
  *   one-time flash "Banner tidak dijumpai.". A 422 shows under the fields and keeps the input.
  */
-import { ArrowLeft, ArrowUpDown, Info } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
-import { AlertBox } from '@/components/feedback'
 import { useApi, useFlash } from '@/composables'
+import { DsArt3D, DsPage } from '@/ds'
 
 import { createBanner, fetchAdminBanner, updateBanner } from '../api/admin-media'
-import MediaFormActions from '../components/admin-media/MediaFormActions.vue'
+import AdminBackLink from '../components/admin-articles-notes/AdminBackLink.vue'
+import AdminAlert from '../components/admin-kit/AdminAlert.vue'
+import AdminField from '../components/admin-kit/AdminField.vue'
+import AdminFormBar from '../components/admin-kit/AdminFormBar.vue'
+import AdminSection from '../components/admin-kit/AdminSection.vue'
+import AdminSwitch from '../components/admin-kit/AdminSwitch.vue'
+import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
 import {
   AUDIENCE_OPTIONS,
   BANNER_TYPE_OPTIONS,
@@ -33,11 +39,6 @@ import {
 import {
   BANNERS_PATH,
   COPY,
-  ERROR_BORDER_CLASS,
-  ERROR_TEXT_CLASS,
-  HINT_CLASS,
-  INPUT_CLASS,
-  LABEL_CLASS,
   errorLines,
   fieldErrors,
   isNotFoundError,
@@ -105,6 +106,9 @@ const errors = ref<Record<string, string>>({})
 const failure = ref<string[]>([])
 
 const showExternal = computed(() => form.linkType === 'external')
+const previewUrl = computed(() =>
+  /^https?:\/\//i.test(form.imageUrl.trim()) ? form.imageUrl.trim() : '',
+)
 
 const KNOWN_FIELDS = [
   'title',
@@ -127,10 +131,7 @@ const boxMessages = computed(() => {
   return [...failure.value, ...unmatched]
 })
 
-const field = (name: string): string[] => [
-  INPUT_CLASS,
-  ...(errors.value[name] ? [ERROR_BORDER_CLASS] : []),
-]
+const invalid = (name: string): boolean => errors.value[name] !== undefined
 
 async function submit(): Promise<void> {
   if (saving.value) return
@@ -157,211 +158,238 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4" data-testid="banner-form-page">
-    <RouterLink
-      :to="BANNERS_PATH"
-      class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-500 transition hover:text-slate-700"
-      data-testid="banner-back"
-    >
-      <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-      Kembali ke Senarai
-    </RouterLink>
+  <DsPage data-testid="banner-form-page">
+    <AdminBackLink :to="BANNERS_PATH" />
 
-    <AlertBox v-if="failed" :messages="COPY.loadFailed" data-testid="banner-load-error" />
+    <AdminAlert v-if="failed" :messages="[COPY.loadFailed]" data-testid="banner-load-error" />
+
+    <UCard v-else-if="!ready" data-testid="banner-form-skeleton">
+      <div class="flex flex-col gap-6">
+        <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
+      </div>
+    </UCard>
 
     <form
-      v-else-if="ready"
+      v-else
       method="post"
-      class="space-y-5 rounded-2xl bg-white p-5 shadow sm:p-6"
+      class="flex min-w-0 flex-col gap-6"
       data-testid="banner-form"
       @submit.prevent="submit"
     >
-      <AlertBox :messages="boxMessages" data-testid="banner-form-alert" />
+      <AdminAlert :messages="boxMessages" data-testid="banner-form-alert" />
 
-      <div>
-        <label for="banner-title" :class="LABEL_CLASS"
-          >Tajuk Banner <span class="text-red-500">*</span></label
-        >
-        <input
-          id="banner-title"
-          v-model="form.title"
-          type="text"
-          name="title"
-          required
-          placeholder="cth: Promosi SPM 2024"
-          :class="field('title')"
-          data-testid="banner-title"
+      <AdminSection title="Maklumat Banner" icon="i-ph-image" accent="action">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
+            <AdminField for="banner-title" label="Tajuk Banner" required :error="errors.title">
+              <UInput
+                id="banner-title"
+                v-model="form.title"
+                type="text"
+                name="title"
+                required
+                placeholder="cth: Promosi SPM 2024"
+                size="md"
+                class="w-full"
+                :color="invalid('title') ? 'error' : undefined"
+                data-testid="banner-title"
+              />
+            </AdminField>
+
+            <AdminField for="banner-description" label="Penerangan" :error="errors.description">
+              <UTextarea
+                id="banner-description"
+                v-model="form.description"
+                name="description"
+                :rows="3"
+                placeholder="Penerangan ringkas tentang banner"
+                size="md"
+                class="w-full"
+                :color="invalid('description') ? 'error' : undefined"
+                data-testid="banner-description"
+              />
+            </AdminField>
+
+            <AdminField
+              for="banner-image"
+              label="URL Gambar"
+              hint="Masukkan URL gambar banner"
+              :error="errors.imageUrl"
+            >
+              <UInput
+                id="banner-image"
+                v-model="form.imageUrl"
+                type="url"
+                name="image_url"
+                placeholder="https://example.com/image.jpg"
+                size="md"
+                class="w-full"
+                :color="invalid('imageUrl') ? 'error' : undefined"
+                data-testid="banner-image-url"
+              />
+            </AdminField>
+          </div>
+
+          <div class="flex min-w-0 flex-col gap-2">
+            <span class="text-label text-default">Pratonton</span>
+            <DsArt3D
+              v-if="previewUrl"
+              variant="plain"
+              ratio="video"
+              :src="previewUrl"
+              alt="Pratonton banner"
+              data-testid="banner-preview"
+            />
+            <div
+              v-else
+              class="grid aspect-video place-items-center bg-soft text-dimmed"
+              aria-hidden="true"
+            >
+              <UIcon name="i-ph-image" class="size-10" />
+            </div>
+          </div>
+        </div>
+      </AdminSection>
+
+      <AdminSection title="Pautan & Sasaran" icon="i-ph-link" accent="friend">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <AdminField for="banner-type" label="Jenis Banner" required :error="errors.bannerType">
+            <NativeSelect
+              id="banner-type"
+              v-model="form.bannerType"
+              name="banner_type"
+              required
+              :aria-invalid="invalid('bannerType') ? 'true' : undefined"
+              data-testid="banner-type"
+            >
+              <option v-if="typeExtra" :value="typeExtra.value">{{ typeExtra.label }}</option>
+              <option value="">Pilih jenis banner</option>
+              <option v-for="o in BANNER_TYPE_OPTIONS" :key="o.value" :value="o.value">
+                {{ o.label }}
+              </option>
+            </NativeSelect>
+          </AdminField>
+
+          <AdminField
+            for="banner-audience"
+            label="Sasaran Penonton"
+            required
+            :error="errors.targetAudience"
+          >
+            <NativeSelect
+              id="banner-audience"
+              v-model="form.targetAudience"
+              name="target_audience"
+              required
+              :aria-invalid="invalid('targetAudience') ? 'true' : undefined"
+              data-testid="banner-audience"
+            >
+              <option v-if="audienceExtra" :value="audienceExtra.value">
+                {{ audienceExtra.label }}
+              </option>
+              <option v-for="o in AUDIENCE_OPTIONS" :key="o.value" :value="o.value">
+                {{ o.label }}
+              </option>
+            </NativeSelect>
+          </AdminField>
+
+          <div class="flex min-w-0 flex-col gap-3 md:col-span-2">
+            <AdminField for="banner-link-type" label="Jenis Pautan" :error="errors.linkType">
+              <NativeSelect
+                id="banner-link-type"
+                v-model="form.linkType"
+                name="link_type"
+                :aria-invalid="invalid('linkType') ? 'true' : undefined"
+                data-testid="banner-link-type"
+              >
+                <option v-if="linkExtra" :value="linkExtra.value">{{ linkExtra.label }}</option>
+                <option v-for="o in LINK_TYPE_OPTIONS" :key="o.value" :value="o.value">
+                  {{ o.label }}
+                </option>
+              </NativeSelect>
+            </AdminField>
+            <div v-show="showExternal" class="flex flex-col gap-2">
+              <UInput
+                v-model="form.externalUrl"
+                type="url"
+                name="external_url"
+                aria-label="URL pautan luar"
+                placeholder="https://example.com"
+                size="md"
+                class="w-full"
+                :color="invalid('externalUrl') ? 'error' : undefined"
+                data-testid="banner-external-url"
+              />
+              <p v-if="showExternal && errors.externalUrl" class="text-caption text-error">
+                {{ errors.externalUrl }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </AdminSection>
+
+      <AdminSection title="Jadual & Status" icon="i-ph-calendar-check" accent="heat">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <AdminField
+            for="banner-order"
+            label="Susunan Paparan"
+            hint="Nombor lebih kecil akan dipaparkan dahulu"
+            :error="errors.displayOrder"
+          >
+            <UInput
+              id="banner-order"
+              v-model.number="form.displayOrder"
+              type="number"
+              name="display_order"
+              min="0"
+              size="md"
+              class="w-full"
+              :color="invalid('displayOrder') ? 'error' : undefined"
+              data-testid="banner-order"
+            />
+          </AdminField>
+
+          <AdminField for="banner-start" label="Tarikh Mula" :error="errors.startDate">
+            <UInput
+              id="banner-start"
+              v-model="form.startDate"
+              type="date"
+              name="start_date"
+              size="md"
+              class="w-full"
+              :color="invalid('startDate') ? 'error' : undefined"
+              data-testid="banner-start"
+            />
+          </AdminField>
+
+          <AdminField for="banner-end" label="Tarikh Tamat" :error="errors.endDate">
+            <UInput
+              id="banner-end"
+              v-model="form.endDate"
+              type="date"
+              name="end_date"
+              size="md"
+              class="w-full"
+              :color="invalid('endDate') ? 'error' : undefined"
+              data-testid="banner-end"
+            />
+          </AdminField>
+        </div>
+
+        <AdminSwitch
+          v-model="form.isActive"
+          name="is_active"
+          label="Banner Aktif"
+          hint="Tandakan untuk memaparkan banner"
+          testid="banner-active"
         />
-        <p v-if="errors.title" :class="ERROR_TEXT_CLASS">{{ errors.title }}</p>
-      </div>
+      </AdminSection>
 
-      <div>
-        <label for="banner-description" :class="LABEL_CLASS">Penerangan</label>
-        <textarea
-          id="banner-description"
-          v-model="form.description"
-          name="description"
-          rows="3"
-          placeholder="Penerangan ringkas tentang banner"
-          :class="field('description')"
-          data-testid="banner-description"
-        ></textarea>
-        <p v-if="errors.description" :class="ERROR_TEXT_CLASS">{{ errors.description }}</p>
-      </div>
-
-      <div>
-        <label for="banner-image" :class="LABEL_CLASS">URL Gambar</label>
-        <input
-          id="banner-image"
-          v-model="form.imageUrl"
-          type="url"
-          name="image_url"
-          placeholder="https://example.com/image.jpg"
-          :class="field('imageUrl')"
-          data-testid="banner-image-url"
-        />
-        <p :class="HINT_CLASS">
-          <Info class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Masukkan URL gambar banner
-        </p>
-        <p v-if="errors.imageUrl" :class="ERROR_TEXT_CLASS">{{ errors.imageUrl }}</p>
-      </div>
-
-      <div>
-        <label for="banner-type" :class="LABEL_CLASS"
-          >Jenis Banner <span class="text-red-500">*</span></label
-        >
-        <select
-          id="banner-type"
-          v-model="form.bannerType"
-          name="banner_type"
-          required
-          :class="field('bannerType')"
-          data-testid="banner-type"
-        >
-          <option v-if="typeExtra" :value="typeExtra.value">{{ typeExtra.label }}</option>
-          <option value="">Pilih jenis banner</option>
-          <option v-for="o in BANNER_TYPE_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
-        <p v-if="errors.bannerType" :class="ERROR_TEXT_CLASS">{{ errors.bannerType }}</p>
-      </div>
-
-      <div>
-        <label for="banner-link-type" :class="LABEL_CLASS">Jenis Pautan</label>
-        <select
-          id="banner-link-type"
-          v-model="form.linkType"
-          name="link_type"
-          :class="field('linkType')"
-          data-testid="banner-link-type"
-        >
-          <option v-if="linkExtra" :value="linkExtra.value">{{ linkExtra.label }}</option>
-          <option v-for="o in LINK_TYPE_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
-        <input
-          v-show="showExternal"
-          v-model="form.externalUrl"
-          type="url"
-          name="external_url"
-          placeholder="https://example.com"
-          :class="[...field('externalUrl'), 'mt-2']"
-          data-testid="banner-external-url"
-        />
-        <p v-if="showExternal && errors.externalUrl" :class="ERROR_TEXT_CLASS">
-          {{ errors.externalUrl }}
-        </p>
-      </div>
-
-      <div>
-        <label for="banner-audience" :class="LABEL_CLASS"
-          >Sasaran Penonton <span class="text-red-500">*</span></label
-        >
-        <select
-          id="banner-audience"
-          v-model="form.targetAudience"
-          name="target_audience"
-          required
-          :class="field('targetAudience')"
-          data-testid="banner-audience"
-        >
-          <option v-if="audienceExtra" :value="audienceExtra.value">
-            {{ audienceExtra.label }}
-          </option>
-          <option v-for="o in AUDIENCE_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
-        <p v-if="errors.targetAudience" :class="ERROR_TEXT_CLASS">{{ errors.targetAudience }}</p>
-      </div>
-
-      <div>
-        <label for="banner-order" :class="LABEL_CLASS">Susunan Paparan</label>
-        <input
-          id="banner-order"
-          v-model.number="form.displayOrder"
-          type="number"
-          name="display_order"
-          min="0"
-          :class="field('displayOrder')"
-          data-testid="banner-order"
-        />
-        <p :class="HINT_CLASS">
-          <ArrowUpDown class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Nombor lebih kecil akan dipaparkan dahulu
-        </p>
-        <p v-if="errors.displayOrder" :class="ERROR_TEXT_CLASS">{{ errors.displayOrder }}</p>
-      </div>
-
-      <div>
-        <label for="banner-start" :class="LABEL_CLASS">Tarikh Mula</label>
-        <input
-          id="banner-start"
-          v-model="form.startDate"
-          type="date"
-          name="start_date"
-          :class="field('startDate')"
-          data-testid="banner-start"
-        />
-        <p v-if="errors.startDate" :class="ERROR_TEXT_CLASS">{{ errors.startDate }}</p>
-      </div>
-
-      <div>
-        <label for="banner-end" :class="LABEL_CLASS">Tarikh Tamat</label>
-        <input
-          id="banner-end"
-          v-model="form.endDate"
-          type="date"
-          name="end_date"
-          :class="field('endDate')"
-          data-testid="banner-end"
-        />
-        <p v-if="errors.endDate" :class="ERROR_TEXT_CLASS">{{ errors.endDate }}</p>
-      </div>
-
-      <div>
-        <label class="inline-flex min-h-11 cursor-pointer items-center gap-2.5">
-          <input
-            v-model="form.isActive"
-            type="checkbox"
-            name="is_active"
-            value="1"
-            class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
-            data-testid="banner-active"
-          />
-          <span class="text-sm font-semibold text-slate-700">Banner Aktif</span>
-        </label>
-        <p class="ml-6.5 text-xs text-slate-500">Tandakan untuk memaparkan banner</p>
-      </div>
-
-      <MediaFormActions
+      <AdminFormBar
         :cancel-to="BANNERS_PATH"
         :submit-label="editing ? 'Kemaskini Banner' : 'Simpan Banner'"
         :saving="saving"
       />
     </form>
-  </div>
+  </DsPage>
 </template>

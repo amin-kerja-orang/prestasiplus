@@ -1,33 +1,32 @@
 <script setup lang="ts">
 /**
- * S5 `/admin/notes` "Pengurusan Nota - Admin PRESTASIPLUS" (FR-M09-42..45; DV-M09-06).
+ * S5 `/admin/notes` "Pengurusan Nota - Admin PRESTASIPLUS" (FR-M09-42..45; DV-M09-06), v2 staff theme.
  *
- * - GET filter form (`search`, `subject`, `note_type`); the "Jenis" options keep their live labels
- *   and the server matches them by meaning (DV-M09-06). The query string is the state.
- * - Table of 20 rows per page from `GET /api/admin/notes` (id ascending); the pager appears only
- *   above 20 rows (INFERRED, as S1) and keeps the filters.
- * - Delete: native confirm, DELETE, reload with the success flash (PROPOSED COPY).
+ * - Page header row, KPI strip, filter bar (`search`, `subject`, `note_type`) with active-filter chips; the
+ *   "Jenis" options keep their live labels and the server matches them by meaning (DV-M09-06). The query
+ *   string is the state.
+ * - Table of 20 rows per page from `GET /api/admin/notes` (id ascending); the pager keeps the filters. Below
+ *   `md` every row is a card. Row actions sit in one menu; delete asks `useConfirm`.
  */
-import { Download, Eye, Inbox, Plus, Search } from '@lucide/vue'
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { DataTableCard, LaravelPager, TABLE_CLASSES as T } from '@/components/data'
-import { AlertBox } from '@/components/feedback'
-import { FORM_INPUT_CLASS } from '@/components/form'
-import { confirmNative, useApi, useFlash } from '@/composables'
+import { useApi, useFlash } from '@/composables'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsPage, DsStatTile, useConfirm } from '@/ds'
+import type { CardField } from '@/ds'
 
 import { deleteAdminNote, fetchAdminNotes, type AdminNoteItem } from '../api/admin-articles-notes'
-import AdminRowActions from '../components/admin-articles-notes/AdminRowActions.vue'
-import AdminStatusPill from '../components/admin-articles-notes/AdminStatusPill.vue'
+import AdminActiveFilters from '../components/admin-kit/AdminActiveFilters.vue'
+import AdminAlert from '../components/admin-kit/AdminAlert.vue'
+import AdminRowMenu from '../components/admin-kit/AdminRowMenu.vue'
+import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
 import {
   COPY,
   NOTES_LIST_PATH,
   NOTE_ROUTES,
   NOTE_SUBJECT_OPTIONS,
   NOTE_TYPE_FILTER_OPTIONS,
-  PRIMARY_BUTTON_CLASS,
-  RESET_BUTTON_CLASS,
   errorLines,
   limitText,
   noteGradeText,
@@ -39,6 +38,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+const confirm = useConfirm()
 
 /** The applied filters, read from the URL (live names: `search`, `subject`, `note_type`). */
 const applied = computed(() => ({
@@ -81,6 +81,9 @@ const { data, error, reload } = useApi(
 
 const rows = computed<AdminNoteItem[]>(() => data.value?.data ?? [])
 const total = computed(() => data.value?.meta.totalItems ?? 0)
+const firstLoad = computed(() => data.value === null && error.value === null)
+const publishedOnPage = computed(() => rows.value.filter((r) => r.isPublished).length)
+const downloadsOnPage = computed(() => rows.value.reduce((sum, r) => sum + r.downloads, 0))
 
 const pagerQuery = computed(() => {
   const out: Record<string, string> = {}
@@ -89,6 +92,19 @@ const pagerQuery = computed(() => {
   if (applied.value.noteType !== '') out.note_type = applied.value.noteType
   return out
 })
+
+const chips = computed(() => {
+  const out: { key: string; label: string }[] = []
+  if (applied.value.search !== '') out.push({ key: 'search', label: `"${applied.value.search}"` })
+  const sub = NOTE_SUBJECT_OPTIONS.find((o) => o.value === applied.value.subject)
+  if (sub) out.push({ key: 'subject', label: sub.label })
+  const type = NOTE_TYPE_FILTER_OPTIONS.find(
+    (o) => o.value === applied.value.noteType && o.value !== 'all',
+  )
+  if (type) out.push({ key: 'note_type', label: type.label })
+  return out
+})
+const activeCount = computed(() => chips.value.length)
 
 function formQuery(): Record<string, string> {
   const out: Record<string, string> = {}
@@ -108,6 +124,16 @@ async function submitFilter(): Promise<void> {
   }
 }
 
+async function resetFilter(): Promise<void> {
+  await router.push({ path: NOTES_LIST_PATH })
+}
+
+async function removeChip(key: string): Promise<void> {
+  const query = { ...pagerQuery.value }
+  delete query[key]
+  await router.push({ path: NOTES_LIST_PATH, query })
+}
+
 function goToPage(page: number): void {
   void router.push({ path: NOTES_LIST_PATH, query: { ...pagerQuery.value, page: String(page) } })
 }
@@ -115,8 +141,8 @@ function goToPage(page: number): void {
 const deleting = ref(false)
 
 async function remove(row: AdminNoteItem): Promise<void> {
-  if (!confirmNative(COPY.confirmDeleteNote)) return
   if (deleting.value) return
+  if (!(await confirm({ message: COPY.confirmDeleteNote, tone: 'danger' }))) return
   deleting.value = true
   try {
     const result = await deleteAdminNote(row.id)
@@ -135,167 +161,221 @@ async function remove(row: AdminNoteItem): Promise<void> {
   }
 }
 
-const COLUMNS = ['Tajuk', 'Subjek', 'Jenis', 'Tahap', 'Status', 'Statistik', 'Tindakan'] as const
+function actionsOf(row: AdminNoteItem) {
+  return [
+    { label: 'Lihat', icon: 'i-ph-eye', to: `${NOTES_LIST_PATH}/${String(row.id)}` },
+    {
+      label: 'Edit',
+      icon: 'i-ph-pencil-simple',
+      to: `${NOTES_LIST_PATH}/${String(row.id)}/edit`,
+    },
+    {
+      label: 'Padam',
+      icon: 'i-ph-trash',
+      danger: true,
+      disabled: deleting.value,
+      onSelect: () => void remove(row),
+    },
+  ]
+}
+
+interface TableRow extends Record<string, unknown> {
+  id: number
+  title: string
+  subjectText: string
+  noteType: string
+  gradeText: string
+  raw: AdminNoteItem
+}
+
+const tableRows = computed<TableRow[]>(() =>
+  rows.value.map((r) => ({
+    id: r.id,
+    title: limitText(r.title, 40),
+    subjectText: noteSubjectText(r.subject),
+    noteType: r.noteType,
+    gradeText: noteGradeText(r.grade),
+    raw: r,
+  })),
+)
+
+const columns: TableColumn<TableRow>[] = [
+  { accessorKey: 'title', header: 'Tajuk' },
+  { accessorKey: 'subjectText', header: 'Subjek' },
+  { accessorKey: 'noteType', header: 'Jenis' },
+  { accessorKey: 'gradeText', header: 'Tahap' },
+  { id: 'status', header: 'Status' },
+  { id: 'stats', header: 'Statistik' },
+  { id: 'actions', header: 'Tindakan' },
+]
+const cardFields: CardField[] = [
+  { key: 'subjectText', label: 'Subjek' },
+  { key: 'noteType', label: 'Jenis' },
+  { key: 'gradeText', label: 'Tahap' },
+]
 </script>
 
 <template>
-  <div class="min-w-0 space-y-4 sm:space-y-6" data-testid="admin-notes-page">
-    <form
-      method="get"
-      class="grid gap-3 rounded-2xl bg-white p-4 shadow sm:grid-cols-2 sm:p-5 lg:grid-cols-[2fr_1fr_1fr_auto]"
-      data-testid="admin-notes-filter"
-      @submit.prevent="submitFilter"
-    >
-      <input
-        v-model="search"
-        type="text"
-        name="search"
-        placeholder="Cari nota..."
-        :class="[FORM_INPUT_CLASS, 'min-h-11 sm:col-span-2 lg:col-span-1']"
-        data-testid="admin-notes-search"
+  <DsPage data-testid="admin-notes-page">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <p class="min-w-0 text-body text-muted" data-testid="admin-notes-count">
+        Jumlah: {{ total }} nota
+      </p>
+      <UButton
+        :to="{ name: NOTE_ROUTES.create }"
+        icon="i-ph-plus"
+        label="Tambah Nota"
+        size="md"
+        class="min-h-11"
+        data-testid="admin-notes-add"
       />
-      <select
-        v-model="subject"
-        name="subject"
-        :class="[FORM_INPUT_CLASS, 'min-h-11']"
-        data-testid="admin-notes-subject"
+    </div>
+
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <DsStatTile :value="total" unit="Jumlah nota" icon="i-ph-notebook" accent="action" />
+      <DsStatTile
+        :value="publishedOnPage"
+        unit="Diterbitkan (halaman ini)"
+        icon="i-ph-check-circle"
+        accent="win"
+      />
+      <DsStatTile
+        :value="downloadsOnPage"
+        unit="Muat turun (halaman ini)"
+        icon="i-ph-download-simple"
+        accent="trial"
+      />
+    </section>
+
+    <div class="flex flex-col gap-3">
+      <DsFilterBar
+        :active-count="activeCount"
+        data-testid="admin-notes-filter"
+        @apply="submitFilter"
+        @reset="resetFilter"
       >
-        <option value="all">Semua Subjek</option>
-        <option v-for="o in NOTE_SUBJECT_OPTIONS" :key="o.value" :value="o.value">
-          {{ o.label }}
-        </option>
-      </select>
-      <select
-        v-model="noteType"
-        name="note_type"
-        :class="[FORM_INPUT_CLASS, 'min-h-11']"
-        data-testid="admin-notes-type"
-      >
-        <option v-for="o in NOTE_TYPE_FILTER_OPTIONS" :key="o.value" :value="o.value">
-          {{ o.label }}
-        </option>
-      </select>
-      <div class="flex gap-3 sm:col-span-2 lg:col-span-1">
-        <button type="submit" :class="PRIMARY_BUTTON_CLASS" data-testid="admin-notes-submit">
-          <Search class="h-4 w-4" aria-hidden="true" />
-          Cari
-        </button>
-        <RouterLink
-          :to="NOTES_LIST_PATH"
-          :class="RESET_BUTTON_CLASS"
-          data-testid="admin-notes-reset"
-        >
-          Reset
-        </RouterLink>
-      </div>
-    </form>
-
-    <AlertBox v-if="error" :messages="errorLines(error)" data-testid="admin-notes-error" />
-
-    <DataTableCard v-else-if="data" :min-width="780">
-      <template #header>
-        <div
-          class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4"
-        >
-          <div>
-            <h2 class="font-heading text-lg font-bold text-slate-800">Senarai Nota</h2>
-            <p class="text-sm text-slate-500" data-testid="admin-notes-count">
-              Jumlah: {{ total }} nota
-            </p>
-          </div>
-          <RouterLink
-            :to="{ name: NOTE_ROUTES.create }"
-            :class="PRIMARY_BUTTON_CLASS"
-            data-testid="admin-notes-add"
-          >
-            <Plus class="h-4 w-4" aria-hidden="true" />
-            Tambah Nota
-          </RouterLink>
-        </div>
-      </template>
-
-      <table :class="T.table" data-testid="admin-notes-table">
-        <thead class="bg-slate-50">
-          <tr>
-            <th
-              v-for="label in COLUMNS"
-              :key="label"
-              scope="col"
-              :class="T.th"
-              data-testid="admin-notes-th"
-            >
-              {{ label }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="rows.length === 0" :class="T.row" data-testid="admin-notes-empty">
-            <td :colspan="COLUMNS.length" class="px-4 py-12 text-center text-slate-400">
-              <Inbox class="mx-auto mb-2 h-10 w-10" aria-hidden="true" />
-              <p class="font-medium text-slate-500">{{ COPY.noteEmpty }}</p>
-            </td>
-          </tr>
-          <tr
-            v-for="row in rows"
-            :key="row.id"
-            :class="[T.row, 'align-middle']"
-            data-testid="admin-note-row"
-            :data-note-id="row.id"
-          >
-            <td :class="[T.td, 'min-w-56']">
-              <div class="font-semibold text-slate-800" data-testid="note-title">
-                {{ limitText(row.title, 40) }}
-              </div>
-              <div v-if="row.author" class="text-xs text-slate-500" data-testid="note-author">
-                Oleh: {{ row.author.name }}
-              </div>
-            </td>
-            <td :class="T.td">
-              <span
-                class="inline-block rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-indigo-700"
-                data-testid="note-subject"
-                >{{ noteSubjectText(row.subject) }}</span
-              >
-            </td>
-            <td :class="[T.td, 'whitespace-nowrap']" data-testid="note-type">
-              {{ row.noteType }}
-            </td>
-            <td :class="[T.td, 'whitespace-nowrap']" data-testid="note-grade">
-              {{ noteGradeText(row.grade) }}
-            </td>
-            <td :class="T.td"><AdminStatusPill :published="row.isPublished" /></td>
-            <td :class="[T.td, 'text-xs whitespace-nowrap text-slate-500']">
-              <div class="flex items-center gap-1.5" data-testid="note-views">
-                <Eye class="h-3.5 w-3.5" aria-hidden="true" />{{ row.views }} tontonan
-              </div>
-              <div class="flex items-center gap-1.5" data-testid="note-downloads">
-                <Download class="h-3.5 w-3.5" aria-hidden="true" />{{ row.downloads }} muat turun
-              </div>
-            </td>
-            <td :class="T.td">
-              <AdminRowActions
-                :view-to="`${NOTES_LIST_PATH}/${row.id}`"
-                :edit-to="`${NOTES_LIST_PATH}/${row.id}/edit`"
-                :busy="deleting"
-                @remove="remove(row)"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <template #footer>
-        <div v-if="data.meta.totalPages > 1" class="border-t border-slate-100 px-4 py-3">
-          <LaravelPager
-            :page="applied.page"
-            :total="total"
-            :per-page="data.meta.pageSize"
-            :path="NOTES_LIST_PATH"
-            :query="pagerQuery"
-            @change="goToPage"
+        <template #search>
+          <UInput
+            v-model="search"
+            type="text"
+            name="search"
+            aria-label="Cari"
+            placeholder="Cari nota..."
+            icon="i-ph-magnifying-glass"
+            size="md"
+            class="w-full md:min-w-64 md:grow"
+            data-testid="admin-notes-search"
           />
+        </template>
+        <NativeSelect
+          v-model="subject"
+          name="subject"
+          aria-label="Subjek"
+          class="md:w-48"
+          data-testid="admin-notes-subject"
+        >
+          <option value="all">Semua Subjek</option>
+          <option v-for="o in NOTE_SUBJECT_OPTIONS" :key="o.value" :value="o.value">
+            {{ o.label }}
+          </option>
+        </NativeSelect>
+        <NativeSelect
+          v-model="noteType"
+          name="note_type"
+          aria-label="Jenis"
+          class="md:w-44"
+          data-testid="admin-notes-type"
+        >
+          <option v-for="o in NOTE_TYPE_FILTER_OPTIONS" :key="o.value" :value="o.value">
+            {{ o.label }}
+          </option>
+        </NativeSelect>
+      </DsFilterBar>
+      <AdminActiveFilters :chips="chips" @remove="removeChip" @reset="resetFilter" />
+    </div>
+
+    <div v-if="error" class="flex flex-col gap-4" data-testid="admin-notes-error">
+      <AdminAlert :messages="errorLines(error)" />
+      <div><UButton label="Cuba Lagi" class="min-h-11" @click="reload()" /></div>
+    </div>
+
+    <UCard v-else-if="!firstLoad && rows.length === 0" data-testid="admin-notes-empty">
+      <DsEmptyState :title="COPY.noteEmpty" icon="i-ph-notebook" />
+    </UCard>
+
+    <DsDataTable
+      v-else
+      :data="tableRows"
+      :columns="columns"
+      caption="Senarai nota"
+      :loading="firstLoad"
+      :total="total"
+      :page-size="data?.meta.pageSize ?? 20"
+      :page="applied.page"
+      card-title="title"
+      :card-fields="cardFields"
+      :empty-label="COPY.noteEmpty"
+      data-testid="admin-notes-table"
+      @update:page="goToPage"
+    >
+      <template #title-cell="{ row }">
+        <div
+          class="flex min-w-56 flex-col gap-1"
+          data-testid="admin-note-row"
+          :data-note-id="row.original.id"
+        >
+          <p class="line-clamp-2 text-label text-highlighted" data-testid="note-title">
+            {{ row.original.title }}
+          </p>
+          <p
+            v-if="row.original.raw.author"
+            class="text-caption text-muted"
+            data-testid="note-author"
+          >
+            Oleh: {{ row.original.raw.author.name }}
+          </p>
         </div>
       </template>
-    </DataTableCard>
-  </div>
+      <template #subjectText-cell="{ row }">
+        <UBadge
+          color="primary"
+          variant="subtle"
+          :label="row.original.subjectText"
+          data-testid="note-subject"
+        />
+      </template>
+      <template #noteType-cell="{ row }">
+        <span class="text-nowrap" data-testid="note-type">{{ row.original.noteType }}</span>
+      </template>
+      <template #gradeText-cell="{ row }">
+        <span class="text-nowrap" data-testid="note-grade">{{ row.original.gradeText }}</span>
+      </template>
+      <template #status-cell="{ row }">
+        <UBadge
+          :color="row.original.raw.isPublished ? 'success' : 'neutral'"
+          variant="subtle"
+          :label="row.original.raw.isPublished ? COPY.published : COPY.draft"
+          data-testid="status-pill"
+        />
+      </template>
+      <template #stats-cell="{ row }">
+        <div class="flex flex-col gap-1 text-caption text-nowrap text-muted">
+          <span class="inline-flex items-center gap-2" data-testid="note-views">
+            <UIcon name="i-ph-eye" class="size-4" aria-hidden="true" />
+            {{ row.original.raw.views }} tontonan
+          </span>
+          <span class="inline-flex items-center gap-2" data-testid="note-downloads">
+            <UIcon name="i-ph-download-simple" class="size-4" aria-hidden="true" />
+            {{ row.original.raw.downloads }} muat turun
+          </span>
+        </div>
+      </template>
+      <template #actions-cell="{ row }">
+        <AdminRowMenu :actions="actionsOf(row.original.raw)" />
+      </template>
+      <template #card-actions="{ row }">
+        <AdminRowMenu :actions="actionsOf((row as unknown as TableRow).raw)" />
+      </template>
+    </DsDataTable>
+  </DsPage>
 </template>

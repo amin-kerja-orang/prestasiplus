@@ -13,6 +13,7 @@ import type { AdminNoteDetail, AdminNoteItem } from '../../api/admin-articles-no
 import AdminNoteFormPage from '../../pages/AdminNoteFormPage.vue'
 import AdminNoteListPage from '../../pages/AdminNoteListPage.vue'
 import AdminNotePreviewPage from '../../pages/AdminNotePreviewPage.vue'
+import { chooseRowAction, menuItem, openRowMenu } from '../menu'
 
 const api = vi.hoisted(() => ({
   fetchAdminNotes: vi.fn(),
@@ -22,9 +23,6 @@ const api = vi.hoisted(() => ({
   deleteAdminNote: vi.fn(),
 }))
 vi.mock('../../api/admin-articles-notes', () => api)
-
-const dialogs = vi.hoisted(() => ({ confirmNative: vi.fn(() => true), alertNative: vi.fn() }))
-vi.mock('@/components/overlay/native-dialogs', () => dialogs)
 
 function item(id: number, extra: Partial<AdminNoteItem> = {}): AdminNoteItem {
   return {
@@ -64,6 +62,7 @@ function listResult(rows: AdminNoteItem[], total = rows.length) {
 
 let wrapper: VueWrapper | null = null
 let router: Router
+let confirmSpy: ReturnType<typeof vi.spyOn>
 
 async function mountAt(
   component: Component,
@@ -101,8 +100,7 @@ function el<T extends Element>(w: VueWrapper, id: string): T {
 beforeEach(() => {
   setActivePinia(createPinia())
   for (const fn of Object.values(api)) fn.mockReset()
-  dialogs.confirmNative.mockReset()
-  dialogs.confirmNative.mockReturnValue(true)
+  confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
   usePageMeta().reset()
   api.fetchAdminNotes.mockResolvedValue(
     listResult([
@@ -122,6 +120,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  confirmSpy.mockRestore()
   wrapper?.unmount()
   wrapper = null
 })
@@ -132,7 +131,7 @@ describe('AdminNoteListPage (M09 S5)', () => {
     expect(t(w, 'admin-notes-count').text()).toBe('Jumlah: 2 nota')
     expect(t(w, 'admin-notes-add').text()).toBe('Tambah Nota')
     expect(t(w, 'admin-notes-add').attributes('href')).toBe('/admin/notes/create')
-    expect(w.findAll('[data-testid=admin-notes-th]').map((h) => h.text())).toEqual([
+    expect(w.findAll('thead th').map((h) => h.text())).toEqual([
       'Tajuk',
       'Subjek',
       'Jenis',
@@ -141,7 +140,7 @@ describe('AdminNoteListPage (M09 S5)', () => {
       'Statistik',
       'Tindakan',
     ])
-    const rows = w.findAll('[data-testid=admin-note-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows[0]!.find('[data-testid=note-subject]').text()).toBe('MATEMATIK')
     expect(rows[0]!.find('[data-testid=note-type]').text()).toBe('FORMULA')
     expect(rows[0]!.find('[data-testid=note-grade]').text()).toBe('DARJAH 2')
@@ -173,7 +172,6 @@ describe('AdminNoteListPage (M09 S5)', () => {
       'Cheat Sheet',
       'Nota Penuh',
     ])
-    expect(t(w, 'admin-notes-reset').attributes('href')).toBe('/admin/notes')
   })
 
   it('reads the URL (note_type) into the controls and the query', async () => {
@@ -206,19 +204,18 @@ describe('AdminNoteListPage (M09 S5)', () => {
 
   it('links the row actions and confirms before deleting', async () => {
     const w = await mountAt(AdminNoteListPage, '/admin/notes')
-    const row = w.get('[data-testid=admin-note-row]')
-    expect(row.get('[data-testid=row-view]').attributes('href')).toBe('/admin/notes/1')
-    expect(row.get('[data-testid=row-edit]').attributes('href')).toBe('/admin/notes/1/edit')
+    const items = await openRowMenu(w, 0)
+    expect(menuItem(items, 'Lihat')?.getAttribute('href')).toBe('/admin/notes/1')
+    expect(menuItem(items, 'Edit')?.getAttribute('href')).toBe('/admin/notes/1/edit')
 
-    dialogs.confirmNative.mockReturnValue(false)
-    await row.get('[data-testid=row-delete]').trigger('click')
-    expect(dialogs.confirmNative).toHaveBeenCalledWith('Adakah anda pasti mahu padam nota ini?')
+    confirmSpy.mockReturnValue(false)
+    await chooseRowAction(w, 0, 'Padam')
+    expect(confirmSpy).toHaveBeenCalledWith('Adakah anda pasti mahu padam nota ini?')
     expect(api.deleteAdminNote).not.toHaveBeenCalled()
 
-    dialogs.confirmNative.mockReturnValue(true)
+    confirmSpy.mockReturnValue(true)
     api.deleteAdminNote.mockResolvedValue({ data: { deleted: 1 }, status: 'Nota berjaya dipadam.' })
-    await row.get('[data-testid=row-delete]').trigger('click')
-    await flushPromises()
+    await chooseRowAction(w, 0, 'Padam')
     expect(api.deleteAdminNote).toHaveBeenCalledWith(1)
     expect(useFlashStore().current?.message).toBe('Nota berjaya dipadam.')
   })
@@ -226,10 +223,11 @@ describe('AdminNoteListPage (M09 S5)', () => {
   it('shows a pager (with filters) only above one page', async () => {
     api.fetchAdminNotes.mockResolvedValue(listResult([item(1)], 25))
     const w = await mountAt(AdminNoteListPage, '/admin/notes?subject=sains')
-    const links = w
-      .findAll('nav[aria-label="Pagination Navigation"] a')
-      .map((a) => a.attributes('href'))
-    expect(links).toContain('/admin/notes?subject=sains&page=2')
+    const next = w.findAll('button').find((b) => b.text() === '2')
+    expect(next).toBeDefined()
+    await next!.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ subject: 'sains', page: '2' })
   })
 })
 
@@ -359,7 +357,7 @@ describe('AdminNotePreviewPage (M09 S8)', () => {
     const body = t(w, 'preview-body')
     expect(body.text().startsWith('<h2>Sifir 1 hingga 12</h2>')).toBe(true)
     expect(body.find('h2').exists()).toBe(false)
-    expect(body.classes().join(' ')).toContain('[overflow-wrap:anywhere]')
+    expect(body.classes()).toContain('break-words')
     expect(t(w, 'preview-edit').text()).toBe('Edit Nota')
     expect(t(w, 'preview-edit').attributes('href')).toBe('/admin/notes/1/edit')
     expect(usePageMeta().state.header).toEqual({

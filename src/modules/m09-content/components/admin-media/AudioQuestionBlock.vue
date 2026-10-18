@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /**
- * One of the 30 question blocks of S13 (FN-M09-5.2.5, FR-M09-69): heading "Soalan {n}", pill "KBAT
+ * One of the 30 question blocks of S13 (FN-M09-5.2.5, FR-M09-69): heading "Soalan {n}", badge "KBAT
  * Audio", "Teks Soalan", "Pilihan A" to "Pilihan D", "Jawapan" (A, default), "Markah" (1–20,
  * default 1), "KBAT Level" (1–5, default 3), "DSKP SP ID" and "Skema / Penjelasan". Native
  * validation: question text, the four options and the answer are required. The four options sit in
  * one column below `md` and two from `md`. The state object belongs to the parent form.
  */
-import { INPUT_CLASS, LABEL_CLASS } from '../../lib/admin-media/common'
 import { ANSWER_OPTIONS, type QuestionState } from '../../lib/admin-media/audio'
+import AdminField from '../admin-kit/AdminField.vue'
+import NativeSelect from '../admin-kit/native/NativeSelect.vue'
 
 defineProps<{ no: number }>()
 
@@ -22,112 +23,111 @@ const OPTIONS = [
 </script>
 
 <template>
-  <section
-    class="space-y-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5"
-    data-testid="question-block"
-    :data-question-no="no"
-  >
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <h3 class="font-heading text-base font-bold text-slate-800">Soalan {{ no }}</h3>
-      <span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700"
-        >KBAT Audio</span
-      >
-    </div>
-
-    <div>
-      <label :for="`q${String(no)}-text`" :class="LABEL_CLASS">Teks Soalan</label>
-      <textarea
-        :id="`q${String(no)}-text`"
-        v-model="question.questionText"
-        :name="`questions[${String(no)}][question_text]`"
-        required
-        rows="2"
-        :class="INPUT_CLASS"
-        data-testid="q-text"
-      ></textarea>
-    </div>
-
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <div v-for="option in OPTIONS" :key="option.key">
-        <label :for="`q${String(no)}-${option.key}`" :class="LABEL_CLASS">{{ option.label }}</label>
-        <input
-          :id="`q${String(no)}-${option.key}`"
-          v-model="question[option.key]"
-          type="text"
-          :name="`questions[${String(no)}][${option.name}]`"
-          required
-          :class="INPUT_CLASS"
-          :data-testid="`q-${option.key}`"
-        />
+  <UCard :ui="{ body: 'p-6' }" data-testid="question-block" :data-question-no="no">
+    <div class="flex flex-col gap-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h3 class="text-label text-highlighted">Soalan {{ no }}</h3>
+        <UBadge color="warning" variant="subtle" label="KBAT Audio" />
       </div>
-    </div>
 
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-      <div>
-        <label :for="`q${String(no)}-answer`" :class="LABEL_CLASS">Jawapan</label>
-        <select
-          :id="`q${String(no)}-answer`"
-          v-model="question.correctAnswer"
-          :name="`questions[${String(no)}][correct_answer]`"
+      <AdminField :for="`q${String(no)}-text`" label="Teks Soalan">
+        <UTextarea
+          :id="`q${String(no)}-text`"
+          v-model="question.questionText"
+          :name="`questions[${String(no)}][question_text]`"
           required
-          :class="INPUT_CLASS"
-          data-testid="q-answer"
+          :rows="2"
+          size="md"
+          class="w-full"
+          data-testid="q-text"
+        />
+      </AdminField>
+
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <AdminField
+          v-for="option in OPTIONS"
+          :key="option.key"
+          :for="`q${String(no)}-${option.key}`"
+          :label="option.label"
         >
-          <option v-for="letter in ANSWER_OPTIONS" :key="letter" :value="letter">
-            {{ letter }}
-          </option>
-        </select>
+          <UInput
+            :id="`q${String(no)}-${option.key}`"
+            v-model="question[option.key]"
+            type="text"
+            :name="`questions[${String(no)}][${option.name}]`"
+            required
+            size="md"
+            class="w-full"
+            :data-testid="`q-${option.key}`"
+          />
+        </AdminField>
       </div>
-      <div>
-        <label :for="`q${String(no)}-marks`" :class="LABEL_CLASS">Markah</label>
-        <input
-          :id="`q${String(no)}-marks`"
-          v-model.number="question.marks"
-          type="number"
-          :name="`questions[${String(no)}][marks]`"
-          min="1"
-          max="20"
-          :class="INPUT_CLASS"
-          data-testid="q-marks"
-        />
-      </div>
-      <div>
-        <label :for="`q${String(no)}-kbat`" :class="LABEL_CLASS">KBAT Level</label>
-        <input
-          :id="`q${String(no)}-kbat`"
-          v-model.number="question.kbatLevel"
-          type="number"
-          :name="`questions[${String(no)}][kbat_level]`"
-          min="1"
-          max="5"
-          :class="INPUT_CLASS"
-          data-testid="q-kbat"
-        />
-      </div>
-      <div>
-        <label :for="`q${String(no)}-dskp`" :class="LABEL_CLASS">DSKP SP ID</label>
-        <input
-          :id="`q${String(no)}-dskp`"
-          v-model.number="question.dskpSpId"
-          type="number"
-          :name="`questions[${String(no)}][dskp_sp_id]`"
-          placeholder="Optional"
-          :class="INPUT_CLASS"
-          data-testid="q-dskp"
-        />
-      </div>
-    </div>
 
-    <div>
-      <label :for="`q${String(no)}-explanation`" :class="LABEL_CLASS">Skema / Penjelasan</label>
-      <textarea
-        :id="`q${String(no)}-explanation`"
-        v-model="question.explanation"
-        :name="`questions[${String(no)}][explanation]`"
-        rows="2"
-        :class="INPUT_CLASS"
-        data-testid="q-explanation"
-      ></textarea>
+      <div class="grid grid-cols-2 gap-6 md:grid-cols-4">
+        <AdminField :for="`q${String(no)}-answer`" label="Jawapan">
+          <NativeSelect
+            :id="`q${String(no)}-answer`"
+            v-model="question.correctAnswer"
+            :name="`questions[${String(no)}][correct_answer]`"
+            required
+            data-testid="q-answer"
+          >
+            <option v-for="letter in ANSWER_OPTIONS" :key="letter" :value="letter">
+              {{ letter }}
+            </option>
+          </NativeSelect>
+        </AdminField>
+        <AdminField :for="`q${String(no)}-marks`" label="Markah">
+          <UInput
+            :id="`q${String(no)}-marks`"
+            v-model.number="question.marks"
+            type="number"
+            :name="`questions[${String(no)}][marks]`"
+            min="1"
+            max="20"
+            size="md"
+            class="w-full"
+            data-testid="q-marks"
+          />
+        </AdminField>
+        <AdminField :for="`q${String(no)}-kbat`" label="KBAT Level">
+          <UInput
+            :id="`q${String(no)}-kbat`"
+            v-model.number="question.kbatLevel"
+            type="number"
+            :name="`questions[${String(no)}][kbat_level]`"
+            min="1"
+            max="5"
+            size="md"
+            class="w-full"
+            data-testid="q-kbat"
+          />
+        </AdminField>
+        <AdminField :for="`q${String(no)}-dskp`" label="DSKP SP ID">
+          <UInput
+            :id="`q${String(no)}-dskp`"
+            v-model.number="question.dskpSpId"
+            type="number"
+            :name="`questions[${String(no)}][dskp_sp_id]`"
+            placeholder="Optional"
+            size="md"
+            class="w-full"
+            data-testid="q-dskp"
+          />
+        </AdminField>
+      </div>
+
+      <AdminField :for="`q${String(no)}-explanation`" label="Skema / Penjelasan">
+        <UTextarea
+          :id="`q${String(no)}-explanation`"
+          v-model="question.explanation"
+          :name="`questions[${String(no)}][explanation]`"
+          :rows="2"
+          size="md"
+          class="w-full"
+          data-testid="q-explanation"
+        />
+      </AdminField>
     </div>
-  </section>
+  </UCard>
 </template>

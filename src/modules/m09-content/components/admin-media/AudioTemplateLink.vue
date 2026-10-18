@@ -4,11 +4,9 @@
  * `href` is the live download path; a plain click fetches the placeholder file through the API and
  * saves it without leaving the page (OQ-M09-03). Modified clicks fall through to the route of the
  * same path, which downloads and returns to S12.
- * On S13 the live links render near-white on a pale box and cannot be read; they use the S12 button
- * colours here (DV-M09-20).
+ * On S13 the live links render near-white on a pale box and cannot be read; here they are ordinary
+ * buttons (DV-M09-20).
  */
-import { FileSpreadsheet, FileText } from '@lucide/vue'
-
 import { alertNative } from '@/composables'
 
 import { downloadAudioTemplate } from '../../lib/admin-media/template-download'
@@ -31,19 +29,15 @@ async function onClick(event: MouseEvent): Promise<void> {
 </script>
 
 <template>
-  <a
+  <UButton
     :href="href"
-    :class="[
-      'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold whitespace-nowrap shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
-      kind === 'xlsx'
-        ? 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
-        : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100',
-    ]"
+    color="neutral"
+    variant="soft"
+    size="md"
+    class="min-h-11"
+    :icon="kind === 'xlsx' ? 'i-ph-file-xls' : 'i-ph-file-doc'"
+    :label="kind === 'xlsx' ? 'Template XLSX' : 'Template Word'"
     :data-testid="kind === 'xlsx' ? 'template-xlsx' : 'template-word'"
     @click="onClick"
-  >
-    <FileSpreadsheet v-if="kind === 'xlsx'" class="h-4 w-4" aria-hidden="true" />
-    <FileText v-else class="h-4 w-4" aria-hidden="true" />
-    {{ kind === 'xlsx' ? 'Template XLSX' : 'Template Word' }}
-  </a>
+  />
 </template>
