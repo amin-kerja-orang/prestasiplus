@@ -70,3 +70,29 @@ export { default as DsBackLink } from './DsBackLink.vue'
 export { default as DsBreadcrumb, type CrumbItem } from './DsBreadcrumb.vue'
 export { default as DsPillNav, type PillItem } from './DsPillNav.vue'
 export { provideShellTitle, useShellPrintsTitle } from './shellTitle'
+export { default as DsText } from './DsText.vue'
+export { default as DsHeading } from './DsHeading.vue'
+export { default as DsStack } from './DsStack.vue'
+export { default as DsCluster } from './DsCluster.vue'
+export { default as DsSpacer } from './DsSpacer.vue'
+export { default as DsGrid } from './DsGrid.vue'
+export { default as DsGridItem } from './DsGridItem.vue'
+export { default as DsSplit } from './DsSplit.vue'
+export { default as DsSection } from './DsSection.vue'
+export { default as DsSurface } from './DsSurface.vue'
+export { default as DsStateView } from './DsStateView.vue'
+export type {
+  DsSpace,
+  DsPadding,
+  DsBreakpoint,
+  DsTone,
+  DsSize,
+  DsTextRole,
+  DsTextTone,
+  DsIconName,
+  DsCols,
+  DsResponsive,
+  DsSurfaceLevel,
+  DsPageLayout,
+  DsPageWidth,
+} from './types'

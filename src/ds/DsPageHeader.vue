@@ -10,6 +10,7 @@ import type { RouteLocationRaw } from 'vue-router'
 
 import { dsCopy } from './copy'
 import DsBackLink from './DsBackLink.vue'
+import DsHeading from './DsHeading.vue'
 import { useShellPrintsTitle } from './shellTitle'
 
 const props = withDefaults(
@@ -21,6 +22,8 @@ const props = withDefaults(
     titleTestid?: string
     subtitleTestid?: string
     showTitle?: 'auto' | boolean
+    /** Actions sit under the title instead of beside it (the `form` page archetype). */
+    stackActions?: boolean
   }>(),
   {
     title: undefined,
@@ -30,6 +33,7 @@ const props = withDefaults(
     titleTestid: undefined,
     subtitleTestid: undefined,
     showTitle: 'auto',
+    stackActions: false,
   },
 )
 
@@ -55,18 +59,20 @@ const hasAny = computed(
     <div
       v-if="titleShown || hasSubtitle || $slots.leading || $slots.actions"
       class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 staff:items-center"
+      :class="stackActions ? 'flex-col' : ''"
     >
       <div class="flex min-w-0 items-start gap-3 staff:items-center staff:gap-4">
         <slot name="leading" />
         <div class="flex min-w-0 flex-col gap-1 staff:gap-0.5">
-          <h1
+          <DsHeading
             v-if="titleShown"
-            class="font-display text-title font-extrabold text-highlighted"
+            :level="1"
+            variant="title"
             data-ds="page-title"
             :data-testid="titleTestid"
           >
             {{ title }}
-          </h1>
+          </DsHeading>
           <div v-if="hasSubtitle" class="max-w-prose text-body text-muted" :data-testid="subtitleTestid">
             <slot name="subtitle">{{ subtitle }}</slot>
           </div>
@@ -75,7 +81,11 @@ const hasAny = computed(
           </div>
         </div>
       </div>
-      <div v-if="$slots.actions" class="flex flex-wrap items-center gap-2 staff:ms-auto staff:gap-3">
+      <div
+        v-if="$slots.actions"
+        class="flex flex-wrap items-center gap-2 staff:gap-3"
+        :class="stackActions ? '' : 'staff:ms-auto'"
+      >
         <slot name="actions" />
       </div>
     </div>

@@ -1,22 +1,33 @@
 <script setup lang="ts">
 /**
- * Raised panel of the admin pattern (`docs/design/v2-admin-pages.md`): the surface that holds a
- * toolbar, a table or a summary on the page layer. `flush` drops the padding (tables go edge to
- * edge), `tone="bulk"` is the sticky selection bar. Surface, radius and shadow live here, so pages
- * never name them. `title` (with optional `description` / `icon`) and the `actions` slot print the
- * standard panel header.
+ * Raised panel of the admin pattern (`docs/design/v2-admin-pages.md`), built on `DsSurface`: the
+ * surface that holds a toolbar, a table or a summary on the page layer. `padding="none"` (or the
+ * deprecated `flush`) drops the padding (tables go edge to edge); `behavior` is the positional part
+ * (`bulk` / `bar` sticky bars, `float` result list). `title` (with optional `description` / `icon`)
+ * and the `actions` slot print the standard panel header.
+ *
+ * Deprecated aliases, kept for one release: `tone` (`raised` | `inset` | `tint` set the layer;
+ * `bulk` | `bar` | `float` mean `behavior`) and `flush` (= `padding="none"`).
  */
-import DsIconChip from './DsIconChip.vue'
-import type { DsAccent } from './types'
+import { computed } from 'vue'
 
-withDefaults(
+import DsHeading from './DsHeading.vue'
+import DsIconChip from './DsIconChip.vue'
+import DsSurface from './DsSurface.vue'
+import type { DsAccent, DsPadding } from './types'
+
+const props = withDefaults(
   defineProps<{
-    /** `raised` = page-layer card; `bulk` = sticky selection bar on the elevated layer; `bar` = sticky bottom action bar of a form; `inset` = flat elevated sub-surface inside a card; `tint` = primary-tinted sub-surface (a chosen item); `float` = the floating result list under a search field (absolute, scrolls inside itself). */
+    /** @deprecated Use `behavior` (bulk, bar, float) and the surface layers. */
     tone?: 'raised' | 'bulk' | 'bar' | 'inset' | 'tint' | 'float'
+    /** Positional behaviour: `bulk` = sticky selection bar; `bar` = sticky bottom action bar; `float` = floating result list under a search field. */
+    behavior?: 'static' | 'bulk' | 'bar' | 'float'
     /** Root element (`div`, `form`, `section`, `nav`...). */
-    as?: string
+    as?: 'div' | 'section' | 'article' | 'aside' | 'li' | 'form' | 'nav' | 'header' | 'footer' | 'ul' | 'ol'
+    padding?: DsPadding
+    /** @deprecated Use `padding="none"`. */
     flush?: boolean
-    /** Sticky positioning of the `bulk` and `bar` tones. */
+    /** Sticky positioning of the `bulk` and `bar` behaviours. */
     sticky?: boolean
     title?: string
     description?: string
@@ -26,7 +37,9 @@ withDefaults(
   }>(),
   {
     tone: 'raised',
+    behavior: undefined,
     as: 'div',
+    padding: undefined,
     flush: false,
     sticky: true,
     title: undefined,
@@ -35,36 +48,45 @@ withDefaults(
     accent: 'action',
   },
 )
+
+const behavior = computed<'static' | 'bulk' | 'bar' | 'float'>(() => {
+  if (props.behavior) return props.behavior
+  return props.tone === 'bulk' || props.tone === 'bar' || props.tone === 'float' ? props.tone : 'static'
+})
+const bar = computed(() => behavior.value === 'bulk' || behavior.value === 'bar')
+const hasHeader = computed(() => Boolean(props.title))
 </script>
 
 <template>
-  <component
-    :is="as"
-    class="min-w-0 overflow-clip rounded-card"
+  <DsSurface
+    :as="as"
+    :level="bar || tone === 'inset' ? 'elevated' : 'raised'"
+    :tone="tone === 'tint' ? 'primary' : 'neutral'"
+    :shadow="bar || behavior === 'float' ? 'lift' : tone === 'inset' ? 'none' : 'auto'"
+    :padding="
+      flush || padding === 'none' || behavior === 'float' || hasHeader || $slots.actions
+        ? 'none'
+        : (padding ?? 'md')
+    "
+    :clip="behavior !== 'float'"
     :class="[
-      tone === 'raised' ? 'bg-default shadow-ds-xs' : '',
-      tone === 'bulk' || tone === 'bar' ? 'bg-elevated shadow-lift' : '',
-      tone === 'inset' ? 'bg-elevated' : '',
-      tone === 'tint' ? 'bg-primary/10' : '',
-      tone === 'float'
-        ? 'absolute z-20 mt-1 max-h-64 w-full overflow-y-auto bg-default shadow-lift'
-        : '',
-      sticky && tone === 'bulk' ? 'sticky top-2 z-20' : '',
-      sticky && tone === 'bar' ? 'sticky bottom-2 z-20' : '',
-      flush || tone === 'float' || title || $slots.actions ? '' : 'p-4 sm:p-5',
+      behavior === 'float' ? 'absolute z-20 mt-1 max-h-64 w-full overflow-y-auto' : '',
+      sticky && behavior === 'bulk' ? 'sticky top-2 z-20' : '',
+      sticky && behavior === 'bar' ? 'sticky bottom-2 z-20' : '',
     ]"
     :data-tone="tone"
+    :data-behavior="behavior"
     data-ds="panel"
   >
     <header
-      v-if="title || $slots.actions"
+      v-if="hasHeader || $slots.actions"
       class="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5"
       data-ds="panel-header"
     >
       <div v-if="title" class="flex min-w-0 items-center gap-3">
         <DsIconChip v-if="icon" :icon="icon" :accent="accent" size="sm" />
         <div class="min-w-0">
-          <h2 class="text-subheading text-highlighted">{{ title }}</h2>
+          <DsHeading :level="2" variant="subheading">{{ title }}</DsHeading>
           <p v-if="description" class="text-caption text-muted">{{ description }}</p>
         </div>
       </div>
@@ -72,8 +94,14 @@ withDefaults(
         <slot name="actions" />
       </div>
     </header>
-    <div :class="!flush && (title || $slots.actions) ? 'px-4 pb-4 sm:px-5 sm:pb-5' : ''">
+    <div
+      :class="
+        !flush && padding !== 'none' && behavior !== 'float' && (hasHeader || $slots.actions)
+          ? 'px-4 pb-4 sm:px-5 sm:pb-5'
+          : ''
+      "
+    >
       <slot />
     </div>
-  </component>
+  </DsSurface>
 </template>
