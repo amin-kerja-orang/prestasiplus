@@ -14,10 +14,17 @@
  */
 
 import { dsIconClasses, learnIconClasses } from './ds-icons.ts'
+import { componentDefaults, disabledState, focusRing, selectSlots } from './ui/components.ts'
 
 /** Filled, borderless field with a 2px primary focus ring (D34). */
-const filled =
-  'bg-elevated text-highlighted hover:bg-accented focus:bg-elevated disabled:bg-elevated/50 focus-visible:ring-2 focus-visible:ring-inset'
+const filled = [
+  'bg-elevated text-highlighted placeholder:text-dimmed transition-colors duration-fast',
+  'hover:bg-accented focus:bg-elevated focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
+  // disabled: one token; invalid: error fill + ring; read-only: flat soft layer, no hover.
+  'disabled:cursor-not-allowed disabled:opacity-(--ds-disabled-opacity) disabled:hover:bg-elevated',
+  'aria-invalid:bg-error-field aria-invalid:ring-2 aria-invalid:ring-inset aria-invalid:ring-error',
+  'read-only:cursor-default read-only:bg-soft read-only:hover:bg-soft',
+].join(' ')
 
 /** Field height: staff 40px (44px on coarse pointers), learner 52px; text is 16px on every size. */
 /**
@@ -28,6 +35,7 @@ const filled =
 const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staff:text-body'
 
 const fieldConfig = {
+  slots: { leadingIcon: 'text-muted', trailingIcon: 'text-muted' },
   defaultVariants: { variant: 'soft' },
   variants: {
     variant: { soft: filled },
@@ -39,6 +47,9 @@ const fieldConfig = {
   // Error / highlight state: 2px inset ring (the theme default is 1px).
   compoundVariants: [{ highlight: true, class: 'ring-2' }],
 }
+
+/** Closed field plus its popup list (item states, checked, empty, group labels). */
+const menuField = { ...fieldConfig, slots: { ...fieldConfig.slots, ...selectSlots } }
 
 /**
  * Nuxt UI's internal icons, remapped from Lucide to Phosphor (design system section 10.1: Lucide is
@@ -107,6 +118,25 @@ export const iconBundle = {
 }
 
 export const uiConfig = {
+  // tailwind-merge must know the type roles are font sizes, so `text-label` replaces a stock `text-sm`
+  // instead of sitting beside it.
+  tv: {
+    twMergeConfig: {
+      extend: {
+        classGroups: {
+          'font-size': [
+            {
+              text: [
+                'display', 'title', 'heading', 'subheading', 'body', 'label', 'caption',
+                'overline', 'th', 'kpi', 'badge',
+              ],
+            },
+          ],
+        },
+      },
+    },
+  },
+  ...componentDefaults,
   icons,
   colors: {
     primary: 'kobalt',
@@ -122,10 +152,12 @@ export const uiConfig = {
   // neutral tonal fill (primary / neutral colours) and lose every ring.
   button: {
     slots: {
-      base: 'font-semibold transition-[transform,box-shadow,background-color] duration-200 ease-pop active:scale-[.97] disabled:opacity-40 aria-disabled:opacity-40',
+      base: 'font-semibold transition-[transform,box-shadow,background-color] duration-200 ease-pop active:scale-[.97] disabled:opacity-(--ds-disabled-opacity) aria-disabled:opacity-(--ds-disabled-opacity) disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2',
     },
     defaultVariants: { variant: 'soft' },
     variants: {
+      // Loading: the leading icon spins (stock); the button shows progress and ignores clicks.
+      loading: { true: { base: 'cursor-progress' } },
       size: {
         xs: { base: 'min-h-9 px-2.5 text-label' },
         sm: { base: 'min-h-10 px-3.5 text-label' },
@@ -168,9 +200,9 @@ export const uiConfig = {
 
   input: fieldConfig,
   textarea: fieldConfig,
-  select: fieldConfig,
-  selectMenu: fieldConfig,
-  inputMenu: fieldConfig,
+  select: menuField,
+  selectMenu: menuField,
+  inputMenu: menuField,
   inputNumber: fieldConfig,
   inputDate: fieldConfig,
   inputTime: fieldConfig,
@@ -178,7 +210,14 @@ export const uiConfig = {
   pinInput: { defaultVariants: { variant: 'soft' }, variants: { variant: { soft: filled } } },
 
   // Pager wraps instead of overflowing on narrow screens (S-08 / S-09).
-  pagination: { slots: { root: 'max-w-full', list: 'flex-wrap justify-center' } },
+  pagination: {
+    slots: {
+      root: 'max-w-full',
+      list: 'flex-wrap justify-center gap-1.5',
+      item: 'min-w-11 tabular-nums',
+      ellipsis: 'text-muted',
+    },
+  },
 
   // Raised surface with a soft shadow, no divider lines.
   card: {
@@ -202,7 +241,10 @@ export const uiConfig = {
   // Learner: the active chip is the primary gradient with the on-primary label.
   tabs: {
     defaultVariants: { variant: 'pill', color: 'neutral' },
-    slots: { list: 'w-fit max-w-full overflow-x-auto' },
+    slots: {
+      list: 'w-fit max-w-full overflow-x-auto',
+      trigger: `text-label transition-colors duration-fast hover:text-highlighted ${disabledState} ${focusRing}`,
+    },
     variants: {
       variant: {
         pill: {
@@ -232,7 +274,9 @@ export const uiConfig = {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
       // Borders are transparent (layers, not lines): an unchecked box needs its own fill to show.
-      base: "relative overflow-visible rounded-xs bg-accented after:absolute after:-inset-2.5 after:content-['']",
+      base: "relative overflow-visible rounded-xs bg-accented transition-colors duration-fast after:absolute after:-inset-2.5 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      label: 'text-label',
+      description: 'text-caption text-muted',
     },
     variants: { size: { md: { base: 'size-6' }, sm: { base: 'size-6' } } },
   },
@@ -240,12 +284,15 @@ export const uiConfig = {
   switch: {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
-      base: "relative after:absolute after:-inset-2 after:content-['']",
+      base: "relative transition-colors duration-fast after:absolute after:-inset-2 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      thumb: 'shadow-ds-xs',
+      label: 'text-label',
+      description: 'text-caption text-muted',
     },
   },
   navigationMenu: {
     slots: {
-      link: 'min-h-11 gap-3 px-3 text-label',
+      link: `min-h-11 gap-3 rounded-md px-3 text-label transition-colors duration-fast hover:bg-elevated hover:text-highlighted data-[state=open]:bg-elevated ${disabledState} ${focusRing}`,
       childLink: 'min-h-11 px-3 text-label',
       linkLeadingIcon: 'size-5',
     },
@@ -262,8 +309,13 @@ export const uiConfig = {
 
   modal: {
     slots: {
-      overlay: 'z-50 bg-(--ds-overlay)',
+      overlay: 'z-50 bg-overlay',
       content: 'z-50 divide-y-0',
+      header: 'p-5',
+      body: 'p-5',
+      footer: 'p-5',
+      title: 'text-heading text-highlighted',
+      description: 'text-body text-muted',
     },
     variants: {
       fullscreen: { false: { content: 'rounded-xl shadow-modal ring-0' } },
@@ -271,17 +323,21 @@ export const uiConfig = {
   },
   // Overlays sit above the shell chrome (sidebar and bars are z-30): modal surfaces never hide behind it.
   slideover: {
-    slots: { overlay: 'z-50 bg-(--ds-overlay)', content: 'z-50 divide-y-0 shadow-modal ring-0' },
+    slots: { overlay: 'z-50 bg-overlay', content: 'z-50 divide-y-0 shadow-modal ring-0' },
   },
   drawer: {
-    slots: { overlay: 'z-50 bg-(--ds-overlay)', content: 'z-50 bg-elevated shadow-modal ring-0' },
+    slots: { overlay: 'z-50 bg-overlay', content: 'z-50 bg-elevated shadow-modal ring-0' },
   },
 
   // Zebra rows on the raised surface, no row lines.
   table: {
     slots: {
       root: 'bg-default rounded-lg shadow-ds-xs in-data-[ds=panel]:rounded-none in-data-[ds=panel]:shadow-none',
-      tbody: 'divide-y-0 [&>tr:nth-child(even)]:bg-soft',
+      // Zebra, then row states (they beat the zebra by specificity): hover on selectable rows, selected.
+      tbody:
+        'divide-y-0 [&>tr:nth-child(even)]:bg-soft [&>tr[data-selectable=true]:hover]:bg-elevated [&>tr[data-selected=true]]:bg-primary-soft',
+      tr: `transition-colors duration-fast ${focusRing}`,
+      empty: 'py-8 text-center text-body text-muted',
       th: 'px-4 py-3 text-th text-muted',
       td: 'px-4 py-3 text-body tabular-nums',
     },
@@ -312,18 +368,30 @@ export const uiConfig = {
   // coloured border).
   // The radio dot gets a fill too: its ring token is transparent, so an unchecked radio would be invisible.
   radioGroup: {
-    slots: { base: 'bg-accented' },
+    slots: {
+      base: 'bg-accented transition-colors duration-fast aria-invalid:ring-2 aria-invalid:ring-error',
+      legend: 'text-label font-semibold',
+      label: 'text-label',
+      description: 'text-caption text-muted',
+    },
     compoundVariants: [
-      { variant: 'card', class: { item: 'border-0' } },
-      { variant: 'card', color: 'info', class: { item: 'has-data-[state=checked]:bg-info/20' } },
+      {
+        variant: 'card',
+        class: {
+          item: `border-0 bg-elevated transition-colors duration-fast hover:bg-accented has-data-[state=checked]:bg-primary-soft has-data-[disabled]:opacity-(--ds-disabled-opacity) has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary`,
+        },
+      },
+      { variant: 'card', color: 'info', class: { item: 'has-data-[state=checked]:bg-info-strong' } },
     ],
   },
 
-  alert: {
-    compoundVariants: [{ variant: ['outline', 'subtle'], class: { root: 'ring-0' } }],
+  toast: {
+    slots: {
+      root: 'bg-elevated shadow-modal ring-0 rounded-md',
+      title: 'text-label font-semibold',
+      description: 'text-body',
+    },
   },
-
-  toast: { slots: { root: 'bg-elevated shadow-modal ring-0 rounded-md' } },
 
   progress: {
     slots: { base: 'bg-elevated', status: 'tabular-nums font-bold text-default' },

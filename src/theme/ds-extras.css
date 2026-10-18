@@ -135,3 +135,11 @@
     animation-delay: 300ms;
   }
 }
+
+/* Keyboard focus for anything interactive that a component did not style itself (DS tiles, rows,
+   pills, custom buttons). Zero specificity (:where) so every component rule still wins; the colour
+   is the live primary, which is AA against the surfaces in all four personality x mode scopes. */
+[data-personality] :where(a[href], button, select, textarea, input, summary, [role='button'], [role='tab'], [role='link'], [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
