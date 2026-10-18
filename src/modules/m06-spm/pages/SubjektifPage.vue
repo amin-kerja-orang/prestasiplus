@@ -4,19 +4,19 @@
  *
  * Info box, four stat cards of the caller's SPM subjective attempts, tabs Semua / Teras / Elektif that
  * switch the card grid client-side, and one card per subject → S9 (the M05 structured list with
- * `scope=spm`). The active "Semua" tab is dark with white text (DV-M06-09: live is unreadable).
+ * `scope=spm`). The active tab is a solid primary button (DV-M06-09: live is unreadable). Restyled for v2.
  */
-import { ArrowLeft, ChevronRight, Info, PenLine, Pen } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
+import { DsBackLink, DsIconChip, DsPage, DsStatTile, type DsAccent } from '@/ds'
 import { formatCount } from '@/lib/number'
+import { subjectGlyph } from '@/modules/m05-practice'
 
 import { fetchSubjektif } from '../api'
 import LoadError from '../components/LoadError.vue'
 import SkeletonCards from '../components/SkeletonCards.vue'
-import SubjectIcon from '../components/SubjectIcon.vue'
 import { bestScoreLabel, subjektifHref, tabSubjects, type SubjektifTab } from '../lib/tracking'
 
 const { data, error, reload } = useApi((signal) => fetchSubjektif({ signal }))
@@ -33,189 +33,166 @@ const counts = computed(() => {
   }
 })
 
-const TABS: { id: SubjektifTab; label: string; on: string }[] = [
-  { id: 'all', label: 'Semua', on: 'bg-slate-900 text-white' },
-  { id: 'teras', label: 'Teras', on: 'bg-teal-600 text-white' },
-  { id: 'elektif', label: 'Elektif', on: 'bg-amber-600 text-white' },
+const TABS: { id: SubjektifTab; label: string }[] = [
+  { id: 'all', label: 'Semua' },
+  { id: 'teras', label: 'Teras' },
+  { id: 'elektif', label: 'Elektif' },
 ]
 
-const stats = computed(() => {
+const stats = computed<
+  { id: string; label: string; value: string; cap: string; icon: string; accent: DsAccent }[]
+>(() => {
   const s = data.value?.stats
   if (!s) return []
   return [
     {
       id: 'answered',
+      icon: 'i-ph-notepad-duotone',
+      accent: 'action',
       label: 'Set Dijawab',
       value: formatCount(s.setsAnswered),
       cap: 'Percubaan subjektif SPM yang telah dihantar',
-      cls: 'text-indigo-600',
     },
     {
       id: 'subjects',
+      icon: 'i-ph-books-duotone',
+      accent: 'friend',
       label: 'Subjek Dicuba',
       value: formatCount(s.subjectsTried),
       cap: 'Bilangan subjek subjektif SPM yang pernah dicuba',
-      cls: 'text-teal-600',
     },
     {
       id: 'best',
+      icon: 'i-ph-trophy-duotone',
+      accent: 'win',
       label: 'Skor Terbaik',
       value: bestScoreLabel(s.bestScore),
       cap: 'Skor tertinggi merentas semua set subjektif SPM',
-      cls: 'text-amber-600',
     },
     {
       id: 'saved',
+      icon: 'i-ph-bookmark-simple-duotone',
+      accent: 'heat',
       label: 'Set Terbaik Disimpan',
       value: formatCount(s.bestSetsSaved),
       cap: 'Bilangan set yang mempunyai percubaan terbaik tersimpan',
-      cls: 'text-rose-600',
     },
   ]
 })
 </script>
 
 <template>
-  <div class="min-h-screen px-2 py-4 sm:px-6 sm:py-8 lg:px-8" data-testid="subjektif-page">
-    <div class="mx-auto max-w-7xl">
-      <RouterLink
-        to="/spm"
-        class="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-800"
-        data-testid="spm-back"
-      >
-        <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-        Kembali ke Mod SPM
-      </RouterLink>
+  <DsPage
+    title="Latihan Subjektif SPM"
+    subtitle="Pilih subjek untuk menjawab set struktur dan esei SPM berasaskan bank subjektif Tingkatan 4 dan 5."
+    :show-title="true"
+    title-testid="spm-heading"
+    subtitle-testid="spm-sub"
+    data-testid="subjektif-page"
+  >
+    <template #breadcrumb>
+      <DsBackLink to="/spm" label="Kembali ke Mod SPM" data-testid="spm-back" />
+    </template>
 
-      <div class="mb-5 sm:mb-6">
-        <h1
-          class="flex items-center gap-2 font-heading text-2xl font-extrabold text-slate-800 sm:text-3xl"
-          data-testid="spm-heading"
+    <UAlert color="info" variant="soft" icon="i-ph-info-duotone" data-testid="subjektif-info">
+      <template #description>
+        <strong>Bagaimana ia berfungsi?</strong>
+        Pilih subjek → jawab set struktur/subjektif SPM → semak markah dan model jawapan. Bank ini
+        ditarik daripada soalan berstruktur Tingkatan 4 dan 5 yang telah diterbitkan.
+      </template>
+    </UAlert>
+
+    <template v-if="data">
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" data-testid="subjektif-stats">
+        <div
+          v-for="s in stats"
+          :key="s.id"
+          class="flex min-w-0 flex-col gap-1"
+          :data-testid="`subjektif-stat-${s.id}`"
         >
-          <PenLine class="h-6 w-6 shrink-0 text-teal-600 sm:h-7 sm:w-7" aria-hidden="true" />
-          Latihan Subjektif SPM
-        </h1>
-        <p class="mt-1 text-sm text-slate-600 sm:text-base" data-testid="spm-sub">
-          Pilih subjek untuk menjawab set struktur dan esei SPM berasaskan bank subjektif Tingkatan
-          4 dan 5.
-        </p>
+          <DsStatTile :value="s.value" :unit="s.label" :icon="s.icon" :accent="s.accent" />
+          <p class="px-1 text-caption text-muted" data-testid="stat-caption">{{ s.cap }}</p>
+        </div>
       </div>
 
-      <div
-        class="mb-5 flex items-start gap-2 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 sm:p-4"
-        data-testid="subjektif-info"
-      >
-        <Info class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        <p>
-          <strong>Bagaimana ia berfungsi?</strong>
-          Pilih subjek → jawab set struktur/subjektif SPM → semak markah dan model jawapan. Bank ini
-          ditarik daripada soalan berstruktur Tingkatan 4 dan 5 yang telah diterbitkan.
-        </p>
+      <div class="flex flex-wrap gap-2" data-testid="subjektif-tabs">
+        <UButton
+          v-for="t in TABS"
+          :key="t.id"
+          :color="tab === t.id ? 'primary' : 'neutral'"
+          :variant="tab === t.id ? 'solid' : 'soft'"
+          class="min-h-11"
+          :aria-pressed="tab === t.id"
+          :data-testid="`tab-${t.id}`"
+          :data-active="tab === t.id ? 'true' : 'false'"
+          @click="tab = t.id"
+        >
+          {{ t.label }}
+          <UBadge
+            :color="tab === t.id ? 'neutral' : 'primary'"
+            :variant="tab === t.id ? 'solid' : 'soft'"
+            size="sm"
+            data-testid="tab-count"
+            >{{ counts[t.id] }}</UBadge
+          >
+        </UButton>
       </div>
 
-      <template v-if="data">
-        <div
-          class="mb-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4"
-          data-testid="subjektif-stats"
-        >
-          <div
-            v-for="s in stats"
-            :key="s.id"
-            class="min-w-0 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm sm:p-4"
-            :data-testid="`subjektif-stat-${s.id}`"
-          >
-            <p
-              class="text-xs font-bold tracking-wider text-slate-500 uppercase"
-              data-testid="stat-label"
-            >
-              {{ s.label }}
-            </p>
-            <p :class="['mt-1 text-2xl font-extrabold', s.cls]" data-testid="stat-value">
-              {{ s.value }}
-            </p>
-            <p class="mt-1 text-xs text-slate-500" data-testid="stat-caption">{{ s.cap }}</p>
-          </div>
-        </div>
-
-        <div class="mb-4 flex flex-wrap gap-2" data-testid="subjektif-tabs">
-          <button
-            v-for="t in TABS"
-            :key="t.id"
-            type="button"
-            :class="[
-              'inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold shadow-sm transition',
-              tab === t.id
-                ? t.on
-                : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300',
-            ]"
-            :data-testid="`tab-${t.id}`"
-            :data-active="tab === t.id ? 'true' : 'false'"
-            @click="tab = t.id"
-          >
-            {{ t.label }}
-            <span
-              :class="[
-                'rounded-full px-2 py-0.5 text-xs font-bold',
-                tab === t.id ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600',
-              ]"
-              data-testid="tab-count"
-              >{{ counts[t.id] }}</span
-            >
-          </button>
-        </div>
-
-        <div
-          class="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3"
-          data-testid="subjektif-grid"
-        >
+      <ul class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3" data-testid="subjektif-grid">
+        <li v-for="s in visible" :key="s.subjectId" class="min-w-0">
           <RouterLink
-            v-for="s in visible"
-            :key="s.subjectId"
             :to="subjektifHref(s.subjectId)"
-            class="group flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+            class="block h-full"
             :data-testid="`subjektif-card-${s.subjectId}`"
           >
-            <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
-              :style="{ background: `${s.color}22`, color: s.color }"
-              data-testid="subjektif-icon"
-            >
-              <SubjectIcon :icon="s.icon" class="h-6 w-6" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <h3
-                  class="font-heading text-base font-extrabold break-words text-slate-800"
-                  data-testid="subjektif-name"
-                >
-                  {{ s.name }}
-                </h3>
-                <span
-                  :class="[
-                    'rounded-full px-2 py-0.5 text-xs font-bold',
-                    s.group === 'teras'
-                      ? 'bg-teal-100 text-teal-700'
-                      : 'bg-amber-100 text-amber-800',
-                  ]"
-                  data-testid="subjektif-badge"
-                  >{{ s.group === 'teras' ? 'Teras' : 'Elektif' }}</span
-                >
+            <UCard class="h-full" :ui="{ body: 'flex items-center gap-3 p-4' }">
+              <DsIconChip
+                :icon="subjectGlyph(s.icon)"
+                :accent="s.group === 'teras' ? 'action' : 'heat'"
+                size="lg"
+                data-testid="subjektif-icon"
+              />
+              <div class="flex min-w-0 flex-1 flex-col gap-2">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3
+                      class="text-subheading break-words text-highlighted"
+                      data-testid="subjektif-name"
+                    >
+                      {{ s.name }}
+                    </h3>
+                    <UBadge
+                      :color="s.group === 'teras' ? 'primary' : 'warning'"
+                      variant="soft"
+                      data-testid="subjektif-badge"
+                      >{{ s.group === 'teras' ? 'Teras' : 'Elektif' }}</UBadge
+                    >
+                  </div>
+                  <p class="text-caption text-muted" data-testid="subjektif-name-en">
+                    {{ s.nameEn }}
+                  </p>
+                </div>
+                <div>
+                  <UBadge
+                    color="neutral"
+                    variant="soft"
+                    icon="i-ph-pencil-simple-line-bold"
+                    data-testid="subjektif-sets"
+                    >{{ formatCount(s.sets) }} set subjektif</UBadge
+                  >
+                </div>
               </div>
-              <p class="text-xs text-slate-500" data-testid="subjektif-name-en">{{ s.nameEn }}</p>
-              <span
-                class="mt-2 inline-flex items-center gap-1 rounded-lg bg-rose-50 px-2 py-1 text-xs font-bold text-rose-700"
-                data-testid="subjektif-sets"
-              >
-                <Pen class="h-3 w-3" aria-hidden="true" />
-                {{ formatCount(s.sets) }} set subjektif
-              </span>
-            </div>
-            <ChevronRight class="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
+              <UIcon
+                name="i-ph-caret-right-bold"
+                class="size-5 shrink-0 text-muted"
+                aria-hidden="true"
+              />
+            </UCard>
           </RouterLink>
-        </div>
-      </template>
-      <LoadError v-else-if="error" @retry="reload()" />
-      <SkeletonCards v-else />
-    </div>
-  </div>
+        </li>
+      </ul>
+    </template>
+    <LoadError v-else-if="error" @retry="reload()" />
+    <SkeletonCards v-else />
+  </DsPage>
 </template>

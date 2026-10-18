@@ -25,6 +25,7 @@ const m05 = vi.hoisted(() => ({ fetchSessions: vi.fn() }))
 vi.mock('@/modules/m05-practice', () => ({
   fetchSessions: m05.fetchSessions,
   QuizRunner: {},
+  subjectGlyph: () => 'i-ph-books-duotone',
 }))
 
 const outcome = vi.hoisted(() => ({ setRouteOutcome: vi.fn() }))
@@ -85,18 +86,17 @@ describe('S1 SpmHubPage', () => {
     expect(t(w, 'spm-title').text()).toBe('Persediaan SPM')
     expect(t(w, 'spm-lead').text()).toContain('Latihan lengkap untuk pelajar Tingkatan 4 & 5.')
     const stats = w.findAll('[data-testid^=spm-stat-]')
-    expect(stats.map((s) => s.get('[data-testid=stat-value]').text())).toEqual([
-      '20,529',
-      '25',
-      '0',
-      '1,769',
-    ])
-    expect(stats.map((s) => s.get('[data-testid=stat-label]').text())).toEqual([
-      'Jumlah Soalan',
-      'Subjek SPM',
-      'Tahun Tersedia',
-      'Soalan Tracking A',
-    ])
+    const expected = [
+      ['20,529', 'Jumlah Soalan'],
+      ['25', 'Subjek SPM'],
+      ['0', 'Tahun Tersedia'],
+      ['1,769', 'Soalan Tracking A'],
+    ]
+    expect(stats).toHaveLength(4)
+    stats.forEach((s, i) => {
+      expect(s.text()).toContain(expected[i]![0])
+      expect(s.text()).toContain(expected[i]![1])
+    })
   })
 
   it('renders four whole-card links with chips and "Mula"', async () => {
@@ -122,10 +122,8 @@ describe('S1 SpmHubPage', () => {
 
   it('shows "Prestasi SPM Anda" with one decimal and the history link', async () => {
     const w = await render(SpmHubPage, '/spm')
-    const values = w
-      .findAll('[data-testid^=spm-mine-]')
-      .map((m) => m.get('[data-testid=mine-value]').text())
-    expect(values).toEqual(['4', '21.8%', '26', '84'])
+    const mine = w.findAll('[data-testid^=spm-mine-]')
+    ;['4', '21.8%', '26', '84'].forEach((v, i) => expect(mine[i]!.text()).toContain(v))
     expect(w.text()).toContain('Syiling Diperoleh')
     expect(t(w, 'spm-history-link').attributes('href')).toBe('/spm/history')
   })
@@ -390,11 +388,8 @@ describe('S10 HistoryPage', () => {
     })
     const w = await render(HistoryPage, '/spm/history')
     expect(t(w, 'spm-heading').text()).toBe('Sejarah Kuiz SPM')
-    expect(
-      w
-        .findAll('[data-testid^=history-stat-]')
-        .map((s) => s.get('[data-testid=stat-value]').text()),
-    ).toEqual(['4', '21.8%', '26', '84'])
+    const hs = w.findAll('[data-testid^=history-stat-]')
+    ;['4', '21.8%', '26', '84'].forEach((v, i) => expect(hs[i]!.text()).toContain(v))
     expect(w.text()).toContain('Jumlah Syiling')
     expect(m05.fetchSessions).toHaveBeenCalledWith(
       { modes: ['past_year', 'latih_tubi', 'ramalan'], type: null },
@@ -404,14 +399,13 @@ describe('S10 HistoryPage', () => {
     expect(rows).toHaveLength(2)
     const first = rows[0]!
     expect(first.get('[data-testid=row-score]').text()).toBe('20%')
-    expect(first.get('[data-testid=row-score]').classes()).toContain('bg-red-100')
     expect(first.get('[data-testid=row-badge]').text()).toBe('Tahun Lepas')
     expect(first.get('[data-testid=row-correct]').text()).toBe('1/5 betul')
     expect(first.get('[data-testid=row-meta]').text().replace(/\s+/g, ' ')).toBe(
       '19 May 2026, 03:26 AM · 0m 36s',
     )
     expect(first.get('[data-testid=row-coins]').text()).toBe('+1 🪙')
-    expect(t(w, 'history-filter-all').classes()).toContain('bg-indigo-500')
+    expect(t(w, 'history-filter-all').attributes('data-active')).toBe('true')
   })
 
   it('marks the active filter and passes the type', async () => {
@@ -424,10 +418,8 @@ describe('S10 HistoryPage', () => {
       modes: ['past_year', 'latih_tubi', 'ramalan'],
       type: 'past_year',
     })
-    expect(t(w, 'history-filter-past_year').classes()).toEqual(
-      expect.arrayContaining(['bg-amber-500', 'text-white', 'shadow-md']),
-    )
-    expect(t(w, 'history-filter-all').classes()).not.toContain('bg-indigo-500')
+    expect(t(w, 'history-filter-past_year').attributes('data-active')).toBe('true')
+    expect(t(w, 'history-filter-all').attributes('data-active')).toBe('false')
     expect(t(w, 'history-filter-latih_tubi').attributes('href')).toBe(
       '/spm/history?type=latih_tubi',
     )
@@ -438,9 +430,7 @@ describe('S10 HistoryPage', () => {
     const w = await render(HistoryPage, '/spm/history?type=zzz')
     expect(m05.fetchSessions.mock.calls[0]?.[0].type).toBeNull()
     for (const id of ['all', 'past_year', 'latih_tubi', 'ramalan']) {
-      expect(t(w, `history-filter-${id}`).classes().join(' ')).not.toMatch(
-        /bg-(indigo|amber|blue|purple)-500/,
-      )
+      expect(t(w, `history-filter-${id}`).attributes('data-active')).toBe('false')
     }
   })
 

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/api'
 
 import type { LatihTubiConfig } from '../api'
-import { HISTORY_FILTERS, parseHistoryType, scoreTileClass } from '../lib/history'
+import { HISTORY_FILTERS, parseHistoryType, scoreColor } from '../lib/history'
 import { diffCount, parseLatihTubiQuery, quizHref, targetName } from '../lib/latih-tubi'
 
 const start = vi.hoisted(() => vi.fn())
@@ -87,11 +87,11 @@ describe('history helpers (S10)', () => {
     ])
   })
 
-  it('colours the score tile by band (FR-M06-66)', () => {
-    expect(scoreTileClass(40)).toBe('bg-red-100 text-red-600')
-    expect(scoreTileClass(50)).toContain('yellow')
-    expect(scoreTileClass(79)).toContain('yellow')
-    expect(scoreTileClass(80)).toContain('green')
+  it('colours the score badge by band (FR-M06-66)', () => {
+    expect(scoreColor(40)).toBe('error')
+    expect(scoreColor(50)).toBe('warning')
+    expect(scoreColor(79)).toBe('warning')
+    expect(scoreColor(80)).toBe('success')
   })
 })
 

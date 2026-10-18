@@ -31,3 +31,6 @@ export type {
   QuizReportConfig,
   QuizStartErrorEvent,
 } from './components/quiz/quiz-types'
+
+/** The Phosphor glyph of a subject (used by M06 cards). */
+export { subjectGlyph } from './components/quiz/subject-glyph'

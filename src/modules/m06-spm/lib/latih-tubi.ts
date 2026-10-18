@@ -11,15 +11,15 @@ export type DifficultyKey = 2 | 3 | 4 | 5
 export interface DifficultyOption {
   key: DifficultyKey
   label: string
-  /** Selected-state classes (green / yellow / orange / red). */
-  on: string
+  /** Nuxt UI colour of the selected state (success / info / warning / error). */
+  color: 'success' | 'info' | 'warning' | 'error'
 }
 
 export const DIFFICULTY_OPTIONS: readonly DifficultyOption[] = [
-  { key: 2, label: 'Asas', on: 'border-green-500 bg-green-50 text-green-800 shadow-md' },
-  { key: 3, label: 'Pertengahan', on: 'border-yellow-500 bg-yellow-50 text-yellow-800 shadow-md' },
-  { key: 4, label: 'Sukar', on: 'border-orange-500 bg-orange-50 text-orange-800 shadow-md' },
-  { key: 5, label: 'Sangat Sukar', on: 'border-red-500 bg-red-50 text-red-800 shadow-md' },
+  { key: 2, label: 'Asas', color: 'success' },
+  { key: 3, label: 'Pertengahan', color: 'info' },
+  { key: 4, label: 'Sukar', color: 'warning' },
+  { key: 5, label: 'Sangat Sukar', color: 'error' },
 ]
 
 export const LEVEL_OPTIONS: readonly { key: LevelKey; label: string }[] = [

@@ -6,7 +6,7 @@
  * - `question_id` the pool refuses (inactive, unknown, other subject): back to S4, no message (INFERRED).
  */
 import { computed, ref } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import {
   QuizRunner,
@@ -46,21 +46,20 @@ const headerTitle = (s: StartSessionResponse): string => s.subject?.name ?? ''
 </script>
 
 <template>
-  <div
-    v-if="noQuestions"
-    class="mx-auto max-w-xl px-4 py-10 text-center"
-    data-testid="spm-no-questions"
-  >
-    <p class="mb-4 text-base font-semibold text-slate-700">
-      Tiada soalan untuk tetapan ini. Sila ubah tetapan kuiz.
-    </p>
-    <RouterLink
+  <div v-if="noQuestions" class="flex min-w-0 flex-col gap-4" data-testid="spm-no-questions">
+    <UAlert
+      color="warning"
+      variant="soft"
+      icon="i-ph-warning-duotone"
+      title="Tiada soalan untuk tetapan ini. Sila ubah tetapan kuiz."
+    />
+    <UButton
       :to="backUrl"
-      class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
+      size="lg"
+      class="min-h-11 self-start"
       data-testid="spm-no-questions-back"
+      >Kembali</UButton
     >
-      Kembali
-    </RouterLink>
   </div>
   <QuizRunner
     v-else

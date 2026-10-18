@@ -24,6 +24,7 @@ const m05 = vi.hoisted(() => ({ startSession: vi.fn() }))
 vi.mock('@/modules/m05-practice', async () => {
   const { defineComponent, h } = await import('vue')
   return {
+    subjectGlyph: () => 'i-ph-books-duotone',
     QuizRunner: defineComponent({
       props: {
         start: { type: Object as PropType<StartSessionRequest>, default: null },
@@ -497,13 +498,16 @@ describe('S8 SubjektifPage', () => {
       'Pilih subjek untuk menjawab set struktur dan esei SPM berasaskan bank subjektif Tingkatan 4 dan 5.',
     )
     expect(t(w, 'subjektif-info').text()).toContain('Bagaimana ia berfungsi?')
-    expect(texts(w, 'stat-label')).toEqual([
-      'Set Dijawab',
-      'Subjek Dicuba',
-      'Skor Terbaik',
-      'Set Terbaik Disimpan',
-    ])
-    expect(texts(w, 'stat-value')).toEqual(['0', '0', 'Belum Ada', '0'])
+    const cards = w.findAll('[data-testid^=subjektif-stat-]')
+    ;[
+      ['Set Dijawab', '0'],
+      ['Subjek Dicuba', '0'],
+      ['Skor Terbaik', 'Belum Ada'],
+      ['Set Terbaik Disimpan', '0'],
+    ].forEach(([label, value], i) => {
+      expect(cards[i]!.text()).toContain(label)
+      expect(cards[i]!.text()).toContain(value)
+    })
     expect(texts(w, 'stat-caption')[2]).toBe('Skor tertinggi merentas semua set subjektif SPM')
   })
 
@@ -512,25 +516,25 @@ describe('S8 SubjektifPage', () => {
       overview({ setsAnswered: 2, subjectsTried: 2, bestScore: 75, bestSetsSaved: 2 }),
     )
     const w = await render(SubjektifPage, '/spm/subjektif')
-    expect(texts(w, 'stat-value')).toEqual(['2', '2', '75%', '2'])
+    const cards = w.findAll('[data-testid^=subjektif-stat-]')
+    ;['2', '2', '75%', '2'].forEach((v, i) => expect(cards[i]!.text()).toContain(v))
   })
 
   it('switches the grid with the tabs and styles the active tab', async () => {
     api.fetchSubjektif.mockResolvedValue(overview())
     const w = await render(SubjektifPage, '/spm/subjektif')
-    expect(t(w, 'tab-all').classes()).toContain('bg-slate-900')
-    expect(t(w, 'tab-all').classes()).toContain('text-white')
+    expect(t(w, 'tab-all').attributes('data-active')).toBe('true')
     expect(w.findAll('[data-testid^=subjektif-card-]')).toHaveLength(4)
     expect(t(w, 'tab-all').get('[data-testid=tab-count]').text()).toBe('4')
     expect(t(w, 'tab-teras').get('[data-testid=tab-count]').text()).toBe('2')
 
     await t(w, 'tab-teras').trigger('click')
-    expect(t(w, 'tab-teras').classes()).toContain('bg-teal-600')
+    expect(t(w, 'tab-teras').attributes('data-active')).toBe('true')
     expect(w.findAll('[data-testid^=subjektif-card-]')).toHaveLength(2)
     expect(texts(w, 'subjektif-badge')).toEqual(['Teras', 'Teras'])
 
     await t(w, 'tab-elektif').trigger('click')
-    expect(t(w, 'tab-elektif').classes()).toContain('bg-amber-600')
+    expect(t(w, 'tab-elektif').attributes('data-active')).toBe('true')
     expect(texts(w, 'subjektif-name')).toEqual(['Biologi', 'Sains Komputer'])
   })
 

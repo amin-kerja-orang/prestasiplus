@@ -153,7 +153,7 @@ afterEach(() => {
 describe('S11 MockExamPage', () => {
   it('renders the hero, warning, form and the list with chips and links', async () => {
     const w = await render(MockExamPage, '/spm-mock')
-    expect(t(w, 'mock-hero').text()).toContain('📝 SPM Mock Exam')
+    expect(t(w, 'mock-title').text()).toContain('📝 SPM Mock Exam')
     expect(t(w, 'mock-warning').text()).toContain('Persediaan sebelum mula:')
     expect(t(w, 'mock-subject').attributes('required')).toBeDefined()
     expect(w.findAll('[data-testid=mock-subject] option')).toHaveLength(11)
@@ -295,12 +295,12 @@ describe('S12 MockResultPage', () => {
     expect(t(w, 'result-hero').attributes('data-hero')).toBe('mid')
     expect(t(w, 'weak-count').text()).toBe('1 soalan tersilap')
     expect(t(w, 'result-tip').get('a').attributes('href')).toBe('/pusat-nota-ringkas')
-    expect(t(w, 'review-item-1').classes()).toContain('correct')
+    expect(t(w, 'review-item-1').attributes('data-correct')).toBe('true')
     expect(t(w, 'review-item-1').get('[data-testid=review-header]').text()).toBe(
       '✓ Soalan 1 · 1/1 markah',
     )
     const wrong = t(w, 'review-item-2')
-    expect(wrong.classes()).toContain('wrong')
+    expect(wrong.attributes('data-correct')).toBe('false')
     expect(wrong.text()).toContain('(tiada jawapan)')
     expect(wrong.text()).toContain('Jawapan betul: B')
     expect(t(w, 'duta-title').text()).toBe('🎓 Cikgu Pakar Bahasa Melayu')

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  GRADE_CHIP_CLASS,
-  HERO_CLASS,
+  GRADE_COLOR,
   MOCK_SUBJECT_OPTIONS,
   WALKTHROUGH_SUBJECT_OPTIONS,
   elapsedLabel,
@@ -36,16 +35,13 @@ describe('mock-lib', () => {
     expect(isCorrect({ marks: null, maxMarks: 1 })).toBe(false)
   })
 
-  it('maps grades to chip colours (DV-M06-06) and hero classes', () => {
-    expect(GRADE_CHIP_CLASS['A+']).toContain('emerald')
-    expect(GRADE_CHIP_CLASS.A).toContain('emerald')
-    expect(GRADE_CHIP_CLASS['B+']).toContain('blue')
-    expect(GRADE_CHIP_CLASS.C).toContain('amber')
-    for (const g of ['D', 'E', 'G'] as const) expect(GRADE_CHIP_CLASS[g]).toContain('red')
-    expect(GRADE_CHIP_CLASS.pending).toContain('slate')
-    expect(HERO_CLASS.good).toContain('emerald')
-    expect(HERO_CLASS.mid).toContain('amber')
-    expect(HERO_CLASS.bad).toContain('red')
+  it('maps grades to badge colours (DV-M06-06)', () => {
+    expect(GRADE_COLOR['A+']).toBe('success')
+    expect(GRADE_COLOR.A).toBe('success')
+    expect(GRADE_COLOR['B+']).toBe('info')
+    expect(GRADE_COLOR.C).toBe('warning')
+    for (const g of ['D', 'E', 'G'] as const) expect(GRADE_COLOR[g]).toBe('error')
+    expect(GRADE_COLOR.pending).toBe('neutral')
   })
 
   it('letters options and formats the elapsed timer without going negative', () => {
