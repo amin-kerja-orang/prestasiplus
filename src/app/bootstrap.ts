@@ -23,6 +23,7 @@ import type { Router, RouterHistory } from 'vue-router'
 import { createHttpTransport, installTransport, type Transport } from '@/api'
 import type { BootMockOptions, MockRuntime } from '@/mock'
 import { useSessionStore, withSessionSliding } from '@/stores'
+import { readStoredSession } from '@/stores/session'
 import { uiLocale, uiLocaleKey } from '@/theme/locale-ms'
 
 import App from '../App.vue'
@@ -73,9 +74,14 @@ function shouldDeferMock(mockOptions: Partial<BootMockOptions> | undefined): boo
 
 async function createTransport(
   mockOptions: Partial<BootMockOptions> | undefined,
-): Promise<{ transport: Transport; mockRuntime: MockRuntime | null }> {
+): Promise<{
+  transport: Transport
+  mockRuntime: MockRuntime | null
+  /** Deferred demo boot only: resolves when the mock (and so the mock clock) is ready. */
+  mockReady: Promise<unknown> | null
+}> {
   if (import.meta.env.VITE_API_MODE === 'http') {
-    return { transport: createHttpTransport(), mockRuntime: null }
+    return { transport: createHttpTransport(), mockRuntime: null, mockReady: null }
   }
   if (shouldDeferMock(mockOptions)) {
     const ready = startMockRuntime(mockOptions)
@@ -87,15 +93,20 @@ async function createTransport(
     const transport: Transport = {
       request: async (req, signal) => (await ready).transport.request(req, signal),
     }
-    return { transport, mockRuntime: null }
+    return { transport, mockRuntime: null, mockReady: ready }
   }
   const runtime = await startMockRuntime(mockOptions)
-  return { transport: runtime.transport, mockRuntime: runtime }
+  return { transport: runtime.transport, mockRuntime: runtime, mockReady: null }
 }
 
 export async function bootstrap(options: BootstrapOptions = {}): Promise<BootstrappedApp> {
-  const { transport, mockRuntime } = await createTransport(options.mock)
+  const { transport, mockRuntime, mockReady } = await createTransport(options.mock)
   installTransport(withSessionSliding(transport))
+  // A stored session is judged by the shared clock. In the deferred demo boot that clock is still
+  // the real one (the mock clock is anchored in the past and restored only when the mock is ready),
+  // so every stored session would look expired and a reload would log the user out. Wait for the
+  // mock first, only when a session is stored; guests keep the fast login screen.
+  if (mockReady && readStoredSession() !== null) await mockReady.catch(() => undefined)
 
   const app = createApp(App)
   const pinia = createPinia()
