@@ -16,7 +16,7 @@ defineProps<{
     data-ds="page"
   >
     <header
-      v-if="title || $slots.actions"
+      v-if="title || subtitle || $slots.actions"
       class="flex flex-wrap items-start justify-between gap-3"
       data-ds="page-header"
     >

@@ -7,12 +7,12 @@
 import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { Chain } from '../../../api/types'
 import KirkpatrickPanel from '../common/KirkpatrickPanel.vue'
 import { pct, plain } from '../common/kirkpatrick-format'
+import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{
   correlation: Chain['correlation']
@@ -65,13 +65,12 @@ const cardFields = [
     data-testid="chain-correlation"
   >
     <div class="flex flex-col gap-4">
-      <DsDataTable
+      <KirkpatrickTable
         :data="rows"
         :columns="columns"
         caption="Analisis korelasi penggunaan dan pencapaian"
         card-title="label"
         :card-fields="cardFields"
-        :page-size="100"
       >
         <template #label-cell="{ row }">
           <span data-testid="corr-row">{{ row.original.label }}</span>
@@ -87,7 +86,7 @@ const cardFields = [
             data-testid="corr-bar"
           />
         </template>
-      </DsDataTable>
+      </KirkpatrickTable>
       <UAlert color="primary" variant="soft" icon="i-ph-sparkle" data-testid="corr-conclusion">
         <template #description>
           <strong>Kesimpulan ALESA:</strong> Pelajar yang menjawab 100+ soalan mencapai ketepatan

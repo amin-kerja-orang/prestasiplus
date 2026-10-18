@@ -6,8 +6,11 @@
  *
  * Filters live in the query (`period`, `state`, `tahap`); the filter form submits to the same prefix
  * with a dummy `_token` as live does (SEC-M11-01). Auto-refresh reloads the data every 300 s.
+ *
+ * Layout (Portal Pentadbiran admin pattern): header row (subtitle + actions), filter toolbar, KPI strip,
+ * the sections in tabs, then the guide.
  */
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { isNavigationFailure, NavigationFailureType, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
@@ -20,6 +23,7 @@ import MonitoringFilters from '../components/monitoring/MonitoringFilters.vue'
 import MonitoringGuide from '../components/monitoring/MonitoringGuide.vue'
 import MonitoringKpis from '../components/monitoring/MonitoringKpis.vue'
 import MonitoringSignals from '../components/monitoring/MonitoringSignals.vue'
+import MonitoringTools from '../components/monitoring/MonitoringTools.vue'
 import MonitoringWeekly from '../components/monitoring/MonitoringWeekly.vue'
 import { buildCsv } from '../components/monitoring/monitoring-csv'
 import { LOAD_ERROR_COPY, pct } from '../components/monitoring/monitoring-format'
@@ -86,21 +90,66 @@ async function doExport(format: 'pdf' | 'csv') {
   )
   saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), result.filename)
 }
+const FORM_ID = 'mon-filters-form'
+const SUBTITLE = 'Pantau penglibatan sekolah & pelajar T4/T5 dalam platform'
+
+const tab = ref('pelajar')
+const TAB_OF: Record<string, string> = {
+  'section-pelajar': 'pelajar',
+  'section-guru': 'guru',
+  'section-mingguan': 'mingguan',
+  'section-perhatian': 'perhatian',
+  'section-cadangan': 'cadangan',
+}
+const TABS = [
+  { value: 'pelajar', label: 'Analisis Sekolah', icon: 'i-ph-chart-bar', slot: 'pelajar' as const },
+  { value: 'guru', label: 'Analisis Guru', icon: 'i-ph-chalkboard-teacher', slot: 'guru' as const },
+  {
+    value: 'mingguan',
+    label: 'Tracking Mingguan',
+    icon: 'i-ph-calendar-dots',
+    slot: 'mingguan' as const,
+  },
+  {
+    value: 'perhatian',
+    label: 'Sekolah Cemerlang / Perhatian Segera',
+    icon: 'i-ph-warning',
+    slot: 'perhatian' as const,
+  },
+  {
+    value: 'cadangan',
+    label: 'Cadangan Tindakan',
+    icon: 'i-ph-lightbulb',
+    slot: 'cadangan' as const,
+  },
+]
+
+/** Guide tiles: open the tab that holds the section, then scroll to the tab strip (or the KPIs). */
+async function goto(sectionId: string) {
+  const next = TAB_OF[sectionId]
+  if (next) tab.value = next
+  await nextTick()
+  document
+    .getElementById(next ? 'mon-tabs' : sectionId)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 </script>
 
 <template>
-  <DsPage data-testid="monitoring-page">
-    <MonitoringGuide />
+  <DsPage data-testid="monitoring-page" :subtitle="SUBTITLE">
+    <template #actions>
+      <MonitoringTools
+        :query="query"
+        :paths="paths"
+        :form-id="FORM_ID"
+        :refresh-display="refresh.display.value"
+        :refresh-running="refresh.running.value"
+        @export="doExport"
+        @toggle="refresh.toggle"
+      />
+    </template>
 
-    <MonitoringFilters
-      :query="query"
-      :paths="paths"
-      :refresh-display="refresh.display.value"
-      :refresh-running="refresh.running.value"
-      @apply="apply"
-      @export="doExport"
-      @toggle="refresh.toggle"
-    />
+    <MonitoringFilters :query="query" :paths="paths" :form-id="FORM_ID" @apply="apply" />
 
     <UAlert
       v-if="error"
@@ -115,15 +164,39 @@ async function doExport(format: 'pdf' | 'csv') {
       class="flex items-center gap-2 text-body text-muted"
       data-testid="mon-loading"
     >
-      <UIcon name="i-ph-circle-notch" class="size-4" />Memuatkan...
+      <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
     </p>
 
     <template v-if="data">
       <MonitoringKpis :kpi="data.kpi" />
-      <MonitoringEngagementTable kind="student" :rows="data.studentRows" :paths="paths" />
-      <MonitoringEngagementTable kind="teacher" :rows="data.teacherRows" :paths="paths" />
-      <MonitoringWeekly :weeks="data.weeks" :rows="data.weekly" :paths="paths" />
-      <MonitoringSignals :signals="data.signals" />
+      <UTabs
+        id="mon-tabs"
+        v-model="tab"
+        :items="TABS"
+        :unmount-on-hide="false"
+        variant="link"
+        size="lg"
+        class="w-full"
+        :ui="{ list: 'overflow-x-auto', content: 'pt-6' }"
+        data-testid="mon-tabs"
+      >
+        <template #pelajar>
+          <MonitoringEngagementTable kind="student" :rows="data.studentRows" :paths="paths" />
+        </template>
+        <template #guru>
+          <MonitoringEngagementTable kind="teacher" :rows="data.teacherRows" :paths="paths" />
+        </template>
+        <template #mingguan>
+          <MonitoringWeekly :weeks="data.weeks" :rows="data.weekly" :paths="paths" />
+        </template>
+        <template #perhatian>
+          <MonitoringSignals :signals="data.signals" part="perhatian" />
+        </template>
+        <template #cadangan>
+          <MonitoringSignals :signals="data.signals" part="cadangan" />
+        </template>
+      </UTabs>
+      <MonitoringGuide @goto="goto" />
     </template>
   </DsPage>
 </template>

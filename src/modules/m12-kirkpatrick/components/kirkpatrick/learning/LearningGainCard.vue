@@ -10,7 +10,7 @@ import { DsEmptyState } from '@/ds'
       title="Pre-Test / Post-Test belum dimulakan"
       description="Apabila ujian diagnostik dimulakan, Hake's Normalized Learning Gain akan dikira secara automatik."
     />
-    <p class="text-center text-caption text-muted">
+    <p class="text-center text-body text-muted">
       g = (Post - Pre) / (100 - Pre) · High: g≥0.7 · Medium: 0.3≤g&lt;0.7 · Low: g&lt;0.3
     </p>
   </UCard>

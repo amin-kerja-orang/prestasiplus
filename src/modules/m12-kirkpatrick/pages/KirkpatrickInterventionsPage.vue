@@ -24,7 +24,10 @@ const { data, error, loading, reload } = useKirkpatrickPage((signal) =>
 </script>
 
 <template>
-  <DsPage data-testid="kirk-interventions">
+  <DsPage
+    data-testid="kirk-interventions"
+    subtitle="Rekod tindakan intervensi berdasarkan amaran Kirkpatrick"
+  >
     <KirkpatrickTabs :base-path="basePath" current="interventions" />
     <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
     <template v-if="data">

@@ -272,6 +272,6 @@ describe('S7 list (AC-M12-28.2)', () => {
     expect(rows[0]?.text()).toContain('25 Sep 2026')
     expect(rows[0]?.text()).toContain('Tidak Aktif')
     expect(has(w, 'int-empty')).toBe(false)
-    expect(t(w, 'int-list').find('.overflow-x-auto').exists()).toBe(true)
+    expect(t(w, 'int-list').find('[data-ds="paged-table"]').exists()).toBe(true)
   })
 })

@@ -23,7 +23,10 @@ const { data, error, loading } = useKirkpatrickPage((signal) =>
 </script>
 
 <template>
-  <DsPage data-testid="kirk-reaction-page">
+  <DsPage
+    data-testid="kirk-reaction-page"
+    subtitle="Kepuasan dan persepsi pengguna terhadap platform"
+  >
     <KirkpatrickTabs :base-path="basePath" current="reaction" />
 
     <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
@@ -35,21 +38,29 @@ const { data, error, loading } = useKirkpatrickPage((signal) =>
     >
       <KirkpatrickStatCard
         label="NPS Pelajar"
+        icon="i-ph-smiley"
+        accent="friend"
         :value="`${mean(data.npsStudent)}/10`"
         data-testid="kirk-nps-student"
       />
       <KirkpatrickStatCard
         label="NPS Guru"
+        icon="i-ph-chalkboard-teacher"
+        accent="win"
         :value="`${mean(data.npsTeacher)}/10`"
         data-testid="kirk-nps-teacher"
       />
       <KirkpatrickStatCard
         label="NPS Admin"
+        icon="i-ph-user-gear"
+        accent="trial"
         :value="`${mean(data.npsAdmin)}/10`"
         data-testid="kirk-nps-admin"
       />
       <KirkpatrickStatCard
         label="Kepuasan Purata"
+        icon="i-ph-heart"
+        accent="heat"
         :value="`${mean(data.satisfaction)}/5`"
         data-testid="kirk-satisfaction"
       />

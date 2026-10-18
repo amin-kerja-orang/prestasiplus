@@ -33,29 +33,45 @@ const gradeACaption = computed(() =>
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" data-testid="res-kpis">
     <KirkpatrickStatCard
       label="GPS Headcount"
+      icon="i-ph-trophy"
+      accent="action"
       :value="kpi.gps === null ? '-' : gps(kpi.gps)"
       :caption="gpsCaption"
     />
     <KirkpatrickStatCard
       label="Kadar Lulus"
+      icon="i-ph-seal-check"
+      accent="win"
       :value="kpi.passPct === null ? '-' : pct(kpi.passPct)"
       :caption="passCaption"
     />
     <KirkpatrickStatCard
       label="Pelajar Gred A"
+      icon="i-ph-star"
+      accent="heat"
       :value="kpi.gradeA === null ? '-' : plain(kpi.gradeA)"
       :caption="gradeACaption"
     />
     <KirkpatrickStatCard
       label="Ketepatan Platform"
+      icon="i-ph-target"
+      accent="trial"
       :value="pct(kpi.accuracy)"
       :caption="`${count(kpi.answers)} soalan`"
     />
     <KirkpatrickStatCard
       label="Pelajar Aktif"
+      icon="i-ph-users"
+      accent="friend"
       :value="plain(kpi.active)"
       :caption="`${pct(kpi.activePct)} daripada ${count(kpi.t4t5)}`"
     />
-    <KirkpatrickStatCard label="Rekod Headcount" :value="plain(kpi.records)" caption="Data OTR" />
+    <KirkpatrickStatCard
+      label="Rekod Headcount"
+      icon="i-ph-database"
+      accent="action"
+      :value="plain(kpi.records)"
+      caption="Data OTR"
+    />
   </div>
 </template>

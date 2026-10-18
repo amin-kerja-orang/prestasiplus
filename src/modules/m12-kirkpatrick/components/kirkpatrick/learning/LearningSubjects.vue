@@ -27,7 +27,7 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
         :data-status="s.status"
       >
         <span
-          class="w-24 shrink-0 truncate text-caption text-highlighted sm:w-40"
+          class="w-24 shrink-0 truncate text-body text-highlighted sm:w-40"
           data-testid="kirk-subject-name"
           >{{ s.name }}</span
         >
@@ -40,9 +40,11 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
           :aria-label="`${s.name} ${pct1(s.accuracy)}`"
           data-testid="kirk-subject-bar"
         />
-        <span class="tabular w-14 shrink-0 text-right text-caption text-muted" data-testid="kirk-subject-pct">{{
-          pct1(s.accuracy)
-        }}</span>
+        <span
+          class="tabular w-14 shrink-0 text-right text-body text-muted"
+          data-testid="kirk-subject-pct"
+          >{{ pct1(s.accuracy) }}</span
+        >
         <!-- Below sm the badge and the count wrap under the bar (320 px: the row cannot fit them beside it). -->
         <div class="flex w-full items-center justify-between gap-2 sm:contents">
           <UBadge
@@ -51,7 +53,9 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
             :label="s.status"
             data-testid="kirk-subject-status"
           />
-          <span class="shrink-0 text-right text-caption text-muted sm:w-20" data-testid="kirk-subject-count"
+          <span
+            class="shrink-0 text-right text-body text-muted sm:w-20"
+            data-testid="kirk-subject-count"
             >{{ plain(s.answers) }} soalan</span
           >
         </div>

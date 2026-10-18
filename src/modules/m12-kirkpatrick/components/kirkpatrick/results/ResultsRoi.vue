@@ -18,25 +18,25 @@ const STEPS = [
     <div class="flex flex-col gap-4">
       <div class="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
         <div>
-          <p class="text-caption text-muted">Pelajar Aktif</p>
+          <p class="text-body text-muted">Pelajar Aktif</p>
           <p class="tabular text-subheading text-highlighted" data-testid="roi-active">
             {{ plain(roi.active) }}
           </p>
         </div>
         <div>
-          <p class="text-caption text-muted">Purata Soalan/Pelajar</p>
+          <p class="text-body text-muted">Purata Soalan/Pelajar</p>
           <p class="tabular text-subheading text-highlighted" data-testid="roi-per-student">
             {{ mean(roi.perStudent) }}
           </p>
         </div>
         <div>
-          <p class="text-caption text-muted">Ketepatan Aktif</p>
+          <p class="text-body text-muted">Ketepatan Aktif</p>
           <p class="tabular text-subheading text-highlighted" data-testid="roi-accuracy">
             {{ pct(roi.accuracy) }}
           </p>
         </div>
         <div>
-          <p class="text-caption text-muted">GPS Headcount</p>
+          <p class="text-body text-muted">GPS Headcount</p>
           <p class="tabular text-subheading text-highlighted" data-testid="roi-gps">
             {{ roi.gps === null ? '-' : gps(roi.gps) }}
           </p>

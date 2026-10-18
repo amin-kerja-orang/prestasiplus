@@ -7,12 +7,11 @@
 import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable } from '@/ds'
-
 import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { gps } from '../common/kirkpatrick-format'
 import { gpsText } from './results-format'
 import type { ResultsTrend } from './results-types'
+import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ trend: ResultsTrend }>()
 
@@ -55,13 +54,12 @@ const cardFields = computed(() => [
     footnote="↑ = GPS menurun (improving). Sumber: Headcount OTR & SPM sebenar."
     data-testid="res-trend"
   >
-    <DsDataTable
+    <KirkpatrickTable
       :data="rows"
       :columns="columns"
       caption="Trend GPS mengikut subjek"
       card-title="name"
       :card-fields="cardFields"
-      :page-size="1000"
     >
       <template #name-cell="{ row }">
         <span
@@ -74,7 +72,9 @@ const cardFields = computed(() => [
         <span
           :class="[
             'text-label',
-            row.original[`v${c}`] === null ? 'text-dimmed' : gpsText(row.original[`v${c}`] as number),
+            row.original[`v${c}`] === null
+              ? 'text-dimmed'
+              : gpsText(row.original[`v${c}`] as number),
           ]"
           data-testid="res-trend-cell"
           >{{ row.original[`t${c}`] }}</span
@@ -83,6 +83,6 @@ const cardFields = computed(() => [
       <template #trend-cell>
         <UIcon name="i-ph-arrow-up" class="size-4 text-success" />
       </template>
-    </DsDataTable>
+    </KirkpatrickTable>
   </KirkpatrickTableSection>
 </template>

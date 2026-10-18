@@ -17,9 +17,9 @@ defineProps<{ insights: Results['insights'] }>()
         <li class="flex items-start gap-3 bg-muted p-3" data-testid="insight-row">
           <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0 text-info" />
           <span
-            >Hanya {{ plain(insights.active) }} daripada {{ plain(insights.t4t5) }} pelajar T4/T5 ({{
-              pct(insights.pct)
-            }}) menggunakan platform. Data perbandingan terhad kepada pelajar aktif sahaja.</span
+            >Hanya {{ plain(insights.active) }} daripada {{ plain(insights.t4t5) }} pelajar T4/T5
+            ({{ pct(insights.pct) }}) menggunakan platform. Data perbandingan terhad kepada pelajar
+            aktif sahaja.</span
           >
         </li>
         <li class="flex items-start gap-3 bg-muted p-3" data-testid="insight-row">

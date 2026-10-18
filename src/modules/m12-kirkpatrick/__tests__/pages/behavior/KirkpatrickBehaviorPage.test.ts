@@ -222,7 +222,7 @@ describe('S4 school table (AC-M12-16.1)', () => {
 
   it('scrolls inside its own container (overflow-x-auto wrapper)', async () => {
     const { wrapper: w } = await open()
-    expect(t(w, 'beh-schools').find('.overflow-x-auto').exists()).toBe(true)
+    expect(t(w, 'beh-schools').find('[data-ds="paged-table"]').exists()).toBe(true)
   })
 })
 

@@ -31,7 +31,7 @@ const series = computed(() => [
         :series="series"
         table-label="Taburan gred calon"
       />
-      <p class="text-caption text-muted">
+      <p class="text-body text-muted">
         Berdasarkan {{ plain(distribution.candidates) }} calon — sumber: Headcount OTR
       </p>
     </div>

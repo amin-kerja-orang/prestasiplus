@@ -26,15 +26,14 @@ const TABS: { key: KirkpatrickTab; label: string; icon: string }[] = [
 
 <template>
   <nav class="max-w-full overflow-x-auto" aria-label="Tahap Kirkpatrick" data-testid="kirk-tabs">
-    <div class="flex w-max gap-1">
+    <div class="flex w-max gap-2">
       <UButton
         v-for="tab in TABS"
         :key="tab.key"
         :to="paths[tab.key]"
         :label="tab.label"
         :icon="tab.icon"
-        size="lg"
-        class="min-h-11"
+        size="md"
         :color="tab.key === current ? 'primary' : 'neutral'"
         :variant="tab.key === current ? 'soft' : 'ghost'"
         :data-testid="`kirk-tab-${tab.key}`"

@@ -21,6 +21,6 @@ defineProps<{ loading: boolean; error: unknown; hasData: boolean }>()
     data-testid="kirk-loading"
     role="status"
   >
-    <UIcon name="i-ph-circle-notch" class="size-4" />Memuatkan...
+    <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
   </p>
 </template>

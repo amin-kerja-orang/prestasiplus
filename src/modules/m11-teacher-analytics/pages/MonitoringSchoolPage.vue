@@ -8,7 +8,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsDrillTable, DsPage } from '@/ds'
+import { DsPage, DsPagedTable } from '@/ds'
 
 import { fetchSchoolDetail } from '../api'
 import type { SchoolDetailStudent, SchoolDetailTeacher, StudentStatus } from '../api/types'
@@ -100,12 +100,16 @@ const TEACHER_PILLS: { key: TeacherFilter; testid: string; label: string }[] = [
   { key: 'never', testid: 'mon-tpill-never', label: 'Belum Login' },
 ]
 
-type StudentRow = SchoolDetailStudent & Record<string, unknown>
-type TeacherRow = SchoolDetailTeacher & Record<string, unknown>
-const studentData = computed<StudentRow[]>(() => students.value.map((s) => ({ ...s })))
-const teacherData = computed<TeacherRow[]>(() => teachers.value.map((t) => ({ ...t })))
+type StudentRow = SchoolDetailStudent & { rank: number } & Record<string, unknown>
+type TeacherRow = SchoolDetailTeacher & { rank: number } & Record<string, unknown>
+const studentData = computed<StudentRow[]>(() =>
+  students.value.map((s, i) => ({ ...s, rank: i + 1 })),
+)
+const teacherData = computed<TeacherRow[]>(() =>
+  teachers.value.map((t, i) => ({ ...t, rank: i + 1 })),
+)
 const studentColumns: TableColumn<StudentRow>[] = [
-  { id: 'no', header: '#', accessorFn: (r) => r.id },
+  { id: 'no', header: '#', accessorKey: 'rank' },
   { id: 'name', header: 'Nama', accessorKey: 'name' },
   { id: 'level', header: 'Tingkatan', accessorKey: 'level' },
   { id: 'answers', header: 'Soalan', accessorKey: 'answers' },
@@ -114,12 +118,27 @@ const studentColumns: TableColumn<StudentRow>[] = [
   { id: 'lastActivity', header: 'Aktiviti Terakhir', accessorKey: 'lastActivityAt' },
 ]
 const teacherColumns: TableColumn<TeacherRow>[] = [
-  { id: 'no', header: '#', accessorFn: (r) => r.id },
+  { id: 'no', header: '#', accessorKey: 'rank' },
   { id: 'name', header: 'Nama', accessorKey: 'name' },
   { id: 'status', header: 'Status', accessorKey: 'loggedIn' },
   { id: 'lastLogin', header: 'Login Terakhir', accessorKey: 'lastLoginAt' },
   { id: 'createdAt', header: 'Daftar', accessorKey: 'createdAt' },
 ]
+const tab = ref('pelajar')
+const TABS = computed(() => [
+  {
+    value: 'pelajar',
+    label: 'Pelajar T4/T5',
+    icon: 'i-ph-graduation-cap',
+    slot: 'pelajar' as const,
+  },
+  {
+    value: 'guru',
+    label: `Guru (${count(data.value?.teachers.length ?? 0)})`,
+    icon: 'i-ph-chalkboard-teacher',
+    slot: 'guru' as const,
+  },
+])
 const FLAG_REVIEW_TITLE = 'Aktiviti luar biasa (kelajuan menjawab tidak munasabah) — perlu semak.'
 const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus penglibatan.`
 </script>
@@ -142,33 +161,34 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
         class="flex items-center gap-2 text-body text-muted"
         data-testid="mon-loading"
       >
-        <UIcon name="i-ph-circle-notch" class="size-4" />Memuatkan...
+        <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
       </p>
 
       <template v-if="data">
         <UCard data-testid="mon-school-header">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex min-w-0 flex-col gap-1">
-              <h2 class="text-heading break-words text-highlighted" data-testid="mon-school-name">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex min-w-0 flex-col gap-2">
+              <h2 class="text-title break-words text-highlighted" data-testid="mon-school-name">
                 {{ data.school.name }}
               </h2>
-              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-muted">
-                <span class="flex items-center gap-1" data-testid="mon-school-code"
-                  ><UIcon name="i-ph-hash" class="size-4" />{{ data.school.code ?? '-' }}</span
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-body text-muted">
+                <span class="flex items-center gap-2" data-testid="mon-school-code"
+                  ><UIcon name="i-ph-hash" class="size-5" />{{ data.school.code ?? '-' }}</span
                 >
-                <span class="flex items-center gap-1" data-testid="mon-school-state"
-                  ><UIcon name="i-ph-map-pin" class="size-4" />{{ data.school.state }}</span
+                <span class="flex items-center gap-2" data-testid="mon-school-state"
+                  ><UIcon name="i-ph-map-pin" class="size-5" />{{ data.school.state }}</span
                 >
                 <UBadge
                   v-if="data.subscription"
                   :color="SUBSCRIPTION_COLOR[data.subscription.status]"
                   variant="subtle"
+                  size="lg"
                   icon="i-ph-circle-fill"
                   :data-status="data.subscription.status"
                   data-testid="mon-subscription"
                   :label="`${SUBSCRIPTION_LABEL[data.subscription.status]} — sehingga ${subscriptionDate(data.subscription.endsAt)}`"
                 />
-                <span v-else class="text-caption text-muted" data-testid="mon-subscription"
+                <span v-else class="text-body text-muted" data-testid="mon-subscription"
                   >Tiada langganan</span
                 >
               </div>
@@ -183,211 +203,352 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
           </div>
         </UCard>
 
-        <section class="grid grid-cols-2 gap-3 lg:grid-cols-5" data-testid="mon-school-cards">
-          <MonitoringStatCard label="Pelajar T4/T5" :value="count(data.cards.students)" />
-          <MonitoringStatCard label="Pernah Aktif" :value="count(data.cards.engaged)" />
-          <MonitoringStatCard label="Soalan Dijawab" :value="count(data.cards.answers)" />
-          <MonitoringStatCard label="Guru Berdaftar" :value="count(data.cards.teachers)" />
+        <section class="grid grid-cols-2 gap-4 lg:grid-cols-5" data-testid="mon-school-cards">
+          <MonitoringStatCard
+            label="Pelajar T4/T5"
+            :value="count(data.cards.students)"
+            icon="i-ph-graduation-cap"
+            accent="friend"
+          />
+          <MonitoringStatCard
+            label="Pernah Aktif"
+            :value="count(data.cards.engaged)"
+            icon="i-ph-check-circle"
+            accent="win"
+            value-class="text-success"
+          />
+          <MonitoringStatCard
+            label="Soalan Dijawab"
+            :value="count(data.cards.answers)"
+            icon="i-ph-pencil-simple"
+            accent="trial"
+          />
+          <MonitoringStatCard
+            label="Guru Berdaftar"
+            :value="count(data.cards.teachers)"
+            icon="i-ph-chalkboard-teacher"
+            accent="action"
+            value-class="text-primary"
+          />
           <MonitoringStatCard
             label="Guru Pernah Login"
             :value="count(data.cards.teachersLoggedIn)"
+            icon="i-ph-sign-in"
+            accent="heat"
           />
         </section>
 
-        <UCard data-testid="mon-students">
-          <div class="flex flex-col gap-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h2 class="flex items-center gap-2 text-label text-highlighted">
-                <UIcon name="i-ph-graduation-cap" class="size-5 text-primary" />Senarai Pelajar
-                T4/T5
-              </h2>
-              <div class="flex flex-wrap gap-2" data-testid="mon-student-pills">
-                <UButton
-                  v-for="p in STUDENT_PILLS"
-                  :key="p.key"
-                  type="button"
-                  size="lg"
-                  :color="studentFilter === p.key ? 'primary' : 'neutral'"
-                  :variant="studentFilter === p.key ? 'soft' : 'ghost'"
-                  :label="p.label()"
-                  :data-testid="p.testid"
-                  @click="studentFilter = p.key"
-                />
-              </div>
-            </div>
-
-            <NativeInput
-              v-model="search"
-              placeholder="Cari nama pelajar..."
-              aria-label="Cari nama pelajar"
-              class="sm:w-64"
-              data-testid="mon-student-search"
-            />
-
-            <UAlert v-if="data.warning" color="warning" variant="subtle" data-testid="mon-warning">
-              <template #description>
-                ⚠
-                <strong>{{ data.warning.review + data.warning.excluded }} akaun</strong> menunjukkan
-                aktiviti luar biasa (kelajuan menjawab tidak munasabah — perlu semak).
-                <template v-if="data.warning.excluded > 0"
-                  ><strong>{{ data.warning.excluded }}</strong> daripadanya dikecualikan dari
-                  peratus penglibatan kerana corak seperti automasi.</template
-                >
-                Angka penglibatan di atas ialah nilai tulen selepas tapis.
-              </template>
-            </UAlert>
-
-            <div data-testid="mon-student-scroller">
-              <DsDrillTable :data="studentData" :columns="studentColumns" caption="Senarai pelajar">
-                <template #no-cell="{ row }">
-                  <span class="tabular text-caption text-muted">{{ row.index + 1 }}</span>
-                </template>
-                <template #name-cell="{ row }">
-                  <div
-                    :class="[
-                      'flex min-w-48 flex-col',
-                      row.original.answers === 0 ? 'text-muted' : '',
-                    ]"
-                    :data-faded="row.original.answers === 0 ? 'true' : 'false'"
-                    data-testid="mon-student-row"
-                    :data-student-id="row.original.id"
-                  >
-                    <RouterLink
-                      v-if="row.original.answers > 0 || paths.kirkpatrickStudent(row.original.id)"
-                      :to="
-                        row.original.answers > 0
-                          ? paths.student(schoolId, row.original.id)
-                          : (paths.kirkpatrickStudent(row.original.id) ?? '')
-                      "
-                      :class="[
-                        'text-label',
-                        row.original.answers > 0 ? 'text-primary' : 'text-muted',
-                      ]"
-                      data-testid="mon-student-link"
-                      >{{ row.original.name }}</RouterLink
-                    >
-                    <span v-else class="text-label text-muted" data-testid="mon-student-name">{{
-                      row.original.name
-                    }}</span>
-                    <span class="text-caption text-muted">{{ row.original.email }}</span>
-                    <UBadge
-                      v-if="row.original.flag === 'review'"
-                      color="warning"
-                      variant="subtle"
-                      size="sm"
-                      class="self-start"
-                      :title="FLAG_REVIEW_TITLE"
-                      data-testid="mon-flag"
-                      label="⚠ Perlu Semak"
-                    />
-                    <UBadge
-                      v-else-if="row.original.flag === 'excluded'"
-                      color="error"
-                      variant="subtle"
-                      size="sm"
-                      class="self-start"
-                      :title="FLAG_EXCLUDED_TITLE"
-                      data-testid="mon-flag"
-                      label="⚠ Perlu Semak · ditapis"
-                    />
-                  </div>
-                </template>
-                <template #answers-cell="{ row }">
-                  <span class="tabular text-label">{{ count(row.original.answers) }}</span>
-                </template>
-                <template #status-cell="{ row }">
-                  <UBadge
-                    :color="statusColor(row.original.status)"
-                    variant="subtle"
-                    data-testid="mon-student-status"
-                    :label="statusLabel(row.original.status)"
+        <UTabs
+          v-model="tab"
+          :items="TABS"
+          :unmount-on-hide="false"
+          variant="link"
+          size="lg"
+          class="w-full"
+          :ui="{ list: 'overflow-x-auto', content: 'pt-6' }"
+        >
+          <template #pelajar>
+            <section class="flex flex-col gap-6" data-testid="mon-students">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <h2 class="flex items-center gap-2 text-heading text-highlighted">
+                  <UIcon name="i-ph-graduation-cap" class="size-6 text-primary" />Senarai Pelajar
+                  T4/T5
+                </h2>
+                <div class="flex flex-wrap gap-2" data-testid="mon-student-pills">
+                  <UButton
+                    v-for="p in STUDENT_PILLS"
+                    :key="p.key"
+                    type="button"
+                    size="md"
+                    :color="studentFilter === p.key ? 'primary' : 'neutral'"
+                    :variant="studentFilter === p.key ? 'soft' : 'ghost'"
+                    :label="p.label()"
+                    :data-testid="p.testid"
+                    @click="studentFilter = p.key"
                   />
-                </template>
-                <template #lastLogin-cell="{ row }">
-                  <span class="tabular whitespace-nowrap">{{
-                    dmyHm(row.original.lastLoginAt)
-                  }}</span>
-                </template>
-                <template #lastActivity-cell="{ row }">
-                  <span class="tabular whitespace-nowrap">{{
-                    dmyHm(row.original.lastActivityAt)
-                  }}</span>
-                </template>
-              </DsDrillTable>
-            </div>
-          </div>
-        </UCard>
+                </div>
+              </div>
 
-        <UCard data-testid="mon-teachers">
-          <div class="flex flex-col gap-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h2 class="flex items-center gap-2 text-label text-highlighted">
-                <UIcon name="i-ph-chalkboard-teacher" class="size-5 text-primary" />Senarai Guru ({{
-                  count(data.teachers.length)
-                }})
-              </h2>
-              <div
-                v-if="data.teachers.length > 0"
-                class="flex flex-wrap gap-2"
-                data-testid="mon-teacher-pills"
+              <NativeInput
+                v-model="search"
+                placeholder="Cari nama pelajar..."
+                aria-label="Cari nama pelajar"
+                class="sm:w-80"
+                data-testid="mon-student-search"
+              />
+
+              <UAlert
+                v-if="data.warning"
+                color="warning"
+                variant="subtle"
+                data-testid="mon-warning"
               >
-                <UButton
-                  v-for="p in TEACHER_PILLS"
-                  :key="p.key"
-                  type="button"
-                  size="lg"
-                  :color="teacherFilter === p.key ? 'primary' : 'neutral'"
-                  :variant="teacherFilter === p.key ? 'soft' : 'ghost'"
-                  :label="p.label"
-                  :data-testid="p.testid"
-                  @click="teacherFilter = p.key"
-                />
-              </div>
-            </div>
+                <template #description>
+                  ⚠
+                  <strong>{{ data.warning.review + data.warning.excluded }} akaun</strong>
+                  menunjukkan aktiviti luar biasa (kelajuan menjawab tidak munasabah — perlu semak).
+                  <template v-if="data.warning.excluded > 0"
+                    ><strong>{{ data.warning.excluded }}</strong> daripadanya dikecualikan dari
+                    peratus penglibatan kerana corak seperti automasi.</template
+                  >
+                  Angka penglibatan di atas ialah nilai tulen selepas tapis.
+                </template>
+              </UAlert>
 
-            <p
-              v-if="data.teachers.length === 0"
-              class="py-4 text-center text-body text-muted"
-              data-testid="mon-teachers-empty"
-            >
-              Tiada guru berdaftar untuk sekolah ini.
-            </p>
-            <div v-else data-testid="mon-teacher-scroller">
-              <DsDrillTable :data="teacherData" :columns="teacherColumns" caption="Senarai guru">
-                <template #no-cell="{ row }">
-                  <span class="tabular text-caption text-muted">{{ row.index + 1 }}</span>
-                </template>
-                <template #name-cell="{ row }">
-                  <div class="flex min-w-48 flex-col" data-testid="mon-teacher-row">
-                    <RouterLink
-                      :to="paths.teacher(schoolId, row.original.id)"
-                      class="text-label text-primary"
-                      data-testid="mon-teacher-link"
-                      >{{ row.original.name }}</RouterLink
+              <div data-testid="mon-student-scroller">
+                <DsPagedTable
+                  :data="studentData"
+                  :columns="studentColumns"
+                  caption="Senarai pelajar"
+                  empty-label="Tiada pelajar"
+                >
+                  <template #no-cell="{ row }">
+                    <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
+                  </template>
+                  <template #name-cell="{ row }">
+                    <div
+                      :class="[
+                        'flex min-w-48 flex-col gap-1',
+                        row.original.answers === 0 ? 'text-muted' : '',
+                      ]"
+                      :data-faded="row.original.answers === 0 ? 'true' : 'false'"
+                      data-testid="mon-student-row"
+                      :data-student-id="row.original.id"
                     >
-                    <span class="text-caption text-muted">{{ row.original.email }}</span>
-                  </div>
-                </template>
-                <template #status-cell="{ row }">
-                  <UBadge
-                    :color="row.original.loggedIn ? 'success' : 'neutral'"
-                    variant="subtle"
-                    data-testid="mon-teacher-status"
-                    :label="row.original.loggedIn ? 'Pernah login' : 'Belum login'"
+                      <RouterLink
+                        v-if="row.original.answers > 0 || paths.kirkpatrickStudent(row.original.id)"
+                        :to="
+                          row.original.answers > 0
+                            ? paths.student(schoolId, row.original.id)
+                            : (paths.kirkpatrickStudent(row.original.id) ?? '')
+                        "
+                        :class="[
+                          'line-clamp-2 text-label',
+                          row.original.answers > 0 ? 'text-primary' : 'text-muted',
+                        ]"
+                        data-testid="mon-student-link"
+                        >{{ row.original.name }}</RouterLink
+                      >
+                      <span
+                        v-else
+                        class="line-clamp-2 text-label text-muted"
+                        data-testid="mon-student-name"
+                        >{{ row.original.name }}</span
+                      >
+                      <span class="truncate text-body text-muted">{{ row.original.email }}</span>
+                      <UBadge
+                        v-if="row.original.flag === 'review'"
+                        color="warning"
+                        variant="subtle"
+                        size="md"
+                        class="self-start"
+                        :title="FLAG_REVIEW_TITLE"
+                        data-testid="mon-flag"
+                        label="⚠ Perlu Semak"
+                      />
+                      <UBadge
+                        v-else-if="row.original.flag === 'excluded'"
+                        color="error"
+                        variant="subtle"
+                        size="md"
+                        class="self-start"
+                        :title="FLAG_EXCLUDED_TITLE"
+                        data-testid="mon-flag"
+                        label="⚠ Perlu Semak · ditapis"
+                      />
+                    </div>
+                  </template>
+                  <template #answers-cell="{ row }">
+                    <span class="tabular text-label">{{ count(row.original.answers) }}</span>
+                  </template>
+                  <template #status-cell="{ row }">
+                    <UBadge
+                      :color="statusColor(row.original.status)"
+                      variant="subtle"
+                      size="lg"
+                      class="whitespace-nowrap"
+                      data-testid="mon-student-status"
+                      :label="statusLabel(row.original.status)"
+                    />
+                  </template>
+                  <template #lastLogin-cell="{ row }">
+                    <span class="tabular whitespace-nowrap">{{
+                      dmyHm(row.original.lastLoginAt)
+                    }}</span>
+                  </template>
+                  <template #lastActivity-cell="{ row }">
+                    <span class="tabular whitespace-nowrap">{{
+                      dmyHm(row.original.lastActivityAt)
+                    }}</span>
+                  </template>
+                  <template #card="{ row }">
+                    <div class="flex flex-col gap-3">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 flex-col gap-1">
+                          <RouterLink
+                            v-if="
+                              (row as StudentRow).answers > 0 ||
+                              paths.kirkpatrickStudent((row as StudentRow).id)
+                            "
+                            :to="
+                              (row as StudentRow).answers > 0
+                                ? paths.student(schoolId, (row as StudentRow).id)
+                                : (paths.kirkpatrickStudent((row as StudentRow).id) ?? '')
+                            "
+                            class="line-clamp-2 text-label text-primary"
+                            >{{ (row as StudentRow).name }}</RouterLink
+                          >
+                          <span v-else class="line-clamp-2 text-label text-muted">{{
+                            (row as StudentRow).name
+                          }}</span>
+                          <span class="truncate text-body text-muted">{{
+                            (row as StudentRow).email
+                          }}</span>
+                        </div>
+                        <UBadge
+                          :color="statusColor((row as StudentRow).status)"
+                          variant="subtle"
+                          size="lg"
+                          class="whitespace-nowrap"
+                          :label="statusLabel((row as StudentRow).status)"
+                        />
+                      </div>
+                      <dl class="grid grid-cols-2 gap-3 text-body">
+                        <div>
+                          <dt class="text-muted">Tingkatan · Soalan</dt>
+                          <dd class="tabular text-label">
+                            {{ (row as StudentRow).level }} ·
+                            {{ count((row as StudentRow).answers) }}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-muted">Login Terakhir</dt>
+                          <dd class="tabular text-label">
+                            {{ dmyHm((row as StudentRow).lastLoginAt) }}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </template>
+                </DsPagedTable>
+              </div>
+            </section>
+          </template>
+
+          <template #guru>
+            <section class="flex flex-col gap-6" data-testid="mon-teachers">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <h2 class="flex items-center gap-2 text-heading text-highlighted">
+                  <UIcon name="i-ph-chalkboard-teacher" class="size-6 text-primary" />Senarai Guru
+                  ({{ count(data.teachers.length) }})
+                </h2>
+                <div
+                  v-if="data.teachers.length > 0"
+                  class="flex flex-wrap gap-2"
+                  data-testid="mon-teacher-pills"
+                >
+                  <UButton
+                    v-for="p in TEACHER_PILLS"
+                    :key="p.key"
+                    type="button"
+                    size="md"
+                    :color="teacherFilter === p.key ? 'primary' : 'neutral'"
+                    :variant="teacherFilter === p.key ? 'soft' : 'ghost'"
+                    :label="p.label"
+                    :data-testid="p.testid"
+                    @click="teacherFilter = p.key"
                   />
-                </template>
-                <template #lastLogin-cell="{ row }">
-                  <span class="tabular whitespace-nowrap">{{
-                    dmyHm(row.original.lastLoginAt)
-                  }}</span>
-                </template>
-                <template #createdAt-cell="{ row }">
-                  <span class="tabular whitespace-nowrap">{{ dmy(row.original.createdAt) }}</span>
-                </template>
-              </DsDrillTable>
-            </div>
-          </div>
-        </UCard>
+                </div>
+              </div>
+
+              <p
+                v-if="data.teachers.length === 0"
+                class="py-6 text-center text-body text-muted"
+                data-testid="mon-teachers-empty"
+              >
+                Tiada guru berdaftar untuk sekolah ini.
+              </p>
+              <div v-else data-testid="mon-teacher-scroller">
+                <DsPagedTable
+                  :data="teacherData"
+                  :columns="teacherColumns"
+                  caption="Senarai guru"
+                  empty-label="Tiada guru"
+                >
+                  <template #no-cell="{ row }">
+                    <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
+                  </template>
+                  <template #name-cell="{ row }">
+                    <div class="flex min-w-48 flex-col gap-1" data-testid="mon-teacher-row">
+                      <RouterLink
+                        :to="paths.teacher(schoolId, row.original.id)"
+                        class="line-clamp-2 text-label text-primary"
+                        data-testid="mon-teacher-link"
+                        >{{ row.original.name }}</RouterLink
+                      >
+                      <span class="truncate text-body text-muted">{{ row.original.email }}</span>
+                    </div>
+                  </template>
+                  <template #status-cell="{ row }">
+                    <UBadge
+                      :color="row.original.loggedIn ? 'success' : 'neutral'"
+                      variant="subtle"
+                      size="lg"
+                      class="whitespace-nowrap"
+                      data-testid="mon-teacher-status"
+                      :label="row.original.loggedIn ? 'Pernah login' : 'Belum login'"
+                    />
+                  </template>
+                  <template #lastLogin-cell="{ row }">
+                    <span class="tabular whitespace-nowrap">{{
+                      dmyHm(row.original.lastLoginAt)
+                    }}</span>
+                  </template>
+                  <template #createdAt-cell="{ row }">
+                    <span class="tabular whitespace-nowrap">{{ dmy(row.original.createdAt) }}</span>
+                  </template>
+                  <template #card="{ row }">
+                    <div class="flex flex-col gap-3">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 flex-col gap-1">
+                          <RouterLink
+                            :to="paths.teacher(schoolId, (row as TeacherRow).id)"
+                            class="line-clamp-2 text-label text-primary"
+                            >{{ (row as TeacherRow).name }}</RouterLink
+                          >
+                          <span class="truncate text-body text-muted">{{
+                            (row as TeacherRow).email
+                          }}</span>
+                        </div>
+                        <UBadge
+                          :color="(row as TeacherRow).loggedIn ? 'success' : 'neutral'"
+                          variant="subtle"
+                          size="lg"
+                          class="whitespace-nowrap"
+                          :label="(row as TeacherRow).loggedIn ? 'Pernah login' : 'Belum login'"
+                        />
+                      </div>
+                      <dl class="grid grid-cols-2 gap-3 text-body">
+                        <div>
+                          <dt class="text-muted">Login Terakhir</dt>
+                          <dd class="tabular text-label">
+                            {{ dmyHm((row as TeacherRow).lastLoginAt) }}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-muted">Daftar</dt>
+                          <dd class="tabular text-label">
+                            {{ dmy((row as TeacherRow).createdAt) }}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </template>
+                </DsPagedTable>
+              </div>
+            </section>
+          </template>
+        </UTabs>
       </template>
     </template>
   </DsPage>

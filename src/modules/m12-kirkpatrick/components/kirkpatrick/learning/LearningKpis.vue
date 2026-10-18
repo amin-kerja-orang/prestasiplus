@@ -16,24 +16,44 @@ defineProps<{ kpi: Learning['kpi'] }>()
   >
     <KirkpatrickStatCard
       label="Soalan Dijawab"
+      icon="i-ph-pencil-simple"
+      accent="trial"
       :value="count(kpi.answers)"
       data-testid="kirk-kpi-answers"
     />
-    <KirkpatrickStatCard label="Ketepatan" :value="pct(kpi.accuracy)" data-testid="kirk-kpi-accuracy" />
-    <KirkpatrickStatCard label="Skor Purata" :value="pct(kpi.avgScore)" data-testid="kirk-kpi-score" />
+    <KirkpatrickStatCard
+      label="Ketepatan"
+      icon="i-ph-target"
+      accent="action"
+      :value="pct(kpi.accuracy)"
+      data-testid="kirk-kpi-accuracy"
+    />
+    <KirkpatrickStatCard
+      label="Skor Purata"
+      icon="i-ph-chart-line-up"
+      accent="trial"
+      :value="pct(kpi.avgScore)"
+      data-testid="kirk-kpi-score"
+    />
     <KirkpatrickStatCard
       label="Sesi Selesai"
+      icon="i-ph-flag-checkered"
+      accent="win"
       :value="plain(kpi.sessionsCompleted)"
       :suffix="`/${plain(kpi.sessions)}`"
       data-testid="kirk-kpi-sessions"
     />
     <KirkpatrickStatCard
       label="Kadar Penyelesaian"
+      icon="i-ph-percent"
+      accent="heat"
       :value="pct(kpi.completionPct)"
       data-testid="kirk-kpi-completion"
     />
     <KirkpatrickStatCard
       label="Learning Gain"
+      icon="i-ph-brain"
+      accent="action"
       value="-"
       caption="Perlu pre/post test"
       muted
