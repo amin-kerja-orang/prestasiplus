@@ -109,7 +109,7 @@ test.describe('M04 S1 question list', { tag: [TAG.smoke, moduleTag(4)] }, () => 
   test('bulk action: needs an action, asks to confirm, then flashes the API status', async ({
     page,
   }) => {
-    const boxes = page.getByTestId('question-select')
+    const boxes = page.locator('tbody [role="checkbox"]')
     await boxes.nth(0).check()
     await boxes.nth(1).check()
     await expect(page.getByTestId('questions-selected-count')).toHaveText('2')
@@ -139,9 +139,9 @@ test.describe('M04 S1 question list', { tag: [TAG.smoke, moduleTag(4)] }, () => 
   })
 
   test('select all ticks the whole page', async ({ page }) => {
-    await page.getByTestId('questions-select-all').check()
+    await page.locator('thead [role="checkbox"]').check()
     await expect(page.getByTestId('questions-selected-count')).toHaveText('20')
-    await page.getByTestId('questions-select-all').uncheck()
+    await page.locator('thead [role="checkbox"]').uncheck()
     await expect(page.getByTestId('questions-bulk-bar')).toHaveCount(0)
   })
 

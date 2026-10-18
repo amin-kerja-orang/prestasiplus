@@ -3,6 +3,8 @@
  * One timeline post (S16 list, S18 posts; PROPOSED layout L-5, FR-M08-99): category label, title, date,
  * story and photo thumbnails with captions. Post text is untrusted: every value renders as text.
  */
+import { DsPanel } from '@/ds'
+
 import type { TimelinePost } from '../../api/types'
 import { photoSrc } from '../../lib/timeline/image-src'
 import { categoryLabel, postDateText } from '../../lib/timeline/posts'
@@ -11,16 +13,9 @@ defineProps<{ post: TimelinePost }>()
 </script>
 
 <template>
-  <article
-    class="min-w-0 rounded-card bg-default p-4 shadow-card sm:p-5"
-    data-testid="post-card"
-  >
+  <DsPanel as="article" class="min-w-0" data-testid="post-card">
     <div class="flex flex-wrap items-center gap-2 text-caption">
-      <span
-        class="rounded-chip bg-primary px-2.5 py-1 text-label text-inverted"
-        data-testid="post-category"
-        >{{ categoryLabel(post.category) }}</span
-      >
+      <UBadge color="primary" variant="solid" :label="categoryLabel(post.category)" data-testid="post-category" />
       <span class="tabular text-muted" data-testid="post-date">{{ postDateText(post) }}</span>
     </div>
     <h3 class="mt-2 font-display text-heading font-extrabold break-words text-highlighted" data-testid="post-title">
@@ -51,5 +46,5 @@ defineProps<{ post: TimelinePost }>()
         </figcaption>
       </figure>
     </div>
-  </article>
+  </DsPanel>
 </template>

@@ -4,7 +4,7 @@
  * calling the API; "Ya, Reset" / "Ya, Padam" emit `confirm-reset` / `confirm-delete` (effects INFERRED,
  * FR-M08-137).
  */
-import { DsDialog } from '@/ds'
+import { DsDialog, DsPanel } from '@/ds'
 
 defineProps<{
   subject: string
@@ -23,7 +23,7 @@ defineEmits<{ 'confirm-reset': []; 'confirm-delete': [] }>()
       <p class="text-body text-default">
         Semua markah murid akan dikosongkan — <strong>TOV, ETR, OTR, AR &amp; RS</strong>.
       </p>
-      <UCard variant="soft">
+      <DsPanel tone="inset">
         <div class="flex flex-col gap-2">
           <p class="text-label text-highlighted">Yang kekal selamat:</p>
           <ul class="flex flex-col gap-2 text-body text-default">
@@ -37,7 +37,7 @@ defineEmits<{ 'confirm-reset': []; 'confirm-delete': [] }>()
             </li>
           </ul>
         </div>
-      </UCard>
+      </DsPanel>
     </div>
     <template #footer>
       <UButton

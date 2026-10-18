@@ -40,7 +40,7 @@ const PNG = Buffer.from(
 async function fillBasics(page: Page, text: string): Promise<void> {
   await byId(page, 'q-subject').selectOption({ label: 'Sains' })
   await byId(page, 'q-level').selectOption({ label: 'Tingkatan 5' })
-  await byId(page, 'q-difficulty-3').check()
+  await page.locator('[id="q-difficulty"] [role="radio"][value="3"]').check()
   await byId(page, 'q-text').fill(text)
 }
 
@@ -63,9 +63,9 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
     await expect(page.getByText('Minimum 10 aksara')).toBeVisible()
     await expect(byId(page, 'q-image')).toContainText('Klik untuk muat naik gambar')
     await expect(byId(page, 'q-image')).toContainText('JPG, PNG, WebP — Maks 2MB')
-    await expect(byId(page, 'q-correct-0')).toBeChecked()
+    await expect(page.locator('[id="q-correct-0"] [role="radio"]')).toBeChecked()
     await expect(byId(page, 'q-points')).toHaveValue('1')
-    await expect(byId(page, 'q-submit')).toHaveText('Simpan Soalan')
+    await expect(byId(page, 'form-submit')).toHaveText('Simpan Soalan')
     await expect(byId(page, 'dskp-sk')).toBeDisabled()
     await expect(byId(page, 'dskp-sp')).toBeDisabled()
     await expectNoHorizontalScroll(page)
@@ -104,10 +104,10 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
       const options = ['Objek buatan manusia', 'Objek semula jadi', 'Bintang', 'Batuan angkasa']
       for (const [i, text] of options.entries())
         await byId(page, `q-option-${String(i)}`).fill(text)
-      await byId(page, 'q-correct-1').check()
+      await page.locator('[id="q-correct-1"] [role="radio"]').check()
       await expectNoHorizontalScroll(page)
 
-      await byId(page, 'q-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(page).toHaveURL(/\/admin\/questions$/)
       await expect(byId(page, 'cmp-flash')).toContainText('Soalan berjaya ditambah.')
     },
@@ -149,15 +149,15 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
     async ({ page }) => {
       await byId(page, 'q-type').selectOption('true_false')
       await fillBasics(page, 'Bumi mengelilingi Matahari dalam masa setahun.')
-      await byId(page, 'q-tf-true').check()
-      await byId(page, 'q-submit').click()
+      await page.locator('[id="q-tf"] [role="radio"][value="true"]').check()
+      await byId(page, 'form-submit').click()
       await expect(page).toHaveURL(/\/admin\/questions$/)
       await expect(byId(page, 'cmp-flash')).toContainText('Soalan berjaya ditambah.')
     },
   )
 
   test('native required stops an empty submit before any request', async ({ page }) => {
-    await byId(page, 'q-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/questions\/create$/)
     await expect(byId(page, 'q-subject')).toHaveJSProperty('validity.valueMissing', true)
     await expect(page.getByTestId('question-form-alert')).toHaveCount(0)
@@ -169,7 +169,7 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
     async ({ page }) => {
       await byId(page, 'q-type').selectOption('short_answer')
       await fillBasics(page, 'Pendek')
-      await byId(page, 'q-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(page).toHaveURL(/\/admin\/questions\/create$/)
       const text = byId(page, 'q-text').locator('xpath=ancestor::div[1]/..')
       await expect(text).toContainText('Teks soalan mesti sekurang-kurangnya 10 aksara.')
@@ -192,7 +192,7 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
       })
       for (const [i, text] of ['A', 'B', 'C', 'D'].entries())
         await byId(page, `q-option-${String(i)}`).fill(text)
-      await byId(page, 'q-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(byId(page, 'q-image')).toBeVisible()
       await expect(page.getByText('Gambar mesti jenis JPG, PNG atau WebP')).toBeVisible()
     },
@@ -275,14 +275,14 @@ test.describe('M04 S4 edit question', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     await expect(byId(page, 'q-text')).toHaveValue(/Apakah maksud satelit buatan/)
     await expect(byId(page, 'q-type')).toHaveCount(0)
     await expect(byId(page, 'vkb-toggle')).toHaveCount(0)
-    await expect(byId(page, 'q-submit')).toHaveText('Kemaskini Soalan')
-    await expect(byId(page, 'q-correct-0')).toBeChecked()
+    await expect(byId(page, 'form-submit')).toHaveText('Kemaskini Soalan')
+    await expect(page.locator('[id="q-correct-0"] [role="radio"]')).toBeChecked()
     await expect(byId(page, 'q-option-0')).toHaveValue(/Objek buatan manusia/)
-    await expect(byId(page, 'q-difficulty-3')).toBeChecked()
+    await expect(page.locator('[id="q-difficulty"] [role="radio"][value="3"]')).toBeChecked()
     await expect(byId(page, 'dskp-tagged')).toBeVisible()
     await expect(byId(page, 'dskp-sp').locator('option:checked')).not.toHaveText('-- Pilih SP --')
     await expect(byId(page, 'dskp-remove')).toBeVisible()
-    await expect(byId(page, 'q-cancel')).toHaveAttribute('href', '/admin/questions/564159')
+    await expect(byId(page, 'form-cancel')).toHaveAttribute('href', '/admin/questions/564159')
     await expectNoHorizontalScroll(page)
   })
 
@@ -298,7 +298,7 @@ test.describe('M04 S4 edit question', { tag: [TAG.smoke, moduleTag(4)] }, () => 
       await expect(byId(page, 'dskp-sk')).toBeDisabled()
       await expect(byId(page, 'dskp-remove')).toHaveCount(0)
 
-      await byId(page, 'q-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(page).toHaveURL(/\/admin\/questions\/564159$/)
       await expect(byId(page, 'cmp-flash')).toContainText('Soalan berjaya dikemaskini.')
       await expect(page.getByText('Belum ditag')).toBeVisible()
@@ -316,7 +316,7 @@ test.describe('M04 S4 edit question', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     test.setTimeout(150_000)
     await expect(byId(page, 'dskp-tagged')).toBeVisible()
     await byId(page, 'q-points').fill('2')
-    await byId(page, 'q-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/questions\/564159$/)
     await reopen(page, '/admin/questions/564159/edit')
     await expect(byId(page, 'q-points')).toHaveValue('2')

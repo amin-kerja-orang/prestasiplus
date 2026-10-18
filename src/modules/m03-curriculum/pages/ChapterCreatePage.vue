@@ -9,15 +9,13 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import { createChapter, fetchLevelOptions, fetchSubjectOptions } from '../api/admin-curriculum'
 import ChapterForm, {
   type ChapterFormPayload,
   type ChapterFormValues,
 } from '../components/curriculum/ChapterForm.vue'
-import CurriculumBackLink from '../components/curriculum/CurriculumBackLink.vue'
-import ErrorBox from '../components/ErrorBox.vue'
 import { errorLines, LOAD_ERROR, treeTo } from '../lib/curriculum-paths'
 import { queryString } from '../lib/query'
 
@@ -28,8 +26,21 @@ const flash = useFlash()
 const subjectParam = queryString(route.query.subject_id)
 const levelParam = queryString(route.query.education_level_id)
 
-const { data: subjects, error: subjectsError } = useApi((signal) => fetchSubjectOptions({ signal }))
-const { data: levels, error: levelsError } = useApi((signal) => fetchLevelOptions({ signal }))
+const {
+  data: subjects,
+  error: subjectsError,
+  reload: reloadSubjects,
+} = useApi((signal) => fetchSubjectOptions({ signal }))
+const {
+  data: levels,
+  error: levelsError,
+  reload: reloadLevels,
+} = useApi((signal) => fetchLevelOptions({ signal }))
+
+function retry(): void {
+  void reloadSubjects()
+  void reloadLevels()
+}
 
 const ready = computed(() => subjects.value !== null && levels.value !== null)
 const loadFailed = computed(() => subjectsError.value !== null || levelsError.value !== null)
@@ -72,10 +83,32 @@ async function submit(payload: ChapterFormPayload): Promise<void> {
 
 <template>
   <DsPage class="max-w-3xl" data-testid="chapter-create-page">
-    <CurriculumBackLink :to="treeTo(subjectParam, levelParam)" />
-    <ErrorBox v-if="loadFailed" :messages="LOAD_ERROR" data-testid="curriculum-load-error" />
+    <template #breadcrumb>
+      <DsBackLink
+        :to="treeTo(subjectParam, levelParam)"
+        label="Kembali ke Kurikulum"
+        data-testid="curriculum-back"
+      />
+    </template>
+    <DsLoadError
+      v-if="loadFailed"
+      :message="LOAD_ERROR"
+      testid="curriculum-load-error"
+      @retry="retry"
+    />
     <template v-else-if="ready">
-      <ErrorBox :messages="errors" data-testid="curriculum-form-alert" />
+      <UAlert
+        v-if="errors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="curriculum-form-alert"
+      >
+        <template #description>
+          <p v-for="(line, i) in errors" :key="i">{{ line }}</p>
+        </template>
+      </UAlert>
       <ChapterForm
         mode="create"
         :subjects="subjects?.data ?? []"

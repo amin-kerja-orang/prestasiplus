@@ -7,6 +7,8 @@
  */
 import { ref } from 'vue'
 
+import { DsFileField } from '@/ds'
+
 import {
   dismissDiagram,
   uploadDiagramImage,
@@ -15,14 +17,13 @@ import {
   type DiagramStructuredItem,
 } from '../api/diagram-audit'
 import { fieldErrors } from '../lib/ui-errors'
-import NativeFile from './native/NativeFile.vue'
 
 const props = defineProps<{
   kind: DiagramKind
   item: DiagramMcqItem | DiagramStructuredItem
 }>()
 const emit = defineEmits<{ done: [status: string]; failed: [error: unknown] }>()
-const fileInput = ref<{ el: HTMLInputElement | null } | null>(null)
+const file = ref<File | null>(null)
 const busy = ref(false)
 /** SRS §5: the server's `image` message shows under the field in red. */
 const imageError = ref('')
@@ -31,12 +32,12 @@ const text = (): string =>
   'questionText' in props.item ? props.item.questionText : props.item.stimulusExcerpt
 
 async function upload(): Promise<void> {
-  const file = fileInput.value?.el?.files?.[0]
-  if (!file || busy.value) return
+  const picked = file.value
+  if (!picked || busy.value) return
   busy.value = true
   imageError.value = ''
   try {
-    const result = await uploadDiagramImage(props.kind, props.item.id, file)
+    const result = await uploadDiagramImage(props.kind, props.item.id, picked)
     emit('done', result.status)
   } catch (err) {
     const message = fieldErrors(err).image
@@ -85,14 +86,28 @@ async function dismiss(): Promise<void> {
 
       <div class="flex flex-col gap-2 sm:w-72 sm:shrink-0">
         <form method="post" class="flex items-center gap-2" @submit.prevent="upload">
-          <NativeFile
-            ref="fileInput"
+          <DsFileField
+            v-model="file"
             name="image"
             accept="image/*"
             required
+            preview="none"
             class="min-w-0 flex-1"
             data-testid="diagram-file"
-          />
+          >
+            <template #default="{ open }">
+              <UButton
+                type="button"
+                color="neutral"
+                variant="soft"
+                icon="i-ph-image"
+                class="min-h-11 w-full min-w-0 justify-start"
+                @click="open()"
+              >
+                <span class="truncate">{{ file ? file.name : 'Pilih gambar' }}</span>
+              </UButton>
+            </template>
+          </DsFileField>
           <UButton
             type="submit"
             icon="i-ph-upload-simple"

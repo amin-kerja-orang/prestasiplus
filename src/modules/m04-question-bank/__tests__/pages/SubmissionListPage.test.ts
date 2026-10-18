@@ -88,8 +88,8 @@ describe('SubmissionListPage (M04 S10)', () => {
     expect(w.get('[data-testid=submissions-count-pending]').text()).toBe('1Pending')
     expect(w.get('[data-testid=submissions-count-processing]').text()).toBe('3Processing')
     expect(w.get('[data-testid=submissions-count-done]').text()).toBe('1Selesai')
-    expect(w.findAll('section > div')).toHaveLength(4)
-    expect(w.get('section').text()).not.toContain('Ditolak')
+    expect(w.findAll('[data-ds="stat-row"] li')).toHaveLength(4)
+    expect(w.get('[data-ds="stat-row"]').text()).not.toContain('Ditolak')
   })
 
   it('offers the status filter with Tapis and resets from the filter bar', async () => {

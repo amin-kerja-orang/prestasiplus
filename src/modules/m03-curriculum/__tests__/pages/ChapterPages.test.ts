@@ -73,8 +73,8 @@ describe('ChapterCreatePage (M03 S2)', () => {
     expect(w.get('[data-testid=chapter-form]').text()).toContain('Contoh: 1, 2, 3 (opsional)')
     expect(w.get('[data-testid=chapter-description]').attributes('rows')).toBe('4')
     expect(w.find('[data-testid=chapter-active]').exists()).toBe(false)
-    expect(w.get('[data-testid=chapter-submit]').text()).toBe('Simpan Bab')
-    expect(w.get('[data-testid=chapter-cancel]').text()).toBe('Batal')
+    expect(w.get('[data-testid=form-submit]').text()).toBe('Simpan Bab')
+    expect(w.get('[data-testid=form-cancel]').text()).toBe('Batal')
     for (const id of ['chapter-subject', 'chapter-level', 'chapter-name']) {
       expect(w.get(`[data-testid=${id}]`).attributes('required')).toBeDefined()
     }
@@ -91,7 +91,7 @@ describe('ChapterCreatePage (M03 S2)', () => {
     ] as const) {
       const { w } = await render(ChapterCreatePage, URL, `${URL}${query}`)
       expect(w.get('[data-testid=curriculum-back]').attributes('href')).toBe(href)
-      expect(w.get('[data-testid=chapter-cancel]').attributes('href')).toBe(href)
+      expect(w.get('[data-testid=form-cancel]').attributes('href')).toBe(href)
       w.unmount()
     }
   })
@@ -158,7 +158,7 @@ describe('ChapterEditPage (M03 S3)', () => {
     expect(w.get('[data-testid=chapter-form]').text()).toContain(
       'Nyahtanda jika bab ini tidak mahu dipaparkan buat masa ini',
     )
-    expect(w.get('[data-testid=chapter-submit]').text()).toBe('Kemaskini Bab')
+    expect(w.get('[data-testid=form-submit]').text()).toBe('Kemaskini Bab')
     expect(w.get('[data-testid=curriculum-back]').attributes('href')).toBe(
       '/admin/curriculum?subject_id=3&education_level_id=10',
     )

@@ -4,7 +4,6 @@
  * "Cuba Semula" button. One component for the 11 module copies of `LoadError`/`ErrorBox`.
  * `inline` is the compact one-line form for use inside a panel.
  */
-import type { ButtonProps } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { dsCopy } from './copy'
@@ -16,7 +15,7 @@ const props = withDefaults(
     retryLabel?: string
     inline?: boolean
     testid?: string
-    /** Test id of the retry button. */
+    /** `data-testid` of the retry button. */
     retryTestid?: string
   }>(),
   {
@@ -31,12 +30,12 @@ const props = withDefaults(
 
 const emit = defineEmits<{ retry: [] }>()
 
-/** The alert's action: the tonal retry button (test id passed through the button's attrs). */
-const actions = computed<ButtonProps[]>(() => [
+/** The retry button of the alert form (`UAlert` takes button props; the test id rides along as an attribute). */
+const actions = computed(() => [
   {
     label: props.retryLabel,
-    color: 'neutral',
-    variant: 'soft',
+    color: 'neutral' as const,
+    variant: 'soft' as const,
     onClick: () => emit('retry'),
     ...(props.retryTestid ? { 'data-testid': props.retryTestid } : {}),
   },

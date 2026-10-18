@@ -14,25 +14,30 @@ import { computed, nextTick, ref } from 'vue'
 import { isNavigationFailure, NavigationFailureType, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsFilterBar, DsFormField, DsLoadError, DsNativeSelect, DsPage } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { fetchMonitoringExport, fetchMonitoringOverview } from '../api'
 import MonitoringEngagementTable from '../components/monitoring/MonitoringEngagementTable.vue'
-import MonitoringFilters from '../components/monitoring/MonitoringFilters.vue'
 import MonitoringGuide from '../components/monitoring/MonitoringGuide.vue'
 import MonitoringKpis from '../components/monitoring/MonitoringKpis.vue'
 import MonitoringSignals from '../components/monitoring/MonitoringSignals.vue'
 import MonitoringTools from '../components/monitoring/MonitoringTools.vue'
 import MonitoringWeekly from '../components/monitoring/MonitoringWeekly.vue'
 import { buildCsv } from '../components/monitoring/monitoring-csv'
-import { LOAD_ERROR_COPY, pct } from '../components/monitoring/monitoring-format'
+import { pct } from '../components/monitoring/monitoring-format'
 import {
   MONITORING_BASE,
   monitoringPaths,
   type MonitoringFilterQuery,
 } from '../components/monitoring/monitoring-paths'
 import { useAutoRefresh } from '../components/monitoring/use-auto-refresh'
+import {
+  PERIODS,
+  STATES,
+  TAHAPS,
+  useMonitoringFilters,
+} from '../components/monitoring/use-monitoring-filters'
 
 const props = withDefaults(defineProps<{ basePath?: string }>(), { basePath: MONITORING_BASE })
 
@@ -91,6 +96,9 @@ async function doExport(format: 'pdf' | 'csv') {
   saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), result.filename)
 }
 const FORM_ID = 'mon-filters-form'
+const filters = useMonitoringFilters(query, (next) => void apply(next))
+/** Reset is a link to the bare prefix on live (FR-M11-32). */
+const resetFilters = () => void router.push(paths.value.overview)
 const SUBTITLE = 'Pantau penglibatan sekolah & pelajar T4/T5 dalam platform'
 
 const tab = ref('pelajar')
@@ -149,16 +157,43 @@ async function goto(sectionId: string) {
       />
     </template>
 
-    <MonitoringFilters :query="query" :paths="paths" :form-id="FORM_ID" @apply="apply" />
+    <!-- Live copy: "Tapis" and "Reset" (FR-M11-31, 32). -->
+    <DsFilterBar
+      :id="FORM_ID"
+      :chips="filters.chips.value"
+      :show-reset="false"
+      apply-label="Tapis"
+      reset-label="Reset"
+      data-testid="mon-filters"
+      @apply="filters.submit"
+      @remove-chip="filters.removeChip"
+      @reset="resetFilters"
+    >
+      <DsFormField v-slot="{ id }" native label="Tempoh" class="w-full md:w-48">
+        <DsNativeSelect
+          :id="id"
+          v-model="filters.period.value"
+          name="period"
+          data-testid="mon-period"
+        >
+          <option v-for="[value, label] in PERIODS" :key="value" :value="value">{{ label }}</option>
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField v-slot="{ id }" native label="Negeri" class="w-full md:w-56">
+        <DsNativeSelect :id="id" v-model="filters.state.value" name="state" data-testid="mon-state">
+          <option value="">Semua Negeri</option>
+          <option v-for="s in STATES" :key="s" :value="s">{{ s }}</option>
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField v-slot="{ id }" native label="Tahap" class="w-full md:w-56">
+        <DsNativeSelect :id="id" v-model="filters.tahap.value" name="tahap" data-testid="mon-tahap">
+          <option value="">Semua Tahap</option>
+          <option v-for="t in TAHAPS" :key="t" :value="t">{{ t }}</option>
+        </DsNativeSelect>
+      </DsFormField>
+    </DsFilterBar>
 
-    <UAlert
-      v-if="error"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning"
-      :description="LOAD_ERROR_COPY"
-      data-testid="mon-error"
-    />
+    <DsLoadError v-if="error" testid="mon-error" @retry="reload" />
     <p
       v-else-if="!data && loading"
       class="flex items-center gap-2 text-body text-muted"

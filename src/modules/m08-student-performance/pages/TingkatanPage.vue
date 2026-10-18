@@ -8,15 +8,10 @@ import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsLeaderRow, DsPage } from '@/ds'
+import { DsBackLink, DsDataTable, DsLeaderRow, DsLoadError, DsPage, DsPageHeader, DsPanel, DsPillNav, DsStatRow, type PillItem } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchLevelDetail } from '../api/performance'
-import PageHeader from '../components/shared/PageHeader.vue'
-import ToneText from '../components/shared/ToneText.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
 import { usePhIcon } from '../lib/icons'
 import {
   TONE_TEXT,
@@ -30,7 +25,10 @@ import {
   pctTrim,
   plain,
 } from '../lib/prestasi/format'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { useStatItems, type StatSpec } from '../lib/stat-items'
+
+const statItems = useStatItems()
 
 const route = useRoute()
 const code = computed(() => String(route.params.code ?? ''))
@@ -52,7 +50,7 @@ const { data, error, reload } = useRouteData(
 )
 const loadFailed = computed(() => isLoadError(error.value))
 
-const stats = computed<StatItem[]>(() => {
+const stats = computed<StatSpec[]>(() => {
   const d = data.value
   if (!d) return []
   return [
@@ -120,46 +118,39 @@ const cardFields = [
   { key: 'onTrack', label: 'On Track' },
   { key: 'below', label: 'Below' },
 ]
+const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
+  key: c,
+  label: c.toUpperCase(),
+  to: `/prestasi/tingkatan/${c}`,
+}))
 </script>
 
 <template>
   <DsPage data-testid="tingkatan-page">
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <PageHeader
-        :title="`Tingkatan ${levelNumber(data.code)}`"
+      <DsPageHeader
+        :show-title="true" :title="`Tingkatan ${levelNumber(data.code)}`"
         :subtitle="`Dashboard Prestasi Tingkatan · ${plain(data.classes)} kelas · ${plain(data.subjects)} subjek`"
         subtitle-testid="level-summary"
       >
-        <template #leading>
-          <UButton
-            to="/prestasi/tingkatan"
-            color="neutral"
-            variant="ghost"
-            size="lg"
-            :icon="icon('arrow-left')"
-            aria-label="Kembali ke senarai tingkatan"
-            data-testid="back-link"
-          />
+        <template #breadcrumb>
+          <DsBackLink to="/prestasi/tingkatan" label="Kembali ke senarai tingkatan" data-testid="back-link" />
         </template>
         <template #actions>
-          <UButton
-            v-for="c in ['t4', 't5']"
-            :key="c"
-            :to="`/prestasi/tingkatan/${c}`"
-            size="lg"
-            :color="data.code === c ? 'primary' : 'neutral'"
-            :variant="data.code === c ? 'solid' : 'soft'"
-            :label="c.toUpperCase()"
-            :data-testid="`pill-${c}`"
+          <DsPillNav
+            :items="levelPills"
+            :active="data.code"
+            label="Tingkatan"
+            testid-prefix="pill"
           />
         </template>
-      </PageHeader>
+      </DsPageHeader>
 
-      <StatGrid :items="stats" :columns="6" />
+      <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="5" prefix="stat" />
 
-      <UCard data-testid="headcount-card">
+      <DsPanel data-testid="headcount-card">
         <div class="flex flex-col gap-3">
           <div class="flex items-center justify-between gap-3">
             <h2 class="text-subheading text-highlighted">Headcount Keseluruhan</h2>
@@ -184,7 +175,7 @@ const cardFields = [
             </span>
           </div>
         </div>
-      </UCard>
+      </DsPanel>
 
       <section class="flex min-w-0 flex-col gap-3" data-testid="class-card">
         <h2 class="text-subheading text-highlighted">Perbandingan Kelas</h2>
@@ -205,9 +196,9 @@ const cardFields = [
             >
           </template>
           <template #accuracyText-cell="{ row }">
-            <ToneText :tone="TONE_TEXT[accuracyTone(row.original.accuracy)]" class="text-label">{{
+            <span :class="[TONE_TEXT[accuracyTone(row.original.accuracy)], 'text-label']">{{
               row.original.accuracyText
-            }}</ToneText>
+            }}</span>
           </template>
           <template #onTrack-cell="{ row }">
             <span :class="row.original.onTrack > 0 ? 'text-success' : 'text-dimmed'">{{
@@ -243,7 +234,7 @@ const cardFields = [
       </section>
 
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-        <UCard class="min-w-0" data-testid="top-students">
+        <DsPanel class="min-w-0" data-testid="top-students">
           <div class="flex flex-col gap-3">
             <h2 class="text-subheading text-highlighted">Murid Terbaik</h2>
             <ol class="flex max-h-96 flex-col gap-2 overflow-y-auto">
@@ -258,9 +249,9 @@ const cardFields = [
               />
             </ol>
           </div>
-        </UCard>
+        </DsPanel>
 
-        <UCard class="min-w-0" data-testid="at-risk">
+        <DsPanel class="min-w-0" data-testid="at-risk">
           <div class="flex flex-col gap-3">
             <h2 class="text-subheading text-highlighted">Murid Berisiko</h2>
             <div class="flex max-h-96 flex-col gap-2 overflow-y-auto">
@@ -283,9 +274,12 @@ const cardFields = [
               </RouterLink>
             </div>
           </div>
-        </UCard>
+        </DsPanel>
       </div>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

@@ -9,10 +9,9 @@ import { computed, watch } from 'vue'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
 import { fetchStructuredQuestion } from '../api/structured'
-import ErrorBox from '../components/ErrorBox.vue'
 import { formatEnDate } from '../lib/audit-format'
 import { STRUCTURED_LIST_PATH, structuredEditPath } from '../lib/audit-routes'
 import { kbatLabel, partLabelText } from '../lib/structured-options'
@@ -43,27 +42,21 @@ watch(
 
 <template>
   <DsPage class="max-w-5xl" data-testid="structured-detail">
-    <div>
-      <UButton
+    <template #breadcrumb>
+      <DsBackLink
         :to="STRUCTURED_LIST_PATH"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        class="min-h-11"
+        label="Kembali ke senarai"
         data-testid="structured-back"
-      >
-        Kembali ke senarai
-      </UButton>
-    </div>
+      />
+    </template>
 
-    <div v-if="error && !notFound" class="flex flex-col gap-3" data-testid="structured-detail-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" class="min-h-11" data-testid="structured-detail-retry" @click="reload()">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+    <DsLoadError
+      v-if="error && !notFound"
+      :message="LOAD_ERROR"
+      testid="structured-detail-error"
+      retry-testid="structured-detail-retry"
+      @retry="reload()"
+    />
 
     <div v-else-if="!question" class="flex flex-col gap-4" data-testid="structured-detail-skeleton">
       <USkeleton class="h-56 w-full" />
@@ -71,7 +64,7 @@ watch(
     </div>
 
     <template v-else>
-      <UCard data-testid="structured-header">
+      <DsPanel data-testid="structured-header">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="flex flex-wrap gap-2">
             <UBadge
@@ -132,18 +125,20 @@ watch(
             <UIcon name="i-ph-eye" class="size-4" />
             Visibiliti: Public
           </span>
-          <span class="inline-flex items-center gap-2 text-success">
-            <UIcon name="i-ph-circle-fill" class="size-3" />
-            {{ question.status === 'published' ? 'Published' : 'Draft' }}
-          </span>
+          <DsStatusBadge
+            :status="question.status === 'published' ? 'published' : 'draft'"
+            :label="question.status === 'published' ? 'Published' : 'Draft'"
+            size="sm"
+            data-testid="structured-status"
+          />
         </div>
-      </UCard>
+      </DsPanel>
 
       <h2 class="text-subheading text-highlighted" data-testid="structured-subs-heading">
         Bahagian Soalan ({{ question.subQuestions.length }} sub-soalan)
       </h2>
 
-      <UCard v-for="sub in question.subQuestions" :key="sub.id" data-testid="structured-sub">
+      <DsPanel v-for="sub in question.subQuestions" :key="sub.id" data-testid="structured-sub">
         <div class="flex items-start gap-3">
           <UBadge
             color="primary"
@@ -170,7 +165,7 @@ watch(
             {{ sub.modelAnswer }}
           </p>
         </UCard>
-      </UCard>
+      </DsPanel>
 
       <div class="flex flex-wrap gap-3">
         <UButton

@@ -8,12 +8,11 @@
 import { computed, watch } from 'vue'
 
 import { usePageMeta } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import { fetchKirkpatrickStudent } from '../api'
 import {
   KIRKPATRICK_ADMIN_BASE,
-  KirkpatrickLoadState,
   kirkpatrickPaths,
   useKirkpatrickPage,
 } from '../components/kirkpatrick/common'
@@ -33,6 +32,7 @@ const {
   data: loaded,
   error,
   loading,
+  reload,
 } = useKirkpatrickPage(
   (signal) => fetchKirkpatrickStudent(props.userId, { signal }),
   () => props.userId,
@@ -40,6 +40,15 @@ const {
 
 /** `useApi` keeps the previous result while it reloads: show only the student of the current id (S8 to S8 navigation). */
 const data = computed(() => (loaded.value?.student.id === props.userId ? loaded.value : null))
+
+/** "{sekolah} · Tingkatan {n}" under the name. */
+const subtitle = computed(() => {
+  const d = data.value
+  if (!d) return undefined
+  return d.student.grade === null
+    ? d.student.schoolName
+    : `${d.student.schoolName} · Tingkatan ${tingkatanOf(d.student.grade)}`
+})
 
 watch(
   data,
@@ -54,32 +63,27 @@ watch(
 </script>
 
 <template>
-  <DsPage data-testid="kirk-pelajar">
-    <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
+  <DsPage
+    data-testid="kirk-pelajar"
+    :title="data?.student.name"
+    :subtitle="subtitle"
+    :show-title="true"
+    title-testid="pel-name"
+    subtitle-testid="pel-school"
+  >
+    <template v-if="data" #actions>
+      <DsBackLink :to="paths.behavior" label="Kembali ke Tahap 3" data-testid="pel-back" />
+    </template>
+    <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
+    <p
+      v-else-if="data === null && loading"
+      class="flex items-center gap-2 text-label text-muted"
+      data-testid="kirk-loading"
+      role="status"
+    >
+      <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
+    </p>
     <template v-if="data">
-      <header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div class="flex min-w-0 flex-col gap-1">
-          <h1 class="text-title break-words text-highlighted" data-testid="pel-name">
-            {{ data.student.name }}
-          </h1>
-          <p class="text-body text-muted" data-testid="pel-school">
-            {{ data.student.schoolName
-            }}<template v-if="data.student.grade !== null">
-              · Tingkatan {{ tingkatanOf(data.student.grade) }}</template
-            >
-          </p>
-        </div>
-        <UButton
-          :to="paths.behavior"
-          size="lg"
-          class="min-h-11"
-          color="neutral"
-          variant="ghost"
-          icon="i-ph-arrow-left"
-          label="Kembali ke Tahap 3"
-          data-testid="pel-back"
-        />
-      </header>
       <PelajarAlesa :data="data" />
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <PelajarHeadcount :headcount="data.headcount" />

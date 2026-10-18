@@ -5,7 +5,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/api'
 
 import KirkpatrickOverviewPage from '../../../pages/KirkpatrickOverviewPage.vue'
-import { all, flat, has, itemLabels, mountPage, options, overview, pick, select, squash, t } from '../fixtures'
+import {
+  all,
+  flat,
+  has,
+  mountPage,
+  nativeLabels,
+  nativePick,
+  options,
+  overview,
+  resetLink,
+  squash,
+  t,
+  tiles,
+} from '../fixtures'
 
 const api = vi.hoisted(() => ({
   fetchKirkpatrickOverview: vi.fn(),
@@ -89,18 +102,18 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
 describe('S1 filter (AC-M12-05.1, 05.2)', () => {
   it('lists the options, no Reset by default, and calls the API without a scope', async () => {
     const { wrapper: w } = await open()
-    expect(itemLabels(w, 'school_id')).toEqual([
+    expect(nativeLabels(w, 'school_id')).toEqual([
       'Semua Sekolah',
       'SMK Demo Satu',
       'SMK Demo Dua',
     ])
-    expect(itemLabels(w, 'state')).toEqual([
+    expect(nativeLabels(w, 'state')).toEqual([
       'Semua Negeri',
       'Johor',
       'Kelantan',
     ])
-    expect(t(w, 'kirk-filter-apply').text()).toBe('Tapis')
-    expect(has(w, 'kirk-filter-reset')).toBe(false)
+    expect(t(w, 'kirk-filter').get('button[type="submit"]').text()).toBe('Tapis')
+    expect(resetLink(w).exists()).toBe(false)
     expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
       { schoolId: null, state: '' },
       expect.anything(),
@@ -109,7 +122,7 @@ describe('S1 filter (AC-M12-05.1, 05.2)', () => {
 
   it('"Tapis" navigates with school_id and state, then Reset appears', async () => {
     const { wrapper: w, router } = await open()
-    await pick(w, 'school_id', '8080')
+    await nativePick(w, 'school_id', '8080')
     await t(w, 'kirk-filter').trigger('submit')
     await vi.waitFor(() => {
       expect(router.currentRoute.value.fullPath).toBe('/admin/kirkpatrick?school_id=8080&state=')
@@ -120,15 +133,17 @@ describe('S1 filter (AC-M12-05.1, 05.2)', () => {
         expect.anything(),
       )
     })
-    await vi.waitFor(() => expect(has(w, 'kirk-filter-reset')).toBe(true))
-    expect(t(w, 'kirk-filter-reset').attributes('href')).toBe('/admin/kirkpatrick')
-    expect(select(w, 'school_id').props('modelValue')).toBe('8080')
+    await vi.waitFor(() => expect(resetLink(w).exists()).toBe(true))
+    expect(resetLink(w).text()).toBe('Reset')
+    expect((w.get('select[name="school_id"]').element as HTMLSelectElement).value).toBe('8080')
+    await resetLink(w).trigger('click')
+    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/admin/kirkpatrick'))
   })
 
   it('a bookmarked ?state= is preloaded and sent', async () => {
     const { wrapper: w } = await open('/admin/kirkpatrick?state=Kelantan')
-    expect(select(w, 'state').props('modelValue')).toBe('Kelantan')
-    expect(has(w, 'kirk-filter-reset')).toBe(true)
+    expect((w.get('select[name="state"]').element as HTMLSelectElement).value).toBe('Kelantan')
+    expect(resetLink(w).exists()).toBe(true)
     expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
       { schoolId: null, state: 'Kelantan' },
       expect.anything(),
@@ -212,15 +227,18 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
       '/admin/monitoring',
       '/admin/kirkpatrick/learning',
     ])
-    expect(flat(kpis)).toBe(
-      'Pelajar Berdaftar (T4/T5) 4,158 Soalan Dijawab 306,133 Guru Aktif 277 /522 Ketepatan Keseluruhan 82.8%',
-    )
+    expect(tiles(w).map((x) => [x.label, x.value])).toEqual([
+      ['Pelajar Berdaftar (T4/T5)', '4,158'],
+      ['Soalan Dijawab', '306,133'],
+      ['Guru Aktif', '277/522'],
+      ['Ketepatan Keseluruhan', '82.8%'],
+    ])
   })
 
   it('five band tiles (counts without separator) link to behavior', async () => {
     const { wrapper: w } = await open()
-    const tiles = t(w, 'kirk-bands').findAll('a')
-    expect(tiles.map((a) => a.attributes('href'))).toEqual(
+    const bandLinks = t(w, 'kirk-bands').findAll('a')
+    expect(bandLinks.map((a) => a.attributes('href'))).toEqual(
       Array(5).fill('/admin/kirkpatrick/behavior'),
     )
     expect(values(w, 'kirk-band-count')).toEqual(['513', '259', '169', '5', '3212'])
@@ -242,7 +260,7 @@ describe('mounts', () => {
   it('guru twin builds its links from its own prefix', async () => {
     const { wrapper: w } = await open('/guru/kirkpatrick')
     expect(t(w, 'kirk-level-t2').attributes('href')).toBe('/guru/kirkpatrick/learning')
-    expect(t(w, 'kirk-kpi-registered').attributes('href')).toBe('/guru/monitoring')
+    expect(t(w, 'kirk-kpi-registered').get('a').attributes('href')).toBe('/guru/monitoring')
   })
 
   it('alias (detailLinks off): no level links, no "Lihat detail", monitoring links stay', async () => {
@@ -272,7 +290,7 @@ describe('states', () => {
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }),
     )
     const { wrapper: w } = await open()
-    expect(t(w, 'kirk-error').text()).toBe('Gagal memuatkan data. Sila cuba lagi.')
+    expect(t(w, 'kirk-error').text()).toContain('Tidak dapat memuatkan data. Sila cuba semula.')
     expect(has(w, 'kirk-levels')).toBe(false)
     expect(outcome.setRouteOutcome).not.toHaveBeenCalled()
   })

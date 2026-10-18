@@ -4,14 +4,14 @@
  * tiles and the footer computed by the API from the listed rows, the stored rows by grade, Keyakinan badges and the
  * Cadangan text of the stored band. Staff table (`DsDataTable`).
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
+import { DsDataTable, DsPanel } from '@/ds'
+
 import type { Results, SpmGrade } from '../../../api/types'
-import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { pct, plain } from '../common/kirkpatrick-format'
 import { CADANGAN, CONFIDENCE, GRADE_PILL } from './results-format'
-import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ alesa: Results['alesa'] }>()
 
@@ -60,12 +60,16 @@ const cardFields = [
   { key: 'confidenceText', label: 'Keyakinan' },
   { key: 'cadangan', label: 'Cadangan' },
 ]
+
+/** Paged at 20 rows. */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(20)
 </script>
 
 <template>
-  <KirkpatrickTableSection
+  <DsPanel
     title="Ramalan ALESA (Predictive Grade)"
-    subtitle="Berdasarkan ketepatan, konsistensi, trend mingguan, dan jumlah latihan pelajar"
+    description="Berdasarkan ketepatan, konsistensi, trend mingguan, dan jumlah latihan pelajar"
     icon="i-ph-sparkle"
     data-testid="res-alesa"
   >
@@ -89,7 +93,10 @@ const cardFields = [
         <p class="text-body text-muted">Perlu Intervensi</p>
       </UCard>
     </div>
-    <KirkpatrickTable
+    <DsDataTable
+      v-model:page-size="pageSize"
+      variant="bare"
+      :page-size-options="PAGE_SIZES"
       :data="data"
       :columns="columns"
       caption="Ramalan ALESA"
@@ -125,7 +132,7 @@ const cardFields = [
           row.original.cadangan
         }}</span>
       </template>
-    </KirkpatrickTable>
+    </DsDataTable>
     <UAlert color="primary" variant="soft" icon="i-ph-info" data-testid="alesa-footer">
       <template #description>
         <strong>{{ plain(alesa.lulus) }} pelajar dijangka lulus</strong>,
@@ -133,5 +140,5 @@ const cardFields = [
         formula berwajaran: Ketepatan (40%), Konsistensi (20%), Trend (20%), Volume (20%).
       </template>
     </UAlert>
-  </KirkpatrickTableSection>
+  </DsPanel>
 </template>

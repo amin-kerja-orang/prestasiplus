@@ -8,15 +8,14 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDrillTable } from '@/ds'
+import { DsDrillTable, DsLoadError, DsPanel } from '@/ds'
 
 import { fetchCcTeacher } from '../api/command-center'
 import type { CcTeacherClass } from '../api/command-center-types'
-import { count, LOAD_ERROR_COPY } from '../components/command-center/cc-format'
+import { count } from '../components/command-center/cc-format'
 import { ccPaths } from '../components/command-center/cc-paths'
 import CcAccuracyBar from '../components/command-center/CcAccuracyBar.vue'
 import CcFrame from '../components/command-center/CcFrame.vue'
-import CcPanel from '../components/command-center/CcPanel.vue'
 import { useCcPage } from '../components/command-center/use-cc-page'
 
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
@@ -29,7 +28,7 @@ const props = withDefaults(defineProps<{ schoolId: number; userId: number; baseP
 const router = useRouter()
 const paths = computed(() => ccPaths(props.basePath))
 
-const { data, error, notFound } = useCcPage(
+const { data, error, notFound, reload } = useCcPage(
   (signal) => fetchCcTeacher(props.schoolId, props.userId, { signal }),
   [() => props.schoolId, () => props.userId],
   (d) => d.teacher.name,
@@ -63,10 +62,10 @@ function open(classId: number) {
   <CcFrame
     v-if="!notFound"
     :back-to="data ? paths.school(data.school.id) : paths.overview"
-    back-label="← Kembali ke Sekolah"
+    back-label="Kembali ke Sekolah"
     :crumbs="crumbs"
   >
-    <p v-if="error" class="text-body text-error" data-testid="cc-error">{{ LOAD_ERROR_COPY }}</p>
+    <DsLoadError v-if="error" testid="cc-error" @retry="reload" />
     <p
       v-else-if="!data"
       class="flex items-center gap-2 text-body text-muted"
@@ -79,7 +78,7 @@ function open(classId: number) {
         Sekolah: <strong class="text-highlighted">{{ data.school.name }}</strong>
       </p>
 
-      <CcPanel icon="i-ph-chalkboard" :title="`Senarai Kelas (${data.classes.length})`">
+      <DsPanel icon="i-ph-chalkboard" :title="`Senarai Kelas (${data.classes.length})`">
         <p v-if="data.classes.length === 0" class="text-body text-muted" data-testid="cc-empty-row">
           Tiada kelas aktif
         </p>
@@ -121,7 +120,7 @@ function open(classId: number) {
             /></template>
           </DsDrillTable>
         </div>
-      </CcPanel>
+      </DsPanel>
     </template>
   </CcFrame>
 </template>

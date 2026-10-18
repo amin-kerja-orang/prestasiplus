@@ -23,8 +23,7 @@ import {
   type LevelInputBody,
 } from '../api/admin-subjects-levels'
 import type { EducationStage } from '../api/lookups'
-import ErrorBox from '../components/ErrorBox.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
+import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
 import FormActions from '../components/subjects-levels/FormActions.vue'
 import {
   COPY,
@@ -60,7 +59,11 @@ const form = reactive<LevelForm>({
 })
 
 // S11: GET /api/admin/education-levels/:id pre-fills the form.
-const { data: loaded, error: loadError } = useApi(
+const {
+  data: loaded,
+  error: loadError,
+  reload,
+} = useApi(
   (signal) => fetchAdminLevel(props.id, { signal }),
   () => props.id,
   { immediate: props.mode === 'edit' },
@@ -140,7 +143,12 @@ async function submit(): Promise<void> {
       </template>
     </DsPageHeader>
 
-    <ErrorBox v-if="failed" :messages="COPY.loadFailed" data-testid="level-load-error" />
+    <DsLoadError
+      v-if="failed"
+      :message="COPY.loadFailed"
+      testid="level-load-error"
+      @retry="reload()"
+    />
 
     <form
       v-else-if="ready"
@@ -149,7 +157,18 @@ async function submit(): Promise<void> {
       data-testid="level-form"
       @submit.prevent="submit"
     >
-      <ErrorBox :messages="errors" data-testid="level-form-alert" />
+      <UAlert
+        v-if="errors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="level-form-alert"
+      >
+        <template #description>
+          <p v-for="(line, i) in errors" :key="i">{{ line }}</p>
+        </template>
+      </UAlert>
 
       <DsFormSection
         title="Maklumat Tahap"
@@ -157,12 +176,15 @@ async function submit(): Promise<void> {
         icon="i-ph-graduation-cap"
         :columns="2"
       >
-        <div class="min-w-0">
-          <label for="level-name" class="mb-2 block text-label text-highlighted"
-            >Nama Tahap (Bahasa Melayu) *</label
-          >
+        <DsFormField
+          v-slot="{ id: fid }"
+          native
+          for="level-name"
+          label="Nama Tahap (Bahasa Melayu)"
+          required
+        >
           <UInput
-            id="level-name"
+            :id="fid"
             v-model="form.name"
             type="text"
             name="name"
@@ -171,14 +193,11 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="level-name"
           />
-        </div>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="level-name-en" class="mb-2 block text-label text-highlighted"
-            >Nama Tahap (English) *</label
-          >
+        <DsFormField v-slot="{ id: fid }" native for="level-name-en" label="Nama Tahap (English)" required>
           <UInput
-            id="level-name-en"
+            :id="fid"
             v-model="form.nameEn"
             type="text"
             name="nameEn"
@@ -187,12 +206,18 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="level-name-en"
           />
-        </div>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="level-code" class="mb-2 block text-label text-highlighted">Kod Tahap *</label>
+        <DsFormField
+          v-slot="{ id: fid }"
+          native
+          for="level-code"
+          label="Kod Tahap"
+          required
+          hint="Kod akan ditukar ke huruf besar automatik"
+        >
           <UInput
-            id="level-code"
+            :id="fid"
             v-model="form.code"
             type="text"
             name="code"
@@ -202,18 +227,11 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="level-code"
           />
-          <p class="mt-2 flex items-start gap-2 text-label text-muted">
-            <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />
-            Kod akan ditukar ke huruf besar automatik
-          </p>
-        </div>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="level-stage" class="mb-2 block text-label text-highlighted"
-            >Peringkat *</label
-          >
-          <NativeSelect
-            id="level-stage"
+        <DsFormField v-slot="{ id: fid }" native for="level-stage" label="Peringkat" required>
+          <DsNativeSelect
+            :id="fid"
             v-model="form.stage"
             name="stage"
             required
@@ -223,15 +241,19 @@ async function submit(): Promise<void> {
             <option v-for="option in STAGE_OPTIONS" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
-          </NativeSelect>
-        </div>
+          </DsNativeSelect>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="level-curriculum" class="mb-2 block text-label text-highlighted"
-            >Kurikulum *</label
-          >
+        <DsFormField
+          v-slot="{ id: fid }"
+          native
+          for="level-curriculum"
+          label="Kurikulum"
+          required
+          hint="Nama kurikulum yang diguna pakai"
+        >
           <UInput
-            id="level-curriculum"
+            :id="fid"
             v-model="form.curriculum"
             type="text"
             name="curriculum"
@@ -240,18 +262,17 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="level-curriculum"
           />
-          <p class="mt-2 flex items-start gap-2 text-label text-muted">
-            <UIcon name="i-ph-book-open" class="mt-1 size-4 shrink-0" />
-            Nama kurikulum yang diguna pakai
-          </p>
-        </div>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="level-order" class="mb-2 block text-label text-highlighted"
-            >Susunan Paparan</label
-          >
+        <DsFormField
+          v-slot="{ id: fid }"
+          native
+          for="level-order"
+          label="Susunan Paparan"
+          hint="Nombor lebih kecil akan dipaparkan dahulu"
+        >
           <UInput
-            id="level-order"
+            :id="fid"
             v-model.number="form.order"
             type="number"
             name="order"
@@ -259,11 +280,7 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="level-order"
           />
-          <p class="mt-2 flex items-start gap-2 text-label text-muted">
-            <UIcon name="i-ph-arrows-down-up" class="mt-1 size-4 shrink-0" />
-            Nombor lebih kecil akan dipaparkan dahulu
-          </p>
-        </div>
+        </DsFormField>
       </DsFormSection>
 
       <FormActions

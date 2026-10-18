@@ -13,14 +13,20 @@ import { useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, useFlash } from '@/composables'
-import { DsPage, useConfirm } from '@/ds'
+import {
+  DsArt3D,
+  DsBackLink,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsRtlScope,
+  DsStatusBadge,
+  useConfirm,
+} from '@/ds'
 import { formatDateTime } from '@/lib/time'
 
 import { bulkQuestionAction, deleteQuestion, fetchQuestion } from '../api'
 import AiExplanationCard from '../components/AiExplanationCard.vue'
-import ErrorBox from '../components/ErrorBox.vue'
-import PreviewImage from '../components/native/PreviewImage.vue'
-import RtlScope from '../components/native/RtlScope.vue'
 import {
   cut,
   DELETE_CONFIRM,
@@ -28,7 +34,7 @@ import {
   QUESTIONS_LIST_PATH,
   questionEditPath,
   STATUS_CONFIRM,
-  statusColor,
+  statusDs,
   statusLabel,
   TYPE_ANSWER_HEADINGS,
 } from '../lib/question-list'
@@ -126,55 +132,46 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
 </script>
 
 <template>
-  <DsPage data-testid="question-detail-page">
-    <!-- Header -->
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex min-w-0 items-center gap-3">
-        <UButton
-          :to="QUESTIONS_LIST_PATH"
-          color="neutral"
-          variant="ghost"
-          icon="i-ph-arrow-left"
-          aria-label="Kembali"
-          class="size-11 shrink-0 justify-center"
-          data-testid="question-back"
-        />
-        <p class="min-w-0 text-body text-muted" data-testid="question-subtitle">Soalan #{{ id }}</p>
-      </div>
-      <div v-if="question" class="flex flex-wrap gap-2">
-        <UButton
-          :to="questionEditPath(id)"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-pencil-simple"
-          class="min-h-11"
-          data-testid="question-edit"
-        >
-          Edit
-        </UButton>
-        <UButton
-          type="button"
-          color="error"
-          variant="soft"
-          icon="i-ph-trash"
-          :disabled="busy"
-          class="min-h-11"
-          data-testid="question-delete"
-          @click="remove"
-        >
-          Padam
-        </UButton>
-      </div>
-    </div>
+  <DsPage
+    :subtitle="`Soalan #${String(id)}`"
+    subtitle-testid="question-subtitle"
+    data-testid="question-detail-page"
+  >
+    <template #breadcrumb>
+      <DsBackLink :to="QUESTIONS_LIST_PATH" data-testid="question-back" />
+    </template>
+    <template v-if="question" #actions>
+      <UButton
+        :to="questionEditPath(id)"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-pencil-simple"
+        class="min-h-11"
+        data-testid="question-edit"
+      >
+        Edit
+      </UButton>
+      <UButton
+        type="button"
+        color="error"
+        variant="soft"
+        icon="i-ph-trash"
+        :disabled="busy"
+        class="min-h-11"
+        data-testid="question-delete"
+        @click="remove"
+      >
+        Padam
+      </UButton>
+    </template>
 
-    <div v-if="error && !notFound" class="flex flex-col gap-3" data-testid="question-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" class="min-h-11" data-testid="question-retry" @click="reload()">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+    <DsLoadError
+      v-if="error && !notFound"
+      :message="LOAD_ERROR"
+      testid="question-error"
+      retry-testid="question-retry"
+      @retry="reload()"
+    />
 
     <div v-else-if="!question && !error" class="flex flex-col gap-4" data-testid="question-skeleton">
       <USkeleton class="h-32 w-full" />
@@ -184,38 +181,35 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
     <div v-else-if="question" class="grid min-w-0 gap-4 md:gap-6 lg:grid-cols-3">
       <!-- Main column -->
       <div class="flex min-w-0 flex-col gap-4 md:gap-6 lg:col-span-2">
-        <UCard data-testid="question-card">
-          <div class="mb-3 flex items-center justify-between gap-3">
-            <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-              <UIcon name="i-ph-question" class="size-5 text-primary" />
-              Soalan
-            </h2>
-            <UBadge
-              :color="statusColor(question.status)"
-              variant="subtle"
+        <DsPanel title="Soalan" icon="i-ph-question" data-testid="question-card">
+          <template #actions>
+            <DsStatusBadge
+              :status="statusDs(question.status)"
               :label="statusLabel(question.status)"
               data-testid="question-status"
             />
-          </div>
-          <RtlScope :rtl="isRtlText(question.questionText)">
+          </template>
+          <DsRtlScope :rtl="isRtlText(question.questionText)">
             <p class="text-body break-words whitespace-pre-line text-highlighted" data-testid="question-text">
               {{ question.questionText }}
             </p>
-          </RtlScope>
-          <PreviewImage
-            v-if="question.questionImage"
-            :src="imageSrc(question.questionImage)"
-            alt=""
-            class="mt-3"
-            data-testid="question-image"
-          />
-        </UCard>
+          </DsRtlScope>
+          <div v-if="question.questionImage" class="mt-3 max-w-md">
+            <DsArt3D
+              variant="plain"
+              :src="imageSrc(question.questionImage)"
+              alt=""
+              data-testid="question-image"
+            />
+          </div>
+        </DsPanel>
 
-        <UCard v-if="optionRows.length > 0" data-testid="options-card">
-          <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-list-checks" class="size-5 text-primary" />
-            Pilihan Jawapan
-          </h2>
+        <DsPanel
+          v-if="optionRows.length > 0"
+          title="Pilihan Jawapan"
+          icon="i-ph-list-checks"
+          data-testid="options-card"
+        >
           <ul class="flex flex-col gap-3">
             <li v-for="o in optionRows" :key="o.letter" data-testid="question-option" :data-correct="o.correct">
               <UCard :color="o.correct ? 'success' : 'neutral'" variant="subtle" :ui="{ body: 'p-3 sm:p-3' }">
@@ -231,7 +225,9 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
                 <p class="text-body break-words text-highlighted" :class="o.correct ? 'text-label' : ''">
                   {{ o.text }}
                 </p>
-                <PreviewImage v-if="o.image" :src="imageSrc(o.image)" alt="" class="mt-2" />
+                <div v-if="o.image" class="mt-2 max-w-xs">
+                  <DsArt3D variant="plain" :src="imageSrc(o.image)" alt="" />
+                </div>
                 <p
                   v-if="o.correct"
                   class="mt-1 inline-flex items-center gap-2 text-label text-success"
@@ -245,14 +241,15 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
               </UCard>
             </li>
           </ul>
-        </UCard>
+        </DsPanel>
 
         <!-- INFERRED (FR-M04-43): the answer card of the other types, with the create-form headings. -->
-        <UCard v-else-if="!isMcq && !isPksk" data-testid="answer-card">
-          <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-list-checks" class="size-5 text-primary" />
-            {{ TYPE_ANSWER_HEADINGS[question.questionType as keyof typeof TYPE_ANSWER_HEADINGS] }}
-          </h2>
+        <DsPanel
+          v-else-if="!isMcq && !isPksk"
+          :title="TYPE_ANSWER_HEADINGS[question.questionType as keyof typeof TYPE_ANSWER_HEADINGS]"
+          icon="i-ph-list-checks"
+          data-testid="answer-card"
+        >
           <div v-if="question.questionType === 'true_false'" class="flex gap-3">
             <UBadge
               v-for="v in [true, false]"
@@ -277,15 +274,16 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
           <p v-else class="text-body break-words whitespace-pre-line text-highlighted">
             {{ question.modelAnswer || '-' }}
           </p>
-        </UCard>
+        </DsPanel>
 
-        <UCard v-if="question.explanation" data-testid="explanation-card">
-          <h2 class="mb-2 flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-lightbulb" class="size-5 text-primary" />
-            Penjelasan
-          </h2>
+        <DsPanel
+          v-if="question.explanation"
+          title="Penjelasan"
+          icon="i-ph-lightbulb"
+          data-testid="explanation-card"
+        >
           <p class="text-body break-words whitespace-pre-line text-default">{{ question.explanation }}</p>
-        </UCard>
+        </DsPanel>
 
         <AiExplanationCard
           :question-id="id"
@@ -296,11 +294,7 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
 
       <!-- Sidebar -->
       <div class="flex min-w-0 flex-col gap-4 md:gap-6">
-        <UCard data-testid="info-card">
-          <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-info" class="size-5 text-primary" />
-            Maklumat
-          </h2>
+        <DsPanel title="Maklumat" icon="i-ph-info" data-testid="info-card">
           <dl class="flex flex-col gap-4">
             <div>
               <dt class="text-overline text-muted">Subjek</dt>
@@ -371,19 +365,21 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
               </dd>
             </div>
           </dl>
-        </UCard>
+        </DsPanel>
 
-        <UCard v-if="question.usage.attempts === 0" data-testid="usage-new">
-          <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-info" class="size-5 text-warning" />
-            Soalan Baharu
-          </h2>
-          <p class="mt-1 text-body text-muted">
+        <DsPanel
+          v-if="question.usage.attempts === 0"
+          title="Soalan Baharu"
+          icon="i-ph-info"
+          accent="heat"
+          data-testid="usage-new"
+        >
+          <p class="text-body text-muted">
             Soalan ini belum digunakan dalam sebarang kuiz atau latihan.
           </p>
-        </UCard>
+        </DsPanel>
         <!-- INFERRED (FR-M04-41): statistics of a used question, UNVERIFIED COPY. -->
-        <UCard v-else data-testid="usage-stats">
+        <DsPanel v-else data-testid="usage-stats">
           <dl class="flex flex-col gap-2 text-body">
             <div class="flex justify-between gap-3">
               <dt class="text-muted">Jumlah Cubaan</dt>
@@ -402,7 +398,7 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
               <dd class="tabular text-label text-highlighted" data-testid="usage-rate">{{ usageRate }}</dd>
             </div>
           </dl>
-        </UCard>
+        </DsPanel>
 
         <!-- INFERRED (FR-M04-42): the "Quick Actions" slot, only for draft and pending questions. -->
         <div

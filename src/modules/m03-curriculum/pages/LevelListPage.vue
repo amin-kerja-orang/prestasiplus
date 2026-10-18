@@ -19,7 +19,6 @@ import {
   DsPageHeader,
   DsStatRow,
   type StatItem,
-  useConfirm,
 } from '@/ds'
 
 import {
@@ -28,8 +27,7 @@ import {
   setLevelActive,
   type AdminEducationLevelListItem,
 } from '../api/admin-subjects-levels'
-import ErrorBox from '../components/ErrorBox.vue'
-import ActiveSwitch from '../components/subjects-levels/ActiveSwitch.vue'
+import { DsLoadError, DsRowActions, type RowAction } from '@/ds'
 import {
   COPY,
   LEVEL_ROUTES,
@@ -39,7 +37,6 @@ import {
 } from '../lib/subjects-levels'
 
 const flash = useFlash()
-const confirm = useConfirm()
 
 const { data, error, reload } = useApi((signal) => fetchAdminLevels({ signal }))
 
@@ -113,8 +110,29 @@ async function toggle(row: AdminEducationLevelListItem): Promise<void> {
 
 const deleting = ref(false)
 
+/** Edit stays one click away; the menu holds the destructive "Padam" (confirmed first). */
+function rowActions(row: AdminEducationLevelListItem): RowAction[] {
+  return [
+    {
+      label: 'Edit',
+      icon: 'i-ph-pencil-simple',
+      to: { name: LEVEL_ROUTES.edit, params: { id: row.id } },
+      testid: 'level-edit',
+    },
+    {
+      label: 'Padam',
+      icon: 'i-ph-trash',
+      danger: true,
+      disabled: deleting.value,
+      testid: 'level-delete',
+      confirm: { title: 'Padam Tahap?', body: COPY.confirmDeleteLevel, confirmLabel: 'Padam' },
+      onSelect: () => void remove(row),
+    },
+  ]
+}
+
+/** The confirmation ran in `DsRowActions` (live message); this only calls the API. */
 async function remove(row: AdminEducationLevelListItem): Promise<void> {
-  if (!(await confirm({ message: COPY.confirmDeleteLevel, tone: 'danger' }))) return
   if (deleting.value) return
   deleting.value = true
   try {
@@ -131,7 +149,12 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
 
 <template>
   <DsPage data-testid="levels-page">
-    <ErrorBox v-if="error" :messages="COPY.loadFailed" data-testid="levels-error" />
+    <DsLoadError
+      v-if="error"
+      :message="COPY.loadFailed"
+      testid="levels-error"
+      @retry="reload()"
+    />
 
     <template v-else-if="data">
       <DsPageHeader>
@@ -191,61 +214,33 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
           />
         </template>
         <template #isActive-cell="{ row }">
-          <ActiveSwitch
-            :active="row.original.isActive"
-            data-testid="level-switch"
-            @toggle="toggle(row.original)"
-          />
+          <span class="inline-flex min-h-11 min-w-11 items-center justify-center">
+            <USwitch
+              :model-value="row.original.isActive"
+              aria-label="Aktif"
+              color="success"
+              data-testid="level-switch"
+              @update:model-value="toggle(row.original)"
+            />
+          </span>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex items-center gap-1">
-            <UButton
-              :to="{ name: LEVEL_ROUTES.edit, params: { id: row.original.id } }"
-              title="Edit"
-              aria-label="Edit"
-              color="neutral"
-              variant="ghost"
-              icon="i-ph-pencil-simple"
-              class="size-11 justify-center"
-              data-testid="level-edit"
-            />
-            <UButton
-              type="button"
-              title="Padam"
-              aria-label="Padam"
-              color="error"
-              variant="ghost"
-              icon="i-ph-trash"
-              :disabled="deleting"
-              class="size-11 justify-center"
-              data-testid="level-delete"
-              @click="remove(row.original)"
-            />
-          </div>
+          <DsRowActions :actions="rowActions(row.original)" :inline="1" testid="level-more" />
         </template>
         <template #card-actions="{ row }">
           <div class="flex items-center gap-1">
-            <ActiveSwitch
-              :active="row.isActive as boolean"
-              @toggle="toggle(row as AdminEducationLevelListItem)"
-            />
-            <UButton
-              :to="{ name: LEVEL_ROUTES.edit, params: { id: row.id as number } }"
-              aria-label="Edit"
-              color="neutral"
-              variant="soft"
-              icon="i-ph-pencil-simple"
-              class="size-11 justify-center"
-            />
-            <UButton
-              type="button"
-              aria-label="Padam"
-              color="error"
-              variant="soft"
-              icon="i-ph-trash"
-              :disabled="deleting"
-              class="size-11 justify-center"
-              @click="remove(row as AdminEducationLevelListItem)"
+            <span class="inline-flex min-h-11 min-w-11 items-center justify-center">
+              <USwitch
+                :model-value="row.isActive as boolean"
+                aria-label="Aktif"
+                color="success"
+                @update:model-value="toggle(row as AdminEducationLevelListItem)"
+              />
+            </span>
+            <DsRowActions
+              :actions="rowActions(row as AdminEducationLevelListItem)"
+              :inline="1"
+              testid="level-more"
             />
           </div>
         </template>

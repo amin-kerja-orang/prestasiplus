@@ -4,10 +4,10 @@
  * characters, "{Subjek} · {n} soalan dijawab" and the full-width "Latihan Fokus ({k} soalan)" link
  * (k = min(available, 25) in label and link, DV-M08-14). The top block also shows the trend icon.
  */
+import { DsPanel } from '@/ds'
 import type { Trend, WeakSp } from '../../api/types'
 import { TREND_ICON, TREND_TEXT, focusHref, weakTitle } from '../../lib/analitik'
 import { usePhIcon } from '../../lib/icons'
-import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{
   sp: WeakSp
@@ -33,19 +33,19 @@ const TREND_LABEL: Record<Trend, string> = {
 </script>
 
 <template>
-  <UCard class="h-full min-w-0" :data-testid="`weak-card-${sp.spId}`">
+  <DsPanel class="h-full min-w-0" :data-testid="`weak-card-${sp.spId}`">
     <div class="flex h-full flex-col gap-3">
       <div class="flex items-center justify-between gap-2">
         <UBadge color="warning" variant="subtle" size="lg" :label="`${sp.accuracy}%`" />
         <template v-if="trend">
-          <ToneText :tone="TREND_TEXT[trend]" :data-testid="`trend-${trend}`">
+          <span :class="TREND_TEXT[trend]" :data-testid="`trend-${trend}`">
             <UIcon
               :name="icon(TREND_ICON[trend])"
               class="size-5"
               role="img"
               :aria-label="TREND_LABEL[trend]"
             />
-          </ToneText>
+          </span>
         </template>
       </div>
       <p class="text-label break-words text-highlighted">{{ weakTitle(sp, max) }}</p>
@@ -60,5 +60,5 @@ const TREND_LABEL: Record<Trend, string> = {
         data-testid="focus-link"
       />
     </div>
-  </UCard>
+  </DsPanel>
 </template>

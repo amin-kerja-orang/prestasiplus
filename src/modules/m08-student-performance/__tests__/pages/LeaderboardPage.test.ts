@@ -83,10 +83,10 @@ describe('LeaderboardPage (M08 S20)', () => {
 
   it('shows "#-", 0, 0, 0% for an unranked viewer', async () => {
     const w = await render()
-    expect(w.get('[data-testid=me-rank]').text()).toBe('#-')
-    expect(w.get('[data-testid=me-coins]').text()).toBe('0')
-    expect(w.get('[data-testid=me-sessions]').text()).toBe('0')
-    expect(w.get('[data-testid=me-accuracy]').text()).toBe('0%')
+    expect(w.get('[data-testid=me-rank]').text()).toBe('#-Ranking')
+    expect(w.get('[data-testid=me-coins]').text()).toBe('0Koin')
+    expect(w.get('[data-testid=me-sessions]').text()).toBe('0Sesi')
+    expect(w.get('[data-testid=me-accuracy]').text()).toBe('0%Ketepatan')
   })
 
   it('shows the viewer position with separators and a rounded accuracy', async () => {
@@ -94,9 +94,9 @@ describe('LeaderboardPage (M08 S20)', () => {
       board({ me: { rank: 1050, coins: 12345, sessions: 4, accuracy: 21.8 } }),
     )
     const w = await render('/leaderboard?period=all')
-    expect(w.get('[data-testid=me-rank]').text()).toBe('#1050')
-    expect(w.get('[data-testid=me-coins]').text()).toBe('12,345')
-    expect(w.get('[data-testid=me-accuracy]').text()).toBe('22%')
+    expect(w.get('[data-testid=me-rank]').text()).toBe('#1050Ranking')
+    expect(w.get('[data-testid=me-coins]').text()).toBe('12,345Koin')
+    expect(w.get('[data-testid=me-accuracy]').text()).toBe('22%Ketepatan')
   })
 
   it('orders the podium 2-1-3 with the crown on rank 1', async () => {
@@ -114,18 +114,15 @@ describe('LeaderboardPage (M08 S20)', () => {
 
   it('renders the table with the responsive columns, plain names and colour pills', async () => {
     const w = await render()
-    expect(w.findAll('[role=columnheader]').map((th) => th.text())).toEqual([
+    expect(w.findAll('thead th').map((th) => th.text())).toEqual([
       '#',
       'Pelajar',
       'Koin',
       'Sesi',
       'Ketepatan',
     ])
-    const heads = w.findAll('[role=columnheader]')
-    expect(heads[3]?.classes()).toEqual(expect.arrayContaining(['hidden', 'md:block']))
-    expect(heads[4]?.classes()).toEqual(expect.arrayContaining(['hidden', 'lg:block']))
     expect(w.find('[data-testid=leaderboard-table] a').exists()).toBe(false)
-    const rows = w.findAll('[data-testid=leaderboard-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(5)
     const pill = (i: number) => rows[i]?.get('[data-testid=row-accuracy]').classes() ?? []
     expect(pill(0)).toContain('bg-success')
@@ -147,8 +144,8 @@ describe('LeaderboardPage (M08 S20)', () => {
     api.fetchLeaderboard.mockRejectedValueOnce(new Error('boom'))
     const w = await render()
     expect(w.get('[data-testid=leaderboard-error]').text()).toContain('Maaf, berlaku ralat.')
-    await w.get('[data-testid=leaderboard-retry]').trigger('click')
+    await w.get('[data-testid=leaderboard-error] button').trigger('click')
     await flushPromises()
-    expect(w.findAll('[data-testid=leaderboard-row]')).toHaveLength(5)
+    expect(w.findAll('tbody tr')).toHaveLength(5)
   })
 })

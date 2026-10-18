@@ -11,15 +11,14 @@ import { computed } from 'vue'
 import { isNavigationFailure, NavigationFailureType, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsFilterBar, DsFormField, DsLoadError, DsNativeSelect, DsPage } from '@/ds'
 
 import { fetchKirkpatrickFilterOptions, fetchKirkpatrickOverview } from '../api'
 import {
   KIRKPATRICK_ADMIN_BASE,
-  KirkpatrickFilterBar,
-  KirkpatrickLoadState,
   kirkpatrickPaths,
   queryString,
+  useKirkpatrickFilters,
   useKirkpatrickPage,
 } from '../components/kirkpatrick/common'
 import OverviewBands from '../components/kirkpatrick/overview/OverviewBands.vue'
@@ -54,6 +53,8 @@ const { data, error, loading, reload } = useKirkpatrickPage(
 )
 const { data: options } = useApi((signal) => fetchKirkpatrickFilterOptions({ signal }))
 
+const filters = useKirkpatrickFilters(options, { schoolId, state }, (value) => void apply(value))
+
 async function apply(value: { schoolId: string; state: string }) {
   const failure = await router.push({
     path: props.basePath,
@@ -68,15 +69,52 @@ async function apply(value: { schoolId: string; state: string }) {
     data-testid="kirk-overview-page"
     subtitle="Analisis Keberkesanan Platform — Model Penilaian 4 Tahap"
   >
-    <KirkpatrickFilterBar
-      :options="options"
-      :school-id="schoolId"
-      :state="state"
-      :reset-to="paths.overview"
-      @apply="apply"
-    />
+    <!-- Live copy: "Tapis" and "Reset" (FR-M12-19, 41). -->
+    <DsFilterBar
+      :chips="filters.chips.value"
+      :show-reset="false"
+      apply-label="Tapis"
+      reset-label="Reset"
+      data-testid="kirk-filter"
+      @apply="filters.apply"
+      @remove-chip="filters.removeChip"
+      @reset="router.push(paths.overview)"
+    >
+      <DsFormField v-slot="{ id }" native label="Sekolah" class="w-full md:w-64">
+        <DsNativeSelect
+          :id="id"
+          v-model="filters.school.value"
+          name="school_id"
+          data-testid="kirk-filter-school"
+        >
+          <option value="">Semua Sekolah</option>
+          <option v-for="s in options?.schools ?? []" :key="s.id" :value="String(s.id)">
+            {{ s.name }}
+          </option>
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField v-slot="{ id }" native label="Negeri" class="w-full md:w-48">
+        <DsNativeSelect
+          :id="id"
+          v-model="filters.state.value"
+          name="state"
+          data-testid="kirk-filter-state"
+        >
+          <option value="">Semua Negeri</option>
+          <option v-for="s in options?.states ?? []" :key="s" :value="s">{{ s }}</option>
+        </DsNativeSelect>
+      </DsFormField>
+    </DsFilterBar>
 
-    <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
+    <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
+    <p
+      v-else-if="data === null && loading"
+      class="flex items-center gap-2 text-label text-muted"
+      data-testid="kirk-loading"
+      role="status"
+    >
+      <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
+    </p>
 
     <template v-if="data">
       <OverviewLevelCards :data="data" :paths="paths" :detail="detailLinks" />

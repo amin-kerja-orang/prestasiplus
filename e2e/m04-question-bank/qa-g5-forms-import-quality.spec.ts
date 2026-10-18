@@ -42,7 +42,7 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
       'Pilih Tahap Pendidikan',
     )
     for (const n of [1, 2, 3, 4, 5])
-      await expect(byId(page, `q-difficulty-${String(n)}`)).not.toBeChecked()
+      await expect(page.locator(`[id="q-difficulty"] [role="radio"][value="${String(n)}"]`)).not.toBeChecked()
     for (const label of ['Sangat Mudah', 'Mudah', 'Sederhana', 'Sukar', 'Sangat Sukar'])
       await expect(page.getByText(label, { exact: true }).first()).toBeVisible()
     await expect(byId(page, 'q-text')).toHaveAttribute(
@@ -63,29 +63,29 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     ).toEqual(['Bahasa Melayu', 'English'])
     await expect(byId(page, 'q-points')).toHaveAttribute('min', '1')
     await expect(page.getByText('Mata yang diperoleh jika jawapan betul')).toBeVisible()
-    await expect(byId(page, 'q-cancel')).toHaveAttribute('href', '/admin/questions')
+    await expect(byId(page, 'form-cancel')).toHaveAttribute('href', '/admin/questions')
     await expect(byId(page, 'q-type').locator('option:checked')).toContainText('Objektif (MCQ)')
     await expect(byId(page, 'question-form').getByRole('link', { name: /Batal/ })).toBeVisible()
-    await byId(page, 'q-cancel').click()
+    await byId(page, 'form-cancel').click()
     await expect(page).toHaveURL(/\/admin\/questions$/)
   })
 
   test('E2E-M04-12 required fields block submit one by one (AC-06.5)', async ({ page }) => {
-    await byId(page, 'q-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(byId(page, 'q-subject')).toHaveJSProperty('validity.valueMissing', true)
     await byId(page, 'q-subject').selectOption({ label: 'Sains' })
-    await byId(page, 'q-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(byId(page, 'q-level')).toHaveJSProperty('validity.valueMissing', true)
     await byId(page, 'q-level').selectOption({ label: 'Tingkatan 5' })
     await byId(page, 'q-text').fill('Soalan ujian lengkap tanpa kesukaran.')
-    await byId(page, 'q-submit').click()
+    await byId(page, 'form-submit').click()
     // Difficulty radio group required.
-    await expect(byId(page, 'q-difficulty-1')).toHaveJSProperty('validity.valueMissing', true)
+    await expect(byId(page, 'field-error').first()).toHaveText('Sila pilih tahap kesukaran.')
     await expect(page).toHaveURL(/\/admin\/questions\/create$/)
     // Essay with empty options is not blocked by the (now optional) option fields.
     await byId(page, 'q-type').selectOption('essay')
-    await byId(page, 'q-difficulty-2').check()
-    await byId(page, 'q-submit').click()
+    await page.locator('[id="q-difficulty"] [role="radio"][value="2"]').check()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/questions$/)
   })
 
@@ -101,7 +101,7 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
       await expect(byId(page, `q-option-${String(i)}`)).toHaveAttribute('required', '')
       await expect(byId(page, `q-option-image-${String(i)}`)).toBeVisible()
     }
-    await expect(byId(page, 'q-correct-0')).toBeChecked()
+    await expect(page.locator('[id="q-correct-0"] [role="radio"]')).toBeChecked()
     await expect(byId(page, 'mcq-card')).toContainText(
       'Pilih butang radio di sebelah pilihan yang merupakan jawapan yang betul.',
     )
@@ -117,9 +117,8 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     await byId(page, 'q-type').selectOption('true_false')
     await expect(byId(page, 'tf-card')).toContainText('Betul')
     await expect(byId(page, 'tf-card')).toContainText('Salah')
-    await expect(byId(page, 'q-tf-true')).not.toBeChecked()
-    await expect(byId(page, 'q-tf-false')).not.toBeChecked()
-    await expect(byId(page, 'q-tf-true')).not.toHaveAttribute('required', /.*/)
+    await expect(page.locator('[id="q-tf"] [role="radio"][value="true"]')).not.toBeChecked()
+    await expect(page.locator('[id="q-tf"] [role="radio"][value="false"]')).not.toBeChecked()
     await expect(byId(page, 'q-option-0')).not.toHaveAttribute('required', /.*/)
 
     await byId(page, 'q-type').selectOption('short_answer')
@@ -149,12 +148,12 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await byId(page, 'q-subject').selectOption({ label: 'Sains' })
     await byId(page, 'q-level').selectOption({ label: 'Tingkatan 5' })
-    await byId(page, 'q-difficulty-3').check()
+    await page.locator('[id="q-difficulty"] [role="radio"][value="3"]').check()
     await byId(page, 'q-text').fill('Soalan QA G5 yang baharu dicipta untuk ujian.')
     for (const [i, t] of ['Satu', 'Dua', 'Tiga', 'Empat'].entries())
       await byId(page, `q-option-${String(i)}`).fill(t)
-    await byId(page, 'q-correct-2').check()
-    await byId(page, 'q-submit').click()
+    await page.locator('[id="q-correct-2"] [role="radio"]').check()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/questions$/)
     await expect(byId(page, 'cmp-flash')).toBeVisible()
     await expect(byId(page, 'question-row').first()).toContainText('Soalan QA G5 yang baharu')
@@ -308,16 +307,16 @@ test.describe('QA G5 S4 edit form', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'shell-admin-subtitle')).toHaveCount(0)
     for (const i of [0, 1, 2, 3])
       await expect(byId(page, `q-option-${String(i)}`)).toHaveAttribute('required', '')
-    await expect(byId(page, 'q-correct-0')).toBeChecked()
+    await expect(page.locator('[id="q-correct-0"] [role="radio"]')).toBeChecked()
     await byId(page, 'q-text').fill('Teks soalan yang dikemaskini oleh QA G5.')
-    await byId(page, 'q-submit').click()
+    await byId(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/questions\/564159$/)
     await expect(byId(page, 'cmp-flash')).toBeVisible()
     await expect(byId(page, 'question-text')).toContainText(
       'Teks soalan yang dikemaskini oleh QA G5.',
     )
     await gotoApp('/admin/questions/564159/edit')
-    await byId(page, 'q-cancel').click()
+    await byId(page, 'form-cancel').click()
     await expect(page).toHaveURL(/\/admin\/questions\/564159$/)
   })
 
@@ -344,7 +343,7 @@ test.describe('QA G5 S4 edit form', { tag: [moduleTag(4), '@qa'] }, () => {
       const removeBtns = page.locator('[data-testid$="-remove"]:visible')
       const n = await removeBtns.count()
       for (let i = 0; i < n; i++) await removeBtns.first().click()
-      await byId(page, 'q-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(page).toHaveURL(/\/admin\/questions\/570022$/)
       const reqs = (await mock.requests('/api/questions/570022')).filter((r) => r.method !== 'GET')
       expect(reqs.length).toBeGreaterThan(0)

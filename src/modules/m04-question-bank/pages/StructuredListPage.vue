@@ -15,12 +15,23 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsDataTable, DsFilterBar, DsPage, DsStatTile, type CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsFilterBar,
+  DsFormField,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsRowActions,
+  DsStatRow,
+  type CardField,
+  type RowAction,
+  type StatItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchStructuredQuestions } from '../api/structured'
-import ErrorBox from '../components/ErrorBox.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import { AUDIT_ROUTES, STRUCTURED_CREATE_PATH, STRUCTURED_LIST_PATH } from '../lib/audit-routes'
 import { fetchLevelOptions, fetchSubjectOptions } from '../lib/lookup-options'
 import { KBAT_FILTER_OPTIONS } from '../lib/structured-options'
@@ -71,6 +82,23 @@ const { data, error, reload } = useApi(
 const rows = computed(() => data.value?.data ?? [])
 const stats = computed(() => data.value?.meta.stats ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
+
+const statItems = computed<StatItem[]>(() => [
+  {
+    key: 'total',
+    label: 'Jumlah Soalan',
+    value: formatNumber(stats.value?.total ?? 0),
+    icon: 'stack',
+    accent: 'action',
+  },
+  {
+    key: 'published',
+    label: 'Published',
+    value: formatNumber(stats.value?.published ?? 0),
+    icon: 'check-circle',
+    accent: 'friend',
+  },
+])
 
 const counter = computed(() => {
   const meta = data.value?.meta
@@ -134,6 +162,16 @@ const tableRows = computed<StructuredRow[]>(() =>
   })),
 )
 
+/** The one row action: a link to the read-only detail page. */
+const viewAction = (id: number): RowAction[] => [
+  {
+    label: 'Lihat',
+    icon: 'i-ph-eye',
+    to: { name: AUDIT_ROUTES.structuredDetail, params: { id } },
+    testid: 'structured-view',
+  },
+]
+
 const columns: TableColumn<StructuredRow>[] = [
   { accessorKey: 'id', header: '#' },
   { accessorKey: 'stimulusExcerpt', header: 'Stimulus / Soalan' },
@@ -167,10 +205,8 @@ async function resetFilter(): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="structured-page">
-    <!-- Header -->
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <p class="min-w-0 text-body text-muted">Semua soalan berstruktur SPM dalam sistem</p>
+  <DsPage subtitle="Semua soalan berstruktur SPM dalam sistem" data-testid="structured-page">
+    <template #actions>
       <UButton
         :to="STRUCTURED_CREATE_PATH"
         icon="i-ph-plus"
@@ -179,30 +215,11 @@ async function resetFilter(): Promise<void> {
       >
         Tambah Soalan
       </UButton>
-    </div>
+    </template>
 
     <!-- Stat cards + subject distribution (whole store). -->
-    <section class="grid grid-cols-2 gap-4 lg:grid-cols-5">
-      <template v-if="stats">
-        <DsStatTile
-          :value="formatNumber(stats.total)"
-          unit="Jumlah Soalan"
-          icon="i-ph-stack"
-          data-testid="structured-stat-total"
-        />
-        <DsStatTile
-          :value="formatNumber(stats.published)"
-          unit="Published"
-          icon="i-ph-check-circle"
-          data-testid="structured-stat-published"
-        />
-      </template>
-      <template v-else>
-        <USkeleton class="h-24 w-full" data-testid="structured-stat-total" />
-        <USkeleton class="h-24 w-full" data-testid="structured-stat-published" />
-      </template>
-      <UCard class="col-span-2 lg:col-span-3" data-testid="structured-by-subject">
-        <h2 class="mb-3 text-label text-muted">Agihan Mengikut Subjek</h2>
+    <DsStatRow :items="statItems" :cols="2" :loading="!stats" roomy prefix="structured-stat" />
+    <DsPanel title="Agihan Mengikut Subjek" data-testid="structured-by-subject">
         <div v-if="stats" class="flex flex-wrap gap-2">
           <UBadge
             v-for="s in stats.bySubject"
@@ -214,8 +231,7 @@ async function resetFilter(): Promise<void> {
           >
         </div>
         <USkeleton v-else class="h-16 w-full" />
-      </UCard>
-    </section>
+    </DsPanel>
 
     <!-- Filter (the URL is the state). -->
     <DsFilterBar
@@ -225,57 +241,59 @@ async function resetFilter(): Promise<void> {
       @reset="resetFilter"
     >
       <div class="w-full min-w-0 sm:w-56">
-        <label for="structured-subject" class="mb-2 block text-label text-highlighted">Subjek</label>
-        <NativeSelect
-          id="structured-subject"
-          v-model="subjectId"
-          name="subject_id"
-          data-testid="structured-subject"
-        >
-          <option value="">Semua Subjek</option>
-          <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">
-            {{ s.name }}
-          </option>
-        </NativeSelect>
+        <DsFormField v-slot="{ id }" native for="structured-subject" label="Subjek">
+          <DsNativeSelect
+            :id="id"
+            v-model="subjectId"
+            name="subject_id"
+            data-testid="structured-subject"
+          >
+            <option value="">Semua Subjek</option>
+            <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">
+              {{ s.name }}
+            </option>
+          </DsNativeSelect>
+        </DsFormField>
       </div>
       <div class="w-full min-w-0 sm:w-56">
-        <label for="structured-level" class="mb-2 block text-label text-highlighted">Tingkatan</label>
-        <NativeSelect
-          id="structured-level"
-          v-model="levelId"
-          name="education_level_id"
-          data-testid="structured-level"
-        >
-          <option value="">Semua</option>
-          <option v-for="l in levels ?? []" :key="l.id" :value="String(l.id)">
-            {{ l.name }}
-          </option>
-        </NativeSelect>
+        <DsFormField v-slot="{ id }" native for="structured-level" label="Tingkatan">
+          <DsNativeSelect
+            :id="id"
+            v-model="levelId"
+            name="education_level_id"
+            data-testid="structured-level"
+          >
+            <option value="">Semua</option>
+            <option v-for="l in levels ?? []" :key="l.id" :value="String(l.id)">
+              {{ l.name }}
+            </option>
+          </DsNativeSelect>
+        </DsFormField>
       </div>
       <div class="w-full min-w-0 sm:w-56">
-        <label for="structured-kbat" class="mb-2 block text-label text-highlighted">KBAT</label>
-        <NativeSelect id="structured-kbat" v-model="kbat" name="kbat_level" data-testid="structured-kbat">
-          <option value="">Semua KBAT</option>
-          <option v-for="o in KBAT_FILTER_OPTIONS" :key="o.value" :value="String(o.value)">
-            {{ o.label }}
-          </option>
-        </NativeSelect>
+        <DsFormField v-slot="{ id }" native for="structured-kbat" label="KBAT">
+          <DsNativeSelect :id="id" v-model="kbat" name="kbat_level" data-testid="structured-kbat">
+            <option value="">Semua KBAT</option>
+            <option v-for="o in KBAT_FILTER_OPTIONS" :key="o.value" :value="String(o.value)">
+              {{ o.label }}
+            </option>
+          </DsNativeSelect>
+        </DsFormField>
       </div>
     </DsFilterBar>
 
     <!-- Load failure: alert in place of the table + retry (design-system §7.4). -->
-    <div v-if="error" class="flex flex-col gap-3" data-testid="structured-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" class="min-h-11" data-testid="structured-retry" @click="reload()">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="LOAD_ERROR"
+      testid="structured-error"
+      retry-testid="structured-retry"
+      @retry="reload()"
+    />
 
     <div v-else class="flex flex-col gap-3" data-testid="structured-footer-wrap">
       <DsDataTable
-        dense
+        variant="flush"
         :data="tableRows"
         :columns="columns"
         caption="Senarai soalan berstruktur"
@@ -285,7 +303,8 @@ async function resetFilter(): Promise<void> {
         :page="data?.meta.page ?? applied.page"
         card-title="stimulusExcerpt"
         :card-fields="cardFields"
-        empty-label="Tiada soalan berstruktur ditemui"
+        empty-title="Tiada soalan berstruktur ditemui"
+        :filtered="activeCount > 0"
         data-testid="structured-table"
         @update:page="goToPage"
       >
@@ -304,26 +323,10 @@ async function resetFilter(): Promise<void> {
           <UBadge color="info" variant="subtle" :label="row.original.kbat" data-testid="structured-kbat-pill" />
         </template>
         <template #actions-cell="{ row }">
-          <UButton
-            :to="{ name: AUDIT_ROUTES.structuredDetail, params: { id: row.original.id } }"
-            color="neutral"
-            variant="soft"
-            icon="i-ph-eye"
-            class="min-h-11"
-            data-testid="structured-view"
-          >
-            Lihat
-          </UButton>
+          <DsRowActions :actions="viewAction(row.original.id)" :inline="1" />
         </template>
         <template #card-actions="{ row }">
-          <UButton
-            :to="{ name: AUDIT_ROUTES.structuredDetail, params: { id: row.id as number } }"
-            color="neutral"
-            variant="soft"
-            icon="i-ph-eye"
-            aria-label="Lihat"
-            class="min-h-11 min-w-11 justify-center"
-          />
+          <DsRowActions :actions="viewAction(row.id as number)" :inline="1" />
         </template>
       </DsDataTable>
       <p v-if="data && showCounter" class="text-caption text-muted" data-testid="structured-counter">

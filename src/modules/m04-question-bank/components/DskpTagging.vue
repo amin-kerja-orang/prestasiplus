@@ -10,6 +10,8 @@
  */
 import { computed, onMounted, ref, watch } from 'vue'
 
+import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
+
 import {
   fetchDskpBidang,
   fetchDskpSk,
@@ -20,7 +22,6 @@ import {
 } from '../api/lookups'
 import type { QuestionDetail } from '../api/questions'
 import { LOAD_ERROR } from '../lib/ui-errors'
-import NativeSelect from './native/NativeSelect.vue'
 
 const props = defineProps<{
   subjectId: string
@@ -227,20 +228,18 @@ function removeTag(): void {
         Buang tag DSKP
       </UButton>
     </div>
-    <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-      <div class="min-w-0">
-        <label for="q-dskp-bidang" class="mb-2 block text-label text-highlighted">Bidang</label>
-        <NativeSelect id="q-dskp-bidang" v-model="bidangModel" data-testid="dskp-bidang">
+    <div class="grid grid-cols-1 items-end gap-3 2xl:grid-cols-3">
+      <DsFormField v-slot="{ id }" native for="q-dskp-bidang" label="Bidang">
+        <DsNativeSelect :id="id" v-model="bidangModel" data-testid="dskp-bidang">
           <option value="">-- Pilih Bidang --</option>
           <option v-for="b in bidangList" :key="b.id" :value="String(b.id)">
             {{ b.code ? `${b.code} - ${b.name}` : b.name }}
           </option>
-        </NativeSelect>
-      </div>
-      <div class="min-w-0">
-        <label for="q-dskp-sk" class="mb-2 block text-label text-highlighted">Standard Kandungan</label>
-        <NativeSelect
-          id="q-dskp-sk"
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField v-slot="{ id }" native for="q-dskp-sk" label="Standard Kandungan">
+        <DsNativeSelect
+          :id="id"
           v-model="skModel"
           :disabled="bidangId === ''"
           data-testid="dskp-sk"
@@ -249,12 +248,11 @@ function removeTag(): void {
           <option v-for="s in skList" :key="s.id" :value="String(s.id)">
             {{ s.code }} - {{ s.description }}
           </option>
-        </NativeSelect>
-      </div>
-      <div class="min-w-0">
-        <label for="q-dskp-sp" class="mb-2 block text-label text-highlighted">Standard Pembelajaran</label>
-        <NativeSelect
-          id="q-dskp-sp"
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField v-slot="{ id }" native for="q-dskp-sp" label="Standard Pembelajaran">
+        <DsNativeSelect
+          :id="id"
           v-model="spModel"
           name="dskp_sp_id"
           :disabled="skId === ''"
@@ -264,26 +262,18 @@ function removeTag(): void {
           <option v-for="s in spList" :key="s.id" :value="String(s.id)">
             {{ s.code }} - {{ s.description }}
           </option>
-        </NativeSelect>
-      </div>
+        </DsNativeSelect>
+      </DsFormField>
     </div>
-    <div
+    <DsLoadError
       v-if="failed"
-      class="mt-3 flex flex-wrap items-center gap-2 text-caption text-error"
-      data-testid="dskp-load-error"
-    >
-      <span>{{ LOAD_ERROR }}</span>
-      <UButton
-        type="button"
-        color="neutral"
-        variant="soft"
-        class="min-h-11"
-        data-testid="dskp-retry"
-        @click="retry"
-      >
-        Cuba Semula
-      </UButton>
-    </div>
+      inline
+      class="mt-3"
+      :message="LOAD_ERROR"
+      testid="dskp-load-error"
+      retry-testid="dskp-retry"
+      @retry="retry"
+    />
     <p
       v-if="spId !== ''"
       class="mt-3 flex items-center gap-2 text-caption text-success"

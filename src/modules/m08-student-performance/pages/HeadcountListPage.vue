@@ -8,14 +8,11 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsDataTable, DsEmptyState, DsPage } from '@/ds'
+import { DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader } from '@/ds'
 
 import { fetchHeadcounts } from '../api/headcount'
 import AutoSetupModal from '../components/headcount/AutoSetupModal.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const { data, error, reload } = useRouteData((signal) => fetchHeadcounts({ signal }))
 const showAutoSetup = ref(false)
@@ -59,7 +56,7 @@ const cardFields = [
 
 <template>
   <DsPage data-testid="headcount-list-page">
-    <PageHeader
+    <DsPageHeader
       title="Headcount"
       subtitle="Tracking prestasi murid — TOV, OTR, AR & RS"
       data-testid="headcount-hero"
@@ -89,9 +86,9 @@ const cardFields = [
           @click="showAutoSetup = true"
         />
       </template>
-    </PageHeader>
+    </DsPageHeader>
 
-    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <div v-if="data.length === 0" data-testid="headcount-empty">
@@ -145,7 +142,10 @@ const cardFields = [
         </DsDataTable>
       </div>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
 
     <AutoSetupModal v-model:open="showAutoSetup" @done="reload()" />
   </DsPage>

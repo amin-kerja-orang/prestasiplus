@@ -9,13 +9,10 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel } from '@/ds'
 
 import { createHeadcount, fetchHeadcountFormOptions } from '../api/headcount'
 import type { HeadcountMode } from '../api/headcount-types'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
 import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
 
 const router = useRouter()
@@ -111,23 +108,15 @@ async function submit() {
 
 <template>
   <DsPage data-testid="headcount-create-page">
-    <PageHeader title="Buat Headcount Baru">
-      <template #leading>
-        <UButton
-          to="/headcount"
-          color="neutral"
-          variant="ghost"
-          size="lg"
-          icon="i-ph-arrow-left"
-          aria-label="Kembali"
-          data-testid="back-link"
-        />
+    <DsPageHeader title="Buat Headcount Baru">
+      <template #breadcrumb>
+        <DsBackLink to="/headcount" label="Kembali" data-testid="back-link" />
       </template>
-    </PageHeader>
+    </DsPageHeader>
 
-    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
-    <UCard v-else-if="options" class="max-w-3xl">
+    <DsPanel v-else-if="options" class="max-w-3xl">
       <form class="flex min-w-0 flex-col gap-6" data-testid="create-form" @submit.prevent="submit">
         <UAlert
           v-if="hasMessages"
@@ -233,7 +222,10 @@ async function submit() {
           data-testid="create-submit"
         />
       </form>
-    </UCard>
-    <PageSkeleton v-else-if="!error" />
+    </DsPanel>
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

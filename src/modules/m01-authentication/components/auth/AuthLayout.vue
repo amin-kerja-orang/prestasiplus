@@ -87,7 +87,7 @@ useThemeMode('learner')
         <div class="rounded-card transition-shadow focus-within:shadow-hero">
           <UCard>
             <div class="mb-6 flex flex-col items-center gap-2 text-center">
-              <DsBrandLogo />
+              <DsBrandLogo size="xl" />
               <p class="text-label font-medium text-muted" data-testid="auth-tagline">
                 {{ tagline }}
               </p>

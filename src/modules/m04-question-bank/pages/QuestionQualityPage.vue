@@ -14,11 +14,18 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsPage, DsStatTile, type CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  type CardField,
+  type StatItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchQualitySummary, runQualityAudit } from '../api/quality'
-import ErrorBox from '../components/ErrorBox.vue'
 import { averageColor } from '../lib/import-quality'
 import { questionEditPath } from '../lib/question-list'
 import { errorLines, LOAD_ERROR } from '../lib/ui-errors'
@@ -102,6 +109,41 @@ const actionRows = computed<ActionRow[]>(() =>
   })),
 )
 
+const kpis = computed<StatItem[]>(() =>
+  data.value
+    ? [
+        {
+          key: 'total',
+          label: 'Jumlah Soalan',
+          value: formatNumber(data.value.total),
+          icon: 'stack',
+    accent: 'action',
+        },
+        {
+          key: 'average',
+          label: 'Purata Skor',
+          value: formatNumber(data.value.average, { decimals: 1 }),
+          icon: 'gauge',
+    accent: 'friend',
+        },
+        {
+          key: 'excellent',
+          label: 'Cemerlang (76-100)',
+          value: formatNumber(data.value.excellentCount),
+          icon: 'seal-check',
+    accent: 'win',
+        },
+        {
+          key: 'action',
+          label: 'Perlu Tindakan Aktif (≤ 50)',
+          value: formatNumber(data.value.activeActionCount),
+          icon: 'warning',
+    accent: 'trial',
+        },
+      ]
+    : [],
+)
+
 const subjectColumns: TableColumn<SubjectRow>[] = [
   { accessorKey: 'name', header: 'Subjek' },
   { accessorKey: 'count', header: 'Soalan' },
@@ -131,14 +173,13 @@ const actionCardFields: CardField[] = [
 
 <template>
   <DsPage data-testid="quality-page">
-    <div v-if="error" class="flex flex-col gap-3" data-testid="quality-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" class="min-h-11" data-testid="quality-retry" @click="reload()">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="LOAD_ERROR"
+      testid="quality-error"
+      retry-testid="quality-retry"
+      @retry="reload()"
+    />
 
     <div v-else-if="firstLoad" class="flex flex-col gap-4" data-testid="quality-skeleton">
       <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -149,49 +190,24 @@ const actionCardFields: CardField[] = [
     </div>
 
     <template v-else-if="data">
-      <div class="grid grid-cols-2 gap-4 md:grid-cols-4" data-testid="quality-kpis">
-        <DsStatTile
-          :value="formatNumber(data.total)"
-          unit="Jumlah Soalan"
-          icon="i-ph-stack"
-          data-testid="kpi-total"
-        />
-        <DsStatTile
-          :value="formatNumber(data.average, { decimals: 1 })"
-          unit="Purata Skor"
-          icon="i-ph-gauge"
-          data-testid="kpi-average"
-        />
-        <DsStatTile
-          :value="formatNumber(data.excellentCount)"
-          unit="Cemerlang (76-100)"
-          icon="i-ph-seal-check"
-          data-testid="kpi-excellent"
-        />
-        <DsStatTile
-          :value="formatNumber(data.activeActionCount)"
-          unit="Perlu Tindakan Aktif (≤ 50)"
-          icon="i-ph-warning"
-          data-testid="kpi-action"
-        />
-      </div>
+      <DsStatRow :items="kpis" :cols="4" prefix="kpi" data-testid="quality-kpis" />
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-3" data-testid="quality-buckets">
-        <UCard data-testid="bucket-baik">
+        <DsPanel data-testid="bucket-baik">
           <p class="text-overline text-muted">Skor 51-75</p>
           <p class="tabular my-1 text-display text-highlighted" data-testid="bucket-baik-value">
             {{ formatNumber(data.buckets.baik) }}
           </p>
           <p class="text-caption text-muted">Perlu semakan ringan atau pengayaan metadata.</p>
-        </UCard>
-        <UCard data-testid="bucket-lemah">
+        </DsPanel>
+        <DsPanel data-testid="bucket-lemah">
           <p class="text-overline text-muted">Skor ≤ 50</p>
           <p class="tabular my-1 text-display text-error" data-testid="bucket-lemah-value">
             {{ formatNumber(data.buckets.lemahKritikal) }}
           </p>
           <p class="text-caption text-muted">Bucket ini patut jadi fokus tindakan segera.</p>
-        </UCard>
-        <UCard data-testid="bucket-legacy">
+        </DsPanel>
+        <DsPanel data-testid="bucket-legacy">
           <p class="text-overline text-muted">Legacy Generic</p>
           <p class="tabular my-1 text-display text-highlighted" data-testid="bucket-legacy-value">
             {{ formatNumber(data.buckets.legacyGeneric) }}
@@ -200,11 +216,10 @@ const actionCardFields: CardField[] = [
             Row legacy seperti `tracking_a_feed_20260308`, `spm_tracking_auto_seed_v1`, dan
             `source_type=ai_generated` diasingkan daripada senarai tindakan aktif.
           </p>
-        </UCard>
+        </DsPanel>
       </div>
 
-      <UCard data-testid="quality-distribution">
-        <h3 class="mb-4 text-subheading text-highlighted">Taburan Kualiti</h3>
+      <DsPanel title="Taburan Kualiti" data-testid="quality-distribution">
         <ul class="flex flex-col gap-3">
           <li v-for="s in segments" :key="s.key" class="flex flex-col gap-1">
             <div class="flex items-baseline justify-between gap-3 text-body">
@@ -216,7 +231,7 @@ const actionCardFields: CardField[] = [
             <UProgress :model-value="s.pct" :max="100" :color="s.color" size="md" />
           </li>
         </ul>
-      </UCard>
+      </DsPanel>
 
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
         <div class="min-w-0" data-testid="quality-subjects">
@@ -240,8 +255,7 @@ const actionCardFields: CardField[] = [
           </DsDataTable>
         </div>
 
-        <UCard data-testid="quality-levels">
-          <h3 class="mb-3 text-subheading text-highlighted">Mengikut Tingkatan</h3>
+        <DsPanel title="Mengikut Tingkatan" data-testid="quality-levels">
           <div class="flex flex-col gap-4">
             <div v-for="l in data.byLevel" :key="l.levelId" class="flex flex-col gap-1" data-testid="level-row">
               <div class="flex items-baseline justify-between gap-3 text-body">
@@ -254,7 +268,7 @@ const actionCardFields: CardField[] = [
               <UProgress :model-value="l.average" :max="100" size="sm" data-testid="level-bar" />
             </div>
           </div>
-        </UCard>
+        </DsPanel>
       </div>
 
       <div class="flex flex-col gap-3" data-testid="quality-actions">

@@ -14,7 +14,7 @@ export function useCcPage<T>(
   deps: WatchSource | readonly WatchSource[],
   name: (data: T) => string,
 ) {
-  const { data, error, loading } = useApi(fetcher, deps)
+  const { data, error, loading, reload } = useApi(fetcher, deps)
   const pageMeta = usePageMeta()
 
   const notFound = computed(() => isApiError(error.value) && error.value.status === 404)
@@ -32,5 +32,5 @@ export function useCcPage<T>(
     },
     { immediate: true },
   )
-  return { data, error, loading, notFound }
+  return { data, error, loading, notFound, reload }
 }

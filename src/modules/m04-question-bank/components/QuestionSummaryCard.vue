@@ -8,7 +8,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsPanel, DsStatTile } from '@/ds'
+import { DsPanel, DsStatRow, type StatItem } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { QuestionSummary, QuestionSummarySubject } from '../api/questions'
@@ -77,6 +77,44 @@ const groupTotal = (g: 'teras' | 'elektif'): number =>
 const groupCount = (g: 'teras' | 'elektif'): number =>
   subjects.value.filter((s) => s.group === g).length
 
+const kpis = computed<StatItem[]>(() => [
+  {
+    key: 'total',
+    label: 'Jumlah soalan',
+    value: formatCount(props.summary?.total ?? 0),
+    icon: 'i-ph-stack',
+    accent: 'action',
+  },
+  {
+    key: 'approved',
+    label: 'Diluluskan',
+    value: formatCount(approvedTotal.value),
+    icon: 'i-ph-check-circle',
+    accent: 'win',
+  },
+  {
+    key: 'pending',
+    label: 'Belum diluluskan',
+    value: formatCount(Math.max((props.summary?.total ?? 0) - approvedTotal.value, 0)),
+    icon: 'i-ph-hourglass',
+    accent: 'trial',
+  },
+  {
+    key: 'teras',
+    label: `Subjek Teras (${String(groupCount('teras'))})`,
+    value: formatCount(groupTotal('teras')),
+    icon: 'i-ph-book-open',
+    accent: 'friend',
+  },
+  {
+    key: 'elektif',
+    label: `Subjek Elektif (${String(groupCount('elektif'))})`,
+    value: formatCount(groupTotal('elektif')),
+    icon: 'i-ph-books',
+    accent: 'heat',
+  },
+])
+
 const GROUP_LABEL = { teras: 'Teras', elektif: 'Elektif' } as const
 type Row = (typeof sorted.value)[number]
 
@@ -116,57 +154,20 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
     aria-label="Ringkasan Bank Soalan"
     data-testid="questions-summary"
   >
-    <div
+    <DsStatRow
       v-if="summary === null"
-      class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5"
+      :items="kpis"
+      loading
       data-testid="questions-tiles-skeleton"
-    >
-      <USkeleton v-for="n in 5" :key="n" class="h-24 w-full" />
-    </div>
+    />
     <template v-else>
       <p class="sr-only" data-testid="questions-total">
         Jumlah: <strong>{{ formatCount(summary.total) }}</strong> soalan
       </p>
-      <div
-        class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5"
-        data-testid="questions-kpis"
-      >
-        <DsStatTile
-          :value="formatCount(summary.total)"
-          class="col-span-2 md:col-span-1"
-          unit="Jumlah soalan"
-          icon="i-ph-stack"
-          accent="action"
-        />
-        <DsStatTile
-          :value="formatCount(approvedTotal)"
-          unit="Diluluskan"
-          icon="i-ph-check-circle"
-          accent="win"
-        />
-        <DsStatTile
-          :value="formatCount(Math.max(summary.total - approvedTotal, 0))"
-          unit="Belum diluluskan"
-          icon="i-ph-hourglass"
-          accent="trial"
-        />
-        <DsStatTile
-          :value="formatCount(groupTotal('teras'))"
-          :unit="`Subjek Teras (${String(groupCount('teras'))})`"
-          icon="i-ph-book-open"
-          accent="friend"
-        />
-        <DsStatTile
-          :value="formatCount(groupTotal('elektif'))"
-          :unit="`Subjek Elektif (${String(groupCount('elektif'))})`"
-          icon="i-ph-books"
-          accent="heat"
-        />
-      </div>
+      <DsStatRow :items="kpis" roomy data-testid="questions-kpis" />
 
-      <DsPanel flush>
-        <div class="flex flex-wrap items-center justify-between gap-3 p-4">
-          <h2 class="text-subheading text-highlighted">Pecahan mengikut subjek</h2>
+      <DsPanel flush title="Pecahan mengikut subjek" icon="i-ph-list-numbers">
+        <template #actions>
           <div class="flex flex-wrap items-center gap-2">
             <UButton
               v-if="activeSubjectId !== null"
@@ -189,7 +190,7 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
               >{{ expanded ? 'Sembunyi' : `Tunjuk ${String(subjects.length)} subjek` }}</UButton
             >
           </div>
-        </div>
+        </template>
         <UTable
           v-if="expanded"
           id="questions-subject-table"

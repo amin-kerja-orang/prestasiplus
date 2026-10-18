@@ -22,6 +22,11 @@ export interface StatItem {
   delta?: StatDelta
   /** The tile of the applied filter: framed with a primary layer, `data-active="true"`. */
   active?: boolean
+  /** Token colour class of the number (a focus point), e.g. `text-success`. */
+  valueClass?: string
+  /** Makes the tile a button (a drill-down that is not a route); `clickTitle` is its `title`. */
+  onClick?: () => void
+  clickTitle?: string
 }
 
 const props = withDefaults(
@@ -74,9 +79,13 @@ function id(key: string): string | undefined {
         :tone="item.tone"
         :to="item.to"
         :delta="item.delta"
+        :value-class="item.valueClass"
+        :clickable="item.onClick !== undefined"
+        :title="item.clickTitle"
         :roomy="roomy"
         :compact="compact"
         :loading="loading"
+        @click="item.onClick?.()"
       />
     </li>
   </ul>

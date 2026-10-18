@@ -5,7 +5,7 @@
  * `/practice/{CODE}/quiz?level=…&dskp_sp_id=…&count={k}` (`level` omitted when unknown). Empty: green
  * check "Tiada topik lemah! Teruskan usaha.".
  */
-import { DsEmptyState } from '@/ds'
+import { DsEmptyState, DsPanel } from '@/ds'
 
 import type { WeakTopic } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
@@ -25,7 +25,7 @@ const href = (t: WeakTopic): string =>
 </script>
 
 <template>
-  <UCard data-testid="weak-block">
+  <DsPanel data-testid="weak-block">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('warning')" class="size-5 text-warning" />Topik Perlu Perhatian
@@ -81,5 +81,5 @@ const href = (t: WeakTopic): string =>
         </p>
       </template>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

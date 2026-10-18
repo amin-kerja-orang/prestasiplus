@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S5 "📈 Headcount — Ringkasan Kelas" (discovery §2.22.2): shown only when the class has a config. */
-import { DsStatTile } from '@/ds'
+import { DsPanel, DsStatTile } from '@/ds'
 import { RouterLink } from 'vue-router'
 
 import type { ClassDashboard } from '../../api/types'
@@ -13,7 +13,7 @@ const icon = usePhIcon()
 </script>
 
 <template>
-  <UCard data-testid="headcount-block">
+  <DsPanel data-testid="headcount-block">
     <div class="flex flex-col gap-4">
       <h2 class="text-subheading text-highlighted">📈 Headcount — Ringkasan Kelas</h2>
       <ul class="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -72,5 +72,5 @@ const icon = usePhIcon()
         >
       </div>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

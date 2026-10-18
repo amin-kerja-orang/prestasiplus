@@ -4,10 +4,10 @@
  * the alias), `grid-cols-5` at every width, each an icon chip, count (no separator), label and "%" of
  * T4/T5.
  */
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import type { BandCount, BandKey } from '../../../api/types'
-import { BAND, BAND_ORDER, KirkpatrickLink, KirkpatrickPanel, pct, plain } from '../common'
+import { BAND, BAND_ORDER, KirkpatrickLink, pct, plain } from '../common'
 
 const props = defineProps<{ bands: BandCount[]; behaviorPath: string | null }>()
 
@@ -24,11 +24,7 @@ const ordered = () =>
 </script>
 
 <template>
-  <KirkpatrickPanel
-    title="Taburan Engagement Pelajar"
-    icon="i-ph-chart-pie"
-    data-testid="kirk-bands"
-  >
+  <DsPanel title="Taburan Engagement Pelajar" icon="i-ph-chart-pie" data-testid="kirk-bands">
     <div class="grid grid-cols-5 gap-1 sm:gap-3">
       <KirkpatrickLink
         v-for="b in ordered()"
@@ -49,5 +45,5 @@ const ordered = () =>
         }}</span>
       </KirkpatrickLink>
     </div>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>

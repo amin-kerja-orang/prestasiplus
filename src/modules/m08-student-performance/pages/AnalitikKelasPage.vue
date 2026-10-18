@@ -8,19 +8,17 @@ import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPage } from '@/ds'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsLoadError, DsPage, DsPageHeader, DsStatRow, DsStatusBadge, type DsStatus } from '@/ds'
 
 import { fetchClassAnalytics } from '../api/class'
 import type { RiskLevel } from '../api/types'
-import PageHeader from '../components/shared/PageHeader.vue'
-import ToneText from '../components/shared/ToneText.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
 import { TREND_ICON, TREND_TEXT } from '../lib/analitik'
 import { usePhIcon } from '../lib/icons'
 import { pct1 } from '../lib/prestasi/format'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { useStatItems, type StatSpec } from '../lib/stat-items'
+
+const statItems = useStatItems()
 
 const route = useRoute()
 const router = useRouter()
@@ -64,14 +62,11 @@ const RISKS: { value: string; label: string }[] = [
   { value: 'medium', label: 'Sederhana' },
   { value: 'low', label: 'Rendah' },
 ]
-const RISK_BADGE: Record<
-  RiskLevel,
-  { label: string; color: 'error' | 'warning' | 'neutral' | 'success' }
-> = {
-  critical: { label: 'Kritikal', color: 'error' },
-  high: { label: 'Tinggi', color: 'warning' },
-  medium: { label: 'Sederhana', color: 'neutral' },
-  low: { label: 'Rendah', color: 'success' },
+const RISK_BADGE: Record<RiskLevel, { label: string; status: DsStatus }> = {
+  critical: { label: 'Kritikal', status: 'risk-high' },
+  high: { label: 'Tinggi', status: 'risk-mid' },
+  medium: { label: 'Sederhana', status: 'inactive' },
+  low: { label: 'Rendah', status: 'risk-low' },
 }
 const TREND_LABEL = { up: 'Naik', down: 'Turun', stable: 'Tetap' } as const
 
@@ -120,7 +115,7 @@ type Trend = 'up' | 'down' | 'stable'
 const trendKey = (t: Trend): Trend => t
 const trendTone = (t: Trend): string => TREND_TEXT[t]
 const trendIcon = (t: Trend): string => icon.value(TREND_ICON[t])
-const riskColor = (r: RiskLevel) => RISK_BADGE[r].color
+const riskStatus = (r: RiskLevel): DsStatus => RISK_BADGE[r].status
 
 /** Unjuran "{low} – {high}" (DV-16). */
 const range = (p: { low: string; high: string }): string => `${p.low} – ${p.high}`
@@ -128,7 +123,7 @@ const range = (p: { low: string; high: string }): string => `${p.low} – ${p.hi
 const accTone = (n: number): string =>
   n < 50 ? 'text-error' : n < 75 ? 'text-warning' : 'text-success'
 
-const summary = computed<StatItem[]>(() => {
+const summary = computed<StatSpec[]>(() => {
   const s = data.value?.summary
   if (!s) return []
   return [
@@ -192,11 +187,11 @@ const cardFields = [
 
 <template>
   <DsPage data-testid="analitik-kelas-page">
-    <PageHeader
+    <DsPageHeader
       title="Analitik Kelas"
       subtitle="Pantau prestasi pelajar dan kenal pasti yang memerlukan perhatian"
     />
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <div data-testid="filters">
@@ -248,7 +243,7 @@ const cardFields = [
       </div>
 
       <template v-else>
-        <StatGrid :items="summary" prefix="sum" />
+        <DsStatRow :items="statItems(summary)" data-testid="stat-cards" :cols="4" prefix="sum" />
 
         <section class="flex min-w-0 flex-col gap-3" data-testid="list-card">
           <h2 class="text-subheading text-highlighted">Senarai Pelajar</h2>
@@ -270,20 +265,19 @@ const cardFields = [
               >
             </template>
             <template #accuracyText-cell="{ row }">
-              <ToneText :tone="accTone(row.original.accuracy)" class="text-label">{{
+              <span :class="[accTone(row.original.accuracy), 'text-label']">{{
                 row.original.accuracyText
-              }}</ToneText>
+              }}</span>
             </template>
             <template #trend-cell="{ row }">
-              <ToneText :tone="trendTone(row.original.trend)" class="flex items-center gap-1">
+              <span :class="[trendTone(row.original.trend), 'flex items-center gap-1']">
                 <UIcon :name="trendIcon(row.original.trend)" class="size-5" />
                 <span class="text-caption">{{ TREND_LABEL[trendKey(row.original.trend)] }}</span>
-              </ToneText>
+              </span>
             </template>
             <template #riskText-cell="{ row }">
-              <UBadge
-                :color="riskColor(row.original.riskLevel)"
-                variant="subtle"
+              <DsStatusBadge
+                :status="riskStatus(row.original.riskLevel)"
                 :label="row.original.riskText"
                 data-testid="risk-badge"
               />
@@ -311,6 +305,9 @@ const cardFields = [
         </section>
       </template>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

@@ -2,8 +2,6 @@
 export const LAPORAN_COPY = {
   filterLabel: 'Tapis:',
   allClasses: 'Semua Kelas',
-  // PROPOSED COPY: no M11 error copy in the SRS; same string as the other modules' local GENERIC_ERROR.
-  loadFailed: 'Ralat berlaku. Sila cuba lagi.',
   loginTitle: 'Pernah Login',
   practiseTitle: 'Pernah Buat Latihan',
   activityTitle: 'Jumlah Aktiviti',

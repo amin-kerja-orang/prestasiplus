@@ -80,7 +80,7 @@ async function render(): Promise<VueWrapper> {
     ],
   })
   await router.push('/admin/subjects')
-  wrapper = mount(SubjectListPage, { global: { plugins: [router] } })
+  wrapper = mount(SubjectListPage, { global: { plugins: [router] }, attachTo: document.body })
   await flushPromises()
   return wrapper
 }
@@ -105,8 +105,21 @@ beforeEach(() => {
 
 afterEach(() => {
   wrapper?.unmount()
+  document.body.innerHTML = ''
   wrapper = null
 })
+
+
+/** Opens the row menu (`DsRowActions`) of row `index` and picks "Padam". */
+async function deleteViaMenu(index: number): Promise<void> {
+  await wrapper?.findAll('[data-testid=subject-more]')[index]?.trigger('keydown', { key: 'Enter' })
+  await flushPromises()
+  const item = Array.from(document.body.querySelectorAll('[role="menuitem"]')).find((n) =>
+    (n.textContent ?? '').includes('Padam'),
+  )
+  item?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await flushPromises()
+}
 
 describe('SubjectListPage (M03 S6)', () => {
   it('shows the heading, the count and the add button', async () => {
@@ -158,12 +171,12 @@ describe('SubjectListPage (M03 S6)', () => {
     expect(tiles[1]?.text()).toBe('')
   })
 
-  it('has edit links and "Padam" buttons with their tooltips', async () => {
+  it('has an "Edit" link and a "Padam" item in the row menu', async () => {
     const w = await render()
     const row = w.findAll('tbody tr')[0]
     expect(row?.get('[data-testid=subject-edit]').attributes('href')).toBe('/admin/subjects/1/edit')
-    expect(row?.get('[data-testid=subject-edit]').attributes('title')).toBe('Edit')
-    expect(row?.get('[data-testid=subject-delete]').attributes('title')).toBe('Padam')
+    expect(row?.get('[data-testid=subject-edit]').text()).toBe('Edit')
+    expect(row?.get('[data-testid=subject-more]').attributes('aria-label')).toBe('Tindakan')
   })
 
   it('flips the switch at once, sends the PATCH and shows no message', async () => {
@@ -222,9 +235,8 @@ describe('SubjectListPage (M03 S6)', () => {
 
   it('does nothing when the delete confirm is dismissed', async () => {
     dialogs.confirmNative.mockReturnValueOnce(false)
-    const w = await render()
-    await w.findAll('[data-testid=subject-delete]')[0]?.trigger('click')
-    await flushPromises()
+    await render()
+    await deleteViaMenu(0)
     expect(dialogs.confirmNative).toHaveBeenCalledWith('Adakah anda pasti mahu padam subjek ini?')
     expect(api.deleteSubject).not.toHaveBeenCalled()
   })
@@ -233,8 +245,7 @@ describe('SubjectListPage (M03 S6)', () => {
     api.deleteSubject.mockResolvedValue({ data: { deleted: 1 }, status: 'Subjek berjaya dipadam.' })
     const w = await render()
     api.fetchAdminSubjects.mockResolvedValue(listResult([subject(2)]))
-    await w.findAll('[data-testid=subject-delete]')[0]?.trigger('click')
-    await flushPromises()
+    await deleteViaMenu(0)
     expect(api.deleteSubject).toHaveBeenCalledWith(1)
     expect(w.findAll('tbody tr')).toHaveLength(1)
     expect(w.get('[data-testid=subjects-count]').text()).toBe('Jumlah: 1 subjek')

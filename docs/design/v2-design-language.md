@@ -183,7 +183,7 @@ Icon-only button: `aria-label` (BM) + tooltip, 44px hit area.
 1. A chip is a **rounded-sm** square (`rounded-chip`) that wraps one icon to give it a role. Sizes: xs 26 (full radius, dot-like), sm 36, md 32 staff / 40 learner, lg 48. (Known defect: staff `sm` (36) is larger than `md` (32). Fix: staff `sm` 28, `md` 32, `lg` 40; see consolidation T0.)
 2. Staff chip: 12% kobalt tint + kobalt glyph (the only permitted tone-on-tone). Learner: solid accent + its `on` colour. Never tint + same-hue glyph in learner.
 3. One chip per tile/section header. No chip next to a 3D image; no chip inside a button.
-4. Chip colour is **per job**, not per taste: KPI/section = action (kobalt/A1); reward = A3; win = A2; AI/info = A4. Staff pages use `action` for all unless the tile is a semantic KPI (risk count: `success/warning/error` accent allowed).
+4. Chip colour is **per job**, not per taste: KPI/section = action (kobalt/A1); reward = A3; win = A2; AI/info = A4. **User decision 2026-10-18 (overrides the earlier "action for all" rule):** staff KPI tiles and icon chips use **varied categorical accents** (action, friend, win, heat, trial), a different one for each tile of a row, so colour sits at the focus points and pages are not monotone. Semantic tones (`success/warning/error`, e.g. Betul/Salah, risk counts) are kept where they carry meaning.
 5. Chip is `aria-hidden`; the label beside it carries the meaning.
 
 ---
@@ -349,7 +349,7 @@ Widths: 375 / 768 / 1280. Every wireframe is the 1280 view; the responsive colum
 |---|---|
 | Header actions | export/print as tonal button; period switch is **tabs** (`UTabs` segmented through `DsPillNav`), not buttons in the header |
 | Breadcrumb | `ReportCrumb` becomes `DsPageHeader #breadcrumb` (last two crumbs on < md) |
-| KPI | `DsStatRow`, number + label + sub, semantic tone only for risk counts |
+| KPI | `DsStatRow`, number + label + sub, varied categorical accent per tile (user decision 2026-10-18); semantic tone where it carries meaning (risk counts, Betul/Salah) |
 | Charts | two across at >= xl, one below; `DsChart` heights 220/280/320; legend wraps below; hidden data table alternative |
 | Table | `DsDataTable` or `DsDrillTable` inside the last panel |
 

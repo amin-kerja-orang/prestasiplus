@@ -4,16 +4,16 @@
  * Staff table (`DsDataTable`); D9 deviation: 50 rows a page instead of one 946-row page, which is too heavy for a
  * flat staff table. The two link columns are router links.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
+import { DsDataTable, DsPanel } from '@/ds'
+
 import type { SpmGrade } from '../../../api/types'
-import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { count, pct } from '../common/kirkpatrick-format'
 import { COLOR_TEXT, GRADE_PILL } from './results-format'
 import type { ResultsPrediction } from './results-types'
-import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{
   rows: ResultsPrediction[]
@@ -61,23 +61,28 @@ const cardFields = [
   { key: 'accuracy', label: 'Ketepatan' },
   { key: 'grade', label: 'Anggaran Gred' },
 ]
+
+/** 50 rows a page (D9 deviation above). */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(50)
 </script>
 
 <template>
-  <KirkpatrickTableSection
+  <DsPanel
     title="Ramalan Prestasi Pelajar Aktif"
-    subtitle="Berdasarkan ketepatan menjawab soalan dalam platform"
+    description="Berdasarkan ketepatan menjawab soalan dalam platform"
     icon="i-ph-magic-wand"
-    footnote="Ramalan ini berdasarkan ketepatan menjawab soalan dalam platform sahaja. Ramalan penuh memerlukan lebih banyak data termasuk keputusan peperiksaan terdahulu."
     data-testid="res-predictions"
   >
-    <KirkpatrickTable
+    <DsDataTable
+      v-model:page-size="pageSize"
+      variant="bare"
+      :page-size-options="PAGE_SIZES"
       :data="data"
       :columns="columns"
       caption="Ramalan prestasi pelajar aktif"
       card-title="name"
       :card-fields="cardFields"
-      :page-size="50"
     >
       <template #name-cell="{ row }">
         <span data-testid="res-pred-row">
@@ -112,6 +117,11 @@ const cardFields = [
           data-testid="pred-grade"
         />
       </template>
-    </KirkpatrickTable>
-  </KirkpatrickTableSection>
+    </DsDataTable>
+    <p class="flex items-start gap-2 px-1 pt-3 text-caption text-muted">
+      <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />Ramalan ini berdasarkan ketepatan
+      menjawab soalan dalam platform sahaja. Ramalan penuh memerlukan lebih banyak data termasuk
+      keputusan peperiksaan terdahulu.
+    </p>
+  </DsPanel>
 </template>

@@ -9,7 +9,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsChart, DsDrillTable } from '@/ds'
+import { DsChart, DsDrillTable, DsLoadError, DsPanel, DsStatRow, type StatItem } from '@/ds'
 
 import { fetchCcStudent } from '../api/command-center'
 import type { CcHeadcountRow, CcMoodDot, CcWeek } from '../api/command-center-types'
@@ -17,7 +17,6 @@ import {
   type CcSessionsSource,
   count,
   dmyOfKey,
-  LOAD_ERROR_COPY,
   MOOD,
   pct1,
   score2,
@@ -26,10 +25,8 @@ import { ccPaths } from '../components/command-center/cc-paths'
 import CcFrame from '../components/command-center/CcFrame.vue'
 import CcHeadcountModal from '../components/command-center/CcHeadcountModal.vue'
 import CcMoodDayModal from '../components/command-center/CcMoodDayModal.vue'
-import CcPanel from '../components/command-center/CcPanel.vue'
 import CcSessionDetailModal from '../components/command-center/CcSessionDetailModal.vue'
 import CcSessionsModal from '../components/command-center/CcSessionsModal.vue'
-import CcStatCard from '../components/command-center/CcStatCard.vue'
 import { useCcPage } from '../components/command-center/use-cc-page'
 
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
@@ -41,7 +38,7 @@ const props = withDefaults(defineProps<{ userId: number; basePath?: string }>(),
 
 const paths = computed(() => ccPaths(props.basePath))
 
-const { data, error, notFound } = useCcPage(
+const { data, error, notFound, reload } = useCcPage(
   (signal) => fetchCcStudent(props.userId, { signal }),
   () => props.userId,
   (d) => d.student.name,
@@ -88,6 +85,37 @@ function openHeadcount(h: CcHeadcountRow) {
   headcount.value = { configId: h.configId, subject: h.subject }
 }
 
+const cards = computed<StatItem[]>(() => {
+  const c = data.value?.cards
+  if (!c) return []
+  return [
+    {
+      key: 'answers',
+      label: 'Jumlah Jawapan',
+      value: count(c.answers),
+      icon: 'i-ph-clipboard-text', accent: 'action',
+      clickTitle: 'Klik untuk lihat semua sesi',
+      onClick: () => {
+        sessionsSource.value = { kind: 'all' }
+      },
+    },
+    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target', accent: 'win' },
+    {
+      key: 'activeDays',
+      label: 'Hari Aktif',
+      value: String(c.activeDays),
+      icon: 'i-ph-calendar-check', accent: 'friend',
+    },
+    { key: 'streak', label: 'Streak', value: String(c.streak), icon: 'i-ph-fire', accent: 'heat' },
+    {
+      key: 'consistency',
+      label: 'Konsistensi',
+      value: `${String(c.consistency)}%`,
+      icon: 'i-ph-chart-line-up', accent: 'trial',
+    },
+  ]
+})
+
 const weekLabels = computed(() => (data.value?.weeks ?? []).map((w) => w.label))
 const weekSeries = computed(() => [
   { label: 'Aktiviti Mingguan', data: (data.value?.weeks ?? []).map((w) => w.count) },
@@ -106,10 +134,10 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
   <CcFrame
     v-if="!notFound"
     :back-to="classLink ?? paths.overview"
-    back-label="← Kembali ke Kelas"
+    back-label="Kembali ke Kelas"
     :crumbs="crumbs"
   >
-    <p v-if="error" class="text-body text-error" data-testid="cc-error">{{ LOAD_ERROR_COPY }}</p>
+    <DsLoadError v-if="error" testid="cc-error" @retry="reload" />
     <p
       v-else-if="!data"
       class="flex items-center gap-2 text-body text-muted"
@@ -118,33 +146,10 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
       <UProgress class="w-16" aria-hidden="true" />Memuatkan...
     </p>
     <template v-else>
-      <div
-        class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5"
-        data-testid="cc-student-cards"
-      >
-        <CcStatCard
-          label="Jumlah Jawapan"
-          :value="count(data.cards.answers)"
-          icon="i-ph-clipboard-text"
-          click-title="Klik untuk lihat semua sesi"
-          @click="sessionsSource = { kind: 'all' }"
-        />
-        <CcStatCard label="Ketepatan" :value="pct1(data.cards.accuracy)" icon="i-ph-target" />
-        <CcStatCard
-          label="Hari Aktif"
-          :value="String(data.cards.activeDays)"
-          icon="i-ph-calendar-check"
-        />
-        <CcStatCard label="Streak" :value="String(data.cards.streak)" icon="i-ph-fire" />
-        <CcStatCard
-          label="Konsistensi"
-          :value="`${String(data.cards.consistency)}%`"
-          icon="i-ph-chart-line-up"
-        />
-      </div>
+      <DsStatRow :items="cards" prefix="cc-stat" :cols="5" roomy data-testid="cc-student-cards" />
 
       <div class="grid gap-4 md:grid-cols-2">
-        <CcPanel icon="i-ph-chart-bar" title="Pecahan Subjek">
+        <DsPanel icon="i-ph-chart-bar" title="Pecahan Subjek">
           <ul class="flex flex-col gap-1" data-testid="cc-subjects">
             <li v-for="s in data.subjects" :key="s.code" class="min-w-0">
               <UButton
@@ -176,9 +181,9 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
               </UButton>
             </li>
           </ul>
-        </CcPanel>
+        </DsPanel>
 
-        <CcPanel icon="i-ph-chart-line-up" title="Aktiviti Mingguan (8 Minggu)">
+        <DsPanel icon="i-ph-chart-line-up" title="Aktiviti Mingguan (8 Minggu)">
           <DsChart
             title="Aktiviti Mingguan (8 Minggu)"
             :labels="weekLabels"
@@ -205,9 +210,9 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
               </UButton>
             </li>
           </ul>
-        </CcPanel>
+        </DsPanel>
 
-        <CcPanel icon="i-ph-smiley" title="Trend Mood (30 Hari)">
+        <DsPanel icon="i-ph-smiley" title="Trend Mood (30 Hari)">
           <p
             v-if="data.moodTrend.length === 0"
             class="text-body text-muted"
@@ -229,9 +234,9 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
               />
             </li>
           </ul>
-        </CcPanel>
+        </DsPanel>
 
-        <CcPanel icon="i-ph-clipboard-text" title="HeadCount">
+        <DsPanel icon="i-ph-clipboard-text" title="HeadCount">
           <div data-testid="cc-table-scroller">
             <DsDrillTable
               :data="data.headcount"
@@ -268,10 +273,10 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
               >
             </DsDrillTable>
           </div>
-        </CcPanel>
+        </DsPanel>
       </div>
 
-      <CcPanel icon="i-ph-sparkle" title="ALESA AI Insight">
+      <DsPanel icon="i-ph-sparkle" title="ALESA AI Insight">
         <div class="flex flex-col gap-2 bg-soft p-4" data-testid="cc-insight">
           <div class="text-overline text-primary">Analisis ALESA</div>
           <p class="text-body text-highlighted" data-testid="cc-insight-text">
@@ -279,7 +284,7 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
           </p>
           <p class="text-end text-caption text-muted">Sumber: {{ data.insight.source }}</p>
         </div>
-      </CcPanel>
+      </DsPanel>
 
       <CcSessionsModal
         v-if="sessionsSource"
