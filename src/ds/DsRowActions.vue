@@ -21,6 +21,8 @@ export interface RowAction {
   onSelect?: () => void
   danger?: boolean
   disabled?: boolean
+  /** The action is running: spinner, not clickable. */
+  loading?: boolean
   /** `data-testid` of the button / menu item. */
   testid?: string
   /** Ask first. `true` uses the glossary dialog ("Padam {label}?"). */
@@ -49,7 +51,7 @@ async function run(a: RowAction): Promise<void> {
       message: c.body ?? dsCopy.actionIrreversible,
       confirmLabel: c.confirmLabel ?? a.label,
       cancelLabel: dsCopy.actionCancel,
-      tone: a.danger ? 'danger' : 'primary',
+      tone: a.danger ? 'error' : 'primary',
     })
     if (!ok) return
   }
@@ -68,7 +70,8 @@ const items = computed<DropdownMenuItem[][]>(() => {
     ...(a.to ? { to: a.to } : {}),
     ...(a.danger ? { color: 'error' as const } : {}),
     ...(a.testid ? { 'data-testid': a.testid } : {}),
-    disabled: a.disabled ?? false,
+    disabled: (a.disabled ?? false) || (a.loading ?? false),
+    ...(a.loading ? { loading: true } : {}),
     onSelect: () => {
       void run(a)
     },
@@ -94,6 +97,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       :title="a.icon ? a.label : undefined"
         :to="a.to"
         :disabled="a.disabled"
+        :loading="a.loading"
         :data-testid="a.testid"
         @click="run(a)"
       />

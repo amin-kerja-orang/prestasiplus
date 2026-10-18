@@ -4,6 +4,7 @@
  * stock chip and the primary action. When the action is unavailable `disabledReason` is shown as
  * a chip next to the disabled button, so the reason is never colour-only.
  */
+import './states.css'
 import type { Art3DName } from './assets'
 import DsArt3D from './DsArt3D.vue'
 import DsRewardChip from './DsRewardChip.vue'
@@ -25,6 +26,10 @@ withDefaults(
     actionLabel: string
     /** Reason the action is unavailable (BM); disables the button. */
     disabledReason?: string
+    /** The purchase is running: spinner on the button, not clickable. */
+    loading?: boolean
+    /** The item is chosen (outlined). */
+    selected?: boolean
   }>(),
   {
     priceIcon: 'coins',
@@ -34,6 +39,8 @@ withDefaults(
     imageAlt: '',
     stock: undefined,
     disabledReason: undefined,
+    loading: false,
+    selected: false,
   },
 )
 
@@ -41,7 +48,12 @@ defineEmits<{ action: [] }>()
 </script>
 
 <template>
-  <UCard class="h-full" data-ds="shop-card">
+  <UCard
+    class="h-full"
+        :aria-busy="loading ? 'true' : undefined"
+    :data-state="selected ? 'selected' : undefined"
+    data-ds="shop-card"
+  >
     <div class="flex h-full flex-col gap-3">
       <div class="grid place-items-center">
         <DsArt3D v-if="art" :name="art" size="lg" />
@@ -66,6 +78,7 @@ defineEmits<{ action: [] }>()
           block
           :label="actionLabel"
           :disabled="!!disabledReason"
+          :loading="loading"
           class="min-h-11"
           @click="$emit('action')"
         />

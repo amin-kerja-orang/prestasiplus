@@ -7,6 +7,7 @@
 import { computed, ref, watch } from 'vue'
 
 import type { FriendId } from './assets'
+import { dsCopy } from './copy'
 import DsFriendFace from './DsFriendFace.vue'
 
 export interface FriendOption {
@@ -30,7 +31,7 @@ const props = withDefaults(
     /** False keeps the page behind the sheet usable (no overlay, no scroll lock). */
     modal?: boolean
   }>(),
-  { description: undefined, cancelLabel: undefined, selectedLabel: 'Dipilih', modal: true },
+  { description: undefined, cancelLabel: undefined, selectedLabel: dsCopy.friendSelected, modal: true },
 )
 
 /** Open state of the sheet. */

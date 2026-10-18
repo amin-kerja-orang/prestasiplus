@@ -12,6 +12,7 @@ import type { FriendId } from './assets'
 import { dsCopy, fillCopy } from './copy'
 import DsFriendFace from './DsFriendFace.vue'
 import { resolveIcon } from './icon'
+import type { DsIconProp } from './types'
 import { usePersonality } from './personality'
 
 const props = withDefaults(
@@ -20,7 +21,7 @@ const props = withDefaults(
     title?: string
     description?: string
     /** Phosphor base name (`tray`) or full class (deprecated). */
-    icon?: string
+    icon?: DsIconProp
     friend?: FriendId
     size?: 'sm' | 'md'
     /** A filter or search is active: "Tiada ... dijumpai" instead of "Belum ada ...". */

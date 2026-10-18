@@ -9,10 +9,11 @@ import { computed } from 'vue'
 import { dsIconWeightSuffix, type DsIconWeight } from '@/theme/ds-icons'
 
 import { usePersonality } from './personality'
+import type { DsIconProp } from './types'
 
 const props = defineProps<{
-  /** Phosphor base name, e.g. `house`. */
-  name: string
+  /** Phosphor base name, e.g. `house` (a full `i-ph-*` class is deprecated and used as given). */
+  name: DsIconProp
   weight?: DsIconWeight
 }>()
 
@@ -20,7 +21,9 @@ const personality = usePersonality()
 const resolved = computed<DsIconWeight>(
   () => props.weight ?? (personality.value === 'learner' ? 'duotone' : 'regular'),
 )
-const iconClass = computed(() => `i-ph-${props.name}${dsIconWeightSuffix[resolved.value]}`)
+const iconClass = computed(() =>
+  props.name.startsWith('i-') ? props.name : `i-ph-${props.name}${dsIconWeightSuffix[resolved.value]}`,
+)
 </script>
 
 <template>

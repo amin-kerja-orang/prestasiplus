@@ -1,0 +1,28 @@
+/*
+ * State rings of the composites (v2-ds-hardening 4.1). Lines are forbidden as utility classes
+ * (G-3b), so focus-visible, selected and error rings live here, keyed on `data-ds` / `data-state`,
+ * and read the theme colour tokens. T-H0 / T-H1 may move them into `ui.config` / `tokens.css`.
+ */
+:is(
+    [data-ds='stat-tile'],
+    [data-ds='pill-nav'] a,
+    [data-ds='pill-nav'] button,
+    [data-ds='native-select'],
+    [data-ds='media-card'] a
+  ):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ui-primary);
+}
+
+[data-ds='stat-tile'][data-state='selected'],
+[data-ds='shop-card'][data-state='selected'] {
+  box-shadow: 0 0 0 2px var(--ui-primary);
+}
+
+[data-ds='stat-tile'][data-state='error'] {
+  box-shadow: 0 0 0 2px var(--ui-error);
+}
+
+[data-ds='native-select'][data-state='loading'] {
+  cursor: progress;
+}

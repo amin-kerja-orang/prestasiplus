@@ -7,12 +7,13 @@
 import type { Art3DName } from './assets'
 import DsArt3D from './DsArt3D.vue'
 import DsIcon from './DsIcon.vue'
+import type { DsIconProp } from './types'
 
 withDefaults(
   defineProps<{
     value: string | number
     /** Phosphor base name (see `DsIcon`). Ignored when `art` is set. */
-    icon?: string
+    icon?: DsIconProp
     art?: Art3DName
     /** Small label after the number, shown from `md` up (BM). */
     label?: string

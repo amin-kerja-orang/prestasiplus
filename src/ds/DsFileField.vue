@@ -8,6 +8,9 @@
 import { computed, ref, useAttrs, useTemplateRef, watch } from 'vue'
 
 import { dsCopy } from './copy'
+import { resolveIcon } from './icon'
+import { usePersonality } from './personality'
+import type { DsIconProp } from './types'
 
 const props = withDefaults(
   defineProps<{
@@ -22,8 +25,10 @@ const props = withDefaults(
     name?: string
     /** `area` = drop zone (default); `button` = one compact button (per-row pickers). */
     variant?: 'area' | 'button'
-    /** Phosphor class of the button variant. */
-    icon?: string
+    /** Phosphor base name of the icon (full `i-ph-*` classes are deprecated). */
+    icon?: DsIconProp
+    /** Visible and listed, not editable (files cannot be added or removed). */
+    readonly?: boolean
   }>(),
   {
     accept: undefined,
@@ -37,8 +42,12 @@ const props = withDefaults(
     name: undefined,
     variant: 'area',
     icon: undefined,
+    readonly: false,
   },
 )
+
+const personality = usePersonality()
+const iconName = computed(() => (props.icon ? resolveIcon(props.icon, personality.value) : undefined))
 
 defineOptions({ inheritAttrs: false })
 const attrs = useAttrs()
@@ -78,7 +87,13 @@ function onUpdate(value: File | File[] | null | undefined): void {
 </script>
 
 <template>
-  <div ref="root" class="flex min-w-0 flex-col gap-2" :class="attrs.class" data-ds="file-field">
+  <div
+    ref="root"
+    class="flex min-w-0 flex-col gap-2"
+    :class="attrs.class"
+    :data-state="readonly ? 'read-only' : undefined"
+    data-ds="file-field"
+  >
     <UFileUpload
       v-bind="inputAttrs"
       :model-value="model"
@@ -87,10 +102,11 @@ function onUpdate(value: File | File[] | null | undefined): void {
       :label="label ?? dsCopy.fileDrop"
       :description="hint"
       :required="required"
-      :disabled="disabled"
+      :disabled="disabled || readonly"
+      :aria-readonly="readonly ? 'true' : undefined"
       :name="name"
       :variant="variant"
-      :icon="icon"
+      :icon="iconName"
       :preview="preview === 'image'"
       :file-image="preview === 'image'"
       @update:model-value="onUpdate"

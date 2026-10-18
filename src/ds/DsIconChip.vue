@@ -11,18 +11,18 @@ import { computed } from 'vue'
 import { accentChip } from './accent'
 import { resolveIcon } from './icon'
 import { usePersonality } from './personality'
-import type { DsAccent } from './types'
+import type { DsAccent, DsIconProp, DsTone } from './types'
 
 type ChipSize = 'xs' | 'sm' | 'md' | 'lg'
-type ChipTone = 'success' | 'warning' | 'error' | 'info'
+
 
 const props = withDefaults(
   defineProps<{
     /** Phosphor base name (`fire`) or a full class (`i-ph-fire-duotone`, deprecated). */
-    icon: string
+    icon: DsIconProp
     accent?: DsAccent
     /** Semantic tint instead of the accent. */
-    tone?: ChipTone
+    tone?: DsTone
     size?: ChipSize
   }>(),
   { accent: 'action', tone: undefined, size: 'md' },
@@ -40,7 +40,7 @@ const iconSize: Record<ChipSize, string> = {
   md: 'size-5 learner:size-6',
   lg: 'size-6 learner:size-6.5',
 }
-const toneChip: Record<ChipTone, string> = {
+const toneChip: Record<DsTone, string> = {
   success: 'bg-success/12 text-success',
   warning: 'bg-warning/12 text-warning',
   error: 'bg-error/12 text-error',

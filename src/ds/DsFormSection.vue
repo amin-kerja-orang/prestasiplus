@@ -6,16 +6,17 @@
  */
 import DsIconChip from './DsIconChip.vue'
 import DsPanel from './DsPanel.vue'
-import type { DsAccent } from './types'
+import type { DsAccent, DsIconProp } from './types'
 
 withDefaults(
   defineProps<{
     title: string
     description?: string
-    /** Phosphor icon class. */
-    icon?: string
+    /** Phosphor base name (full `i-ph-*` classes are deprecated). */
+    icon?: DsIconProp
     accent?: DsAccent
-    tone?: 'default' | 'danger'
+    /** `danger` is a deprecated alias of `error`. */
+    tone?: 'default' | 'error' | 'danger'
     columns?: 1 | 2
   }>(),
   { description: undefined, icon: undefined, accent: 'action', tone: 'default', columns: 1 },
@@ -26,14 +27,7 @@ withDefaults(
   <DsPanel flush data-ds="form-section" :data-tone="tone">
     <header class="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-6">
       <div class="flex min-w-0 items-center gap-3">
-        <span
-          v-if="icon && tone === 'danger'"
-          class="inline-grid size-8 shrink-0 place-items-center rounded-chip bg-error/12 text-error learner:size-10"
-          aria-hidden="true"
-        >
-          <UIcon :name="icon" class="size-5 learner:size-6" />
-        </span>
-        <DsIconChip v-else-if="icon" :icon="icon" :accent="accent" />
+        <DsIconChip v-if="icon" :icon="icon" :accent="accent" :tone="tone === 'default' ? undefined : 'error'" />
         <div class="min-w-0">
           <h2 class="text-subheading text-highlighted">{{ title }}</h2>
           <p v-if="description" class="text-caption text-muted">{{ description }}</p>

@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 
 import type { FriendId } from './assets'
+import { dsCopy } from './copy'
 import DsFriendFace from './DsFriendFace.vue'
 import DsIconChip from './DsIconChip.vue'
 import { usePersonality } from './personality'
@@ -26,19 +27,18 @@ const props = withDefaults(
 
 const COPY: Record<ErrorKind, { title: string; description: string; icon: string }> = {
   403: {
-    title: 'Akses Ditolak',
-    description: 'Halaman ini tidak tersedia untuk peranan anda.',
+    title: dsCopy.error403Title,
+    description: dsCopy.error403Description,
     icon: 'i-ph-lock-simple',
   },
   404: {
-    title: 'Halaman Tidak Dijumpai',
-    description:
-      'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
+    title: dsCopy.error404Title,
+    description: dsCopy.error404Description,
     icon: 'i-ph-magnifying-glass',
   },
   500: {
-    title: 'Sesuatu tidak kena',
-    description: 'Kami tidak dapat memuatkan halaman ini. Cuba lagi sebentar.',
+    title: dsCopy.error500Title,
+    description: dsCopy.error500Description,
     icon: 'i-ph-warning-circle',
   },
 }

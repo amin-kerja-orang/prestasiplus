@@ -1,11 +1,14 @@
 <script setup lang="ts">
 /**
- * Achievement tile. `earned`: 3D medal, title and date. `locked`: duotone glyph on `bg-elevated`
- * plus the word "Terkunci". `progress`: glyph plus a progress bar. `isNew` adds the "BARU" chip.
- * State is always carried by a word as well as the visual.
+ * Achievement tile. `earned`: 3D medal, title and date. `locked`: glyph on `bg-elevated` plus the
+ * word "Terkunci". `progress`: glyph plus a progress bar. `isNew` adds the "BARU" chip. State is
+ * always carried by a word as well as the visual. The glyph weight follows the personality.
  */
 import type { Art3DName } from './assets'
+import { dsCopy } from './copy'
 import DsArt3D from './DsArt3D.vue'
+import DsIcon from './DsIcon.vue'
+import type { DsIconProp } from './types'
 
 type BadgeState = 'earned' | 'locked' | 'progress'
 
@@ -16,8 +19,8 @@ withDefaults(
     /** Earned date (BM text from the caller). */
     date?: string
     art?: Art3DName
-    /** Glyph for locked / progress (Phosphor duotone class). */
-    icon?: string
+    /** Glyph for locked / progress: Phosphor base name (full `i-ph-*` classes are deprecated). */
+    icon?: DsIconProp
     /** 0-100 for `progress`. */
     progress?: number
     isNew?: boolean
@@ -29,12 +32,12 @@ withDefaults(
     state: 'earned',
     date: undefined,
     art: 'trophy',
-    icon: 'i-ph-medal-duotone',
+    icon: 'medal',
     progress: 0,
     isNew: false,
-    newLabel: 'BARU',
-    lockedLabel: 'Terkunci',
-    progressLabel: 'Kemajuan',
+    newLabel: dsCopy.badgeNew,
+    lockedLabel: dsCopy.badgeLocked,
+    progressLabel: dsCopy.progress,
   },
 )
 </script>
@@ -53,7 +56,7 @@ withDefaults(
       />
       <DsArt3D v-if="state === 'earned'" :name="art" size="xl" />
       <span v-else class="grid size-19 place-items-center rounded-full bg-elevated text-muted" aria-hidden="true">
-        <UIcon :name="icon" class="size-10" />
+        <DsIcon :name="icon" class="size-10" />
       </span>
       <h3 class="text-label text-highlighted">{{ title }}</h3>
       <p v-if="state === 'earned' && date" class="text-caption text-muted">{{ date }}</p>

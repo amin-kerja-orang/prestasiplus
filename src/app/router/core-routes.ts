@@ -84,6 +84,12 @@ export function devRoutes(): RouteRecordRaw[] {
             component: () => import('@/dev/ds/DsGallery.vue'),
             meta: { layout: 'bare', access: 'public', title: 'Galeri komposit (dev)' },
           },
+          {
+            path: '/__ds/matrix',
+            name: 'dev.ds-matrix-api',
+            component: () => import('@/dev/ds/DsMatrixApi.vue'),
+            meta: { layout: 'bare', access: 'public', title: 'Matriks keadaan (dev)' },
+          },
         ]
       : []
   if (!import.meta.env.DEV || scoped) return [...hub, ...ds]

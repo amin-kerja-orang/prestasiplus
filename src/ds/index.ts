@@ -19,7 +19,19 @@ export { default as DsStatTile } from './DsStatTile.vue'
 export { default as DsSticker } from './DsSticker.vue'
 export { default as DsWinHero } from './DsWinHero.vue'
 export { art3dNames, friendIds, type Art3DName, type FriendId } from './assets'
-export type { DsAccent, FriendMood, QuizOptionState } from './types'
+export type {
+  DsAccent,
+  DsHeadingLevel,
+  DsIconName,
+  DsIconProp,
+  DsLegacyIconClass,
+  DsTableDensity,
+  DsTileDensity,
+  DsTone,
+  DsValueTone,
+  FriendMood,
+  QuizOptionState,
+} from './types'
 export { default as DsThemeScope } from './DsThemeScope.vue'
 export { default as DsHeroCard } from './DsHeroCard.vue'
 export { default as DsIcon } from './DsIcon.vue'

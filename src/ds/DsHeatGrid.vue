@@ -7,6 +7,7 @@
  */
 import { computed } from 'vue'
 
+import { dsCopy } from './copy'
 import { usePersonality } from './personality'
 import { useMedia } from './useMedia'
 
@@ -28,8 +29,10 @@ const props = withDefaults(
     unit?: string
     /** Text of the empty cell (BM). */
     noDataLabel?: string
+    /** Skeleton in place of the grid. */
+    loading?: boolean
   }>(),
-  { lowLabel: 'Rendah', highLabel: 'Tinggi', unit: '%', noDataLabel: 'Tiada data' },
+  { lowLabel: dsCopy.heatLow, highLabel: dsCopy.heatHigh, unit: '%', noDataLabel: dsCopy.heatNoData, loading: false },
 )
 
 const personality = usePersonality()
@@ -81,8 +84,13 @@ function detail(row: HeatRow, c: number): string {
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-3" data-ds="heat-grid">
-    <div v-if="wide" class="max-w-full overflow-x-auto" role="group" :aria-label="label">
+  <div
+    class="flex min-w-0 flex-col gap-3"
+    :aria-busy="loading ? 'true' : undefined"
+    data-ds="heat-grid"
+  >
+    <USkeleton v-if="loading" class="h-40 w-full" data-ds="heat-loading" />
+    <div v-else-if="wide" class="max-w-full overflow-x-auto" role="group" :aria-label="label">
       <div class="grid min-w-max gap-1" :class="gridCols">
         <span aria-hidden="true" />
         <span
@@ -134,7 +142,7 @@ function detail(row: HeatRow, c: number): string {
         </ul>
       </li>
     </ul>
-    <div class="flex items-center gap-2 text-caption text-muted" data-ds="heat-legend">
+    <div v-if="!loading" class="flex items-center gap-2 text-caption text-muted" data-ds="heat-legend">
       <span>{{ lowLabel }}</span>
       <span v-for="(cls, i) in ramp" :key="i" class="size-4 rounded-chip" :class="cls" aria-hidden="true" />
       <span>{{ highLabel }}</span>

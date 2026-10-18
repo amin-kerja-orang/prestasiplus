@@ -8,23 +8,28 @@ import { computed } from 'vue'
 
 import type { RouteLocationRaw } from 'vue-router'
 
+import { warnDeprecated } from './deprecate'
 import DsStatTile, { type StatDelta } from './DsStatTile.vue'
-import type { DsAccent } from './types'
+import type { DsAccent, DsIconProp, DsTileDensity, DsTone, DsValueTone } from './types'
 
 export interface StatItem {
   key: string
   label: string
   value: string | number
-  icon?: string
+  icon?: DsIconProp
   accent?: DsAccent
-  tone?: 'success' | 'warning' | 'error' | 'info'
+  tone?: DsTone
   sub?: string
   to?: RouteLocationRaw
   delta?: StatDelta
   /** The tile of the applied filter: framed with a primary layer, `data-active="true"`. */
   active?: boolean
-  /** Token colour class of the number (a focus point), e.g. `text-success`. */
+  /** Colour of the number (a focus point). */
+  valueTone?: DsValueTone
+  /** @deprecated use `valueTone`. */
   valueClass?: string
+  /** Not available: dimmed and inert. */
+  disabled?: boolean
   /** Makes the tile a button (a drill-down that is not a route); `clickTitle` is its `title`. */
   onClick?: () => void
   clickTitle?: string
@@ -36,14 +41,31 @@ const props = withDefaults(
     /** Test-id prefix. */
     prefix?: string
     cols?: 'auto' | 2 | 3 | 4 | 5
+    /** `compact` = horizontal tiles (chip beside value) for dense admin lists; `roomy` = report size. */
+    density?: DsTileDensity
+    /** @deprecated use `density="roomy"`. */
     roomy?: boolean
-    /** Horizontal tiles (chip beside value) for dense admin list pages. */
+    /** @deprecated use `density="compact"`. */
     compact?: boolean
     loading?: boolean
     /** Test-id prefix of the tile parts (`-value`, `-label`, `-sub`). */
     partPrefix?: string
   }>(),
-  { partPrefix: undefined, prefix: undefined, cols: 'auto', roomy: false, compact: false, loading: false },
+  {
+    partPrefix: undefined,
+    prefix: undefined,
+    cols: 'auto',
+    density: undefined,
+    roomy: false,
+    compact: false,
+    loading: false,
+  },
+)
+
+if (props.roomy) warnDeprecated('DsStatRow', 'roomy', 'density="roomy"')
+if (props.compact) warnDeprecated('DsStatRow', 'compact', 'density="compact"')
+const tileDensity = computed<DsTileDensity>(
+  () => props.density ?? (props.compact ? 'compact' : props.roomy ? 'roomy' : 'default'),
 )
 
 const GRID: Record<string, string> = {
@@ -72,7 +94,6 @@ function id(key: string): string | undefined {
       v-for="item in items"
       :key="item.key"
       class="flex min-w-0"
-      :class="item.active ? 'rounded-card bg-primary p-0.5' : ''"
       :data-testid="id(item.key)"
       :data-active="item.active ? 'true' : undefined"
     >
@@ -86,11 +107,13 @@ function id(key: string): string | undefined {
         :tone="item.tone"
         :to="item.to"
         :delta="item.delta"
+        :value-tone="item.valueTone"
         :value-class="item.valueClass"
+        :selected="item.active"
+        :disabled="item.disabled"
         :clickable="item.onClick !== undefined"
         :title="item.clickTitle"
-        :roomy="roomy"
-        :compact="compact"
+        :density="tileDensity"
         :loading="loading"
         :part-prefix="partPrefix"
         @click="item.onClick?.()"
