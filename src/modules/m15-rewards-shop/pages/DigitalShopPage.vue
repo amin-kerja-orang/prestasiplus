@@ -10,14 +10,14 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage, DsRewardChip } from '@/ds'
+import { DsEmptyState, DsPage, DsRewardChip, DsLoadError } from '@/ds'
 import { fetchGamificationWallet } from '@/modules/m14-gamification'
 
 import { fetchDigitalItems } from '../api'
 import { DIGITAL_CHIPS, activeChipKey } from '../components/digital-chips'
 import { DIGITAL_COPY } from '../components/copy'
-import LoadError from '../components/LoadError.vue'
 import LoadSkeleton from '../components/LoadSkeleton.vue'
+import { COMMON_COPY } from '../components/copy'
 
 const route = useRoute()
 const cat = computed(() => route.query.cat)
@@ -105,7 +105,7 @@ function retry(): void {
       </UButton>
     </nav>
 
-    <LoadError v-if="failed" @retry="retry" />
+    <DsLoadError v-if="failed" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="retry" />
     <LoadSkeleton v-else-if="!ready" testid="digital-loading" />
     <div v-else data-testid="digital-empty">
       <DsEmptyState :title="DIGITAL_COPY.empty" icon="i-ph-gift-duotone" />

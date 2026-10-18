@@ -9,12 +9,11 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsLoadError, DsPage } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchChapterSubjects } from '../api/practice'
-import LoadError from '../components/quiz/LoadError.vue'
-import { subjectGlyph } from '../components/quiz/subject-glyph'
+import { subjectAccent, subjectGlyph } from '../components/quiz/subject-glyph'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
@@ -23,33 +22,32 @@ const subjects = computed(() => data.value?.data ?? [])
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="chapter-index-page">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between" data-testid="chapter-hero">
-      <div class="flex min-w-0 flex-col gap-1">
-        <p class="text-overline text-primary">Mode Sistematik</p>
-        <h1 class="text-title text-highlighted">Soalan by Chapter</h1>
-        <p class="max-w-prose text-body text-muted">
-          Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap
-          dan mencapai sekurang-kurangnya 70%.
-        </p>
-      </div>
+  <DsPage
+    title="Soalan by Chapter"
+    subtitle="Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap dan mencapai sekurang-kurangnya 70%."
+    data-testid="chapter-index-page"
+  >
+    <template #breadcrumb>
+      <p class="text-overline text-primary">Mode Sistematik</p>
+    </template>
+    <template #actions>
       <UButton
         to="/practice"
         color="neutral"
         variant="soft"
         icon="i-ph-shuffle-duotone"
-        class="min-h-11 self-start sm:self-auto"
+        class="min-h-11"
         data-testid="chapter-random"
         >Latih Tubi Rawak</UButton
       >
-    </div>
+    </template>
 
     <ul
       v-if="data"
       class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
       data-testid="chapter-subject-grid"
     >
-      <li v-for="s in subjects" :key="s.code" class="min-w-0">
+      <li v-for="(s, i) in subjects" :key="s.code" class="min-w-0">
         <RouterLink
           :to="`/practice/chapter/${s.code}`"
           class="block h-full"
@@ -59,6 +57,7 @@ const subjects = computed(() => data.value?.data ?? [])
             <div class="flex items-center gap-4">
               <DsIconChip
                 :icon="subjectGlyph(s.icon)"
+                :accent="subjectAccent(i)"
                 size="lg"
                 data-testid="chapter-subject-icon"
               />
@@ -83,12 +82,12 @@ const subjects = computed(() => data.value?.data ?? [])
       </li>
     </ul>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error"
       :message="LOAD_ERROR"
       retry-testid="chapter-retry"
-      data-testid="chapter-error"
+      testid="chapter-error"
       @retry="reload()"
     />
-  </div>
+  </DsPage>
 </template>

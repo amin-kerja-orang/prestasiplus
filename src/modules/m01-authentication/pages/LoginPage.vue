@@ -7,24 +7,18 @@
  * kept and the password cleared (FR-M01-09/10/68). Renders for a logged-in user too (FR-M01-13).
  */
 import { ref } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import AuthAlert from '../components/auth/AuthAlert.vue'
 import { resolvePostLoginTarget } from '@/app/router/guards'
 import { useApi } from '@/composables'
-import { DsSticker } from '@/ds'
+import { DsFormField, DsSticker } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { useSessionStore } from '@/stores/session'
 
 import { getPlatformStats, login } from '../api'
 import AuthLayout from '../components/auth/AuthLayout.vue'
 import AuthWelcomePanel from '../components/auth/AuthWelcomePanel.vue'
-import {
-  AUTH_INPUT_CLASS,
-  AUTH_LABEL_CLASS,
-  AUTH_LINK_CLASS,
-  AUTH_SUBMIT_CLASS,
-} from '../components/auth/classes'
 import PasswordInput from '../components/auth/PasswordInput.vue'
 import { LOGIN_TILES } from '../components/auth/welcome-tiles'
 import { errorLines } from '../lib/error-lines'
@@ -83,39 +77,26 @@ async function submit(): Promise<void> {
       </AuthWelcomePanel>
     </template>
 
-    <form data-testid="login-form" class="space-y-5" @submit.prevent="submit">
+    <form data-testid="login-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="login-alert" />
 
-      <div>
-        <label for="email" :class="AUTH_LABEL_CLASS">
-          <UIcon name="i-ph-envelope-simple-duotone" class="size-4 text-primary" />
-          Alamat Email
-        </label>
-        <div class="relative">
-          <input
-            id="email"
-            v-model="email"
-            type="email"
-            name="email"
-            required
-            autocomplete="email"
-            placeholder="nama@email.com"
-            :class="[AUTH_INPUT_CLASS, 'pr-12']"
-            data-testid="login-email"
-          />
-          <span
-            aria-hidden="true"
-            class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-dimmed select-none"
-            >@</span
-          >
-        </div>
-      </div>
+      <DsFormField native for="email" label="Alamat Email">
+        <UInput
+          id="email"
+          v-model="email"
+          type="email"
+          name="email"
+          required
+          autocomplete="email"
+          placeholder="nama@email.com"
+          icon="i-ph-envelope-simple-duotone"
+          size="xl"
+          class="w-full"
+          data-testid="login-email"
+        />
+      </DsFormField>
 
-      <div>
-        <label for="password" :class="AUTH_LABEL_CLASS">
-          <UIcon name="i-ph-lock-duotone" class="size-4 text-primary" />
-          Kata Laluan
-        </label>
+      <DsFormField native for="password" label="Kata Laluan">
         <PasswordInput
           id="password"
           v-model="password"
@@ -124,70 +105,55 @@ async function submit(): Promise<void> {
           autocomplete="current-password"
           testid="login-password"
         />
-      </div>
+      </DsFormField>
 
-      <div class="flex flex-wrap items-center justify-between gap-x-4">
-        <label class="inline-flex min-h-11 cursor-pointer items-center gap-2 text-label text-default">
-          <input
-            v-model="remember"
-            type="checkbox"
-            name="remember"
-            class="size-5 accent-primary"
-            data-testid="login-remember"
-          />
-          Ingat saya
-        </label>
+      <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <UCheckbox
+          v-model="remember"
+          name="remember"
+          label="Ingat saya"
+          data-testid="login-remember"
+        />
         <div class="ml-auto flex flex-col items-end">
-          <RouterLink
-            to="/password/reset"
-            :class="[AUTH_LINK_CLASS, 'text-primary hover:underline']"
+          <UButton to="/password/reset" variant="link" color="primary" class="min-h-11"
+            >Lupa kata laluan?</UButton
           >
-            Lupa kata laluan?
-          </RouterLink>
-          <RouterLink
+          <UButton
             to="/password/reset-ic"
-            :class="[AUTH_LINK_CLASS, 'text-primary hover:underline']"
+            variant="link"
+            color="primary"
+            icon="i-ph-identification-card-duotone"
+            class="min-h-11"
+            >Reset melalui No IC</UButton
           >
-            <UIcon name="i-ph-identification-card-duotone" class="size-4" />
-            Reset melalui No IC
-          </RouterLink>
         </div>
       </div>
 
-      <button
+      <UButton
         type="submit"
+        block
+        size="xl"
+        variant="solid"
+        :loading="loading"
         :disabled="loading"
-        :class="AUTH_SUBMIT_CLASS"
+        icon="i-ph-sign-in-duotone"
         data-testid="login-submit"
       >
-        <template v-if="loading">
-          <UIcon name="i-ph-circle-notch" class="size-5 motion-safe:animate-spin" />
-          Sedang Memasuki...
-        </template>
-        <template v-else>
-          <UIcon name="i-ph-sign-in-duotone" class="size-5" />
-          Log Masuk
-        </template>
-      </button>
+        {{ loading ? 'Sedang Memasuki...' : 'Log Masuk' }}
+      </UButton>
 
-      <p class="text-center text-label text-muted">
-        <RouterLink
-          to="/register"
-          class="inline-flex min-h-11 items-center gap-1 text-muted hover:text-default"
-        >
-          Belum ada akaun?
-          <strong class="text-primary underline underline-offset-4"
-            >Daftar Sekarang 🚀</strong
-          >
-        </RouterLink>
-      </p>
+      <UButton to="/register" variant="link" color="neutral" class="min-h-11 justify-center">
+        <span>Belum ada akaun? <strong class="text-primary">Daftar Sekarang 🚀</strong></span>
+      </UButton>
 
-      <p class="text-center">
-        <RouterLink to="/" :class="[AUTH_LINK_CLASS, 'text-muted hover:text-default']">
-          <UIcon name="i-ph-arrow-left" class="size-4" />
-          Kembali ke Laman Utama
-        </RouterLink>
-      </p>
+      <UButton
+        to="/"
+        variant="link"
+        color="neutral"
+        icon="i-ph-arrow-left"
+        class="min-h-11 justify-center"
+        >Kembali ke Laman Utama</UButton
+      >
     </form>
 
     <template #below>

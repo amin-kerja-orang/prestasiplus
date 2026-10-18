@@ -43,7 +43,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
       await expect(tid(page, 'shell-user-subtitle')).toHaveText(
         'Latihan tersusun ikut bab buku teks dan DSKP',
       )
-      await expect(tid(page, 'chapter-hero').getByRole('heading', { level: 1 })).toHaveText(
+      await expect(tid(page, 'chapter-index-page').getByRole('heading', { level: 1 })).toHaveText(
         'Soalan by Chapter',
       )
       await expect(tid(page, 'chapter-random')).toHaveAttribute('href', '/practice')

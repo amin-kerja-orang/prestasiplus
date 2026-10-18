@@ -7,14 +7,14 @@
 import { computed, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsArt3D, DsEmptyState, DsPage, DsRewardChip } from '@/ds'
+import { DsArt3D, DsEmptyState, DsPage, DsRewardChip, DsLoadError } from '@/ds'
 
 import { buyCabutanTicket, fetchCabutan } from '../api'
 import { DRAW_COPY } from '../components/copy'
 import DrawCard from '../components/DrawCard.vue'
 import { errorMessage } from '../components/format'
-import LoadError from '../components/LoadError.vue'
 import LoadSkeleton from '../components/LoadSkeleton.vue'
+import { COMMON_COPY } from '../components/copy'
 
 const flash = useFlash()
 const view = useApi((signal) => fetchCabutan({ signal }))
@@ -61,7 +61,7 @@ async function buy(drawId: number): Promise<void> {
     <section class="flex flex-col gap-3">
       <h2 class="text-heading text-highlighted">{{ DRAW_COPY.openHeading }}</h2>
 
-      <LoadError v-if="view.error.value" @retry="view.reload()" />
+      <DsLoadError v-if="view.error.value" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="view.reload()" />
       <LoadSkeleton v-else-if="!view.data.value" testid="cabutan-loading" />
       <div v-else-if="draws.length === 0" data-testid="cabutan-empty">
         <DsEmptyState :title="DRAW_COPY.empty" icon="i-ph-ticket-duotone" />

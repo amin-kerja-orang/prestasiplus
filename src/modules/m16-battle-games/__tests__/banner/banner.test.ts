@@ -91,7 +91,7 @@ describe('TournamentBanner (S30, FR-M16-08..11)', () => {
     api.fetchActiveTournaments.mockResolvedValue([LIVE])
     const w = await mountBanner()
     const item = w.get('[data-testid="tournament-banner-live"]')
-    expect(item.classes()).toContain('border-red-200')
+    expect(item.find('[data-ds="live-badge"]').exists()).toBe(true)
     expect(item.get('[data-testid="tournament-banner-line"]').text()).toBe(
       'LIVE: Sekolah A vs Sekolah B',
     )

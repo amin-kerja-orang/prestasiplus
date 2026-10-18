@@ -15,7 +15,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useClickOutside } from '@/composables'
-import { DsArt3D, DsIconChip, DsPage } from '@/ds'
+import { DsArt3D, DsIconChip, DsPage, DsLoadError } from '@/ds'
 
 import {
   fetchBattleLobby,
@@ -167,15 +167,12 @@ onBeforeUnmount(() => {
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-48 w-full" />
     </div>
-    <div v-else-if="lobbyError" class="flex flex-col items-start gap-3" data-testid="battle-load-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        title="Maaf, berlaku ralat. Sila cuba semula."
-        class="w-full"
-      />
-      <UButton size="lg" class="min-h-11" @click="reload()">Cuba Lagi</UButton>
-    </div>
+    <DsLoadError
+      v-else-if="lobbyError"
+      message="Maaf, berlaku ralat. Sila cuba semula."
+      testid="battle-load-error"
+      @retry="reload()"
+    />
 
     <template v-else-if="lobby">
       <UAlert

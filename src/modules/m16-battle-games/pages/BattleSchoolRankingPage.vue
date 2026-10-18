@@ -9,11 +9,11 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsArt3D, DsEmptyState, DsPage } from '@/ds'
+import { DsArt3D, DsEmptyState, DsPage, DsLoadError } from '@/ds'
 
 import { fetchSchoolStandings } from '../api'
 import { BATTLE_STATES } from '../components/battle/battle-lib'
-import StatRow from '../components/battle/StatRow.vue'
+import RankedRow from '../components/battle/RankedRow.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -113,15 +113,12 @@ const podiumOrder = computed(() => {
       />
     </div>
 
-    <div v-if="error" class="flex flex-col items-start gap-3" data-testid="battle-load-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        title="Maaf, berlaku ralat. Sila cuba semula."
-        class="w-full"
-      />
-      <UButton size="lg" class="min-h-11" @click="reload()">Cuba Lagi</UButton>
-    </div>
+    <DsLoadError
+      v-if="error"
+      message="Maaf, berlaku ralat. Sila cuba semula."
+      testid="battle-load-error"
+      @retry="reload()"
+    />
     <div v-else-if="loading && !data" class="flex flex-col gap-2" aria-busy="true">
       <USkeleton v-for="n in 4" :key="n" class="h-16 w-full" />
     </div>
@@ -168,7 +165,7 @@ const podiumOrder = computed(() => {
           data-testid="battle-schools-empty"
         />
         <ul v-else class="mt-3 flex flex-col gap-2" data-testid="battle-schools-scroll">
-          <StatRow
+          <RankedRow
             v-for="r in rows"
             :key="r.schoolId"
             :rank="r.rank"
@@ -201,7 +198,7 @@ const podiumOrder = computed(() => {
               <dt class="text-caption text-muted">Skor</dt>
               <dd class="tabular text-label text-primary">{{ r.skor }}</dd>
             </div>
-          </StatRow>
+          </RankedRow>
         </ul>
       </UCard>
     </template>

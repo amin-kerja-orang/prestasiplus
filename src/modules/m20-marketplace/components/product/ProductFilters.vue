@@ -44,6 +44,22 @@ const sortItems: { value: string; label: string }[] = SORT_OPTIONS.map((o) => ({
 
 const activeCount = computed(() => [category.value, condition.value].filter((v) => v !== '').length)
 
+/** The applied category and condition as removable chips under the bar. */
+const chips = computed(() => {
+  const out: { key: string; label: string }[] = []
+  const cat = props.categories.find((c) => c.slug === props.query.category)
+  if (cat) out.push({ key: 'category', label: cat.name })
+  const cond = CONDITION_OPTIONS.find((o) => o.value === props.query.condition)
+  if (cond) out.push({ key: 'condition', label: cond.label })
+  return out
+})
+
+function removeChip(key: string): void {
+  if (key === 'category') category.value = ''
+  if (key === 'condition') condition.value = ''
+  submit()
+}
+
 function submit(): void {
   emit('search', {
     q: q.value,
@@ -63,7 +79,13 @@ function reset(): void {
 
 <template>
   <div data-testid="marketplace-search">
-    <DsFilterBar :active-count="activeCount" @apply="submit" @reset="reset">
+    <DsFilterBar
+      :active-count="activeCount"
+      :chips="chips"
+      @apply="submit"
+      @reset="reset"
+      @remove-chip="removeChip"
+    >
       <template #search>
         <UInput
           v-model="q"

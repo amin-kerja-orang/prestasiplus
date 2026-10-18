@@ -12,15 +12,15 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsBackLink, DsEmptyState, DsIconChip } from '@/ds'
+import { DsBackLink, DsEmptyState, DsIconChip, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { subjectGlyph } from '@/modules/m05-practice'
 
 import { fetchTrackingASubject, type TrackingASubject } from '../api'
-import LoadError from '../components/LoadError.vue'
 import SkeletonCards from '../components/SkeletonCards.vue'
 import { targetName } from '../lib/latih-tubi'
 import { SET_STATUS, dskpLine, isStartable, setHref, setSize } from '../lib/tracking'
+import { LOAD_ERROR } from '../lib/copy'
 
 const route = useRoute()
 const router = useRouter()
@@ -211,7 +211,7 @@ const size = computed(() => setSize(subject.value?.targetSize ?? null))
         />
       </UCard>
     </template>
-    <LoadError v-else-if="error && !notFound" @retry="reload()" />
+    <DsLoadError v-else-if="error && !notFound" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else-if="!notFound" :count="4" />
   </div>
 </template>

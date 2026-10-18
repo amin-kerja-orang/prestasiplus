@@ -7,13 +7,13 @@
  * the "Mula" is plain text as live (D-5, replicated). Every query parameter is ignored.
  */
 import { useApi } from '@/composables'
-import { DsBackLink, DsIconChip, DsPage } from '@/ds'
+import { DsBackLink, DsIconChip, DsPage, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
-import { subjectGlyph } from '@/modules/m05-practice'
+import { subjectAccent, subjectGlyph } from '@/modules/m05-practice'
 
 import { fetchDatabank } from '../api'
-import LoadError from '../components/LoadError.vue'
 import SkeletonCards from '../components/SkeletonCards.vue'
+import { LOAD_ERROR } from '../lib/copy'
 
 const COUNTS = [5, 10, 20] as const
 
@@ -38,10 +38,15 @@ const { data, error, reload } = useApi((signal) => fetchDatabank({ signal }))
       class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3"
       data-testid="databank-grid"
     >
-      <li v-for="s in data" :key="s.code" class="min-w-0" :data-testid="`databank-card-${s.code}`">
+      <li v-for="(s, i) in data" :key="s.code" class="min-w-0" :data-testid="`databank-card-${s.code}`">
         <UCard class="h-full" :ui="{ body: 'flex h-full flex-col gap-3 p-4' }">
           <div class="flex items-center gap-3">
-            <DsIconChip :icon="subjectGlyph(s.icon)" size="lg" data-testid="databank-icon" />
+            <DsIconChip
+              :icon="subjectGlyph(s.icon)"
+              :accent="subjectAccent(i)"
+              size="lg"
+              data-testid="databank-icon"
+            />
             <div class="min-w-0">
               <h2 class="text-subheading break-words text-highlighted" data-testid="databank-name">
                 {{ s.name }}
@@ -70,7 +75,7 @@ const { data, error, reload } = useApi((signal) => fetchDatabank({ signal }))
         </UCard>
       </li>
     </ul>
-    <LoadError v-else-if="error" @retry="reload()" />
+    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else />
   </DsPage>
 </template>

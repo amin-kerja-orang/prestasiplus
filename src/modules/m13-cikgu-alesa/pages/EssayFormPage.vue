@@ -8,7 +8,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { alertNative } from '@/components/overlay/native-dialogs'
+import { alertNative } from '@/composables'
 import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 
 import { RUBRICS } from '../api'

@@ -9,7 +9,7 @@
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 
 import { fetchShareCards } from '../../api'
 import KadCardFrame from '../../components/student-b/KadCardFrame.vue'
@@ -17,7 +17,6 @@ import KadKomboCard from '../../components/student-b/KadKomboCard.vue'
 import KadMasteryCard from '../../components/student-b/KadMasteryCard.vue'
 import KadProfilCard from '../../components/student-b/KadProfilCard.vue'
 import KadRankingCard from '../../components/student-b/KadRankingCard.vue'
-import StudentBLoadState from '../../components/student-b/StudentBLoadState.vue'
 import {
   KAD_COPY,
   KAD_TABS,
@@ -136,13 +135,17 @@ function whatsapp(text: string): void {
         </KadCardFrame>
       </UCard>
     </template>
-    <StudentBLoadState
-      v-else
-      :error="error !== null"
+    <DsLoadError
+      v-else-if="error !== null"
       :message="KAD_COPY.loadError"
       :retry-label="KAD_COPY.retry"
-      test-key="kad"
+      testid="kad-error"
+      retry-testid="kad-retry"
       @retry="reload()"
     />
+    <div v-else class="flex flex-col gap-3" aria-busy="true" data-testid="kad-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

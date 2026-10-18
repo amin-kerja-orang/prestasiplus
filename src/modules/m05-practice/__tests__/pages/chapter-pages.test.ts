@@ -228,7 +228,7 @@ describe('S4 ChapterIndexPage', () => {
     api.fetchChapterSubjects.mockResolvedValue({ data: SUBJECTS, meta: {} })
     const w = await render(ChapterIndexPage, '/practice/chapter')
     expect(w.text()).toContain('Mode Sistematik')
-    expect(t(w, 'chapter-hero').get('h1').text()).toBe('Soalan by Chapter')
+    expect(t(w, 'chapter-index-page').get('h1').text()).toBe('Soalan by Chapter')
     expect(w.text()).toContain(
       'Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap dan mencapai sekurang-kurangnya 70%.',
     )
@@ -471,7 +471,7 @@ describe('S6 RevisionListPage', () => {
   it('shows the banner, the cards, the tips and the back link (FR-M05-68…71)', async () => {
     api.fetchRevisionOverview.mockResolvedValue(OVERVIEW)
     const w = await render(RevisionListPage, '/practice/revision')
-    expect(t(w, 'revision-banner').get('h1').text()).toBe('Soalan Aku Salah')
+    expect(t(w, 'revision-list-page').get('h1').text()).toBe('Soalan Aku Salah')
     expect(w.text()).toContain('Ulang kaji soalan yang pernah dijawab salah')
     expect(t(w, 'revision-total').text()).toBe('72 soalan perlu diulang kaji')
     const cards = w

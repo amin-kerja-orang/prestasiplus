@@ -6,8 +6,6 @@
  */
 import { ref } from 'vue'
 
-import { AUTH_INPUT_CLASS } from './classes'
-
 defineProps<{
   id: string
   name: string
@@ -22,27 +20,29 @@ const visible = ref(false)
 </script>
 
 <template>
-  <div class="relative">
-    <input
-      :id="id"
-      v-model="model"
-      :type="visible ? 'text' : 'password'"
-      :name="name"
-      required
-      :autocomplete="autocomplete"
-      :placeholder="placeholder"
-      :class="[AUTH_INPUT_CLASS, 'pr-12']"
-      :data-testid="testid"
-    />
-    <button
-      type="button"
-      class="absolute top-1/2 right-1 flex size-11 -translate-y-1/2 items-center justify-center rounded-chip text-muted transition hover:text-default"
-      :data-testid="`${testid}-toggle`"
-      :data-visible="visible"
-      @click="visible = !visible"
-    >
-      <UIcon v-if="visible" name="i-ph-eye-slash-duotone" class="size-5" />
-      <UIcon v-else name="i-ph-eye-duotone" class="size-5" />
-    </button>
-  </div>
+  <UInput
+    :id="id"
+    v-model="model"
+    :type="visible ? 'text' : 'password'"
+    :name="name"
+    required
+    :autocomplete="autocomplete"
+    :placeholder="placeholder"
+    icon="i-ph-lock-duotone"
+    size="xl"
+    class="w-full"
+    :data-testid="testid"
+  >
+    <template #trailing>
+      <UButton
+        type="button"
+        color="neutral"
+        variant="link"
+        :icon="visible ? 'i-ph-eye-slash-duotone' : 'i-ph-eye-duotone'"
+        :data-testid="`${testid}-toggle`"
+        :data-visible="visible"
+        @click="visible = !visible"
+      />
+    </template>
+  </UInput>
 </template>

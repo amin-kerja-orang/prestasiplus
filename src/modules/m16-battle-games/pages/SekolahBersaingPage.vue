@@ -12,12 +12,12 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsDataTable, DsPage, type CardField } from '@/ds'
+import { DsDataTable, DsPage, type CardField, DsLoadError } from '@/ds'
 import { formatDateEn } from '@/lib/time'
 
 import { fetchSekolahBersaing } from '../api'
-import PageLoadError from '../components/competition/PageLoadError.vue'
 import { SB_COPY as COPY, SB_MEDALS } from '../components/sekolah-bersaing/copy'
+import { LOAD_COPY } from '../components/competition/copy'
 
 const route = useRoute()
 
@@ -75,7 +75,7 @@ const cardFields: CardField[] = [
 <template>
   <DsPage :title="COPY.heading" :subtitle="COPY.sub" data-testid="m16-sekolah-bersaing-page">
 
-    <PageLoadError v-if="view.error.value" @retry="view.reload()" />
+    <DsLoadError v-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
     <USkeleton v-else-if="!data" class="h-48 w-full" data-testid="sb-loading" />
 
     <UCard v-else-if="data.rows.length === 0" data-testid="sb-empty">

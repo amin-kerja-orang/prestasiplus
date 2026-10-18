@@ -10,20 +10,17 @@ import progressRoutes from '../../routes/progress'
 
 const api = vi.hoisted(() => ({ fetchProgress: vi.fn(), fetchHistory: vi.fn() }))
 vi.mock('../../api/practice', () => api)
-vi.mock('@/ds', async () => {
+vi.mock('@/ds', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/ds')>()
   const { defineComponent, h } = await import('vue')
-  const stub = (name: string, slots: string[] = []) =>
-    defineComponent({
-      name,
-      inheritAttrs: false,
-      props: { value: { type: null, default: null }, unit: { type: String, default: '' }, title: { type: String, default: '' } },
-      setup: (p, { slots: s, attrs }) => () =>
-        h('div', { ...attrs, 'data-stub': name }, [p.title, String(p.value ?? ''), p.unit, ...slots.map((n) => s[n]?.())])
-    })
   return {
-    DsChart: stub('DsChart'),
-    DsEmptyState: stub('DsEmptyState', ['actions']),
-    DsStatTile: stub('DsStatTile'),
+    ...actual,
+    DsChart: defineComponent({
+      name: 'DsChart',
+      inheritAttrs: false,
+      props: { title: { type: String, default: '' } },
+      setup: (p, { attrs }) => () => h('div', { ...attrs, 'data-stub': 'DsChart' }, p.title),
+    }),
   }
 })
 
@@ -83,7 +80,7 @@ describe('ProgressPage (S8)', () => {
     expect(w.text()).toContain('Kemajuan Saya')
     expect(w.text()).toContain('Belum Ada Data')
     expect(w.find('[data-testid="progress-trend"]').exists()).toBe(false)
-    const active = w.findAll('[data-testid="progress-period"][data-active="true"]')
+    const active = w.findAll('[data-testid^="progress-period-"][data-active="true"]')
     expect(active).toHaveLength(1)
   })
 

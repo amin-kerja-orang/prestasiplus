@@ -4,13 +4,13 @@
  * user shell as the first child of `<main>`; on mount it calls `GET /api/tournament/active` once (no
  * polling) and renders nothing while loading, on any failure, or with an empty list.
  *
- * A live match (red card, "LIVE: {a} vs {b}" + "MAIN") takes precedence over the status; otherwise a
- * `registration` item shows "Pendaftaran dibuka" + "DAFTAR" and any other item "Sedang berlangsung".
- * Several items stack in response order.
+ * A live match (red-tinted card, "LIVE: {a} vs {b}" + "MAIN") takes precedence over the status;
+ * otherwise a `registration` item shows "Pendaftaran dibuka" + "DAFTAR" and any other item "Sedang
+ * berlangsung". Several items stack in response order.
  */
-import { Circle, RadioTower, Trophy } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+
+import { DsIconChip, DsLiveBadge, DsPanel } from '@/ds'
 
 import { fetchActiveTournaments, type TournamentActive } from '../../api'
 
@@ -23,61 +23,45 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="items.length > 0" class="mb-4" data-testid="tournament-banner">
-    <RouterLink
+  <div v-if="items.length > 0" class="mb-4 flex flex-col gap-2" data-testid="tournament-banner">
+    <ULink
       v-for="t in items"
       :key="t.uuid"
       :to="`/tournament/${t.uuid}`"
-      class="mb-2 flex min-h-11 items-center gap-3 rounded-xl border p-4 shadow-sm hover:shadow-md"
-      :class="
-        t.live_match
-          ? 'border-red-200 bg-linear-to-r from-red-50 to-orange-50'
-          : 'border-indigo-200 bg-linear-to-r from-indigo-50 to-purple-50'
-      "
+      class="block min-h-11 min-w-0"
       :data-testid="t.live_match ? 'tournament-banner-live' : 'tournament-banner-item'"
     >
-      <span
-        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-        :class="t.live_match ? 'bg-red-100 text-red-500' : 'bg-indigo-100 text-indigo-500'"
-      >
-        <RadioTower v-if="t.live_match" class="h-5 w-5" />
-        <Trophy v-else class="h-5 w-5" />
-      </span>
-      <span class="min-w-0 flex-1">
-        <span class="block text-sm font-bold break-words text-gray-800">{{ t.title }}</span>
-        <span
-          v-if="t.live_match"
-          class="flex items-center gap-1.5 text-xs font-bold text-red-600"
-          data-testid="tournament-banner-line"
-        >
-          <Circle class="h-1.5 w-1.5 shrink-0 animate-pulse fill-current" />
-          <span class="min-w-0 break-words">
+      <DsPanel :tone="t.live_match ? 'tint' : 'raised'" class="flex items-center gap-3">
+        <DsIconChip
+          :icon="t.live_match ? 'broadcast' : 'trophy'"
+          :accent="t.live_match ? 'heat' : 'trial'"
+          size="lg"
+        />
+        <span class="flex min-w-0 flex-1 flex-col">
+          <span class="text-label break-words text-highlighted">{{ t.title }}</span>
+          <span
+            v-if="t.live_match"
+            class="text-caption break-words text-error"
+            data-testid="tournament-banner-line"
+          >
             LIVE: {{ t.live_match.school_a }} vs {{ t.live_match.school_b }}
           </span>
+          <span
+            v-else-if="t.status === 'registration'"
+            class="text-caption text-muted"
+            data-testid="tournament-banner-line"
+          >
+            Pendaftaran dibuka
+          </span>
+          <span v-else class="text-caption text-muted" data-testid="tournament-banner-line">
+            Sedang berlangsung
+          </span>
         </span>
-        <span
-          v-else-if="t.status === 'registration'"
-          class="block text-xs text-gray-600"
-          data-testid="tournament-banner-line"
+        <DsLiveBadge v-if="t.live_match" label="MAIN" class="shrink-0" />
+        <UBadge v-else-if="t.status === 'registration'" color="primary" variant="solid" class="shrink-0"
+          >DAFTAR</UBadge
         >
-          Pendaftaran dibuka
-        </span>
-        <span v-else class="block text-xs text-gray-600" data-testid="tournament-banner-line">
-          Sedang berlangsung
-        </span>
-      </span>
-      <span
-        v-if="t.live_match"
-        class="shrink-0 animate-pulse rounded-lg bg-red-600 px-3 py-1 text-xs font-bold text-white"
-      >
-        MAIN
-      </span>
-      <span
-        v-else-if="t.status === 'registration'"
-        class="shrink-0 rounded-lg bg-indigo-600 px-3 py-1 text-xs font-bold text-white"
-      >
-        DAFTAR
-      </span>
-    </RouterLink>
+      </DsPanel>
+    </ULink>
   </div>
 </template>

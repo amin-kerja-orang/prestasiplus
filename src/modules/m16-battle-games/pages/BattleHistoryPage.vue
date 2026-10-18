@@ -5,7 +5,7 @@
  * battles newest first in the S4 "Battle Terkini" row format.
  */
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsEmptyState, DsPage, DsLoadError } from '@/ds'
 
 import { fetchBattleHistory } from '../api'
 import BattleRecentList from '../components/battle/BattleRecentList.vue'
@@ -15,15 +15,12 @@ const { data, error, reload } = useApi((signal) => fetchBattleHistory({ signal }
 
 <template>
   <DsPage data-testid="battle-history">
-    <div v-if="error" class="flex flex-col items-start gap-3" data-testid="battle-load-error">
-      <UAlert
-        color="error"
-        variant="subtle"
-        title="Maaf, berlaku ralat. Sila cuba semula."
-        class="w-full"
-      />
-      <UButton size="lg" class="min-h-11" @click="reload()">Cuba Lagi</UButton>
-    </div>
+    <DsLoadError
+      v-if="error"
+      message="Maaf, berlaku ralat. Sila cuba semula."
+      testid="battle-load-error"
+      @retry="reload()"
+    />
     <div v-else-if="!data" class="flex flex-col gap-2" aria-busy="true">
       <USkeleton v-for="n in 3" :key="n" class="h-14 w-full" />
     </div>

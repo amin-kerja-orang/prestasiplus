@@ -12,7 +12,7 @@ import { RouterLink, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useApi } from '@/composables'
-import { DsFormField, DsNativeSelect, DsPage, DsPanel } from '@/ds'
+import { DsFormField, DsNativeSelect, DsPage, DsPanel, DsLoadError } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import { createMock, fetchMocks } from '../api'
@@ -129,12 +129,13 @@ async function generate(): Promise<void> {
       <div v-if="loading && !data" class="flex flex-col gap-2" data-testid="mock-skeleton">
         <USkeleton v-for="n in 3" :key="n" class="h-16" />
       </div>
-      <div v-else-if="error" class="flex max-w-xl flex-col gap-3" data-testid="mock-error">
-        <UAlert color="error" variant="soft" icon="i-ph-warning-circle-duotone" :title="LOAD_ERROR" />
-        <UButton size="lg" class="min-h-11 self-start" data-testid="mock-retry" @click="reload()"
-          >Cuba Semula</UButton
-        >
-      </div>
+      <DsLoadError
+        v-else-if="error"
+        :message="LOAD_ERROR"
+        testid="mock-error"
+        retry-testid="mock-retry"
+        @retry="reload()"
+      />
       <ul v-else class="flex flex-col gap-2" data-testid="mock-list">
         <li v-for="m in mocks" :key="m.id" :data-testid="`mock-row-${String(m.id)}`">
           <UCard variant="subtle" :ui="{ body: 'p-3' }">

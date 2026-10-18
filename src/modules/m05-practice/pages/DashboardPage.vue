@@ -33,6 +33,7 @@ import HomeStats from '../components/dashboard-v2/HomeStats.vue'
 import HomeSubjects from '../components/dashboard-v2/HomeSubjects.vue'
 import HomeSubjectStats from '../components/dashboard-v2/HomeSubjectStats.vue'
 import HomeTrial from '../components/dashboard-v2/HomeTrial.vue'
+import { DsLoadError } from '@/ds'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
@@ -88,21 +89,13 @@ watch(
       <HomeSubjectStats :stats="data.subjectStats" />
     </div>
 
-    <div
+    <DsLoadError
       v-else-if="error"
-      class="mx-auto flex max-w-xl flex-col gap-3"
-      data-testid="dashboard-error"
-    >
-      <UAlert
-        color="error"
-        variant="subtle"
-        :title="LOAD_ERROR"
-        data-testid="dashboard-error-alert"
-      />
-      <UButton size="lg" class="min-h-11 self-start" data-testid="dashboard-retry" @click="reload()"
-        >Cuba Semula</UButton
-      >
-    </div>
+      :message="LOAD_ERROR"
+      testid="dashboard-error"
+      retry-testid="dashboard-retry"
+      @retry="reload()"
+    />
 
     <div v-else class="flex flex-col gap-4" aria-busy="true" data-testid="dashboard-loading">
       <USkeleton class="h-32 w-full" />

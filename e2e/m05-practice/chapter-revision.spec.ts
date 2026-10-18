@@ -75,13 +75,13 @@ test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
         'Latihan tersusun ikut bab buku teks dan DSKP',
       )
     }
-    await expect(tid(page, 'chapter-hero')).toContainText('Mode Sistematik')
-    const eyebrow = tid(page, 'chapter-hero').locator('p').first()
+    await expect(tid(page, 'chapter-index-page')).toContainText('Mode Sistematik')
+    const eyebrow = tid(page, 'chapter-index-page').locator('p').first()
     expect(await eyebrow.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
-    await expect(tid(page, 'chapter-hero').getByRole('heading', { level: 1 })).toHaveText(
+    await expect(tid(page, 'chapter-index-page').getByRole('heading', { level: 1 })).toHaveText(
       'Soalan by Chapter',
     )
-    await expect(tid(page, 'chapter-hero')).toContainText(
+    await expect(tid(page, 'chapter-index-page')).toContainText(
       'Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap dan mencapai sekurang-kurangnya 70%.',
     )
     await expect(tid(page, 'chapter-random')).toHaveText('Latih Tubi Rawak')
@@ -398,10 +398,10 @@ test.describe('M05 S6 revision list', { tag: [moduleTag(5)] }, () => {
     await expectTabTitle(page, 'Soalan Aku Salah — PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Aku Salah')
     await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
-    await expect(tid(page, 'revision-banner').getByRole('heading', { level: 1 })).toHaveText(
+    await expect(tid(page, 'revision-list-page').getByRole('heading', { level: 1 })).toHaveText(
       'Soalan Aku Salah',
     )
-    await expect(tid(page, 'revision-banner')).toContainText(
+    await expect(tid(page, 'revision-list-page')).toContainText(
       'Ulang kaji soalan yang pernah dijawab salah',
     )
     await expect(tid(page, 'revision-total')).toHaveText('72 soalan perlu diulang kaji')
@@ -446,7 +446,7 @@ test.describe('M05 S6 revision list', { tag: [moduleTag(5)] }, () => {
     )
     // The flash sits between the banner and the cards, as on live.
     const order = await page.evaluate(() => {
-      const b = document.querySelector('[data-testid=revision-banner]')!
+      const b = document.querySelector('[data-testid=revision-list-page]')!
       const f = document.querySelector('[data-testid=revision-flash]')!
       const g = document.querySelector('[data-testid=revision-grid]')!
       return [b.compareDocumentPosition(f), f.compareDocumentPosition(g)].map(

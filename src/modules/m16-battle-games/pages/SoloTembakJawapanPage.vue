@@ -14,7 +14,6 @@ import { computed, ref, watch } from 'vue'
 import CountdownView from '../components/solo/CountdownView.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
-import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
 import {
   fallProgress,
@@ -29,6 +28,7 @@ import {
 } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
+import { DsLoadError } from '@/ds'
 
 /** The fall zone is a 4-lane grid of 14 rows; a tile's row follows its fall progress (no inline style). */
 const COL = ['col-start-1', 'col-start-2', 'col-start-3', 'col-start-4'] as const
@@ -219,7 +219,11 @@ watch(darjah, () => void start(), { immediate: true })
   <div data-testid="solo-tembak-jawapan">
     <DarjahPicker v-if="darjah === null" title="Tembak Jawapan" art="rocket" />
     <GamePanel>
-      <LoadState :loading="loading" :error="error" />
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+        <USkeleton class="h-16 w-full" />
+        <USkeleton class="h-16 w-full" />
+      </div>
+      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
       <CountdownView
         v-if="phase === 'countdown'"

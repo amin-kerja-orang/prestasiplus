@@ -15,11 +15,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta, usePrototypeScope } from '@/composables'
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchSubjectConfig } from '../api/practice'
-import LoadError from '../components/quiz/LoadError.vue'
 import {
   availableQuestions,
   COUNT_OPTIONS,
@@ -380,11 +379,11 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
       </div>
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error && !notFound"
       :message="LOAD_ERROR"
       retry-testid="config-retry"
-      data-testid="config-error"
+      testid="config-error"
       @retry="reload()"
     />
   </div>

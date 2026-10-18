@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState, DsHeroCard } from '@/ds'
+import { DsEmptyState, DsHeroCard, DsLoadError, DsPage } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import { shortageLine } from '../domain/blueprint'
@@ -122,23 +122,23 @@ async function generate(): Promise<void> {
 </script>
 
 <template>
-  <main class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6" data-testid="bijak-hub">
-    <header class="flex flex-col gap-2">
-      <h1 class="text-title text-highlighted">Bijak SPM</h1>
-      <p class="text-body text-toned" data-testid="bijak-subtitle">
-        Duduki kertas SPM penuh dalam format kertas sebenar — bermasa, dengan skema.
-      </p>
-      <div class="flex flex-wrap gap-2">
-        <UButton
-          to="/spm/bijak/sejarah"
-          icon="i-ph-clock-counter-clockwise"
-          color="neutral"
-          data-testid="history-link"
-          >Sejarah Bijak SPM</UButton
-        >
-        <UButton to="/spm" icon="i-ph-arrow-left" color="neutral" variant="ghost">Mod SPM</UButton>
-      </div>
-    </header>
+  <DsPage
+    title="Bijak SPM"
+    subtitle="Duduki kertas SPM penuh dalam format kertas sebenar — bermasa, dengan skema."
+    subtitle-testid="bijak-subtitle"
+    back-to="/spm"
+    back-label="Mod SPM"
+    data-testid="bijak-hub"
+  >
+    <template #actions>
+      <UButton
+        to="/spm/bijak/sejarah"
+        icon="i-ph-clock-counter-clockwise"
+        color="neutral"
+        data-testid="history-link"
+        >Sejarah Bijak SPM</UButton
+      >
+    </template>
 
     <DsHeroCard
       v-if="heroPaper"
@@ -180,10 +180,11 @@ async function generate(): Promise<void> {
         </UFormField>
       </div>
 
-      <div v-if="papersError" class="flex flex-col gap-3">
-        <UAlert color="error" variant="soft" title="Senarai kertas tidak dapat dimuatkan." />
-        <UButton class="self-start" @click="reloadPapers">Cuba lagi</UButton>
-      </div>
+      <DsLoadError
+        v-if="papersError"
+        message="Senarai kertas tidak dapat dimuatkan."
+        @retry="reloadPapers"
+      />
       <div v-else-if="!papers" class="flex flex-col gap-3" aria-busy="true">
         <USkeleton v-for="n in 3" :key="n" class="h-24 w-full" />
       </div>
@@ -310,5 +311,5 @@ async function generate(): Promise<void> {
         role="alert"
       />
     </section>
-  </main>
+  </DsPage>
 </template>

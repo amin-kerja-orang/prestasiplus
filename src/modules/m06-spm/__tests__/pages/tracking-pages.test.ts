@@ -25,6 +25,7 @@ vi.mock('@/modules/m05-practice', async () => {
   const { defineComponent, h } = await import('vue')
   return {
     subjectGlyph: () => 'i-ph-books-duotone',
+    subjectAccent: () => 'action',
     QuizRunner: defineComponent({
       props: {
         start: { type: Object as PropType<StartSessionRequest>, default: null },

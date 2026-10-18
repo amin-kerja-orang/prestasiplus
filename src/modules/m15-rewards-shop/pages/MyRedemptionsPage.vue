@@ -7,12 +7,12 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 
 import { fetchDigitalRedemptions } from '../api'
 import { MY_REDEMPTIONS_COPY } from '../components/copy'
-import LoadError from '../components/LoadError.vue'
 import LoadSkeleton from '../components/LoadSkeleton.vue'
+import { COMMON_COPY } from '../components/copy'
 
 const list = useApi((signal) => fetchDigitalRedemptions({ signal }))
 const ready = computed(() => list.data.value !== null)
@@ -34,7 +34,7 @@ const ready = computed(() => list.data.value !== null)
       </UButton>
     </section>
 
-    <LoadError v-if="list.error.value" @retry="list.reload()" />
+    <DsLoadError v-if="list.error.value" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="list.reload()" />
     <LoadSkeleton v-else-if="!ready" testid="redemptions-loading" />
     <UCard v-else data-testid="redemptions-empty">
       <div class="flex flex-col items-center gap-3 text-center">

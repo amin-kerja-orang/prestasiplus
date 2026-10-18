@@ -14,7 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 import { clock } from '@/lib/time'
 
 import { fetchMock, submitMock } from '../api'
@@ -89,16 +89,13 @@ async function submit(): Promise<void> {
     <div v-if="loading && !data" class="flex flex-col gap-2" data-testid="run-skeleton">
       <USkeleton v-for="n in 3" :key="n" class="h-20" />
     </div>
-    <div
+    <DsLoadError
       v-else-if="error && !notFound"
-      class="flex max-w-xl flex-col gap-3"
-      data-testid="run-error"
-    >
-      <UAlert color="error" variant="soft" icon="i-ph-warning-circle-duotone" :title="LOAD_ERROR" />
-      <UButton size="lg" class="min-h-11 self-start" data-testid="run-retry" @click="reload()"
-        >Cuba Semula</UButton
-      >
-    </div>
+      :message="LOAD_ERROR"
+      testid="run-error"
+      retry-testid="run-retry"
+      @retry="reload()"
+    />
 
     <form
       v-else-if="data && data.status === 'in_progress'"

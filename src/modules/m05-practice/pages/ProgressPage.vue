@@ -8,10 +8,19 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsChart, DsEmptyState, DsStatTile } from '@/ds'
+import {
+  DsChart,
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsPillNav,
+  DsStatRow,
+  type PillItem,
+  type StatItem,
+} from '@/ds'
 
 import { fetchProgress } from '../api/practice'
-import LoadError from '../components/quiz/LoadError.vue'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const PERIODS = [
@@ -20,6 +29,12 @@ const PERIODS = [
   { value: '90', label: '3 Bulan' },
   { value: 'all', label: 'Semua' },
 ] as const
+
+const PERIOD_ITEMS: PillItem<string>[] = PERIODS.map((p) => ({
+  key: p.value,
+  label: p.label,
+  to: { path: '/practice/progress', query: { period: p.value } },
+}))
 
 const route = useRoute()
 const period = computed(() => {
@@ -37,6 +52,13 @@ const accuracy = computed(() =>
   data.value?.accuracyPct == null ? '0%' : `${data.value.accuracyPct}%`,
 )
 const minutes = computed(() => `${data.value?.minutes ?? 0}m`)
+
+const stats = computed<StatItem[]>(() => [
+  { key: 'answered', label: 'Soalan Dijawab', value: data.value?.answered ?? 0, icon: 'i-ph-note-pencil', accent: 'action' },
+  { key: 'accuracy', label: 'Ketepatan Keseluruhan', value: accuracy.value, icon: 'i-ph-target', accent: 'win' },
+  { key: 'sessions', label: 'Sesi Latihan', value: data.value?.sessions ?? 0, icon: 'i-ph-clipboard-text', accent: 'heat' },
+  { key: 'minutes', label: 'Masa Berlatih', value: minutes.value, icon: 'i-ph-timer', accent: 'friend' },
+])
 
 /** Red below 50, amber 50-69, green from 70 (INFERRED bands, as live). */
 function tone(pct: number): string {
@@ -60,37 +82,23 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="progress-page">
-    <div class="flex flex-col gap-1">
-      <h1 class="text-title text-highlighted">Kemajuan Saya</h1>
-      <p class="max-w-prose text-body text-muted">Pantau prestasi dan kenal pasti topik lemah</p>
-    </div>
-
-    <nav class="flex flex-wrap gap-2" aria-label="Tempoh" data-testid="progress-periods">
-      <UButton
-        v-for="p in PERIODS"
-        :key="p.value"
-        :to="{ path: '/practice/progress', query: { period: p.value } }"
-        size="lg"
-        class="min-h-11"
-        :color="period === p.value ? 'primary' : 'neutral'"
-        :variant="period === p.value ? 'solid' : 'soft'"
-        :aria-current="period === p.value ? 'true' : undefined"
-        :data-active="period === p.value ? 'true' : 'false'"
-        data-testid="progress-period"
-        >{{ p.label }}</UButton
-      >
-    </nav>
+  <DsPage
+    title="Kemajuan Saya"
+    subtitle="Pantau prestasi dan kenal pasti topik lemah"
+    data-testid="progress-page"
+  >
+    <DsPillNav
+      :items="PERIOD_ITEMS"
+      :active="period"
+      label="Tempoh"
+      testid-prefix="progress-period"
+      data-testid="progress-periods"
+    />
 
     <template v-if="data">
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="progress-stats">
-        <DsStatTile :value="data.answered" unit="Soalan Dijawab" icon="i-ph-note-pencil" />
-        <DsStatTile :value="accuracy" unit="Ketepatan Keseluruhan" icon="i-ph-target" />
-        <DsStatTile :value="data.sessions" unit="Sesi Latihan" icon="i-ph-clipboard-text" />
-        <DsStatTile :value="minutes" unit="Masa Berlatih" icon="i-ph-timer" />
-      </div>
+      <DsStatRow :items="stats" :cols="4" prefix="progress-stat" data-testid="progress-stats" />
 
-      <UCard v-if="!hasData" data-testid="progress-empty">
+      <DsPanel v-if="!hasData" data-testid="progress-empty">
         <DsEmptyState
           title="Belum Ada Data"
           description="Mula buat latihan untuk lihat kemajuan kamu di sini!"
@@ -100,10 +108,10 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
             <UButton to="/practice" size="lg" class="min-h-11">Mula Latihan</UButton>
           </template>
         </DsEmptyState>
-      </UCard>
+      </DsPanel>
 
       <template v-else>
-        <UCard data-testid="progress-trend">
+        <DsPanel data-testid="progress-trend">
           <DsChart
             type="line"
             title="Trend Ketepatan"
@@ -111,53 +119,48 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
             :series="[{ label: 'Ketepatan (%)', data: data.chart.accuracy }]"
             unit="%"
           />
-        </UCard>
+        </DsPanel>
 
-        <UCard v-if="data.weakSubjects.length > 0" data-testid="progress-weak">
-          <h2 class="mb-3 flex items-center gap-2 text-subheading text-error">
-            <UIcon name="i-ph-warning-duotone" class="size-5" aria-hidden="true" />
-            Topik Perlu Perhatian
-          </h2>
+        <DsPanel
+          v-if="data.weakSubjects.length > 0"
+          title="Topik Perlu Perhatian"
+          icon="warning"
+          accent="heat"
+          data-testid="progress-weak"
+        >
           <ul class="flex flex-col gap-2">
-            <li
-              v-for="w in data.weakSubjects"
-              :key="w.code"
-              class="flex flex-wrap items-center gap-3 rounded-card bg-elevated p-3"
-              data-testid="progress-weak-row"
-            >
-              <span
-                class="grid size-10 shrink-0 place-items-center rounded-full bg-error/10 text-label font-bold text-error"
-                aria-hidden="true"
-                >{{ w.name.slice(0, 2).toUpperCase() }}</span
+            <li v-for="w in data.weakSubjects" :key="w.code" class="min-w-0">
+              <DsPanel
+                tone="inset"
+                class="flex flex-wrap items-center gap-3"
+                data-testid="progress-weak-row"
               >
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-label font-semibold text-highlighted">{{ w.name }}</p>
-                <p class="text-caption text-muted">{{ w.answered }} soalan</p>
-              </div>
-              <span class="tabular font-bold text-error">{{ w.accuracyPct }}%</span>
-              <UButton :to="`/practice/${w.code}`" size="md" class="min-h-11" variant="soft"
-                >Ulang Kaji</UButton
-              >
+                <UAvatar :text="w.name.slice(0, 2).toUpperCase()" size="lg" aria-hidden="true" />
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-label text-highlighted">{{ w.name }}</p>
+                  <p class="text-caption text-muted">{{ w.answered }} soalan</p>
+                </div>
+                <span class="tabular text-label text-error">{{ w.accuracyPct }}%</span>
+                <UButton :to="`/practice/${w.code}`" size="md" class="min-h-11" variant="soft"
+                  >Ulang Kaji</UButton
+                >
+              </DsPanel>
             </li>
           </ul>
-        </UCard>
+        </DsPanel>
 
         <section class="flex flex-col gap-3" data-testid="progress-subjects">
           <h2 class="text-subheading text-highlighted">Prestasi Mengikut Subjek</h2>
           <ul class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             <li v-for="s in data.subjects" :key="s.code" class="min-w-0">
-              <UCard class="h-full" data-testid="progress-subject">
+              <DsPanel class="h-full" data-testid="progress-subject">
                 <div class="flex items-center gap-3">
-                  <span
-                    class="grid size-10 shrink-0 place-items-center rounded-chip bg-primary/10 text-label font-bold text-primary-t"
-                    aria-hidden="true"
-                    >{{ s.name.slice(0, 2).toUpperCase() }}</span
-                  >
+                  <UAvatar :text="s.name.slice(0, 2).toUpperCase()" size="lg" aria-hidden="true" />
                   <div class="min-w-0 flex-1">
-                    <p class="truncate text-label font-semibold text-highlighted">{{ s.name }}</p>
+                    <p class="truncate text-label text-highlighted">{{ s.name }}</p>
                     <p class="text-caption text-muted">{{ s.answered }} soalan dijawab</p>
                   </div>
-                  <span class="tabular font-bold" :class="tone(s.accuracyPct)"
+                  <span class="tabular text-label" :class="tone(s.accuracyPct)"
                     >{{ s.accuracyPct }}%</span
                   >
                 </div>
@@ -167,28 +170,35 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
                   <svg
                     v-if="s.trend.length > 0"
                     viewBox="0 0 120 30"
-                    class="h-[30px] w-[120px] text-primary-t"
+                    class="h-8 w-30 text-primary"
                     aria-hidden="true"
                   >
-                    <polyline :points="spark(s.trend)" fill="none" stroke="currentColor" stroke-width="2" />
+                    <polyline
+                      :points="spark(s.trend)"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
                   </svg>
                   <span v-if="s.trend.length >= 2" aria-hidden="true">{{
                     trendUp(s.trend) ? '▲' : '▼'
                   }}</span>
                 </div>
-                <p class="mt-2 text-caption text-muted">{{ s.correct }} betul · {{ s.wrong }} salah</p>
-              </UCard>
+                <p class="mt-2 text-caption text-muted">
+                  {{ s.correct }} betul · {{ s.wrong }} salah
+                </p>
+              </DsPanel>
             </li>
           </ul>
         </section>
       </template>
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error"
       :message="LOAD_ERROR"
       retry-testid="progress-retry"
       @retry="reload"
     />
-  </div>
+  </DsPage>
 </template>

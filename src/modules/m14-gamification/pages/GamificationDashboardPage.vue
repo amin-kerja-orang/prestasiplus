@@ -12,7 +12,7 @@ import S11ChallengesCard from '../components/student-a/S11ChallengesCard.vue'
 import S11Hero from '../components/student-a/S11Hero.vue'
 import S11MasteryCard from '../components/student-a/S11MasteryCard.vue'
 import S11RecentCard from '../components/student-a/S11RecentCard.vue'
-import S11StatCards from '../components/student-a/S11StatCards.vue'
+import WalletTiles from '../components/student-a/WalletTiles.vue'
 import S11TierSystem from '../components/student-a/S11TierSystem.vue'
 
 const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
@@ -40,7 +40,7 @@ const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
 
     <template v-else>
       <S11Hero :wallet="dashboard.data.value.wallet" />
-      <S11StatCards :wallet="dashboard.data.value.wallet" />
+      <WalletTiles :wallet="dashboard.data.value.wallet" />
 
       <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
         <S11ChallengesCard :challenges="dashboard.data.value.challenges.slice(0, 4)" />

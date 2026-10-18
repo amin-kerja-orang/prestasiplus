@@ -21,10 +21,10 @@ import { fetchChapterSubject } from '../api/practice'
 import type { StartSessionRequest, StartSessionResponse } from '../api/types'
 import { chapterListHref, chapterQuizTitle } from '../components/chapter/chapter-lib'
 import { parseQuizQuery } from '../components/quiz/practice-config'
-import LoadError from '../components/quiz/LoadError.vue'
 import QuizLoading from '../components/quiz/QuizLoading.vue'
 import QuizRunner from '../components/quiz/QuizRunner.vue'
 import { PRACTICE_LABELS } from '../components/quiz/quiz-labels'
+import { DsLoadError } from '@/ds'
 
 const route = useRoute()
 const pageMeta = usePageMeta()
@@ -133,11 +133,11 @@ const headerTitle = (s: StartSessionResponse): string => chapterQuizTitle(s.chap
     :text="PRACTICE_LABELS.loadingText"
     data-testid="chapter-quiz-resolving"
   />
-  <LoadError
+  <DsLoadError
     v-else
     message="Maaf, berlaku ralat. Sila cuba semula."
     retry-testid="chapter-quiz-retry"
-    data-testid="chapter-quiz-error"
+    testid="chapter-quiz-error"
     @retry="attempt += 1"
   />
 </template>

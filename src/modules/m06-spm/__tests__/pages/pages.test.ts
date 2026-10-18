@@ -26,6 +26,7 @@ vi.mock('@/modules/m05-practice', () => ({
   fetchSessions: m05.fetchSessions,
   QuizRunner: {},
   subjectGlyph: () => 'i-ph-books-duotone',
+  subjectAccent: () => 'action',
 }))
 
 const outcome = vi.hoisted(() => ({ setRouteOutcome: vi.fn() }))

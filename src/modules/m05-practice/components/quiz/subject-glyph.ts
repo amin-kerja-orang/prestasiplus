@@ -4,6 +4,13 @@
  * are written out in full so the icon bundler finds them.
  */
 
+import type { DsAccent } from '@/ds'
+
+/** Accent of a subject chip by list position, so a row of subjects is varied (design language 2026-10-18). */
+const SUBJECT_ACCENTS: readonly DsAccent[] = ['action', 'win', 'heat', 'friend', 'trial']
+export const subjectAccent = (index: number): DsAccent =>
+  SUBJECT_ACCENTS[index % SUBJECT_ACCENTS.length] ?? 'action'
+
 const GLYPHS: readonly { match: RegExp; glyph: string }[] = [
   { match: /calc|math|sigma|function|percent|ruler/, glyph: 'i-ph-calculator-duotone' },
   { match: /language|translate|globe|speech|message|comment/, glyph: 'i-ph-translate-duotone' },

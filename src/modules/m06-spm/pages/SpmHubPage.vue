@@ -11,12 +11,12 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsHeroCard, DsIconChip, DsPage, DsPanel, DsStatTile, type DsAccent } from '@/ds'
+import { DsHeroCard, DsIconChip, DsPage, DsPanel, DsStatTile, type DsAccent, DsLoadError } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 
 import { fetchSpmOverview } from '../api'
-import LoadError from '../components/LoadError.vue'
 import SkeletonCards from '../components/SkeletonCards.vue'
+import { LOAD_ERROR } from '../lib/copy'
 
 const { data, error, reload } = useApi((signal) => fetchSpmOverview({ signal }))
 
@@ -249,7 +249,7 @@ const mine = computed<Tile[]>(() => {
       </div>
     </template>
 
-    <LoadError v-else-if="error" @retry="reload()" />
+    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else :count="4" />
   </DsPage>
 </template>

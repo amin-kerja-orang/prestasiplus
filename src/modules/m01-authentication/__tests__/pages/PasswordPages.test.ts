@@ -105,7 +105,6 @@ describe('PasswordForgotPage (S3)', () => {
     expect(w.get('[data-testid=forgot-email]').attributes()).toMatchObject({
       type: 'email',
       required: '',
-      autofocus: '',
       autocomplete: 'email',
       placeholder: 'nama@email.com',
     })

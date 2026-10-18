@@ -8,7 +8,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsFeedbackSheet, DsQuizHeader } from '@/ds'
+import { DsFeedbackSheet, DsQuizHeader, DsLoadError } from '@/ds'
 
 import AttemptShell from '../components/AttemptShell.vue'
 import NavigatorPanel, { type NavState } from '../components/NavigatorPanel.vue'
@@ -409,10 +409,7 @@ const feedback = computed(() => {
     </template>
 
     <template #main>
-      <div v-if="loadError" class="py-8">
-        <UAlert color="error" variant="soft" title="Ralat" :description="loadError" />
-        <UButton class="mt-4 min-h-11" @click="load">Cuba lagi</UButton>
-      </div>
+      <DsLoadError v-if="loadError" class="my-8" :message="loadError" @retry="load" />
       <div
         v-else-if="!view || !current"
         class="flex flex-col gap-3 py-4"

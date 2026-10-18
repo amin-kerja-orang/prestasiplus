@@ -6,17 +6,13 @@
  * entered values stay. `maxlength=14` (DV-04; live 20).
  */
 import { onMounted, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import AuthAlert from '../components/auth/AuthAlert.vue'
 
+import { DsFormField } from '@/ds'
+
 import { resetByIc } from '../api'
-import {
-  AUTH_INPUT_CLASS,
-  AUTH_LABEL_CLASS,
-  AUTH_LINK_CLASS,
-  AUTH_SUBMIT_CLASS,
-} from '../components/auth/classes'
 import PasswordCard from '../components/auth/PasswordCard.vue'
 import { errorLines } from '../lib/error-lines'
 
@@ -26,10 +22,10 @@ const email = ref('')
 const icNumber = ref('')
 const loading = ref(false)
 const errors = ref<string[]>([])
-const emailInput = ref<HTMLInputElement | null>(null)
+const emailInput = ref<{ inputRef: HTMLInputElement | null } | null>(null)
 
 // `autofocus` (FR-M01-33): the attribute only acts on a full page load, so focus on mount too.
-onMounted(() => emailInput.value?.focus())
+onMounted(() => emailInput.value?.inputRef?.focus())
 
 async function submit(): Promise<void> {
   loading.value = true
@@ -54,15 +50,11 @@ async function submit(): Promise<void> {
       ><UIcon name="i-ph-identification-card-duotone" class="size-10"
     /></template>
 
-    <form data-testid="ic-form" class="space-y-5" @submit.prevent="submit">
+    <form data-testid="ic-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="ic-alert" />
 
-      <div>
-        <label for="email" :class="AUTH_LABEL_CLASS">
-          <UIcon name="i-ph-envelope-simple-duotone" class="size-4 text-primary" />
-          Alamat Email
-        </label>
-        <input
+      <DsFormField native for="email" label="Alamat Email">
+        <UInput
           id="email"
           ref="emailInput"
           v-model="email"
@@ -72,17 +64,20 @@ async function submit(): Promise<void> {
           autofocus
           autocomplete="email"
           placeholder="nama@email.com"
-          :class="AUTH_INPUT_CLASS"
+          icon="i-ph-envelope-simple-duotone"
+          size="xl"
+          class="w-full"
           data-testid="ic-email"
         />
-      </div>
+      </DsFormField>
 
-      <div>
-        <label for="ic_number" :class="AUTH_LABEL_CLASS">
-          <UIcon name="i-ph-identification-card-duotone" class="size-4 text-primary" />
-          No Kad Pengenalan
-        </label>
-        <input
+      <DsFormField
+        native
+        for="ic_number"
+        label="No Kad Pengenalan"
+        hint="Tanpa tanda sempang (-). Contoh: 000101010000"
+      >
+        <UInput
           id="ic_number"
           v-model="icNumber"
           type="text"
@@ -90,29 +85,34 @@ async function submit(): Promise<void> {
           required
           maxlength="14"
           placeholder="000101010000"
-          :class="AUTH_INPUT_CLASS"
+          icon="i-ph-identification-card-duotone"
+          size="xl"
+          class="w-full"
           data-testid="ic-number"
         />
-        <p class="mt-2 text-caption text-muted">Tanpa tanda sempang (-). Contoh: 000101010000</p>
-      </div>
+      </DsFormField>
 
-      <button type="submit" :disabled="loading" :class="AUTH_SUBMIT_CLASS" data-testid="ic-submit">
-        <template v-if="loading">
-          <UIcon name="i-ph-circle-notch" class="size-5 motion-safe:animate-spin" />
-          Memproses...
-        </template>
-        <template v-else>
-          <UIcon name="i-ph-lock-open-duotone" class="size-5" />
-          Reset Kata Laluan
-        </template>
-      </button>
+      <UButton
+        type="submit"
+        block
+        size="xl"
+        variant="solid"
+        :loading="loading"
+        :disabled="loading"
+        icon="i-ph-lock-open-duotone"
+        data-testid="ic-submit"
+      >
+        {{ loading ? 'Memproses...' : 'Reset Kata Laluan' }}
+      </UButton>
 
-      <p class="text-center">
-        <RouterLink to="/login" :class="[AUTH_LINK_CLASS, 'text-muted hover:text-default']">
-          <UIcon name="i-ph-arrow-left" class="size-4" />
-          Kembali ke Log Masuk
-        </RouterLink>
-      </p>
+      <UButton
+        to="/login"
+        variant="link"
+        color="neutral"
+        icon="i-ph-arrow-left"
+        class="min-h-11 justify-center"
+        >Kembali ke Log Masuk</UButton
+      >
     </form>
   </PasswordCard>
 </template>

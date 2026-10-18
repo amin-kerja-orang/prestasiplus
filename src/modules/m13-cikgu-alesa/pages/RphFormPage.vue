@@ -268,8 +268,11 @@ async function onSubmit(): Promise<void> {
         data-testid="rph-info"
       >
         <template #description>
-          <ul class="mt-1 list-disc space-y-0.5 pl-5">
-            <li v-for="b in C.infoBullets" :key="b">{{ b }}</li>
+          <ul class="mt-1 flex flex-col gap-1">
+            <li v-for="b in C.infoBullets" :key="b" class="flex gap-2">
+              <span aria-hidden="true">•</span>
+              <span class="min-w-0">{{ b }}</span>
+            </li>
           </ul>
         </template>
       </UAlert>

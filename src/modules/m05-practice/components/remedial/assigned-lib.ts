@@ -29,10 +29,9 @@ export const missionDone = (m: MissionItem): boolean => m.status === 'completed'
 export const SPM_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E'] as const
 
 /** S15 progress bar colour (legend: green ≥ 70, amber 50–69, red < 50). */
-export const BAND_CLASS: Record<'green' | 'amber' | 'red', string> = {
-  green: 'bg-green-500',
-  amber: 'bg-amber-500',
-  red: 'bg-red-500',
+export function bandColor(band: 'green' | 'amber' | 'red'): 'success' | 'warning' | 'error' {
+  if (band === 'green') return 'success'
+  return band === 'amber' ? 'warning' : 'error'
 }
 
 /** S15 status line: "Belum mula" or "{answered} soalan · {accuracy}%" (PROPOSED COPY, BR-27). */

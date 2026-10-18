@@ -9,11 +9,19 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsStatTile } from '@/ds'
+import {
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsPillNav,
+  DsStatRow,
+  type PillItem,
+  type StatItem,
+} from '@/ds'
 
 import { fetchHistory } from '../api/practice'
 import type { HistoryItem } from '../api/types'
-import LoadError from '../components/quiz/LoadError.vue'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const PILLS = [
@@ -22,6 +30,13 @@ const PILLS = [
   { value: 'month', label: 'Bulan Ini' },
   { value: 'year', label: 'Tahun Ini' },
 ] as const
+
+const PILL_ITEMS: PillItem<string>[] = PILLS.map((p) => ({
+  key: p.value,
+  label: p.label,
+  testid: p.value || 'all',
+  to: p.value ? { path: '/practice/history', query: { period: p.value } } : '/practice/history',
+}))
 
 const route = useRoute()
 const router = useRouter()
@@ -57,44 +72,36 @@ function clock(seconds: number): string {
 function grade(pct: number): string {
   return pct >= 80 ? '🏆 Cemerlang' : pct >= 60 ? '👍 Baik' : pct >= 36 ? '📈 Teruskan' : '💪 Cuba Lagi'
 }
+const totals = computed<StatItem[]>(() => {
+  const t = meta.value?.totals
+  return [
+    { key: 'sessions', label: 'Jumlah Sesi', value: t?.sessions ?? 0, icon: 'sparkle', accent: 'action' },
+    { key: 'answered', label: 'Soalan Dijawab', value: t?.answered ?? 0, icon: 'i-ph-target', accent: 'win' },
+    { key: 'accuracy', label: 'Purata Ketepatan', value: `${t?.avgAccuracyPct ?? 0}%`, icon: 'i-ph-chart-bar', accent: 'heat' },
+    { key: 'coins', label: 'Syiling Dikumpul', value: t?.coins ?? 0, icon: 'coins', accent: 'friend' },
+  ]
+})
 const itemKey = (i: HistoryItem): string => i.id
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="history-page">
-    <div class="flex flex-col gap-1">
-      <h1 class="text-title text-highlighted">Sejarah Latihan</h1>
-      <p class="max-w-prose text-body text-muted">Rekod latihan dan prestasi anda</p>
-    </div>
-
+  <DsPage
+    title="Sejarah Latihan"
+    subtitle="Rekod latihan dan prestasi anda"
+    data-testid="history-page"
+  >
     <template v-if="data && meta">
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="history-totals">
-        <DsStatTile :value="meta.totals.sessions" unit="Jumlah Sesi" icon="i-ph-sparkle" />
-        <DsStatTile :value="meta.totals.answered" unit="Soalan Dijawab" icon="i-ph-target" />
-        <DsStatTile
-          :value="`${meta.totals.avgAccuracyPct}%`"
-          unit="Purata Ketepatan"
-          icon="i-ph-chart-bar"
-        />
-        <DsStatTile :value="meta.totals.coins" unit="Syiling Dikumpul" icon="i-ph-coins" />
-      </div>
+      <DsStatRow :items="totals" :cols="4" prefix="history-total" data-testid="history-totals" />
 
-      <nav class="flex flex-wrap gap-2" aria-label="Tempoh" data-testid="history-pills">
-        <UButton
-          v-for="p in PILLS"
-          :key="p.label"
-          :to="p.value ? { path: '/practice/history', query: { period: p.value } } : '/practice/history'"
-          size="lg"
-          class="min-h-11"
-          :color="period === p.value ? 'primary' : 'neutral'"
-          :variant="period === p.value ? 'solid' : 'soft'"
-          :data-active="period === p.value ? 'true' : 'false'"
-          data-testid="history-pill"
-          >{{ p.label }}</UButton
-        >
-      </nav>
+      <DsPillNav
+        :items="PILL_ITEMS"
+        :active="period"
+        label="Tempoh"
+        testid-prefix="history-pill"
+        data-testid="history-pills"
+      />
 
-      <UCard v-if="items.length === 0" data-testid="history-empty">
+      <DsPanel v-if="items.length === 0" data-testid="history-empty">
         <DsEmptyState
           title="Belum Ada Rekod Latihan"
           description="Anda belum melengkapkan sebarang latihan lagi. Mulakan latihan pertama anda sekarang dan kumpul syiling! 🚀"
@@ -104,15 +111,15 @@ const itemKey = (i: HistoryItem): string => i.id
             <UButton to="/practice" size="lg" class="min-h-11">Mula Latihan</UButton>
           </template>
         </DsEmptyState>
-      </UCard>
+      </DsPanel>
 
       <ul v-else class="flex flex-col gap-3" data-testid="history-list">
         <li v-for="s in items" :key="itemKey(s)" class="min-w-0">
-          <UCard data-testid="history-session">
+          <DsPanel data-testid="history-session">
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <UBadge color="neutral" variant="soft">{{ s.badge.label }}</UBadge>
+              <UBadge color="neutral" variant="subtle">{{ s.badge.label }}</UBadge>
               <span class="text-caption text-muted">{{ when(s.completedAt) }}</span>
-              <span class="tabular ms-auto font-display text-heading text-highlighted"
+              <span class="tabular ms-auto text-heading text-highlighted"
                 >{{ s.correctCount }} / {{ s.questionCount }}</span
               >
             </div>
@@ -120,18 +127,22 @@ const itemKey = (i: HistoryItem): string => i.id
               <span>{{ clock(s.timeSpent) }}</span>
               <span>{{ s.correctCount }} betul</span>
               <span>{{ s.wrongCount }} salah</span>
-              <span class="ms-auto font-semibold text-highlighted">{{ grade(s.accuracyPct) }}</span>
+              <span class="ms-auto text-label text-highlighted">{{ grade(s.accuracyPct) }}</span>
             </div>
             <UProgress class="mt-2" :model-value="s.accuracyPct" :max="100" />
             <div class="mt-2 flex flex-wrap items-center gap-2">
-              <UBadge color="primary" variant="soft">Ketepatan: {{ s.accuracyPct }}%</UBadge>
-              <UBadge color="warning" variant="soft">🪙 {{ s.coinsEarned }} SYILING</UBadge>
+              <UBadge color="primary" variant="subtle">Ketepatan: {{ s.accuracyPct }}%</UBadge>
+              <UBadge color="warning" variant="subtle">🪙 {{ s.coinsEarned }} SYILING</UBadge>
             </div>
-          </UCard>
+          </DsPanel>
         </li>
       </ul>
 
-      <div v-if="meta.totalItems > meta.pageSize" class="flex justify-center" data-testid="history-pager">
+      <div
+        v-if="meta.totalItems > meta.pageSize"
+        class="flex justify-center"
+        data-testid="history-pager"
+      >
         <UPagination
           :page="meta.page"
           :total="meta.totalItems"
@@ -141,11 +152,11 @@ const itemKey = (i: HistoryItem): string => i.id
       </div>
     </template>
 
-    <LoadError
+    <DsLoadError
       v-else-if="error"
       :message="LOAD_ERROR"
       retry-testid="history-retry"
       @retry="reload"
     />
-  </div>
+  </DsPage>
 </template>

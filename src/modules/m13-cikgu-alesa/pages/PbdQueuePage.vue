@@ -10,13 +10,12 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsDataTable, DsNativeSelect, DsPage, DsPanel, type CardField } from '@/ds'
+import { DsDataTable, DsNativeSelect, DsPage, DsPanel, type CardField, DsLoadError } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { bulkApprovePbd, downloadPbdCsv, fetchCikguClasses, fetchPbdQueue, rollupPbd } from '../api'
 import { PBD_COPY as C } from '../components/teacher/copy'
 import { errorLines, pageOf } from '../components/teacher/lib'
-import PageState from '../components/teacher/PageState.vue'
 
 interface Row extends Record<string, unknown> {
   id: number
@@ -185,13 +184,23 @@ async function onExport(event: MouseEvent): Promise<void> {
       role="alert"
     />
 
-    <PageState
-      :loaded="data !== null"
-      :error="error !== null"
+    <DsLoadError
+      v-if="error !== null"
       :message="C.loadFailed"
       :retry-label="C.retry"
+      testid="page-error"
+      retry-testid="page-retry"
       @retry="reload"
+    />
+    <div
+      v-else-if="!(data !== null)"
+      class="flex flex-col gap-3"
+      aria-busy="true"
+      data-testid="page-loading"
     >
+      <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
+    </div>
+    <template v-else>
       <form v-if="data" id="bulk-form" class="flex min-w-0 flex-col gap-4" @submit.prevent="onBulk">
         <DsPanel class="flex flex-wrap items-center justify-between gap-3">
           <UCheckbox
@@ -241,6 +250,6 @@ async function onExport(event: MouseEvent): Promise<void> {
           </template>
         </DsDataTable>
       </form>
-    </PageState>
+    </template>
   </DsPage>
 </template>

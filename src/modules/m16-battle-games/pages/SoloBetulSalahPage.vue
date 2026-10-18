@@ -9,12 +9,12 @@ import { computed, ref, watch } from 'vue'
 import CountdownView from '../components/solo/CountdownView.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
-import LoadState from '../components/solo/LoadState.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
-import StatBar from '../components/solo/StatBar.vue'
+import GameHud from '../components/solo/GameHud.vue'
 import { betulSalahGain, betulSalahTitle, ratio } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
+import { DsLoadError } from '@/ds'
 
 const GAME_SECONDS = 45
 const FEEDBACK_MS = 700
@@ -130,7 +130,11 @@ watch(darjah, () => void start(), { immediate: true })
   <div data-testid="solo-betul-salah">
     <DarjahPicker v-if="darjah === null" title="Betul atau Salah" art="trophy" />
     <GamePanel>
-      <LoadState :loading="loading" :error="error" />
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+        <USkeleton class="h-16 w-full" />
+        <USkeleton class="h-16 w-full" />
+      </div>
+      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
       <CountdownView v-if="phase === 'countdown'" title="✅❌ BETUL ATAU SALAH" :count="count" />
 
@@ -145,7 +149,7 @@ watch(darjah, () => void start(), { immediate: true })
             >🔥 {{ streak }} KOMBO</UBadge
           >
         </div>
-        <StatBar :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" />
+        <GameHud :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" />
         <p class="text-center text-caption text-muted">Kenyataan {{ index + 1 }}</p>
         <UCard class="relative text-center" :data-feedback="feedback" data-testid="solo-card">
           <p class="text-subheading break-words text-highlighted">

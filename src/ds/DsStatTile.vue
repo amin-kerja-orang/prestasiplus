@@ -49,6 +49,9 @@ const props = withDefaults(
     delta?: StatDelta
     /** Skeleton in place of the content. */
     loading?: boolean
+    /** Test ids of the number and the `sub` line (modules whose tests address them). */
+    valueTestid?: string
+    subTestid?: string
   }>(),
   {
     sub: undefined,
@@ -62,6 +65,8 @@ const props = withDefaults(
     to: undefined,
     delta: undefined,
     loading: false,
+    valueTestid: undefined,
+    subTestid: undefined,
   },
 )
 
@@ -127,6 +132,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
       <span
         class="tabular font-display font-extrabold"
         :class="[valueClass, roomy ? 'text-title' : 'text-heading']"
+        :data-testid="valueTestid"
         >{{ value }}</span
       >
       <span
@@ -134,7 +140,13 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
         :class="roomy ? 'text-body font-medium' : '-mt-1 text-caption font-semibold'"
         >{{ unit }}</span
       >
-      <span v-if="sub" class="text-caption text-muted" data-ds="stat-tile-sub">{{ sub }}</span>
+      <span
+        v-if="sub"
+        class="text-caption text-muted"
+        data-ds="stat-tile-sub"
+        :data-testid="subTestid"
+        >{{ sub }}</span
+      >
       <span
         v-if="delta"
         class="tabular inline-flex items-center gap-1 text-caption font-semibold"
@@ -145,6 +157,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
         <span class="sr-only">{{ deltaWord[delta.dir] }}</span>
         {{ delta.value }}
       </span>
+      <slot />
     </template>
   </component>
 </template>

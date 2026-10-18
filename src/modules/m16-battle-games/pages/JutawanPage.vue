@@ -12,8 +12,8 @@ import type { JutawanPage } from '../api'
 import JutawanSubjectList from '../components/jutawan/JutawanSubjectList.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
-import LoadState from '../components/solo/LoadState.vue'
 import { jutawanHeading, parseDarjah } from '../components/solo/solo-lib'
+import { DsLoadError } from '@/ds'
 
 const route = useRoute()
 const darjah = computed(() => parseDarjah(route.query.darjah))
@@ -54,7 +54,11 @@ watch(darjah, () => void load(), { immediate: true })
         </p>
       </div>
 
-      <LoadState :loading="loading" :error="error" />
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+        <USkeleton class="h-16 w-full" />
+        <USkeleton class="h-16 w-full" />
+      </div>
+      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
       <template v-if="page">
         <div class="grid grid-cols-3 gap-3 text-center" data-testid="jutawan-stats">

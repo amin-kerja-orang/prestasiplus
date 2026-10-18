@@ -13,12 +13,12 @@
 import { computed } from 'vue'
 
 import { useApi, useSession } from '@/composables'
-import { DsArt3D, DsEmptyState, DsPage } from '@/ds'
+import { DsArt3D, DsEmptyState, DsPage, DsLoadError } from '@/ds'
 
 import { fetchTournaments } from '../api'
-import PageLoadError from '../components/competition/PageLoadError.vue'
 import { LIST_COPY as COPY } from '../components/tournament/copy'
 import TournamentCard from '../components/tournament/TournamentCard.vue'
+import { LOAD_COPY } from '../components/competition/copy'
 
 const { role } = useSession()
 const isAdmin = computed(() => role.value === 'admin')
@@ -54,7 +54,7 @@ const view = useApi((signal) => fetchTournaments({ signal }))
       {{ COPY.create }}
     </UButton>
 
-    <PageLoadError v-if="view.error.value" @retry="view.reload()" />
+    <DsLoadError v-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
     <div
       v-else-if="!view.data.value"
       class="flex flex-col gap-3"

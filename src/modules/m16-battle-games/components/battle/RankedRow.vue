@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Ranked row with a stats grid (v2 learner look; a local composite in the style of `DsLeaderRow`, which has
+ * Ranked row with a stats grid (v2 learner look; a domain composite in the style of `DsLeaderRow`, which has
  * no room for the extra figures of the Top 10, the student ranking and the school ranking). Rank chip
  * (ranks 1-3 lime), optional initials avatar, title with a muted subtitle, then the default slot with the
  * stats (`<dl>` cells). Wraps under the name below `sm`, so the page never scrolls sideways.
@@ -24,7 +24,7 @@ withDefaults(
 <template>
   <li
     class="flex flex-col gap-3 rounded-card bg-default p-3 learner:shadow-lift sm:flex-row sm:items-center"
-    data-ds="stat-row"
+    data-ds="ranked-row"
   >
     <div class="flex min-w-0 flex-1 items-center gap-3">
       <span

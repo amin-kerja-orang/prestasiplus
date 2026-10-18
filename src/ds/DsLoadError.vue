@@ -4,15 +4,20 @@
  * "Cuba Semula" button. One component for the 11 module copies of `LoadError`/`ErrorBox`.
  * `inline` is the compact one-line form for use inside a panel.
  */
+import type { ButtonProps } from '@nuxt/ui'
+import { computed } from 'vue'
+
 import { dsCopy } from './copy'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     message?: string
     title?: string
     retryLabel?: string
     inline?: boolean
     testid?: string
+    /** Test id of the retry button. */
+    retryTestid?: string
   }>(),
   {
     message: dsCopy.loadError,
@@ -20,10 +25,22 @@ withDefaults(
     retryLabel: dsCopy.retry,
     inline: false,
     testid: undefined,
+    retryTestid: undefined,
   },
 )
 
 const emit = defineEmits<{ retry: [] }>()
+
+/** The alert's action: the tonal retry button (test id passed through the button's attrs). */
+const actions = computed<ButtonProps[]>(() => [
+  {
+    label: props.retryLabel,
+    color: 'neutral',
+    variant: 'soft',
+    onClick: () => emit('retry'),
+    ...(props.retryTestid ? { 'data-testid': props.retryTestid } : {}),
+  },
+])
 </script>
 
 <template>
@@ -41,6 +58,7 @@ const emit = defineEmits<{ retry: [] }>()
       color="neutral"
       variant="soft"
       :label="retryLabel"
+      :data-testid="retryTestid"
       @click="emit('retry')"
     />
   </div>
@@ -51,9 +69,7 @@ const emit = defineEmits<{ retry: [] }>()
     icon="i-ph-warning-circle"
     :title="title ?? message"
     :description="title ? message : undefined"
-    :actions="[
-      { label: retryLabel, color: 'neutral', variant: 'soft', onClick: () => emit('retry') },
-    ]"
+    :actions="actions"
     role="alert"
     data-ds="load-error"
     :data-testid="testid"

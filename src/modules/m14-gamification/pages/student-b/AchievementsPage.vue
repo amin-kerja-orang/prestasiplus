@@ -10,12 +10,11 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { useSession } from '@/composables/useSession'
-import { DsArt3D, DsPage } from '@/ds'
+import { DsArt3D, DsPage, DsLoadError } from '@/ds'
 
 import { fetchGamificationAchievements, type AchievementItem } from '../../api'
 import AchievementBadgeCard from '../../components/student-b/AchievementBadgeCard.vue'
 import AchievementShareModal from '../../components/student-b/AchievementShareModal.vue'
-import StudentBLoadState from '../../components/student-b/StudentBLoadState.vue'
 import {
   ACHIEVEMENTS_COPY,
   ACHIEVEMENTS_PATH,
@@ -135,13 +134,17 @@ const progressWidth = computed(() =>
         @close="selected = null"
       />
     </template>
-    <StudentBLoadState
-      v-else
-      :error="error !== null"
+    <DsLoadError
+      v-else-if="error !== null"
       :message="ACHIEVEMENTS_COPY.loadError"
       :retry-label="ACHIEVEMENTS_COPY.retry"
-      test-key="achievements"
+      testid="achievements-error"
+      retry-testid="achievements-retry"
       @retry="reload()"
     />
+    <div v-else class="flex flex-col gap-3" aria-busy="true" data-testid="achievements-loading">
+      <USkeleton class="h-28 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

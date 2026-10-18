@@ -7,7 +7,7 @@
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 
-import { DsPage } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 
 import { getSettings, saveSettings, type Faith, type UserSettings } from '../api'
 import SettingRow from '../components/tetapan/SettingRow.vue'
@@ -138,17 +138,7 @@ onMounted(load)
       <USkeleton class="h-24 w-full" />
     </div>
 
-    <div v-else-if="loadFailed" class="text-center">
-      <UButton
-        type="button"
-        color="neutral"
-        variant="soft"
-        size="lg"
-        data-testid="tetapan-retry"
-        @click="load"
-        >Cuba lagi</UButton
-      >
-    </div>
+    <DsLoadError v-else-if="loadFailed" retry-testid="tetapan-retry" @retry="load" />
 
     <form
       v-else

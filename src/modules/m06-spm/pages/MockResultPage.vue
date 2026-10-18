@@ -13,7 +13,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, usePageMeta } from '@/composables'
-import { DsArt3D, DsPage, DsPanel } from '@/ds'
+import { DsArt3D, DsPage, DsPanel, DsLoadError } from '@/ds'
 
 import { fetchMockResult } from '../api'
 import DutaBlock from '../components/DutaBlock.vue'
@@ -64,16 +64,13 @@ watch(
       <USkeleton class="h-40" />
       <USkeleton v-for="n in 3" :key="n" class="h-20" />
     </div>
-    <div
+    <DsLoadError
       v-else-if="error && !notFound && !notSubmitted"
-      class="flex max-w-xl flex-col gap-3"
-      data-testid="result-error"
-    >
-      <UAlert color="error" variant="soft" icon="i-ph-warning-circle-duotone" :title="LOAD_ERROR" />
-      <UButton size="lg" class="min-h-11 self-start" data-testid="result-retry" @click="reload()"
-        >Cuba Semula</UButton
-      >
-    </div>
+      :message="LOAD_ERROR"
+      testid="result-error"
+      retry-testid="result-retry"
+      @retry="reload()"
+    />
 
     <template v-else-if="data">
       <UCard :data-hero="data.heroClass" data-testid="result-hero">
