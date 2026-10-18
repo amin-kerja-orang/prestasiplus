@@ -52,7 +52,7 @@ afterEach(() => {
 describe('S3 admin', () => {
   it('renders header, tabs on "Hari Ini" and ignores a ?period= query', async () => {
     const w = await mountDaily(false, '/?period=week')
-    expect(get(w, 'cc-title').text()).toBe('AKTIVITI PLATFORM')
+    expect(get(w, 'cc-s3-subtitle').text()).toBe('Aktiviti Platform')
     expect(get(w, 'cc-s3-back').text()).toBe('◀ Command Center')
     expect(get(w, 'cc-s3-back').attributes('href')).toBe('/admin/command-center')
     expect(get(w, 'cc-s3-report').text()).toBe('Laporan Eksekutif')
@@ -250,7 +250,7 @@ describe('S3 Admin Sekolah alias', () => {
   it('titles the page "AKTIVITI SEKOLAH", hides the school list and the report link', async () => {
     api.fetchCcDailyActivity.mockResolvedValue(schoolDaily())
     const w = await mountDaily(true)
-    expect(get(w, 'cc-title').text()).toBe('AKTIVITI SEKOLAH')
+    expect(get(w, 'cc-s3-subtitle').text()).toBe('Aktiviti Sekolah')
     expect(get(w, 'cc-s3-back').attributes('href')).toBe('/admin-sekolah/command-center')
     expect(w.find('[data-testid="cc-s3-report"]').exists()).toBe(false)
     expect(w.find('[data-testid="cc-panel-schools"]').exists()).toBe(false)

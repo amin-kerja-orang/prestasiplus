@@ -84,10 +84,13 @@ describe('useFriend', () => {
   it('offers the picker once on first run only', () => {
     const f = useFriend()
     f.offerFirstRun()
-    expect(f.pickerOpen.value).toBe(true)
-    f.pickerOpen.value = false
-    f.offerFirstRun()
+    expect(f.promptOpen.value).toBe(true)
     expect(f.pickerOpen.value).toBe(false)
+    f.dismissPrompt()
+    expect(f.promptOpen.value).toBe(false)
+    expect(localStorage.getItem(FRIEND_STORAGE_KEY)).toBe('aiman')
+    f.offerFirstRun()
+    expect(f.promptOpen.value).toBe(false)
   })
 
   it('does not offer the picker when a friend was already chosen', () => {
@@ -95,7 +98,7 @@ describe('useFriend', () => {
     resetFriendForTests()
     const f = useFriend()
     f.offerFirstRun()
-    expect(f.pickerOpen.value).toBe(false)
+    expect(f.promptOpen.value).toBe(false)
   })
 })
 
