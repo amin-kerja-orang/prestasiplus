@@ -39,6 +39,7 @@ Never commit `.env.api`, `.env.db`, API keys, dumps or `.migration-out/`. If you
 
 1. Give this PC a short unique name once (e.g. `pc-ali`). There is no fixed lane per PC: the agent picks the next ready card from the whole tracker ([../AGENT-SYNC.md](../AGENT-SYNC.md) section 1).
 2. In the repo root run `git fetch origin && git switch feature/v2-backend && git pull --ff-only`.
+3. Start Claude Code in the repo root (`claude`).
 4. Paste this as the first message (replace the PC name):
 
    ```text
@@ -46,7 +47,6 @@ Never commit `.env.api`, `.env.db`, API keys, dumps or `.migration-out/`. If you
    ```
 
    The full lane prompts (PC-1.md to PC-6.md) are references the agent reads for the lane of the card it takes.
-4. Open the lane file (for example [PC-2.md](PC-2.md)), copy **everything inside the `text` block**, and paste it as the first message. The prompt tells the agent to read the repo docs, read the tracker, pick the next unblocked card of the lane, branch, work contract-first, and report.
 5. Let it finish one or two cards. At the end it prints the report; check that the PR is open (draft or ready) and that the tracker row on the branch is updated.
 6. Start a **fresh** Claude Code session for the next card (keeps the context small and focused).
 
