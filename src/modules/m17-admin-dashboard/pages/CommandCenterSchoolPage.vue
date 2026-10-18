@@ -8,15 +8,13 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDrillTable } from '@/ds'
+import { DsDrillTable, DsLoadError, DsPanel, DsStatRow, type StatItem } from '@/ds'
 
 import { fetchCcSchool } from '../api/command-center'
 import type { CcSchoolTeacher } from '../api/command-center-types'
-import { count, LOAD_ERROR_COPY, pct1 } from '../components/command-center/cc-format'
+import { count, pct1 } from '../components/command-center/cc-format'
 import { ccPaths } from '../components/command-center/cc-paths'
 import CcFrame from '../components/command-center/CcFrame.vue'
-import CcPanel from '../components/command-center/CcPanel.vue'
-import CcStatCard from '../components/command-center/CcStatCard.vue'
 import { useCcPage } from '../components/command-center/use-cc-page'
 
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
@@ -29,7 +27,7 @@ const props = withDefaults(defineProps<{ schoolId: number; basePath?: string }>(
 const router = useRouter()
 const paths = computed(() => ccPaths(props.basePath))
 
-const { data, error, notFound } = useCcPage(
+const { data, error, notFound, reload } = useCcPage(
   (signal) => fetchCcSchool(props.schoolId, { signal }),
   () => props.schoolId,
   (d) => d.school.name,
@@ -39,6 +37,21 @@ const crumbs = computed(() => [
   { label: 'Command Center', to: paths.value.overview },
   { label: data.value?.school.name ?? '' },
 ])
+const cards = computed<StatItem[]>(() => {
+  const c = data.value?.cards
+  if (!c) return []
+  return [
+    { key: 'students', label: 'Jumlah Pelajar', value: count(c.students), icon: 'i-ph-student' },
+    { key: 'active', label: 'Pelajar Aktif', value: count(c.active), icon: 'i-ph-users-three' },
+    {
+      key: 'answers',
+      label: 'Jumlah Jawapan',
+      value: count(c.answers),
+      icon: 'i-ph-clipboard-text',
+    },
+    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target' },
+  ]
+})
 const columns: TableColumn<Row>[] = [
   { id: 'no', header: '#' },
   { id: 'name', header: 'Nama Guru' },
@@ -57,10 +70,10 @@ function open(userId: number) {
   <CcFrame
     v-if="!notFound"
     :back-to="paths.overview"
-    back-label="← Kembali ke Overview"
+    back-label="Kembali ke Overview"
     :crumbs="data ? crumbs : [{ label: 'Command Center', to: paths.overview }]"
   >
-    <p v-if="error" class="text-body text-error" data-testid="cc-error">{{ LOAD_ERROR_COPY }}</p>
+    <DsLoadError v-if="error" testid="cc-error" @retry="reload" />
     <p
       v-else-if="!data"
       class="flex items-center gap-2 text-body text-muted"
@@ -69,26 +82,9 @@ function open(userId: number) {
       <UProgress class="w-16" aria-hidden="true" />Memuatkan...
     </p>
     <template v-else>
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="cc-school-cards">
-        <CcStatCard
-          label="Jumlah Pelajar"
-          :value="count(data.cards.students)"
-          icon="i-ph-student"
-        />
-        <CcStatCard
-          label="Pelajar Aktif"
-          :value="count(data.cards.active)"
-          icon="i-ph-users-three"
-        />
-        <CcStatCard
-          label="Jumlah Jawapan"
-          :value="count(data.cards.answers)"
-          icon="i-ph-clipboard-text"
-        />
-        <CcStatCard label="Ketepatan" :value="pct1(data.cards.accuracy)" icon="i-ph-target" />
-      </div>
+      <DsStatRow :items="cards" prefix="cc-stat" :cols="4" roomy data-testid="cc-school-cards" />
 
-      <CcPanel icon="i-ph-chalkboard-teacher" :title="`Senarai Guru (${data.teachers.length})`">
+      <DsPanel icon="i-ph-chalkboard-teacher" :title="`Senarai Guru (${data.teachers.length})`">
         <div data-testid="cc-table-scroller">
           <DsDrillTable
             :data="data.teachers"
@@ -124,7 +120,7 @@ function open(userId: number) {
             >
           </DsDrillTable>
         </div>
-      </CcPanel>
+      </DsPanel>
     </template>
   </CcFrame>
 </template>

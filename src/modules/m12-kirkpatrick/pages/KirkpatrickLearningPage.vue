@@ -6,12 +6,11 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 
 import { fetchKirkpatrickLearning } from '../api'
 import {
   KIRKPATRICK_ADMIN_BASE,
-  KirkpatrickLoadState,
   kirkpatrickPaths,
   KirkpatrickTabs,
   queryString,
@@ -30,7 +29,7 @@ const route = useRoute()
 const paths = computed(() => kirkpatrickPaths(props.basePath))
 const schoolId = computed(() => queryString(route.query.school_id))
 
-const { data, error, loading } = useKirkpatrickPage(
+const { data, error, loading, reload } = useKirkpatrickPage(
   (signal) =>
     fetchKirkpatrickLearning(
       { schoolId: /^\d+$/.test(schoolId.value) ? Number(schoolId.value) : null },
@@ -47,7 +46,15 @@ const { data, error, loading } = useKirkpatrickPage(
   >
     <KirkpatrickTabs :base-path="basePath" current="learning" />
 
-    <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
+    <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
+    <p
+      v-else-if="data === null && loading"
+      class="flex items-center gap-2 text-label text-muted"
+      data-testid="kirk-loading"
+      role="status"
+    >
+      <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
+    </p>
 
     <template v-if="data">
       <LearningKpis :kpi="data.kpi" />

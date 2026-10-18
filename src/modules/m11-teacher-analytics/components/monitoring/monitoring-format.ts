@@ -68,6 +68,3 @@ export const TOPIC_COLOR: Record<TopicBadge, UiColor> = {
 
 export const STATUS_LABEL = { aktif: 'Aktif', login: 'Login sahaja', never: 'Belum login' } as const
 export const STATUS_COLOR = { aktif: 'success', login: 'warning', never: 'neutral' } as const
-
-/** Shared copy: a failed fetch (no M11-specific copy on live, SRS 8.3). */
-export const LOAD_ERROR_COPY = 'Gagal memuatkan data. Sila cuba lagi.'

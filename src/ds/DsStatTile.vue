@@ -49,6 +49,8 @@ const props = withDefaults(
     delta?: StatDelta
     /** Skeleton in place of the content. */
     loading?: boolean
+    /** The tile is a button (a drill-down that is not a route); the caller listens to `click`. */
+    clickable?: boolean
   }>(),
   {
     sub: undefined,
@@ -62,6 +64,7 @@ const props = withDefaults(
     to: undefined,
     delta: undefined,
     loading: false,
+    clickable: false,
   },
 )
 
@@ -93,11 +96,12 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     </div>
   </div>
   <component
-    :is="to ? RouterLink : 'div'"
+    :is="to ? RouterLink : clickable ? 'button' : 'div'"
     v-else
-    v-bind="to ? { to } : {}"
+    v-bind="to ? { to } : clickable ? { type: 'button' } : {}"
     class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift"
     :class="[
+      clickable ? 'cursor-pointer text-start' : '',
       roomy ? 'gap-3 p-6' : 'gap-2 px-2.5 pt-3.5 pb-3',
       riseOff ? 'staff:animate-none' : 'staff:animate-ds-rise-quick',
     ]"

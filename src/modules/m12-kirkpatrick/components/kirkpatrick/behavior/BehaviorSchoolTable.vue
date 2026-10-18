@@ -4,14 +4,14 @@
  * Pelajar · Aktif · Soalan · Sesi · Purata/Aktif · Skor · Tahap. Staff table (`DsDataTable`: card list below
  * md, inner scroll when wide).
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
+import { DsDataTable, DsPanel } from '@/ds'
+
 import type { BandKey, BehaviorSchoolRow } from '../../../api/types'
-import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { BAND, count, mean, plain } from '../common/kirkpatrick-format'
-import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ rows: BehaviorSchoolRow[]; schoolPath: (id: number) => string }>()
 
@@ -72,15 +72,18 @@ const cardFields = [
   { key: 'score', label: 'Skor' },
   { key: 'tahapText', label: 'Tahap' },
 ]
+
+/** Paged at 20 rows. */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(20)
 </script>
 
 <template>
-  <KirkpatrickTableSection
-    title="Engagement Mengikut Sekolah"
-    icon="i-ph-buildings"
-    data-testid="beh-schools"
-  >
-    <KirkpatrickTable
+  <DsPanel title="Engagement Mengikut Sekolah" icon="i-ph-buildings" data-testid="beh-schools">
+    <DsDataTable
+      v-model:page-size="pageSize"
+      variant="bare"
+      :page-size-options="PAGE_SIZES"
       :data="data"
       :columns="columns"
       caption="Engagement mengikut sekolah"
@@ -132,6 +135,6 @@ const cardFields = [
           data-testid="cell-tahap"
         />
       </template>
-    </KirkpatrickTable>
-  </KirkpatrickTableSection>
+    </DsDataTable>
+  </DsPanel>
 </template>

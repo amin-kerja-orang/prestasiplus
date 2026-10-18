@@ -5,18 +5,23 @@
  * box only when its count is > 0). The route prefix is a prop.
  */
 import type { TableColumn } from '@nuxt/ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsIconChip, DsPage, DsPagedTable } from '@/ds'
+import {
+  DsBreadcrumb,
+  DsDataTable,
+  DsIconChip,
+  DsLoadError,
+  DsPage,
+  DsStatRow,
+  type StatItem,
+} from '@/ds'
 
 import { fetchTeacherDetail } from '../api'
 import type { StudentStatus, TeacherDetail } from '../api/types'
-import MonitoringCrumbs from '../components/monitoring/MonitoringCrumbs.vue'
-import MonitoringStatCard from '../components/monitoring/MonitoringStatCard.vue'
 import {
   ACCURACY_TEXT,
-  LOAD_ERROR_COPY,
   STATUS_COLOR,
   STATUS_LABEL,
   accuracyBand,
@@ -24,7 +29,11 @@ import {
   dmyHm,
   pct,
 } from '../components/monitoring/monitoring-format'
-import { MONITORING_BASE, monitoringPaths } from '../components/monitoring/monitoring-paths'
+import {
+  MONITORING_BASE,
+  monitoringCrumbs,
+  monitoringPaths,
+} from '../components/monitoring/monitoring-paths'
 import { useMonitoringPage } from '../components/monitoring/use-monitoring-page'
 
 const props = withDefaults(defineProps<{ schoolId: number; userId: number; basePath?: string }>(), {
@@ -34,16 +43,52 @@ const paths = computed(() => monitoringPaths(props.basePath))
 const statusColor = (s: StudentStatus) => STATUS_COLOR[s]
 const statusLabel = (s: StudentStatus) => STATUS_LABEL[s]
 
-const { data, error, blocked } = useMonitoringPage(
+const { data, error, blocked, reload } = useMonitoringPage(
   (signal) => fetchTeacherDetail(props.schoolId, props.userId, { signal }),
   [() => props.schoolId, () => props.userId],
   (d) => `${d.teacher.name} - Detail Guru`,
 )
 
+const cards = computed<StatItem[]>(() => {
+  const c = data.value?.cards
+  if (!c) return []
+  return [
+    {
+      key: 'students',
+      label: 'Pelajar T4/T5',
+      value: count(c.students),
+      icon: 'i-ph-graduation-cap',
+    },
+    {
+      key: 'engaged',
+      label: 'Pelajar Aktif',
+      value: count(c.engaged),
+      icon: 'i-ph-check-circle',
+      valueClass: 'text-success',
+    },
+    {
+      key: 'pct',
+      label: '% Aktif',
+      value: pct(c.pct),
+      icon: 'i-ph-percent',
+      valueClass: 'text-primary',
+    },
+    {
+      key: 'attention',
+      label: 'Perlu Perhatian',
+      value: count(c.needAttention),
+      icon: 'i-ph-warning',
+    },
+  ]
+})
+
 type PupilRow = TeacherDetail['students'][number] & { rank: number } & Record<string, unknown>
 const pupils = computed<PupilRow[]>(() =>
   (data.value?.students ?? []).map((s, i) => ({ ...s, rank: i + 1 })),
 )
+/** Paged at 20 rows (FN-M11-4.3.x). */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(20)
 const columns: TableColumn<PupilRow>[] = [
   { id: 'no', header: '#', accessorKey: 'rank' },
   { id: 'name', header: 'Pelajar', accessorKey: 'name' },
@@ -57,21 +102,14 @@ const columns: TableColumn<PupilRow>[] = [
 <template>
   <DsPage data-testid="monitoring-teacher-page">
     <template v-if="!blocked">
-      <MonitoringCrumbs
-        :paths="paths"
-        :school="data?.school.name ?? ''"
-        :school-id="schoolId"
-        :person="data?.teacher.name ?? ''"
+      <DsBreadcrumb
+        :items="
+          monitoringCrumbs(paths, data?.school.name ?? '', schoolId, data?.teacher.name ?? '')
+        "
+        data-testid="mon-crumbs"
       />
 
-      <UAlert
-        v-if="error"
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning"
-        :description="LOAD_ERROR_COPY"
-        data-testid="mon-error"
-      />
+      <DsLoadError v-if="error" testid="mon-error" @retry="reload" />
       <p
         v-else-if="!data"
         class="flex items-center gap-2 text-body text-muted"
@@ -105,34 +143,13 @@ const columns: TableColumn<PupilRow>[] = [
           </div>
         </UCard>
 
-        <section class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-testid="mon-teacher-cards">
-          <MonitoringStatCard
-            label="Pelajar T4/T5"
-            :value="count(data.cards.students)"
-            icon="i-ph-graduation-cap"
-            accent="friend"
-          />
-          <MonitoringStatCard
-            label="Pelajar Aktif"
-            :value="count(data.cards.engaged)"
-            icon="i-ph-check-circle"
-            accent="win"
-            value-class="text-success"
-          />
-          <MonitoringStatCard
-            label="% Aktif"
-            :value="pct(data.cards.pct)"
-            icon="i-ph-percent"
-            accent="action"
-            value-class="text-primary"
-          />
-          <MonitoringStatCard
-            label="Perlu Perhatian"
-            :value="count(data.cards.needAttention)"
-            icon="i-ph-warning"
-            accent="heat"
-          />
-        </section>
+        <DsStatRow
+          :items="cards"
+          prefix="mon-stat"
+          :cols="4"
+          roomy
+          data-testid="mon-teacher-cards"
+        />
 
         <UCard data-testid="mon-teacher-students">
           <div class="flex flex-col gap-6">
@@ -140,7 +157,14 @@ const columns: TableColumn<PupilRow>[] = [
               <UIcon name="i-ph-graduation-cap" class="size-6 text-primary" />Prestasi Pelajar
             </h2>
             <div data-testid="mon-teacher-students-scroller">
-              <DsPagedTable :data="pupils" :columns="columns" caption="Prestasi pelajar">
+              <DsDataTable
+                v-model:page-size="pageSize"
+                variant="bare"
+                :page-size-options="PAGE_SIZES"
+                :data="pupils"
+                :columns="columns"
+                caption="Prestasi pelajar"
+              >
                 <template #no-cell="{ row }">
                   <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
                 </template>
@@ -225,7 +249,7 @@ const columns: TableColumn<PupilRow>[] = [
                     </dl>
                   </div>
                 </template>
-              </DsPagedTable>
+              </DsDataTable>
             </div>
           </div>
         </UCard>

@@ -12,8 +12,6 @@ export const ITEM_COPY = {
   legendNote: 'Diskriminasi: >0.3 = baik, <0 = semak semula',
   emptyTitle: 'Tiada data analisis item untuk paparan ini.',
   emptyBody: 'Pelajar perlu membuat latihan dahulu.',
-  // PROPOSED COPY: no M11 error copy in the SRS; same string as the other modules' local GENERIC_ERROR.
-  loadFailed: 'Ralat berlaku. Sila cuba lagi.',
   colQuestion: 'Soalan',
   colSubject: 'Subjek',
   colAttempts: 'Percubaan',

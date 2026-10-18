@@ -1,37 +1,32 @@
 <script setup lang="ts">
-/** The four KPI cards of S7 (FN-M12-8.1.1; FR-M12-70; BR-M12-26): 2 x 2 below `md`, 4 from `md`. */
+/** The four KPI cards of S7 (FN-M12-8.1.1; FR-M12-70; BR-M12-26) in a `DsStatRow`. */
+import { computed } from 'vue'
+
+import { DsStatRow, type StatItem } from '@/ds'
+
 import type { InterventionList } from '../../../api/types'
-import KirkpatrickStatCard from '../common/KirkpatrickStatCard.vue'
 import { plain } from '../common/kirkpatrick-format'
 
-defineProps<{ kpi: InterventionList['kpi'] }>()
+const props = defineProps<{ kpi: InterventionList['kpi'] }>()
+
+const items = computed<StatItem[]>(() => [
+  {
+    key: 'total',
+    label: 'Jumlah Intervensi',
+    value: plain(props.kpi.total),
+    icon: 'i-ph-hand-heart',
+  },
+  {
+    key: 'pending',
+    label: 'Menunggu Semakan',
+    value: plain(props.kpi.pending),
+    icon: 'i-ph-hourglass',
+  },
+  { key: 'up', label: 'Meningkat', value: plain(props.kpi.up), icon: 'i-ph-trend-up' },
+  { key: 'down', label: 'Menurun', value: plain(props.kpi.down), icon: 'i-ph-trend-down' },
+])
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="int-kpis">
-    <KirkpatrickStatCard
-      label="Jumlah Intervensi"
-      icon="i-ph-hand-heart"
-      accent="action"
-      :value="plain(kpi.total)"
-    />
-    <KirkpatrickStatCard
-      label="Menunggu Semakan"
-      icon="i-ph-hourglass"
-      accent="heat"
-      :value="plain(kpi.pending)"
-    />
-    <KirkpatrickStatCard
-      label="Meningkat"
-      icon="i-ph-trend-up"
-      accent="win"
-      :value="plain(kpi.up)"
-    />
-    <KirkpatrickStatCard
-      label="Menurun"
-      icon="i-ph-trend-down"
-      accent="heat"
-      :value="plain(kpi.down)"
-    />
-  </div>
+  <DsStatRow :items="items" prefix="int-kpi" :cols="4" roomy data-testid="int-kpis" />
 </template>

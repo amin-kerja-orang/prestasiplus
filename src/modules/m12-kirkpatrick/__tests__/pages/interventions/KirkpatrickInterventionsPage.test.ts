@@ -7,7 +7,7 @@ import { setRouteOutcome } from '@/app/router/outcome'
 
 import type { InterventionList, InterventionRow } from '../../../api/types'
 import KirkpatrickInterventionsPage from '../../../pages/KirkpatrickInterventionsPage.vue'
-import { all, has, itemLabels, mountPage, pick, rowOf, select, squash, t } from '../fixtures'
+import { all, has, itemLabels, mountPage, pick, rowOf, select, squash, t, tiles } from '../fixtures'
 
 const api = vi.hoisted(() => ({
   fetchKirkpatrickInterventions: vi.fn(),
@@ -64,17 +64,17 @@ const isOpen = (w: VueWrapper) =>
   t(w, 'int-form').attributes('style')?.includes('display: none') !== true
 
 describe('S7 KPIs and empty list (AC-M12-28.1, 28.3)', () => {
-  it('shows four zero KPI cards in a 2-column grid below md and 4 from md', async () => {
+  it('shows four zero KPI cards in a 2-column grid below md, 3 from md and 4 from xl', async () => {
     const w = await open()
-    expect(all(w, 'kirk-stat-label').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.label)).toEqual([
       'Jumlah Intervensi',
       'Menunggu Semakan',
       'Meningkat',
       'Menurun',
     ])
-    expect(all(w, 'kirk-stat-value').map((e) => e.text())).toEqual(['0', '0', '0', '0'])
+    expect(tiles(w).map((x) => x.value)).toEqual(['0', '0', '0', '0'])
     expect(t(w, 'int-kpis').classes()).toEqual(
-      expect.arrayContaining(['grid-cols-2', 'md:grid-cols-4']),
+      expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3', 'xl:grid-cols-4']),
     )
   })
 
@@ -206,7 +206,7 @@ describe('S7 save (AC-M12-29.4, 29.5)', () => {
     })
     await vi.waitFor(() => expect(all(w, 'int-row-student')).toHaveLength(1))
     expect(isOpen(w)).toBe(false)
-    expect(all(w, 'kirk-stat-value').map((e) => e.text())).toEqual(['1', '1', '0', '0'])
+    expect(tiles(w).map((x) => x.value)).toEqual(['1', '1', '0', '0'])
     expect((t(w, 'int-student').element as HTMLInputElement).value).toBe('')
     expect(has(w, 'int-student-error')).toBe(false)
   })
@@ -272,6 +272,6 @@ describe('S7 list (AC-M12-28.2)', () => {
     expect(rows[0]?.text()).toContain('25 Sep 2026')
     expect(rows[0]?.text()).toContain('Tidak Aktif')
     expect(has(w, 'int-empty')).toBe(false)
-    expect(t(w, 'int-list').find('[data-ds="paged-table"]').exists()).toBe(true)
+    expect(t(w, 'int-list').find('[data-ds="data-table"]').exists()).toBe(true)
   })
 })

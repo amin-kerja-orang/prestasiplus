@@ -6,9 +6,9 @@
  * empty body (FR-M11-51). Paged at 20 rows; cards below md.
  */
 import type { TableColumn } from '@nuxt/ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
-import { DsPagedTable } from '@/ds'
+import { DsDataTable } from '@/ds'
 
 import type { SchoolEngagementRow, TahapKey, TeacherEngagementRow } from '../../api/types'
 import { count, pct, TAHAP, type UiColor } from './monitoring-format'
@@ -19,6 +19,10 @@ const props = defineProps<{
   rows: readonly (SchoolEngagementRow | TeacherEngagementRow)[]
   paths: MonitoringPaths
 }>()
+
+/** Paged at 20 rows (FN-M11-3.4.x). */
+const pageSize = ref(20)
+const PAGE_SIZES = [10, 20, 50]
 
 const tahapStyle = (t: TahapKey) => TAHAP[t]
 const isStudent = computed(() => props.kind === 'student')
@@ -76,7 +80,15 @@ const LEGEND: readonly [UiColor, string][] = [
       />
     </div>
 
-    <DsPagedTable :data="data" :columns="columns" :caption="title" empty-label="Tiada data">
+    <DsDataTable
+      v-model:page-size="pageSize"
+      variant="bare"
+      :page-size-options="PAGE_SIZES"
+      :data="data"
+      :columns="columns"
+      :caption="title"
+      empty-title="Tiada data"
+    >
       <template #no-cell="{ row }">
         <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
       </template>
@@ -175,7 +187,7 @@ const LEGEND: readonly [UiColor, string][] = [
           />
         </div>
       </template>
-    </DsPagedTable>
+    </DsDataTable>
 
     <UCard data-testid="mon-legend"
       ><details>

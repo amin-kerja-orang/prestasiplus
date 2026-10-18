@@ -6,7 +6,21 @@ import { ApiError } from '@/api'
 import { useRouteOutcome, setRouteOutcome } from '@/app/router/outcome'
 
 import KirkpatrickBehaviorPage from '../../../pages/KirkpatrickBehaviorPage.vue'
-import { all, flat, has, itemLabels, mountPage, options, pick, rowOf, squash, t } from '../fixtures'
+import {
+  all,
+  captions,
+  flat,
+  has,
+  mountPage,
+  nativeLabels,
+  nativePick,
+  options,
+  resetLink,
+  rowOf,
+  squash,
+  t,
+  tiles,
+} from '../fixtures'
 import { behavior } from './fixtures'
 
 const api = vi.hoisted(() => ({
@@ -44,9 +58,9 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
     const { wrapper: w } = await open()
     expect(has(w, 'kirk-filter-school')).toBe(true)
     expect(has(w, 'kirk-filter-state')).toBe(false)
-    expect(t(w, 'kirk-filter-apply').text()).toBe('Tapis')
-    expect(has(w, 'kirk-filter-reset')).toBe(false)
-    expect(itemLabels(w, 'school_id')).toEqual([
+    expect(t(w, 'kirk-filter').get('button[type="submit"]').text()).toBe('Tapis')
+    expect(resetLink(w).exists()).toBe(false)
+    expect(nativeLabels(w, 'school_id')).toEqual([
       'Semua Sekolah',
       'SMK Demo Satu',
       'SMK Demo Dua',
@@ -55,7 +69,7 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
 
   it('Tapis pushes school_id, Reset appears and the API receives the id', async () => {
     const { wrapper: w, router } = await open()
-    await pick(w, 'school_id', '8080')
+    await nativePick(w, 'school_id', '8080')
     await t(w, 'kirk-filter').trigger('submit')
     await vi.waitFor(() =>
       expect(router.currentRoute.value.fullPath).toBe('/admin/kirkpatrick/behavior?school_id=8080'),
@@ -66,7 +80,12 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
         expect.anything(),
       ),
     )
-    expect(t(w, 'kirk-filter-reset').attributes('href')).toBe('/admin/kirkpatrick/behavior')
+    await vi.waitFor(() => expect(resetLink(w).exists()).toBe(true))
+    expect(resetLink(w).text()).toBe('Reset')
+    await resetLink(w).trigger('click')
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.fullPath).toBe('/admin/kirkpatrick/behavior'),
+    )
   })
 
   it('reads school_id from the URL and ignores a malformed one', async () => {
@@ -90,7 +109,7 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
 describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
   it('shows the six cards of the platform', async () => {
     const { wrapper: w } = await open()
-    expect(all(w, 'kirk-stat-label').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.label)).toEqual([
       'Pelajar T4/T5',
       'Pernah Aktif',
       'Jumlah Sesi',
@@ -98,7 +117,7 @@ describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
       'Ketepatan',
       'Guru Aktif',
     ])
-    expect(all(w, 'kirk-stat-value').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.value)).toEqual([
       '4,158',
       '946',
       '20991',
@@ -106,7 +125,7 @@ describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
       '82.8%',
       '53.1%',
     ])
-    expect(all(w, 'kirk-stat-caption').map((e) => e.text())).toEqual(['277/522'])
+    expect(captions(w)).toEqual(['277/522'])
   })
 
   it('prints a whole-number teacher share without a decimal', async () => {
@@ -125,7 +144,7 @@ describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
       }),
     )
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=8080')
-    expect(all(w, 'kirk-stat-value').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.value)).toEqual([
       '184',
       '53',
       '1002',
@@ -133,13 +152,13 @@ describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
       '75.6%',
       '100%',
     ])
-    expect(all(w, 'kirk-stat-caption')[0]?.text()).toBe('34/34')
+    expect(captions(w)[0]).toBe('34/34')
   })
 
-  it('KPI grid is 2 / 3 / 6 columns', async () => {
+  it('KPI grid is 2 columns, 3 from md', async () => {
     const { wrapper: w } = await open()
     expect(t(w, 'beh-kpis').classes()).toEqual(
-      expect.arrayContaining(['grid-cols-2', 'sm:grid-cols-3', 'lg:grid-cols-6']),
+      expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3']),
     )
   })
 })
@@ -222,7 +241,7 @@ describe('S4 school table (AC-M12-16.1)', () => {
 
   it('scrolls inside its own container (overflow-x-auto wrapper)', async () => {
     const { wrapper: w } = await open()
-    expect(t(w, 'beh-schools').find('[data-ds="paged-table"]').exists()).toBe(true)
+    expect(t(w, 'beh-schools').find('[data-ds="data-table"]').exists()).toBe(true)
   })
 })
 

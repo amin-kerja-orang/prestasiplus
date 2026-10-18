@@ -3,8 +3,9 @@
  * "Pemerhatian & Insight" (FN-M12-6.9.1; FR-M12-59; BR-M12-24; DV-M12-13): three info rows (the GPS sentence is omitted
  * when the scope has no SPM history) and the disclaimer.
  */
+import { DsPanel } from '@/ds'
+
 import type { Results } from '../../../api/types'
-import KirkpatrickPanel from '../common/KirkpatrickPanel.vue'
 import { gps, pct, plain } from '../common/kirkpatrick-format'
 
 defineProps<{ insights: Results['insights'] }>()
@@ -12,7 +13,7 @@ defineProps<{ insights: Results['insights'] }>()
 
 <template>
   <section class="flex min-w-0 flex-col gap-3" data-testid="res-insights">
-    <KirkpatrickPanel title="Pemerhatian & Insight" icon="i-ph-lightbulb">
+    <DsPanel title="Pemerhatian & Insight" icon="i-ph-lightbulb">
       <ul class="flex flex-col gap-2 text-body text-default">
         <li class="flex items-start gap-3 bg-muted p-3" data-testid="insight-row">
           <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0 text-info" />
@@ -41,7 +42,7 @@ defineProps<{ insights: Results['insights'] }>()
           >
         </li>
       </ul>
-    </KirkpatrickPanel>
+    </DsPanel>
     <UAlert
       color="neutral"
       variant="soft"

@@ -5,8 +5,9 @@
  */
 import { RouterLink } from 'vue-router'
 
+import { DsPanel } from '@/ds'
+
 import type { BandCount } from '../../../api/types'
-import KirkpatrickPanel from '../common/KirkpatrickPanel.vue'
 import { BAND, pct, plain } from '../common/kirkpatrick-format'
 import { BAND_CAPTION } from './behavior-format'
 
@@ -14,7 +15,7 @@ defineProps<{ bands: BandCount[]; monitoringPath: string }>()
 </script>
 
 <template>
-  <KirkpatrickPanel title="Taburan Tahap Engagement" icon="i-ph-chart-pie" data-testid="beh-bands">
+  <DsPanel title="Taburan Tahap Engagement" icon="i-ph-chart-pie" data-testid="beh-bands">
     <div class="grid grid-cols-5 gap-1 sm:gap-3">
       <RouterLink
         v-for="b in bands"
@@ -46,5 +47,5 @@ defineProps<{ bands: BandCount[]; monitoringPath: string }>()
         </p>
       </RouterLink>
     </div>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>

@@ -8,14 +8,20 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsPage, DsPagedTable } from '@/ds'
+import {
+  DsBreadcrumb,
+  DsDataTable,
+  DsLoadError,
+  DsPage,
+  DsPillNav,
+  DsStatRow,
+  type PillItem,
+  type StatItem,
+} from '@/ds'
 
 import { fetchSchoolDetail } from '../api'
 import type { SchoolDetailStudent, SchoolDetailTeacher, StudentStatus } from '../api/types'
-import MonitoringCrumbs from '../components/monitoring/MonitoringCrumbs.vue'
-import MonitoringStatCard from '../components/monitoring/MonitoringStatCard.vue'
 import {
-  LOAD_ERROR_COPY,
   STATUS_COLOR,
   STATUS_LABEL,
   TAHAP,
@@ -25,9 +31,12 @@ import {
   pct,
   subscriptionDate,
 } from '../components/monitoring/monitoring-format'
-import { MONITORING_BASE, monitoringPaths } from '../components/monitoring/monitoring-paths'
+import {
+  MONITORING_BASE,
+  monitoringCrumbs,
+  monitoringPaths,
+} from '../components/monitoring/monitoring-paths'
 import { useMonitoringPage } from '../components/monitoring/use-monitoring-page'
-import NativeInput from '../components/native/NativeInput.vue'
 
 const props = withDefaults(defineProps<{ schoolId: number; basePath?: string }>(), {
   basePath: MONITORING_BASE,
@@ -36,7 +45,7 @@ const paths = computed(() => monitoringPaths(props.basePath))
 const statusColor = (s: StudentStatus) => STATUS_COLOR[s]
 const statusLabel = (s: StudentStatus) => STATUS_LABEL[s]
 
-const { data, error, blocked } = useMonitoringPage(
+const { data, error, blocked, reload } = useMonitoringPage(
   (signal) => fetchSchoolDetail(props.schoolId, { signal }),
   () => props.schoolId,
   (d) => `${d.school.name} - Monitoring`,
@@ -80,25 +89,56 @@ const SUBSCRIPTION_COLOR = {
 } as const
 const SUBSCRIPTION_LABEL = { active: 'Active', cancelled: 'Cancelled', expired: 'Expired' } as const
 
-const STUDENT_PILLS: { key: StudentFilter; testid: string; label: () => string }[] = [
-  {
-    key: 'all',
-    testid: 'mon-pill-all',
-    label: () => `Semua (${count(data.value?.students.length ?? 0)})`,
-  },
-  {
-    key: 'active',
-    testid: 'mon-pill-active',
-    label: () => `● Aktif (${count(data.value?.cards.engaged ?? 0)})`,
-  },
-  { key: 'login', testid: 'mon-pill-login', label: () => 'Login sahaja' },
-  { key: 'never', testid: 'mon-pill-never', label: () => 'Belum login' },
+const studentPills = computed<PillItem<StudentFilter>[]>(() => [
+  { key: 'all', label: `Semua (${count(data.value?.students.length ?? 0)})` },
+  { key: 'active', label: `● Aktif (${count(data.value?.cards.engaged ?? 0)})` },
+  { key: 'login', label: 'Login sahaja' },
+  { key: 'never', label: 'Belum login' },
+])
+const TEACHER_PILLS: PillItem<TeacherFilter>[] = [
+  { key: 'all', label: 'Semua' },
+  { key: 'login', label: 'Pernah Login' },
+  { key: 'never', label: 'Belum Login' },
 ]
-const TEACHER_PILLS: { key: TeacherFilter; testid: string; label: string }[] = [
-  { key: 'all', testid: 'mon-tpill-all', label: 'Semua' },
-  { key: 'login', testid: 'mon-tpill-login', label: 'Pernah Login' },
-  { key: 'never', testid: 'mon-tpill-never', label: 'Belum Login' },
-]
+
+const cards = computed<StatItem[]>(() => {
+  const c = data.value?.cards
+  if (!c) return []
+  return [
+    {
+      key: 'students',
+      label: 'Pelajar T4/T5',
+      value: count(c.students),
+      icon: 'i-ph-graduation-cap',
+    },
+    {
+      key: 'engaged',
+      label: 'Pernah Aktif',
+      value: count(c.engaged),
+      icon: 'i-ph-check-circle',
+      valueClass: 'text-success',
+    },
+    {
+      key: 'answers',
+      label: 'Soalan Dijawab',
+      value: count(c.answers),
+      icon: 'i-ph-pencil-simple',
+    },
+    {
+      key: 'teachers',
+      label: 'Guru Berdaftar',
+      value: count(c.teachers),
+      icon: 'i-ph-chalkboard-teacher',
+      valueClass: 'text-primary',
+    },
+    {
+      key: 'teachersLoggedIn',
+      label: 'Guru Pernah Login',
+      value: count(c.teachersLoggedIn),
+      icon: 'i-ph-sign-in',
+    },
+  ]
+})
 
 type StudentRow = SchoolDetailStudent & { rank: number } & Record<string, unknown>
 type TeacherRow = SchoolDetailTeacher & { rank: number } & Record<string, unknown>
@@ -124,6 +164,10 @@ const teacherColumns: TableColumn<TeacherRow>[] = [
   { id: 'lastLogin', header: 'Login Terakhir', accessorKey: 'lastLoginAt' },
   { id: 'createdAt', header: 'Daftar', accessorKey: 'createdAt' },
 ]
+/** Both lists are paged at 20 rows (FN-M11-4.1.x). */
+const PAGE_SIZES = [10, 20, 50]
+const studentPageSize = ref(20)
+const teacherPageSize = ref(20)
 const tab = ref('pelajar')
 const TABS = computed(() => [
   {
@@ -146,16 +190,12 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
 <template>
   <DsPage data-testid="monitoring-school-page">
     <template v-if="!blocked">
-      <MonitoringCrumbs :paths="paths" :school="data?.school.name ?? ''" />
-
-      <UAlert
-        v-if="error"
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning"
-        :description="LOAD_ERROR_COPY"
-        data-testid="mon-error"
+      <DsBreadcrumb
+        :items="monitoringCrumbs(paths, data?.school.name ?? '')"
+        data-testid="mon-crumbs"
       />
+
+      <DsLoadError v-if="error" testid="mon-error" @retry="reload" />
       <p
         v-else-if="!data"
         class="flex items-center gap-2 text-body text-muted"
@@ -203,40 +243,13 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
           </div>
         </UCard>
 
-        <section class="grid grid-cols-2 gap-4 lg:grid-cols-5" data-testid="mon-school-cards">
-          <MonitoringStatCard
-            label="Pelajar T4/T5"
-            :value="count(data.cards.students)"
-            icon="i-ph-graduation-cap"
-            accent="friend"
-          />
-          <MonitoringStatCard
-            label="Pernah Aktif"
-            :value="count(data.cards.engaged)"
-            icon="i-ph-check-circle"
-            accent="win"
-            value-class="text-success"
-          />
-          <MonitoringStatCard
-            label="Soalan Dijawab"
-            :value="count(data.cards.answers)"
-            icon="i-ph-pencil-simple"
-            accent="trial"
-          />
-          <MonitoringStatCard
-            label="Guru Berdaftar"
-            :value="count(data.cards.teachers)"
-            icon="i-ph-chalkboard-teacher"
-            accent="action"
-            value-class="text-primary"
-          />
-          <MonitoringStatCard
-            label="Guru Pernah Login"
-            :value="count(data.cards.teachersLoggedIn)"
-            icon="i-ph-sign-in"
-            accent="heat"
-          />
-        </section>
+        <DsStatRow
+          :items="cards"
+          prefix="mon-stat"
+          :cols="5"
+          roomy
+          data-testid="mon-school-cards"
+        />
 
         <UTabs
           v-model="tab"
@@ -254,23 +267,20 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   <UIcon name="i-ph-graduation-cap" class="size-6 text-primary" />Senarai Pelajar
                   T4/T5
                 </h2>
-                <div class="flex flex-wrap gap-2" data-testid="mon-student-pills">
-                  <UButton
-                    v-for="p in STUDENT_PILLS"
-                    :key="p.key"
-                    type="button"
-                    size="md"
-                    :color="studentFilter === p.key ? 'primary' : 'neutral'"
-                    :variant="studentFilter === p.key ? 'soft' : 'ghost'"
-                    :label="p.label()"
-                    :data-testid="p.testid"
-                    @click="studentFilter = p.key"
-                  />
-                </div>
+                <DsPillNav
+                  :items="studentPills"
+                  :active="studentFilter"
+                  label="Penapis pelajar"
+                  testid-prefix="mon-pill"
+                  data-testid="mon-student-pills"
+                  @select="studentFilter = $event"
+                />
               </div>
 
-              <NativeInput
+              <UInput
                 v-model="search"
+                type="text"
+                icon="i-ph-magnifying-glass"
                 placeholder="Cari nama pelajar..."
                 aria-label="Cari nama pelajar"
                 class="sm:w-80"
@@ -296,11 +306,14 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
               </UAlert>
 
               <div data-testid="mon-student-scroller">
-                <DsPagedTable
+                <DsDataTable
+                  v-model:page-size="studentPageSize"
+                  variant="bare"
+                  :page-size-options="PAGE_SIZES"
                   :data="studentData"
                   :columns="studentColumns"
                   caption="Senarai pelajar"
-                  empty-label="Tiada pelajar"
+                  empty-title="Tiada pelajar"
                 >
                   <template #no-cell="{ row }">
                     <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
@@ -430,7 +443,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                       </dl>
                     </div>
                   </template>
-                </DsPagedTable>
+                </DsDataTable>
               </div>
             </section>
           </template>
@@ -442,23 +455,15 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   <UIcon name="i-ph-chalkboard-teacher" class="size-6 text-primary" />Senarai Guru
                   ({{ count(data.teachers.length) }})
                 </h2>
-                <div
+                <DsPillNav
                   v-if="data.teachers.length > 0"
-                  class="flex flex-wrap gap-2"
+                  :items="TEACHER_PILLS"
+                  :active="teacherFilter"
+                  label="Penapis guru"
+                  testid-prefix="mon-tpill"
                   data-testid="mon-teacher-pills"
-                >
-                  <UButton
-                    v-for="p in TEACHER_PILLS"
-                    :key="p.key"
-                    type="button"
-                    size="md"
-                    :color="teacherFilter === p.key ? 'primary' : 'neutral'"
-                    :variant="teacherFilter === p.key ? 'soft' : 'ghost'"
-                    :label="p.label"
-                    :data-testid="p.testid"
-                    @click="teacherFilter = p.key"
-                  />
-                </div>
+                  @select="teacherFilter = $event"
+                />
               </div>
 
               <p
@@ -469,11 +474,14 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                 Tiada guru berdaftar untuk sekolah ini.
               </p>
               <div v-else data-testid="mon-teacher-scroller">
-                <DsPagedTable
+                <DsDataTable
+                  v-model:page-size="teacherPageSize"
+                  variant="bare"
+                  :page-size-options="PAGE_SIZES"
                   :data="teacherData"
                   :columns="teacherColumns"
                   caption="Senarai guru"
-                  empty-label="Tiada guru"
+                  empty-title="Tiada guru"
                 >
                   <template #no-cell="{ row }">
                     <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
@@ -544,7 +552,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                       </dl>
                     </div>
                   </template>
-                </DsPagedTable>
+                </DsDataTable>
               </div>
             </section>
           </template>

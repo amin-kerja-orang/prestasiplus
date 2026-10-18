@@ -5,15 +5,17 @@
  * staff tokens (`DsPrintSheet`), no chrome, with a print button that is hidden on paper. "Cetak" lets the browser
  * save the sheet as a PDF.
  */
-import { DsPrintSheet } from '@/ds'
+import { DsLoadError, DsPrintSheet } from '@/ds'
 
 import { fetchKirkpatrickChain } from '../api'
 import ChainCards from '../components/kirkpatrick/chain/ChainCards.vue'
 import ChainConclusion from '../components/kirkpatrick/chain/ChainConclusion.vue'
 import ChainCorrelation from '../components/kirkpatrick/chain/ChainCorrelation.vue'
-import { KirkpatrickLoadState, useKirkpatrickPage } from '../components/kirkpatrick/common'
+import { useKirkpatrickPage } from '../components/kirkpatrick/common'
 
-const { data, error, loading } = useKirkpatrickPage((signal) => fetchKirkpatrickChain({ signal }))
+const { data, error, loading, reload } = useKirkpatrickPage((signal) =>
+  fetchKirkpatrickChain({ signal }),
+)
 </script>
 
 <template>
@@ -26,7 +28,15 @@ const { data, error, loading } = useKirkpatrickPage((signal) => fetchKirkpatrick
             Bukti keberkesanan Prestasi Plus berdasarkan 4 Tahap Kirkpatrick
           </p>
         </header>
-        <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
+        <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
+        <p
+          v-else-if="data === null && loading"
+          class="flex items-center gap-2 text-label text-muted"
+          data-testid="kirk-loading"
+          role="status"
+        >
+          <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
+        </p>
         <template v-if="data">
           <ChainCards :chain="data" />
           <ChainCorrelation :correlation="data.correlation" :strength="data.t4.strength" />

@@ -9,7 +9,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsDrillTable } from '@/ds'
+import { DsDialog, DsDrillTable, DsLoadError, DsStatRow } from '@/ds'
 import { formatMyt } from '@/lib/time'
 
 import {
@@ -18,9 +18,17 @@ import {
   fetchCcStudentWeek,
 } from '../../api/command-center'
 import type { CcSessionRow } from '../../api/command-center-types'
-import { accuracyTone, count, pct1, pct2, TONE_TEXT, type CcSessionsSource } from './cc-format'
-import CcModal from './CcModal.vue'
-import CcModalStats from './CcModalStats.vue'
+import {
+  accuracyTone,
+  count,
+  MODAL_ERROR_COPY,
+  pct1,
+  pct2,
+  statItems,
+  TONE_TEXT,
+  type CcSessionsSource,
+} from './cc-format'
+import { useCcDialog } from './use-cc-dialog'
 
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
 type Row = { [K in keyof CcSessionRow]: CcSessionRow[K] }
@@ -35,7 +43,9 @@ const title = computed(() => {
   return `${s.name} — Semua Sesi`
 })
 
-const { data, error } = useApi((signal) => {
+const open = useCcDialog(() => emit('close'))
+
+const { data, error, reload } = useApi((signal) => {
   const s = props.source
   if (s.kind === 'week') return fetchCcStudentWeek(props.userId, s.start, s.end, { signal })
   if (s.kind === 'all') return fetchCcStudentAllSessions(props.userId, { signal })
@@ -77,66 +87,81 @@ const sessions = computed(() => data.value?.sessions ?? [])
 </script>
 
 <template>
-  <CcModal :title="title" testid="cc-sessions-modal" @close="emit('close')">
-    <p v-if="error" class="text-body text-error" data-testid="cc-modal-error">
-      Ralat memuatkan data
-    </p>
-    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
-      Memuatkan...
-    </p>
-    <template v-else>
-      <CcModalStats :stats="stats" />
-      <p
-        v-if="data.sessions.length === 0"
-        class="text-body text-muted"
-        data-testid="cc-modal-empty"
-      >
-        {{ emptyCopy }}
+  <DsDialog v-model:open="open" :title="title" class="sm:max-w-2xl">
+    <div class="flex min-w-0 flex-col gap-4" data-testid="cc-sessions-modal">
+      <DsLoadError
+        v-if="error"
+        inline
+        :message="MODAL_ERROR_COPY"
+        testid="cc-modal-error"
+        @retry="reload"
+      />
+      <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
+        Memuatkan...
       </p>
-      <div v-else data-testid="cc-sessions-scroller">
-        <DsDrillTable
-          :data="sessions"
-          :columns="columns"
-          :caption="title"
-          data-testid="cc-sessions-table"
-          @drill="(row: Row) => emit('open-session', row.id)"
+      <template v-else>
+        <DsStatRow :items="statItems(stats)" data-testid="cc-modal-stats" />
+        <p
+          v-if="data.sessions.length === 0"
+          class="text-body text-muted"
+          data-testid="cc-modal-empty"
         >
-          <template #date-cell="{ row }">
-            <span
-              :title="rowTitle"
-              data-testid="cc-session-row"
-              :data-session-id="row.original.id"
-              >{{ formatMyt(row.original.completedAt, 'dd/MM HH:mm') }}</span
-            >
-          </template>
-          <template #second-cell="{ row }">
-            {{
-              source.kind === 'subject' ? (row.original.topic ?? '-') : row.original.subjectLabel
-            }}
-          </template>
-          <template #total-cell="{ row }">
-            <UButton
-              variant="link"
-              color="primary"
-              size="sm"
-              trailing-icon="i-ph-magnifying-glass"
-              class="h-auto p-0"
-              :label="String(row.original.total)"
-              data-testid="cc-session-open"
-              @click.stop="emit('open-session', row.original.id)"
-            />
-          </template>
-          <template #correct-cell="{ row }"
-            ><span class="text-success">{{ row.original.correct }}</span></template
+          {{ emptyCopy }}
+        </p>
+        <div v-else data-testid="cc-sessions-scroller">
+          <DsDrillTable
+            :data="sessions"
+            :columns="columns"
+            :caption="title"
+            data-testid="cc-sessions-table"
+            @drill="(row: Row) => emit('open-session', row.id)"
           >
-          <template #acc-cell="{ row }">
-            <span :class="TONE_TEXT[accuracyTone(row.original.accuracy)]">{{
-              pct2(row.original.accuracy)
-            }}</span>
-          </template>
-          <template #time-cell="{ row }">{{ row.original.minutes }}m</template>
-        </DsDrillTable>
-      </div>
+            <template #date-cell="{ row }">
+              <span
+                :title="rowTitle"
+                data-testid="cc-session-row"
+                :data-session-id="row.original.id"
+                >{{ formatMyt(row.original.completedAt, 'dd/MM HH:mm') }}</span
+              >
+            </template>
+            <template #second-cell="{ row }">
+              {{
+                source.kind === 'subject' ? (row.original.topic ?? '-') : row.original.subjectLabel
+              }}
+            </template>
+            <template #total-cell="{ row }">
+              <UButton
+                variant="link"
+                color="primary"
+                size="sm"
+                trailing-icon="i-ph-magnifying-glass"
+                class="h-auto p-0"
+                :label="String(row.original.total)"
+                data-testid="cc-session-open"
+                @click.stop="emit('open-session', row.original.id)"
+              />
+            </template>
+            <template #correct-cell="{ row }"
+              ><span class="text-success">{{ row.original.correct }}</span></template
+            >
+            <template #acc-cell="{ row }">
+              <span :class="TONE_TEXT[accuracyTone(row.original.accuracy)]">{{
+                pct2(row.original.accuracy)
+              }}</span>
+            </template>
+            <template #time-cell="{ row }">{{ row.original.minutes }}m</template>
+          </DsDrillTable>
+        </div>
+      </template>
+    </div>
+    <template #footer>
+      <UButton
+        color="neutral"
+        variant="soft"
+        label="Tutup"
+        data-testid="cc-modal-close"
+        @click="open = false"
+      />
     </template>
-  </CcModal>
+  </DsDialog>
 </template>

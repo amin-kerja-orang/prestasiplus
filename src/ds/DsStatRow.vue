@@ -20,6 +20,11 @@ export interface StatItem {
   sub?: string
   to?: RouteLocationRaw
   delta?: StatDelta
+  /** Token colour class of the number (a focus point), e.g. `text-success`. */
+  valueClass?: string
+  /** Makes the tile a button (a drill-down that is not a route); `clickTitle` is its `title`. */
+  onClick?: () => void
+  clickTitle?: string
 }
 
 const props = withDefaults(
@@ -63,8 +68,12 @@ function id(key: string): string | undefined {
         :tone="item.tone"
         :to="item.to"
         :delta="item.delta"
+        :value-class="item.valueClass"
+        :clickable="item.onClick !== undefined"
+        :title="item.clickTitle"
         :roomy="roomy"
         :loading="loading"
+        @click="item.onClick?.()"
       />
     </li>
   </ul>

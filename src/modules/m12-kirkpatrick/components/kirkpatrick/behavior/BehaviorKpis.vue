@@ -1,50 +1,45 @@
 <script setup lang="ts">
-/** The six KPI cards of S4 (FN-M12-5.2.1; BR-M12-02/03/05/07). */
+/** The six KPI cards of S4 (FN-M12-5.2.1; BR-M12-02/03/05/07) in a `DsStatRow`. */
+import { computed } from 'vue'
+
+import { DsStatRow, type StatItem } from '@/ds'
+
 import type { Behavior } from '../../../api/types'
-import KirkpatrickStatCard from '../common/KirkpatrickStatCard.vue'
 import { count, pct, plain } from '../common/kirkpatrick-format'
 
-defineProps<{ kpi: Behavior['kpi'] }>()
+const props = defineProps<{ kpi: Behavior['kpi'] }>()
+
+const items = computed<StatItem[]>(() => [
+  {
+    key: 't4t5',
+    label: 'Pelajar T4/T5',
+    value: count(props.kpi.t4t5),
+    icon: 'i-ph-graduation-cap',
+  },
+  {
+    key: 'active',
+    label: 'Pernah Aktif',
+    value: plain(props.kpi.active),
+    icon: 'i-ph-check-circle',
+  },
+  { key: 'sessions', label: 'Jumlah Sesi', value: plain(props.kpi.sessions), icon: 'i-ph-timer' },
+  {
+    key: 'answers',
+    label: 'Soalan Dijawab',
+    value: count(props.kpi.answers),
+    icon: 'i-ph-pencil-simple',
+  },
+  { key: 'accuracy', label: 'Ketepatan', value: pct(props.kpi.accuracy), icon: 'i-ph-target' },
+  {
+    key: 'teachers',
+    label: 'Guru Aktif',
+    value: pct(props.kpi.teacherPct),
+    icon: 'i-ph-chalkboard-teacher',
+    sub: `${plain(props.kpi.teachersLoggedIn)}/${plain(props.kpi.teachers)}`,
+  },
+])
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" data-testid="beh-kpis">
-    <KirkpatrickStatCard
-      label="Pelajar T4/T5"
-      icon="i-ph-graduation-cap"
-      accent="friend"
-      :value="count(kpi.t4t5)"
-    />
-    <KirkpatrickStatCard
-      label="Pernah Aktif"
-      icon="i-ph-check-circle"
-      accent="win"
-      :value="plain(kpi.active)"
-    />
-    <KirkpatrickStatCard
-      label="Jumlah Sesi"
-      icon="i-ph-timer"
-      accent="heat"
-      :value="plain(kpi.sessions)"
-    />
-    <KirkpatrickStatCard
-      label="Soalan Dijawab"
-      icon="i-ph-pencil-simple"
-      accent="trial"
-      :value="count(kpi.answers)"
-    />
-    <KirkpatrickStatCard
-      label="Ketepatan"
-      icon="i-ph-target"
-      accent="action"
-      :value="pct(kpi.accuracy)"
-    />
-    <KirkpatrickStatCard
-      label="Guru Aktif"
-      icon="i-ph-chalkboard-teacher"
-      accent="win"
-      :value="pct(kpi.teacherPct)"
-      :caption="`${plain(kpi.teachersLoggedIn)}/${plain(kpi.teachers)}`"
-    />
-  </div>
+  <DsStatRow :items="items" prefix="beh-kpi" :cols="3" roomy data-testid="beh-kpis" />
 </template>
