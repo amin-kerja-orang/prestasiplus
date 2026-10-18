@@ -116,3 +116,22 @@
     scrollbar-color: var(--ui-bg-accented) transparent;
   }
 }
+
+/* KPI strip: staggered rise entry (60ms per tile). */
+@media (prefers-reduced-motion: no-preference) {
+  [data-ds='stat-row'] > li:nth-child(2) > [data-ds='stat-tile'] {
+    animation-delay: 60ms;
+  }
+  [data-ds='stat-row'] > li:nth-child(3) > [data-ds='stat-tile'] {
+    animation-delay: 120ms;
+  }
+  [data-ds='stat-row'] > li:nth-child(4) > [data-ds='stat-tile'] {
+    animation-delay: 180ms;
+  }
+  [data-ds='stat-row'] > li:nth-child(5) > [data-ds='stat-tile'] {
+    animation-delay: 240ms;
+  }
+  [data-ds='stat-row'] > li:nth-child(6) > [data-ds='stat-tile'] {
+    animation-delay: 300ms;
+  }
+}

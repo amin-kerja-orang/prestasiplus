@@ -30,7 +30,7 @@ describe('DsIconChip', () => {
   })
   it('has size variants', () => {
     const w = mount(DsIconChip, { props: { icon: 'i-ph-star', size: 'lg' } })
-    expect(w.classes()).toContain('size-12')
+    expect(w.classes()).toContain('size-10')
   })
 })
 

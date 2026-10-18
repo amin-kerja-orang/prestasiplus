@@ -17,6 +17,7 @@ import {
   DsWinScreen,
 } from '@/ds'
 
+
 import DsGalleryShowcase from '@/dev/ds/DsGalleryShowcase.vue'
 
 const wait = (ms = 30) => new Promise((r) => setTimeout(r, ms))
@@ -281,9 +282,10 @@ describe('keyboard', () => {
 
 describe('no inline colour', () => {
   it('the whole gallery renders no inline style with a colour', async () => {
+    // The gallery has linked KPI tiles (RouterLink), so it needs a router.
     const router = createRouter({
       history: createMemoryHistory(),
-      routes: [{ path: '/', component: { template: '<div />' } }],
+      routes: [{ path: '/:rest(.*)*', component: { render: () => null } }],
     })
     mount(DsGalleryShowcase, { attachTo: document.body, global: { plugins: [router] } })
     await wait(50)
