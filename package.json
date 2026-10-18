@@ -33,6 +33,9 @@
     "check:trace": "node scripts/check-e2e-trace.mjs",
     "contract:emit": "npm run emit -w @pp/contract",
     "contract:check": "npm run check -w @pp/contract",
+    "ds:debt": "node scripts/ds-debt.mjs",
+    "ds:census": "node scripts/codemods/census.mjs",
+    "page-shots": "node scripts/page-shots.mjs",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {

@@ -45,3 +45,6 @@ playwright-report-*/
 
 # Local compose overrides (see .env.example)
 .env
+
+# page-shots harness output (local only, D-H5)
+.page-shots/
