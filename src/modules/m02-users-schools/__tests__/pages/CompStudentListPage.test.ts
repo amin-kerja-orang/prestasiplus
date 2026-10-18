@@ -90,12 +90,12 @@ describe('CompStudentListPage (M02 S6) content', () => {
         .findAll('th')
         .map((h) => h.text()),
     ).toEqual(['', 'Nama', 'IC', 'Sekolah', 'Kelas / Cikgu', 'Akaun', 'Syiling', 'Pakej tamat'])
-    const rows = w.findAll('[data-testid=comp-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(3)
     expect(rows[0]!.get('[data-testid=comp-name]').attributes('href')).toBe(
       '/admin/comp-students/1',
     )
-    expect(rows[0]!.get('[data-testid=comp-account]').text()).toBe('AKTIF')
+    expect(rows[0]!.get('[data-testid=comp-account]').text()).toBe('Aktif')
     expect(rows[0]!.get('[data-testid=comp-coins]').text()).toBe('OFF')
     expect(rows[0]!.text()).toContain('31/12/2026')
     // No IC: an empty cell (FR-M02-66).
@@ -105,18 +105,18 @@ describe('CompStudentListPage (M02 S6) content', () => {
     expect(rows[0]!.text()).toContain('000001@prestasiplus.my')
   })
 
-  it('shows TIDAK AKTIF and ON for an inactive student with coins on', async () => {
+  it('shows Tidak Aktif and ON for an inactive student with coins on', async () => {
     api.fetchCompStudents.mockResolvedValue(
       result([student(4, { isActive: false, coinsEnabled: true })]),
     )
     const w = await render()
-    expect(t(w, 'comp-account').text()).toBe('TIDAK AKTIF')
+    expect(t(w, 'comp-account').text()).toBe('Tidak Aktif')
     expect(t(w, 'comp-coins').text()).toBe('ON')
   })
 
   it('scrolls the table inside its card (DV-M02-05)', async () => {
     const w = await render()
-    expect(w.find('[data-ds="admin-table"]').classes()).toContain('max-xl:overflow-x-auto')
+    expect(w.find('[data-ds="data-table"] .overflow-x-auto').exists()).toBe(true)
   })
 
   it('shows the empty text with the "Daftar baru." link', async () => {
@@ -134,9 +134,8 @@ describe('CompStudentListPage (M02 S6) content', () => {
     expect(t(w, 'comp-empty').text().replace(/s+/g, ' ')).toBe(
       'Tiada pelajar komplimen lagi. Daftar baru.',
     )
-    expect(t(w, 'comp-empty').element.closest('tbody')).toBeNull()
     expect(t(w, 'comp-empty-link').attributes('href')).toBe('/admin/comp-students/create')
-    expect(t(w, 'comp-pager').find('nav').exists()).toBe(true)
+    expect(w.get('[data-ds="data-table-pager"]').find('nav').exists()).toBe(true)
   })
 
   it('shows a skeleton while loading, then the error box with a retry', async () => {
@@ -147,18 +146,25 @@ describe('CompStudentListPage (M02 S6) content', () => {
     expect(w.find('[data-testid=comp-summary]').exists()).toBe(false)
     reject(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }))
     await flushPromises()
-    expect(t(w, 'comp-error').text()).toContain('Ralat pelayan.')
+    expect(t(w, 'comp-error').text()).toContain(
+      'Tidak dapat memuatkan senarai pelajar komplimen. Sila cuba semula.',
+    )
     api.fetchCompStudents.mockResolvedValue(result([student(1)]))
-    await t(w, 'comp-retry').trigger('click')
+    await w
+      .findAll('button')
+      .find((b) => b.text() === 'Cuba Semula')!
+      .trigger('click')
     await flushPromises()
-    expect(w.findAll('[data-testid=comp-row]')).toHaveLength(1)
+    expect(w.findAll('tbody tr')).toHaveLength(1)
   })
 
   it('asks for the requested page and paginates at 50', async () => {
     api.fetchCompStudents.mockResolvedValue(result([student(51)], 90, 2))
     const w = await render('/admin/comp-students?page=2')
     expect(api.fetchCompStudents).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }))
-    expect(t(w, 'comp-pager').text()).toContain('Menunjukkan 51-51 daripada 90 hasil')
+    expect(w.get('[data-ds="data-table-pager"]').text()).toContain(
+      'Menunjukkan 51-90 daripada 90 hasil',
+    )
   })
 })
 
@@ -166,7 +172,7 @@ describe('CompStudentListPage (M02 S6) bulk bar', () => {
   it('appears on a tick with 4 actions and "Batal pilihan"; the header box selects the page', async () => {
     const w = await render()
     expect(w.find('[data-testid=comp-bulk-bar]').exists()).toBe(false)
-    await w.findAll('[data-testid=comp-select]')[0]!.setValue(true)
+    await w.findAll('[data-testid=comp-select]')[0]!.trigger('click')
     const bar = t(w, 'comp-bulk-bar')
     expect(bar.text()).toContain('1 dipilih')
     expect(bar.findAll('button').map((b) => b.text())).toEqual([
@@ -176,11 +182,11 @@ describe('CompStudentListPage (M02 S6) bulk bar', () => {
       'Aktifkan akaun',
       'Batal pilihan',
     ])
-    await t(w, 'comp-select-all').setValue(true)
+    await t(w, 'comp-select-all').trigger('click')
     expect(t(w, 'comp-selected-count').text()).toBe('3')
     await t(w, 'comp-bulk-clear').trigger('click')
     expect(w.find('[data-testid=comp-bulk-bar]').exists()).toBe(false)
-    expect((t(w, 'comp-select-all').element as HTMLInputElement).checked).toBe(false)
+    expect(t(w, 'comp-select-all').attributes('aria-checked')).toBe('false')
   })
 
   it('runs an action at once (no confirmation), reloads, clears the selection and flashes the status', async () => {
@@ -189,8 +195,8 @@ describe('CompStudentListPage (M02 S6) bulk bar', () => {
       status: 'Tindakan berjaya dilaksanakan.',
     })
     const w = await render()
-    await w.findAll('[data-testid=comp-select]')[0]!.setValue(true)
-    await w.findAll('[data-testid=comp-select]')[1]!.setValue(true)
+    await w.findAll('[data-testid=comp-select]')[0]!.trigger('click')
+    await w.findAll('[data-testid=comp-select]')[1]!.trigger('click')
     api.fetchCompStudents.mockResolvedValue(
       result(
         [student(1, { coinsEnabled: true }), student(2, { coinsEnabled: true }), student(3)],
@@ -216,7 +222,7 @@ describe('CompStudentListPage (M02 S6) bulk bar', () => {
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Gagal.' }),
     )
     const w = await render()
-    await w.findAll('[data-testid=comp-select]')[0]!.setValue(true)
+    await w.findAll('[data-testid=comp-select]')[0]!.trigger('click')
     await t(w, 'comp-bulk-deactivate').trigger('click')
     await flushPromises()
     expect(useFlashStore().current).toEqual({ type: 'error', message: ['Gagal.'] })
@@ -225,7 +231,7 @@ describe('CompStudentListPage (M02 S6) bulk bar', () => {
 
   it('a page change clears the selection', async () => {
     const w = await render()
-    await w.findAll('[data-testid=comp-select]')[0]!.setValue(true)
+    await w.findAll('[data-testid=comp-select]')[0]!.trigger('click')
     await router.push('/admin/comp-students?page=2')
     await flushPromises()
     expect(w.find('[data-testid=comp-bulk-bar]').exists()).toBe(false)

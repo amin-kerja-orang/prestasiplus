@@ -11,8 +11,10 @@ import type { DsAccent } from './types'
 
 withDefaults(
   defineProps<{
-    /** `raised` = page-layer card; `bulk` = sticky selection bar on the elevated layer; `bar` = sticky bottom action bar of a form. */
-    tone?: 'raised' | 'bulk' | 'bar'
+    /** `raised` = page-layer card; `bulk` = sticky selection bar on the elevated layer; `bar` = sticky bottom action bar of a form; `inset` = flat elevated sub-surface inside a card; `tint` = primary-tinted sub-surface (a chosen item); `float` = the floating result list under a search field (absolute, scrolls inside itself). */
+    tone?: 'raised' | 'bulk' | 'bar' | 'inset' | 'tint' | 'float'
+    /** Root element (`div`, `form`, `section`, `nav`...). */
+    as?: string
     flush?: boolean
     /** Sticky positioning of the `bulk` and `bar` tones. */
     sticky?: boolean
@@ -24,6 +26,7 @@ withDefaults(
   }>(),
   {
     tone: 'raised',
+    as: 'div',
     flush: false,
     sticky: true,
     title: undefined,
@@ -35,13 +38,20 @@ withDefaults(
 </script>
 
 <template>
-  <div
+  <component
+    :is="as"
     class="min-w-0 overflow-clip rounded-card"
     :class="[
-      tone === 'raised' ? 'bg-default shadow-ds-xs' : 'bg-elevated shadow-lift',
+      tone === 'raised' ? 'bg-default shadow-ds-xs' : '',
+      tone === 'bulk' || tone === 'bar' ? 'bg-elevated shadow-lift' : '',
+      tone === 'inset' ? 'bg-elevated' : '',
+      tone === 'tint' ? 'bg-primary/10' : '',
+      tone === 'float'
+        ? 'absolute z-20 mt-1 max-h-64 w-full overflow-y-auto bg-default shadow-lift'
+        : '',
       sticky && tone === 'bulk' ? 'sticky top-2 z-20' : '',
       sticky && tone === 'bar' ? 'sticky bottom-2 z-20' : '',
-      flush || title || $slots.actions ? '' : 'p-3 sm:p-4',
+      flush || tone === 'float' || title || $slots.actions ? '' : 'p-3 sm:p-4',
     ]"
     :data-tone="tone"
     data-ds="panel"
@@ -65,5 +75,5 @@ withDefaults(
     <div :class="!flush && (title || $slots.actions) ? 'px-3 pb-3 sm:px-4 sm:pb-4' : ''">
       <slot />
     </div>
-  </div>
+  </component>
 </template>

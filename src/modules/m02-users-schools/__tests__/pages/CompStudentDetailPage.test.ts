@@ -117,11 +117,11 @@ describe('CompStudentDetailPage (M02 S8) content', () => {
     expect(t(w, 'comp-ic').text()).toBe('090101101234')
     expect(t(w, 'comp-school').text()).toBe('SEKOLAH CONTOH')
     expect(t(w, 'comp-level').text()).toBe('T5')
-    expect(t(w, 'comp-status').text()).toBe('AKTIF')
+    expect(t(w, 'comp-status').text()).toBe('Aktif')
     expect(t(w, 'comp-coins').text()).toBe('OFF (tak boleh kumpul/claim)')
     expect(t(w, 'comp-expiry').text()).toBe('31/12/2026')
     expect(t(w, 'comp-balance').text()).toBe('0 syiling · 0 coins')
-    expect(t(w, 'comp-back').attributes('href')).toBe('/admin/comp-students')
+    expect(w.get('[data-ds="back-link"]').attributes('href')).toBe('/admin/comp-students')
   })
 
   it('shows "—" for a missing IC and the classes table with "—" for no subject', async () => {
@@ -134,10 +134,10 @@ describe('CompStudentDetailPage (M02 S8) content', () => {
         .findAll('th')
         .map((h) => h.text()),
     ).toEqual(['Kelas', 'Subjek', 'Cikgu', 'Status'])
-    const rows = w.findAll('[data-testid=comp-class-row]')
+    const rows = w.findAll('[data-testid=comp-classes] tbody tr')
     expect(rows[0]!.text()).toContain('5 BESTARI DMO201')
     expect(rows[1]!.findAll('td')[1]!.text()).toBe('—')
-    expect(rows[0]!.findAll('td')[3]!.text()).toBe('active')
+    expect(rows[0]!.findAll('td')[3]!.text()).toBe('Aktif')
   })
 
   it('a 404 sets the standard 404 outcome and shows neither the card nor the red box', async () => {
@@ -156,7 +156,9 @@ describe('CompStudentDetailPage (M02 S8) content', () => {
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }),
     )
     const w = await render()
-    expect(t(w, 'comp-load-error').text()).toContain('Ralat pelayan.')
+    expect(t(w, 'comp-load-error').text()).toContain(
+      'Tidak dapat memuatkan pelajar komplimen. Sila cuba semula.',
+    )
     expect(useRouteOutcome().value).toBeNull()
   })
 })
@@ -181,7 +183,7 @@ describe('CompStudentDetailPage (M02 S8) toggles', () => {
     })
   })
 
-  it('"Nyahaktif akaun" becomes "Aktifkan akaun" and the status TIDAK AKTIF', async () => {
+  it('"Nyahaktif akaun" becomes "Aktifkan akaun" and the status Tidak Aktif', async () => {
     api.toggleCompActive.mockResolvedValue({
       data: { isActive: false },
       status: 'Tindakan berjaya dilaksanakan.',
@@ -192,7 +194,7 @@ describe('CompStudentDetailPage (M02 S8) toggles', () => {
     await w.findAll('form')[1]!.trigger('submit')
     await flushPromises()
     expect(api.toggleCompActive).toHaveBeenCalledWith(5901)
-    expect(t(w, 'comp-status').text()).toBe('TIDAK AKTIF')
+    expect(t(w, 'comp-status').text()).toBe('Tidak Aktif')
     expect(t(w, 'comp-toggle-active').text()).toBe('Aktifkan akaun')
   })
 

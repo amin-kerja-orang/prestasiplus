@@ -7,9 +7,10 @@
  */
 import { computed } from 'vue'
 
+import { DsPanel } from '@/ds'
+
 import type { SchoolQuota } from '../api/imports'
 import { quotaPercent } from '../lib/import-options'
-import NativePanel from './native/NativePanel.vue'
 
 const props = defineProps<{
   loading: boolean
@@ -27,58 +28,53 @@ const percent = computed(() => quotaPercent(used.value, total.value))
 
 <template>
   <div data-testid="quota-panel">
-    <NativePanel
-      v-if="loading"
-      tone="soft"
-      class="flex items-center gap-2 text-label text-muted"
-      data-testid="quota-loading"
-    >
-      <UIcon name="i-ph-spinner-gap" class="size-4" aria-hidden="true" />
-      Memeriksa kuota...
-    </NativePanel>
-    <NativePanel
+    <DsPanel v-if="loading" tone="inset" data-testid="quota-loading">
+      <p class="flex items-center gap-2 text-label text-muted">
+        <UIcon name="i-ph-spinner-gap" class="size-4" aria-hidden="true" />
+        Memeriksa kuota...
+      </p>
+    </DsPanel>
+    <DsPanel
       v-else-if="subscribed"
-      tone="soft"
-      class="flex flex-col gap-2"
+      tone="inset"
       :data-state="full ? 'full' : 'available'"
       data-testid="quota-summary"
     >
-      <div class="flex items-center justify-between gap-3">
-        <span class="flex items-center gap-2 text-label text-default">
-          <UIcon name="i-ph-users" class="size-4" aria-hidden="true" />
-          Kuota Pelajar
-        </span>
-        <span
-          class="text-label"
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-3">
+          <span class="flex items-center gap-2 text-label text-default">
+            <UIcon name="i-ph-users" class="size-4" aria-hidden="true" />
+            Kuota Pelajar
+          </span>
+          <span
+            class="text-label"
+            :class="full ? 'text-error' : 'text-success'"
+            data-testid="quota-figures"
+          >
+            {{ used }} / {{ total }}
+          </span>
+        </div>
+        <UProgress
+          :model-value="percent"
+          :color="full ? 'error' : 'success'"
+          :aria-label="`Kuota digunakan ${String(percent)}%`"
+          data-testid="quota-bar"
+        />
+        <p
+          class="text-caption"
           :class="full ? 'text-error' : 'text-success'"
-          data-testid="quota-figures"
+          data-testid="quota-note"
         >
-          {{ used }} / {{ total }}
-        </span>
+          <template v-if="!full">Baki kuota: {{ remaining }} pelajar</template>
+          <template v-else>Kuota penuh! Sila tingkatkan kuota dahulu.</template>
+        </p>
       </div>
-      <UProgress
-        :model-value="percent"
-        :color="full ? 'error' : 'success'"
-        :aria-label="`Kuota digunakan ${String(percent)}%`"
-        data-testid="quota-bar"
-      />
-      <p
-        class="text-caption"
-        :class="full ? 'text-error' : 'text-success'"
-        data-testid="quota-note"
-      >
-        <template v-if="!full">Baki kuota: {{ remaining }} pelajar</template>
-        <template v-else>Kuota penuh! Sila tingkatkan kuota dahulu.</template>
+    </DsPanel>
+    <DsPanel v-else tone="inset" data-testid="quota-none">
+      <p class="flex items-center gap-2 text-label text-warning">
+        <UIcon name="i-ph-warning" class="size-4 shrink-0" aria-hidden="true" />
+        Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.
       </p>
-    </NativePanel>
-    <NativePanel
-      v-else
-      tone="soft"
-      class="flex items-center gap-2 text-label text-warning"
-      data-testid="quota-none"
-    >
-      <UIcon name="i-ph-warning" class="size-4 shrink-0" aria-hidden="true" />
-      Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.
-    </NativePanel>
+    </DsPanel>
   </div>
 </template>

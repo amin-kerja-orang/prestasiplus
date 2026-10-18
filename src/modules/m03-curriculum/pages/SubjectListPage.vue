@@ -14,9 +14,16 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 
-import { AdminKpiStrip, AdminPageHeader } from '@/ds/admin'
 import { alertNative, useApi, useFlash } from '@/composables'
-import { DsDataTable, DsPage, DsStatTile, useConfirm, type CardField } from '@/ds'
+import {
+  type CardField,
+  DsDataTable,
+  DsPage,
+  DsPageHeader,
+  DsStatRow,
+  type StatItem,
+  useConfirm,
+} from '@/ds'
 
 import {
   deleteSubject,
@@ -47,6 +54,19 @@ const kpi = computed(() => ({
   core: rows.value.filter((r) => r.isCore).length,
   questions: rows.value.reduce((sum, r) => sum + r.questionCount, 0),
 }))
+
+const kpiItems = computed<StatItem[]>(() => [
+  { key: 'total', label: 'Jumlah Subjek', value: rows.value.length, icon: 'books' },
+  { key: 'active', label: 'Aktif', value: kpi.value.active, icon: 'check-circle', accent: 'win' },
+  { key: 'core', label: 'Teras', value: kpi.value.core, icon: 'star', accent: 'friend' },
+  {
+    key: 'questions',
+    label: 'Jumlah Soalan',
+    value: kpi.value.questions,
+    icon: 'question',
+    accent: 'trial',
+  },
+])
 
 const columns: TableColumn<SubjectRow>[] = [
   { accessorKey: 'id', header: '#' },
@@ -107,7 +127,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
     <ErrorBox v-if="error" :messages="COPY.loadFailed" data-testid="subjects-error" />
 
     <template v-else-if="data">
-      <AdminPageHeader>
+      <DsPageHeader>
         <template #subtitle>
           <div>
             <h2 class="text-subheading text-highlighted">Senarai Subjek</h2>
@@ -125,26 +145,9 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
             Tambah
           </UButton>
         </template>
-      </AdminPageHeader>
+      </DsPageHeader>
 
-      <AdminKpiStrip label="Ringkasan subjek" class="xl:grid-cols-4 2xl:grid-cols-4">
-        <DsStatTile compact :value="rows.length" unit="Jumlah Subjek" icon="i-ph-books" />
-        <DsStatTile
-          compact
-          accent="win"
-          :value="kpi.active"
-          unit="Aktif"
-          icon="i-ph-check-circle"
-        />
-        <DsStatTile compact accent="friend" :value="kpi.core" unit="Teras" icon="i-ph-star" />
-        <DsStatTile
-          compact
-          accent="trial"
-          :value="kpi.questions"
-          unit="Jumlah Soalan"
-          icon="i-ph-question"
-        />
-      </AdminKpiStrip>
+      <DsStatRow :items="kpiItems" compact :cols="4" aria-label="Ringkasan subjek" />
 
       <DsDataTable
         :data="tableRows"

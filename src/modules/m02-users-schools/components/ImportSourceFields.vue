@@ -5,11 +5,9 @@
  * sini" / "atau" / "Pilih Fail", `accept=".csv,.txt"`; a drop copies the file into the input; status "Tiada
  * fail dipilih" / "Fail dipilih: {name}"). The format box differs per screen and comes in the `format` slot.
  */
-import { ref } from 'vue'
+import { DsFileField } from '@/ds'
 
 import type { ImportMode } from '../api/imports'
-import NativeFile from './native/NativeFile.vue'
-import NativePanel from './native/NativePanel.vue'
 
 defineProps<{ pastePlaceholder: string }>()
 
@@ -19,20 +17,9 @@ const file = defineModel<File | null>('file', { required: true })
 
 defineSlots<{ format?: (props: { mode: ImportMode }) => unknown }>()
 
-const input = ref<{ el: HTMLInputElement | null } | null>(null)
-const dragging = ref(false)
-
-function onPick(event: Event): void {
-  file.value = (event.target as HTMLInputElement).files?.[0] ?? null
-}
-
-function onDrop(event: DragEvent): void {
-  dragging.value = false
-  const dropped = event.dataTransfer?.files
-  if (!dropped || dropped.length === 0) return
-  // As live `handleDrop`: the dropped file is copied into the file input.
-  if (input.value?.el) input.value.el.files = dropped
-  file.value = dropped[0] ?? null
+/** `DsFileField` (the `UFileUpload` drop zone) hands over one file; a rejected file clears the choice. */
+function onPick(value: File | File[] | null): void {
+  file.value = Array.isArray(value) ? (value[0] ?? null) : value
 }
 </script>
 
@@ -66,30 +53,20 @@ function onDrop(event: DragEvent): void {
     </div>
 
     <div v-if="mode === 'csv'" data-testid="import-csv">
-      <NativePanel
-        :tone="dragging ? 'primary' : 'soft'"
-        class="flex flex-col items-center gap-2 p-6 text-center"
-        data-testid="import-dropzone"
-        @dragover.prevent="dragging = true"
-        @dragleave.prevent="dragging = false"
-        @drop.prevent="onDrop"
-      >
-        <UIcon name="i-ph-upload-simple" class="size-8 text-muted" aria-hidden="true" />
-        <p class="text-label text-default">Seret &amp; Lepas fail CSV di sini</p>
-        <p class="text-caption text-muted">atau</p>
-        <NativeFile
-          ref="input"
+      <div class="flex flex-col gap-2" data-testid="import-dropzone">
+        <DsFileField
+          :model-value="file"
           name="csv_file"
           accept=".csv,.txt"
-          input-testid="import-file"
-          @change="onPick"
-        >
-          Pilih Fail
-        </NativeFile>
+          label="Seret &amp; Lepas fail CSV di sini"
+          preview="none"
+          hint="atau klik untuk memilih fail"
+          @update:model-value="onPick"
+        />
         <p class="text-label text-muted" data-testid="import-file-status">
           {{ file ? `Fail dipilih: ${file.name}` : 'Tiada fail dipilih' }}
         </p>
-      </NativePanel>
+      </div>
     </div>
 
     <UTextarea

@@ -14,8 +14,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
-import { AdminFormSection, AdminPageHeader } from '@/ds/admin'
+import { DsFormSection, DsPage, DsPageHeader } from '@/ds'
 
 import {
   createSubject,
@@ -138,7 +137,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
 </script>
 <template>
   <DsPage data-testid="subject-form-page">
-    <AdminPageHeader
+    <DsPageHeader
       :title="editing ? 'Edit Subjek' : 'Tambah Subjek'"
       :subtitle="editing ? 'Kemaskini maklumat subjek.' : 'Daftarkan subjek baharu.'"
     >
@@ -153,7 +152,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
           Kembali ke Senarai
         </UButton>
       </template>
-    </AdminPageHeader>
+    </DsPageHeader>
 
     <ErrorBox v-if="failed" :messages="COPY.loadFailed" data-testid="subject-load-error" />
 
@@ -166,10 +165,11 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
     >
       <ErrorBox :messages="errors" data-testid="subject-form-alert" />
 
-      <AdminFormSection
+      <DsFormSection
         title="Maklumat Subjek"
         description="Nama, kod dan susunan paparan."
         icon="i-ph-book"
+        :columns="2"
       >
         <div class="min-w-0">
           <label for="subject-name" class="mb-2 block text-label text-highlighted"
@@ -242,12 +242,13 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             Nombor lebih kecil akan dipaparkan dahulu
           </p>
         </div>
-      </AdminFormSection>
+      </DsFormSection>
 
-      <AdminFormSection
+      <DsFormSection
         title="Penampilan"
         description="Ikon, warna tema dan jenis subjek."
         icon="i-ph-palette"
+        :columns="2"
       >
         <div class="min-w-0">
           <label for="subject-icon" class="mb-2 block text-label text-highlighted"
@@ -311,12 +312,13 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
           />
           <p class="mt-2 text-label text-muted">Tandakan jika subjek ini adalah subjek wajib</p>
         </div>
-      </AdminFormSection>
+      </DsFormSection>
 
-      <AdminFormSection
+      <DsFormSection
         title="Tahap Pendidikan Berkaitan"
         description="Pilih tahap yang mempunyai subjek ini."
         icon="i-ph-graduation-cap"
+        :columns="2"
       >
         <fieldset class="min-w-0 md:col-span-2">
           <legend class="sr-only">Tahap Pendidikan Berkaitan</legend>
@@ -340,7 +342,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             </div>
           </div>
         </fieldset>
-      </AdminFormSection>
+      </DsFormSection>
 
       <FormActions
         :cancel-to="SUBJECTS_LIST_PATH"

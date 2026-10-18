@@ -10,11 +10,9 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
+import { DsFormField, DsPanel } from '@/ds'
+
 import { searchSchools, type SchoolSummary } from '../api/schools'
-import AdminField from './AdminField.vue'
-import NativeDropdown from './native/NativeDropdown.vue'
-import NativeOption from './native/NativeOption.vue'
-import NativePanel from './native/NativePanel.vue'
 
 const school = defineModel<SchoolSummary | null>({ required: true })
 
@@ -69,31 +67,28 @@ function clear(): void {
 
 <template>
   <div ref="root" data-testid="sub-school">
-    <AdminField for="sub-school-search" label="Sekolah" icon="i-ph-buildings" required>
-      <NativePanel
-        v-if="school"
-        tone="primary"
-        class="flex min-h-14 items-center gap-3 pr-1"
-        data-testid="sub-school-chip"
-      >
-        <span class="min-w-0 flex-1">
-          <span
-            class="block text-label break-words text-highlighted"
-            data-testid="sub-school-name"
-            >{{ school.name }}</span
-          >
-          <span class="block text-caption break-words text-muted">{{ meta(school) }}</span>
-        </span>
-        <UButton
-          type="button"
-          color="error"
-          variant="ghost"
-          icon="i-ph-x-circle"
-          aria-label="Buang sekolah"
-          data-testid="sub-school-clear"
-          @click="clear"
-        />
-      </NativePanel>
+    <DsFormField native for="sub-school-search" label="Sekolah" required>
+      <DsPanel v-if="school" tone="tint" data-testid="sub-school-chip">
+        <div class="flex min-h-14 items-center gap-3">
+          <span class="min-w-0 flex-1">
+            <span
+              class="block text-label break-words text-highlighted"
+              data-testid="sub-school-name"
+              >{{ school.name }}</span
+            >
+            <span class="block text-caption break-words text-muted">{{ meta(school) }}</span>
+          </span>
+          <UButton
+            type="button"
+            color="error"
+            variant="ghost"
+            icon="i-ph-x-circle"
+            aria-label="Buang sekolah"
+            data-testid="sub-school-clear"
+            @click="clear"
+          />
+        </div>
+      </DsPanel>
 
       <div v-else class="relative">
         <UInput
@@ -109,16 +104,23 @@ function clear(): void {
           @focus="picker.onFocus()"
         />
         <span v-if="searching" class="sr-only" data-testid="sub-school-loading">Mencari...</span>
-        <NativeDropdown v-if="showDropdown" data-testid="sub-school-dropdown">
-          <NativeOption
+        <DsPanel v-if="showDropdown" tone="float" flush data-testid="sub-school-dropdown">
+          <UButton
             v-for="item in results"
             :key="item.id"
+            type="button"
+            block
+            color="neutral"
+            variant="ghost"
+            class="h-auto min-h-11 justify-start text-start whitespace-normal"
             data-testid="sub-school-result"
             @click="picker.select(item)"
           >
-            <span class="block text-label text-highlighted">{{ item.name }}</span>
-            <span class="block text-caption text-muted">{{ meta(item) }}</span>
-          </NativeOption>
+            <span class="flex min-w-0 flex-col">
+              <span class="text-label text-highlighted">{{ item.name }}</span>
+              <span class="text-caption text-muted">{{ meta(item) }}</span>
+            </span>
+          </UButton>
           <p
             v-if="showEmpty"
             class="flex items-center justify-center gap-2 p-3 text-center text-label text-muted"
@@ -127,8 +129,8 @@ function clear(): void {
             <UIcon name="i-ph-magnifying-glass-minus" class="size-4" aria-hidden="true" />
             Tiada sekolah dijumpai
           </p>
-        </NativeDropdown>
+        </DsPanel>
       </div>
-    </AdminField>
+    </DsFormField>
   </div>
 </template>

@@ -127,7 +127,7 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
   it('a standard role shows the FR-M02-22 fields with their copy and no HTML required', async () => {
     const w = await render()
     await type(w, 'user-role', 'admin')
-    expect(w.get('label[for=user-name]').text()).toBe('Nama *')
+    expect(w.get('label[for=user-name]').text()).toContain('Nama *')
     expect(t(w, 'user-name').attributes('placeholder')).toBe('Nama penuh')
     expect(t(w, 'user-email').attributes('placeholder')).toBe('contoh@email.com')
     expect(t(w, 'user-email').attributes('type')).toBe('email')
@@ -145,26 +145,26 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     ]) {
       expect(t(w, id).attributes('required')).toBeUndefined()
     }
-    expect((t(w, 'user-active').element as HTMLInputElement).checked).toBe(true)
+    expect(t(w, 'user-active').attributes('aria-checked')).toBe('true')
     expect(w.text()).toContain('Aktifkan Akaun')
     expect(w.text()).toContain('Pengguna yang tidak aktif tidak boleh log masuk')
     // No student / teacher / parent section for admin.
     expect(w.find('[data-testid=grade-cards]').exists()).toBe(false)
     expect(w.find('[data-testid=std-school]').exists()).toBe(false)
     expect(w.find('[data-testid=parent-linker]').exists()).toBe(false)
-    expect(t(w, 'user-submit').text()).toBe('Daftar Pengguna')
-    expect(t(w, 'user-cancel').attributes('href')).toBe('/admin/users')
-    expect(t(w, 'user-cancel').text()).toBe('Batal')
+    expect(t(w, 'form-submit').text()).toBe('Daftar Pengguna')
+    expect(t(w, 'form-cancel').attributes('href')).toBe('/admin/users')
+    expect(t(w, 'form-cancel').text()).toBe('Batal')
     expect(w.find('form').attributes('novalidate')).toBeUndefined()
   })
 
   it('student: 11 grade cards (none checked), IC with its hint, school picker', async () => {
     const w = await render()
     await type(w, 'user-role', 'student')
-    const cards = w.findAll('[data-testid=grade-cards] input[type=radio]')
+    const cards = w.findAll('[data-testid=grade-cards] button[role=radio]')
     expect(cards).toHaveLength(11)
-    expect(cards.some((c) => (c.element as HTMLInputElement).checked)).toBe(false)
-    const labels = w.findAll('[data-testid=grade-cards] label').map((l) => l.text())
+    expect(cards.some((c) => c.attributes('aria-checked') === 'true')).toBe(false)
+    const labels = w.findAll('[data-testid=grade-cards] [data-slot="label"]').map((l) => l.text())
     expect(labels).toEqual([
       'Darjah 1',
       'Darjah 2',
@@ -180,7 +180,7 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     ])
     expect(w.text()).toContain('Sekolah Rendah')
     expect(w.text()).toContain('Sekolah Menengah')
-    expect(t(w, 'grade-7').attributes('value')).toBe('7')
+    expect(w.find('[data-testid=grade-cards] button[role=radio][value="7"]').exists()).toBe(true)
     expect(t(w, 'user-ic').attributes('maxlength')).toBe('14')
     expect(t(w, 'user-ic').attributes('inputmode')).toBe('numeric')
     expect(t(w, 'user-ic').attributes('placeholder')).toBe('Cth: 031215101234')
@@ -196,7 +196,7 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     await type(w, 'user-email', 'fulan@contoh.test')
     await type(w, 'user-password', 'rahsia123')
     await type(w, 'user-password-confirm', 'rahsia123')
-    await t(w, 'grade-10').setValue(true)
+    await w.get('[data-testid=grade-cards] button[role=radio][value="10"]').trigger('click')
     await type(w, 'user-ic', '031215101234')
     await search(w, 'std-school-search', 'contoh')
     expect(schools.searchSchools).toHaveBeenCalledWith(expect.objectContaining({ q: 'contoh' }))
@@ -245,7 +245,7 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     await type(w, 'user-name', 'Nama Kekal')
     await type(w, 'user-email', 'kekal@contoh.test')
     await type(w, 'user-password', 'rahsia123')
-    await t(w, 'grade-3').setValue(true)
+    await w.get('[data-testid=grade-cards] button[role=radio][value="3"]').trigger('click')
     await type(w, 'user-ic', '0312')
     await search(w, 'std-school-search', 'contoh')
     await w.findAll('[data-testid=std-school-result]')[0]?.trigger('click')
@@ -257,7 +257,9 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     expect(w.find('[data-testid=grade-cards]').exists()).toBe(false)
 
     await type(w, 'user-role', 'student')
-    expect((t(w, 'grade-3').element as HTMLInputElement).checked).toBe(true)
+    expect(
+      w.get('[data-testid=grade-cards] button[role=radio][value="3"]').attributes('aria-checked'),
+    ).toBe('true')
     expect((t(w, 'user-ic').element as HTMLInputElement).value).toBe('0312')
   })
 
@@ -390,7 +392,7 @@ describe('UserCreatePage (M02 S2) school admin', () => {
       'Taipkan nama sekolah atau kod sekolah (cth: JBA0001)...',
     )
     expect(w.find('[data-testid=user-fields]').exists()).toBe(false)
-    expect(t(w, 'user-submit').attributes('disabled')).toBeDefined()
+    expect(t(w, 'form-submit').attributes('disabled')).toBeDefined()
     await search(w, 'gen-search', 'contoh')
     const rows = w.findAll('[data-testid=gen-result]')
     expect(rows[0]?.text()).toContain('SEKOLAH KEBANGSAAN CONTOH BARU')
@@ -413,7 +415,7 @@ describe('UserCreatePage (M02 S2) school admin', () => {
     expect(chosen.text()).toContain('Selangor')
     expect(chosen.text()).toContain('PPD GOMBAK')
     expect(t(w, 'gen-reset').attributes('title')).toBe('Reset')
-    expect(t(w, 'user-submit').attributes('disabled')).toBeDefined()
+    expect(t(w, 'form-submit').attributes('disabled')).toBeDefined()
 
     expect(t(w, 'gen-generate').text()).toBe('Janakan Akaun Admin Sekolah')
     expect(t(w, 'gen-generate').attributes('disabled')).toBeUndefined()
@@ -432,7 +434,7 @@ describe('UserCreatePage (M02 S2) school admin', () => {
     expect(t(w, 'gen-jpn').text()).toBe('JPN: Selangor')
     expect(t(w, 'gen-ppd').text()).toBe('PPD: PPD GOMBAK')
     expect(t(w, 'gen-copy-email').attributes('title')).toBe('Salin')
-    expect(t(w, 'user-submit').attributes('disabled')).toBeUndefined()
+    expect(t(w, 'form-submit').attributes('disabled')).toBeUndefined()
 
     // "Disalin!" toast for 2 s.
     expect(document.body.textContent).not.toContain('Disalin!')

@@ -4,17 +4,59 @@
  * (sub, delta, tone, link, loading), `DsStatusBadge` (every status), `DsLoadError`, `DsEmptyState`
  * (sizes, filtered) and `DsIconChip` sizes. Dev / demo only; sample copy is BM.
  */
-import { DsEmptyState, DsIconChip, DsLoadError, DsStatRow, DsStatusBadge, statusMap } from '@/ds'
+import {
+  DsEmptyState,
+  DsIconChip,
+  DsIdentity,
+  DsLoadError,
+  DsStatRow,
+  DsStatusBadge,
+  statusMap,
+} from '@/ds'
 import type { DsStatus, StatItem } from '@/ds'
 
 const statuses = Object.keys(statusMap) as DsStatus[]
 
 const kpis: StatItem[] = [
-  { key: 'murid', label: 'Murid', value: 1240, icon: 'users', sub: '32 kelas', delta: { value: '+4.2%', dir: 'up' } },
-  { key: 'aktif', label: 'Aktif minggu ini', value: 912, icon: 'pulse', delta: { value: '-1.1%', dir: 'down' } },
-  { key: 'sederhana', label: 'Risiko Sederhana', value: 87, icon: 'warning', tone: 'warning', to: '/__ds' },
-  { key: 'tinggi', label: 'Risiko Tinggi', value: 23, icon: 'warning-octagon', tone: 'error', sub: 'Perlu tindakan' },
-  { key: 'lulus', label: 'Lulus', value: '78%', icon: 'check-circle', tone: 'success', delta: { value: '0%', dir: 'flat' } },
+  {
+    key: 'murid',
+    label: 'Murid',
+    value: 1240,
+    icon: 'users',
+    sub: '32 kelas',
+    delta: { value: '+4.2%', dir: 'up' },
+  },
+  {
+    key: 'aktif',
+    label: 'Aktif minggu ini',
+    value: 912,
+    icon: 'pulse',
+    delta: { value: '-1.1%', dir: 'down' },
+  },
+  {
+    key: 'sederhana',
+    label: 'Risiko Sederhana',
+    value: 87,
+    icon: 'warning',
+    tone: 'warning',
+    to: '/__ds',
+  },
+  {
+    key: 'tinggi',
+    label: 'Risiko Tinggi',
+    value: 23,
+    icon: 'warning-octagon',
+    tone: 'error',
+    sub: 'Perlu tindakan',
+  },
+  {
+    key: 'lulus',
+    label: 'Lulus',
+    value: '78%',
+    icon: 'check-circle',
+    tone: 'success',
+    delta: { value: '0%', dir: 'flat' },
+  },
 ]
 </script>
 
@@ -25,6 +67,18 @@ const kpis: StatItem[] = [
       <DsStatRow prefix="gal" :items="kpis" />
       <DsStatRow :items="kpis.slice(0, 3)" roomy />
       <DsStatRow :items="kpis.slice(0, 4)" loading />
+      <DsStatRow
+        :items="kpis.slice(0, 4).map((k, i) => ({ ...k, to: '/__ds', active: i === 1 }))"
+        compact
+      />
+    </section>
+
+    <section class="flex flex-col gap-3" aria-labelledby="s-identity">
+      <h3 id="s-identity" class="text-subheading">DsIdentity</h3>
+      <div class="flex flex-wrap gap-6">
+        <DsIdentity name="Aini Contoh" sub="aini@contoh.test" initials="AC" />
+        <DsIdentity name="Kod sekolah" sub="ABA0001" />
+      </div>
     </section>
 
     <section class="flex flex-col gap-3" aria-labelledby="s-chip">

@@ -88,7 +88,7 @@ describe('SubscriptionListPage (M02 S12)', () => {
 
   it('renders the rows with level, tier, quota, status labels and dd/mm/yyyy dates', async () => {
     const { w } = await render()
-    const rows = w.findAll('[data-testid=subs-row]')
+    const rows = w.findAll('tbody tr')
     expect(rows).toHaveLength(3)
     expect(rows[0]!.get('[data-testid=subs-level-badge]').text()).toBe('T5')
     expect(rows[0]!.get('[data-testid=subs-tier-badge]').text()).toBe('Pemantauan')
@@ -133,15 +133,17 @@ describe('SubscriptionListPage (M02 S12)', () => {
     const { w } = await render('/admin/school-subscriptions?search=zzz')
     const empty = w.get('[data-testid=subs-empty]')
     expect(empty.text()).toBe('Tiada langganan dijumpai.')
-    expect(empty.get('td').attributes('colspan')).toBe('8')
   })
 
   it('shows a red alert with a retry when the list fails', async () => {
     api.fetchSubscriptions.mockRejectedValueOnce(new Error('boom'))
     const { w } = await render()
     expect(w.find('[data-testid=subs-error]').exists()).toBe(true)
-    await w.get('[data-testid=subs-retry]').trigger('click')
+    await w
+      .findAll('button')
+      .find((b) => b.text() === 'Cuba Semula')!
+      .trigger('click')
     await flushPromises()
-    expect(w.findAll('[data-testid=subs-row]')).toHaveLength(3)
+    expect(w.findAll('tbody tr')).toHaveLength(3)
   })
 })

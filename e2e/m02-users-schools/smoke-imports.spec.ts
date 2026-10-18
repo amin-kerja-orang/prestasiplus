@@ -79,7 +79,7 @@ test.describe('M02 S4 bulk user import', { tag: [TAG.smoke, moduleTag(2)] }, () 
           'Guru Demo Tiga, bukan-emel',
         ].join('\n'),
       )
-      await byId(page, 'bulk-submit').click()
+      await byId(page, 'form-submit').click()
 
       const flash = byId(page, 'cmp-flash')
       await expect(flash).toContainText(
@@ -98,7 +98,7 @@ test.describe('M02 S4 bulk user import', { tag: [TAG.smoke, moduleTag(2)] }, () 
     async ({ page }) => {
       await byId(page, 'bulk-role-teacher').click()
       await byId(page, 'import-paste').fill('Guru Demo Empat, guru.empat@demo.test')
-      await byId(page, 'bulk-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(byId(page, 'bulk-alert')).toContainText('The school id field is required.')
       await expect(byId(page, 'import-paste')).toHaveValue('Guru Demo Empat, guru.empat@demo.test')
       await expect(page.locator('input[name=role]:checked')).toHaveCount(1)
@@ -174,7 +174,7 @@ test.describe('M02 S5 DELIMa student import', { tag: [TAG.smoke, moduleTag(2)] }
           'katalaluan2',
         ].join('\n'),
       )
-      await byId(page, 'student-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(byId(page, 'cmp-flash')).toContainText(
         'Import selesai: 1 pelajar didaftarkan, 1 dilangkau.',
       )
@@ -202,12 +202,12 @@ test.describe('M02 S5 DELIMa student import', { tag: [TAG.smoke, moduleTag(2)] }
       await expect(page.locator('input[name=class_level]')).toHaveCount(5)
 
       // Import is never disabled by the quota (as live): the server refuses.
-      await expect(byId(page, 'student-submit')).toBeEnabled()
+      await expect(byId(page, 'form-submit')).toBeEnabled()
       await page.locator('input[name=class_level]').first().check({ force: true })
       await byId(page, 'import-paste').fill(
         'PELAJAR DEMO TIGA\nm-demo0003@moe-dl.edu.my\nkatalaluan3',
       )
-      await byId(page, 'student-submit').click()
+      await byId(page, 'form-submit').click()
       await expect(byId(page, 'student-alert')).toContainText('Kuota tidak mencukupi.')
       await expect(byId(page, 'import-paste')).toHaveValue(/PELAJAR DEMO TIGA/)
       await expect(byId(page, 'admin-school-chip')).toBeVisible()
@@ -260,7 +260,7 @@ test.describe('M02 S5 DELIMa student import', { tag: [TAG.smoke, moduleTag(2)] }
       await page.getByLabel('Jenis').selectOption('SJK(C)')
       await page.getByLabel('Negeri').selectOption('Selangor')
       await page.getByLabel('Daerah').fill('PPD DEMO')
-      await page.getByTestId('school-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL('/admin/schools')
 
       await gotoApp('/admin/import-students')

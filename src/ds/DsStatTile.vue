@@ -68,7 +68,9 @@ const props = withDefaults(
 const personality = usePersonality()
 // Decided once per tile at mount; non-reactive on purpose (the entry is a one-shot).
 const riseOff = !staffRiseAllowed()
-const chipSize = computed(() => (props.roomy ? (personality.value === 'staff' ? 'lg' : 'sm') : 'md'))
+const chipSize = computed(() =>
+  props.roomy ? (personality.value === 'staff' ? 'lg' : 'sm') : 'md',
+)
 
 const deltaIcon = { up: 'arrow-up', down: 'arrow-down', flat: 'minus' } as const
 const deltaTone = { up: 'text-success', down: 'text-error', flat: 'text-muted' } as const
@@ -76,22 +78,32 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
 </script>
 
 <template>
-  <div
+  <component
+    :is="to ? RouterLink : 'div'"
     v-if="compact"
+    v-bind="to ? { to } : {}"
     class="flex min-w-0 items-center gap-3 rounded-card bg-default p-3 shadow-ds-xs sm:gap-4 sm:p-4"
+    :class="to ? 'hover:bg-elevated' : ''"
     data-ds="stat-tile"
     data-compact="true"
+    :aria-busy="loading ? 'true' : undefined"
   >
-    <DsIconChip v-if="icon" :icon="icon" :accent="accent" :tone="tone" size="md" />
-    <div class="flex min-w-0 flex-col">
-      <span
-        class="tabular truncate font-display text-heading leading-tight font-extrabold"
-        :class="valueClass"
-        >{{ value }}</span
-      >
-      <span class="truncate text-label font-semibold text-muted">{{ unit }}</span>
-    </div>
-  </div>
+    <template v-if="loading">
+      <USkeleton class="size-8 rounded-chip" />
+      <USkeleton class="h-9 w-24" />
+    </template>
+    <template v-else>
+      <DsIconChip v-if="icon" :icon="icon" :accent="accent" :tone="tone" size="md" />
+      <div class="flex min-w-0 flex-col">
+        <span
+          class="tabular truncate font-display text-heading leading-tight font-extrabold"
+          :class="valueClass"
+          >{{ value }}</span
+        >
+        <span class="truncate text-label font-semibold text-muted">{{ unit }}</span>
+      </div>
+    </template>
+  </component>
   <component
     :is="to ? RouterLink : 'div'"
     v-else
@@ -111,13 +123,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     </template>
     <template v-else>
       <DsArt3D v-if="art" :name="art" size="md" />
-      <DsIconChip
-        v-else-if="icon"
-        :icon="icon"
-        :accent="accent"
-        :tone="tone"
-        :size="chipSize"
-      />
+      <DsIconChip v-else-if="icon" :icon="icon" :accent="accent" :tone="tone" :size="chipSize" />
       <span
         class="tabular font-display font-extrabold"
         :class="[valueClass, roomy ? 'text-title' : 'text-heading']"

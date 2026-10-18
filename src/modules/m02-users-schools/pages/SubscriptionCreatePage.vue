@@ -12,16 +12,11 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { AdminCard, AdminFormSection, AdminPageHeader } from '@/ds/admin'
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsFormField, DsFormSection, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import type { SchoolSummary } from '../api/schools'
 import { createSubscription, fetchSchoolPackages, type PackageTier } from '../api/subscriptions'
-import AdminAlert from '../components/AdminAlert.vue'
-import AdminField from '../components/AdminField.vue'
-import NativeChoice from '../components/native/NativeChoice.vue'
-import NativePanel from '../components/native/NativePanel.vue'
 import SubscriptionSchoolPicker from '../components/SubscriptionSchoolPicker.vue'
 import { errorLines } from '../lib/school-errors'
 import {
@@ -36,6 +31,26 @@ const router = useRouter()
 const flash = useFlash()
 
 const school = ref<SchoolSummary | null>(null)
+const tierItems = [
+  {
+    value: 'basic',
+    label: 'Pemantauan',
+    description: '500 soalan/bulan · PERCUMA\n1 bulan (demo/trial)',
+  },
+  {
+    value: 'full',
+    label: 'Penuh',
+    description: 'Tanpa had · RM30/pelajar\n1 tahun',
+  },
+]
+const packageItems = computed(() =>
+  (packages.value ?? []).map((pkg) => ({
+    value: pkg.id,
+    label: pkg.code,
+    description: `${pkg.name}\n${String(pkg.maxRenewals + 1)} tahun`,
+  })),
+)
+
 const form = reactive<{
   tier: PackageTier
   packageId: number | null
@@ -100,20 +115,12 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="sub-create-page">
-    <AdminPageHeader title="Langganan Baru" subtitle="Cipta langganan baharu untuk sekolah.">
-      <template #actions>
-        <UButton
-          :to="SUBSCRIPTIONS_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          label="Kembali"
-          data-testid="sub-back"
-        />
-      </template>
-    </AdminPageHeader>
-
+  <DsPage
+    title="Langganan Baru"
+    subtitle="Cipta langganan baharu untuk sekolah."
+    :back-to="SUBSCRIPTIONS_LIST_PATH"
+    data-testid="sub-create-page"
+  >
     <form
       method="post"
       class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3"
@@ -123,85 +130,95 @@ async function submit(): Promise<void> {
       <div class="flex min-w-0 flex-col gap-6 xl:col-span-2">
         <h2 class="sr-only">Borang Langganan Baru</h2>
 
-        <AdminAlert :messages="errors" data-testid="sub-form-alert" />
+        <UAlert
+          v-if="errors.length > 0"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          role="alert"
+          data-testid="sub-form-alert"
+        >
+          <template #description>
+            <div class="flex flex-col gap-1">
+              <p v-for="m in errors" :key="m">{{ m }}</p>
+            </div>
+          </template>
+        </UAlert>
 
-        <AdminFormSection
+        <DsFormSection
           title="Sekolah"
           description="Cari dan pilih sekolah untuk langganan ini."
-          icon="i-ph-buildings"
+          icon="buildings"
+          :columns="2"
         >
-          <div class="md:col-span-2"><SubscriptionSchoolPicker v-model="school" /></div>
-        </AdminFormSection>
+          <div class="sm:col-span-2"><SubscriptionSchoolPicker v-model="school" /></div>
+        </DsFormSection>
 
-        <AdminFormSection
+        <DsFormSection
           title="Pakej"
           description="Jenis pakej, tingkatan dan bilangan pelajar."
-          icon="i-ph-stack"
+          icon="stack"
+          :columns="2"
         >
-          <fieldset class="flex min-w-0 flex-col gap-3 md:col-span-2">
-            <legend class="mb-3 text-label text-default">
-              Jenis Pakej <span class="text-error">*</span>
-            </legend>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <NativeChoice
-                v-model="form.tier"
-                name="package_tier"
-                value="basic"
-                input-testid="sub-tier-basic"
-              >
-                <span class="flex flex-col items-center gap-1 py-1">
-                  <span class="text-body">Pemantauan</span>
-                  <span class="text-label">500 soalan/bulan · PERCUMA</span>
-                  <span class="text-label">1 bulan (demo/trial)</span>
-                </span>
-              </NativeChoice>
-              <NativeChoice
-                v-model="form.tier"
-                name="package_tier"
-                value="full"
-                input-testid="sub-tier-full"
-              >
-                <span class="flex flex-col items-center gap-1 py-1">
-                  <span class="text-body">Penuh</span>
-                  <span class="text-label">Tanpa had · RM30/pelajar</span>
-                  <span class="text-label">1 tahun</span>
-                </span>
-              </NativeChoice>
-            </div>
-          </fieldset>
+          <div class="flex min-w-0 flex-col gap-3 sm:col-span-2">
+            <p class="text-label text-default">Jenis Pakej <span class="text-error">*</span></p>
+            <URadioGroup
+              v-model="form.tier"
+              :items="tierItems"
+              legend="Jenis Pakej"
+              name="package_tier"
+              required
+              variant="card"
+              color="info"
+              indicator="hidden"
+              orientation="horizontal"
+              :ui="{
+                fieldset: 'grid grid-cols-1 gap-3 sm:grid-cols-2',
+                item: 'min-h-11 items-center justify-center bg-elevated p-4 text-center',
+                wrapper: 'w-full text-center',
+                label: 'text-body',
+                description: 'whitespace-pre-line text-label',
+                legend: 'sr-only',
+              }"
+            />
+          </div>
 
-          <fieldset class="flex min-w-0 flex-col gap-3 md:col-span-2">
-            <legend class="mb-3 text-label text-default">
-              Tingkatan <span class="text-error">*</span>
-            </legend>
-            <div v-if="packagesError" class="flex flex-col gap-4" data-testid="sub-packages-error">
-              <AdminAlert :messages="errorLines(packagesError)" />
-              <div>
-                <UButton label="Cuba Lagi" @click="reloadPackages()" />
-              </div>
-            </div>
+          <div class="flex min-w-0 flex-col gap-3 sm:col-span-2">
+            <p class="text-label text-default">Tingkatan <span class="text-error">*</span></p>
+            <DsLoadError
+              v-if="packagesError"
+              message="Tidak dapat memuatkan senarai pakej. Sila cuba semula."
+              testid="sub-packages-error"
+              @retry="reloadPackages()"
+            />
             <div v-else-if="!packages" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <USkeleton v-for="n in 4" :key="n" class="h-24 w-full" />
             </div>
-            <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="sub-packages">
-              <NativeChoice
-                v-for="pkg in packages"
-                :key="pkg.id"
-                v-model="form.packageId"
-                name="school_package_id"
-                :value="pkg.id"
-                input-testid="sub-package"
-              >
-                <span class="flex flex-col items-center gap-1 py-1">
-                  <span class="text-body">{{ pkg.code }}</span>
-                  <span class="text-label">{{ pkg.name }}</span>
-                  <span class="text-label">{{ pkg.maxRenewals + 1 }} tahun</span>
-                </span>
-              </NativeChoice>
-            </div>
-          </fieldset>
+            <URadioGroup
+              v-else
+              :model-value="form.packageId ?? undefined"
+              :items="packageItems"
+              legend="Tingkatan"
+              name="school_package_id"
+              required
+              variant="card"
+              color="info"
+              indicator="hidden"
+              orientation="horizontal"
+              :ui="{
+                fieldset: 'grid grid-cols-1 gap-3 sm:grid-cols-2',
+                item: 'min-h-11 items-center justify-center bg-elevated p-4 text-center',
+                wrapper: 'w-full text-center',
+                label: 'text-body',
+                description: 'whitespace-pre-line text-label',
+                legend: 'sr-only',
+              }"
+              data-testid="sub-packages"
+              @update:model-value="(v) => (form.packageId = v as number)"
+            />
+          </div>
 
-          <AdminField for="sub-quota" label="Bilangan Pelajar" icon="i-ph-users" required>
+          <DsFormField native for="sub-quota" label="Bilangan Pelajar" required>
             <UInput
               id="sub-quota"
               v-model="form.quota"
@@ -213,15 +230,16 @@ async function submit(): Promise<void> {
               class="w-full"
               data-testid="sub-quota"
             />
-          </AdminField>
-        </AdminFormSection>
+          </DsFormField>
+        </DsFormSection>
 
-        <AdminFormSection
+        <DsFormSection
           title="Pembayaran"
           description="Rujukan dan nota pembayaran."
-          icon="i-ph-receipt"
+          icon="receipt"
+          :columns="2"
         >
-          <AdminField for="sub-reference" label="Rujukan Pembayaran" icon="i-ph-receipt">
+          <DsFormField native for="sub-reference" label="Rujukan Pembayaran">
             <UInput
               id="sub-reference"
               v-model="form.reference"
@@ -231,10 +249,10 @@ async function submit(): Promise<void> {
               class="w-full"
               data-testid="sub-reference"
             />
-          </AdminField>
+          </DsFormField>
 
-          <div class="md:col-span-2">
-            <AdminField for="sub-notes" label="Nota" icon="i-ph-note">
+          <div class="sm:col-span-2">
+            <DsFormField native for="sub-notes" label="Nota">
               <UTextarea
                 id="sub-notes"
                 v-model="form.notes"
@@ -244,49 +262,52 @@ async function submit(): Promise<void> {
                 class="w-full"
                 data-testid="sub-notes"
               />
-            </AdminField>
+            </DsFormField>
           </div>
-        </AdminFormSection>
+        </DsFormSection>
       </div>
 
       <aside class="flex min-w-0 flex-col gap-6 xl:sticky xl:top-6">
-        <AdminCard class="flex flex-col gap-4">
-          <NativePanel
-            v-if="summary"
-            tone="soft"
-            class="flex flex-col gap-2 p-4"
-            data-testid="sub-summary"
-          >
-            <template v-if="summary.kind === 'basic'">
-              <p class="text-body text-default">
-                Pakej Pemantauan: <strong>PERCUMA</strong> · 500 soalan/bulan/pelajar · 1 bulan
-              </p>
-              <p class="text-label text-muted">
-                Sekolah boleh naik taraf ke Pakej Penuh bila-bila masa.
-              </p>
-            </template>
-            <template v-else>
-              <span class="text-body text-default" data-testid="sub-summary-line">{{
-                summary.line
-              }}</span>
-              <span class="text-title text-highlighted" data-testid="sub-summary-total">{{
-                summary.total
-              }}</span>
-              <p v-if="summary.grand" class="text-label text-muted" data-testid="sub-summary-grand">
-                {{ summary.grand }}
-              </p>
-            </template>
-          </NativePanel>
-          <UButton
-            type="submit"
-            block
-            icon="i-ph-check"
-            label="Cipta Langganan"
-            :loading="saving"
-            :disabled="saving"
-            data-testid="sub-submit"
-          />
-        </AdminCard>
+        <DsPanel flush>
+          <div class="flex flex-col gap-4 p-4 sm:p-6">
+            <DsPanel v-if="summary" tone="inset" data-testid="sub-summary">
+              <div class="flex flex-col gap-2">
+                <template v-if="summary.kind === 'basic'">
+                  <p class="text-body text-default">
+                    Pakej Pemantauan: <strong>PERCUMA</strong> · 500 soalan/bulan/pelajar · 1 bulan
+                  </p>
+                  <p class="text-label text-muted">
+                    Sekolah boleh naik taraf ke Pakej Penuh bila-bila masa.
+                  </p>
+                </template>
+                <template v-else>
+                  <span class="text-body text-default" data-testid="sub-summary-line">{{
+                    summary.line
+                  }}</span>
+                  <span class="text-title text-highlighted" data-testid="sub-summary-total">{{
+                    summary.total
+                  }}</span>
+                  <p
+                    v-if="summary.grand"
+                    class="text-label text-muted"
+                    data-testid="sub-summary-grand"
+                  >
+                    {{ summary.grand }}
+                  </p>
+                </template>
+              </div>
+            </DsPanel>
+            <UButton
+              type="submit"
+              block
+              icon="i-ph-check"
+              label="Cipta Langganan"
+              :loading="saving"
+              :disabled="saving"
+              data-testid="sub-submit"
+            />
+          </div>
+        </DsPanel>
       </aside>
     </form>
   </DsPage>

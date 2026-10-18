@@ -7,16 +7,15 @@
  * while loading, "Tiada pelajar dijumpai" when empty and the 200-row notice at 200 rows. Errors are silent
  * (console).
  */
-import { ref, watch } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
+import { computed, ref, watch } from 'vue'
 
 import { useDebounce } from '@/composables'
 
+import { DsDataTable, DsNativeSelect } from '@/ds'
+
 import { fetchSchoolStudents, type ExistingStudent } from '../api/imports'
 import { EXISTING_STUDENTS_CAP, existingClassFilter } from '../lib/import-options'
-import CardCell from './native/CardCell.vue'
-import CardRow from './native/CardRow.vue'
-import CardTable from './native/CardTable.vue'
-import NativeSelect from './native/NativeSelect.vue'
 
 const props = defineProps<{
   schoolId: number
@@ -32,12 +31,14 @@ const classLevel = ref('')
 let loaded = false
 let controller: AbortController | null = null
 
-const COLUMNS = [
-  { key: 'no', label: '#' },
-  { key: 'name', label: 'Nama' },
-  { key: 'email', label: 'Email / ID Delima' },
-  { key: 'class', label: 'Kelas' },
+type StudentRow = ExistingStudent & Record<string, unknown>
+const COLUMNS: TableColumn<StudentRow>[] = [
+  { id: 'no', header: '#' },
+  { accessorKey: 'name', header: 'Nama' },
+  { id: 'email', header: 'Email / ID Delima' },
+  { id: 'class', header: 'Kelas' },
 ]
+const tableRows = computed(() => rows.value as StudentRow[])
 
 async function load(): Promise<void> {
   controller?.abort()
@@ -109,7 +110,7 @@ watch(classLevel, () => {
             class="min-w-0 flex-1"
             data-testid="existing-search"
           />
-          <NativeSelect
+          <DsNativeSelect
             v-model="classLevel"
             aria-label="Kelas"
             class="sm:w-48"
@@ -119,7 +120,7 @@ watch(classLevel, () => {
             <option v-for="o in existingClassFilter(schoolType)" :key="o.value" :value="o.value">
               {{ o.label }}
             </option>
-          </NativeSelect>
+          </DsNativeSelect>
         </div>
 
         <p
@@ -139,26 +140,48 @@ watch(classLevel, () => {
           Tiada pelajar dijumpai
         </p>
         <div v-else class="max-h-96 overflow-auto" data-testid="existing-scroll">
-          <CardTable :columns="COLUMNS" caption="Pelajar sedia ada">
-            <CardRow v-for="(s, i) in rows" :key="s.id" data-testid="existing-row">
-              <CardCell label="#">{{ i + 1 }}</CardCell>
-              <CardCell label="Nama">{{ s.name }}</CardCell>
-              <CardCell label="Email / ID Delima">
-                <span class="break-all">
-                  {{ s.email }}
-                  <span v-if="s.idDelima" class="text-primary">{{ s.idDelima }}</span>
-                </span>
-              </CardCell>
-              <CardCell label="Kelas">
-                <UBadge
-                  v-if="s.classLevel"
-                  color="neutral"
-                  variant="subtle"
-                  :label="s.classLevel"
-                />
-              </CardCell>
-            </CardRow>
-          </CardTable>
+          <DsDataTable
+            :data="tableRows"
+            :columns="COLUMNS"
+            variant="bare"
+            density="tight"
+            caption="Pelajar sedia ada"
+            :page-size="Math.max(tableRows.length, 1)"
+            card-title="name"
+            data-testid="existing-table"
+          >
+            <template #no-cell="{ row }">{{ row.index + 1 }}</template>
+            <template #email-cell="{ row }">
+              <span class="break-all">
+                {{ row.original.email }}
+                <span v-if="row.original.idDelima" class="text-primary">{{
+                  row.original.idDelima
+                }}</span>
+              </span>
+            </template>
+            <template #class-cell="{ row }">
+              <UBadge
+                v-if="row.original.classLevel"
+                color="neutral"
+                variant="subtle"
+                :label="row.original.classLevel"
+              />
+            </template>
+            <template #card="{ row }">
+              <p class="text-label text-highlighted">{{ row.name }}</p>
+              <p class="text-caption break-all text-muted">
+                {{ row.email }}
+                <span v-if="row.idDelima" class="text-primary">{{ row.idDelima }}</span>
+              </p>
+              <UBadge
+                v-if="row.classLevel"
+                class="w-fit"
+                color="neutral"
+                variant="subtle"
+                :label="String(row.classLevel)"
+              />
+            </template>
+          </DsDataTable>
         </div>
         <p
           v-if="!loading && rows.length >= EXISTING_STUDENTS_CAP"

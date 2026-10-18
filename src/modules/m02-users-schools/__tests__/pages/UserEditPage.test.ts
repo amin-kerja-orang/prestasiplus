@@ -144,7 +144,9 @@ describe('UserEditPage (M02 S3) student record', () => {
       'Pegawai JPN',
       'Admin',
     ])
-    expect((t(w, 'grade-10').element as HTMLInputElement).checked).toBe(true)
+    expect(
+      w.get('[data-testid=grade-cards] button[role=radio][value="10"]').attributes('aria-checked'),
+    ).toBe('true')
     expect((t(w, 'user-ic').element as HTMLInputElement).value).toBe('xxxxxx-xx-xx01')
     expect((t(w, 'user-package').element as HTMLSelectElement).value).toBe('regular_monthly')
     expect(w.findAll('[data-testid=user-package] option').map((o) => o.text())).toEqual([
@@ -152,17 +154,17 @@ describe('UserEditPage (M02 S3) student record', () => {
       'Regular Bulanan — RM10/bulan (1 bulan)',
       'Personal Per Sesi — RM200 (hingga 10 Jan)',
     ])
-    expect((t(w, 'user-pksk').element as HTMLInputElement).checked).toBe(false)
+    expect(t(w, 'user-pksk').attributes('aria-checked')).toBe('false')
     expect(t(w, 'user-pksk-status').text()).toBe('Tiada Akses')
     expect(w.text()).toContain(
       'Tukar pakej secara manual. Tarikh tamat dikira automatik mengikut jenis pakej.',
     )
     expect(t(w, 'admin-school-name').text()).toBe('SMK CONTOH BARU')
     expect(t(w, 'admin-school-chip').text()).toContain('SMK · Melaka · PPD MELAKA TENGAH')
-    expect((t(w, 'user-active').element as HTMLInputElement).checked).toBe(true)
+    expect(t(w, 'user-active').attributes('aria-checked')).toBe('true')
     expect(w.text()).toContain('Status Aktif')
-    expect(t(w, 'user-submit').text()).toBe('Kemaskini')
-    expect(t(w, 'user-cancel').attributes('href')).toBe('/admin/users')
+    expect(t(w, 'form-submit').text()).toBe('Kemaskini')
+    expect(t(w, 'form-cancel').attributes('href')).toBe('/admin/users')
     expect(w.find('[data-testid=parent-linker-edit]').exists()).toBe(false)
   })
 
@@ -201,10 +203,10 @@ describe('UserEditPage (M02 S3) student record', () => {
     })
     const w = await render()
     await t(w, 'user-name').setValue('Nama Baru')
-    await t(w, 'grade-8').setValue(true)
+    await w.get('[data-testid=grade-cards] button[role=radio][value="8"]').trigger('click')
     await t(w, 'user-package').setValue('personal')
-    await t(w, 'user-pksk').setValue(true)
-    await t(w, 'user-active').setValue(false)
+    await t(w, 'user-pksk').trigger('click')
+    await t(w, 'user-active').trigger('click')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(users.updateAdminUser).toHaveBeenCalledWith(2, {
@@ -333,7 +335,9 @@ describe('UserEditPage (M02 S3) role sections follow the select (DV-M02-04)', ()
     await t(w, 'user-role').setValue('sponsor')
     expect(w.find('[data-testid=admin-school]').exists()).toBe(false)
     await t(w, 'user-role').setValue('student')
-    expect((t(w, 'grade-10').element as HTMLInputElement).checked).toBe(true)
+    expect(
+      w.get('[data-testid=grade-cards] button[role=radio][value="10"]').attributes('aria-checked'),
+    ).toBe('true')
     expect((t(w, 'user-ic').element as HTMLInputElement).value).toBe('xxxxxx-xx-xx01')
     expect(t(w, 'admin-school-name').text()).toBe('SMK CONTOH BARU')
   })
@@ -353,12 +357,12 @@ describe('UserEditPage (M02 S3) role sections follow the select (DV-M02-04)', ()
     expect(w.find('[data-testid=grade-cards]').exists()).toBe(false)
     await t(w, 'user-role').setValue('student')
     const checked = w
-      .findAll('[data-testid=grade-cards] input')
-      .filter((i) => (i.element as HTMLInputElement).checked)
+      .findAll('[data-testid=grade-cards] button[role=radio]')
+      .filter((i) => i.attributes('aria-checked') === 'true')
     expect(checked).toHaveLength(0)
     expect((t(w, 'user-ic').element as HTMLInputElement).value).toBe('')
     expect((t(w, 'user-package').element as HTMLSelectElement).value).toBe('none')
-    expect((t(w, 'user-pksk').element as HTMLInputElement).checked).toBe(false)
+    expect(t(w, 'user-pksk').attributes('aria-checked')).toBe('false')
     expect(w.find('[data-testid=admin-school-chip]').exists()).toBe(false)
     await t(w, 'user-role').setValue('parent')
     expect(w.findAll('[data-testid=linker-chip]')).toHaveLength(0)
@@ -505,11 +509,16 @@ describe('UserEditPage (M02 S3) errors and loading', () => {
     )
     const w = await render(2)
     expect(useRouteOutcome().value).toBeNull()
-    expect(t(w, 'user-load-error').text()).toContain('Ralat pelayan.')
+    expect(t(w, 'user-load-error').text()).toContain(
+      'Tidak dapat memuatkan pengguna. Sila cuba semula.',
+    )
     expect(w.find('[data-testid=user-form]').exists()).toBe(false)
-    expect(t(w, 'user-back').attributes('href')).toBe('/admin/users')
+    expect(w.get('[data-ds="back-link"]').attributes('href')).toBe('/admin/users')
     users.fetchAdminUser.mockResolvedValue(detail())
-    await w.get('[data-testid=user-load-error] button').trigger('click')
+    await w
+      .findAll('[data-testid=user-load-error] button')
+      .find((b) => b.text() === 'Cuba Semula')!
+      .trigger('click')
     await flushPromises()
     expect(w.find('[data-testid=user-form]').exists()).toBe(true)
   })

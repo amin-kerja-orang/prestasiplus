@@ -64,10 +64,12 @@ afterEach(() => {
 describe('SubscriptionCreatePage (M02 S13)', () => {
   it('defaults to Pemantauan, no package, quota 100, and shows the basic summary', async () => {
     const { w } = await render()
-    expect((w.get('[data-testid=sub-tier-basic]').element as HTMLInputElement).checked).toBe(true)
-    expect(w.findAll('[data-testid=sub-package]')).toHaveLength(3)
+    expect(w.get('button[role=radio][value=basic]').attributes('aria-checked')).toBe('true')
+    expect(w.findAll('[data-testid=sub-packages] button[role=radio]')).toHaveLength(3)
     expect(
-      w.findAll('[data-testid=sub-package]').some((i) => (i.element as HTMLInputElement).checked),
+      w
+        .findAll('[data-testid=sub-packages] button[role=radio]')
+        .some((i) => i.attributes('aria-checked') === 'true'),
     ).toBe(false)
     expect((w.get('[data-testid=sub-quota]').element as HTMLInputElement).value).toBe('100')
     expect(w.get('[data-testid=sub-summary]').text()).toContain(
@@ -80,16 +82,16 @@ describe('SubscriptionCreatePage (M02 S13)', () => {
 
   it('computes the full summary with the multi-year line only when maxRenewals > 0', async () => {
     const { w } = await render()
-    await w.get('[data-testid=sub-tier-full]').setValue()
+    await w.get('button[role=radio][value=full]').trigger('click')
     expect(w.find('[data-testid=sub-summary]').exists()).toBe(false)
-    const radios = w.findAll('[data-testid=sub-package]')
-    await radios[0]!.setValue()
+    const radios = w.findAll('[data-testid=sub-packages] button[role=radio]')
+    await radios[0]!.trigger('click')
     expect(w.get('[data-testid=sub-summary-line]').text()).toBe('100 pelajar × RM30.00/tahun')
     expect(w.get('[data-testid=sub-summary-total]').text()).toBe('RM3,000.00')
     expect(w.get('[data-testid=sub-summary-grand]').text()).toBe('Jumlah 2 tahun: RM6,000.00')
-    await radios[2]!.setValue()
+    await radios[2]!.trigger('click')
     expect(w.get('[data-testid=sub-summary-grand]').text()).toBe('Jumlah 6 tahun: RM18,000.00')
-    await radios[1]!.setValue()
+    await radios[1]!.trigger('click')
     expect(w.find('[data-testid=sub-summary-grand]').exists()).toBe(false)
   })
 

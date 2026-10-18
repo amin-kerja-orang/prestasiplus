@@ -8,19 +8,30 @@
  * action the same page reloads, the selection is cleared and the API `status` is the success flash
  * (UNVERIFIED COPY).
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { AdminCard, AdminIdentity, AdminKpiStrip, AdminPageHeader, AdminPager } from '@/ds/admin'
 import { useApi, useFlash } from '@/composables'
-import { DsPage, DsStatTile } from '@/ds'
+import {
+  DsDataTable,
+  DsIdentity,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  DsStatusBadge,
+  type StatItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 
-import { bulkCompAction, fetchCompStudents, type CompBulkAction } from '../api/comp-students'
-import AdminAlert from '../components/AdminAlert.vue'
-import NativeCheckbox from '../components/native/NativeCheckbox.vue'
 import {
-  accountColor,
+  bulkCompAction,
+  fetchCompStudents,
+  type CompBulkAction,
+  type CompStudentListItem,
+} from '../api/comp-students'
+import {
   BULK_BUTTONS,
   COMP_CREATE_PATH,
   COMP_LIST_PATH,
@@ -29,9 +40,6 @@ import {
 } from '../lib/comp-students'
 import { errorLines } from '../lib/user-form-errors'
 import { formatUserDate } from '../lib/user-list'
-import AdminCell from '../components/native/AdminCell.vue'
-import AdminRow from '../components/native/AdminRow.vue'
-import AdminTable from '../components/native/AdminTable.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -50,10 +58,33 @@ const { data, error, reload } = useApi(
 const rows = computed(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.counts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
-const summary = computed(() => {
-  const meta = data.value?.meta
-  if (!meta || rows.value.length === 0) return ''
-  return `Menunjukkan ${String(meta.from ?? 1)}-${String(meta.to ?? rows.value.length)} daripada ${String(meta.totalItems)} hasil`
+type CompRow = CompStudentListItem & Record<string, unknown>
+const tableRows = computed(() => rows.value as CompRow[])
+const stats = computed<StatItem[]>(() => {
+  const k = counts.value
+  if (!k) return []
+  return [
+    {
+      key: 'total',
+      label: 'Pelajar Komplimen',
+      value: formatNumber(k.total),
+      icon: 'graduation-cap',
+    },
+    {
+      key: 'off',
+      label: 'Syiling OFF',
+      value: formatNumber(k.coinsOff),
+      icon: 'prohibit',
+      accent: 'heat',
+    },
+    {
+      key: 'on',
+      label: 'Syiling ON',
+      value: formatNumber(k.total - k.coinsOff),
+      icon: 'coins',
+      accent: 'trial',
+    },
+  ]
 })
 
 function goToPage(next: number): void {
@@ -73,8 +104,14 @@ watch(
   },
 )
 
-function toggleAll(event: Event): void {
-  selected.value = (event.target as HTMLInputElement).checked ? [...pageIds.value] : []
+function toggleAll(checked: boolean | 'indeterminate'): void {
+  selected.value = checked === true ? [...pageIds.value] : []
+}
+function toggleOne(id: number, checked: boolean | 'indeterminate'): void {
+  selected.value =
+    checked === true
+      ? [...selected.value.filter((v) => v !== id), id]
+      : selected.value.filter((v) => v !== id)
 }
 
 const busy = ref(false)
@@ -97,213 +134,197 @@ async function runBulk(action: CompBulkAction): Promise<void> {
   }
 }
 
-const SKELETON_ROWS = 6
-const COLUMNS = [
-  { key: 'select', label: '', cls: 'w-14' },
-  { key: 'name', label: 'Nama' },
-  { key: 'ic', label: 'IC' },
-  { key: 'school', label: 'Sekolah' },
-  { key: 'class', label: 'Kelas / Cikgu' },
-  { key: 'account', label: 'Akaun' },
-  { key: 'coins', label: 'Syiling' },
-  { key: 'expiry', label: 'Pakej tamat' },
+const COLUMNS: TableColumn<CompRow>[] = [
+  { id: 'select', header: '' },
+  { id: 'name', header: 'Nama' },
+  { id: 'ic', header: 'IC' },
+  { id: 'school', header: 'Sekolah' },
+  { id: 'class', header: 'Kelas / Cikgu' },
+  { id: 'account', header: 'Akaun' },
+  { id: 'coins', header: 'Syiling' },
+  { id: 'expiry', header: 'Pakej tamat' },
 ]
 </script>
 
 <template>
-  <DsPage data-testid="comp-list-page">
-    <AdminPageHeader title="Pelajar Komplimen">
-      <template #subtitle>
-        <p v-if="counts" class="text-body text-muted" data-testid="comp-summary">
-          Syiling OFF: <strong class="text-highlighted">{{ counts.coinsOff }}</strong> /
-          {{ counts.total }} pelajar komplimen
-        </p>
-      </template>
-      <template #actions>
-        <UButton
-          :to="COMP_CREATE_PATH"
-          icon="i-ph-user-plus"
-          label="Daftar Baru"
-          data-testid="comp-add"
-        />
-      </template>
-    </AdminPageHeader>
+  <DsPage title="Pelajar Komplimen" data-testid="comp-list-page">
+    <template #subtitle>
+      <p v-if="counts" class="text-body text-muted" data-testid="comp-summary">
+        Syiling OFF: <strong class="text-highlighted">{{ counts.coinsOff }}</strong> /
+        {{ counts.total }} pelajar komplimen
+      </p>
+    </template>
+    <template #actions>
+      <UButton
+        :to="COMP_CREATE_PATH"
+        icon="i-ph-user-plus"
+        label="Daftar Baru"
+        data-testid="comp-add"
+      />
+    </template>
 
-    <AdminKpiStrip label="Ringkasan pelajar komplimen" class="xl:grid-cols-3 2xl:grid-cols-3">
-      <template v-if="counts">
-        <DsStatTile
-          compact
-          :value="formatNumber(counts.total)"
-          unit="Pelajar Komplimen"
-          icon="i-ph-graduation-cap"
-        />
-        <DsStatTile
-          compact
-          accent="heat"
-          :value="formatNumber(counts.coinsOff)"
-          unit="Syiling OFF"
-          icon="i-ph-prohibit"
-        />
-        <DsStatTile
-          compact
-          accent="trial"
-          :value="formatNumber(counts.total - counts.coinsOff)"
-          unit="Syiling ON"
-          icon="i-ph-coins"
-        />
-      </template>
-      <template v-else>
-        <USkeleton v-for="n in 3" :key="n" class="h-20 w-full" />
-      </template>
-    </AdminKpiStrip>
+    <DsStatRow
+      :items="stats"
+      :loading="counts === null"
+      compact
+      :cols="3"
+      aria-label="Ringkasan pelajar komplimen"
+    />
 
     <!-- Sticky bulk bar (FR-M02-67): only while at least one row is ticked. -->
-    <AdminCard
-      v-if="selected.length > 0"
-      as="div"
-      tone="elevated"
-      sticky
-      flush
-      class="flex flex-wrap items-center gap-3 p-4"
-      data-testid="comp-bulk-bar"
-    >
-      <span class="mr-2 text-body text-highlighted">
-        <span data-testid="comp-selected-count">{{ selected.length }}</span> dipilih
-      </span>
-      <UButton
-        v-for="b in BULK_BUTTONS"
-        :key="b.action"
-        type="button"
-        :color="b.color"
-        variant="soft"
-        :icon="b.icon"
-        :label="b.label"
-        :loading="runningAction === b.action"
-        :disabled="busy"
-        :data-testid="`comp-bulk-${b.action}`"
-        @click="runBulk(b.action)"
-      />
-      <UButton
-        type="button"
-        color="neutral"
-        variant="ghost"
-        label="Batal pilihan"
-        data-testid="comp-bulk-clear"
-        @click="selected = []"
-      />
-    </AdminCard>
-
-    <div v-if="error" class="flex flex-col gap-4" data-testid="comp-error">
-      <AdminAlert :messages="errorLines(error)" />
-      <div>
-        <UButton label="Cuba Lagi" data-testid="comp-retry" @click="reload()" />
+    <DsPanel v-if="selected.length > 0" tone="bulk" data-testid="comp-bulk-bar">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="mr-2 text-body text-highlighted">
+          <span data-testid="comp-selected-count">{{ selected.length }}</span> dipilih
+        </span>
+        <UButton
+          v-for="b in BULK_BUTTONS"
+          :key="b.action"
+          type="button"
+          :color="b.color"
+          variant="soft"
+          :icon="b.icon"
+          :label="b.label"
+          :loading="runningAction === b.action"
+          :disabled="busy"
+          :data-testid="`comp-bulk-${b.action}`"
+          @click="runBulk(b.action)"
+        />
+        <UButton
+          type="button"
+          color="neutral"
+          variant="ghost"
+          label="Batal pilihan"
+          data-testid="comp-bulk-clear"
+          @click="selected = []"
+        />
       </div>
-    </div>
+    </DsPanel>
 
-    <AdminTable
+    <DsLoadError
+      v-if="error"
+      message="Tidak dapat memuatkan senarai pelajar komplimen. Sila cuba semula."
+      testid="comp-error"
+      @retry="reload()"
+    />
+
+    <DsPanel v-else-if="firstLoad" flush data-testid="comp-table">
+      <div class="flex flex-col gap-3 p-4">
+        <USkeleton v-for="n in 5" :key="n" class="h-12 w-full" data-testid="comp-skeleton" />
+      </div>
+    </DsPanel>
+
+    <DsDataTable
       v-else
+      :data="tableRows"
       :columns="COLUMNS"
+      variant="flush"
       caption="Senarai pelajar komplimen"
+      :total="data?.meta.totalItems ?? 0"
+      :page="data?.meta.page ?? 1"
+      :page-size="data?.meta.pageSize ?? 50"
       data-testid="comp-table"
+      @update:page="goToPage"
     >
-      <template #head-select>
-        <NativeCheckbox
+      <template #select-header>
+        <UCheckbox
           :model-value="allSelected"
           aria-label="Pilih semua"
           data-testid="comp-select-all"
-          @change="toggleAll"
+          @update:model-value="toggleAll"
         />
       </template>
-
-      <template v-if="firstLoad">
-        <AdminRow v-for="n in SKELETON_ROWS" :key="n" data-testid="comp-skeleton">
-          <AdminCell v-for="c in COLUMNS.length" :key="c">
-            <USkeleton class="h-5 w-full max-w-28" />
-          </AdminCell>
-        </AdminRow>
+      <template #select-cell="{ row }">
+        <UCheckbox
+          :model-value="selected.includes(row.original.id)"
+          :aria-label="`Pilih ${row.original.name}`"
+          data-testid="comp-select"
+          @update:model-value="(v: boolean | 'indeterminate') => toggleOne(row.original.id, v)"
+        />
       </template>
-
-      <template v-else>
-        <AdminRow v-for="s in rows" :key="s.id" data-testid="comp-row" :data-student-id="s.id">
-          <AdminCell label="Pilih">
-            <NativeCheckbox
-              v-model="selected"
-              :value="s.id"
-              :aria-label="`Pilih ${s.name}`"
-              data-testid="comp-select"
-            />
-          </AdminCell>
-          <AdminCell>
-            <AdminIdentity :name="s.name" :sub="s.username">
-              <template #name>
-                <RouterLink
-                  :to="compDetailPath(s.id)"
-                  class="text-primary"
-                  data-testid="comp-name"
-                  >{{ s.name }}</RouterLink
-                >
-              </template>
-            </AdminIdentity>
-          </AdminCell>
-          <AdminCell label="IC">
-            <span class="text-nowrap text-muted">{{ s.icNumber ?? '' }}</span>
-          </AdminCell>
-          <AdminCell label="Sekolah">
-            <span class="block max-w-32 truncate" :title="s.schoolName ?? ''">{{
-              s.schoolName ?? ''
-            }}</span>
-          </AdminCell>
-          <AdminCell label="Kelas / Cikgu">
-            <div class="flex min-w-0 flex-col max-md:items-end">
-              <span class="text-nowrap text-highlighted">{{ s.classLabel }}</span>
-              <span class="block max-w-36 truncate text-label text-muted" :title="s.teacherName">{{
-                s.teacherName
-              }}</span>
-            </div>
-          </AdminCell>
-          <AdminCell label="Akaun">
-            <UBadge
-              :color="accountColor(s.isActive)"
-              variant="subtle"
-              :label="s.isActive ? 'AKTIF' : 'TIDAK AKTIF'"
-              data-testid="comp-account"
-            />
-          </AdminCell>
-          <AdminCell label="Syiling">
-            <UBadge
-              :color="coinsColor(s.coinsEnabled)"
-              variant="subtle"
-              :label="s.coinsEnabled ? 'ON' : 'OFF'"
-              data-testid="comp-coins"
-            />
-          </AdminCell>
-          <AdminCell label="Pakej tamat">
-            <span class="text-nowrap">{{ formatUserDate(s.packageExpiresAt) }}</span>
-          </AdminCell>
-        </AdminRow>
+      <template #name-cell="{ row }">
+        <DsIdentity :name="row.original.name" :sub="row.original.username">
+          <template #name>
+            <RouterLink
+              :to="compDetailPath(row.original.id)"
+              class="text-primary"
+              data-testid="comp-name"
+              >{{ row.original.name }}</RouterLink
+            >
+          </template>
+        </DsIdentity>
       </template>
-
-      <template #footer>
-        <!-- Empty page: outside the table body, centred in the card (FR-M02-69). -->
-        <p
-          v-if="data && rows.length === 0"
-          class="px-4 py-12 text-center text-body text-muted"
-          data-testid="comp-empty"
-        >
+      <template #ic-cell="{ row }">
+        <span class="text-nowrap text-muted">{{ row.original.icNumber ?? '' }}</span>
+      </template>
+      <template #school-cell="{ row }">
+        <span class="block max-w-32 truncate" :title="row.original.schoolName ?? ''">{{
+          row.original.schoolName ?? ''
+        }}</span>
+      </template>
+      <template #class-cell="{ row }">
+        <div class="flex min-w-0 flex-col">
+          <span class="text-nowrap text-highlighted">{{ row.original.classLabel }}</span>
+          <span
+            class="block max-w-36 truncate text-label text-muted"
+            :title="row.original.teacherName"
+            >{{ row.original.teacherName }}</span
+          >
+        </div>
+      </template>
+      <template #account-cell="{ row }">
+        <DsStatusBadge
+          :status="row.original.isActive ? 'active' : 'inactive'"
+          data-testid="comp-account"
+        />
+      </template>
+      <template #coins-cell="{ row }">
+        <UBadge
+          :color="coinsColor(row.original.coinsEnabled)"
+          variant="subtle"
+          :label="row.original.coinsEnabled ? 'ON' : 'OFF'"
+          data-testid="comp-coins"
+        />
+      </template>
+      <template #expiry-cell="{ row }">
+        <span class="text-nowrap">{{ formatUserDate(row.original.packageExpiresAt) }}</span>
+      </template>
+      <template #empty>
+        <!-- Empty page (FR-M02-69). -->
+        <p class="px-4 py-12 text-center text-body text-muted" data-testid="comp-empty">
           Tiada pelajar komplimen lagi.
           <RouterLink :to="COMP_CREATE_PATH" class="text-primary" data-testid="comp-empty-link"
             >Daftar baru.</RouterLink
           >
         </p>
-        <AdminPager
-          :summary="summary"
-          :total="data?.meta.totalItems ?? 0"
-          :page="data?.meta.page ?? 1"
-          :page-size="data?.meta.pageSize ?? 50"
-          data-testid="comp-pager"
-          @update:page="goToPage"
-        />
       </template>
-    </AdminTable>
+      <template #card="{ row }">
+        <div class="flex min-w-0 items-start gap-3">
+          <UCheckbox
+            :model-value="selected.includes(row.id as number)"
+            :aria-label="`Pilih ${row.name as string}`"
+            data-testid="comp-select"
+            @update:model-value="(v: boolean | 'indeterminate') => toggleOne(row.id as number, v)"
+          />
+          <div class="flex min-w-0 flex-col gap-1">
+            <RouterLink
+              :to="compDetailPath(row.id as number)"
+              class="text-primary"
+              data-testid="comp-name"
+              >{{ row.name }}</RouterLink
+            >
+            <span class="text-label text-muted">{{ row.classLabel }} · {{ row.teacherName }}</span>
+            <div class="flex flex-wrap items-center gap-2">
+              <DsStatusBadge :status="row.isActive ? 'active' : 'inactive'" />
+              <UBadge
+                :color="coinsColor(row.coinsEnabled as boolean)"
+                variant="subtle"
+                :label="row.coinsEnabled ? 'ON' : 'OFF'"
+              />
+            </div>
+          </div>
+        </div>
+      </template>
+    </DsDataTable>
   </DsPage>
 </template>

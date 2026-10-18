@@ -99,13 +99,13 @@ describe('StudentImportPage (M02 S5) content', () => {
     expect(w.text()).toContain('Borang Import Pelajar')
     expect(w.text()).toContain('Sekolah Rendah')
     expect(w.text()).toContain('Sekolah Menengah')
-    expect(w.findAll('input[name=class_level]')).toHaveLength(11)
+    expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(11)
     expect(t(w, 'import-paste').attributes('placeholder')).toContain(
       'Paste data dari DELIMa (3-4 baris per pelajar):',
     )
     expect(t(w, 'student-format-paste').text()).toContain('Format DELIMa (3-4 baris per pelajar):')
     expect(t(w, 'student-format-paste').text()).toContain('(No. KP — pilihan)')
-    expect(t(w, 'student-back').attributes('href')).toBe('/admin')
+    expect(w.get('[data-ds="back-link"]').attributes('href')).toBe('/admin')
     expect(t(w, 'student-notes').text()).toContain('Nama pelajar akan ditukar ke Title Case')
     expect(
       t(w, 'student-notes')
@@ -149,7 +149,7 @@ describe('StudentImportPage (M02 S5) quota panel', () => {
     expect(t(w, 'quota-figures').text()).toBe('423 / 415')
     expect(t(w, 'quota-bar').html()).toContain('aria-valuenow="100"')
     expect(t(w, 'quota-note').text()).toBe('Kuota penuh! Sila tingkatkan kuota dahulu.')
-    expect(t(w, 'student-submit').attributes('disabled')).toBeUndefined()
+    expect(t(w, 'form-submit').attributes('disabled')).toBeUndefined()
   })
 
   it('no subscription and a failed request both show the warning', async () => {
@@ -181,7 +181,7 @@ describe('StudentImportPage (M02 S5) existing students', () => {
     await t(w, 'existing-toggle').trigger('click')
     await flushPromises()
     expect(imports.fetchSchoolStudents).toHaveBeenCalledTimes(1)
-    expect(w.findAll('[data-testid=existing-row]')).toHaveLength(3)
+    expect(w.findAll('[data-testid=existing-table] tbody tr')).toHaveLength(3)
     expect(w.find('[data-testid=existing-cap]').exists()).toBe(false)
     expect(w.findAll('[data-testid=existing-class] option').map((o) => o.text())).toEqual([
       'Semua Kelas',
@@ -249,17 +249,17 @@ describe('StudentImportPage (M02 S5) existing students', () => {
 describe('StudentImportPage (M02 S5) class cards', () => {
   it('SK and SJK show Darjah only, SMK Tingkatan only; a hidden checked card is unchecked', async () => {
     const w = await render()
-    await w.get('input[value=T3]').setValue(true)
+    await w.get('button[role=radio][value=T3]').trigger('click')
     await pickSchool(w, SK)
     expect(w.find('[data-testid=class-group-secondary]').exists()).toBe(false)
-    expect(w.findAll('input[name=class_level]')).toHaveLength(6)
-    await w.get('input[value=D2]').setValue(true)
+    expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(6)
+    await w.get('button[role=radio][value=D2]').trigger('click')
     await t(w, 'admin-school-clear').trigger('click')
-    expect(w.findAll('input[name=class_level]')).toHaveLength(11)
-    expect((w.get('input[value=D2]').element as HTMLInputElement).checked).toBe(true)
+    expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(11)
+    expect(w.get('button[role=radio][value=D2]').attributes('aria-checked')).toBe('true')
     await pickSchool(w, SMK)
     expect(w.find('[data-testid=class-group-primary]').exists()).toBe(false)
-    expect(w.findAll('input[name=class_level]')).toHaveLength(5)
+    expect(w.findAll('[data-testid=student-classes] button[role=radio]')).toHaveLength(5)
     expect(w.text()).toContain('Tingkatan 5')
     await t(w, 'admin-school-clear').trigger('click')
     await pickSchool(w, SJKC)
@@ -276,7 +276,7 @@ describe('StudentImportPage (M02 S5) submit', () => {
     })
     const w = await render()
     await pickSchool(w, SMK)
-    await w.get('input[value=T4]').setValue(true)
+    await w.get('button[role=radio][value=T4]').trigger('click')
     await t(w, 'import-paste').setValue('PELAJAR DEMO SATU\nm-1@moe-dl.edu.my\nkata1')
     await t(w, 'student-form').trigger('submit')
     await flushPromises()

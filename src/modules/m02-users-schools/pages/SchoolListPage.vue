@@ -10,28 +10,28 @@
  *   (UNVERIFIED COPY, from the API `status`).
  * - The table scrolls inside its card from `md`; below `md` every school is a card (`AdminTable`).
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
-import {
-  AdminKpiStrip,
-  AdminPageHeader,
-  AdminPager,
-  AdminToolbar,
-  type ToolbarChip,
-} from '@/ds/admin'
 import { useApi, useFlash } from '@/composables'
-import { DsPage, DsStatTile } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  DsStatusBadge,
+  type StatItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchAdminSchools, toggleSchool, type AdminSchool } from '../api/schools-admin'
-import AdminAlert from '../components/AdminAlert.vue'
 import { errorLines } from '../lib/school-errors'
 import { SCHOOL_ROUTES, SCHOOLS_LIST_PATH, SCHOOL_STATE_OPTIONS } from '../lib/school-options'
-import AdminCell from '../components/native/AdminCell.vue'
-import AdminRow from '../components/native/AdminRow.vue'
-import AdminSelect from '../components/native/AdminSelect.vue'
-import AdminTable from '../components/native/AdminTable.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -85,8 +85,8 @@ const counts = computed(() => data.value?.meta.counts ?? null)
 const types = computed<string[]>(() => data.value?.meta.types ?? [])
 const firstLoad = computed(() => data.value === null && error.value === null)
 /** Removable chips of the applied filters (the URL is the source of truth). */
-const chips = computed<ToolbarChip[]>(() => {
-  const out: ToolbarChip[] = []
+const chips = computed<{ key: string; label: string }[]>(() => {
+  const out: { key: string; label: string }[] = []
   if (applied.value.state !== '') out.push({ key: 'state', label: applied.value.state })
   if (applied.value.type !== '') out.push({ key: 'type', label: applied.value.type })
   return out
@@ -99,13 +99,8 @@ async function removeChip(key: string): Promise<void> {
   if (applied.value.type !== '' && key !== 'type') query.type = applied.value.type
   await router.push({ path: SCHOOLS_LIST_PATH, query })
 }
-const summary = computed(() => {
-  const meta = data.value?.meta
-  if (!meta || rows.value.length === 0) return ''
-  const first = (meta.page - 1) * meta.pageSize + 1
-  const last = Math.min(meta.page * meta.pageSize, meta.totalItems)
-  return `Menunjukkan ${String(first)}-${String(last)} daripada ${String(meta.totalItems)} hasil`
-})
+/** Filters in force (search counts as one), for the reset button and the mobile badge. */
+const activeCount = computed(() => chips.value.length + (applied.value.search !== '' ? 1 : 0))
 
 /** Filter values as the query string of the GET form (empty values dropped, page reset). */
 function filterQuery(): Record<string, string> {
@@ -172,77 +167,73 @@ async function toggle(school: AdminSchool): Promise<void> {
   }
 }
 
-const SKELETON_ROWS = 5
-const COLUMNS = [
-  { key: 'name', label: 'Nama Sekolah' },
-  { key: 'code', label: 'Kod' },
-  { key: 'type', label: 'Jenis' },
-  { key: 'state', label: 'Negeri' },
-  { key: 'district', label: 'Daerah' },
-  { key: 'students', label: 'Pelajar' },
-  { key: 'teachers', label: 'Guru' },
-  { key: 'status', label: 'Status' },
-  { key: 'actions', label: 'Tindakan', cls: 'w-28 text-end' },
+type SchoolRow = AdminSchool & Record<string, unknown>
+const tableRows = computed(() => rows.value as SchoolRow[])
+const stats = computed<StatItem[]>(() => {
+  const k = counts.value
+  if (!k) return []
+  return [
+    { key: 'total', label: 'Jumlah Sekolah', value: formatNumber(k.total), icon: 'buildings' },
+    {
+      key: 'active',
+      label: 'Aktif',
+      value: formatNumber(k.active),
+      icon: 'check-circle',
+      accent: 'win',
+    },
+    {
+      key: 'inactive',
+      label: 'Tidak Aktif',
+      value: formatNumber(k.inactive),
+      icon: 'pause-circle',
+      accent: 'heat',
+    },
+  ]
+})
+const COLUMNS: TableColumn<SchoolRow>[] = [
+  { accessorKey: 'name', header: 'Nama Sekolah' },
+  { accessorKey: 'code', header: 'Kod' },
+  { accessorKey: 'type', header: 'Jenis' },
+  { accessorKey: 'state', header: 'Negeri' },
+  { accessorKey: 'district', header: 'Daerah' },
+  { accessorKey: 'studentCount', header: 'Pelajar' },
+  { accessorKey: 'teacherCount', header: 'Guru' },
+  { id: 'status', header: 'Status' },
+  { id: 'actions', header: 'Tindakan' },
 ]
 </script>
 
 <template>
-  <DsPage data-testid="schools-page">
-    <AdminPageHeader
-      title="Urus Sekolah"
-      subtitle="Senarai sekolah berdaftar, status dan bilangan pelajar serta guru."
-    >
-      <template #actions>
-        <UButton
-          :to="{ name: SCHOOL_ROUTES.create }"
-          icon="i-ph-plus"
-          label="Tambah Sekolah"
-          data-testid="schools-add"
-        />
-      </template>
-    </AdminPageHeader>
+  <DsPage
+    title="Urus Sekolah"
+    subtitle="Senarai sekolah berdaftar, status dan bilangan pelajar serta guru."
+    data-testid="schools-page"
+  >
+    <template #actions>
+      <UButton
+        :to="{ name: SCHOOL_ROUTES.create }"
+        icon="i-ph-plus"
+        label="Tambah Sekolah"
+        data-testid="schools-add"
+      />
+    </template>
 
-    <AdminKpiStrip label="Ringkasan sekolah" class="xl:grid-cols-3 2xl:grid-cols-3">
-      <div data-testid="schools-stat-total">
-        <DsStatTile
-          v-if="counts"
-          compact
-          :value="formatNumber(counts.total)"
-          unit="Jumlah Sekolah"
-          icon="i-ph-buildings"
-        />
-        <USkeleton v-else class="h-20 w-full" />
-      </div>
-      <div data-testid="schools-stat-active">
-        <DsStatTile
-          v-if="counts"
-          compact
-          accent="win"
-          :value="formatNumber(counts.active)"
-          unit="Aktif"
-          icon="i-ph-check-circle"
-        />
-        <USkeleton v-else class="h-20 w-full" />
-      </div>
-      <div data-testid="schools-stat-inactive">
-        <DsStatTile
-          v-if="counts"
-          compact
-          accent="heat"
-          :value="formatNumber(counts.inactive)"
-          unit="Tidak Aktif"
-          icon="i-ph-pause-circle"
-        />
-        <USkeleton v-else class="h-20 w-full" />
-      </div>
-    </AdminKpiStrip>
+    <DsStatRow
+      prefix="schools-stat"
+      :items="stats"
+      :loading="counts === null"
+      compact
+      :cols="3"
+      aria-label="Ringkasan sekolah"
+    />
 
-    <AdminToolbar
+    <DsFilterBar
       :chips="chips"
+      :active-count="activeCount"
       data-testid="schools-filter"
       @apply="submitFilter"
       @reset="resetFilter"
-      @remove="removeChip"
+      @remove-chip="removeChip"
     >
       <template #search>
         <UInput
@@ -252,11 +243,11 @@ const COLUMNS = [
           aria-label="Cari"
           placeholder="Cari nama atau kod sekolah..."
           icon="i-ph-magnifying-glass"
-          class="w-full"
+          class="w-full md:min-w-64 md:flex-1"
           data-testid="schools-search"
         />
       </template>
-      <AdminSelect
+      <DsNativeSelect
         v-model="state"
         name="state"
         aria-label="Negeri"
@@ -265,8 +256,8 @@ const COLUMNS = [
       >
         <option value="">Semua Negeri</option>
         <option v-for="name in SCHOOL_STATE_OPTIONS" :key="name" :value="name">{{ name }}</option>
-      </AdminSelect>
-      <AdminSelect
+      </DsNativeSelect>
+      <DsNativeSelect
         v-model="type"
         name="type"
         aria-label="Jenis"
@@ -275,120 +266,128 @@ const COLUMNS = [
       >
         <option value="">Semua Jenis</option>
         <option v-for="name in types" :key="name" :value="name">{{ name }}</option>
-      </AdminSelect>
-    </AdminToolbar>
+      </DsNativeSelect>
+    </DsFilterBar>
 
-    <!-- Load failure: red box in place of the table + retry (design-system 7.4, INFERRED copy). -->
-    <div v-if="error" class="flex flex-col gap-3" data-testid="schools-error">
-      <AdminAlert :messages="errorLines(error)" />
-      <div>
-        <UButton label="Cuba Lagi" data-testid="schools-retry" @click="reload()" />
+    <DsLoadError
+      v-if="error"
+      message="Tidak dapat memuatkan senarai sekolah. Sila cuba semula."
+      testid="schools-error"
+      @retry="reload()"
+    />
+
+    <DsPanel v-else-if="firstLoad" flush data-testid="schools-table">
+      <div class="flex flex-col gap-3 p-4">
+        <USkeleton v-for="n in 5" :key="n" class="h-12 w-full" data-testid="schools-skeleton" />
       </div>
-    </div>
+    </DsPanel>
 
-    <AdminTable v-else :columns="COLUMNS" caption="Senarai sekolah" data-testid="schools-table">
-      <!-- Loading: skeleton rows matching the column count (design-system 7.4, INFERRED). -->
-      <template v-if="firstLoad">
-        <AdminRow v-for="n in SKELETON_ROWS" :key="n" data-testid="schools-skeleton">
-          <AdminCell v-for="c in COLUMNS" :key="c.key">
-            <USkeleton class="h-4 w-full max-w-32" />
-          </AdminCell>
-        </AdminRow>
-      </template>
-
-      <AdminRow v-else-if="rows.length === 0" data-testid="schools-empty">
-        <AdminCell :colspan="COLUMNS.length">
-          <UIcon name="i-ph-buildings" class="mx-auto mb-3 size-10 text-muted" aria-hidden="true" />
-          <p class="text-label text-default">Tiada sekolah dijumpai</p>
-        </AdminCell>
-      </AdminRow>
-
-      <template v-else>
-        <AdminRow
-          v-for="school in rows"
-          :key="school.id"
+    <DsDataTable
+      v-else
+      :data="tableRows"
+      :columns="COLUMNS"
+      variant="flush"
+      caption="Senarai sekolah"
+      :total="data?.meta.totalItems ?? 0"
+      :page="data?.meta.page ?? 1"
+      :page-size="data?.meta.pageSize ?? 30"
+      card-title="name"
+      data-testid="schools-table"
+      @update:page="goToPage"
+    >
+      <template #name-cell="{ row }">
+        <span
+          class="block max-w-72 text-body whitespace-normal text-highlighted"
           data-testid="school-row"
-          :data-school-id="school.id"
+          :data-school-id="row.original.id"
+          >{{ row.original.name }}</span
         >
-          <AdminCell label="Nama Sekolah">
-            <span class="block max-w-72 text-body text-highlighted">{{ school.name }}</span>
-          </AdminCell>
-          <AdminCell label="Kod">
-            <span class="text-label text-nowrap text-muted">{{ school.code }}</span>
-          </AdminCell>
-          <AdminCell label="Jenis">
-            <UBadge color="neutral" variant="subtle" :label="school.type" />
-          </AdminCell>
-          <AdminCell label="Negeri">
-            <span class="text-nowrap">{{ school.state }}</span>
-          </AdminCell>
-          <AdminCell label="Daerah">
-            <span class="text-label text-muted">{{ school.district }}</span>
-          </AdminCell>
-          <AdminCell label="Pelajar">
-            <span :class="school.studentCount > 0 ? 'text-highlighted' : 'text-dimmed'">{{
-              formatNumber(school.studentCount)
-            }}</span>
-          </AdminCell>
-          <AdminCell label="Guru">
-            <span :class="school.teacherCount > 0 ? 'text-highlighted' : 'text-dimmed'">{{
-              formatNumber(school.teacherCount)
-            }}</span>
-          </AdminCell>
-          <AdminCell label="Status">
-            <UBadge
-              :color="school.isActive ? 'success' : 'neutral'"
-              variant="subtle"
-              :label="school.isActive ? 'Aktif' : 'Tidak Aktif'"
-              data-testid="school-status"
-            />
-          </AdminCell>
-          <AdminCell label="Tindakan">
-            <div class="flex items-center justify-end gap-2">
-              <UButton
-                :to="{ name: SCHOOL_ROUTES.edit, params: { id: school.id } }"
-                color="neutral"
-                variant="soft"
-                icon="i-ph-pencil-simple"
-                title="Edit"
-                aria-label="Edit"
-                data-testid="school-edit"
-              />
-              <form method="post" @submit.prevent="toggle(school)">
-                <UButton
-                  type="submit"
-                  color="neutral"
-                  variant="soft"
-                  :title="school.isActive ? 'Nyahaktif' : 'Aktifkan'"
-                  :aria-label="school.isActive ? 'Nyahaktif' : 'Aktifkan'"
-                  :loading="toggling === school.id"
-                  :disabled="toggling !== null"
-                  data-testid="school-toggle"
-                >
-                  <UIcon
-                    v-if="toggling !== school.id"
-                    :name="school.isActive ? 'i-ph-toggle-right' : 'i-ph-toggle-left'"
-                    class="size-5"
-                    aria-hidden="true"
-                    data-testid="school-toggle-icon"
-                  />
-                </UButton>
-              </form>
-            </div>
-          </AdminCell>
-        </AdminRow>
       </template>
-
-      <template #footer>
-        <AdminPager
-          :summary="summary"
-          :total="data?.meta.totalItems ?? 0"
-          :page="data?.meta.page ?? 1"
-          :page-size="data?.meta.pageSize ?? 30"
-          data-testid="schools-pager"
-          @update:page="goToPage"
+      <template #code-cell="{ row }">
+        <span class="text-label text-nowrap text-muted">{{ row.original.code }}</span>
+      </template>
+      <template #type-cell="{ row }">
+        <UBadge color="neutral" variant="subtle" :label="row.original.type" />
+      </template>
+      <template #state-cell="{ row }">
+        <span class="text-nowrap">{{ row.original.state }}</span>
+      </template>
+      <template #district-cell="{ row }">
+        <span class="text-label text-muted">{{ row.original.district }}</span>
+      </template>
+      <template #studentCount-cell="{ row }">
+        <span :class="row.original.studentCount > 0 ? 'text-highlighted' : 'text-dimmed'">{{
+          formatNumber(row.original.studentCount)
+        }}</span>
+      </template>
+      <template #teacherCount-cell="{ row }">
+        <span :class="row.original.teacherCount > 0 ? 'text-highlighted' : 'text-dimmed'">{{
+          formatNumber(row.original.teacherCount)
+        }}</span>
+      </template>
+      <template #status-cell="{ row }">
+        <DsStatusBadge
+          :status="row.original.isActive ? 'active' : 'inactive'"
+          data-testid="school-status"
         />
       </template>
-    </AdminTable>
+      <template #actions-cell="{ row }">
+        <div class="flex items-center justify-end gap-2">
+          <UButton
+            :to="{ name: SCHOOL_ROUTES.edit, params: { id: row.original.id } }"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-pencil-simple"
+            title="Edit"
+            aria-label="Edit"
+            data-testid="school-edit"
+          />
+          <form method="post" @submit.prevent="toggle(row.original)">
+            <UButton
+              type="submit"
+              color="neutral"
+              variant="soft"
+              :title="row.original.isActive ? 'Nyahaktif' : 'Aktifkan'"
+              :aria-label="row.original.isActive ? 'Nyahaktif' : 'Aktifkan'"
+              :loading="toggling === row.original.id"
+              :disabled="toggling !== null"
+              data-testid="school-toggle"
+            >
+              <UIcon
+                v-if="toggling !== row.original.id"
+                :name="row.original.isActive ? 'i-ph-toggle-right' : 'i-ph-toggle-left'"
+                class="size-5"
+                aria-hidden="true"
+                data-testid="school-toggle-icon"
+              />
+            </UButton>
+          </form>
+        </div>
+      </template>
+      <template #empty>
+        <DsEmptyState
+          size="sm"
+          icon="buildings"
+          title="Tiada sekolah dijumpai"
+          data-testid="schools-empty"
+        />
+      </template>
+      <template #card="{ row }">
+        <p class="text-body text-highlighted" data-testid="school-row" :data-school-id="row.id">
+          {{ row.name }}
+        </p>
+        <p class="text-label text-muted">{{ row.code }} · {{ row.type }} · {{ row.state }}</p>
+        <div class="flex items-center gap-2">
+          <DsStatusBadge :status="row.isActive ? 'active' : 'inactive'" />
+          <UButton
+            :to="{ name: SCHOOL_ROUTES.edit, params: { id: row.id as number } }"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-pencil-simple"
+            aria-label="Edit"
+          />
+        </div>
+      </template>
+    </DsDataTable>
   </DsPage>
 </template>

@@ -9,26 +9,32 @@
  *   on the live GET form.
  * - All rows, no pagination; the table scrolls inside its card from `md`, below `md` each row is a card.
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
-import { AdminKpiStrip, AdminPageHeader, AdminToolbar, type ToolbarChip } from '@/ds/admin'
 import { useApi } from '@/composables'
-import { DsPage, DsStatTile } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  DsStatusBadge,
+  type StatItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { formatDate } from '@/lib/time'
 
 import {
   fetchSubscriptions,
   type SchoolFormLevel,
+  type SubscriptionListItem,
   type SubscriptionStatus,
 } from '../api/subscriptions'
-import AdminAlert from '../components/AdminAlert.vue'
-import { errorLines } from '../lib/school-errors'
-import AdminCell from '../components/native/AdminCell.vue'
-import AdminRow from '../components/native/AdminRow.vue'
-import AdminSelect from '../components/native/AdminSelect.vue'
-import AdminTable from '../components/native/AdminTable.vue'
 import {
   barColor,
   FORM_LEVEL_FILTER_OPTIONS,
@@ -80,8 +86,8 @@ const { data, error, reload } = useApi(
 const rows = computed(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.counts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
-const chips = computed<ToolbarChip[]>(() => {
-  const out: ToolbarChip[] = []
+const chips = computed<{ key: string; label: string }[]>(() => {
+  const out: { key: string; label: string }[] = []
   const st = STATUS_FILTER_OPTIONS.find((o) => o.value === applied.value.status)
   if (st) out.push({ key: 'status', label: st.label })
   const fl = FORM_LEVEL_FILTER_OPTIONS.find((o) => o.value === applied.value.formLevel)
@@ -123,88 +129,86 @@ function percent(used: number, quota: number): number {
   return quota > 0 ? Math.min(100, Math.round((used * 100) / quota)) : 0
 }
 
-const COLUMNS = [
-  { key: 'school', label: 'Sekolah' },
-  { key: 'level', label: 'Tingkatan' },
-  { key: 'tier', label: 'Pakej' },
-  { key: 'quota', label: 'Kuota' },
-  { key: 'status', label: 'Status' },
-  { key: 'start', label: 'Mula' },
-  { key: 'end', label: 'Tamat' },
-  { key: 'view', label: 'Tindakan', cls: 'text-end' },
+type SubRow = SubscriptionListItem & Record<string, unknown>
+const tableRows = computed(() => rows.value as SubRow[])
+const activeCount = computed(() => chips.value.length + (applied.value.search !== '' ? 1 : 0))
+const stats = computed<StatItem[]>(() => {
+  const k = counts.value
+  if (!k) return []
+  return [
+    {
+      key: 'active',
+      label: 'Aktif',
+      value: formatNumber(k.active),
+      icon: 'check-circle',
+      accent: 'win',
+    },
+    {
+      key: 'grace',
+      label: 'Tempoh Ihsan',
+      value: formatNumber(k.grace),
+      icon: 'hourglass-medium',
+      accent: 'trial',
+    },
+    {
+      key: 'expired',
+      label: 'Tamat Tempoh',
+      value: formatNumber(k.expired),
+      icon: 'calendar-x',
+      accent: 'heat',
+    },
+    {
+      key: 'quota',
+      label: 'Jumlah Kuota Pelajar',
+      value: formatNumber(k.totalQuota),
+      icon: 'users',
+      accent: 'action',
+    },
+  ]
+})
+const COLUMNS: TableColumn<SubRow>[] = [
+  { id: 'school', header: 'Sekolah' },
+  { id: 'level', header: 'Tingkatan' },
+  { id: 'tier', header: 'Pakej' },
+  { id: 'quota', header: 'Kuota' },
+  { id: 'status', header: 'Status' },
+  { id: 'start', header: 'Mula' },
+  { id: 'end', header: 'Tamat' },
+  { id: 'view', header: 'Tindakan' },
 ]
-const SKELETON_ROWS = 5
 </script>
 
 <template>
-  <DsPage data-testid="subs-page">
-    <AdminPageHeader
-      title="Langganan Sekolah"
-      subtitle="Pantau langganan sekolah, kuota pelajar dan tarikh tamat."
-    >
-      <template #actions>
-        <UButton
-          :to="{ name: SUBSCRIPTION_ROUTES.create }"
-          icon="i-ph-plus"
-          label="Langganan Baru"
-          data-testid="subs-add"
-        />
-      </template>
-    </AdminPageHeader>
+  <DsPage
+    title="Langganan Sekolah"
+    subtitle="Pantau langganan sekolah, kuota pelajar dan tarikh tamat."
+    data-testid="subs-page"
+  >
+    <template #actions>
+      <UButton
+        :to="{ name: SUBSCRIPTION_ROUTES.create }"
+        icon="i-ph-plus"
+        label="Langganan Baru"
+        data-testid="subs-add"
+      />
+    </template>
 
-    <AdminKpiStrip label="Ringkasan langganan" class="xl:grid-cols-4 2xl:grid-cols-4">
-      <div data-testid="subs-stat-active">
-        <DsStatTile
-          v-if="counts"
-          compact
-          accent="win"
-          :value="formatNumber(counts.active)"
-          unit="Aktif"
-          icon="i-ph-check-circle"
-        />
-        <USkeleton v-else class="h-20 w-full" />
-      </div>
-      <div data-testid="subs-stat-grace">
-        <DsStatTile
-          v-if="counts"
-          compact
-          accent="trial"
-          :value="formatNumber(counts.grace)"
-          unit="Tempoh Ihsan"
-          icon="i-ph-hourglass-medium"
-        />
-        <USkeleton v-else class="h-20 w-full" />
-      </div>
-      <div data-testid="subs-stat-expired">
-        <DsStatTile
-          v-if="counts"
-          compact
-          accent="heat"
-          :value="formatNumber(counts.expired)"
-          unit="Tamat Tempoh"
-          icon="i-ph-calendar-x"
-        />
-        <USkeleton v-else class="h-20 w-full" />
-      </div>
-      <div data-testid="subs-stat-quota">
-        <DsStatTile
-          v-if="counts"
-          compact
-          accent="action"
-          :value="formatNumber(counts.totalQuota)"
-          unit="Jumlah Kuota Pelajar"
-          icon="i-ph-users"
-        />
-        <USkeleton v-else class="h-20 w-full" />
-      </div>
-    </AdminKpiStrip>
+    <DsStatRow
+      prefix="subs-stat"
+      :items="stats"
+      :loading="counts === null"
+      compact
+      :cols="4"
+      aria-label="Ringkasan langganan"
+    />
 
-    <AdminToolbar
+    <DsFilterBar
       :chips="chips"
+      :active-count="activeCount"
       data-testid="subs-filter"
       @apply="submitFilter"
       @reset="resetFilter"
-      @remove="removeChip"
+      @remove-chip="removeChip"
     >
       <template #search>
         <UInput
@@ -214,11 +218,11 @@ const SKELETON_ROWS = 5
           aria-label="Cari"
           placeholder="Cari sekolah..."
           icon="i-ph-magnifying-glass"
-          class="w-full"
+          class="w-full md:min-w-64 md:flex-1"
           data-testid="subs-search"
         />
       </template>
-      <AdminSelect
+      <DsNativeSelect
         v-model="status"
         name="status"
         aria-label="Status"
@@ -229,8 +233,8 @@ const SKELETON_ROWS = 5
         <option v-for="o in STATUS_FILTER_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
-      </AdminSelect>
-      <AdminSelect
+      </DsNativeSelect>
+      <DsNativeSelect
         v-model="formLevel"
         name="form_level"
         aria-label="Tingkatan"
@@ -241,101 +245,127 @@ const SKELETON_ROWS = 5
         <option v-for="o in FORM_LEVEL_FILTER_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
-      </AdminSelect>
-    </AdminToolbar>
+      </DsNativeSelect>
+    </DsFilterBar>
 
-    <div v-if="error" class="flex flex-col gap-3" data-testid="subs-error">
-      <AdminAlert :messages="errorLines(error)" />
-      <div>
-        <UButton label="Cuba Lagi" data-testid="subs-retry" @click="reload()" />
+    <DsLoadError
+      v-if="error"
+      message="Tidak dapat memuatkan senarai langganan. Sila cuba semula."
+      testid="subs-error"
+      @retry="reload()"
+    />
+
+    <DsPanel v-else-if="firstLoad" flush data-testid="subs-table">
+      <div class="flex flex-col gap-3 p-4">
+        <USkeleton v-for="n in 5" :key="n" class="h-12 w-full" data-testid="subs-skeleton" />
       </div>
-    </div>
+    </DsPanel>
 
-    <AdminTable
+    <DsDataTable
       v-else
+      :data="tableRows"
       :columns="COLUMNS"
+      variant="flush"
+      compact-cells
       caption="Senarai langganan sekolah"
+      :page-size="Math.max(tableRows.length, 1)"
       data-testid="subs-table"
     >
-      <template v-if="firstLoad">
-        <AdminRow v-for="n in SKELETON_ROWS" :key="n" data-testid="subs-skeleton">
-          <AdminCell v-for="c in COLUMNS" :key="c.key">
-            <USkeleton class="h-4 w-full max-w-32" />
-          </AdminCell>
-        </AdminRow>
+      <template #school-cell="{ row }">
+        <div class="flex flex-col gap-1" data-testid="subs-row" :data-sub-id="row.original.id">
+          <span class="max-w-56 text-body whitespace-normal text-highlighted">{{
+            row.original.school.name
+          }}</span>
+          <span class="text-label text-muted">{{ row.original.school.code }}</span>
+        </div>
       </template>
-
-      <AdminRow v-else-if="rows.length === 0" data-testid="subs-empty">
-        <AdminCell :colspan="COLUMNS.length">
-          <UIcon name="i-ph-file-text" class="mx-auto mb-3 size-10 text-muted" aria-hidden="true" />
-          <p class="text-label text-default">Tiada langganan dijumpai.</p>
-        </AdminCell>
-      </AdminRow>
-
-      <template v-else>
-        <AdminRow v-for="row in rows" :key="row.id" data-testid="subs-row" :data-sub-id="row.id">
-          <AdminCell label="Sekolah">
-            <div class="flex flex-col gap-1">
-              <span class="text-body text-highlighted">{{ row.school.name }}</span>
-              <span class="text-label text-muted">{{ row.school.code }}</span>
-            </div>
-          </AdminCell>
-          <AdminCell label="Tingkatan">
-            <UBadge
-              color="neutral"
-              variant="subtle"
-              :label="levelLabel(row.formLevel)"
-              data-testid="subs-level-badge"
-            />
-          </AdminCell>
-          <AdminCell label="Pakej">
-            <UBadge
-              color="neutral"
-              variant="subtle"
-              :icon="row.packageTier === 'basic' ? 'i-ph-eye' : 'i-ph-infinity'"
-              :label="TIER_LABEL[row.packageTier]"
-              data-testid="subs-tier-badge"
-            />
-          </AdminCell>
-          <AdminCell label="Kuota">
-            <div class="flex items-center gap-2">
-              <UProgress
-                class="w-24"
-                :model-value="percent(row.used, row.studentQuota)"
-                :color="barColor(percent(row.used, row.studentQuota))"
-                :aria-label="`Kuota digunakan ${String(percent(row.used, row.studentQuota))}%`"
-              />
-              <span class="text-label text-muted" data-testid="subs-quota"
-                >{{ row.used }}/{{ row.studentQuota }}</span
-              >
-            </div>
-          </AdminCell>
-          <AdminCell label="Status">
-            <UBadge
-              :color="STATUS_BADGE[row.status].color"
-              variant="subtle"
-              :label="STATUS_BADGE[row.status].label"
-              data-testid="subs-status-badge"
-            />
-          </AdminCell>
-          <AdminCell label="Mula">
-            <span class="text-nowrap">{{ formatDate(row.startsAt) }}</span>
-          </AdminCell>
-          <AdminCell label="Tamat">
-            <span class="text-nowrap">{{ formatDate(row.endsAt) }}</span>
-          </AdminCell>
-          <AdminCell label="Tindakan">
-            <UButton
-              :to="{ name: SUBSCRIPTION_ROUTES.detail, params: { id: row.id } }"
-              color="neutral"
-              variant="soft"
-              trailing-icon="i-ph-arrow-right"
-              label="Lihat"
-              data-testid="subs-view"
-            />
-          </AdminCell>
-        </AdminRow>
+      <template #level-cell="{ row }">
+        <UBadge
+          color="neutral"
+          variant="subtle"
+          :label="levelLabel(row.original.formLevel)"
+          data-testid="subs-level-badge"
+        />
       </template>
-    </AdminTable>
+      <template #tier-cell="{ row }">
+        <UBadge
+          color="neutral"
+          variant="subtle"
+          :icon="row.original.packageTier === 'basic' ? 'i-ph-eye' : 'i-ph-infinity'"
+          :label="TIER_LABEL[row.original.packageTier]"
+          data-testid="subs-tier-badge"
+        />
+      </template>
+      <template #quota-cell="{ row }">
+        <div class="flex items-center gap-2">
+          <UProgress
+            class="w-24"
+            :model-value="percent(row.original.used, row.original.studentQuota)"
+            :color="barColor(percent(row.original.used, row.original.studentQuota))"
+            :aria-label="`Kuota digunakan ${String(percent(row.original.used, row.original.studentQuota))}%`"
+          />
+          <span class="text-label text-muted" data-testid="subs-quota"
+            >{{ row.original.used }}/{{ row.original.studentQuota }}</span
+          >
+        </div>
+      </template>
+      <template #status-cell="{ row }">
+        <DsStatusBadge
+          :status="STATUS_BADGE[row.original.status].status"
+          :label="STATUS_BADGE[row.original.status].label"
+          data-testid="subs-status-badge"
+        />
+      </template>
+      <template #start-cell="{ row }">
+        <span class="text-nowrap">{{ formatDate(row.original.startsAt) }}</span>
+      </template>
+      <template #end-cell="{ row }">
+        <span class="text-nowrap">{{ formatDate(row.original.endsAt) }}</span>
+      </template>
+      <template #view-cell="{ row }">
+        <UButton
+          :to="{ name: SUBSCRIPTION_ROUTES.detail, params: { id: row.original.id } }"
+          color="neutral"
+          variant="soft"
+          trailing-icon="i-ph-arrow-right"
+          label="Lihat"
+          data-testid="subs-view"
+        />
+      </template>
+      <template #empty>
+        <DsEmptyState
+          size="sm"
+          icon="file-text"
+          title="Tiada langganan dijumpai."
+          data-testid="subs-empty"
+        />
+      </template>
+      <template #card="{ row }">
+        <div class="flex flex-col gap-1" data-testid="subs-row" :data-sub-id="row.id">
+          <span class="text-body text-highlighted">{{
+            (row.school as { name: string }).name
+          }}</span>
+          <span class="text-label text-muted">
+            {{ levelLabel(row.formLevel as SchoolFormLevel) }} · {{ row.used }}/{{
+              row.studentQuota
+            }}
+          </span>
+        </div>
+        <DsStatusBadge
+          class="w-fit"
+          :status="STATUS_BADGE[row.status as SubscriptionStatus].status"
+          :label="STATUS_BADGE[row.status as SubscriptionStatus].label"
+        />
+      </template>
+      <template #card-actions="{ row }">
+        <UButton
+          :to="{ name: SUBSCRIPTION_ROUTES.detail, params: { id: row.id as number } }"
+          color="neutral"
+          variant="soft"
+          trailing-icon="i-ph-arrow-right"
+          label="Lihat"
+        />
+      </template>
+    </DsDataTable>
   </DsPage>
 </template>

@@ -272,8 +272,8 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
       'Pilih negeri',
     )
     await expect(page.getByLabel('Sekolah Aktif')).toBeChecked()
-    await expect(page.getByTestId('school-submit')).toHaveText('Simpan')
-    await expect(page.getByTestId('school-cancel')).toHaveText('Batal')
+    await expect(page.getByTestId('form-submit')).toHaveText('Simpan')
+    await expect(page.getByTestId('form-cancel')).toHaveText('Batal')
 
     // One column below 640, two columns from 640 (Jenis / Negeri side by side).
     const type = await page.getByTestId('school-type').boundingBox()
@@ -282,7 +282,7 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
     else expect(Math.abs(state!.y - type!.y)).toBeLessThan(2)
 
     // Native validation blocks an empty submit (no request, stays on the form).
-    await page.getByTestId('school-submit').click()
+    await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL('/admin/schools/create')
     await expect(page.getByTestId('school-name')).toBeFocused()
     expect(
@@ -292,7 +292,7 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
     ).toBe(true)
     await expectNoHorizontalScroll(page)
 
-    await page.getByTestId('school-cancel').click()
+    await page.getByTestId('form-cancel').click()
     await expect(page).toHaveURL('/admin/schools')
     await expect(rows(page).first()).toBeVisible()
   })
@@ -304,7 +304,7 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
       await loginAs(ADMIN)
       await gotoApp('/admin/schools/create')
       await fillNewSchool(page)
-      await page.getByTestId('school-submit').click()
+      await page.getByTestId('form-submit').click()
 
       await expect(page).toHaveURL('/admin/schools')
       await expect(page.getByText('Sekolah berjaya disimpan.')).toBeVisible()
@@ -329,13 +329,13 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
       await loginAs(ADMIN)
       await gotoApp('/admin/schools/create')
       await fillNewSchool(page)
-      await page.getByTestId('school-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL('/admin/schools')
 
       await page.getByTestId('schools-add').click()
       await expect(page.getByTestId('school-form')).toBeVisible()
       await fillNewSchool(page)
-      await page.getByTestId('school-submit').click()
+      await page.getByTestId('form-submit').click()
 
       await expect(page.getByTestId('school-form-alert')).toContainText(
         'The code has already been taken.',
@@ -364,7 +364,7 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
       await expect(page.getByLabel('Kod Sekolah')).toHaveValue(code)
       await expect(page.getByLabel('Jenis')).not.toHaveValue('')
       await expect(page.getByLabel('Negeri')).not.toHaveValue('')
-      await expect(page.getByTestId('school-submit')).toHaveText('Kemaskini')
+      await expect(page.getByTestId('form-submit')).toHaveText('Kemaskini')
       // The shell header subtitle is the school name (SRS §2).
       await expect(page.getByText(name, { exact: true }).first()).toBeVisible()
       await expectNoHorizontalScroll(page)
@@ -373,7 +373,7 @@ test.describe('M02 S10 / S11 school form', { tag: [TAG.smoke, moduleTag(2)] }, (
       // The native checkbox is visually hidden behind the switch track: click its label text.
       await page.getByText('Sekolah Aktif', { exact: true }).click()
       await expect(page.getByLabel('Sekolah Aktif')).not.toBeChecked()
-      await page.getByTestId('school-submit').click()
+      await page.getByTestId('form-submit').click()
 
       await expect(page).toHaveURL('/admin/schools')
       await expect(page.getByText('Sekolah berjaya disimpan.')).toBeVisible()

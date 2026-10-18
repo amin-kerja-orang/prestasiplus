@@ -86,7 +86,9 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       await expect(cards.nth(i)).toContainText(label)
       // Label never truncated (DV-M02-02): no clipped text inside the card.
       const clipped = await cards.nth(i).evaluate((el) => {
-        return Array.from(el.querySelectorAll('span')).some((s) => s.scrollWidth > s.clientWidth + 1)
+        return Array.from(el.querySelectorAll('span')).some(
+          (s) => s.scrollWidth > s.clientWidth + 1,
+        )
       })
       expect(clipped).toBe(false)
     }
@@ -164,7 +166,8 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   test('E2E-M02-02: the JPN officer role badge reads "Pegawai JPN"', async ({ page, gotoApp }) => {
     await gotoApp('/admin/users?role=jpn_officer')
     await expect(byId(page, 'user-row')).toHaveCount(2)
-    for (const badge of await byId(page, 'user-role').all()) await expect(badge).toHaveText('Pegawai JPN')
+    for (const badge of await byId(page, 'user-role').all())
+      await expect(badge).toHaveText('Pegawai JPN')
     // No stat card is ringed for jpn_officer (DV-M02-10).
     await expect(byId(page, 'users-stats').locator('[data-active="true"]')).toHaveCount(0)
   })
@@ -246,7 +249,9 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     const options = byId(page, 'users-school').locator('option')
     await expect.poll(() => options.count()).toBeGreaterThan(2)
     const names = (await options.allInnerTexts()).slice(1).map((s) => s.trim())
-    expect(names).toEqual([...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).length ? names : [])
+    expect(names).toEqual(
+      [...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).length ? names : [],
+    )
     const value = await options.nth(1).getAttribute('value')
     await byId(page, 'users-school').selectOption(value!)
     await byId(page, 'users-search-submit').click()
@@ -339,7 +344,10 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await gotoApp('/admin/users?role=student')
     const first = byId(page, 'user-row').first()
     const name = (await first.getByTestId('user-name').innerText()).trim()
-    const dismissed = dismissNextDialog(page, { type: 'confirm', message: `Login sebagai ${name}?` })
+    const dismissed = dismissNextDialog(page, {
+      type: 'confirm',
+      message: `Login sebagai ${name}?`,
+    })
     await first.getByTestId('user-login-as').click()
     await dismissed
     await expect(page).toHaveURL(/\/admin\/users\?role=student$/)
@@ -390,7 +398,9 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(byId(page, 'users-bulk-modal')).toContainText('Ya, Padam Semua')
     await byId(page, 'users-bulk-cancel').click()
     await expect(byId(page, 'users-bulk-modal')).toHaveCount(0)
-    await expect(byId(page, 'users-stat-student').getByTestId('users-stat-count')).toHaveText('4533')
+    await expect(byId(page, 'users-stat-student').getByTestId('users-stat-count')).toHaveText(
+      '4533',
+    )
 
     await gotoApp('/admin/users?role=admin')
     await expect(rows).toHaveCount(2)
@@ -497,7 +507,10 @@ test.describe('M02 QA menus, access, responsive', { tag: [TAG.smoke, moduleTag(2
 
     await gotoApp('/admin/users?role=student')
     await byId(page, 'user-row').first().getByTestId('user-delete').click()
-    const box = await byId(page, 'users-delete-modal').locator('h3').locator('xpath=..').boundingBox()
+    const box = await byId(page, 'users-delete-modal')
+      .locator('h3')
+      .locator('xpath=..')
+      .boundingBox()
     if (viewportWidth(page) < 768) expect(box!.width).toBeGreaterThan(viewportWidth(page) * 0.8)
     else expect(box!.width).toBeLessThan(viewportWidth(page) * 0.8)
   })

@@ -20,6 +20,8 @@ export interface StatItem {
   sub?: string
   to?: RouteLocationRaw
   delta?: StatDelta
+  /** The tile of the applied filter: framed with a primary layer, `data-active="true"`. */
+  active?: boolean
 }
 
 const props = withDefaults(
@@ -29,9 +31,11 @@ const props = withDefaults(
     prefix?: string
     cols?: 'auto' | 2 | 3 | 4 | 5
     roomy?: boolean
+    /** Horizontal tiles (chip beside value) for dense admin list pages. */
+    compact?: boolean
     loading?: boolean
   }>(),
-  { prefix: undefined, cols: 'auto', roomy: false, loading: false },
+  { prefix: undefined, cols: 'auto', roomy: false, compact: false, loading: false },
 )
 
 const GRID: Record<string, string> = {
@@ -52,7 +56,14 @@ function id(key: string): string | undefined {
 
 <template>
   <ul class="grid min-w-0 gap-3 md:gap-4" :class="grid" data-ds="stat-row">
-    <li v-for="item in items" :key="item.key" class="flex min-w-0" :data-testid="id(item.key)">
+    <li
+      v-for="item in items"
+      :key="item.key"
+      class="flex min-w-0"
+      :class="item.active ? 'rounded-card bg-primary p-0.5' : ''"
+      :data-testid="id(item.key)"
+      :data-active="item.active ? 'true' : undefined"
+    >
       <DsStatTile
         class="w-full"
         :value="item.value"
@@ -64,6 +75,7 @@ function id(key: string): string | undefined {
         :to="item.to"
         :delta="item.delta"
         :roomy="roomy"
+        :compact="compact"
         :loading="loading"
       />
     </li>

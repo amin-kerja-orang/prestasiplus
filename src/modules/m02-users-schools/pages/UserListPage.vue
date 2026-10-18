@@ -11,19 +11,24 @@
  *   and bulk delete.
  */
 import { computed, ref, watch } from 'vue'
-import type { DropdownMenuItem } from '@nuxt/ui'
+import type { TableColumn } from '@nuxt/ui'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
-import {
-  AdminIdentity,
-  AdminPageHeader,
-  AdminPager,
-  AdminRowMenu,
-  AdminToolbar,
-  type ToolbarChip,
-} from '@/ds/admin'
 import { useApi, useFlash, useSession } from '@/composables'
-import { DsPage, useConfirm } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsIdentity,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsRowActions,
+  DsStatusBadge,
+  type RowAction,
+  useConfirm,
+} from '@/ds'
 
 import {
   bulkDeleteAdminUsers,
@@ -35,14 +40,8 @@ import {
   type AdminUserListItem,
   type AdminUserRole,
 } from '../api/users'
-import AdminAlert from '../components/AdminAlert.vue'
-import NativeCheckbox from '../components/native/NativeCheckbox.vue'
 import UserDeleteModals from '../components/UserDeleteModals.vue'
 import UserStatCards from '../components/UserStatCards.vue'
-import AdminCell from '../components/native/AdminCell.vue'
-import AdminRow from '../components/native/AdminRow.vue'
-import AdminSelect from '../components/native/AdminSelect.vue'
-import AdminTable from '../components/native/AdminTable.vue'
 import {
   errorLines,
   formatUserDate,
@@ -116,11 +115,19 @@ const schoolOptions = computed(() => schoolFilters.data.value ?? [])
 const rows = computed<AdminUserListItem[]>(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.roleCounts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
-const summary = computed(() => {
-  const meta = data.value?.meta
-  if (!meta || rows.value.length === 0) return ''
-  return `Menunjukkan ${String(meta.from ?? 1)}-${String(meta.to ?? rows.value.length)} daripada ${String(meta.totalItems)} hasil`
-})
+type UserRow = AdminUserListItem & Record<string, unknown>
+const tableRows = computed(() => rows.value as UserRow[])
+/** The `card` slot hands over the untyped row; this narrows it back. */
+const asUser = (row: Record<string, unknown>): AdminUserListItem =>
+  row as unknown as AdminUserListItem
+/** Filters in force (search counts as one), for the reset button and the mobile badge. */
+const activeCount = computed(
+  () =>
+    (applied.value.role !== '' ? 1 : 0) +
+    (applied.value.school !== null ? 1 : 0) +
+    (applied.value.isActive !== null ? 1 : 0) +
+    (applied.value.search !== '' ? 1 : 0),
+)
 
 function filterQuery(): Record<string, string> {
   const out: Record<string, string> = {}
@@ -143,8 +150,8 @@ const pagerQuery = computed(() => {
 })
 
 /** Removable chips of the applied filters (the URL is the source of truth). */
-const chips = computed<ToolbarChip[]>(() => {
-  const out: ToolbarChip[] = []
+const chips = computed<{ key: string; label: string }[]>(() => {
+  const out: { key: string; label: string }[] = []
   if (applied.value.role !== '') out.push({ key: 'role', label: roleLabel(applied.value.role) })
   if (applied.value.school !== null) {
     const found = schoolOptions.value.find((s) => s.id === applied.value.school)
@@ -201,8 +208,14 @@ watch(
   },
 )
 
-function toggleAll(event: Event): void {
-  selected.value = (event.target as HTMLInputElement).checked ? [...selectableIds.value] : []
+function toggleAll(checked: boolean | 'indeterminate'): void {
+  selected.value = checked === true ? [...selectableIds.value] : []
+}
+function toggleOne(id: number, checked: boolean | 'indeterminate'): void {
+  selected.value =
+    checked === true
+      ? [...selected.value.filter((v) => v !== id), id]
+      : selected.value.filter((v) => v !== id)
 }
 
 // --- Toggle, Login As (confirm), delete.
@@ -295,89 +308,85 @@ async function confirmBulk(): Promise<void> {
 }
 
 /** Row menu: Pakej (school admins), the status toggle, Login As (not the own row) and Padam. */
-function menuItems(user: AdminUserListItem): DropdownMenuItem[][] {
-  const main: DropdownMenuItem[] = []
+function menuActions(user: AdminUserListItem): RowAction[] {
+  const actions: RowAction[] = []
   if (user.role === 'school_admin')
-    main.push({
+    actions.push({
       label: 'Pakej',
       icon: 'i-ph-package',
       to: `/admin/users/${String(user.id)}/packages`,
     })
-  main.push({
+  actions.push({
     label: user.isActive ? 'Nyahaktifkan' : 'Aktifkan',
     icon: user.isActive ? 'i-ph-x-circle' : 'i-ph-check-circle',
     onSelect: () => void toggle(user),
   })
-  if (user.id === ownId.value) return [main]
-  main.push({ label: 'Login As', icon: 'i-ph-sign-in', onSelect: () => void loginAs(user) })
-  return [
-    main,
-    [
-      {
-        label: 'Padam',
-        icon: 'i-ph-trash',
-        color: 'error',
-        onSelect: () => {
-          deleting.value = { id: user.id, name: user.name }
-        },
-      },
-    ],
-  ]
+  if (user.id === ownId.value) return actions
+  actions.push({ label: 'Login As', icon: 'i-ph-sign-in', onSelect: () => void loginAs(user) })
+  actions.push({
+    label: 'Padam',
+    icon: 'i-ph-trash',
+    danger: true,
+    onSelect: () => {
+      deleting.value = { id: user.id, name: user.name }
+    },
+  })
+  return actions
 }
 
 const SKELETON_ROWS = 6
-const COLUMNS = [
-  { key: 'select', label: 'Pilih', cls: 'w-14' },
-  { key: 'name', label: 'Nama' },
-  { key: 'phone', label: 'Telefon' },
-  { key: 'role', label: 'Peranan' },
-  { key: 'school', label: 'Sekolah' },
-  { key: 'active', label: 'Status' },
-  { key: 'date', label: 'Tarikh' },
-  { key: 'actions', label: 'Tindakan', cls: 'w-32 text-end' },
+const COLUMNS: TableColumn<UserRow>[] = [
+  { id: 'select', header: '' },
+  { id: 'name', header: 'Nama' },
+  { id: 'phone', header: 'Telefon' },
+  { id: 'role', header: 'Peranan' },
+  { id: 'school', header: 'Sekolah' },
+  { id: 'active', header: 'Status' },
+  { id: 'date', header: 'Tarikh' },
+  { id: 'actions', header: 'Tindakan' },
 ]
 </script>
 
 <template>
-  <DsPage data-testid="users-page">
-    <AdminPageHeader
-      title="Pengurusan Pengguna"
-      subtitle="Cari, tapis dan urus akaun pelajar, guru dan pentadbir."
-    >
-      <template #actions>
-        <UButton
-          to="/admin/import-students"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-file-arrow-up"
-          label="Import Pelajar"
-          data-testid="users-import-students"
-        />
-        <UButton
-          to="/admin/users/bulk-import"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-users-three"
-          label="Import Pengguna"
-          data-testid="users-import-users"
-        />
-        <UButton
-          to="/admin/users/create"
-          icon="i-ph-user-plus"
-          label="Tambah"
-          data-testid="users-add"
-        />
-      </template>
-    </AdminPageHeader>
+  <DsPage
+    title="Pengurusan Pengguna"
+    subtitle="Cari, tapis dan urus akaun pelajar, guru dan pentadbir."
+    data-testid="users-page"
+  >
+    <template #actions>
+      <UButton
+        to="/admin/import-students"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-file-arrow-up"
+        label="Import Pelajar"
+        data-testid="users-import-students"
+      />
+      <UButton
+        to="/admin/users/bulk-import"
+        color="neutral"
+        variant="soft"
+        icon="i-ph-users-three"
+        label="Import Pengguna"
+        data-testid="users-import-users"
+      />
+      <UButton
+        to="/admin/users/create"
+        icon="i-ph-user-plus"
+        label="Tambah"
+        data-testid="users-add"
+      />
+    </template>
 
     <UserStatCards :counts="counts" :active-role="applied.role" />
 
-    <AdminToolbar
+    <DsFilterBar
       :chips="chips"
+      :active-count="activeCount"
       data-testid="users-filter"
       @apply="submitFilter"
       @reset="resetFilter"
-      @remove="removeChip"
+      @remove-chip="removeChip"
     >
       <template #search>
         <UInput
@@ -387,11 +396,11 @@ const COLUMNS = [
           aria-label="Cari"
           placeholder="Cari nama atau emel..."
           icon="i-ph-magnifying-glass"
-          class="w-full"
+          class="w-full md:min-w-64 md:flex-1"
           data-testid="users-search"
         />
       </template>
-      <AdminSelect
+      <DsNativeSelect
         id="users-role"
         v-model="role"
         name="role"
@@ -403,8 +412,8 @@ const COLUMNS = [
         <option v-for="o in ROLE_FILTER_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
-      </AdminSelect>
-      <AdminSelect
+      </DsNativeSelect>
+      <DsNativeSelect
         id="users-school"
         v-model="school"
         name="school"
@@ -414,8 +423,8 @@ const COLUMNS = [
       >
         <option value="">Semua Sekolah</option>
         <option v-for="s in schoolOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
-      </AdminSelect>
-      <AdminSelect
+      </DsNativeSelect>
+      <DsNativeSelect
         id="users-status"
         v-model="status"
         name="is_active"
@@ -426,147 +435,183 @@ const COLUMNS = [
         <option value="">Semua</option>
         <option value="1">Aktif</option>
         <option value="0">Tidak Aktif</option>
-      </AdminSelect>
-    </AdminToolbar>
+      </DsNativeSelect>
+    </DsFilterBar>
 
-    <!-- Load failure: red box in place of the table + retry (design-system 7.4, INFERRED copy). -->
-    <div v-if="error" class="flex flex-col gap-4" data-testid="users-error">
-      <AdminAlert :messages="errorLines(error)" />
-      <div>
-        <UButton label="Cuba Lagi" data-testid="users-retry" @click="reload()" />
+    <!-- Bulk bar (FR-M02-15): only while at least one row is ticked. -->
+    <DsPanel v-if="selected.length > 0" tone="bulk" data-testid="users-bulk-bar">
+      <div class="flex items-center justify-between gap-4">
+        <span class="flex items-center gap-2 text-body text-default">
+          <UIcon name="i-ph-check-square" class="size-5" aria-hidden="true" />
+          <span data-testid="users-selected-count">{{ selected.length }}</span> dipilih
+        </span>
+        <UButton
+          type="button"
+          color="error"
+          icon="i-ph-trash"
+          label="Padam"
+          data-testid="users-bulk-delete"
+          @click="bulkOpen = true"
+        />
       </div>
-    </div>
+    </DsPanel>
 
-    <AdminTable v-else :columns="COLUMNS" caption="Senarai pengguna" data-testid="users-table">
-      <template #header>
-        <div
-          v-if="selected.length > 0"
-          class="flex items-center justify-between gap-4 bg-elevated p-4"
-          data-testid="users-bulk-bar"
-        >
-          <span class="flex items-center gap-2 text-body text-default">
-            <UIcon name="i-ph-check-square" class="size-5" aria-hidden="true" />
-            <span data-testid="users-selected-count">{{ selected.length }}</span> dipilih
-          </span>
-          <UButton
-            type="button"
-            color="error"
-            icon="i-ph-trash"
-            label="Padam"
-            data-testid="users-bulk-delete"
-            @click="bulkOpen = true"
-          />
-        </div>
-      </template>
+    <DsLoadError
+      v-if="error"
+      message="Tidak dapat memuatkan senarai pengguna. Sila cuba semula."
+      testid="users-error"
+      @retry="reload()"
+    />
 
-      <template #head-select>
-        <NativeCheckbox
+    <DsPanel v-else-if="firstLoad" flush data-testid="users-table">
+      <div class="flex flex-col gap-3 p-4">
+        <USkeleton
+          v-for="n in SKELETON_ROWS"
+          :key="n"
+          class="h-12 w-full"
+          data-testid="users-skeleton"
+        />
+      </div>
+    </DsPanel>
+
+    <DsDataTable
+      v-else
+      :data="tableRows"
+      :columns="COLUMNS"
+      variant="flush"
+      caption="Senarai pengguna"
+      :total="data?.meta.totalItems ?? 0"
+      :page="data?.meta.page ?? 1"
+      :page-size="data?.meta.pageSize ?? 25"
+      data-testid="users-table"
+      @update:page="goToPage"
+    >
+      <template #select-header>
+        <UCheckbox
           :model-value="allSelected"
           aria-label="Pilih semua"
           data-testid="users-select-all"
-          @change="toggleAll"
+          @update:model-value="toggleAll"
         />
       </template>
-
-      <template v-if="firstLoad">
-        <AdminRow v-for="n in SKELETON_ROWS" :key="n" data-testid="users-skeleton">
-          <AdminCell v-for="c in COLUMNS.length" :key="c">
-            <USkeleton class="h-5 w-full max-w-28" />
-          </AdminCell>
-        </AdminRow>
+      <template #select-cell="{ row }">
+        <UCheckbox
+          v-if="row.original.id !== ownId"
+          :model-value="selected.includes(row.original.id)"
+          :aria-label="`Pilih ${row.original.name}`"
+          data-testid="user-select"
+          @update:model-value="(v: boolean | 'indeterminate') => toggleOne(row.original.id, v)"
+        />
       </template>
-
-      <AdminRow v-else-if="rows.length === 0" data-testid="users-empty">
-        <AdminCell :colspan="COLUMNS.length">
-          <UIcon name="i-ph-users" class="mx-auto mb-3 size-10 text-muted" aria-hidden="true" />
-          <p class="text-body text-default">Tiada pengguna dijumpai</p>
-          <p class="text-body text-muted">Cuba ubah kriteria carian anda</p>
-        </AdminCell>
-      </AdminRow>
-
-      <template v-else>
-        <AdminRow
-          v-for="user in rows"
-          :key="user.id"
-          data-testid="user-row"
-          :data-user-id="user.id"
+      <template #name-cell="{ row }">
+        <DsIdentity
+          :name="row.original.name"
+          :sub="row.original.email"
+          :src="row.original.avatarUrl"
+          :initials="initialsOf(row.original.name)"
         >
-          <AdminCell label="Pilih">
-            <NativeCheckbox
-              v-if="user.id !== ownId"
-              v-model="selected"
-              :value="user.id"
-              :aria-label="`Pilih ${user.name}`"
-              data-testid="user-select"
+          <template #name
+            ><span data-testid="user-name">{{ row.original.name }}</span></template
+          >
+        </DsIdentity>
+      </template>
+      <template #phone-cell="{ row }">
+        <span class="text-nowrap">{{ row.original.phone || '-' }}</span>
+      </template>
+      <template #role-cell="{ row }">
+        <UBadge
+          color="neutral"
+          variant="subtle"
+          :label="roleLabel(row.original.role)"
+          data-testid="user-role"
+        />
+      </template>
+      <template #school-cell="{ row }">
+        <span class="block max-w-28 truncate" :title="row.original.school?.name">{{
+          row.original.school?.name || '-'
+        }}</span>
+      </template>
+      <template #active-cell="{ row }">
+        <DsStatusBadge
+          :status="row.original.isActive ? 'active' : 'inactive'"
+          data-testid="user-status"
+        />
+      </template>
+      <template #date-cell="{ row }">
+        <span class="text-nowrap">{{ formatUserDate(row.original.createdAt) }}</span>
+      </template>
+      <template #actions-cell="{ row }">
+        <div
+          class="flex items-center justify-end gap-1"
+          data-testid="user-row"
+          :data-user-id="row.original.id"
+        >
+          <UButton
+            :to="`/admin/users/${String(row.original.id)}/edit`"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-pencil-simple"
+            aria-label="Edit"
+            title="Edit"
+            data-testid="user-edit"
+          />
+          <DsRowActions
+            :actions="menuActions(row.original)"
+            :label="`Tindakan lain untuk ${row.original.name}`"
+          />
+        </div>
+      </template>
+      <template #empty>
+        <DsEmptyState
+          size="sm"
+          icon="users"
+          title="Tiada pengguna dijumpai"
+          description="Cuba ubah kriteria carian anda"
+          data-testid="users-empty"
+        />
+      </template>
+      <template #card="{ row }">
+        <div class="flex min-w-0 items-start gap-3">
+          <UCheckbox
+            v-if="asUser(row).id !== ownId"
+            :model-value="selected.includes(asUser(row).id)"
+            :aria-label="`Pilih ${asUser(row).name}`"
+            data-testid="user-select"
+            @update:model-value="(v: boolean | 'indeterminate') => toggleOne(asUser(row).id, v)"
+          />
+          <div class="flex min-w-0 flex-col gap-1">
+            <DsIdentity
+              :name="asUser(row).name"
+              :sub="asUser(row).email"
+              :src="asUser(row).avatarUrl"
+              :initials="initialsOf(asUser(row).name)"
             />
-          </AdminCell>
-          <AdminCell>
-            <AdminIdentity
-              :name="user.name"
-              :sub="user.email"
-              :src="user.avatarUrl"
-              :initials="initialsOf(user.name)"
+            <div class="flex flex-wrap items-center gap-2">
+              <UBadge color="neutral" variant="subtle" :label="roleLabel(asUser(row).role)" />
+              <DsStatusBadge :status="asUser(row).isActive ? 'active' : 'inactive'" />
+            </div>
+            <div
+              class="flex items-center gap-1"
+              data-testid="user-row"
+              :data-user-id="asUser(row).id"
             >
-              <template #name
-                ><span data-testid="user-name">{{ user.name }}</span></template
-              >
-            </AdminIdentity>
-          </AdminCell>
-          <AdminCell label="Telefon"
-            ><span class="text-nowrap">{{ user.phone || '-' }}</span></AdminCell
-          >
-          <AdminCell label="Peranan">
-            <UBadge
-              color="neutral"
-              variant="subtle"
-              :label="roleLabel(user.role)"
-              data-testid="user-role"
-            />
-          </AdminCell>
-          <AdminCell label="Sekolah">
-            <span class="block max-w-28 truncate" :title="user.school?.name">{{
-              user.school?.name || '-'
-            }}</span>
-          </AdminCell>
-          <AdminCell label="Status">
-            <UBadge
-              :color="user.isActive ? 'success' : 'neutral'"
-              variant="subtle"
-              :label="user.isActive ? 'Aktif' : 'Tidak Aktif'"
-              data-testid="user-status"
-            />
-          </AdminCell>
-          <AdminCell label="Tarikh"
-            ><span class="text-nowrap">{{ formatUserDate(user.createdAt) }}</span></AdminCell
-          >
-          <AdminCell label="Tindakan">
-            <div class="flex items-center justify-end gap-1">
               <UButton
-                :to="`/admin/users/${String(user.id)}/edit`"
+                :to="`/admin/users/${String(asUser(row).id)}/edit`"
                 color="neutral"
                 variant="soft"
                 icon="i-ph-pencil-simple"
                 aria-label="Edit"
                 title="Edit"
-                data-testid="user-edit"
               />
-              <AdminRowMenu :items="menuItems(user)" :label="`Tindakan lain untuk ${user.name}`" />
+              <DsRowActions
+                :actions="menuActions(asUser(row))"
+                :label="`Tindakan lain untuk ${asUser(row).name}`"
+              />
             </div>
-          </AdminCell>
-        </AdminRow>
+          </div>
+        </div>
       </template>
-
-      <template #footer>
-        <AdminPager
-          :summary="summary"
-          :total="data?.meta.totalItems ?? 0"
-          :page="data?.meta.page ?? 1"
-          :page-size="data?.meta.pageSize ?? 25"
-          data-testid="users-pager"
-          @update:page="goToPage"
-        />
-      </template>
-    </AdminTable>
+    </DsDataTable>
 
     <UserDeleteModals
       :single="deleting"

@@ -10,13 +10,23 @@
  * a dismissed confirm (`useConfirm`, same BM text as the native confirm) sends nothing. Native HTML5
  * validation only.
  */
+import type { TableColumn } from '@nuxt/ui'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
-import { AdminCard, AdminKpiStrip, AdminPageHeader } from '@/ds/admin'
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import { DsPage, DsStatTile, useConfirm } from '@/ds'
+import {
+  DsDataTable,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  DsStatusBadge,
+  type StatItem,
+  useConfirm,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { formatDate, formatDateTime } from '@/lib/time'
 
@@ -29,14 +39,9 @@ import {
   updateSubscriptionQuota,
   upgradeSubscription,
   type SubscriptionMutation,
+  type SubscriptionStudent,
 } from '../api/subscriptions'
-import AdminAlert from '../components/AdminAlert.vue'
-import NativePanel from '../components/native/NativePanel.vue'
 import { errorLines } from '../lib/school-errors'
-import AdminCell from '../components/native/AdminCell.vue'
-import AdminRow from '../components/native/AdminRow.vue'
-import AdminSelect from '../components/native/AdminSelect.vue'
-import AdminTable from '../components/native/AdminTable.vue'
 import {
   barColor,
   EXTEND_PRESETS,
@@ -227,42 +232,68 @@ async function extend(): Promise<void> {
   }
 }
 
-const STUDENT_COLUMNS = [
-  { key: 'no', label: '#' },
-  { key: 'name', label: 'Nama' },
-  { key: 'email', label: 'Email ID Delima' },
-  { key: 'level', label: 'Tingkatan' },
+type StudentRow = SubscriptionStudent & Record<string, unknown>
+const studentRows = computed(() => (students.value?.data ?? []) as StudentRow[])
+const STUDENT_COLUMNS: TableColumn<StudentRow>[] = [
+  { id: 'no', header: '#' },
+  { accessorKey: 'name', header: 'Nama' },
+  { id: 'email', header: 'Email ID Delima' },
+  { id: 'level', header: 'Tingkatan' },
 ]
+/** The four detail tiles; the keys give the test ids `sub-start`, `sub-end`, `sub-price`... */
+const tiles = computed<StatItem[]>(() => {
+  const s = sub.value
+  if (!s) return []
+  const head: StatItem[] = [
+    { key: 'start', label: 'Mula', value: formatDate(s.startsAt), icon: 'calendar-check' },
+    { key: 'end', label: 'Tamat', value: formatDate(s.endsAt), icon: 'calendar-x', accent: 'heat' },
+  ]
+  return s.packageTier === 'basic'
+    ? [
+        ...head,
+        {
+          key: 'limit',
+          label: 'Had Soalan',
+          value: `${String(s.questionLimit ?? 500)}/bulan`,
+          icon: 'question',
+          accent: 'trial',
+        },
+        { key: 'cost', label: 'Kos', value: 'PERCUMA', icon: 'gift', accent: 'win' },
+      ]
+    : [
+        ...head,
+        {
+          key: 'price',
+          label: 'Harga / Pelajar',
+          value: money(s.package.priceAnnual),
+          icon: 'tag',
+          accent: 'trial',
+        },
+        {
+          key: 'total',
+          label: 'Jumlah',
+          value: money(s.studentQuota * Number(s.package.priceAnnual)),
+          icon: 'coins',
+          accent: 'win',
+        },
+      ]
+})
 </script>
 
 <template>
-  <DsPage data-testid="sub-detail-page">
-    <AdminPageHeader
-      title="Langganan Sekolah"
-      subtitle="Butiran langganan, kuota dan senarai pelajar."
-    >
-      <template #actions>
-        <UButton
-          :to="SUBSCRIPTIONS_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          label="Senarai Langganan"
-          data-testid="sub-list-back"
-        />
-      </template>
-    </AdminPageHeader>
-
-    <div
+  <DsPage
+    back-label="Senarai Langganan"
+    title="Langganan Sekolah"
+    subtitle="Butiran langganan, kuota dan senarai pelajar."
+    :back-to="SUBSCRIPTIONS_LIST_PATH"
+    data-testid="sub-detail-page"
+  >
+    <DsLoadError
       v-if="loadError && !isNotFound(loadError)"
-      class="flex flex-col gap-3"
-      data-testid="sub-load-error"
-    >
-      <AdminAlert :messages="errorLines(loadError)" />
-      <div>
-        <UButton label="Cuba Lagi" @click="reloadSub()" />
-      </div>
-    </div>
+      message="Tidak dapat memuatkan langganan. Sila cuba semula."
+      testid="sub-load-error"
+      @retry="reloadSub()"
+    />
 
     <div v-else-if="!sub" class="flex flex-col gap-4" data-testid="sub-skeleton">
       <USkeleton class="h-64 w-full" />
@@ -271,363 +302,350 @@ const STUDENT_COLUMNS = [
 
     <template v-else>
       <div ref="alertBox">
-        <AdminAlert :messages="errors" data-testid="sub-action-alert" />
+        <UAlert
+          v-if="errors.length > 0"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          role="alert"
+          data-testid="sub-action-alert"
+        >
+          <template #description>
+            <div class="flex flex-col gap-1">
+              <p v-for="m in errors" :key="m">{{ m }}</p>
+            </div>
+          </template>
+        </UAlert>
       </div>
 
       <!-- Summary card -->
-      <AdminCard data-testid="sub-summary-card">
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="min-w-0">
-              <h3 class="text-heading break-words text-highlighted" data-testid="sub-school">
-                {{ sub.school.name }}
-              </h3>
-              <p class="text-label text-muted" data-testid="sub-code">
-                {{ sub.school.code }} · {{ sub.package.name }}
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <UBadge
-                color="neutral"
-                variant="subtle"
-                :icon="sub.packageTier === 'basic' ? 'i-ph-eye' : 'i-ph-infinity'"
-                :label="TIER_LABEL[sub.packageTier]"
-                data-testid="sub-tier"
-              />
-              <UBadge
-                :color="STATUS_BADGE[sub.status].color"
-                variant="subtle"
-                :label="STATUS_BADGE[sub.status].label"
-                data-testid="sub-status"
-              />
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <div class="flex items-center justify-between gap-3 text-label">
-              <span class="flex items-center gap-2 text-default">
-                <UIcon name="i-ph-users" class="size-4 text-muted" aria-hidden="true" />
-                Kuota Pelajar
-              </span>
-              <span class="text-highlighted" data-testid="sub-usage"
-                >{{ sub.used }} / {{ sub.studentQuota }}</span
-              >
-            </div>
-            <UProgress
-              :model-value="sub.usedPercent"
-              :color="barColor(sub.usedPercent)"
-              :aria-label="`Kuota digunakan ${String(sub.usedPercent)}%`"
-              data-testid="sub-bar"
-            />
-            <div class="flex justify-between text-caption text-muted">
-              <span data-testid="sub-percent">{{ sub.usedPercent }}% digunakan</span>
-              <span data-testid="sub-remaining">Baki: {{ sub.remaining }} pelajar</span>
-            </div>
-          </div>
-
-          <NativePanel
-            v-if="sub.packageTier === 'basic'"
-            tone="soft"
-            class="flex items-center gap-3"
-            data-testid="sub-basic-box"
-          >
-            <UIcon name="i-ph-eye" class="size-6 shrink-0 text-muted" aria-hidden="true" />
-            <div class="min-w-0 text-label">
-              <p class="text-highlighted">Pakej Pemantauan</p>
-              <p class="break-words text-muted">
-                {{ sub.questionLimit ?? 500 }} soalan/bulan/pelajar · PERCUMA · Tamat
-                {{ formatDate(sub.endsAt) }}
-              </p>
-            </div>
-          </NativePanel>
-
-          <AdminKpiStrip label="Butiran langganan" data-testid="sub-tiles">
-            <DsStatTile
-              compact
-              :value="formatDate(sub.startsAt)"
-              unit="Mula"
-              icon="i-ph-calendar-check"
-            />
-            <DsStatTile
-              compact
-              accent="heat"
-              :value="formatDate(sub.endsAt)"
-              unit="Tamat"
-              icon="i-ph-calendar-x"
-            />
-            <template v-if="sub.packageTier === 'basic'">
-              <DsStatTile
-                compact
-                accent="trial"
-                :value="`${String(sub.questionLimit ?? 500)}/bulan`"
-                unit="Had Soalan"
-                icon="i-ph-question"
-              />
-              <DsStatTile compact accent="win" value="PERCUMA" unit="Kos" icon="i-ph-gift" />
-            </template>
-            <template v-else>
-              <div data-testid="sub-price">
-                <DsStatTile
-                  compact
-                  accent="trial"
-                  :value="money(sub.package.priceAnnual)"
-                  unit="Harga / Pelajar"
-                  icon="i-ph-tag"
+      <DsPanel flush data-testid="sub-summary-card">
+        <div class="p-4 sm:p-6">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="text-heading break-words text-highlighted" data-testid="sub-school">
+                  {{ sub.school.name }}
+                </h3>
+                <p class="text-label text-muted" data-testid="sub-code">
+                  {{ sub.school.code }} · {{ sub.package.name }}
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <UBadge
+                  color="neutral"
+                  variant="subtle"
+                  :icon="sub.packageTier === 'basic' ? 'i-ph-eye' : 'i-ph-infinity'"
+                  :label="TIER_LABEL[sub.packageTier]"
+                  data-testid="sub-tier"
+                />
+                <DsStatusBadge
+                  :status="STATUS_BADGE[sub.status].status"
+                  :label="STATUS_BADGE[sub.status].label"
+                  data-testid="sub-status"
                 />
               </div>
-              <div data-testid="sub-total">
-                <DsStatTile
-                  compact
-                  accent="win"
-                  :value="money(sub.studentQuota * Number(sub.package.priceAnnual))"
-                  unit="Jumlah"
-                  icon="i-ph-coins"
-                />
-              </div>
-            </template>
-          </AdminKpiStrip>
+            </div>
 
-          <NativePanel
-            v-if="sub.notes"
-            tone="soft"
-            class="flex items-start gap-2 text-label text-default"
-            data-testid="sub-notes"
-          >
-            <UIcon name="i-ph-note" class="mt-1 size-4 shrink-0 text-muted" aria-hidden="true" />
-            <span class="min-w-0 break-words whitespace-pre-line"
-              ><strong>Nota:</strong> {{ sub.notes }}</span
-            >
-          </NativePanel>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between gap-3 text-label">
+                <span class="flex items-center gap-2 text-default">
+                  <UIcon name="i-ph-users" class="size-4 text-muted" aria-hidden="true" />
+                  Kuota Pelajar
+                </span>
+                <span class="text-highlighted" data-testid="sub-usage"
+                  >{{ sub.used }} / {{ sub.studentQuota }}</span
+                >
+              </div>
+              <UProgress
+                :model-value="sub.usedPercent"
+                :color="barColor(sub.usedPercent)"
+                :aria-label="`Kuota digunakan ${String(sub.usedPercent)}%`"
+                data-testid="sub-bar"
+              />
+              <div class="flex justify-between text-caption text-muted">
+                <span data-testid="sub-percent">{{ sub.usedPercent }}% digunakan</span>
+                <span data-testid="sub-remaining">Baki: {{ sub.remaining }} pelajar</span>
+              </div>
+            </div>
+
+            <DsPanel v-if="sub.packageTier === 'basic'" tone="inset" data-testid="sub-basic-box">
+              <div class="flex items-center gap-3">
+                <UIcon name="i-ph-eye" class="size-6 shrink-0 text-muted" aria-hidden="true" />
+                <div class="min-w-0 text-label">
+                  <p class="text-highlighted">Pakej Pemantauan</p>
+                  <p class="break-words text-muted">
+                    {{ sub.questionLimit ?? 500 }} soalan/bulan/pelajar · PERCUMA · Tamat
+                    {{ formatDate(sub.endsAt) }}
+                  </p>
+                </div>
+              </div>
+            </DsPanel>
+
+            <DsStatRow
+              prefix="sub"
+              :items="tiles"
+              compact
+              :cols="4"
+              aria-label="Butiran langganan"
+              data-testid="sub-tiles"
+            />
+
+            <DsPanel v-if="sub.notes" tone="inset" data-testid="sub-notes">
+              <div class="flex items-start gap-2 text-label text-default">
+                <UIcon
+                  name="i-ph-note"
+                  class="mt-1 size-4 shrink-0 text-muted"
+                  aria-hidden="true"
+                />
+                <span class="min-w-0 break-words whitespace-pre-line"
+                  ><strong>Nota:</strong> {{ sub.notes }}</span
+                >
+              </div>
+            </DsPanel>
+          </div>
         </div>
-      </AdminCard>
+      </DsPanel>
 
       <!-- Actions -->
-      <AdminCard data-testid="sub-actions">
-        <div class="flex flex-col gap-4">
-          <h3 class="flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-sliders-horizontal" class="size-5 text-muted" aria-hidden="true" />
-            Tindakan
-          </h3>
-          <div class="flex flex-wrap gap-2">
-            <UButton
-              type="button"
-              color="neutral"
-              variant="soft"
-              icon="i-ph-sliders-horizontal"
-              label="Ubah Kuota"
-              data-testid="sub-toggle-quota"
-              @click="toggleQuota"
-            />
-            <UButton
-              :to="{ name: SUBSCRIPTION_ROUTES.invoice, params: { id: sub.id } }"
-              color="neutral"
-              variant="soft"
-              icon="i-ph-printer"
-              label="Cetak Invoice"
-              data-testid="sub-invoice"
-            />
-            <UButton
-              v-if="sub.packageTier === 'basic'"
-              type="button"
-              color="neutral"
-              variant="soft"
-              icon="i-ph-arrow-up"
-              label="Naik Taraf ke Penuh"
-              data-testid="sub-toggle-upgrade"
-              @click="open.upgrade = !open.upgrade"
-            />
-            <UButton
-              type="button"
-              color="error"
-              variant="soft"
-              icon="i-ph-x"
-              label="Batalkan"
-              :disabled="busy"
-              data-testid="sub-cancel"
-              @click="cancel"
-            />
-            <UButton
-              type="button"
-              icon="i-ph-calendar-plus"
-              label="Lanjutkan Tempoh"
-              data-testid="sub-toggle-extend"
-              @click="open.extend = !open.extend"
-            />
-          </div>
-
-          <!-- Ubah Kuota -->
-          <NativePanel
-            v-if="open.quota"
-            as="form"
-            tone="soft"
-            class="flex flex-col gap-3 p-4"
-            method="post"
-            data-testid="sub-quota-form"
-            @submit.prevent="saveQuota"
-          >
-            <div class="flex flex-wrap items-center gap-3">
-              <label for="sub-new-quota" class="text-label text-default">Kuota baru:</label>
-              <UInput
-                id="sub-new-quota"
-                v-model="quotaForm.quota"
-                type="number"
-                name="student_quota"
-                required
-                :min="QUOTA_MIN"
-                :max="QUOTA_MAX"
-                class="w-32"
-                data-testid="sub-quota-input"
-              />
-            </div>
-            <UInput
-              v-model="quotaForm.notes"
-              type="text"
-              name="notes"
-              placeholder="Sebab perubahan (opsional)"
-              aria-label="Sebab perubahan"
-              class="w-full"
-              data-testid="sub-quota-notes"
-            />
-            <div>
+      <DsPanel flush data-testid="sub-actions">
+        <div class="p-4 sm:p-6">
+          <div class="flex flex-col gap-4">
+            <h3 class="flex items-center gap-2 text-subheading text-highlighted">
+              <UIcon name="i-ph-sliders-horizontal" class="size-5 text-muted" aria-hidden="true" />
+              Tindakan
+            </h3>
+            <div class="flex flex-wrap gap-2">
               <UButton
-                type="submit"
-                icon="i-ph-floppy-disk"
-                label="Simpan"
-                :disabled="busy"
-                data-testid="sub-quota-save"
-              />
-            </div>
-          </NativePanel>
-
-          <!-- Lanjutkan Tempoh -->
-          <NativePanel
-            v-if="open.extend"
-            as="form"
-            tone="soft"
-            class="flex flex-col gap-3 p-4"
-            method="post"
-            data-testid="sub-extend-form"
-            @submit.prevent="extend"
-          >
-            <p
-              class="flex items-center gap-2 text-label text-muted"
-              data-testid="sub-extend-current"
-            >
-              <UIcon name="i-ph-info" class="size-4 shrink-0" aria-hidden="true" />
-              Tamat semasa: {{ formatDateTime(sub.endsAt) }}
-            </p>
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="text-label text-default">Tambah:</span>
-              <UButton
-                v-for="preset in EXTEND_PRESETS"
-                :key="preset.days"
                 type="button"
                 color="neutral"
                 variant="soft"
-                :label="preset.label"
-                data-testid="sub-extend-preset"
-                @click="extendForm.days = String(preset.days)"
+                icon="i-ph-sliders-horizontal"
+                label="Ubah Kuota"
+                data-testid="sub-toggle-quota"
+                @click="toggleQuota"
               />
-            </div>
-            <div class="flex items-center gap-3">
-              <UInput
-                v-model="extendForm.days"
-                type="number"
-                name="days"
-                required
-                min="1"
-                max="365"
-                aria-label="Bilangan hari"
-                class="w-28"
-                data-testid="sub-extend-days"
-              />
-              <span class="text-label text-muted">hari</span>
-            </div>
-            <UInput
-              v-model="extendForm.reason"
-              type="text"
-              name="reason"
-              placeholder="Sebab lanjutan (opsional)"
-              aria-label="Sebab lanjutan"
-              class="w-full"
-              data-testid="sub-extend-reason"
-            />
-            <div>
               <UButton
-                type="submit"
-                icon="i-ph-calendar-plus"
-                label="Lanjutkan"
-                :disabled="busy"
-                data-testid="sub-extend-submit"
+                :to="{ name: SUBSCRIPTION_ROUTES.invoice, params: { id: sub.id } }"
+                color="neutral"
+                variant="soft"
+                icon="i-ph-printer"
+                label="Cetak Invoice"
+                data-testid="sub-invoice"
               />
-            </div>
-          </NativePanel>
-
-          <!-- Naik Taraf ke Penuh -->
-          <NativePanel
-            v-if="open.upgrade && sub.packageTier === 'basic'"
-            as="form"
-            tone="soft"
-            class="flex flex-col gap-3 p-4"
-            method="post"
-            data-testid="sub-upgrade-form"
-            @submit.prevent="confirmUpgrade"
-          >
-            <p
-              class="flex items-start gap-2 text-label text-default"
-              data-testid="sub-upgrade-text"
-            >
-              <UIcon
-                name="i-ph-warning-circle"
-                class="mt-1 size-4 shrink-0 text-warning"
-                aria-hidden="true"
-              />
-              <span
-                >Naik taraf dari
-                <strong>Pemantauan ({{ sub.questionLimit ?? 500 }} soalan/bulan)</strong> ke
-                <strong>Penuh (Tanpa Had)</strong>. Langganan akan dilanjutkan 1 tahun dari sekarang
-                dengan harga {{ money(sub.package.priceAnnual) }}/pelajar.</span
-              >
-            </p>
-            <UInput
-              v-model="upgradeForm.reference"
-              type="text"
-              name="payment_reference"
-              placeholder="Rujukan pembayaran (opsional)"
-              aria-label="Rujukan pembayaran"
-              class="w-full"
-              data-testid="sub-upgrade-reference"
-            />
-            <UInput
-              v-model="upgradeForm.notes"
-              type="text"
-              name="payment_notes"
-              placeholder="Nota (opsional)"
-              aria-label="Nota"
-              class="w-full"
-              data-testid="sub-upgrade-notes"
-            />
-            <div>
               <UButton
-                type="submit"
+                v-if="sub.packageTier === 'basic'"
+                type="button"
+                color="neutral"
+                variant="soft"
                 icon="i-ph-arrow-up"
-                label="Sahkan Naik Taraf"
+                label="Naik Taraf ke Penuh"
+                data-testid="sub-toggle-upgrade"
+                @click="open.upgrade = !open.upgrade"
+              />
+              <UButton
+                type="button"
+                color="error"
+                variant="soft"
+                icon="i-ph-x"
+                label="Batalkan"
                 :disabled="busy"
-                data-testid="sub-upgrade-submit"
+                data-testid="sub-cancel"
+                @click="cancel"
+              />
+              <UButton
+                type="button"
+                icon="i-ph-calendar-plus"
+                label="Lanjutkan Tempoh"
+                data-testid="sub-toggle-extend"
+                @click="open.extend = !open.extend"
               />
             </div>
-          </NativePanel>
+
+            <!-- Ubah Kuota -->
+            <DsPanel
+              v-if="open.quota"
+              tone="inset"
+              as="form"
+              method="post"
+              data-testid="sub-quota-form"
+              @submit.prevent="saveQuota"
+            >
+              <div class="flex flex-col gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                  <label for="sub-new-quota" class="text-label text-default">Kuota baru:</label>
+                  <UInput
+                    id="sub-new-quota"
+                    v-model="quotaForm.quota"
+                    type="number"
+                    name="student_quota"
+                    required
+                    :min="QUOTA_MIN"
+                    :max="QUOTA_MAX"
+                    class="w-32"
+                    data-testid="sub-quota-input"
+                  />
+                </div>
+                <UInput
+                  v-model="quotaForm.notes"
+                  type="text"
+                  name="notes"
+                  placeholder="Sebab perubahan (opsional)"
+                  aria-label="Sebab perubahan"
+                  class="w-full"
+                  data-testid="sub-quota-notes"
+                />
+                <div>
+                  <UButton
+                    type="submit"
+                    icon="i-ph-floppy-disk"
+                    label="Simpan"
+                    :disabled="busy"
+                    data-testid="sub-quota-save"
+                  />
+                </div>
+              </div>
+            </DsPanel>
+
+            <!-- Lanjutkan Tempoh -->
+            <DsPanel
+              v-if="open.extend"
+              tone="inset"
+              as="form"
+              method="post"
+              data-testid="sub-extend-form"
+              @submit.prevent="extend"
+            >
+              <div class="flex flex-col gap-3">
+                <p
+                  class="flex items-center gap-2 text-label text-muted"
+                  data-testid="sub-extend-current"
+                >
+                  <UIcon name="i-ph-info" class="size-4 shrink-0" aria-hidden="true" />
+                  Tamat semasa: {{ formatDateTime(sub.endsAt) }}
+                </p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-label text-default">Tambah:</span>
+                  <UButton
+                    v-for="preset in EXTEND_PRESETS"
+                    :key="preset.days"
+                    type="button"
+                    color="neutral"
+                    variant="soft"
+                    :label="preset.label"
+                    data-testid="sub-extend-preset"
+                    @click="extendForm.days = String(preset.days)"
+                  />
+                </div>
+                <div class="flex items-center gap-3">
+                  <UInput
+                    v-model="extendForm.days"
+                    type="number"
+                    name="days"
+                    required
+                    min="1"
+                    max="365"
+                    aria-label="Bilangan hari"
+                    class="w-28"
+                    data-testid="sub-extend-days"
+                  />
+                  <span class="text-label text-muted">hari</span>
+                </div>
+                <UInput
+                  v-model="extendForm.reason"
+                  type="text"
+                  name="reason"
+                  placeholder="Sebab lanjutan (opsional)"
+                  aria-label="Sebab lanjutan"
+                  class="w-full"
+                  data-testid="sub-extend-reason"
+                />
+                <div>
+                  <UButton
+                    type="submit"
+                    icon="i-ph-calendar-plus"
+                    label="Lanjutkan"
+                    :disabled="busy"
+                    data-testid="sub-extend-submit"
+                  />
+                </div>
+              </div>
+            </DsPanel>
+
+            <!-- Naik Taraf ke Penuh -->
+            <DsPanel
+              v-if="open.upgrade && sub.packageTier === 'basic'"
+              tone="inset"
+              as="form"
+              method="post"
+              data-testid="sub-upgrade-form"
+              @submit.prevent="confirmUpgrade"
+            >
+              <div class="flex flex-col gap-3">
+                <p
+                  class="flex items-start gap-2 text-label text-default"
+                  data-testid="sub-upgrade-text"
+                >
+                  <UIcon
+                    name="i-ph-warning-circle"
+                    class="mt-1 size-4 shrink-0 text-warning"
+                    aria-hidden="true"
+                  />
+                  <span
+                    >Naik taraf dari
+                    <strong>Pemantauan ({{ sub.questionLimit ?? 500 }} soalan/bulan)</strong> ke
+                    <strong>Penuh (Tanpa Had)</strong>. Langganan akan dilanjutkan 1 tahun dari
+                    sekarang dengan harga {{ money(sub.package.priceAnnual) }}/pelajar.</span
+                  >
+                </p>
+                <UInput
+                  v-model="upgradeForm.reference"
+                  type="text"
+                  name="payment_reference"
+                  placeholder="Rujukan pembayaran (opsional)"
+                  aria-label="Rujukan pembayaran"
+                  class="w-full"
+                  data-testid="sub-upgrade-reference"
+                />
+                <UInput
+                  v-model="upgradeForm.notes"
+                  type="text"
+                  name="payment_notes"
+                  placeholder="Nota (opsional)"
+                  aria-label="Nota"
+                  class="w-full"
+                  data-testid="sub-upgrade-notes"
+                />
+                <div>
+                  <UButton
+                    type="submit"
+                    icon="i-ph-arrow-up"
+                    label="Sahkan Naik Taraf"
+                    :disabled="busy"
+                    data-testid="sub-upgrade-submit"
+                  />
+                </div>
+              </div>
+            </DsPanel>
+          </div>
         </div>
-      </AdminCard>
+      </DsPanel>
 
       <!-- Students -->
       <section data-testid="sub-students">
-        <AdminTable
+        <DsDataTable
+          :data="studentRows"
           :columns="STUDENT_COLUMNS"
+          variant="flush"
           caption="Senarai pelajar langganan"
+          :loading="!students && !studentsError"
+          :error="studentsError ? errorLines(studentsError).join(' ') : undefined"
+          :page-size="Math.max(studentRows.length, 1)"
+          card-title="name"
           data-testid="sub-students-table"
+          @retry="reloadStudents()"
         >
-          <template #header>
+          <template #toolbar>
             <div class="flex flex-wrap items-center justify-between gap-3 p-4">
               <h3 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon name="i-ph-users" class="size-5 text-muted" aria-hidden="true" />
@@ -635,70 +653,49 @@ const STUDENT_COLUMNS = [
               </h3>
               <div class="flex flex-wrap items-center gap-2 text-label text-muted">
                 <label for="sub-per-page">Tunjuk</label>
-                <AdminSelect
-                  id="sub-per-page"
-                  :model-value="pageSize"
-                  class="w-24"
-                  data-testid="sub-per-page"
-                  @change="onPerPage"
-                >
-                  <option v-for="n in SUBSCRIPTION_PER_PAGE_OPTIONS" :key="n" :value="n">
-                    {{ n }}
-                  </option>
-                </AdminSelect>
+                <div class="w-24">
+                  <DsNativeSelect
+                    id="sub-per-page"
+                    :model-value="pageSize"
+                    data-testid="sub-per-page"
+                    @change="onPerPage"
+                  >
+                    <option v-for="n in SUBSCRIPTION_PER_PAGE_OPTIONS" :key="n" :value="n">
+                      {{ n }}
+                    </option>
+                  </DsNativeSelect>
+                </div>
                 <span data-testid="sub-range"
                   >perbarisan · Memaparkan {{ firstNo }}-{{ lastNo }} dari {{ total }}</span
                 >
               </div>
             </div>
           </template>
-
-          <AdminRow v-if="studentsError" data-testid="sub-students-error">
-            <AdminCell :colspan="STUDENT_COLUMNS.length">
-              <div class="flex flex-col items-center gap-3">
-                <AdminAlert :messages="errorLines(studentsError)" />
-                <UButton label="Cuba Lagi" @click="reloadStudents()" />
-              </div>
-            </AdminCell>
-          </AdminRow>
-          <template v-else-if="!students">
-            <AdminRow v-for="n in 5" :key="n">
-              <AdminCell v-for="c in STUDENT_COLUMNS" :key="c.key">
-                <USkeleton class="h-4 w-full max-w-32" />
-              </AdminCell>
-            </AdminRow>
+          <template #no-cell="{ row }">
+            <span data-testid="sub-student-row">{{ firstNo + row.index }}</span>
           </template>
-          <template v-else>
-            <AdminRow
-              v-for="(student, i) in students.data"
-              :key="student.id"
-              data-testid="sub-student-row"
-            >
-              <AdminCell label="#">{{ firstNo + i }}</AdminCell>
-              <AdminCell label="Nama">{{ student.name }}</AdminCell>
-              <AdminCell label="Email ID Delima">
-                <span class="break-all">{{ student.idDelima }}</span>
-              </AdminCell>
-              <AdminCell label="Tingkatan">
-                <span class="text-nowrap">{{ student.classLevel }}</span>
-              </AdminCell>
-            </AdminRow>
+          <template #email-cell="{ row }">
+            <span class="break-all">{{ row.original.idDelima }}</span>
           </template>
-
-          <template #footer>
-            <div class="p-3 empty:hidden" data-testid="sub-pager">
-              <UPagination
-                v-if="students && total > pageSize"
-                :page="pageQuery"
-                :total="total"
-                :items-per-page="pageSize"
-                :prev="{ 'aria-label': 'Sebelum' }"
-                :next="{ 'aria-label': 'Seterusnya' }"
-                @update:page="goToPage"
-              />
-            </div>
+          <template #level-cell="{ row }">
+            <span class="text-nowrap">{{ row.original.classLevel }}</span>
           </template>
-        </AdminTable>
+          <template #card="{ row }">
+            <p class="text-body text-highlighted" data-testid="sub-student-row">{{ row.name }}</p>
+            <p class="text-label break-all text-muted">{{ row.idDelima }}</p>
+            <p class="text-label text-muted">{{ row.classLevel }}</p>
+          </template>
+        </DsDataTable>
+        <div v-if="students && total > pageSize" class="p-3" data-testid="sub-pager">
+          <UPagination
+            :page="pageQuery"
+            :total="total"
+            :items-per-page="pageSize"
+            :prev="{ 'aria-label': 'Sebelum' }"
+            :next="{ 'aria-label': 'Seterusnya' }"
+            @update:page="goToPage"
+          />
+        </div>
       </section>
     </template>
   </DsPage>

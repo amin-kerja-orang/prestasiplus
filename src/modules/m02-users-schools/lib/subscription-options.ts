@@ -4,6 +4,7 @@
  */
 
 import { isApiError } from '@/api'
+import type { DsStatus } from '@/ds'
 import { formatCurrency } from '@/lib/number'
 
 import type { PackageTier, SubscriptionStatus } from '../api/subscriptions'
@@ -33,14 +34,12 @@ export const FORM_LEVEL_FILTER_OPTIONS = [
 ] as const
 
 /** BR-23 badge labels and their Nuxt UI badge colour. */
-export const STATUS_BADGE: Record<
-  SubscriptionStatus,
-  { label: string; color: 'success' | 'warning' | 'error' | 'neutral' }
-> = {
-  active: { label: 'Aktif', color: 'success' },
-  grace: { label: 'Tempoh Ihsan', color: 'warning' },
-  expired: { label: 'Tamat', color: 'error' },
-  cancelled: { label: 'Batal', color: 'neutral' },
+/** Badge of a subscription: the canonical `DsStatusBadge` status plus the observed live word (BR-23). */
+export const STATUS_BADGE: Record<SubscriptionStatus, { label: string; status: DsStatus }> = {
+  active: { label: 'Aktif', status: 'active' },
+  grace: { label: 'Tempoh Ihsan', status: 'pending-approval' },
+  expired: { label: 'Tamat', status: 'expired' },
+  cancelled: { label: 'Batal', status: 'inactive' },
 }
 
 export const TIER_LABEL: Record<PackageTier, string> = { basic: 'Pemantauan', full: 'Penuh' }

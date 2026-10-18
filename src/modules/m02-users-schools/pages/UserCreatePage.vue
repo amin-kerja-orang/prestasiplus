@@ -17,9 +17,8 @@ import { useRouter } from 'vue-router'
 
 import type { Role } from '@/modules/m01-authentication'
 
-import { AdminFormSection, AdminPageHeader, AdminStickyBar } from '@/ds/admin'
 import { useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 
 import { fetchJpnList, type Jpn, type SchoolSummary } from '../api/schools'
 import {
@@ -29,8 +28,6 @@ import {
   type CreateAdminUserRequest,
   type StudentSearchItem,
 } from '../api/users'
-import AdminAlert from '../components/AdminAlert.vue'
-import AdminField from '../components/AdminField.vue'
 import GradeCards from '../components/GradeCards.vue'
 import OfficerSelects from '../components/OfficerSelects.vue'
 import ParentStudentLinker from '../components/ParentStudentLinker.vue'
@@ -38,7 +35,6 @@ import SchoolAdminGenerator from '../components/SchoolAdminGenerator.vue'
 import StudentSchoolPicker from '../components/StudentSchoolPicker.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
 import { errorLines, USERS_LIST_PATH } from '../lib/user-list'
-import AdminSelect from '../components/native/AdminSelect.vue'
 import {
   generatedAdminEmail,
   generatedAdminName,
@@ -223,11 +219,11 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="user-create-page">
-    <AdminPageHeader
-      title="Borang Pendaftaran Pengguna"
-      subtitle="Isi maklumat untuk mendaftarkan pengguna baru"
-    />
+  <DsPage
+    title="Borang Pendaftaran Pengguna"
+    subtitle="Isi maklumat untuk mendaftarkan pengguna baru"
+    data-testid="user-create-page"
+  >
     <form
       method="post"
       class="flex w-full min-w-0 flex-col gap-6"
@@ -235,30 +231,51 @@ async function submit(): Promise<void> {
       @submit.prevent="submit"
     >
       <div ref="alertBox" class="empty:hidden">
-        <AdminAlert :messages="errors" data-testid="user-form-alert" />
+        <UAlert
+          v-if="errors.length > 0"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          role="alert"
+          data-testid="user-form-alert"
+        >
+          <template #description>
+            <div class="flex flex-col gap-1">
+              <p v-for="m in errors" :key="m">{{ m }}</p>
+            </div>
+          </template>
+        </UAlert>
       </div>
 
-      <AdminFormSection
+      <DsFormSection
         title="Peranan"
         description="Pilih peranan; borang akan menyesuaikan diri."
-        icon="i-ph-user-gear"
+        icon="user-gear"
+        :columns="2"
       >
-        <AdminField for="user-role" label="Peranan" required>
-          <AdminSelect id="user-role" v-model="role" name="role" required data-testid="user-role">
+        <DsFormField native for="user-role" label="Peranan" required>
+          <DsNativeSelect
+            id="user-role"
+            v-model="role"
+            name="role"
+            required
+            data-testid="user-role"
+          >
             <option value="">-- Pilih Peranan --</option>
             <option v-for="o in ROLE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-          </AdminSelect>
-        </AdminField>
-      </AdminFormSection>
+          </DsNativeSelect>
+        </DsFormField>
+      </DsFormSection>
 
       <!-- school_admin (FR-M02-27…31) -->
-      <AdminFormSection
+      <DsFormSection
         v-if="isSchoolAdmin"
         title="Admin Sekolah"
         description="Cari sekolah dan janakan akaun pentadbir."
-        icon="i-ph-buildings"
+        icon="buildings"
+        :columns="2"
       >
-        <div class="md:col-span-2">
+        <div class="sm:col-span-2">
           <SchoolAdminGenerator
             v-model:school="genSchool"
             v-model:generated="generated"
@@ -270,19 +287,20 @@ async function submit(): Promise<void> {
             @copy="copyText"
           />
         </div>
-      </AdminFormSection>
+      </DsFormSection>
 
       <!-- standard roles and officers (FR-M02-22, FR-M02-32) -->
-      <AdminFormSection
+      <DsFormSection
         v-if="isStandard || isOfficer"
         title="Maklumat Akaun"
         :description="
           isOfficer ? 'Maklumat pegawai dan kata laluan.' : 'Maklumat pengguna dan kata laluan.'
         "
-        icon="i-ph-identification-card"
+        icon="identification-card"
         data-testid="user-fields"
+        :columns="2"
       >
-        <AdminField for="user-name" label="Nama" icon="i-ph-user" required>
+        <DsFormField native for="user-name" label="Nama" required>
           <UInput
             id="user-name"
             v-model="form.name"
@@ -292,9 +310,9 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="user-name"
           />
-        </AdminField>
+        </DsFormField>
 
-        <AdminField for="user-email" label="Emel" icon="i-ph-envelope-simple" required>
+        <DsFormField native for="user-email" label="Emel" required>
           <UInput
             id="user-email"
             v-model="form.email"
@@ -304,10 +322,13 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="user-email"
           />
-        </AdminField>
+        </DsFormField>
 
         <template v-if="isStandard">
-          <AdminField for="user-phone" label="No. Telefon" icon="i-ph-phone" optional>
+          <DsFormField native for="user-phone" label="No. Telefon">
+            <template #label-extra>
+              <span class="text-caption text-muted">(Pilihan)</span></template
+            >
             <UInput
               id="user-phone"
               v-model="form.phone"
@@ -319,24 +340,26 @@ async function submit(): Promise<void> {
               class="w-full"
               data-testid="user-phone"
             />
-          </AdminField>
+          </DsFormField>
 
-          <div v-if="role === 'parent'" class="md:col-span-2">
+          <div v-if="role === 'parent'" class="sm:col-span-2">
             <ParentStudentLinker v-model="linked" variant="create" />
           </div>
 
           <template v-if="role === 'student'">
-            <div class="md:col-span-2">
+            <div class="sm:col-span-2">
               <GradeCards v-model="grade" />
             </div>
-            <div class="md:col-span-2">
-              <AdminField
+            <div class="sm:col-span-2">
+              <DsFormField
+                native
                 for="user-ic"
                 label="No. Kad Pengenalan"
-                icon="i-ph-identification-card"
-                optional
                 hint="12 digit MyKad. Dilindungi PDPA."
               >
+                <template #label-extra>
+                  <span class="text-caption text-muted">(Pilihan)</span></template
+                >
                 <UInput
                   id="user-ic"
                   v-model="form.icNumber"
@@ -348,11 +371,11 @@ async function submit(): Promise<void> {
                   class="w-full"
                   data-testid="user-ic"
                 />
-              </AdminField>
+              </DsFormField>
             </div>
           </template>
 
-          <div v-if="role === 'student' || role === 'teacher'" class="md:col-span-2">
+          <div v-if="role === 'student' || role === 'teacher'" class="sm:col-span-2">
             <StudentSchoolPicker v-model="stdSchool" />
           </div>
         </template>
@@ -366,7 +389,7 @@ async function submit(): Promise<void> {
           :jpns="jpns"
         />
 
-        <AdminField for="user-password" label="Kata Laluan" icon="i-ph-lock" required>
+        <DsFormField native for="user-password" label="Kata Laluan" required>
           <UInput
             id="user-password"
             v-model="form.password"
@@ -377,14 +400,9 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="user-password"
           />
-        </AdminField>
+        </DsFormField>
 
-        <AdminField
-          for="user-password-confirm"
-          label="Sahkan Kata Laluan"
-          icon="i-ph-lock"
-          required
-        >
+        <DsFormField native for="user-password-confirm" label="Sahkan Kata Laluan" required>
           <UInput
             id="user-password-confirm"
             v-model="form.passwordConfirmation"
@@ -395,9 +413,9 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="user-password-confirm"
           />
-        </AdminField>
+        </DsFormField>
 
-        <div v-if="isStandard" class="md:col-span-2">
+        <div v-if="isStandard" class="sm:col-span-2">
           <UserFormSwitch
             v-model="form.isActive"
             name="is_active"
@@ -406,27 +424,18 @@ async function submit(): Promise<void> {
             testid="user-active"
           />
         </div>
-      </AdminFormSection>
+      </DsFormSection>
 
       <!-- FR-M02-34: the footer appears once a role is chosen -->
-      <AdminStickyBar v-if="role !== ''" data-testid="user-form-footer">
-        <UButton
-          :to="USERS_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          label="Batal"
-          data-testid="user-cancel"
-        />
-        <UButton
-          type="submit"
-          icon="i-ph-user-plus"
-          label="Daftar Pengguna"
-          :loading="saving"
-          :disabled="saving || (isSchoolAdmin && !generated)"
-          data-testid="user-submit"
-        />
-      </AdminStickyBar>
+      <DsFormBar
+        v-if="role !== ''"
+        :cancel-to="USERS_LIST_PATH"
+        submit-label="Daftar Pengguna"
+        submit-icon="i-ph-user-plus"
+        :saving="saving"
+        :disabled="isSchoolAdmin && !generated"
+        data-testid="user-form-footer"
+      />
     </form>
 
     <UBadge
