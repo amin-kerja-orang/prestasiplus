@@ -56,7 +56,6 @@ describe('BannerListPage (S9)', () => {
     expect(t(w, 'banners-add').attributes('href')).toBe('/admin/banners/create')
     expect(t(w, 'banners-add').text()).toBe('Tambah')
     expect(w.findAll('thead th').map((th) => th.text())).toEqual([
-      '#',
       'Tajuk',
       'Jenis',
       'Sasaran',
@@ -81,18 +80,17 @@ describe('BannerListPage (S9)', () => {
     const text = (testid: string) =>
       wrapper!.findAll(`[data-testid=${testid}]`).map((e) => e.text())
     expect(text('banner-type')).toEqual([
-      'HERO',
-      'FEATURE',
-      'PROMOTIONAL',
-      'ANNOUNCEMENT',
-      'FEATURE',
+      'Hero',
+      'Feature',
+      'Promotional',
+      'Announcement',
+      'Feature',
     ])
     expect(text('banner-audience')[0]).toBe('ALL')
     expect(text('banner-start')[0]).toBe('01/01/2026')
     expect(text('banner-end')[0]).toBe('31/12/2026')
     expect(text('banner-active')[0]).toBe('Aktif')
-    // The row number is the position, not the id.
-    expect(cells[0]?.findAll('td')[0]?.text()).toBe('1')
+    expect(cells).toHaveLength(5)
   })
 
   it('has an edit link and a delete action per row and no view action', async () => {

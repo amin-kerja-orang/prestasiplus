@@ -25,7 +25,7 @@ const filled =
  * lists, lg 16 cards and tables, xl 24 modals and hero cards, full pills. Inputs sit one step below
  * the buttons beside them; a control inside a card is always smaller than the card.
  */
-const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base'
+const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staff:text-body'
 
 const fieldConfig = {
   defaultVariants: { variant: 'soft' },
@@ -130,10 +130,10 @@ export const uiConfig = {
         xs: { base: 'min-h-9 px-2.5 text-label' },
         sm: { base: 'min-h-10 px-3.5 text-label' },
         md: {
-          base: 'min-h-11 gap-2 px-4 text-base learner:min-h-13 learner:rounded-md learner:px-5',
+          base: 'min-h-11 gap-2 px-4 text-label learner:min-h-13 learner:rounded-md learner:px-5 learner:text-base',
         },
         lg: {
-          base: 'min-h-12 gap-2.5 px-5 text-base learner:min-h-14 learner:rounded-md learner:px-6',
+          base: 'min-h-12 gap-2.5 px-5 text-label learner:min-h-14 learner:rounded-md learner:px-6 learner:text-base',
         },
       },
     },
@@ -153,6 +153,14 @@ export const uiConfig = {
       },
       { color: 'secondary', variant: 'solid', class: 'bg-highlight text-on-highlight' },
       { color: ['error', 'success', 'info', 'warning'], variant: 'solid', class: 'text-on-sem' },
+      // Staff: a primary button (the default colour) is the page's main action, so it is solid even
+      // when the caller leaves the variant at the tonal default. Secondary actions say `color="neutral"`.
+      {
+        color: 'primary',
+        variant: 'soft',
+        class:
+          'staff:bg-gradient-primary staff:text-primary-on staff:shadow-cta staff:hover:bg-primary staff:hover:brightness-110 staff:active:brightness-95',
+      },
       // Tonal / link text in the readable tone of the primary (`--ds-primary-t`).
       { color: 'primary', variant: ['soft', 'ghost', 'link'], class: 'text-primary-t' },
     ],
@@ -176,9 +184,9 @@ export const uiConfig = {
   card: {
     slots: {
       root: 'rounded-card',
-      header: 'p-5 sm:px-6',
-      body: 'p-5 sm:p-6',
-      footer: 'p-5 sm:px-6',
+      header: 'p-4 sm:px-5',
+      body: 'p-4 sm:p-5',
+      footer: 'p-4 sm:px-5',
     },
     variants: {
       variant: {
@@ -274,18 +282,20 @@ export const uiConfig = {
     slots: {
       root: 'bg-default rounded-lg shadow-ds-xs in-data-[ds=panel]:rounded-none in-data-[ds=panel]:shadow-none',
       tbody: 'divide-y-0 [&>tr:nth-child(even)]:bg-soft',
-      th: 'px-4 py-3.5 text-overline uppercase text-muted',
-      td: 'px-4 py-3.5 text-body tabular-nums',
+      th: 'px-4 py-3 text-th text-muted',
+      td: 'px-4 py-3 text-body tabular-nums',
     },
   },
 
   badge: {
-    slots: { base: 'rounded-full font-bold tabular-nums' },
+    // One badge style: sentence case, 12px semibold (13px label in the learner portal).
+    slots: { base: 'rounded-full font-semibold tabular-nums' },
     variants: {
       size: {
-        xs: { base: 'rounded-full text-caption' },
-        sm: { base: 'rounded-full text-caption px-2.5 py-1' },
-        md: { base: 'rounded-full text-label px-3 py-1' },
+        // `text-xs` (not the `text-badge` role) so it replaces the stock xs/sm sizes (8px / 10px).
+        xs: { base: 'rounded-full text-xs px-2 py-0.5 learner:text-caption' },
+        sm: { base: 'rounded-full text-xs px-2 py-0.5 learner:text-caption learner:px-2.5 learner:py-1' },
+        md: { base: 'rounded-full text-xs px-2.5 py-1 learner:text-label learner:px-3' },
         lg: { base: 'rounded-full' },
         xl: { base: 'rounded-full' },
       },

@@ -51,14 +51,14 @@ withDefaults(
         : '',
       sticky && tone === 'bulk' ? 'sticky top-2 z-20' : '',
       sticky && tone === 'bar' ? 'sticky bottom-2 z-20' : '',
-      flush || tone === 'float' || title || $slots.actions ? '' : 'p-3 sm:p-4',
+      flush || tone === 'float' || title || $slots.actions ? '' : 'p-4 sm:p-5',
     ]"
     :data-tone="tone"
     data-ds="panel"
   >
     <header
       v-if="title || $slots.actions"
-      class="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4"
+      class="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5"
       data-ds="panel-header"
     >
       <div v-if="title" class="flex min-w-0 items-center gap-3">
@@ -72,7 +72,7 @@ withDefaults(
         <slot name="actions" />
       </div>
     </header>
-    <div :class="!flush && (title || $slots.actions) ? 'px-3 pb-3 sm:px-4 sm:pb-4' : ''">
+    <div :class="!flush && (title || $slots.actions) ? 'px-4 pb-4 sm:px-5 sm:pb-5' : ''">
       <slot />
     </div>
   </component>

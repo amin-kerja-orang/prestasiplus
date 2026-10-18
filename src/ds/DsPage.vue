@@ -26,7 +26,7 @@ const headerSlots = ['leading', 'breadcrumb', 'subtitle', 'actions', 'tabs', 'me
 
 <template>
   <div
-    class="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-5 md:gap-6 lg:gap-8 staff:max-w-none"
+    class="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-5 md:gap-6 learner:lg:gap-8 staff:max-w-none"
     data-ds="page"
   >
     <DsPageHeader

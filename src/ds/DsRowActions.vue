@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * Row actions of a table row or card (design language 9.2): the first `inline` non-danger actions
- * are ghost icon buttons with a label, the rest sit in a "..." `UDropdownMenu` (44px trigger). Danger
+ * are ghost icon buttons (an action with an icon shows the icon only; its label is the tooltip and
+ * the accessible name; one without an icon keeps its text), the rest sit in a "..." `UDropdownMenu`. Danger
  * actions get their own group at the end of the menu. An action with `confirm` asks through
  * `useConfirm()` before `onSelect` runs; `to` makes it a link.
  */
@@ -84,16 +85,18 @@ const items = computed<DropdownMenuItem[][]>(() => {
       v-for="a in inlineActions"
       :key="a.label"
       type="button"
-      color="neutral"
-      variant="ghost"
-      class="min-h-11"
-      :icon="a.icon"
-      :label="a.label"
-      :to="a.to"
-      :disabled="a.disabled"
-      :data-testid="a.testid"
-      @click="run(a)"
-    />
+        color="neutral"
+        variant="ghost"
+        :class="a.icon ? 'min-h-9 min-w-9 justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11' : 'min-h-9 pointer-coarse:min-h-11'"
+        :icon="a.icon"
+        :label="a.icon ? undefined : a.label"
+      :aria-label="a.icon ? a.label : undefined"
+      :title="a.icon ? a.label : undefined"
+        :to="a.to"
+        :disabled="a.disabled"
+        :data-testid="a.testid"
+        @click="run(a)"
+      />
     <UDropdownMenu v-if="menuActions.length" :items="items" :content="{ align: 'end' }">
       <UButton
         type="button"
@@ -102,7 +105,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
         icon="i-ph-dots-three"
         :aria-label="label"
         :title="label"
-        class="min-h-11 min-w-11 justify-center"
+        class="min-h-9 min-w-9 justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
         :data-testid="testid"
       />
     </UDropdownMenu>

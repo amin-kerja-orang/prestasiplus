@@ -555,7 +555,7 @@ describe('PkskAccessPage (S8)', () => {
     expect(first.get('[data-testid=a-granted]').text()).toBe('22/04/2026')
     expect(first.get('[data-testid=a-expires]').text()).toBe('Tiada had')
     expect(first.get('[data-testid=a-status]').text()).toBe('Aktif')
-    expect(first.get('[data-ds=row-actions] button').text()).toBe('Tarik')
+    expect(first.get('[data-ds=row-actions] button').attributes('aria-label')).toBe('Tarik')
     expect(w.findAll('[data-testid=a-granter]')[1]!.text()).toBe('Admin Demo')
   })
 

@@ -140,8 +140,8 @@ const cols = computed<TableColumn<T>[]>(() => {
 const tableUi = computed(() => {
   const sticky = flush.value || bare.value || props.stickyHeader
   const th = [
-    'text-overline whitespace-nowrap text-muted',
-    props.compactCells ? 'px-2 py-3.5' : tight.value ? 'px-3 py-3' : 'px-4 py-3.5',
+    'text-th whitespace-nowrap text-muted',
+    props.compactCells ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3',
     sticky ? `sticky top-0 z-10 ${bare.value ? 'bg-elevated' : 'bg-default shadow-bar'}` : '',
   ].join(' ')
   return {
@@ -151,7 +151,7 @@ const tableUi = computed(() => {
     th,
     td: [
       'tabular align-middle text-body font-normal',
-      props.compactCells ? 'px-2 py-4' : tight.value ? 'px-3 py-3' : 'px-4 py-4',
+      props.compactCells ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3',
       fixed.value ? 'whitespace-normal' : '',
     ].join(' '),
     tr: bare.value

@@ -236,7 +236,7 @@ const accountItems = computed(() => [
             <UDashboardNavbar
               :toggle="false"
               :as="{ title: 'div' }"
-              :ui="{ root: 'h-16 bg-default shadow-bar', title: 'min-w-0' }"
+              :ui="{ root: 'h-16 bg-default shadow-bar', title: 'min-w-0', right: 'gap-2' }"
               data-testid="pentadbiran-header"
             >
               <template #leading>
@@ -254,15 +254,11 @@ const accountItems = computed(() => [
                 </div>
               </template>
               <template #title>
-                <div class="flex min-w-0 flex-col leading-tight">
-                  <span v-if="crumb" class="hidden truncate text-caption text-muted sm:block">{{
-                    crumb
-                  }}</span>
-                  <h1
-                    class="line-clamp-2 text-label font-bold break-words text-highlighted sm:text-subheading"
+                <div class="flex min-w-0 items-baseline gap-2">
+                  <span v-if="crumb" class="hidden truncate text-body text-muted xl:block"
+                    >{{ crumb }} <span aria-hidden="true">/</span></span
                   >
-                    {{ title }}
-                  </h1>
+                  <h1 class="truncate text-subheading text-highlighted">{{ title }}</h1>
                 </div>
               </template>
               <template #right>
@@ -270,22 +266,26 @@ const accountItems = computed(() => [
                   label="Cari menu"
                   color="neutral"
                   variant="soft"
-                  class="hidden sm:inline-flex"
+                  size="sm"
+                  class="hidden w-52 justify-start font-normal text-muted lg:inline-flex"
+                  :ui="{ label: 'grow text-start' }"
                 />
                 <UDashboardSearchButton
                   :collapsed="true"
                   color="neutral"
-                  variant="soft"
-                  class="sm:hidden"
+                  variant="ghost"
+                  size="sm"
+                  class="lg:hidden"
                 />
                 <span
-                  class="hidden max-w-64 truncate rounded-full bg-primary/15 px-3 py-1.5 text-label font-semibold text-primary lg:inline-flex"
+                  class="hidden h-8 max-w-64 items-center truncate rounded-full bg-elevated px-3 text-caption font-medium text-muted lg:inline-flex"
                   data-testid="pentadbiran-scope-chip"
                   >{{ SCOPE_CHIP }}</span
                 >
                 <UButton
                   color="neutral"
-                  variant="soft"
+                  variant="ghost"
+                  size="sm"
                   :icon="theme.scheme.value === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
                   :aria-label="themeLabel"
                   data-testid="pentadbiran-theme-toggle"
@@ -299,7 +299,7 @@ const accountItems = computed(() => [
             <main
               id="kandungan"
               :key="route.path"
-              class="mx-auto flex w-full max-w-[1600px] min-w-0 flex-1 flex-col gap-4 p-3 sm:p-4 lg:p-6"
+              class="mx-auto flex w-full max-w-[1600px] min-w-0 flex-1 flex-col gap-4 p-4 md:p-6"
               data-testid="pentadbiran-main"
               tabindex="-1"
             >

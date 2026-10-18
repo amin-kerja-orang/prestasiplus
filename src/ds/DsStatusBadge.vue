@@ -31,7 +31,7 @@ const def = computed(() => statusMap[props.status])
     data-ds="status-badge"
     :data-status="status"
   >
-    <DsIcon :name="def.icon" weight="bold" class="size-4 shrink-0" />
+    <DsIcon :name="def.icon" weight="bold" class="size-3.5 shrink-0" />
     {{ label ?? def.word }}
   </UBadge>
 </template>

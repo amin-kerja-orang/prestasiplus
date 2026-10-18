@@ -83,8 +83,9 @@ function part(name: 'value' | 'label' | 'sub'): string | undefined {
 const personality = usePersonality()
 // Decided once per tile at mount; non-reactive on purpose (the entry is a one-shot).
 const riseOff = !staffRiseAllowed()
+// Staff: one 40px chip beside the number (the tile hugs its content); learner keeps the stacked tile.
 const chipSize = computed(() =>
-  props.roomy ? (personality.value === 'staff' ? 'lg' : 'sm') : 'md',
+  personality.value === 'staff' ? 'lg' : props.roomy ? 'sm' : 'md',
 )
 
 const deltaIcon = { up: 'arrow-up', down: 'arrow-down', flat: 'minus' } as const
@@ -97,26 +98,30 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     :is="to ? RouterLink : 'div'"
     v-if="compact"
     v-bind="to ? { to } : {}"
-    class="flex min-w-0 items-center gap-3 rounded-card bg-default p-3 shadow-ds-xs sm:gap-4 sm:p-4"
+    class="flex min-w-0 items-center gap-3 rounded-card bg-default p-4 shadow-ds-xs sm:gap-4 staff:p-4 md:staff:p-5"
     :class="to ? 'hover:bg-elevated' : ''"
     data-ds="stat-tile"
     data-compact="true"
     :aria-busy="loading ? 'true' : undefined"
   >
     <template v-if="loading">
-      <USkeleton class="size-8 rounded-chip" />
-      <USkeleton class="h-9 w-24" />
+      <USkeleton class="size-10 rounded-chip" />
+      <USkeleton class="h-10 w-24" />
     </template>
     <template v-else>
-      <DsIconChip v-if="icon" :icon="icon" :accent="accent" :tone="tone" size="md" />
-      <div class="flex min-w-0 flex-col">
+      <DsIconChip v-if="icon" :icon="icon" :accent="accent" :tone="tone" :size="chipSize" />
+      <div class="flex min-w-0 flex-col gap-0.5">
         <span
-          class="tabular truncate font-display text-heading leading-tight font-extrabold"
+          class="tabular truncate font-display text-heading learner:font-extrabold staff:text-kpi"
           :class="valueClass"
           :data-testid="valueTestid ?? part('value')"
           >{{ value }}</span
         >
-        <span class="truncate text-label font-semibold text-muted" :data-testid="part('label')">{{ unit }}</span>
+        <span
+          class="truncate text-caption font-semibold text-muted staff:text-body staff:font-medium"
+          :data-testid="part('label')"
+          >{{ unit }}</span
+        >
       </div>
     </template>
   </component>
@@ -124,7 +129,7 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     :is="to ? RouterLink : clickable ? 'button' : 'div'"
     v-else
     v-bind="to ? { to } : clickable ? { type: 'button' } : {}"
-    class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift"
+    class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift staff:flex-row staff:items-center staff:gap-4 staff:p-4 md:staff:p-5"
     :class="[
       clickable ? 'cursor-pointer text-start' : '',
       roomy ? 'gap-3 p-6' : 'gap-2 px-2.5 pt-3.5 pb-3',
@@ -134,43 +139,47 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     :aria-busy="loading ? 'true' : undefined"
   >
     <template v-if="loading">
-      <USkeleton class="size-8 rounded-chip" />
-      <USkeleton class="h-7 w-20" />
-      <USkeleton class="h-4 w-24" />
+      <USkeleton class="size-10 rounded-chip" />
+      <div class="flex flex-col gap-1.5">
+        <USkeleton class="h-7 w-20" />
+        <USkeleton class="h-4 w-24" />
+      </div>
     </template>
     <template v-else>
       <DsArt3D v-if="art" :name="art" size="md" />
       <DsIconChip v-else-if="icon" :icon="icon" :accent="accent" :tone="tone" :size="chipSize" />
-      <span
-        class="tabular font-display font-extrabold"
-        :class="[valueClass, roomy ? 'text-title' : 'text-heading']"
-        :data-testid="valueTestid ?? part('value')"
-        >{{ value }}</span
-      >
-      <span
-        class="text-muted"
-        :class="roomy ? 'text-body font-medium' : '-mt-1 text-caption font-semibold'"
-        :data-testid="part('label')"
-        >{{ unit }}</span
-      >
-      <span
-        v-if="sub"
-        class="text-caption text-muted"
-        data-ds="stat-tile-sub"
-        :data-testid="subTestid ?? part('sub')"
-        >{{ sub }}</span
-      >
-      <span
-        v-if="delta"
-        class="tabular inline-flex items-center gap-1 text-caption font-semibold"
-        :class="deltaTone[delta.dir]"
-        data-ds="stat-tile-delta"
-      >
-        <DsIcon :name="deltaIcon[delta.dir]" weight="bold" class="size-4" />
-        <span class="sr-only">{{ deltaWord[delta.dir] }}</span>
-        {{ delta.value }}
-      </span>
-      <slot />
+      <div class="flex min-w-0 flex-col items-start gap-2 staff:gap-0.5">
+        <span
+          class="tabular font-display font-extrabold staff:text-kpi"
+          :class="[valueClass, roomy ? 'text-title' : 'text-heading']"
+          :data-testid="valueTestid ?? part('value')"
+          >{{ value }}</span
+        >
+        <span
+          class="text-muted staff:text-body staff:font-medium"
+          :class="roomy ? 'text-body font-medium' : '-mt-1 text-caption font-semibold staff:mt-0'"
+          :data-testid="part('label')"
+          >{{ unit }}</span
+        >
+        <span
+          v-if="sub"
+          class="text-caption text-muted"
+          data-ds="stat-tile-sub"
+          :data-testid="subTestid ?? part('sub')"
+          >{{ sub }}</span
+        >
+        <span
+          v-if="delta"
+          class="tabular inline-flex items-center gap-1 text-caption font-semibold"
+          :class="deltaTone[delta.dir]"
+          data-ds="stat-tile-delta"
+        >
+          <DsIcon :name="deltaIcon[delta.dir]" weight="bold" class="size-4" />
+          <span class="sr-only">{{ deltaWord[delta.dir] }}</span>
+          {{ delta.value }}
+        </span>
+        <slot />
+      </div>
     </template>
   </component>
 </template>

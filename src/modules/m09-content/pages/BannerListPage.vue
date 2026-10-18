@@ -14,7 +14,6 @@ import { computed, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
 import {
-  DsArt3D,
   DsDataTable,
   DsEmptyState,
   DsLoadError,
@@ -23,6 +22,8 @@ import {
   DsRowActions,
   DsStatRow,
   DsStatusBadge,
+  DsTag,
+  DsThumb,
   useConfirm,
 } from '@/ds'
 import type { CardField, RowAction, StatItem } from '@/ds'
@@ -113,15 +114,14 @@ const tableRows = computed<TableRow[]>(() =>
 )
 
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'no', header: '#', ...cellClass('w-10') },
   { accessorKey: 'title', header: 'Tajuk', ...cellClass('') },
   { accessorKey: 'bannerType', header: 'Jenis', ...cellClass('w-36') },
-  { accessorKey: 'targetAudience', header: 'Sasaran', ...cellClass('w-28') },
+  { accessorKey: 'targetAudience', header: 'Sasaran', ...cellClass('w-24') },
   { accessorKey: 'displayOrder', header: 'Susunan', ...cellClass('w-24') },
   { accessorKey: 'start', header: 'Mula', ...cellClass('w-28') },
   { accessorKey: 'end', header: 'Tamat', ...cellClass('w-28') },
-  { id: 'active', header: 'Aktif?', ...cellClass('w-36') },
-  { id: 'actions', header: 'Tindakan', ...cellClass('w-32') },
+  { id: 'active', header: 'Aktif?', ...cellClass('w-32') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-28 text-end') },
 ]
 const cardFields: CardField[] = [
   { key: 'bannerType', label: 'Jenis' },
@@ -167,38 +167,20 @@ const cardFields: CardField[] = [
       :card-fields="cardFields"
       data-testid="banners-table"
     >
-      <template #no-cell="{ row }">
-        <span class="text-muted">{{ row.original.no }}</span>
-      </template>
       <template #title-cell="{ row }">
         <div
           class="flex min-w-40 items-center gap-4"
           data-testid="banner-row"
           :data-banner-id="row.original.id"
         >
-          <div class="w-16 shrink-0">
-            <DsArt3D
-              v-if="row.original.raw.imageUrl"
-              variant="plain"
-              ratio="video"
-              :src="row.original.raw.imageUrl"
-              :alt="row.original.title"
-            />
-            <div
-              v-else
-              class="grid aspect-video place-items-center bg-soft text-dimmed"
-              aria-hidden="true"
-            >
-              <UIcon name="i-ph-image" class="size-6" />
-            </div>
-          </div>
+          <DsThumb :src="row.original.raw.imageUrl || undefined" :alt="row.original.title" />
           <div class="flex min-w-0 flex-col gap-1">
-            <p class="line-clamp-2 text-label text-highlighted" data-testid="banner-title">
+            <p class="line-clamp-1 text-label text-highlighted" :title="row.original.title" data-testid="banner-title">
               {{ row.original.title }}
             </p>
             <p
               v-if="row.original.raw.description"
-              class="line-clamp-2 text-caption text-muted"
+              class="line-clamp-1 text-caption text-muted"
               data-testid="banner-description"
             >
               {{ limit50(row.original.raw.description) }}
@@ -207,15 +189,12 @@ const cardFields: CardField[] = [
         </div>
       </template>
       <template #bannerType-cell="{ row }">
-        <UBadge
-          color="neutral"
-          variant="subtle"
-          :label="row.original.bannerType"
-          data-testid="banner-type"
-        />
+        <DsTag :label="row.original.bannerType" data-testid="banner-type" />
       </template>
       <template #targetAudience-cell="{ row }">
-        <span data-testid="banner-audience">{{ row.original.targetAudience }}</span>
+        <span data-testid="banner-audience">{{
+          row.original.targetAudience
+        }}</span>
       </template>
       <template #displayOrder-cell="{ row }">
         <span data-testid="banner-order">{{ row.original.displayOrder }}</span>
