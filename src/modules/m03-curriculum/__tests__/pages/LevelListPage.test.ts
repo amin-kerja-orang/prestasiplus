@@ -79,7 +79,7 @@ async function render(): Promise<VueWrapper> {
     ],
   })
   await router.push('/admin/education-levels')
-  wrapper = mount(LevelListPage, { global: { plugins: [router] } })
+  wrapper = mount(LevelListPage, { global: { plugins: [router] }, attachTo: document.body })
   await flushPromises()
   return wrapper
 }
@@ -105,8 +105,21 @@ beforeEach(() => {
 
 afterEach(() => {
   wrapper?.unmount()
+  document.body.innerHTML = ''
   wrapper = null
 })
+
+
+/** Opens the row menu (`DsRowActions`) of row `index` and picks "Padam". */
+async function deleteViaMenu(index: number): Promise<void> {
+  await wrapper?.findAll('[data-testid=level-more]')[index]?.trigger('keydown', { key: 'Enter' })
+  await flushPromises()
+  const item = Array.from(document.body.querySelectorAll('[role="menuitem"]')).find((n) =>
+    (n.textContent ?? '').includes('Padam'),
+  )
+  item?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await flushPromises()
+}
 
 describe('LevelListPage (M03 S9)', () => {
   it('shows the heading, the count and the pink add button', async () => {
@@ -189,8 +202,7 @@ describe('LevelListPage (M03 S9)', () => {
     })
     const w = await render()
     api.fetchAdminLevels.mockResolvedValue(listResult([level(1), level(7)]))
-    await w.findAll('[data-testid=level-delete]')[2]?.trigger('click')
-    await flushPromises()
+    await deleteViaMenu(2)
     expect(dialogs.confirmNative).toHaveBeenCalledWith(
       'Adakah anda pasti mahu padam tahap pendidikan ini?',
     )
@@ -218,9 +230,8 @@ describe('LevelListPage (M03 S9)', () => {
 
   it('sends nothing when the delete confirm is dismissed', async () => {
     dialogs.confirmNative.mockReturnValueOnce(false)
-    const w = await render()
-    await w.findAll('[data-testid=level-delete]')[0]?.trigger('click')
-    await flushPromises()
+    await render()
+    await deleteViaMenu(0)
     expect(api.deleteLevel).not.toHaveBeenCalled()
   })
 

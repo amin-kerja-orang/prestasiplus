@@ -12,10 +12,18 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsPage, DsPanel, DsStatTile } from '@/ds'
+import {
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsPillNav,
+  DsStatRow,
+  type PillItem,
+  type StatItem,
+} from '@/ds'
 
 import { fetchMasterNotes, type MasterNoteTab } from '../api/master-notes'
-import ErrorBox from '../components/ErrorBox.vue'
 import MasterNoteRow from '../components/MasterNoteRow.vue'
 import { MASTER_NOTES_PATH } from '../lib/audit-routes'
 import { pageOf, queryText } from '../lib/route-query'
@@ -37,11 +45,39 @@ const summary = computed(() => data.value?.meta.summary ?? null)
 const activeTab = computed<MasterNoteTab>(() => data.value?.meta.activeTab ?? 'flagged')
 const firstLoad = computed(() => data.value === null && error.value === null)
 
-const TABS: { tab: MasterNoteTab; label: string }[] = [
-  { tab: 'flagged', label: 'Flagged Review' },
-  { tab: 'approved', label: 'Teacher Approved' },
-  { tab: 'all', label: 'Semua' },
+const TABS: PillItem<MasterNoteTab>[] = [
+  { key: 'flagged', label: 'Flagged Review', to: { path: MASTER_NOTES_PATH, query: { tab: 'flagged' } } },
+  {
+    key: 'approved',
+    label: 'Teacher Approved',
+    to: { path: MASTER_NOTES_PATH, query: { tab: 'approved' } },
+  },
+  { key: 'all', label: 'Semua', to: { path: MASTER_NOTES_PATH, query: { tab: 'all' } } },
 ]
+
+const kpis = computed<StatItem[]>(() => [
+  {
+    key: 'flagged',
+    label: 'Flagged (perlu semakan)',
+    value: summary.value?.flagged ?? 0,
+    icon: 'flag',
+    accent: 'heat',
+  },
+  {
+    key: 'approved',
+    label: 'Teacher-approved',
+    value: summary.value?.teacherApproved ?? 0,
+    icon: 'check-circle',
+    accent: 'win',
+  },
+  {
+    key: 'total',
+    label: 'Jumlah nota',
+    value: summary.value?.total ?? 0,
+    icon: 'notebook',
+    accent: 'action',
+  },
+])
 
 function goToPage(next: number): void {
   const query: Record<string, string> = {}
@@ -54,26 +90,8 @@ function goToPage(next: number): void {
 
 <template>
   <DsPage data-testid="notes-page">
-    <div
-      v-if="summary"
-      class="grid grid-cols-1 gap-3 sm:grid-cols-3"
-      data-testid="notes-kpis"
-    >
-      <DsStatTile
-        :value="summary.flagged"
-        unit="Flagged (perlu semakan)"
-        icon="i-ph-flag"
-        accent="heat"
-      />
-      <DsStatTile
-        :value="summary.teacherApproved"
-        unit="Teacher-approved"
-        icon="i-ph-check-circle"
-        accent="win"
-      />
-      <DsStatTile :value="summary.total" unit="Jumlah nota" icon="i-ph-notebook" accent="action" />
-    </div>
-    <UCard data-testid="notes-header" class="sr-only">
+    <DsStatRow v-if="summary" :items="kpis" :cols="3" data-testid="notes-kpis" />
+    <div data-testid="notes-header" class="sr-only">
       <p class="text-body text-default" data-testid="notes-summary">
         <template v-if="summary">
           Self-healing nota AI: {{ summary.flagged }} flagged ·
@@ -82,41 +100,31 @@ function goToPage(next: number): void {
         </template>
         <USkeleton v-else class="h-4 w-72 max-w-full" />
       </p>
-    </UCard>
-
-    <DsPanel>
-    <nav class="flex max-w-full flex-wrap gap-2" aria-label="Tab nota" data-testid="notes-tabs">
-      <UButton
-        v-for="t in TABS"
-        :key="t.tab"
-        :to="{ path: MASTER_NOTES_PATH, query: { tab: t.tab } }"
-        :color="activeTab === t.tab && !firstLoad ? 'primary' : 'neutral'"
-        :variant="activeTab === t.tab && !firstLoad ? 'solid' : 'soft'"
-        class="min-h-11"
-        :data-active="activeTab === t.tab && !firstLoad ? 'true' : 'false'"
-        :data-testid="`notes-tab-${t.tab}`"
-      >
-        {{ t.label }}
-      </UButton>
-    </nav>
-    </DsPanel>
-
-    <div v-if="error" class="flex flex-col gap-3" data-testid="notes-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" class="min-h-11" data-testid="notes-retry" @click="reload()">
-          Cuba Semula
-        </UButton>
-      </div>
     </div>
+
+    <DsPillNav
+      :items="TABS"
+      :active="firstLoad ? null : activeTab"
+      label="Tab nota"
+      testid-prefix="notes-tab"
+      data-testid="notes-tabs"
+    />
+
+    <DsLoadError
+      v-if="error"
+      :message="LOAD_ERROR"
+      testid="notes-error"
+      retry-testid="notes-retry"
+      @retry="reload()"
+    />
 
     <div v-else-if="firstLoad" class="flex flex-col gap-3" data-testid="notes-skeleton">
       <USkeleton v-for="n in 3" :key="n" class="h-44 w-full" />
     </div>
 
-    <UCard v-else-if="rows.length === 0" data-testid="notes-empty">
-      <p class="text-center text-body text-muted">Tiada nota dalam tab ini.</p>
-    </UCard>
+    <DsPanel v-else-if="rows.length === 0" data-testid="notes-empty">
+      <DsEmptyState size="sm" title="Tiada nota dalam tab ini." icon="notebook" />
+    </DsPanel>
 
     <template v-else>
       <MasterNoteRow v-for="note in rows" :key="note.id" :note="note" />

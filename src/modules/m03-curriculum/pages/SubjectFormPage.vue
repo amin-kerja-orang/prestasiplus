@@ -24,8 +24,7 @@ import {
   updateSubject,
   type SubjectInputBody,
 } from '../api/admin-subjects-levels'
-import ErrorBox from '../components/ErrorBox.vue'
-import NativeColor from '../components/native/NativeColor.vue'
+import { DsFormField, DsLoadError } from '@/ds'
 import FormActions from '../components/subjects-levels/FormActions.vue'
 import { COPY, SUBJECTS_LIST_PATH, errorLines, isNotFoundError } from '../lib/subjects-levels'
 
@@ -59,10 +58,18 @@ const form = reactive<SubjectForm>({
 })
 
 // The level checkboxes: every level, active or not (S7/S8 list all 11).
-const { data: levels, error: levelsError } = useApi((signal) => fetchAdminLevels({ signal }))
+const {
+  data: levels,
+  error: levelsError,
+  reload: reloadLevels,
+} = useApi((signal) => fetchAdminLevels({ signal }))
 
 // S8: GET /api/admin/subjects/:id pre-fills the form.
-const { data: loaded, error: loadError } = useApi(
+const {
+  data: loaded,
+  error: loadError,
+  reload: reloadSubject,
+} = useApi(
   (signal) => fetchAdminSubject(props.id, { signal }),
   () => props.id,
   { immediate: props.mode === 'edit' },
@@ -131,6 +138,12 @@ async function submit(): Promise<void> {
 }
 const FONT_AWESOME_URL = 'https://fontawesome.com/icons'
 
+/** Retry of the load-error box: reload whatever failed. */
+function retryLoad(): void {
+  if (levelsError.value !== null) void reloadLevels()
+  if (loadError.value !== null) void reloadSubject()
+}
+
 function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
   const rest = form.educationLevelIds.filter((v) => v !== id)
   form.educationLevelIds = checked === true ? [...rest, id] : rest
@@ -155,7 +168,12 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
       </template>
     </AdminPageHeader>
 
-    <ErrorBox v-if="failed" :messages="COPY.loadFailed" data-testid="subject-load-error" />
+    <DsLoadError
+      v-if="failed"
+      :message="COPY.loadFailed"
+      testid="subject-load-error"
+      @retry="retryLoad()"
+    />
 
     <form
       v-else-if="ready"
@@ -164,19 +182,33 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
       data-testid="subject-form"
       @submit.prevent="submit"
     >
-      <ErrorBox :messages="errors" data-testid="subject-form-alert" />
+      <UAlert
+        v-if="errors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="subject-form-alert"
+      >
+        <template #description>
+          <p v-for="(line, i) in errors" :key="i">{{ line }}</p>
+        </template>
+      </UAlert>
 
       <AdminFormSection
         title="Maklumat Subjek"
         description="Nama, kod dan susunan paparan."
         icon="i-ph-book"
       >
-        <div class="min-w-0">
-          <label for="subject-name" class="mb-2 block text-label text-highlighted"
-            >Nama Subjek (Bahasa Melayu) *</label
-          >
+        <DsFormField
+          v-slot="{ id: fid }"
+          native
+          for="subject-name"
+          label="Nama Subjek (Bahasa Melayu)"
+          required
+        >
           <UInput
-            id="subject-name"
+            :id="fid"
             v-model="form.name"
             type="text"
             name="name"
@@ -185,14 +217,11 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             class="w-full"
             data-testid="subject-name"
           />
-        </div>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="subject-name-en" class="mb-2 block text-label text-highlighted"
-            >Nama Subjek (English) *</label
-          >
+        <DsFormField v-slot="{ id: fid }" native for="subject-name-en" label="Nama Subjek (English)" required>
           <UInput
-            id="subject-name-en"
+            :id="fid"
             v-model="form.nameEn"
             type="text"
             name="nameEn"
@@ -201,14 +230,18 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             class="w-full"
             data-testid="subject-name-en"
           />
-        </div>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="subject-code" class="mb-2 block text-label text-highlighted"
-            >Kod Subjek *</label
-          >
+        <DsFormField
+          v-slot="{ id: fid }"
+          native
+          for="subject-code"
+          label="Kod Subjek"
+          required
+          hint="Kod akan ditukar ke huruf besar automatik"
+        >
           <UInput
-            id="subject-code"
+            :id="fid"
             v-model="form.code"
             type="text"
             name="code"
@@ -218,18 +251,17 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             class="w-full"
             data-testid="subject-code"
           />
-          <p class="mt-2 flex items-start gap-2 text-label text-muted">
-            <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />
-            Kod akan ditukar ke huruf besar automatik
-          </p>
-        </div>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="subject-order" class="mb-2 block text-label text-highlighted"
-            >Susunan Paparan</label
-          >
+        <DsFormField
+          v-slot="{ id: fid }"
+          native
+          for="subject-order"
+          label="Susunan Paparan"
+          hint="Nombor lebih kecil akan dipaparkan dahulu"
+        >
           <UInput
-            id="subject-order"
+            :id="fid"
             v-model.number="form.order"
             type="number"
             name="order"
@@ -237,11 +269,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             class="w-full"
             data-testid="subject-order"
           />
-          <p class="mt-2 flex items-start gap-2 text-label text-muted">
-            <UIcon name="i-ph-arrows-down-up" class="mt-1 size-4 shrink-0" />
-            Nombor lebih kecil akan dipaparkan dahulu
-          </p>
-        </div>
+        </DsFormField>
       </AdminFormSection>
 
       <AdminFormSection
@@ -249,12 +277,9 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
         description="Ikon, warna tema dan jenis subjek."
         icon="i-ph-palette"
       >
-        <div class="min-w-0">
-          <label for="subject-icon" class="mb-2 block text-label text-highlighted"
-            >Ikon (Font Awesome)</label
-          >
+        <DsFormField v-slot="{ id: fid }" native for="subject-icon" label="Ikon (Font Awesome)">
           <UInput
-            id="subject-icon"
+            :id="fid"
             v-model="form.icon"
             type="text"
             name="icon"
@@ -262,31 +287,27 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             class="w-full"
             data-testid="subject-icon-input"
           />
-          <p class="mt-2 flex items-start gap-2 text-label text-muted">
-            <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0" />
-            <span
-              >Lihat ikon di
-              <ULink
-                :href="FONT_AWESOME_URL"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-primary"
-                data-testid="subject-icon-link"
-                >Font Awesome</ULink
-              ></span
+          <p class="text-caption text-muted">
+            Lihat ikon di
+            <ULink
+              :href="FONT_AWESOME_URL"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary"
+              data-testid="subject-icon-link"
+              >Font Awesome</ULink
             >
           </p>
-        </div>
+        </DsFormField>
 
-        <div class="min-w-0">
-          <label for="subject-color" class="mb-2 block text-label text-highlighted"
-            >Warna Tema</label
-          >
+        <DsFormField v-slot="{ id: fid }" native for="subject-color" label="Warna Tema">
           <div class="flex items-center gap-3">
-            <NativeColor
-              id="subject-color"
+            <UInput
+              :id="fid"
               v-model="form.color"
+              type="color"
               name="color"
+              class="w-16 shrink-0"
               data-testid="subject-color"
             />
             <UInput
@@ -299,7 +320,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
               data-testid="subject-color-text"
             />
           </div>
-        </div>
+        </DsFormField>
 
         <div class="min-w-0 md:col-span-2">
           <UCheckbox

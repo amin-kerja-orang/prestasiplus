@@ -16,7 +16,7 @@ import { computed, ref, watch } from 'vue'
 
 import { AdminKpiStrip, AdminPageHeader } from '@/ds/admin'
 import { alertNative, useApi, useFlash } from '@/composables'
-import { DsDataTable, DsPage, DsStatTile, useConfirm, type CardField } from '@/ds'
+import { DsDataTable, DsPage, DsStatTile, type CardField } from '@/ds'
 
 import {
   deleteSubject,
@@ -24,14 +24,12 @@ import {
   setSubjectActive,
   type AdminSubjectListItem,
 } from '../api/admin-subjects-levels'
-import ErrorBox from '../components/ErrorBox.vue'
-import ActiveSwitch from '../components/subjects-levels/ActiveSwitch.vue'
+import { DsLoadError, DsRowActions, type RowAction } from '@/ds'
 import ColorSwatch from '../components/subjects-levels/ColorSwatch.vue'
 import SubjectIconTile from '../components/subjects-levels/SubjectIconTile.vue'
 import { COPY, SUBJECT_ROUTES, errorLines, isNetworkFailure } from '../lib/subjects-levels'
 
 const flash = useFlash()
-const confirm = useConfirm()
 
 const { data, error, reload } = useApi((signal) => fetchAdminSubjects({ signal }))
 
@@ -86,8 +84,29 @@ async function toggle(row: AdminSubjectListItem): Promise<void> {
 
 const deleting = ref(false)
 
+/** Edit stays one click away; the menu holds the destructive "Padam" (confirmed first). */
+function rowActions(row: AdminSubjectListItem): RowAction[] {
+  return [
+    {
+      label: 'Edit',
+      icon: 'i-ph-pencil-simple',
+      to: { name: SUBJECT_ROUTES.edit, params: { id: row.id } },
+      testid: 'subject-edit',
+    },
+    {
+      label: 'Padam',
+      icon: 'i-ph-trash',
+      danger: true,
+      disabled: deleting.value,
+      testid: 'subject-delete',
+      confirm: { title: 'Padam Subjek?', body: COPY.confirmDeleteSubject, confirmLabel: 'Padam' },
+      onSelect: () => void remove(row),
+    },
+  ]
+}
+
+/** The confirmation ran in `DsRowActions` (live message); this only calls the API. */
 async function remove(row: AdminSubjectListItem): Promise<void> {
-  if (!(await confirm({ message: COPY.confirmDeleteSubject, tone: 'danger' }))) return
   if (deleting.value) return
   deleting.value = true
   try {
@@ -104,7 +123,12 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
 
 <template>
   <DsPage data-testid="subjects-page">
-    <ErrorBox v-if="error" :messages="COPY.loadFailed" data-testid="subjects-error" />
+    <DsLoadError
+      v-if="error"
+      :message="COPY.loadFailed"
+      testid="subjects-error"
+      @retry="reload()"
+    />
 
     <template v-else-if="data">
       <AdminPageHeader>
@@ -211,61 +235,33 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
           >
         </template>
         <template #isActive-cell="{ row }">
-          <ActiveSwitch
-            :active="row.original.isActive"
-            data-testid="subject-switch"
-            @toggle="toggle(row.original)"
-          />
+          <span class="inline-flex min-h-11 min-w-11 items-center justify-center">
+            <USwitch
+              :model-value="row.original.isActive"
+              aria-label="Aktif"
+              color="success"
+              data-testid="subject-switch"
+              @update:model-value="toggle(row.original)"
+            />
+          </span>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex items-center gap-1">
-            <UButton
-              :to="{ name: SUBJECT_ROUTES.edit, params: { id: row.original.id } }"
-              title="Edit"
-              aria-label="Edit"
-              color="neutral"
-              variant="ghost"
-              icon="i-ph-pencil-simple"
-              class="size-11 justify-center xl:size-10"
-              data-testid="subject-edit"
-            />
-            <UButton
-              type="button"
-              title="Padam"
-              aria-label="Padam"
-              color="error"
-              variant="ghost"
-              icon="i-ph-trash"
-              :disabled="deleting"
-              class="size-11 justify-center xl:size-10"
-              data-testid="subject-delete"
-              @click="remove(row.original)"
-            />
-          </div>
+          <DsRowActions :actions="rowActions(row.original)" :inline="1" testid="subject-more" />
         </template>
         <template #card-actions="{ row }">
           <div class="flex items-center gap-1">
-            <ActiveSwitch
-              :active="row.isActive as boolean"
-              @toggle="toggle(row as AdminSubjectListItem)"
-            />
-            <UButton
-              :to="{ name: SUBJECT_ROUTES.edit, params: { id: row.id as number } }"
-              aria-label="Edit"
-              color="neutral"
-              variant="soft"
-              icon="i-ph-pencil-simple"
-              class="size-11 justify-center"
-            />
-            <UButton
-              type="button"
-              aria-label="Padam"
-              color="error"
-              variant="soft"
-              icon="i-ph-trash"
-              :disabled="deleting"
-              class="size-11 justify-center"
-              @click="remove(row as AdminSubjectListItem)"
+            <span class="inline-flex min-h-11 min-w-11 items-center justify-center">
+              <USwitch
+                :model-value="row.isActive as boolean"
+                aria-label="Aktif"
+                color="success"
+                @update:model-value="toggle(row as AdminSubjectListItem)"
+              />
+            </span>
+            <DsRowActions
+              :actions="rowActions(row as AdminSubjectListItem)"
+              :inline="1"
+              testid="subject-more"
             />
           </div>
         </template>

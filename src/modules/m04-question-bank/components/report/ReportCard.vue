@@ -9,17 +9,18 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { DsStatusBadge } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import {
   updateQuestionReport,
-  type ReportDisplayStatus,
   type ReportUpdateInput,
   type ReportView,
 } from '../../api/reports'
 import {
   DEACTIVATE_NOTE,
   DISMISS_NOTE,
+  DISPLAY_STATUS_DS,
   DISPLAY_STATUS_LABEL,
   type ReportCategory,
 } from '../../lib/report-reasons'
@@ -29,20 +30,6 @@ const emit = defineEmits<{ saved: [message: string]; failed: [error: unknown] }>
 
 const router = useRouter()
 
-const STATUS_ICON: Record<ReportDisplayStatus, string> = {
-  pending: 'i-ph-clock',
-  reviewed: 'i-ph-eye',
-  fixed: 'i-ph-check',
-  removed: 'i-ph-prohibit',
-  dismissed: 'i-ph-x',
-}
-const STATUS_COLOR: Record<ReportDisplayStatus, 'warning' | 'info' | 'success' | 'error' | 'neutral'> = {
-  pending: 'warning',
-  reviewed: 'info',
-  fixed: 'success',
-  removed: 'error',
-  dismissed: 'neutral',
-}
 const CATEGORY: Record<
   ReportCategory,
   { icon: string; color: 'warning' | 'error' | 'neutral' }
@@ -113,10 +100,8 @@ const deactivate = () =>
     <article class="flex min-w-0 flex-col gap-4 lg:flex-row">
       <div class="flex min-w-0 flex-1 flex-col gap-3">
         <div class="flex flex-wrap items-center gap-2">
-          <UBadge
-            :color="STATUS_COLOR[r.displayStatus]"
-            variant="subtle"
-            :icon="STATUS_ICON[r.displayStatus]"
+          <DsStatusBadge
+            :status="DISPLAY_STATUS_DS[r.displayStatus]"
             :label="DISPLAY_STATUS_LABEL[r.displayStatus]"
             data-testid="report-status"
           />

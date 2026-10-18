@@ -1,5 +1,7 @@
 /** S10 status copy (FN-M04-5.1.2, 5.1.5; SRS §8). Pending and rejected pills are INFERRED. */
 
+import type { DsStatus } from '@/ds'
+
 import type { SubmissionStatus } from '../api/submissions'
 
 export const SUBMISSION_STATUS_OPTIONS: { value: SubmissionStatus; label: string }[] = [
@@ -16,17 +18,13 @@ export const SUBMISSION_STATUS_LABEL: Record<SubmissionStatus, string> = {
   rejected: 'Ditolak',
 }
 
-/** `UBadge` colour and icon of a status (staff theme; the word carries the meaning). */
-export const SUBMISSION_STATUS_COLOR: Record<SubmissionStatus, 'success' | 'info' | 'warning' | 'error'> = {
-  done: 'success',
-  processing: 'info',
-  pending: 'warning',
-  rejected: 'error',
-}
-
-export const SUBMISSION_STATUS_ICON: Record<SubmissionStatus, string> = {
-  done: 'i-ph-check-circle',
-  processing: 'i-ph-gear',
-  pending: 'i-ph-clock',
-  rejected: 'i-ph-x-circle',
+/**
+ * `DsStatusBadge` status of a submission status (icon and colour come from the badge). The live
+ * words "Pending" and "Processing" are passed as the badge label (live exception, discovery M04 S10).
+ */
+export const SUBMISSION_STATUS_DS: Record<SubmissionStatus, DsStatus> = {
+  done: 'done',
+  processing: 'in-progress',
+  pending: 'awaiting-review',
+  rejected: 'rejected',
 }

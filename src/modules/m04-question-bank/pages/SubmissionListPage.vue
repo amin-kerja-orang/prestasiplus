@@ -14,7 +14,18 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsFilterBar, DsPage, DsStatTile, type CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsFilterBar,
+  DsFormField,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsStatRow,
+  DsStatusBadge,
+  type CardField,
+  type StatItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { saveBlob } from '@/lib/save-blob'
 
@@ -23,14 +34,11 @@ import {
   fetchQuestionSubmissions,
   type QuestionSubmission,
 } from '../api/submissions'
-import ErrorBox from '../components/ErrorBox.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import SubmissionActions from '../components/SubmissionActions.vue'
 import { formatEnDate, formatTime } from '../lib/audit-format'
 import { SUBMISSIONS_PATH } from '../lib/audit-routes'
 import {
-  SUBMISSION_STATUS_COLOR,
-  SUBMISSION_STATUS_ICON,
+  SUBMISSION_STATUS_DS,
   SUBMISSION_STATUS_LABEL,
   SUBMISSION_STATUS_OPTIONS,
 } from '../lib/submission-options'
@@ -55,6 +63,19 @@ const { data, error, reload } = useApi(
 const rows = computed(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.counts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
+
+const countItems = computed<StatItem[]>(() => [
+  { key: 'all', label: 'Jumlah', value: formatNumber(counts.value?.all ?? 0), icon: 'stack', accent: 'action' },
+  { key: 'pending', label: 'Pending', value: formatNumber(counts.value?.pending ?? 0), icon: 'clock', accent: 'trial' },
+  {
+    key: 'processing',
+    label: 'Processing',
+    value: formatNumber(counts.value?.processing ?? 0),
+    icon: 'gear',
+    accent: 'friend',
+  },
+  { key: 'done', label: 'Selesai', value: formatNumber(counts.value?.done ?? 0), icon: 'check-circle', accent: 'win' },
+])
 
 async function submitFilter(): Promise<void> {
   if (status.value === applied.value) await reload()
@@ -130,43 +151,8 @@ async function resetFilter(): Promise<void> {
 
 <template>
   <DsPage data-testid="submissions-page">
-    <!-- Counters: 2 per row, 4 from md. -->
-    <section class="grid grid-cols-2 gap-4 md:grid-cols-4">
-      <template v-if="counts">
-        <DsStatTile
-          :value="formatNumber(counts.all)"
-          unit="Jumlah"
-          icon="i-ph-stack"
-          data-testid="submissions-count-all"
-        />
-        <DsStatTile
-          :value="formatNumber(counts.pending)"
-          unit="Pending"
-          icon="i-ph-clock"
-          data-testid="submissions-count-pending"
-        />
-        <DsStatTile
-          :value="formatNumber(counts.processing)"
-          unit="Processing"
-          icon="i-ph-gear"
-          data-testid="submissions-count-processing"
-        />
-        <DsStatTile
-          :value="formatNumber(counts.done)"
-          unit="Selesai"
-          icon="i-ph-check-circle"
-          data-testid="submissions-count-done"
-        />
-      </template>
-      <template v-else>
-        <USkeleton
-          v-for="k in ['all', 'pending', 'processing', 'done']"
-          :key="k"
-          class="h-24 w-full"
-          :data-testid="`submissions-count-${k}`"
-        />
-      </template>
-    </section>
+    <!-- Counters: 2 per row, 4 from xl. -->
+    <DsStatRow :items="countItems" :cols="4" :loading="!counts" prefix="submissions-count" />
 
     <!-- Filter (the URL is the state). -->
     <DsFilterBar
@@ -178,33 +164,33 @@ async function resetFilter(): Promise<void> {
       @reset="resetFilter"
     >
       <div class="w-full min-w-0 sm:w-56">
-        <label for="submissions-status" class="mb-2 block text-label text-highlighted">Status</label>
-        <NativeSelect
-          id="submissions-status"
-          v-model="status"
-          name="status"
-          data-testid="submissions-status"
-        >
-          <option value="">Semua Status</option>
-          <option v-for="o in SUBMISSION_STATUS_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </NativeSelect>
+        <DsFormField v-slot="{ id }" native for="submissions-status" label="Status">
+          <DsNativeSelect
+            :id="id"
+            v-model="status"
+            name="status"
+            data-testid="submissions-status"
+          >
+            <option value="">Semua Status</option>
+            <option v-for="o in SUBMISSION_STATUS_OPTIONS" :key="o.value" :value="o.value">
+              {{ o.label }}
+            </option>
+          </DsNativeSelect>
+        </DsFormField>
       </div>
     </DsFilterBar>
 
-    <div v-if="error" class="flex flex-col gap-3" data-testid="submissions-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" class="min-h-11" data-testid="submissions-retry" @click="reload()">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="LOAD_ERROR"
+      testid="submissions-error"
+      retry-testid="submissions-retry"
+      @retry="reload()"
+    />
 
     <DsDataTable
-        v-else
-      dense
+      v-else
+      variant="flush"
       :data="tableRows"
       :columns="columns"
       caption="Kertas soalan guru"
@@ -212,7 +198,8 @@ async function resetFilter(): Promise<void> {
       :page-size="Math.max(tableRows.length, 1)"
       card-title="teacherName"
       :card-fields="cardFields"
-      empty-label="Tiada rekod ditemui"
+      empty-title="Tiada rekod ditemui"
+      :filtered="applied !== ''"
       data-testid="submissions-table"
     >
       <template #empty>
@@ -268,10 +255,8 @@ async function resetFilter(): Promise<void> {
       </template>
       <template #statusLabel-cell="{ row }">
         <div class="min-w-28">
-          <UBadge
-            :color="SUBMISSION_STATUS_COLOR[row.original.raw.status]"
-            variant="subtle"
-            :icon="SUBMISSION_STATUS_ICON[row.original.raw.status]"
+          <DsStatusBadge
+            :status="SUBMISSION_STATUS_DS[row.original.raw.status]"
             :label="SUBMISSION_STATUS_LABEL[row.original.raw.status]"
             data-testid="submission-status"
           />

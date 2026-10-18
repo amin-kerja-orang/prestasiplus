@@ -1,21 +1,36 @@
 <script setup lang="ts">
 /**
- * S1 `/admin/questions` "Pengurusan Soalan" (M04-T3; FR-M04-01..16). v2: Portal Pentadbiran staff theme.
+ * S1 `/admin/questions` "Pengurusan Soalan" (M04-T3; FR-M04-01..16). v2: Portal Pentadbiran staff theme,
+ * built from the design-system blocks (docs/design/v2-design-language.md 9.2).
  *
- * Admin-list pattern (docs/design/v2-admin-pages.md):
- * - a compact header row with the create button, a KPI strip + collapsible subject table;
- * - one filter toolbar (search, 4 selects, a "Lagi penapis" popover, a drawer below `md`, chips of the
- *   active filters; the URL is the state);
- * - the dense table (bulk select, row menu) and the server pager with a page-size select.
+ * Admin-list pattern:
+ * - `DsPage` header: the subtitle and the create button; a KPI strip + collapsible subject table;
+ * - `DsFilterBar` (search + Cari, 3 inline selects, a "Lagi Penapis" popover, a drawer below `md`) and
+ *   `DsActiveFilters` chips; the URL is the state;
+ * - `DsDataTable` (bulk select, `DsRowActions`) with the server pager and a page-size select.
  * - Bulk bar: the action select is `required`; confirmation through `useConfirm`; the API `status` is the flash.
  * - The table fits the width from `xl`; below that Tahap folds into Subjek; below `md` rows are cards.
  */
-import type { DropdownMenuItem, TableColumn } from '@nuxt/ui'
+import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsEmptyState, DsPage, DsPanel, useConfirm, type CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFilterBar,
+  DsFormField,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsRowActions,
+  DsStatusBadge,
+  useConfirm,
+  type CardField,
+  type RowAction,
+} from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import {
@@ -27,8 +42,6 @@ import {
   fetchSubjects,
   type QuestionRow,
 } from '../api'
-import ErrorBox from '../components/ErrorBox.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import QuestionSummaryCard from '../components/QuestionSummaryCard.vue'
 import {
   BULK_OPTIONS,
@@ -47,7 +60,7 @@ import {
   questionEditPath,
   SOURCE_OPTIONS,
   sourceLabel,
-  statusColor,
+  statusDs,
   statusLabel,
   STATUS_OPTIONS,
   type FilterKey,
@@ -59,7 +72,8 @@ const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
 const confirm = useConfirm()
-const wide = useMedia('(min-width: 768px)')
+/** The columns fit the width from `xl`; below that the table scrolls inside its own container. */
+const xl = useMedia('(min-width: 1280px)')
 
 const PAGE_SIZES = [20, 50, 100]
 const DEFAULT_PAGE_SIZE = 20
@@ -133,7 +147,7 @@ const pagerQuery = computed(() => {
   return out
 })
 
-// --- Filter fields: one definition drives the toolbar, the popover, the drawer and the chips.
+// --- Filter fields: one definition drives the bar, the popover, the drawer and the chips.
 interface FieldDef {
   key: FilterKey
   id: string
@@ -206,25 +220,20 @@ const ALL_FIELDS = computed(() => [...PRIMARY_FIELDS.value, ...MORE_FIELDS])
 const moreActive = computed(() => MORE_FIELDS.filter((f) => applied.value[f.key] !== '').length)
 
 const chips = computed(() => {
-  const out: { key: FilterKey; text: string }[] = []
+  const out: { key: FilterKey; label: string }[] = []
   for (const f of ALL_FIELDS.value) {
     const v = applied.value[f.key]
     if (v === '') continue
     const label = f.options.find((o) => o.value === v)?.label ?? v
-    out.push({ key: f.key, text: `${f.label}: ${label}` })
+    out.push({ key: f.key, label: `${f.label}: ${label}` })
   }
   if (applied.value.search !== '') {
-    out.push({ key: 'search', text: `Cari: ${applied.value.search}` })
+    out.push({ key: 'search', label: `Cari: ${applied.value.search}` })
   }
   return out
 })
 
-const sheet = ref(false)
-const morePopover = ref(false)
-
 async function submitFilter(): Promise<void> {
-  sheet.value = false
-  morePopover.value = false
   const query: Record<string, string> = {}
   for (const key of FILTER_KEYS) {
     const value = draft.value[key].trim()
@@ -240,8 +249,6 @@ async function submitFilter(): Promise<void> {
 }
 
 async function resetFilter(): Promise<void> {
-  sheet.value = false
-  morePopover.value = false
   for (const key of FILTER_KEYS) draft.value[key] = ''
   await router.push({
     path: QUESTIONS_LIST_PATH,
@@ -249,8 +256,8 @@ async function resetFilter(): Promise<void> {
   })
 }
 
-function removeChip(key: FilterKey): void {
-  draft.value[key] = ''
+function removeChip(key: string): void {
+  draft.value[key as FilterKey] = ''
   const query = { ...pagerQuery.value }
   Reflect.deleteProperty(query, key)
   void router.push({ path: QUESTIONS_LIST_PATH, query })
@@ -270,24 +277,24 @@ function setPageSize(size: number): void {
   void router.push({ path: QUESTIONS_LIST_PATH, query })
 }
 
+interface TableRow extends Record<string, unknown> {
+  id: number
+  excerptText: string
+  subjectName: string
+  levelName: string
+  statusText: string
+  difficultyText: string
+  raw: QuestionRow
+}
+
 // --- Selection (FR-M04-12): page/filter changes clear it.
-const selected = ref<number[]>([])
-const allSelected = computed(
-  () => rows.value.length > 0 && rows.value.every((r) => selected.value.includes(r.id)),
-)
+const selected = ref<TableRow[]>([])
 watch(
   () => route.fullPath,
   () => {
     selected.value = []
   },
 )
-function toggleAll(checked: boolean | 'indeterminate'): void {
-  selected.value = checked === true ? rows.value.map((r) => r.id) : []
-}
-function toggleOne(id: number, checked: boolean | 'indeterminate'): void {
-  const rest = selected.value.filter((v) => v !== id)
-  selected.value = checked === true ? [...rest, id] : rest
-}
 
 // --- Bulk action and delete (FR-M04-13, 14, 16).
 const busy = ref(false)
@@ -311,7 +318,10 @@ async function submitBulk(): Promise<void> {
   if (!(await confirm({ message: bulkConfirmText(option.verb, selected.value.length) }))) return
   busy.value = true
   try {
-    const result = await bulkQuestionAction(option.value, selected.value)
+    const result = await bulkQuestionAction(
+      option.value,
+      selected.value.map((r) => r.id),
+    )
     selected.value = []
     bulkAction.value = ''
     await reloadAfterMutation()
@@ -323,13 +333,13 @@ async function submitBulk(): Promise<void> {
   }
 }
 
+/** The confirmation ran in `DsRowActions` (live message); this only calls the API. */
 async function remove(row: QuestionRow): Promise<void> {
   if (busy.value) return
-  if (!(await confirm({ message: DELETE_CONFIRM, tone: 'danger' }))) return
   busy.value = true
   try {
     const result = await deleteQuestion(row.id)
-    selected.value = selected.value.filter((id) => id !== row.id)
+    selected.value = selected.value.filter((r) => r.id !== row.id)
     await reloadAfterMutation()
     flash.show({ type: 'success', message: result.status })
   } catch (err) {
@@ -339,31 +349,30 @@ async function remove(row: QuestionRow): Promise<void> {
   }
 }
 
-/** Row menu: Lihat and Edit stay one click away as icon buttons; the menu holds the destructive one. */
-function rowMenu(row: QuestionRow): DropdownMenuItem[][] {
+/** Lihat and Edit stay one click away as buttons; the menu holds the destructive one. */
+function rowActions(row: QuestionRow): RowAction[] {
   return [
-    [{ label: 'Lihat', icon: 'i-ph-eye', to: questionDetailPath(row.id) }],
-    [{ label: 'Edit', icon: 'i-ph-pencil-simple', to: questionEditPath(row.id) }],
-    [
-      {
-        label: 'Padam',
-        icon: 'i-ph-trash',
-        color: 'error',
-        disabled: busy.value,
-        onSelect: () => void remove(row),
-      },
-    ],
+    {
+      label: 'Lihat',
+      icon: 'i-ph-eye',
+      to: questionDetailPath(row.id),
+      testid: 'question-view',
+    },
+    {
+      label: 'Edit',
+      icon: 'i-ph-pencil-simple',
+      to: questionEditPath(row.id),
+      testid: 'question-edit',
+    },
+    {
+      label: 'Padam',
+      icon: 'i-ph-trash',
+      danger: true,
+      disabled: busy.value,
+      confirm: { title: 'Padam Soalan?', body: DELETE_CONFIRM, confirmLabel: 'Padam' },
+      onSelect: () => void remove(row),
+    },
   ]
-}
-
-interface TableRow extends Record<string, unknown> {
-  id: number
-  excerptText: string
-  subjectName: string
-  levelName: string
-  statusText: string
-  difficultyText: string
-  raw: QuestionRow
 }
 
 const tableRows = computed<TableRow[]>(() =>
@@ -386,14 +395,13 @@ const cellClass = (th: string, td = th): { meta: Record<string, unknown> } => ({
 })
 
 const columns: TableColumn<TableRow>[] = [
-  { id: 'select', header: ' ', ...cellClass('w-12 pe-0', 'w-12 pe-0') },
   { accessorKey: 'id', header: 'ID', ...cellClass('w-16') },
-  { accessorKey: 'excerptText', header: 'Soalan', ...cellClass('') },
-  { accessorKey: 'subjectName', header: 'Subjek', ...cellClass('w-36 xl:w-40') },
+  { accessorKey: 'excerptText', header: 'Soalan', ...cellClass('min-w-64') },
+  { accessorKey: 'subjectName', header: 'Subjek', ...cellClass('w-32 xl:w-36') },
   { accessorKey: 'levelName', header: 'Tahap', ...cellClass('hidden 2xl:table-cell w-40') },
   { id: 'difficulty', header: 'Kesukaran', ...cellClass('w-28') },
   { id: 'status', header: 'Status', ...cellClass('w-32') },
-  { id: 'actions', header: ' ', ...cellClass('w-36 text-end', 'w-36') },
+  { id: 'actions', header: ' ', ...cellClass('w-64 text-end', 'w-64') },
 ]
 const cardFields: CardField[] = [
   { key: 'subjectName', label: 'Subjek' },
@@ -404,190 +412,93 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage data-testid="questions-page">
-    <!-- Header row: what the page is for, the live total and the primary action. -->
-    <div class="flex items-center justify-between gap-3">
-      <p class="min-w-0 text-body text-muted">Urus bank soalan untuk platform PRESTASIPLUS</p>
+  <DsPage subtitle="Urus bank soalan untuk platform PRESTASIPLUS" data-testid="questions-page">
+    <template #actions>
       <UButton
         :to="QUESTIONS_CREATE_PATH"
         icon="i-ph-plus"
-        class="shrink-0"
+        class="min-h-11 shrink-0"
         data-testid="questions-add"
       >
         <span class="hidden sm:inline">Tambah Soalan</span>
         <span class="sm:hidden">Tambah</span>
       </UButton>
-    </div>
+    </template>
 
     <QuestionSummaryCard :summary="summary.data.value" :active-subject-id="activeSubjectId" />
 
-    <!-- Filter toolbar (the URL is the state). -->
-    <div class="flex flex-col gap-3">
-      <DsPanel>
-      <form
-        class="flex flex-wrap items-center gap-3"
-        role="search"
-        data-testid="questions-filter"
-        @submit.prevent="submitFilter"
-      >
-        <div class="flex min-w-56 grow basis-64 items-center gap-2">
-          <label for="q-search" class="sr-only">Cari</label>
+    <!-- Filter bar (the URL is the state). -->
+    <DsFilterBar
+      :active-count="activeCount"
+      :chips="chips"
+      :more-count="moreActive"
+      data-testid="questions-filter"
+      @apply="submitFilter"
+      @reset="resetFilter"
+      @remove-chip="removeChip"
+    >
+      <template #search>
+        <div class="min-w-0 grow sm:basis-40">
           <UInput
-            id="q-search"
             v-model="draft.search"
             type="text"
             name="search"
             placeholder="Cari soalan..."
+            aria-label="Cari"
             icon="i-ph-magnifying-glass"
             class="w-full"
             data-testid="questions-search"
           />
-          <UButton type="submit" icon="i-ph-magnifying-glass" label="Cari" />
         </div>
+      </template>
 
-        <template v-if="wide">
-          <div v-for="f in PRIMARY_FIELDS" :key="f.key" class="w-36 min-w-0 2xl:w-52">
-            <label :for="f.id" class="sr-only">{{ f.label }}</label>
-            <NativeSelect
-              :id="f.id"
-              v-model="draft[f.key]"
-              :name="f.key"
-              :data-testid="f.testid"
-            >
-              <option value="">{{ f.empty }}</option>
-              <option v-for="o in f.options" :key="o.value" :value="o.value">{{ o.label }}</option>
-            </NativeSelect>
-          </div>
-
-          <UPopover v-model:open="morePopover" :content="{ align: 'end' }">
-            <UChip :show="moreActive > 0" :text="moreActive" color="primary">
-              <UButton
-                type="button"
-                color="neutral"
-                variant="soft"
-                icon="i-ph-sliders-horizontal"
-                data-testid="questions-more-open"
-                >Lagi penapis</UButton
-              >
-            </UChip>
-            <template #content>
-              <div class="flex w-72 flex-col gap-3 p-4" data-testid="questions-more">
-                <div v-for="f in MORE_FIELDS" :key="f.key">
-                  <label :for="f.id" class="mb-2 block text-label text-highlighted">{{
-                    f.label
-                  }}</label>
-                  <NativeSelect
-                    :id="f.id"
-                    v-model="draft[f.key]"
-                    :name="f.key"
-                    :data-testid="f.testid"
-                  >
-                    <option value="">{{ f.empty }}</option>
-                    <option v-for="o in f.options" :key="o.value" :value="o.value">
-                      {{ o.label }}
-                    </option>
-                  </NativeSelect>
-                </div>
-                <UButton type="button" block label="Guna" @click="submitFilter" />
-              </div>
-            </template>
-          </UPopover>
-
-          <UButton
-            v-if="activeCount > 0"
-            type="button"
-            color="neutral"
-            variant="ghost"
-            label="Set Semula"
-            @click="resetFilter"
-          />
-        </template>
-
-        <template v-else>
-          <UChip :show="activeCount > 0" :text="activeCount" color="primary">
-            <UButton
-              type="button"
-              color="neutral"
-              variant="soft"
-              icon="i-ph-funnel"
-              label="Penapis"
-              data-testid="questions-filter-open"
-              @click="sheet = true"
-            />
-          </UChip>
-          <UDrawer v-model:open="sheet" title="Penapis" description=" ">
-            <template #body>
-              <div
-                class="flex flex-col gap-4 overflow-y-auto"
-                data-testid="questions-filter-sheet"
-              >
-                <div v-for="f in ALL_FIELDS" :key="f.key">
-                  <label :for="`m-${f.id}`" class="mb-2 block text-label text-highlighted">{{
-                    f.label
-                  }}</label>
-                  <NativeSelect
-                    :id="`m-${f.id}`"
-                    v-model="draft[f.key]"
-                    :name="f.key"
-                    :data-testid="`m-${f.testid}`"
-                  >
-                    <option value="">{{ f.empty }}</option>
-                    <option v-for="o in f.options" :key="o.value" :value="o.value">
-                      {{ o.label }}
-                    </option>
-                  </NativeSelect>
-                </div>
-                <UButton type="button" block label="Guna" @click="submitFilter" />
-                <UButton
-                  type="button"
-                  block
-                  color="neutral"
-                  variant="ghost"
-                  label="Set Semula"
-                  @click="resetFilter"
-                />
-              </div>
-            </template>
-          </UDrawer>
-        </template>
-      </form>
-      </DsPanel>
-
-      <div
-        v-if="chips.length > 0"
-        class="flex flex-wrap items-center gap-2"
-        data-testid="questions-chips"
-      >
-        <span class="text-label text-muted">Penapis aktif:</span>
-        <UButton
-          v-for="c in chips"
-          :key="c.key"
-          type="button"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          trailing-icon="i-ph-x"
-          :aria-label="`Buang penapis ${c.text}`"
-          data-testid="questions-chip"
-          @click="removeChip(c.key)"
-          >{{ c.text }}</UButton
+      <div v-for="f in PRIMARY_FIELDS" :key="f.key" class="w-full min-w-0 md:w-40 2xl:w-52">
+        <DsNativeSelect
+          :id="f.id"
+          v-model="draft[f.key]"
+          :name="f.key"
+          :aria-label="f.label"
+          :data-testid="f.testid"
         >
+          <option value="">{{ f.empty }}</option>
+          <option v-for="o in f.options" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </DsNativeSelect>
       </div>
-    </div>
+
+      <template #more>
+        <DsFormField
+          v-for="f in MORE_FIELDS"
+          :key="f.key"
+          v-slot="{ id }"
+          native
+          :for="f.id"
+          :label="f.label"
+        >
+          <DsNativeSelect
+            :id="id"
+            v-model="draft[f.key]"
+            :name="f.key"
+            :data-testid="f.testid"
+          >
+            <option value="">{{ f.empty }}</option>
+            <option v-for="o in f.options" :key="o.value" :value="o.value">{{ o.label }}</option>
+          </DsNativeSelect>
+        </DsFormField>
+      </template>
+    </DsFilterBar>
 
     <!-- Load failure: alert in place of the table + retry (INFERRED copy, SRS §8.2). -->
-    <div v-if="list.error.value" class="flex flex-col gap-3" data-testid="questions-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" data-testid="questions-retry" @click="list.reload()">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+    <DsLoadError
+      v-if="list.error.value"
+      :message="LOAD_ERROR"
+      testid="questions-error"
+      retry-testid="questions-retry"
+      @retry="list.reload()"
+    />
 
     <!-- Empty: table and pager are not rendered (FR-M04-11). -->
-    <UCard v-else-if="!firstLoad && rows.length === 0" data-testid="questions-empty">
-      <DsEmptyState title="Tiada soalan dijumpai" icon="i-ph-tray">
+    <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="questions-empty">
+      <DsEmptyState title="Tiada soalan dijumpai" icon="tray" :filtered="activeCount > 0">
         <template #actions>
           <UButton
             :to="QUESTIONS_CREATE_PATH"
@@ -598,40 +509,52 @@ const cardFields: CardField[] = [
           >
         </template>
       </DsEmptyState>
-    </UCard>
+    </DsPanel>
 
-    <div v-else class="flex flex-col gap-3">
+    <div v-else class="flex flex-col gap-4">
       <DsPanel v-if="selected.length > 0" tone="bulk">
-      <form
-        method="post"
-        class="flex flex-wrap items-center gap-3"
-        data-testid="questions-bulk-bar"
-        @submit.prevent="submitBulk"
-      >
-        <span class="inline-flex items-center gap-2 ps-2 text-label text-highlighted">
-          <UIcon name="i-ph-check-square" class="size-5 text-primary" />
-          <span class="tabular" data-testid="questions-selected-count">{{ selected.length }}</span>
-          soalan dipilih
-        </span>
-        <NativeSelect
-          v-model="bulkAction"
-          name="action"
-          required
-          class="w-auto"
-          data-testid="questions-bulk-action"
+        <form
+          method="post"
+          class="flex flex-wrap items-center gap-3"
+          data-testid="questions-bulk-bar"
+          @submit.prevent="submitBulk"
         >
-          <option value="">Pilih Tindakan</option>
-          <option v-for="o in BULK_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </NativeSelect>
-        <UButton type="submit" :disabled="busy" data-testid="questions-bulk-submit">
-          Laksanakan
-        </UButton>
-      </form>
+          <span class="inline-flex items-center gap-2 ps-2 text-label text-highlighted">
+            <UIcon name="i-ph-check-square" class="size-5 text-primary" />
+            <span class="tabular" data-testid="questions-selected-count">{{ selected.length }}</span>
+            soalan dipilih
+          </span>
+          <div class="w-full min-w-0 sm:w-64">
+            <DsNativeSelect
+              v-model="bulkAction"
+              name="action"
+              required
+              aria-label="Tindakan"
+              data-testid="questions-bulk-action"
+            >
+              <option value="">Pilih Tindakan</option>
+              <option v-for="o in BULK_OPTIONS" :key="o.value" :value="o.value">
+                {{ o.label }}
+              </option>
+            </DsNativeSelect>
+          </div>
+          <UButton
+            type="submit"
+            class="min-h-11"
+            :disabled="busy"
+            data-testid="questions-bulk-submit"
+          >
+            Laksanakan
+          </UButton>
+        </form>
       </DsPanel>
 
       <DsDataTable
-        dense
-        fixed-layout
+        v-model:selection="selected"
+        variant="flush"
+        :layout="xl ? 'fixed' : 'auto'"
+        selectable
+        row-key="id"
         :data="tableRows"
         :columns="columns"
         caption="Senarai soalan"
@@ -642,27 +565,12 @@ const cardFields: CardField[] = [
         :page="list.data.value?.meta.page ?? page"
         card-title="excerptText"
         :card-fields="cardFields"
-        empty-label="Tiada soalan dijumpai"
+        empty-title="Tiada soalan dijumpai"
+        :filtered="activeCount > 0"
         data-testid="questions-table"
         @update:page="goToPage"
         @update:page-size="setPageSize"
       >
-        <template #select-header>
-          <UCheckbox
-            :model-value="allSelected"
-            aria-label="Pilih semua soalan"
-            data-testid="questions-select-all"
-            @update:model-value="toggleAll"
-          />
-        </template>
-        <template #select-cell="{ row }">
-          <UCheckbox
-            :model-value="selected.includes(row.original.id)"
-            :aria-label="`Pilih soalan ${row.original.id}`"
-            data-testid="question-select"
-            @update:model-value="toggleOne(row.original.id, $event)"
-          />
-        </template>
         <template #id-cell="{ row }">
           <span class="text-label text-dimmed" data-testid="question-id">{{ row.original.id }}</span>
         </template>
@@ -745,73 +653,30 @@ const cardFields: CardField[] = [
           </span>
         </template>
         <template #status-cell="{ row }">
-          <div class="flex flex-col items-start gap-1">
-            <UBadge
-              :color="statusColor(row.original.raw.status)"
-              variant="subtle"
+          <div class="flex flex-col items-start gap-2">
+            <DsStatusBadge
+              :status="statusDs(row.original.raw.status)"
               :label="statusLabel(row.original.raw.status, true)"
               data-testid="question-status"
             />
-            <span
-              class="text-caption"
-              :class="row.original.raw.isActive ? 'text-success' : 'text-error'"
+            <!-- Live word: "ACTIVE" / "INACTIVE" under the status pill (discovery M04 S1). -->
+            <DsStatusBadge
+              size="sm"
+              :status="row.original.raw.isActive ? 'active' : 'inactive'"
+              :label="row.original.raw.isActive ? 'ACTIVE' : 'INACTIVE'"
               data-testid="question-active"
-              >{{ row.original.raw.isActive ? 'ACTIVE' : 'INACTIVE' }}</span
-            >
+            />
           </div>
         </template>
         <template #actions-cell="{ row }">
-          <div class="flex items-center justify-end gap-1">
-            <UButton
-              :to="questionDetailPath(row.original.id)"
-              color="neutral"
-              variant="ghost"
-              icon="i-ph-eye"
-              aria-label="Lihat"
-              title="Lihat"
-              data-testid="question-view"
-            />
-            <UButton
-              :to="questionEditPath(row.original.id)"
-              color="neutral"
-              variant="ghost"
-              icon="i-ph-pencil-simple"
-              aria-label="Edit"
-              title="Edit"
-              data-testid="question-edit"
-            />
-            <UDropdownMenu :items="rowMenu(row.original.raw)" :content="{ align: 'end' }">
-              <UButton
-                type="button"
-                color="neutral"
-                variant="ghost"
-                icon="i-ph-dots-three-vertical"
-                aria-label="Lagi tindakan"
-                title="Lagi tindakan"
-                data-testid="question-more"
-              />
-            </UDropdownMenu>
-          </div>
+          <DsRowActions :actions="rowActions(row.original.raw)" :inline="2" testid="question-more" />
         </template>
         <template #card-actions="{ row }">
-          <div class="flex items-center gap-1">
-            <UButton
-              :to="questionDetailPath(row.id as number)"
-              color="neutral"
-              variant="soft"
-              icon="i-ph-eye"
-              aria-label="Lihat"
-            />
-            <UDropdownMenu :items="rowMenu(row.raw as QuestionRow)" :content="{ align: 'end' }">
-              <UButton
-                type="button"
-                color="neutral"
-                variant="soft"
-                icon="i-ph-dots-three-vertical"
-                aria-label="Lagi tindakan"
-              />
-            </UDropdownMenu>
-          </div>
+          <DsRowActions
+            :actions="rowActions((row as TableRow).raw)"
+            :inline="0"
+            testid="question-more"
+          />
         </template>
       </DsDataTable>
     </div>

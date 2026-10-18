@@ -14,6 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { AdminCard, AdminPageHeader } from '@/ds/admin'
 import { useApi, useFlash } from '@/composables'
 import { DsEmptyState, DsPage, useConfirm } from '@/ds'
+import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
 
 import {
   createSubtopic,
@@ -28,7 +29,6 @@ import {
 } from '../api/admin-curriculum'
 import ChapterBlock from '../components/curriculum/ChapterBlock.vue'
 import CurriculumStatCards from '../components/curriculum/CurriculumStatCards.vue'
-import ErrorBox from '../components/ErrorBox.vue'
 import {
   CURRICULUM_PATH,
   chapterCreateTo,
@@ -38,7 +38,6 @@ import {
 } from '../lib/curriculum-paths'
 import { queryString } from '../lib/query'
 import { TREE_ACTIONS, type TreeActions } from '../lib/tree-actions'
-import NativeSelect from '../components/native/NativeSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,8 +48,16 @@ const subjectParam = computed(() => queryString(route.query.subject_id))
 const levelParam = computed(() => queryString(route.query.education_level_id))
 const hasPair = computed(() => subjectParam.value !== '' && levelParam.value !== '')
 
-const { data: subjects, error: subjectsError } = useApi((signal) => fetchSubjectOptions({ signal }))
-const { data: levels, error: levelsError } = useApi((signal) => fetchLevelOptions({ signal }))
+const {
+  data: subjects,
+  error: subjectsError,
+  reload: reloadSubjects,
+} = useApi((signal) => fetchSubjectOptions({ signal }))
+const {
+  data: levels,
+  error: levelsError,
+  reload: reloadLevels,
+} = useApi((signal) => fetchLevelOptions({ signal }))
 
 const {
   data: tree,
@@ -69,6 +76,13 @@ watch([subjectParam, levelParam], ([s, l]) => {
   subjectSel.value = s
   levelSel.value = l
 })
+
+/** Retry of the load-error box: reload whatever failed (options and the tree). */
+function retryLoad(): void {
+  if (subjectsError.value !== null) void reloadSubjects()
+  if (levelsError.value !== null) void reloadLevels()
+  if (treeError.value !== null) void reload()
+}
 
 /** The form is a GET form (FR-M03-03): empty values go out as empty parameters. */
 async function applyFilter(): Promise<void> {
@@ -161,10 +175,11 @@ provide(TREE_ACTIONS, actions)
       </template>
     </AdminPageHeader>
 
-    <ErrorBox
+    <DsLoadError
       v-if="optionsFailed || treeFailed"
-      :messages="LOAD_ERROR"
-      data-testid="curriculum-load-error"
+      :message="LOAD_ERROR"
+      testid="curriculum-load-error"
+      @retry="retryLoad"
     />
 
     <template v-if="optionsReady">
@@ -177,32 +192,34 @@ provide(TREE_ACTIONS, actions)
         @submit.prevent="applyFilter"
       >
         <div class="min-w-0 md:flex-1">
-          <label for="cur-subject" class="mb-2 block text-label text-highlighted">Subjek</label>
-          <NativeSelect
-            id="cur-subject"
-            v-model="subjectSel"
-            name="subject_id"
-            data-testid="curriculum-subject"
-          >
-            <option value="">-- Pilih Subjek --</option>
-            <option v-for="s in subjects?.data ?? []" :key="s.id" :value="String(s.id)">
-              {{ s.name }}
-            </option>
-          </NativeSelect>
+          <DsFormField v-slot="{ id }" native for="cur-subject" label="Subjek">
+            <DsNativeSelect
+              :id="id"
+              v-model="subjectSel"
+              name="subject_id"
+              data-testid="curriculum-subject"
+            >
+              <option value="">-- Pilih Subjek --</option>
+              <option v-for="s in subjects?.data ?? []" :key="s.id" :value="String(s.id)">
+                {{ s.name }}
+              </option>
+            </DsNativeSelect>
+          </DsFormField>
         </div>
         <div class="min-w-0 md:flex-1">
-          <label for="cur-level" class="mb-2 block text-label text-highlighted">Tahap</label>
-          <NativeSelect
-            id="cur-level"
-            v-model="levelSel"
-            name="education_level_id"
-            data-testid="curriculum-level"
-          >
-            <option value="">-- Pilih Tahap --</option>
-            <option v-for="l in levels?.data ?? []" :key="l.id" :value="String(l.id)">
-              {{ l.name }}
-            </option>
-          </NativeSelect>
+          <DsFormField v-slot="{ id }" native for="cur-level" label="Tahap">
+            <DsNativeSelect
+              :id="id"
+              v-model="levelSel"
+              name="education_level_id"
+              data-testid="curriculum-level"
+            >
+              <option value="">-- Pilih Tahap --</option>
+              <option v-for="l in levels?.data ?? []" :key="l.id" :value="String(l.id)">
+                {{ l.name }}
+              </option>
+            </DsNativeSelect>
+          </DsFormField>
         </div>
         <UButton
           type="submit"

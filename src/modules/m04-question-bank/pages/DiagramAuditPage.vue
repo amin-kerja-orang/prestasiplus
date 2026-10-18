@@ -16,13 +16,20 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsFilterBar, DsPage, DsStatTile } from '@/ds'
+import {
+  DsFilterBar,
+  DsFormField,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  type StatItem,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchDiagramAudit } from '../api/diagram-audit'
 import DiagramCard from '../components/DiagramCard.vue'
-import ErrorBox from '../components/ErrorBox.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import { DIAGRAMS_PATH } from '../lib/audit-routes'
 import { fetchSchoolNameOptions, fetchSubjectOptions } from '../lib/lookup-options'
 import { pageOf, queryText } from '../lib/route-query'
@@ -67,6 +74,29 @@ const { data, error, reload } = useApi(
 )
 
 const stats = computed(() => data.value?.meta.stats ?? null)
+const statItems = computed<StatItem[]>(() => [
+  {
+    key: 'mcq',
+    label: 'MCQ Perlu Gambar',
+    value: formatNumber(stats.value?.mcq ?? 0),
+    icon: 'list-numbers',
+    accent: 'action',
+  },
+  {
+    key: 'structured',
+    label: 'Struktur Perlu Gambar',
+    value: formatNumber(stats.value?.structured ?? 0),
+    icon: 'pen-nib',
+    accent: 'friend',
+  },
+  {
+    key: 'total',
+    label: 'Jumlah',
+    value: formatNumber(stats.value?.total ?? 0),
+    icon: 'chart-bar',
+    accent: 'win',
+  },
+])
 const pills = computed(() => data.value?.meta.bySubject ?? [])
 const mcq = computed(() => data.value?.data.mcq ?? null)
 const structured = computed(() => data.value?.data.structured ?? null)
@@ -130,39 +160,11 @@ const filterCount = computed(
 
 <template>
   <DsPage data-testid="diagrams-page">
-    <!-- Stat cards: 2 + 1 below sm (as live), 3 across from sm. -->
-    <section class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-      <template v-if="stats">
-        <DsStatTile
-          :value="formatNumber(stats.mcq)"
-          unit="MCQ Perlu Gambar"
-          icon="i-ph-list-numbers"
-          data-testid="diagrams-stat-mcq"
-        />
-        <DsStatTile
-          :value="formatNumber(stats.structured)"
-          unit="Struktur Perlu Gambar"
-          icon="i-ph-pen-nib"
-          data-testid="diagrams-stat-structured"
-        />
-        <DsStatTile
-          class="col-span-2 sm:col-span-1"
-          :value="formatNumber(stats.total)"
-          unit="Jumlah"
-          icon="i-ph-chart-bar"
-          data-testid="diagrams-stat-total"
-        />
-      </template>
-      <template v-else>
-        <USkeleton class="h-24 w-full" data-testid="diagrams-stat-mcq" />
-        <USkeleton class="h-24 w-full" data-testid="diagrams-stat-structured" />
-        <USkeleton class="col-span-2 h-24 w-full sm:col-span-1" data-testid="diagrams-stat-total" />
-      </template>
-    </section>
+    <!-- Stat cards: 2 across below md, 3 across from md. -->
+    <DsStatRow :items="statItems" :cols="3" :loading="!stats" roomy prefix="diagrams-stat" />
 
     <!-- Top-10 subjects by flagged MCQ count (global). -->
-    <UCard data-testid="diagrams-by-subject">
-      <h2 class="mb-3 text-overline text-muted">MCQ Perlu Gambar Mengikut Mata Pelajaran</h2>
+    <DsPanel title="MCQ Perlu Gambar Mengikut Mata Pelajaran" data-testid="diagrams-by-subject">
       <div class="flex flex-wrap gap-2">
         <UBadge
           v-for="p in pills"
@@ -173,7 +175,7 @@ const filterCount = computed(
           data-testid="diagrams-pill"
         />
       </div>
-    </UCard>
+    </DsPanel>
 
     <!-- Filter (the URL is the state). -->
     <DsFilterBar
@@ -184,47 +186,51 @@ const filterCount = computed(
       @reset="resetFilter"
     >
       <div class="w-full min-w-0 sm:w-64">
-        <label for="diagrams-subject" class="mb-2 block text-label text-highlighted"
-          >Mata Pelajaran</label
-        >
-        <NativeSelect
-          id="diagrams-subject"
-          v-model="subjectId"
-          name="subject_id"
-          data-testid="diagrams-subject"
-        >
-          <option value="">Semua Mata Pelajaran</option>
-          <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
-        </NativeSelect>
+        <DsFormField v-slot="{ id }" native for="diagrams-subject" label="Mata Pelajaran">
+          <DsNativeSelect
+            :id="id"
+            v-model="subjectId"
+            name="subject_id"
+            data-testid="diagrams-subject"
+          >
+            <option value="">Semua Mata Pelajaran</option>
+            <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+          </DsNativeSelect>
+        </DsFormField>
       </div>
       <div class="w-full min-w-0 sm:w-64">
-        <label for="diagrams-school" class="mb-2 block text-label text-highlighted">Sekolah</label>
-        <NativeSelect id="diagrams-school" v-model="schoolId" name="school_id" data-testid="diagrams-school">
-          <option value="">Semua Sekolah</option>
-          <option v-for="s in schools ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
-        </NativeSelect>
+        <DsFormField v-slot="{ id }" native for="diagrams-school" label="Sekolah">
+          <DsNativeSelect
+            :id="id"
+            v-model="schoolId"
+            name="school_id"
+            data-testid="diagrams-school"
+          >
+            <option value="">Semua Sekolah</option>
+            <option v-for="s in schools ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+          </DsNativeSelect>
+        </DsFormField>
       </div>
     </DsFilterBar>
 
-    <div v-if="error" class="flex flex-col gap-3" data-testid="diagrams-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" class="min-h-11" data-testid="diagrams-retry" @click="reload()">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="LOAD_ERROR"
+      testid="diagrams-error"
+      retry-testid="diagrams-retry"
+      @retry="reload()"
+    />
 
     <div v-else-if="firstLoad" class="flex flex-col gap-3" data-testid="diagrams-skeleton">
       <USkeleton v-for="n in 3" :key="n" class="h-24 w-full" />
     </div>
 
     <template v-else>
-      <UCard v-if="allDone" data-testid="diagrams-empty">
+      <DsPanel v-if="allDone" data-testid="diagrams-empty">
         <p class="text-center text-body text-success">
           Semua soalan sudah lengkap dengan gambar rajah!
         </p>
-      </UCard>
+      </DsPanel>
 
       <section v-if="mcq && mcq.meta.totalItems > 0" class="flex flex-col gap-3" data-testid="diagrams-mcq">
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">

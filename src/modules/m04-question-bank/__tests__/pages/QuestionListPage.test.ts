@@ -236,11 +236,11 @@ describe('QuestionListPage (M04 S1)', () => {
   it('ticks rows, shows the bulk bar and select-all ticks the page', async () => {
     const w = await render()
     expect(w.find('[data-testid="questions-bulk-bar"]').exists()).toBe(false)
-    await w.findAll('[data-testid="question-select"]')[0]?.trigger('click')
+    await w.findAll('tbody [role="checkbox"]')[0]?.trigger('click')
     await flushPromises()
     expect(t(w, 'questions-selected-count').text()).toBe('1')
     expect(w.get('[data-testid="questions-bulk-bar"]').text()).toContain('soalan dipilih')
-    await t(w, 'questions-select-all').trigger('click')
+    await w.get('thead [role="checkbox"]').trigger('click')
     await flushPromises()
     expect(t(w, 'questions-selected-count').text()).toBe('3')
     expect(t(w, 'questions-bulk-action').attributes('required')).toBeDefined()
@@ -252,7 +252,7 @@ describe('QuestionListPage (M04 S1)', () => {
       status: '2 soalan berjaya dikemaskini.',
     })
     const w = await render()
-    const boxes = w.findAll('[data-testid="question-select"]')
+    const boxes = w.findAll('tbody [role="checkbox"]')
     await boxes[0]?.trigger('click')
     await boxes[1]?.trigger('click')
     await flushPromises()
@@ -273,7 +273,7 @@ describe('QuestionListPage (M04 S1)', () => {
   it('sends nothing when the bulk confirm is dismissed', async () => {
     dialogs.confirmNative.mockReturnValue(false)
     const w = await render()
-    await w.findAll('[data-testid="question-select"]')[0]?.trigger('click')
+    await w.findAll('tbody [role="checkbox"]')[0]?.trigger('click')
     await flushPromises()
     await t(w, 'questions-bulk-action').setValue('delete')
     await w.get('[data-testid="questions-bulk-bar"]').trigger('submit')
@@ -314,6 +314,7 @@ describe('QuestionListPage (M04 S1)', () => {
     expect(first.get('[data-testid="question-edit"]').attributes('href')).toBe(
       '/admin/questions/564159/edit',
     )
-    expect(first.get('[data-testid="question-view"]').attributes('title')).toBe('Lihat')
+    expect(first.get('[data-testid="question-view"]').text()).toBe('Lihat')
+    expect(first.get('[data-testid="question-edit"]').text()).toBe('Edit')
   })
 })

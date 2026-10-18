@@ -172,7 +172,11 @@
     { "glob": "src/modules/m02-users-schools/pages/CompStudent*.vue", "level": "page" },
     { "glob": "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue", "level": "page" },
     { "glob": "src/modules/m06-spm/pages/**", "level": "page" },
-    { "glob": "src/modules/m06-spm/components/**", "level": "page" }
+    { "glob": "src/modules/m06-spm/components/**", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/pages/{DiagramAudit,ImportHistory,LaporanSoalan,MasterNotes,QuestionCreate,QuestionDetail,QuestionEdit,QuestionImport,QuestionList,QuestionQuality,QuestionReports,StructuredDetail,StructuredList,SubmissionList}Page.vue", "level": "page" },
+    { "glob": "src/modules/m04-question-bank/components/{AiExplanationCard,DiagramCard,DskpTagging,MasterNoteRow,QuestionForm,QuestionImagePicker,QuestionSummaryCard,SubmissionActions}.vue", "level": "page" },
+    { "glob": "src/modules/m03-curriculum/pages/**", "level": "page" },
+    { "glob": "src/modules/m03-curriculum/components/subjects-levels/FormActions.vue", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

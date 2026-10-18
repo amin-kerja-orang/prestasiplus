@@ -441,8 +441,8 @@ test.describe('M03 S2 create chapter', { tag: [TAG.smoke, moduleTag(3)] }, () =>
       'Penerangan ringkas tentang bab ini...',
     )
     await expect(page.getByTestId('chapter-active')).toHaveCount(0)
-    await expect(page.getByTestId('chapter-submit')).toHaveText('Simpan Bab')
-    await expect(page.getByTestId('chapter-cancel')).toHaveText('Batal')
+    await expect(page.getByTestId('form-submit')).toHaveText('Simpan Bab')
+    await expect(page.getByTestId('form-cancel')).toHaveText('Batal')
     await expectNoHorizontalScroll(page)
   })
 
@@ -456,7 +456,7 @@ test.describe('M03 S2 create chapter', { tag: [TAG.smoke, moduleTag(3)] }, () =>
     await expect(page.getByTestId('chapter-subject')).toHaveValue('')
     await expect(page.getByTestId('chapter-level')).toHaveValue('')
     await expect(page.getByTestId('curriculum-back')).toHaveAttribute('href', '/admin/curriculum')
-    await expect(page.getByTestId('chapter-cancel')).toHaveAttribute('href', '/admin/curriculum')
+    await expect(page.getByTestId('form-cancel')).toHaveAttribute('href', '/admin/curriculum')
   })
 
   test('E2E-M03-15b with one parameter the links carry only that parameter', async ({
@@ -470,7 +470,7 @@ test.describe('M03 S2 create chapter', { tag: [TAG.smoke, moduleTag(3)] }, () =>
       'href',
       '/admin/curriculum?subject_id=3',
     )
-    await expect(page.getByTestId('chapter-cancel')).toHaveAttribute(
+    await expect(page.getByTestId('form-cancel')).toHaveAttribute(
       'href',
       '/admin/curriculum?subject_id=3',
     )
@@ -483,8 +483,8 @@ test.describe('M03 S2 create chapter', { tag: [TAG.smoke, moduleTag(3)] }, () =>
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/curriculum/chapters/create?subject_id=3&education_level_id=10')
-    await expect(page.getByTestId('chapter-cancel')).toHaveAttribute('href', MATH_T4)
-    await page.getByTestId('chapter-cancel').click()
+    await expect(page.getByTestId('form-cancel')).toHaveAttribute('href', MATH_T4)
+    await page.getByTestId('form-cancel').click()
     await expect(page).toHaveURL(/\/admin\/curriculum\?subject_id=3&education_level_id=10$/)
     await expect(page.getByTestId('curriculum-tree')).toBeVisible()
   })
@@ -496,15 +496,15 @@ test.describe('M03 S2 create chapter', { tag: [TAG.smoke, moduleTag(3)] }, () =>
       await loginAs(ADMIN)
       await gotoApp('/admin/curriculum/chapters/create?subject_id=3&education_level_id=10')
       await expect(page.getByTestId('chapter-form')).toBeVisible()
-      await page.getByTestId('chapter-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/chapters\/create/)
       await page.getByTestId('chapter-name').fill('Bab 11 Demo')
       await page.getByTestId('chapter-number').fill('0')
-      await page.getByTestId('chapter-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/chapters\/create/)
 
       await page.getByTestId('chapter-number').fill('11')
-      await page.getByTestId('chapter-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/\/admin\/curriculum\?subject_id=3&education_level_id=10$/)
       await expect(flash(page)).toContainText('Bab berjaya ditambah.')
       await expect(chapters(page)).toHaveCount(11)
@@ -530,7 +530,7 @@ test.describe('M03 S2 create chapter', { tag: [TAG.smoke, moduleTag(3)] }, () =>
       fields: { name: 'The name field is required.' },
     })
     await page.getByTestId('chapter-name').fill('Kekal')
-    await page.getByTestId('chapter-submit').click()
+    await page.getByTestId('form-submit').click()
     await expect(page.getByTestId('curriculum-form-alert')).toContainText(
       'The name field is required.',
     )
@@ -565,9 +565,9 @@ test.describe('M03 S3 edit chapter', { tag: [TAG.smoke, moduleTag(3)] }, () => {
     await expect(page.getByTestId('chapter-form')).toContainText(
       'Nyahtanda jika bab ini tidak mahu dipaparkan buat masa ini',
     )
-    await expect(page.getByTestId('chapter-submit')).toHaveText('Kemaskini Bab')
+    await expect(page.getByTestId('form-submit')).toHaveText('Kemaskini Bab')
     await expect(page.getByTestId('curriculum-back')).toHaveAttribute('href', MATH_T4)
-    await expect(page.getByTestId('chapter-cancel')).toHaveAttribute('href', MATH_T4)
+    await expect(page.getByTestId('form-cancel')).toHaveAttribute('href', MATH_T4)
     await expectNoHorizontalScroll(page)
   })
 
@@ -579,7 +579,7 @@ test.describe('M03 S3 edit chapter', { tag: [TAG.smoke, moduleTag(3)] }, () => {
       await gotoApp('/admin/curriculum/chapters/91/edit')
       await expect(page.getByTestId('chapter-form')).toBeVisible()
       await page.getByTestId('chapter-active').uncheck()
-      await page.getByTestId('chapter-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/\/admin\/curriculum\?subject_id=3&education_level_id=10$/)
       await expect(flash(page)).toContainText('Bab berjaya dikemaskini.')
       await expect(page.getByText('Bab 1: Fungsi dan Persamaan Kuadratik')).toBeVisible()
@@ -587,7 +587,7 @@ test.describe('M03 S3 edit chapter', { tag: [TAG.smoke, moduleTag(3)] }, () => {
       await gotoApp('/admin/curriculum/chapters/91/edit')
       await expect(page.getByTestId('chapter-active')).not.toBeChecked()
       await page.getByTestId('chapter-level').selectOption('11')
-      await page.getByTestId('chapter-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/\/admin\/curriculum\?subject_id=3&education_level_id=11$/)
       const moved = chapters(page).filter({ hasText: 'Fungsi dan Persamaan Kuadratik' })
       await expect(moved).toHaveCount(1)
@@ -631,15 +631,15 @@ test.describe('M03 S4 create topic', { tag: [TAG.smoke, moduleTag(3)] }, () => {
         'Rujuk dokumen standard kurikulum KPM',
       )
       await expect(page.getByTestId('topic-active')).toHaveCount(0)
-      await expect(page.getByTestId('topic-submit')).toHaveText('Simpan Topik')
+      await expect(page.getByTestId('form-submit')).toHaveText('Simpan Topik')
       await expectNoHorizontalScroll(page)
 
-      await page.getByTestId('topic-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/topics\/create/)
 
       await page.getByTestId('topic-name').fill('Topik Demo')
       await page.getByTestId('topic-number').fill('1.5')
-      await page.getByTestId('topic-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/\/admin\/curriculum\?subject_id=3&education_level_id=10$/)
       await expect(flash(page)).toContainText('Topik berjaya ditambah.')
       const headings = chapters(page).first().getByTestId('topic-heading')
@@ -676,11 +676,11 @@ test.describe('M03 S5 edit topic', { tag: [TAG.smoke, moduleTag(3)] }, () => {
         'Nyahtanda jika topik ini tidak mahu dipaparkan buat masa ini',
       )
       await expect(page.locator('main select')).toHaveCount(0)
-      await expect(page.getByTestId('topic-submit')).toHaveText('Kemaskini Topik')
+      await expect(page.getByTestId('form-submit')).toHaveText('Kemaskini Topik')
       await expect(page.getByTestId('curriculum-back')).toHaveAttribute('href', MATH_T4)
 
       await page.getByTestId('topic-name').fill('Fungsi Diubah')
-      await page.getByTestId('topic-submit').click()
+      await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/\/admin\/curriculum\?subject_id=3&education_level_id=10$/)
       await expect(flash(page)).toContainText('Topik berjaya dikemaskini.')
       await expect(page.getByText('Topik 1: Fungsi Diubah')).toBeVisible()

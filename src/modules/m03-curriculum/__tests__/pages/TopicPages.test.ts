@@ -76,7 +76,7 @@ describe('TopicCreatePage (M03 S4)', () => {
     expect(text).toContain('Contoh: 1.1, 1.2, 2.1 (opsional)')
     expect(text).toContain('Rujuk dokumen standard kurikulum KPM')
     expect(w.find('[data-testid=topic-active]').exists()).toBe(false)
-    expect(w.get('[data-testid=topic-submit]').text()).toBe('Simpan Topik')
+    expect(w.get('[data-testid=form-submit]').text()).toBe('Simpan Topik')
     expect(w.get('[data-testid=curriculum-back]').attributes('href')).toBe(
       '/admin/curriculum?subject_id=3&education_level_id=10',
     )
@@ -150,7 +150,7 @@ describe('TopicEditPage (M03 S5)', () => {
     )
     expect(w.find('select').exists()).toBe(false)
     expect(w.get('[data-testid=chapter-context]').text()).toContain('Tingkatan 4')
-    expect(w.get('[data-testid=topic-submit]').text()).toBe('Kemaskini Topik')
+    expect(w.get('[data-testid=form-submit]').text()).toBe('Kemaskini Topik')
   })
 
   it('puts the topic with isActive and returns to the tree', async () => {

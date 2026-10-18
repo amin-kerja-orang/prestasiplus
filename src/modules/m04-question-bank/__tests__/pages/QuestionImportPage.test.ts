@@ -49,6 +49,8 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({ data: [{ id: 4, name: 'Tingkatan 5' }] })
   window.scrollTo = vi.fn()
+  // jsdom has no object URLs; the file field lists the chosen file with a preview.
+  URL.createObjectURL = vi.fn(() => 'blob:mock')
 })
 
 afterEach(() => {
@@ -116,7 +118,7 @@ describe('QuestionImportPage (M04 S5)', () => {
     await t(w, 'import-default-subject').setValue('3')
     await t(w, 'import-form').trigger('submit')
     await flushPromises()
-    expect(w.findAll('[data-variant=error]')).toHaveLength(1)
+    expect(w.findAll('[data-testid=import-alert]')).toHaveLength(1)
     expect(w.text().match(/Fail mesti jenis CSV/g)).toHaveLength(1)
     expect((t(w, 'import-default-subject').element as HTMLSelectElement).value).toBe('3')
     expect(useFlashStore().current).toBeNull()
