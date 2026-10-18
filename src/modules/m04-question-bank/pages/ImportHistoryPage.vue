@@ -12,11 +12,10 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsDataTable, DsPage, type CardField } from '@/ds'
+import { DsBackLink, DsDataTable, DsLoadError, DsPage, type CardField } from '@/ds'
 import { formatDateTime } from '@/lib/time'
 
 import { fetchQuestionImports } from '../api/imports'
-import ErrorBox from '../components/ErrorBox.vue'
 import { IMPORT_HISTORY_PATH, IMPORT_PATH } from '../lib/import-quality'
 import { LOAD_ERROR } from '../lib/ui-errors'
 
@@ -73,31 +72,21 @@ const cardFields: CardField[] = [
 
 <template>
   <DsPage data-testid="history-page">
-    <div>
-      <UButton
-        :to="IMPORT_PATH"
-        color="neutral"
-        variant="soft"
-        icon="i-ph-arrow-left"
-        class="min-h-11"
-        data-testid="history-back"
-      >
-        Kembali
-      </UButton>
-    </div>
+    <template #breadcrumb>
+      <DsBackLink :to="IMPORT_PATH" data-testid="history-back" />
+    </template>
 
-    <div v-if="error" class="flex flex-col gap-3" data-testid="history-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" class="min-h-11" data-testid="history-retry" @click="reload()">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="LOAD_ERROR"
+      testid="history-error"
+      retry-testid="history-retry"
+      @retry="reload()"
+    />
 
     <DsDataTable
-        v-else
-      dense
+      v-else
+      variant="flush"
       :data="tableRows"
       :columns="columns"
       caption="Sejarah import"
@@ -107,7 +96,7 @@ const cardFields: CardField[] = [
       :page="data?.meta.page ?? page"
       card-title="fileName"
       :card-fields="cardFields"
-      empty-label="Tiada sejarah import."
+      empty-title="Tiada sejarah import."
       data-testid="history-table"
       @update:page="goToPage"
     >

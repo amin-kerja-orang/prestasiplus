@@ -287,8 +287,7 @@ describe('LaporanSoalanPage (M04 S13)', () => {
       '0Ditolak',
     ])
     const empty = wrapper.get('[data-testid=my-reports-empty]')
-    expect(empty.text()).toContain('📋')
-    expect(empty.get('h3').text()).toBe('Tiada Laporan')
+    expect(empty.text()).toContain('Tiada Laporan')
     expect(empty.text()).toContain('Anda belum menghantar sebarang laporan soalan.')
   })
 

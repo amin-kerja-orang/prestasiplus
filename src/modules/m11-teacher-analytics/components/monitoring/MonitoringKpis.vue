@@ -1,133 +1,99 @@
 <script setup lang="ts">
 /**
- * S2 KPI strip, `#section-ringkasan` (FN-M11-3.3.1 / 3.3.2; FR-M11-35, 36). Row 1: six tiles
- * (`grid-cols-2 lg:grid-cols-3 xl:grid-cols-6`); row 2: the three teacher tiles. Roomy `DsStatTile`s.
+ * S2 KPI strip, `#section-ringkasan` (FN-M11-3.3.1 / 3.3.2; FR-M11-35, 36). Row 1: six tiles, row 2: the three
+ * teacher tiles, both a roomy `DsStatRow` (2 / 3 columns).
  */
 import { computed } from 'vue'
 
-import { DsStatTile } from '@/ds'
-import type { DsAccent } from '@/ds/types'
+import { DsStatRow, type StatItem } from '@/ds'
 
 import type { MonitoringKpi } from '../../api/types'
 import { avg, count, pct } from './monitoring-format'
 
 const props = defineProps<{ kpi: MonitoringKpi }>()
 
-interface Card {
-  key: string
-  label: string
-  value: string
-  icon: string
-  accent: DsAccent
-  tone: string
-}
-
-const row1 = computed<Card[]>(() => [
+const row1 = computed<StatItem[]>(() => [
   {
     key: 'schools',
     label: 'Jumlah Sekolah · Berdaftar',
     value: count(props.kpi.schools),
-    icon: 'i-ph-buildings',
-    accent: 'action',
-    tone: 'text-primary',
+    icon: 'i-ph-buildings', accent: 'action',
+
+    valueClass: 'text-primary',
   },
   {
     key: 'students',
     label: 'Pelajar T4/T5 · Berdaftar',
     value: count(props.kpi.students),
-    icon: 'i-ph-graduation-cap',
-    accent: 'friend',
-    tone: 'text-highlighted',
+    icon: 'i-ph-graduation-cap', accent: 'friend',
+
+    valueClass: 'text-highlighted',
   },
   {
     key: 'engaged',
     label: 'Pernah Aktif · Min. 1 soalan',
     value: count(props.kpi.engaged),
-    icon: 'i-ph-check-circle',
-    accent: 'win',
-    tone: 'text-success',
+    icon: 'i-ph-check-circle', accent: 'win',
+
+    valueClass: 'text-success',
   },
   {
     key: 'engagement',
     label: '% Penglibatan · Keseluruhan',
     value: pct(props.kpi.engagementPct),
-    icon: 'i-ph-chart-line-up',
-    accent: 'heat',
-    tone: 'text-primary',
+    icon: 'i-ph-chart-line-up', accent: 'heat',
+
+    valueClass: 'text-primary',
   },
   {
     key: 'answers',
     label: 'Soalan Dijawab · Total',
     value: count(props.kpi.answers),
-    icon: 'i-ph-pencil-simple',
-    accent: 'trial',
-    tone: 'text-highlighted',
+    icon: 'i-ph-pencil-simple', accent: 'trial',
+
+    valueClass: 'text-highlighted',
   },
   {
     key: 'average',
     label: 'Purata/Pelajar · Soalan/pelajar aktif',
     value: avg(props.kpi.avgPerStudent),
-    icon: 'i-ph-calculator',
-    accent: 'action',
-    tone: 'text-highlighted',
+    icon: 'i-ph-calculator', accent: 'action',
+
+    valueClass: 'text-highlighted',
   },
 ])
 
-const row2 = computed<Card[]>(() => [
+const row2 = computed<StatItem[]>(() => [
   {
     key: 'teachers',
     label: 'Guru Berdaftar',
     value: count(props.kpi.teachers),
-    icon: 'i-ph-chalkboard-teacher',
-    accent: 'friend',
-    tone: 'text-highlighted',
+    icon: 'i-ph-chalkboard-teacher', accent: 'friend',
+
+    valueClass: 'text-highlighted',
   },
   {
     key: 'teachersLoggedIn',
     label: 'Guru Pernah Login',
     value: count(props.kpi.teachersLoggedIn),
-    icon: 'i-ph-sign-in',
-    accent: 'win',
-    tone: 'text-success',
+    icon: 'i-ph-sign-in', accent: 'win',
+
+    valueClass: 'text-success',
   },
   {
     key: 'teacherPct',
     label: '% Penglibatan Guru',
     value: pct(props.kpi.teacherPct),
-    icon: 'i-ph-percent',
-    accent: 'heat',
-    tone: 'text-primary',
+    icon: 'i-ph-percent', accent: 'heat',
+
+    valueClass: 'text-primary',
   },
 ])
 </script>
 
 <template>
   <section id="section-ringkasan" class="flex flex-col gap-4" data-testid="mon-kpis">
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-      <DsStatTile
-        v-for="c in row1"
-        :key="c.key"
-        roomy
-        :value="c.value"
-        :unit="c.label"
-        :icon="c.icon"
-        :accent="c.accent"
-        :value-class="c.tone"
-        :data-testid="`mon-kpi-${c.key}`"
-      />
-    </div>
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <DsStatTile
-        v-for="c in row2"
-        :key="c.key"
-        roomy
-        :value="c.value"
-        :unit="c.label"
-        :icon="c.icon"
-        :accent="c.accent"
-        :value-class="c.tone"
-        :data-testid="`mon-kpi-${c.key}`"
-      />
-    </div>
+    <DsStatRow :items="row1" prefix="mon-kpi" :cols="3" roomy />
+    <DsStatRow :items="row2" prefix="mon-kpi" :cols="3" roomy />
   </section>
 </template>

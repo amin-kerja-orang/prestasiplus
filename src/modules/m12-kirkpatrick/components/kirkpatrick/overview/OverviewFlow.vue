@@ -6,18 +6,10 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import type { Overview } from '../../../api/types'
-import {
-  gps,
-  KirkpatrickLink,
-  KirkpatrickPanel,
-  mean,
-  pct,
-  plain,
-  type KirkpatrickPaths,
-} from '../common'
+import { gps, KirkpatrickLink, mean, pct, plain, type KirkpatrickPaths } from '../common'
 
 const props = defineProps<{ data: Overview; paths: KirkpatrickPaths; detail: boolean }>()
 
@@ -69,9 +61,9 @@ const steps = computed<Step[]>(() => [
 </script>
 
 <template>
-  <KirkpatrickPanel
+  <DsPanel
     title="Kirkpatrick Evaluation Flow"
-    subtitle="Klik mana-mana tahap untuk lihat detail"
+    description="Klik mana-mana tahap untuk lihat detail"
     icon="i-ph-flow-arrow"
     data-testid="kirk-flow"
   >
@@ -111,5 +103,5 @@ const steps = computed<Step[]>(() => [
         </KirkpatrickLink>
       </li>
     </ul>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>

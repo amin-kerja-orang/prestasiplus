@@ -9,7 +9,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import {
   fetchChapter,
@@ -21,8 +21,6 @@ import ChapterForm, {
   type ChapterFormPayload,
   type ChapterFormValues,
 } from '../components/curriculum/ChapterForm.vue'
-import CurriculumBackLink from '../components/curriculum/CurriculumBackLink.vue'
-import ErrorBox from '../components/ErrorBox.vue'
 import {
   CURRICULUM_PATH,
   errorLines,
@@ -41,12 +39,27 @@ const {
   data: chapter,
   error: chapterError,
   loading: chapterLoading,
+  reload: reloadChapter,
 } = useApi(
   (signal) => fetchChapter(props.id, { signal }),
   () => props.id,
 )
-const { data: subjects, error: subjectsError } = useApi((signal) => fetchSubjectOptions({ signal }))
-const { data: levels, error: levelsError } = useApi((signal) => fetchLevelOptions({ signal }))
+const {
+  data: subjects,
+  error: subjectsError,
+  reload: reloadSubjects,
+} = useApi((signal) => fetchSubjectOptions({ signal }))
+const {
+  data: levels,
+  error: levelsError,
+  reload: reloadLevels,
+} = useApi((signal) => fetchLevelOptions({ signal }))
+
+function retry(): void {
+  void reloadChapter()
+  void reloadSubjects()
+  void reloadLevels()
+}
 
 watch(
   chapterError,
@@ -109,10 +122,26 @@ async function submit(payload: ChapterFormPayload): Promise<void> {
 
 <template>
   <DsPage class="max-w-3xl" data-testid="chapter-edit-page">
-    <ErrorBox v-if="loadFailed" :messages="LOAD_ERROR" data-testid="curriculum-load-error" />
+    <DsLoadError
+      v-if="loadFailed"
+      :message="LOAD_ERROR"
+      testid="curriculum-load-error"
+      @retry="retry"
+    />
     <template v-else-if="ready">
-      <CurriculumBackLink :to="backTo" />
-      <ErrorBox :messages="errors" data-testid="curriculum-form-alert" />
+      <DsBackLink :to="backTo" label="Kembali ke Kurikulum" data-testid="curriculum-back" />
+      <UAlert
+        v-if="errors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="curriculum-form-alert"
+      >
+        <template #description>
+          <p v-for="(line, i) in errors" :key="i">{{ line }}</p>
+        </template>
+      </UAlert>
       <ChapterForm
         mode="edit"
         :subjects="subjects?.data ?? []"

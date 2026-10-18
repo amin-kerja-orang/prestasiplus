@@ -4,8 +4,9 @@
  * them (never logged in, teacher logged in without answers, active above 50%). Rendered only when there is at
  * least one item. No item has a button (DV-M12-01). Meaning is carried by icon and words, not colour alone.
  */
+import { DsPanel } from '@/ds'
+
 import type { BehaviorAlert } from '../../../api/types'
-import KirkpatrickPanel from '../common/KirkpatrickPanel.vue'
 import { pct, plain } from '../common/kirkpatrick-format'
 
 defineProps<{ alerts: BehaviorAlert[] }>()
@@ -20,7 +21,7 @@ function text(a: BehaviorAlert): string {
 </script>
 
 <template>
-  <KirkpatrickPanel
+  <DsPanel
     v-if="alerts.length > 0"
     title="Amaran & Pemerhatian"
     icon="i-ph-bell"
@@ -41,5 +42,5 @@ function text(a: BehaviorAlert): string {
         </UAlert>
       </li>
     </ul>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>

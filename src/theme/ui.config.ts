@@ -223,11 +223,12 @@ export const uiConfig = {
   checkbox: {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
-      // bg-elevated: the stock unchecked box is drawn by a ring, which the zero-border tokens make transparent.
-      base: "relative overflow-visible rounded-xs bg-elevated after:absolute after:-inset-2.5 after:content-['']",
+      // Borders are transparent (layers, not lines): an unchecked box needs its own fill to show.
+      base: "relative overflow-visible rounded-xs bg-accented after:absolute after:-inset-2.5 after:content-['']",
     },
     variants: { size: { md: { base: 'size-6' }, sm: { base: 'size-6' } } },
   },
+
   switch: {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
@@ -299,7 +300,9 @@ export const uiConfig = {
 
   // Card radios: selected = tinted surface (info mix), never a line (the stock card draws a
   // coloured border).
+  // The radio dot gets a fill too: its ring token is transparent, so an unchecked radio would be invisible.
   radioGroup: {
+    slots: { base: 'bg-accented' },
     compoundVariants: [
       { variant: 'card', class: { item: 'border-0' } },
       { variant: 'card', color: 'info', class: { item: 'has-data-[state=checked]:bg-info/20' } },

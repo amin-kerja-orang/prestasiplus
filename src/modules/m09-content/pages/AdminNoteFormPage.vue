@@ -14,7 +14,15 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+} from '@/ds'
 
 import {
   createAdminNote,
@@ -24,13 +32,6 @@ import {
   type NoteSubject,
   type NoteType,
 } from '../api/admin-articles-notes'
-import AdminBackLink from '../components/admin-articles-notes/AdminBackLink.vue'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
-import AdminField from '../components/admin-kit/AdminField.vue'
-import AdminFormBar from '../components/admin-kit/AdminFormBar.vue'
-import AdminSection from '../components/admin-kit/AdminSection.vue'
-import AdminSwitch from '../components/admin-kit/AdminSwitch.vue'
-import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
 import {
   COPY,
   NOTES_LIST_PATH,
@@ -70,7 +71,11 @@ const form = reactive<NoteForm>({
   isPublished: false,
 })
 
-const { data: loaded, error: loadError } = useApi(
+const {
+  data: loaded,
+  error: loadError,
+  reload,
+} = useApi(
   (signal) => fetchAdminNote(numericId.value ?? 0, { signal }),
   () => props.id,
   { immediate: props.mode === 'edit' && numericId.value !== null },
@@ -158,16 +163,23 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="admin-note-form-page">
-    <AdminBackLink :to="NOTES_LIST_PATH" />
+  <DsPage
+    :back-to="NOTES_LIST_PATH"
+    back-label="Kembali ke Senarai"
+    data-testid="admin-note-form-page"
+  >
+    <DsLoadError
+      v-if="failed"
+      :message="COPY.loadFailed"
+      testid="admin-note-load-error"
+      @retry="reload()"
+    />
 
-    <AdminAlert v-if="failed" :messages="[COPY.loadFailed]" data-testid="admin-note-load-error" />
-
-    <UCard v-else-if="!ready" data-testid="admin-note-form-skeleton">
+    <DsPanel v-else-if="!ready" data-testid="admin-note-form-skeleton">
       <div class="flex flex-col gap-6">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
       </div>
-    </UCard>
+    </DsPanel>
 
     <form
       v-else
@@ -176,10 +188,21 @@ async function submit(): Promise<void> {
       data-testid="admin-note-form"
       @submit.prevent="submit"
     >
-      <AdminAlert :messages="topErrors" data-testid="admin-note-form-alert" />
+      <UAlert
+        v-if="topErrors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="admin-note-form-alert"
+      >
+        <template #description>
+          <p v-for="m in topErrors" :key="m">{{ m }}</p>
+        </template>
+      </UAlert>
 
-      <AdminSection title="Maklumat Nota" icon="i-ph-notebook" accent="action">
-        <AdminField for="note-title" label="Tajuk" required :error="messageOf('title')">
+      <DsFormSection title="Maklumat Nota" icon="i-ph-notebook" accent="action">
+        <DsFormField native for="note-title" label="Tajuk" required :error="messageOf('title')">
           <UInput
             id="note-title"
             v-model="form.title"
@@ -191,9 +214,9 @@ async function submit(): Promise<void> {
             :color="invalid('title') ? 'error' : undefined"
             data-testid="note-title"
           />
-        </AdminField>
+        </DsFormField>
 
-        <AdminField for="note-summary" label="Ringkasan" :error="messageOf('summary')">
+        <DsFormField native for="note-summary" label="Ringkasan" :error="messageOf('summary')">
           <UTextarea
             id="note-summary"
             v-model="form.summary"
@@ -204,9 +227,15 @@ async function submit(): Promise<void> {
             :color="invalid('summary') ? 'error' : undefined"
             data-testid="note-summary"
           />
-        </AdminField>
+        </DsFormField>
 
-        <AdminField for="note-content" label="Kandungan" required :error="messageOf('content')">
+        <DsFormField
+          native
+          for="note-content"
+          label="Kandungan"
+          required
+          :error="messageOf('content')"
+        >
           <UTextarea
             id="note-content"
             v-model="form.content"
@@ -218,13 +247,19 @@ async function submit(): Promise<void> {
             :color="invalid('content') ? 'error' : undefined"
             data-testid="note-content"
           />
-        </AdminField>
-      </AdminSection>
+        </DsFormField>
+      </DsFormSection>
 
-      <AdminSection title="Klasifikasi" icon="i-ph-tag" accent="friend">
+      <DsFormSection title="Klasifikasi" icon="i-ph-tag" accent="friend">
         <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <AdminField for="note-subject" label="Subjek" required :error="messageOf('subject')">
-            <NativeSelect
+          <DsFormField
+            native
+            for="note-subject"
+            label="Subjek"
+            required
+            :error="messageOf('subject')"
+          >
+            <DsNativeSelect
               id="note-subject"
               v-model="form.subject"
               name="subject"
@@ -236,16 +271,17 @@ async function submit(): Promise<void> {
               <option v-for="o in NOTE_SUBJECT_OPTIONS" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
-            </NativeSelect>
-          </AdminField>
+            </DsNativeSelect>
+          </DsFormField>
 
-          <AdminField
+          <DsFormField
+            native
             for="note-type"
             label="Jenis"
             required
             :error="messageOf('noteType', 'note_type')"
           >
-            <NativeSelect
+            <DsNativeSelect
               id="note-type"
               v-model="form.noteType"
               name="note_type"
@@ -257,11 +293,11 @@ async function submit(): Promise<void> {
               <option v-for="o in NOTE_TYPE_FORM_OPTIONS" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
-            </NativeSelect>
-          </AdminField>
+            </DsNativeSelect>
+          </DsFormField>
 
-          <AdminField for="note-grade" label="Tahap" required :error="messageOf('grade')">
-            <NativeSelect
+          <DsFormField native for="note-grade" label="Tahap" required :error="messageOf('grade')">
+            <DsNativeSelect
               id="note-grade"
               v-model="form.grade"
               name="grade"
@@ -273,21 +309,22 @@ async function submit(): Promise<void> {
               <option v-for="o in NOTE_GRADE_OPTIONS" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
-            </NativeSelect>
-          </AdminField>
+            </DsNativeSelect>
+          </DsFormField>
         </div>
-      </AdminSection>
+      </DsFormSection>
 
-      <AdminSection title="Penerbitan" icon="i-ph-rocket-launch" accent="win">
-        <AdminSwitch
+      <DsFormSection title="Penerbitan" icon="i-ph-rocket-launch" accent="win">
+        <USwitch
           v-model="form.isPublished"
           name="is_published"
           label="Terbitkan Sekarang"
-          testid="note-published"
+          class="min-h-11"
+          data-testid="note-published"
         />
-      </AdminSection>
+      </DsFormSection>
 
-      <AdminFormBar
+      <DsFormBar
         :cancel-to="NOTES_LIST_PATH"
         :submit-label="editing ? 'Kemaskini Nota' : 'Simpan Nota'"
         :saving="saving"

@@ -7,6 +7,8 @@
 import { reactive, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
+import { DsFormBar, DsFormField, DsFormSection } from '@/ds'
+
 import { orNull } from '../../lib/curriculum-paths'
 
 export interface TopicFormValues {
@@ -56,126 +58,105 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <form method="post" data-testid="topic-form" @submit.prevent="onSubmit">
-    <UCard>
-      <div class="flex min-w-0 flex-col gap-4">
-        <div class="min-w-0">
-          <label for="topic-name" class="mb-2 block text-label text-highlighted"
-            >Nama Topik (Bahasa Melayu) *</label
-          >
-          <UInput
-            id="topic-name"
-            v-model="form.name"
-            type="text"
-            name="name"
-            required
-            placeholder="cth: Nombor hingga 1000"
-            class="w-full"
-            data-testid="topic-name"
-          />
-        </div>
+  <form method="post" class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="topic-form" @submit.prevent="onSubmit">
+    <DsFormSection title="Maklumat Topik" icon="i-ph-bookmark-simple">
+      <DsFormField
+        v-slot="{ id }"
+        native
+        for="topic-name"
+        label="Nama Topik (Bahasa Melayu)"
+        required
+      >
+        <UInput
+          :id="id"
+          v-model="form.name"
+          type="text"
+          name="name"
+          required
+          placeholder="cth: Nombor hingga 1000"
+          class="w-full"
+          data-testid="topic-name"
+        />
+      </DsFormField>
 
-        <div class="min-w-0">
-          <label for="topic-name-en" class="mb-2 block text-label text-highlighted"
-            >Nama Topik (English)</label
-          >
-          <UInput
-            id="topic-name-en"
-            v-model="form.nameEn"
-            type="text"
-            name="name_en"
-            placeholder="e.g: Numbers up to 1000"
-            class="w-full"
-            data-testid="topic-name-en"
-          />
-        </div>
+      <DsFormField v-slot="{ id }" native for="topic-name-en" label="Nama Topik (English)">
+        <UInput
+          :id="id"
+          v-model="form.nameEn"
+          type="text"
+          name="name_en"
+          placeholder="e.g: Numbers up to 1000"
+          class="w-full"
+          data-testid="topic-name-en"
+        />
+      </DsFormField>
 
-        <div class="min-w-0">
-          <label for="topic-number" class="mb-2 block text-label text-highlighted"
-            >Nombor Topik</label
-          >
-          <UInput
-            id="topic-number"
-            v-model="form.topicNumber"
-            type="text"
-            name="topic_number"
-            placeholder="cth: 1.1"
-            class="w-full"
-            data-testid="topic-number"
-          />
-          <p class="mt-1 flex items-center gap-2 text-caption text-muted">
-            <UIcon name="i-ph-info" class="size-4 shrink-0" />Contoh: 1.1, 1.2, 2.1 (opsional)
-          </p>
-        </div>
+      <DsFormField
+        v-slot="{ id }"
+        native
+        for="topic-number"
+        label="Nombor Topik"
+        hint="Contoh: 1.1, 1.2, 2.1 (opsional)"
+      >
+        <UInput
+          :id="id"
+          v-model="form.topicNumber"
+          type="text"
+          name="topic_number"
+          placeholder="cth: 1.1"
+          class="w-full"
+          data-testid="topic-number"
+        />
+      </DsFormField>
 
-        <div class="min-w-0">
-          <label for="topic-description" class="mb-2 block text-label text-highlighted"
-            >Penerangan</label
-          >
-          <UTextarea
-            id="topic-description"
-            v-model="form.description"
-            name="description"
-            :rows="4"
-            placeholder="Penerangan ringkas tentang topik ini..."
-            class="w-full"
-            data-testid="topic-description"
-          />
-        </div>
+      <DsFormField v-slot="{ id }" native for="topic-description" label="Penerangan">
+        <UTextarea
+          :id="id"
+          v-model="form.description"
+          name="description"
+          :rows="4"
+          placeholder="Penerangan ringkas tentang topik ini..."
+          class="w-full"
+          data-testid="topic-description"
+        />
+      </DsFormField>
 
-        <div class="min-w-0">
-          <label for="topic-standard" class="mb-2 block text-label text-highlighted"
-            >Standard Pembelajaran</label
-          >
-          <UTextarea
-            id="topic-standard"
-            v-model="form.learningStandard"
-            name="learning_standard"
-            :rows="4"
-            placeholder="Standard pembelajaran mengikut kurikulum KSSM/KSSR..."
-            class="w-full"
-            data-testid="topic-standard"
-          />
-          <p class="mt-1 flex items-center gap-2 text-caption text-muted">
-            <UIcon name="i-ph-info" class="size-4 shrink-0" />Rujuk dokumen standard kurikulum KPM
-          </p>
-        </div>
+      <DsFormField
+        v-slot="{ id }"
+        native
+        for="topic-standard"
+        label="Standard Pembelajaran"
+        hint="Rujuk dokumen standard kurikulum KPM"
+      >
+        <UTextarea
+          :id="id"
+          v-model="form.learningStandard"
+          name="learning_standard"
+          :rows="4"
+          placeholder="Standard pembelajaran mengikut kurikulum KSSM/KSSR..."
+          class="w-full"
+          data-testid="topic-standard"
+        />
+      </DsFormField>
 
-        <div v-if="mode === 'edit'" class="min-w-0">
-          <UCheckbox
-            v-model="form.isActive"
-            name="is_active"
-            value="1"
-            label="Aktif"
-            data-testid="topic-active"
-          />
-          <p class="mt-1 text-caption text-muted">
-            Nyahtanda jika topik ini tidak mahu dipaparkan buat masa ini
-          </p>
-        </div>
-
-        <div class="flex justify-end gap-3">
-          <UButton
-            :to="cancelTo"
-            color="neutral"
-            variant="ghost"
-            class="min-h-11"
-            data-testid="topic-cancel"
-          >
-            Batal
-          </UButton>
-          <UButton
-            type="submit"
-            :loading="saving"
-            :disabled="saving"
-            :icon="saving ? undefined : 'i-ph-floppy-disk'"
-            class="min-h-11"
-            data-testid="topic-submit"
-          >
-            {{ mode === 'edit' ? 'Kemaskini Topik' : 'Simpan Topik' }}
-          </UButton>
-        </div>
+      <div v-if="mode === 'edit'" class="flex min-w-0 flex-col gap-2">
+        <UCheckbox
+          v-model="form.isActive"
+          name="is_active"
+          value="1"
+          label="Aktif"
+          data-testid="topic-active"
+        />
+        <p class="text-caption text-muted">
+          Nyahtanda jika topik ini tidak mahu dipaparkan buat masa ini
+        </p>
       </div>
-    </UCard>
+    </DsFormSection>
+
+    <DsFormBar
+      :cancel-to="cancelTo"
+      :saving="saving"
+      :submit-label="mode === 'edit' ? 'Kemaskini Topik' : 'Simpan Topik'"
+    />
   </form>
 </template>

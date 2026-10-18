@@ -302,7 +302,7 @@ describe('S22 submit', () => {
   it('takes a chosen question image into the model and drops it again', async () => {
     const w = await mountForm()
     const upload = () =>
-      w.findAllComponents({ name: 'FileUpload' }).find((c) => t(w, 'q-image-input').element.contains(c.element))!
+      w.findAllComponents({ name: 'FileUpload' }).find((c) => { const el = t(w, 'q-image-input').element; return c.element === el || c.element.contains(el) || el.contains(c.element) })!
     await pickFiles(w, 'q-image-input', [new File(['x'], 'rajah.png', { type: 'image/png' })])
     expect((upload().props('modelValue') as File).name).toBe('rajah.png')
     await pickFiles(w, 'q-image-input', [])

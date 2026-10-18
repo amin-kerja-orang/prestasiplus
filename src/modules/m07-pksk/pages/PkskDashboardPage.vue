@@ -7,15 +7,13 @@
 import { computed, watch } from 'vue'
 
 import { usePageMeta } from '@/composables'
-import { DsIconChip, DsPage, DsStatTile } from '@/ds'
+import { DsIconChip, DsLoadError, DsPage, DsStatTile } from '@/ds'
 
 import { fetchPkskDashboard } from '../api/pksk'
 import type { PkskLevel } from '../api/types'
-import BackLink from '../components/BackLink.vue'
-import LoadError from '../components/LoadError.vue'
 import PkskBanner from '../components/PkskBanner.vue'
 import MasteryBar from '../components/MasteryBar.vue'
-import { isLoadError, usePkskData } from '../lib/load'
+import { LOAD_ERROR, isLoadError, usePkskData } from '../lib/load'
 
 const props = defineProps<{ level: PkskLevel }>()
 
@@ -69,10 +67,8 @@ const shortcuts = computed(
 </script>
 
 <template>
-  <DsPage data-testid="pksk-dashboard">
-    <BackLink to="/pksk" label="Kembali ke PKSK" />
-
-    <LoadError v-if="loadFailed" @retry="reload()" />
+  <DsPage back-to="/pksk" back-label="Kembali ke PKSK" data-testid="pksk-dashboard">
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <PkskBanner data-testid="readiness">

@@ -4,20 +4,14 @@
  * school page of the mount) / Pelajar / Soalan / Ketepatan / Skor Purata / Subjek. Staff table (`DsDataTable`:
  * card list below md, inner scroll when wide, NFR-RESP-05 b).
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
+import { DsDataTable, DsPanel } from '@/ds'
+
 import type { Learning } from '../../../api/types'
-import {
-  accuracyText,
-  count,
-  KirkpatrickTableSection,
-  pct,
-  plain,
-  type KirkpatrickPaths,
-} from '../common'
-import KirkpatrickTable from '../common/KirkpatrickTable.vue'
+import { accuracyText, count, pct, plain, type KirkpatrickPaths } from '../common'
 
 const props = defineProps<{ schools: Learning['schools']; paths: KirkpatrickPaths }>()
 
@@ -64,15 +58,18 @@ const cardFields = [
   { key: 'avgScore', label: 'Skor Purata' },
   { key: 'subjects', label: 'Subjek' },
 ]
+
+/** Paged at 20 rows. */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(20)
 </script>
 
 <template>
-  <KirkpatrickTableSection
-    title="Pembelajaran Mengikut Sekolah"
-    icon="i-ph-buildings"
-    data-testid="kirk-schools"
-  >
-    <KirkpatrickTable
+  <DsPanel title="Pembelajaran Mengikut Sekolah" icon="i-ph-buildings" data-testid="kirk-schools">
+    <DsDataTable
+      v-model:page-size="pageSize"
+      variant="bare"
+      :page-size-options="PAGE_SIZES"
       :data="rows"
       :columns="columns"
       caption="Pembelajaran mengikut sekolah"
@@ -95,6 +92,6 @@ const cardFields = [
           >{{ row.original.accuracyText }}</span
         >
       </template>
-    </KirkpatrickTable>
-  </KirkpatrickTableSection>
+    </DsDataTable>
+  </DsPanel>
 </template>

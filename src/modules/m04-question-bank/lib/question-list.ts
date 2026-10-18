@@ -3,6 +3,8 @@
  * strings are finite lookup maps (overview §8.2 rule 2).
  */
 
+import type { DsStatus } from '@/ds'
+
 import type { BulkAction, ComplianceStatus, QuestionStatus, QuestionType } from '../api/questions'
 
 export const QUESTIONS_LIST_PATH = '/admin/questions'
@@ -114,6 +116,17 @@ const STATUS_LABEL: Record<QuestionStatus, string> = {
 }
 export const statusLabel = (status: QuestionStatus, short = false): string =>
   short && status === 'archived' ? 'Arkib' : STATUS_LABEL[status]
+
+/** `DsStatusBadge` status of a question status; the live word is passed as the badge label. */
+const STATUS_DS: Record<QuestionStatus, DsStatus> = {
+  draft: 'draft',
+  pending_review: 'awaiting-review',
+  approved: 'approved',
+  rejected: 'rejected',
+  archived: 'inactive',
+  pending: 'pending-approval',
+}
+export const statusDs = (status: QuestionStatus): DsStatus => STATUS_DS[status]
 
 export type BadgeColor = 'success' | 'warning' | 'error' | 'neutral'
 

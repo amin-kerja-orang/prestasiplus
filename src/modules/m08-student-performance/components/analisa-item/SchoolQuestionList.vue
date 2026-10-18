@@ -4,6 +4,7 @@
  * questions in rank order; the subject pills filter client-side (no request); a click on a card toggles
  * its detail ("Jawapan Betul", "Jawapan Salah Paling Popular", "Pelajar Yang Salah").
  */
+import { DsPanel } from '@/ds'
 import { computed, ref } from 'vue'
 
 import { formatNumber } from '@/lib/number'
@@ -87,7 +88,7 @@ function toggle(id: number): void {
 
     <ul class="flex flex-col gap-3" data-testid="question-list">
       <li v-for="q in shown" :key="q.questionId" :data-testid="`question-${q.questionId}`">
-        <UCard>
+        <DsPanel>
           <div class="flex min-w-0 flex-col gap-3">
             <UButton
               type="button"
@@ -168,7 +169,7 @@ function toggle(id: number): void {
               </div>
             </div>
           </div>
-        </UCard>
+        </DsPanel>
       </li>
     </ul>
   </section>

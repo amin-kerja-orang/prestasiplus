@@ -3,12 +3,11 @@
 import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsChart, DsDataTable } from '@/ds'
+import { DsChart, DsDataTable, DsPanel } from '@/ds'
 
 import type { SchoolPerformance } from '../../api/types'
 import { BAND_STYLE, dec2, grouped } from '../../lib/prestasi/format'
 import { trendSeries } from '../../lib/prestasi/gps-chart'
-import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{ trend: SchoolPerformance['trend'] }>()
 
@@ -71,7 +70,7 @@ const cardFields = [
 </script>
 
 <template>
-  <UCard data-testid="trend-card">
+  <DsPanel data-testid="trend-card">
     <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-1">
         <h2 class="text-subheading text-highlighted">📉 Trend GPS (5 Tahun)</h2>
@@ -112,11 +111,8 @@ const cardFields = [
           </span>
         </template>
         <template #gpsText-cell="{ row }">
-          <ToneText
-            :tone="row.original.band ? bandStyle(row.original.band).text : 'text-muted'"
-            class="text-label"
-            >{{ row.original.gpsText }}</ToneText
-          >
+          <span :class="[row.original.band ? bandStyle(row.original.band).text : 'text-muted', 'text-label']"
+            >{{ row.original.gpsText }}</span>
         </template>
         <template #band-cell="{ row }">
           <UBadge
@@ -128,18 +124,17 @@ const cardFields = [
           <span v-else class="text-dimmed">—</span>
         </template>
         <template #changeText-cell="{ row }">
-          <ToneText
-            :tone="
+          <span
+:class="
               row.original.change === null || row.original.change === 0
                 ? 'text-dimmed'
                 : row.original.change < 0
                   ? 'text-success'
                   : 'text-error'
             "
-            >{{ row.original.changeText }}</ToneText
-          >
+            >{{ row.original.changeText }}</span>
         </template>
       </DsDataTable>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

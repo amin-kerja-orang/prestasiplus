@@ -7,7 +7,7 @@ import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { DsChart } from '@/ds'
 
 import KirkpatrickResultsPage from '../../../pages/KirkpatrickResultsPage.vue'
-import { all, flat, has, mountPage, rowOf, squash, t } from '../fixtures'
+import { all, captions, flat, has, mountPage, rowOf, squash, t, tiles } from '../fixtures'
 import { results, resultsNoCounts, resultsNoHistory } from './fixtures'
 
 const api = vi.hoisted(() => ({ fetchKirkpatrickResults: vi.fn() }))
@@ -39,7 +39,7 @@ afterEach(() => {
 describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
   it('shows the platform values and captions', async () => {
     const { wrapper: w } = await open()
-    expect(all(w, 'kirk-stat-label').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.label)).toEqual([
       'GPS Headcount',
       'Kadar Lulus',
       'Pelajar Gred A',
@@ -47,7 +47,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
       'Pelajar Aktif',
       'Rekod Headcount',
     ])
-    expect(all(w, 'kirk-stat-value').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.value)).toEqual([
       '4.30',
       '96.7%',
       '52',
@@ -55,7 +55,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
       '946',
       '4378',
     ])
-    expect(all(w, 'kirk-stat-caption').map((e) => e.text())).toEqual([
+    expect(captions(w)).toEqual([
       '41 rekod · 2025',
       '174/180 calon',
       '28.9% daripada 180',
@@ -88,7 +88,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
     )
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=8080')
     expect(api.fetchKirkpatrickResults).toHaveBeenCalledWith({ schoolId: 8080 }, expect.anything())
-    expect(all(w, 'kirk-stat-value').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.value)).toEqual([
       '4.00',
       '100%',
       '0',
@@ -96,7 +96,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
       '53',
       '4378',
     ])
-    expect(all(w, 'kirk-stat-caption').map((e) => e.text())).toEqual([
+    expect(captions(w)).toEqual([
       '41 rekod · 2026',
       '1/1 calon',
       '0% daripada 1',
@@ -109,10 +109,10 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
   it('shows the no-history state of school 9167 ("-", "41 rekod" without the year, 0/0 calon)', async () => {
     api.fetchKirkpatrickResults.mockResolvedValue(resultsNoHistory())
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=9167')
-    const values = all(w, 'kirk-stat-value').map((e) => e.text())
+    const values = tiles(w).map((x) => x.value)
     expect(values.slice(0, 3)).toEqual(['-', '0%', '0'])
     expect(values[4]).toBe('5')
-    expect(all(w, 'kirk-stat-caption').map((e) => e.text())).toEqual([
+    expect(captions(w)).toEqual([
       '41 rekod',
       '0/0 calon',
       '0% daripada 0',
@@ -132,20 +132,19 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
     api.fetchKirkpatrickResults.mockResolvedValue(resultsNoCounts())
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=8880')
     expect(
-      all(w, 'kirk-stat-value')
-        .map((e) => e.text())
+      tiles(w).map((x) => x.value)
         .slice(0, 3),
     ).toEqual(['2.88', '-', '-'])
-    const captions = all(w, 'kirk-stat-caption').map((e) => e.text())
-    expect(captions.slice(0, 3)).toEqual(['41 rekod · 2026', '150 calon', '150 calon'])
-    expect(captions.join(' ')).not.toContain('0/0')
+    const lines = captions(w)
+    expect(lines.slice(0, 3)).toEqual(['41 rekod · 2026', '150 calon', '150 calon'])
+    expect(lines.join(' ')).not.toContain('0/0')
     expect(has(w, 'res-grades')).toBe(false)
   })
 
-  it('KPI grid is 2 / 3 / 6 columns and the tab strip marks T4 active', async () => {
+  it('KPI grid is 2 columns, 3 from md and the tab strip marks T4 active', async () => {
     const { wrapper: w } = await open()
     expect(t(w, 'res-kpis').classes()).toEqual(
-      expect.arrayContaining(['grid-cols-2', 'sm:grid-cols-3', 'lg:grid-cols-6']),
+      expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3']),
     )
     expect(t(w, 'kirk-tab-results').attributes('data-active')).toBe('true')
   })
@@ -264,7 +263,7 @@ describe('S5 subject GPS and trend (AC-M12-21.1 ... 21.4)', () => {
       'res-predictions',
       'res-alesa',
     ]) {
-      expect(t(w, id).find('[data-ds="paged-table"]').exists()).toBe(true)
+      expect(t(w, id).find('[data-ds="data-table"]').exists()).toBe(true)
     }
   })
 })

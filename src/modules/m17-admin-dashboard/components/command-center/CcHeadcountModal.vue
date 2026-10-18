@@ -8,13 +8,12 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsDrillTable } from '@/ds'
+import { DsDialog, DsDrillTable, DsLoadError, DsStatRow } from '@/ds'
 
 import { fetchCcHeadcount } from '../../api/command-center'
 import type { CcHeadcountStudent } from '../../api/command-center-types'
-import { gradeTone, score2, TONE_TEXT } from './cc-format'
-import CcModal from './CcModal.vue'
-import CcModalStats from './CcModalStats.vue'
+import { gradeTone, score2, statItems, TONE_TEXT } from './cc-format'
+import { useCcDialog } from './use-cc-dialog'
 
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
 type Row = { [K in keyof CcHeadcountStudent]: CcHeadcountStudent[K] }
@@ -22,7 +21,8 @@ type Row = { [K in keyof CcHeadcountStudent]: CcHeadcountStudent[K] }
 const props = defineProps<{ configId: number; subject: string }>()
 const emit = defineEmits<{ close: [] }>()
 
-const { data, error } = useApi((signal) => fetchCcHeadcount(props.configId, { signal }))
+const open = useCcDialog(() => emit('close'))
+const { data, error, reload } = useApi((signal) => fetchCcHeadcount(props.configId, { signal }))
 
 const stats = computed(() => {
   const d = data.value
@@ -46,40 +46,51 @@ const students = computed(() => data.value?.students ?? [])
 </script>
 
 <template>
-  <CcModal :title="`HeadCount: ${subject}`" testid="cc-headcount-modal" @close="emit('close')">
-    <p v-if="error" class="text-body text-error" data-testid="cc-modal-error">Ralat</p>
-    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
-      Memuatkan...
-    </p>
-    <template v-else>
-      <CcModalStats :stats="stats" />
-      <div data-testid="cc-headcount-scroller">
-        <DsDrillTable
-          :data="students"
-          :columns="columns"
-          :caption="`HeadCount: ${subject}`"
-          data-testid="cc-headcount-table"
-        >
-          <template #no-cell="{ row }">
-            <span data-testid="cc-headcount-student">{{ row.index + 1 }}</span>
-          </template>
-          <template #name-cell="{ row }">{{ row.original.name }}</template>
-          <template #tov-cell="{ row }"
-            ><span class="tabular">{{ score2(row.original.tov) }}</span></template
+  <DsDialog v-model:open="open" :title="`HeadCount: ${subject}`" class="sm:max-w-2xl">
+    <div class="flex min-w-0 flex-col gap-4" data-testid="cc-headcount-modal">
+      <DsLoadError v-if="error" inline message="Ralat" testid="cc-modal-error" @retry="reload" />
+      <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
+        Memuatkan...
+      </p>
+      <template v-else>
+        <DsStatRow :items="statItems(stats)" data-testid="cc-modal-stats" />
+        <div data-testid="cc-headcount-scroller">
+          <DsDrillTable
+            :data="students"
+            :columns="columns"
+            :caption="`HeadCount: ${subject}`"
+            data-testid="cc-headcount-table"
           >
-          <template #etr-cell="{ row }"
-            ><span class="tabular">{{ score2(row.original.etr) }}</span></template
-          >
-          <template #rs-cell="{ row }"
-            ><span class="tabular">{{ score2(row.original.rs) }}</span></template
-          >
-          <template #grade-cell="{ row }">
-            <span :class="TONE_TEXT[gradeTone(row.original.grade)]">{{
-              row.original.grade ?? '-'
-            }}</span>
-          </template>
-        </DsDrillTable>
-      </div>
+            <template #no-cell="{ row }">
+              <span data-testid="cc-headcount-student">{{ row.index + 1 }}</span>
+            </template>
+            <template #name-cell="{ row }">{{ row.original.name }}</template>
+            <template #tov-cell="{ row }"
+              ><span class="tabular">{{ score2(row.original.tov) }}</span></template
+            >
+            <template #etr-cell="{ row }"
+              ><span class="tabular">{{ score2(row.original.etr) }}</span></template
+            >
+            <template #rs-cell="{ row }"
+              ><span class="tabular">{{ score2(row.original.rs) }}</span></template
+            >
+            <template #grade-cell="{ row }">
+              <span :class="TONE_TEXT[gradeTone(row.original.grade)]">{{
+                row.original.grade ?? '-'
+              }}</span>
+            </template>
+          </DsDrillTable>
+        </div>
+      </template>
+    </div>
+    <template #footer>
+      <UButton
+        color="neutral"
+        variant="soft"
+        label="Tutup"
+        data-testid="cc-modal-close"
+        @click="open = false"
+      />
     </template>
-  </CcModal>
+  </DsDialog>
 </template>

@@ -7,7 +7,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsChart, DsDataTable, type CardField, type ChartSeries } from '@/ds'
+import { type CardField, type ChartSeries, DsChart, DsDataTable, DsPanel } from '@/ds'
 import { formatMyt } from '@/lib/time'
 
 import type {
@@ -19,7 +19,6 @@ import type {
   TrendLabel,
 } from '../../api/headcount-types'
 import { DASH, fixed1, gradeOfPercent, num1, selisihText } from '../../lib/headcount/format'
-import ToneText from '../shared/ToneText.vue'
 
 const props = defineProps<{ section: HeadcountSection }>()
 
@@ -173,7 +172,7 @@ const rowTestId =(r: Row, i: number): string =>
 
 <template>
   <section class="flex min-w-0 flex-col gap-4" :data-testid="`section-${section.configId}`">
-    <UCard>
+    <DsPanel>
       <div class="flex flex-col gap-4">
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h2 class="min-w-0 text-heading break-words text-highlighted">{{ section.subject }}</h2>
@@ -244,9 +243,9 @@ const rowTestId =(r: Row, i: number): string =>
             />
             <span class="text-caption text-muted" data-testid="chip-confidence"
               >Keyakinan:
-              <ToneText :tone="CONFIDENCE[section.projection.confidence]" class="text-label">{{
+              <span :class="[CONFIDENCE[section.projection.confidence], 'text-label']">{{
                 section.projection.confidence
-              }}</ToneText></span
+              }}</span></span
             >
           </template>
         </div>
@@ -261,7 +260,7 @@ const rowTestId =(r: Row, i: number): string =>
           :data-testid="`student-chart-${section.configId}`"
         />
       </div>
-    </UCard>
+    </DsPanel>
 
     <DsDataTable
       :data="rows"
@@ -281,9 +280,9 @@ const rowTestId =(r: Row, i: number): string =>
         >
       </template>
       <template #ar-cell="{ row }">
-        <ToneText v-if="row.original.kind === 'otr'" :tone="rowTone(row.original)">{{
+        <span v-if="row.original.kind === 'otr'" :class="rowTone(row.original)">{{
           row.original.ar
-        }}</ToneText>
+        }}</span>
         <span v-else class="text-caption text-muted">{{ row.original.note }}</span>
       </template>
       <template #status-cell="{ row }">
@@ -301,12 +300,12 @@ const rowTestId =(r: Row, i: number): string =>
       </template>
     </DsDataTable>
 
-    <UCard v-if="section.prediction && verdict" data-testid="prediction-box">
+    <DsPanel v-if="section.prediction && verdict" data-testid="prediction-box">
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
-          <ToneText :tone="verdict.iconTone" class="flex shrink-0"
+          <span :class="[verdict.iconTone, 'flex shrink-0']"
             ><UIcon :name="verdict.icon" class="size-6"
-          /></ToneText>
+          /></span>
           <h3 class="text-subheading text-highlighted">Ketepatan Ramalan ETR vs RS</h3>
         </div>
         <p class="text-body text-default">
@@ -320,15 +319,14 @@ const rowTestId =(r: Row, i: number): string =>
           }})
         </p>
         <p class="text-label" data-testid="selisih">
-          <ToneText :tone="verdict.text"
-            >Selisih: {{ selisihText(section.prediction.diff) }} markah</ToneText
-          >
+          <span :class="verdict.text"
+            >Selisih: {{ selisihText(section.prediction.diff) }} markah</span>
         </p>
         <p class="text-label" data-testid="verdict">
-          <ToneText :tone="verdict.text">{{ section.prediction.verdict }}</ToneText>
+          <span :class="verdict.text">{{ section.prediction.verdict }}</span>
         </p>
         <p class="text-caption text-muted">{{ verdict.note }}</p>
       </div>
-    </UCard>
+    </DsPanel>
   </section>
 </template>

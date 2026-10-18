@@ -257,6 +257,8 @@ describe('DiagramAuditPage (M04 S11)', () => {
     const input = card.get('[data-testid=diagram-file]').element as HTMLInputElement
     const file = new File(['x'], 'rajah.png', { type: 'image/png' })
     Object.defineProperty(input, 'files', { value: [file], configurable: true })
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
     await card.get('form').trigger('submit')
     await flushPromises()
     expect(api.uploadDiagramImage).toHaveBeenCalledWith('structured', 4461, file)
@@ -282,6 +284,8 @@ describe('DiagramAuditPage (M04 S11)', () => {
       value: [new File(['x'], 'rajah.svg', { type: 'image/svg+xml' })],
       configurable: true,
     })
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
     await card.get('form').trigger('submit')
     await flushPromises()
     expect(card.get('[data-testid=diagram-file-error]').text()).toBe(

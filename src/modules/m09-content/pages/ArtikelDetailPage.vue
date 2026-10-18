@@ -17,7 +17,7 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta, useSession } from '@/composables'
-import { DsMediaCard, DsPage, DsProse } from '@/ds'
+import { DsLoadError, DsMediaCard, DsPage, DsProse } from '@/ds'
 import { diffForHumans, formatDateEn } from '@/lib/time'
 
 import { fetchArticle, fetchLatestArticles, type ArticleCard } from '../api'
@@ -30,7 +30,11 @@ const props = defineProps<{ slug: string }>()
 const { isLoggedIn } = useSession()
 const pageMeta = usePageMeta()
 
-const { data: article, error } = useApi(
+const {
+  data: article,
+  error,
+  reload,
+} = useApi(
   (signal) => fetchArticle(props.slug, { signal }),
   () => props.slug,
 )
@@ -74,13 +78,7 @@ const age = computed(() =>
 <template>
   <div v-if="notFound" />
   <DsPage v-else data-testid="artikel-detail-page">
-    <UAlert
-      v-if="error"
-      color="error"
-      variant="soft"
-      icon="i-ph-warning-duotone"
-      :description="ARTIKEL_COPY.loadFailed"
-    />
+    <DsLoadError v-if="error" :message="ARTIKEL_COPY.loadFailed" @retry="reload()" />
 
     <div v-if="article" class="flex flex-col gap-6 lg:grid lg:grid-cols-12">
       <article class="flex min-w-0 flex-col gap-4 md:gap-6 lg:col-span-9">

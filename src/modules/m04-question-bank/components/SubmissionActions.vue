@@ -6,6 +6,8 @@
  */
 import { ref } from 'vue'
 
+import { DsNativeSelect } from '@/ds'
+
 import {
   updateSubmissionStatus,
   type QuestionSubmission,
@@ -13,7 +15,6 @@ import {
 } from '../api/submissions'
 import { SUBMISSION_STATUS_OPTIONS } from '../lib/submission-options'
 import { fieldErrors } from '../lib/ui-errors'
-import NativeSelect from './native/NativeSelect.vue'
 
 const props = defineProps<{ submission: QuestionSubmission }>()
 const emit = defineEmits<{ saved: [status: string]; failed: [error: unknown] }>()
@@ -76,7 +77,7 @@ async function save(): Promise<void> {
       data-testid="submission-panel"
       @submit.prevent="save"
     >
-      <NativeSelect
+      <DsNativeSelect
         v-model="status"
         name="status"
         required
@@ -86,7 +87,7 @@ async function save(): Promise<void> {
         <option v-for="o in SUBMISSION_STATUS_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
-      </NativeSelect>
+      </DsNativeSelect>
       <p v-if="errors.status" class="text-caption text-error" data-testid="submission-status-error">
         {{ errors.status }}
       </p>

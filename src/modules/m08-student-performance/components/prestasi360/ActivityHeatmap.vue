@@ -4,13 +4,12 @@
  * ramp from `bg-elevated` to `bg-primary`). `mouseenter` sets and a mouse leaving clears the active day,
  * `click` toggles it; the active day shows the tooltip "{dd/mm} ({hari}) — Tiada aktiviti | {n} sesi".
  */
+import { DsPanel } from '@/ds'
 import { computed, ref } from 'vue'
 
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
-import { HEAT_RAMP, dayLabel } from '../../lib/analitik'
-import HeatCell from '../shared/HeatCell.vue'
-import ToneText from '../shared/ToneText.vue'
+import { HEAT_RAMP, dayLabel, heatClass } from '../../lib/analitik'
 
 const props = defineProps<{ days: StudentPerformance['heatmap'] }>()
 
@@ -47,19 +46,24 @@ const LEGEND = ['0', '1-1', '2-2', '3-3', '4+']
 </script>
 
 <template>
-  <UCard data-testid="heatmap-card">
+  <DsPanel data-testid="heatmap-card">
     <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('calendar-dots')" class="size-5 text-primary" />Peta Aktiviti (90 Hari)
       </h2>
       <div class="flex flex-wrap gap-1" data-testid="heatmap">
-        <HeatCell
+        <UButton
           v-for="d in days"
           :key="d.date"
-          :sessions="d.sessions"
-          :active="activeDay === d.date"
-          :pressed="pinned === d.date"
-          :label="dayLabel(d.date, d.sessions)"
+          type="button"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          square
+          class="size-6 p-0"
+          :class="activeDay === d.date ? 'bg-default' : heatClass(d.sessions)"
+          :aria-label="dayLabel(d.date, d.sessions)"
+          :aria-pressed="pinned === d.date"
           :data-date="d.date"
           data-testid="heat-cell"
           @mouseenter="hover = d.date"
@@ -77,14 +81,13 @@ const LEGEND = ['0', '1-1', '2-2', '3-3', '4+']
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
         <template v-for="(label, i) in LEGEND" :key="label">
           <span>{{ label }}</span>
-          <ToneText
-            :tone="HEAT_RAMP[i] ?? 'bg-elevated'"
-            class="inline-block size-4"
+          <span
+:class="[HEAT_RAMP[i] ?? 'bg-elevated', 'inline-block size-4']"
             aria-hidden="true"
           />
         </template>
         <span class="text-dimmed">sesi/hari</span>
       </div>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

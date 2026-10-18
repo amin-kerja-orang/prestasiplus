@@ -16,7 +16,7 @@ import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { confirmNative, useApi, useFlash, usePageMeta } from '@/composables'
-import { DsMediaCard, DsPage } from '@/ds'
+import { DsLoadError, DsMediaCard, DsPage } from '@/ds'
 import { formatDateEn } from '@/lib/time'
 
 import { deleteVideo, fetchVideo } from '../api/content'
@@ -37,7 +37,11 @@ const router = useRouter()
 const flash = useFlash()
 const pageMeta = usePageMeta()
 
-const { data: video, error } = useApi(
+const {
+  data: video,
+  error,
+  reload,
+} = useApi(
   (signal) => fetchVideo(props.id, { signal }),
   () => props.id,
 )
@@ -83,13 +87,11 @@ async function remove(): Promise<void> {
 
 <template>
   <DsPage data-testid="video-detail-page">
-    <UAlert
+    <DsLoadError
       v-if="error && !notFound"
-      color="error"
-      variant="soft"
-      icon="i-ph-warning-duotone"
-      :description="errorLines(error).join(' ')"
-      data-testid="video-detail-error"
+      :message="errorLines(error).join(' ')"
+      testid="video-detail-error"
+      @retry="reload()"
     />
 
     <template v-else-if="video">
@@ -156,7 +158,8 @@ async function remove(): Promise<void> {
           <UAlert
             v-if="failure.length"
             color="error"
-            variant="soft"
+            variant="subtle"
+            icon="i-ph-warning-circle"
             :description="failure.join(' ')"
           />
 

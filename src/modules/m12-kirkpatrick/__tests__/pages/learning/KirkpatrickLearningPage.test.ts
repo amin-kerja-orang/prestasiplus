@@ -3,7 +3,7 @@ import { type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import KirkpatrickLearningPage from '../../../pages/KirkpatrickLearningPage.vue'
-import { all, flat, has, learning, mountPage, rowOf, squash, t } from '../fixtures'
+import { all, flat, has, learning, mountPage, rowOf, squash, t, tiles } from '../fixtures'
 
 const api = vi.hoisted(() => ({ fetchKirkpatrickLearning: vi.fn() }))
 vi.mock('../../../api', () => api)
@@ -33,7 +33,7 @@ afterEach(() => {
 describe('S3 KPIs and Learning Gain (AC-M12-11.1..11.4)', () => {
   it('shows the six KPI cards', async () => {
     const w = await open()
-    expect(all(w, 'kirk-stat-label').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.label)).toEqual([
       'Soalan Dijawab',
       'Ketepatan',
       'Skor Purata',
@@ -41,11 +41,11 @@ describe('S3 KPIs and Learning Gain (AC-M12-11.1..11.4)', () => {
       'Kadar Penyelesaian',
       'Learning Gain',
     ])
-    expect(all(w, 'kirk-stat-value').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.value)).toEqual([
       '306,133',
       '82.8%',
       '80.3%',
-      '20991',
+      '20991/20991',
       '100%',
       '-',
     ])
@@ -53,10 +53,10 @@ describe('S3 KPIs and Learning Gain (AC-M12-11.1..11.4)', () => {
     expect(t(w, 'kirk-kpi-gain').text()).toContain('Perlu pre/post test')
   })
 
-  it('KPI grid is 2 / 3 / 6 columns', async () => {
+  it('KPI grid is 2 columns, 3 from md', async () => {
     const w = await open()
     expect(t(w, 'kirk-learning-kpis').classes()).toEqual(
-      expect.arrayContaining(['grid-cols-2', 'sm:grid-cols-3', 'lg:grid-cols-6']),
+      expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3']),
     )
   })
 
@@ -139,7 +139,7 @@ describe('S3 school table (AC-M12-13.1..13.3)', () => {
 
   it('scrolls inside its card; links follow the guru mount', async () => {
     const w = await open('/guru/kirkpatrick')
-    expect(t(w, 'kirk-schools-scroller').find('[data-ds="paged-table"]').exists()).toBe(true)
+    expect(t(w, 'kirk-schools-scroller').attributes('data-ds')).toBe('data-table')
     expect(all(w, 'kirk-school-link')[0]!.attributes('href')).toBe('/guru/monitoring/sekolah/8880')
     expect(t(w, 'kirk-tab-overview').attributes('href')).toBe('/guru/kirkpatrick')
   })

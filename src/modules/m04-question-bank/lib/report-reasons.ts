@@ -4,6 +4,8 @@
  * the ReportView), the S14 modal, S7 and S13.
  */
 
+import type { DsStatus } from '@/ds'
+
 export type ReportVariant = 'mcq' | 'structured'
 
 export type ReportTint =
@@ -134,6 +136,15 @@ export const DISPLAY_STATUS_LABEL: Record<ReportDisplayStatus, string> = {
   fixed: 'Diperbaiki',
   removed: 'Dikeluarkan',
   dismissed: 'Ditolak',
+}
+
+/** `DsStatusBadge` status of a report status (icon and colour); the live word is the badge label. */
+export const DISPLAY_STATUS_DS: Record<ReportDisplayStatus, DsStatus> = {
+  pending: 'awaiting-review',
+  reviewed: 'in-progress',
+  fixed: 'done',
+  removed: 'rejected',
+  dismissed: 'inactive',
 }
 
 export const REPORT_FILTERS = ['pending', 'reviewed', 'fixed', 'dismissed', 'all'] as const

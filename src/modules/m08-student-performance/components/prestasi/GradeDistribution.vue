@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 
 import { formatNumber } from '@/lib/number'
-import { DsChart } from '@/ds'
+import { DsChart, DsPanel } from '@/ds'
 
 import type { SchoolPerformance } from '../../api/types'
 import { grouped } from '../../lib/prestasi/format'
@@ -21,7 +21,7 @@ const series = computed(() => [
 </script>
 
 <template>
-  <UCard class="lg:col-span-2" data-testid="grade-card">
+  <DsPanel class="lg:col-span-2" data-testid="grade-card">
     <div class="flex flex-col gap-4">
       <DsChart
         title="📈 Taburan Gred (Anggaran)"
@@ -47,5 +47,5 @@ const series = computed(() => [
         Jumlah: {{ grouped(total) }} rekod
       </p>
     </div>
-  </UCard>
+  </DsPanel>
 </template>

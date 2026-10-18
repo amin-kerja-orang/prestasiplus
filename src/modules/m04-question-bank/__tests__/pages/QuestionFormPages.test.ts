@@ -118,6 +118,11 @@ async function render(kind: 'create' | 'edit', id = 564159): Promise<VueWrapper>
 }
 
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid=${id}]`)
+/** A `URadioGroup` item: Reka radios carry no test id; the group has the id, the item its value. */
+const radio = (w: VueWrapper, group: string, value: string) =>
+  w.get(`[id="${group}"] [role="radio"][value="${value}"]`)
+const checked = (w: VueWrapper, group: string, value: string) =>
+  radio(w, group, value).attributes('aria-checked')
 const value = (w: VueWrapper, id: string) =>
   (t(w, id).element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value
 
@@ -148,15 +153,15 @@ describe('QuestionCreatePage (M04 S2)', () => {
       'Pilih Subjek',
       'Sains',
     ])
-    expect(t(w, 'q-difficulty-1').attributes('required')).toBeDefined()
-    expect((t(w, 'q-difficulty-3').element as HTMLInputElement).checked).toBe(false)
+    expect(radio(w, 'q-difficulty', '1').attributes('role')).toBe('radio')
+    expect(checked(w, 'q-difficulty', '3')).toBe('false')
     expect(value(w, 'q-type')).toBe('mcq')
-    expect((t(w, 'q-correct-0').element as HTMLInputElement).checked).toBe(true)
+    expect(checked(w, 'q-correct-0', '0')).toBe('true')
     expect(t(w, 'q-option-0').attributes('required')).toBeDefined()
     expect(value(w, 'q-points')).toBe('1')
     expect(value(w, 'q-language')).toBe('bm')
-    expect(t(w, 'q-submit').text()).toBe('Simpan Soalan')
-    expect(t(w, 'q-cancel').attributes('href')).toBe('/admin/questions')
+    expect(t(w, 'form-submit').text()).toBe('Simpan Soalan')
+    expect(t(w, 'form-cancel').attributes('href')).toBe('/admin/questions')
     expect(w.find('[data-testid=question-form]').attributes('novalidate')).toBeUndefined()
   })
 
@@ -233,11 +238,11 @@ describe('QuestionCreatePage (M04 S2)', () => {
     const w = await render('create')
     await t(w, 'q-subject').setValue('4')
     await t(w, 'q-level').setValue('11')
-    await t(w, 'q-difficulty-3').setValue(true)
+    await radio(w, 'q-difficulty', '3').trigger('click')
     await t(w, 'q-text').setValue('Apakah ibu negara Malaysia?')
     for (const [i, text] of ['A', 'B', 'C', 'D'].entries())
       await t(w, `q-option-${i}`).setValue(text)
-    await t(w, 'q-correct-1').setValue(true)
+    await radio(w, 'q-correct-1', '1').trigger('click')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(questions.createQuestion).toHaveBeenCalledTimes(1)
@@ -271,11 +276,12 @@ describe('QuestionCreatePage (M04 S2)', () => {
     )
     const w = await render('create')
     await t(w, 'q-type').setValue('short_answer')
+    await radio(w, 'q-difficulty', '3').trigger('click')
     await t(w, 'q-text').setValue('Pendek')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/page')
-    const errors = w.findAll('[data-field-error]').map((e) => e.text())
+    const errors = w.findAll('[data-testid="field-error"]').map((e) => e.text())
     expect(errors).toEqual([
       'Teks soalan mesti sekurang-kurangnya 10 aksara.',
       'Sila masukkan jawapan betul.',
@@ -343,19 +349,18 @@ describe('QuestionEditPage (M04 S4)', () => {
     expect(w.find('[data-testid=vkb-toggle]').exists()).toBe(false)
     expect(value(w, 'q-subject')).toBe('4')
     expect(value(w, 'q-level')).toBe('11')
-    expect((t(w, 'q-difficulty-3').element as HTMLInputElement).checked).toBe(true)
+    expect(checked(w, 'q-difficulty', '3')).toBe('true')
     expect(value(w, 'q-text')).toContain('satelit buatan')
     expect(value(w, 'q-option-2')).toBe('C1')
-    expect((t(w, 'q-correct-2').element as HTMLInputElement).checked).toBe(true)
-    expect(t(w, 'q-correct-2').attributes('required')).toBeDefined()
+    expect(checked(w, 'q-correct-2', '2')).toBe('true')
     expect(value(w, 'q-language')).toBe('en')
     expect(value(w, 'q-points')).toBe('3')
     expect(value(w, 'dskp-bidang')).toBe('515')
     expect(value(w, 'dskp-sk')).toBe('2667')
     expect(value(w, 'dskp-sp')).toBe('6191')
     expect(t(w, 'dskp-tagged').text()).toBe('DSKP tagged')
-    expect(t(w, 'q-submit').text()).toBe('Kemaskini Soalan')
-    expect(t(w, 'q-cancel').attributes('href')).toBe('/admin/questions/564159')
+    expect(t(w, 'form-submit').text()).toBe('Kemaskini Soalan')
+    expect(t(w, 'form-cancel').attributes('href')).toBe('/admin/questions/564159')
   })
 
   it('"Buang tag DSKP" resets the three selects and saving posts an empty dskpSpId', async () => {

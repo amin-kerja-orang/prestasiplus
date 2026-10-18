@@ -13,12 +13,22 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsArt3D, DsDataTable, DsEmptyState, DsPage, DsStatTile, useConfirm } from '@/ds'
-import type { CardField } from '@/ds'
+import {
+  DsArt3D,
+  DsDataTable,
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsRowActions,
+  DsStatRow,
+  DsStatusBadge,
+  useConfirm,
+} from '@/ds'
+import type { CardField, RowAction, StatItem } from '@/ds'
 
 import { deleteBanner, fetchAdminBanners, type AdminBanner } from '../api/admin-media'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
-import AdminRowMenu from '../components/admin-kit/AdminRowMenu.vue'
+import { cellClass } from '../lib/table-cols'
 import { COPY, dmy, errorLines, limit50, MEDIA_ROUTES } from '../lib/admin-media/common'
 
 const flash = useFlash()
@@ -47,7 +57,7 @@ async function remove(banner: AdminBanner): Promise<void> {
   }
 }
 
-function actionsOf(banner: AdminBanner) {
+function actionsOf(banner: AdminBanner): RowAction[] {
   return [
     {
       label: 'Edit',
@@ -63,6 +73,18 @@ function actionsOf(banner: AdminBanner) {
     },
   ]
 }
+
+const statItems = computed<StatItem[]>(() => [
+  { key: 'k1', label: 'Jumlah banner', value: rows.value.length, icon: 'image', accent: 'action' },
+  { key: 'k2', label: 'Aktif', value: activeCount.value, icon: 'check-circle', accent: 'win' },
+  {
+    key: 'k3',
+    label: 'Tidak aktif',
+    value: rows.value.length - activeCount.value,
+    icon: 'pause-circle',
+    accent: 'heat',
+  },
+])
 
 interface TableRow extends Record<string, unknown> {
   id: number
@@ -91,15 +113,15 @@ const tableRows = computed<TableRow[]>(() =>
 )
 
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'no', header: '#' },
-  { accessorKey: 'title', header: 'Tajuk' },
-  { accessorKey: 'bannerType', header: 'Jenis' },
-  { accessorKey: 'targetAudience', header: 'Sasaran' },
-  { accessorKey: 'displayOrder', header: 'Susunan' },
-  { accessorKey: 'start', header: 'Mula' },
-  { accessorKey: 'end', header: 'Tamat' },
-  { id: 'active', header: 'Aktif?' },
-  { id: 'actions', header: 'Tindakan' },
+  { accessorKey: 'no', header: '#', ...cellClass('w-10') },
+  { accessorKey: 'title', header: 'Tajuk', ...cellClass('') },
+  { accessorKey: 'bannerType', header: 'Jenis', ...cellClass('w-36') },
+  { accessorKey: 'targetAudience', header: 'Sasaran', ...cellClass('w-28') },
+  { accessorKey: 'displayOrder', header: 'Susunan', ...cellClass('w-24') },
+  { accessorKey: 'start', header: 'Mula', ...cellClass('w-28') },
+  { accessorKey: 'end', header: 'Tamat', ...cellClass('w-28') },
+  { id: 'active', header: 'Aktif?', ...cellClass('w-36') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-32') },
 ]
 const cardFields: CardField[] = [
   { key: 'bannerType', label: 'Jenis' },
@@ -110,43 +132,31 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage data-testid="banners-page">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <p class="min-w-0 text-body text-muted" data-testid="banners-count">
-        Jumlah: {{ rows.length }} banner
-      </p>
+  <DsPage subtitle-testid="banners-count" data-testid="banners-page">
+    <template #subtitle>Jumlah: {{ rows.length }} banner</template>
+    <template #actions>
       <UButton
         :to="{ name: MEDIA_ROUTES.bannerCreate }"
         icon="i-ph-plus"
         label="Tambah"
-        size="md"
         class="min-h-11"
         data-testid="banners-add"
       />
-    </div>
+    </template>
 
-    <section class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-      <DsStatTile :value="rows.length" unit="Jumlah banner" icon="i-ph-image" accent="action" />
-      <DsStatTile :value="activeCount" unit="Aktif" icon="i-ph-check-circle" accent="win" />
-      <DsStatTile
-        :value="rows.length - activeCount"
-        unit="Tidak aktif"
-        icon="i-ph-pause-circle"
-        accent="heat"
-      />
-    </section>
+    <DsStatRow :items="statItems" prefix="stat" :cols="3" />
 
-    <div v-if="error" class="flex flex-col gap-4" data-testid="banners-error">
-      <AdminAlert :messages="[COPY.loadFailed]" />
-      <div><UButton label="Cuba Lagi" class="min-h-11" @click="reload()" /></div>
-    </div>
+    <DsLoadError v-if="error" :message="COPY.loadFailed" testid="banners-error" @retry="reload()" />
 
-    <UCard v-else-if="!firstLoad && rows.length === 0" data-testid="banners-empty">
+    <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="banners-empty">
       <DsEmptyState title="Tiada banner" icon="i-ph-image" />
-    </UCard>
+    </DsPanel>
 
     <DsDataTable
       v-else
+      variant="flush"
+      layout="fixed"
+      compact-cells
       :data="tableRows"
       :columns="columns"
       caption="Senarai banner"
@@ -217,19 +227,16 @@ const cardFields: CardField[] = [
         <span class="text-nowrap" data-testid="banner-end">{{ row.original.end }}</span>
       </template>
       <template #active-cell="{ row }">
-        <UBadge
-          :color="row.original.raw.isActive ? 'success' : 'neutral'"
-          variant="subtle"
-          :icon="row.original.raw.isActive ? 'i-ph-check-circle' : undefined"
-          :label="row.original.raw.isActive ? 'Aktif' : 'Tidak Aktif'"
+        <DsStatusBadge
+          :status="row.original.raw.isActive ? 'active' : 'inactive'"
           data-testid="banner-active"
         />
       </template>
       <template #actions-cell="{ row }">
-        <AdminRowMenu :actions="actionsOf(row.original.raw)" />
+        <DsRowActions :actions="actionsOf(row.original.raw)" :inline="1" />
       </template>
       <template #card-actions="{ row }">
-        <AdminRowMenu :actions="actionsOf((row as unknown as TableRow).raw)" />
+        <DsRowActions :actions="actionsOf((row as unknown as TableRow).raw)" :inline="1" />
       </template>
     </DsDataTable>
   </DsPage>

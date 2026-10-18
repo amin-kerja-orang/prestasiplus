@@ -51,6 +51,12 @@ async function mountAt(url: string) {
 
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid="${id}"]`)
 const has = (w: VueWrapper, id: string) => w.find(`[data-testid="${id}"]`).exists()
+/** The "Reset" button of the filter bar (live label, FR-M11-77). */
+const resetButton = (w: VueWrapper) =>
+  w
+    .get('[data-testid="filter-card"]')
+    .findAll('button')
+    .find((b) => b.text() === 'Reset')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -83,7 +89,7 @@ describe('S6 Analisis Item: admin empty state (E2E-M11-43)', () => {
     expect(legend).toContain('Diskriminasi: >0.3 = baik, <0 = semak semula')
     expect(t(w, 'item-empty').text()).toContain('Tiada data analisis item untuk paparan ini.')
     expect(t(w, 'item-empty').text()).toContain('Pelajar perlu membuat latihan dahulu.')
-    expect(has(w, 'filter-reset')).toBe(false)
+    expect(resetButton(w)).toBeUndefined()
     expect(has(w, 'item-table')).toBe(false)
   })
 
@@ -102,18 +108,17 @@ describe('S6 Analisis Item: admin empty state (E2E-M11-43)', () => {
     expect(router.currentRoute.value.query).toEqual({ subject_id: '1', classroom_id: '' })
     expect(api.fetchItemAnalysis).toHaveBeenLastCalledWith({ subjectId: 1 }, expect.anything())
     expect((t(w, 'filter-subject').element as HTMLSelectElement).value).toBe('1')
-    expect(has(w, 'filter-reset')).toBe(true)
+    expect(resetButton(w)).toBeDefined()
   })
 
-  it('Reset links to /guru/analisis-item and clears both filters', async () => {
+  it('Reset goes to /guru/analisis-item and clears both filters', async () => {
     const w = await mountAt('/guru/analisis-item?subject_id=1&classroom_id=')
-    const reset = t(w, 'filter-reset')
-    expect(reset.attributes('href')).toBe('/guru/analisis-item')
-    expect(reset.text()).toBe('Reset')
-    await reset.trigger('click')
+    const reset = resetButton(w)
+    expect(reset?.text()).toBe('Reset')
+    await reset?.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/guru/analisis-item')
-    expect(has(w, 'filter-reset')).toBe(false)
+    expect(resetButton(w)).toBeUndefined()
   })
 
   it('an unknown class id is passed on, reads "Semua Kelas" and the card stays empty', async () => {
@@ -121,7 +126,7 @@ describe('S6 Analisis Item: admin empty state (E2E-M11-43)', () => {
     expect(api.fetchItemAnalysis).toHaveBeenCalledWith({ classroomId: 228 }, expect.anything())
     expect((t(w, 'filter-classroom').element as HTMLSelectElement).value).toBe('')
     expect(has(w, 'item-empty')).toBe(true)
-    expect(has(w, 'filter-reset')).toBe(true)
+    expect(resetButton(w)).toBeDefined()
   })
 })
 
@@ -214,13 +219,13 @@ describe('S6 Analisis Item: teacher table (E2E-M11-44, provisional)', () => {
 })
 
 describe('S6 Analisis Item: states', () => {
-  // @provisional: the error copy is PROPOSED (no M11 copy in the SRS)
+  // @provisional: the error copy is the design-system default (no M11 copy in the SRS)
   it('@provisional shows an error message when the request fails', async () => {
     api.fetchItemAnalysis.mockRejectedValue(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }),
     )
     const w = await mountAt('/guru/analisis-item')
-    expect(w.text()).toContain('Ralat berlaku. Sila cuba lagi.')
+    expect(w.text()).toContain('Tidak dapat memuatkan data. Sila cuba semula.')
     expect(has(w, 'item-legend')).toBe(false)
   })
 })

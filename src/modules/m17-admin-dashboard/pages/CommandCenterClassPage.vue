@@ -9,21 +9,14 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDrillTable } from '@/ds'
+import { DsDrillTable, DsLoadError, DsPanel } from '@/ds'
 
 import { fetchCcClass } from '../api/command-center'
 import type { CcClassStudent, Mood } from '../api/command-center-types'
-import {
-  count,
-  dayMonthTime,
-  LOAD_ERROR_COPY,
-  MOOD,
-  type MoodInfo,
-} from '../components/command-center/cc-format'
+import { count, dayMonthTime, MOOD, type MoodInfo } from '../components/command-center/cc-format'
 import { ccPaths } from '../components/command-center/cc-paths'
 import CcAccuracyBar from '../components/command-center/CcAccuracyBar.vue'
 import CcFrame from '../components/command-center/CcFrame.vue'
-import CcPanel from '../components/command-center/CcPanel.vue'
 import { useCcPage } from '../components/command-center/use-cc-page'
 
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
@@ -36,7 +29,7 @@ const props = withDefaults(defineProps<{ classroomId: number; basePath?: string 
 const router = useRouter()
 const paths = computed(() => ccPaths(props.basePath))
 
-const { data, error, notFound } = useCcPage(
+const { data, error, notFound, reload } = useCcPage(
   (signal) => fetchCcClass(props.classroomId, { signal }),
   () => props.classroomId,
   (d) => d.class.name,
@@ -82,10 +75,10 @@ function open(userId: number) {
   <CcFrame
     v-if="!notFound"
     :back-to="teacherLink ?? paths.overview"
-    back-label="← Kembali ke Guru"
+    back-label="Kembali ke Guru"
     :crumbs="crumbs"
   >
-    <p v-if="error" class="text-body text-error" data-testid="cc-error">{{ LOAD_ERROR_COPY }}</p>
+    <DsLoadError v-if="error" testid="cc-error" @retry="reload" />
     <p
       v-else-if="!data"
       class="flex items-center gap-2 text-body text-muted"
@@ -106,7 +99,7 @@ function open(userId: number) {
         >
       </p>
 
-      <CcPanel icon="i-ph-student" :title="`Senarai Pelajar (${data.students.length})`">
+      <DsPanel icon="i-ph-student" :title="`Senarai Pelajar (${data.students.length})`">
         <div data-testid="cc-table-scroller">
           <DsDrillTable
             :data="data.students"
@@ -175,7 +168,7 @@ function open(userId: number) {
             </template>
           </DsDrillTable>
         </div>
-      </CcPanel>
+      </DsPanel>
     </template>
   </CcFrame>
 </template>

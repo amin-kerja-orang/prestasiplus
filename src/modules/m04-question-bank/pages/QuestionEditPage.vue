@@ -11,11 +11,10 @@ import { useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import { fetchQuestion, updateQuestion, type QuestionInputBody } from '../api/questions'
-import ErrorBox from '../components/ErrorBox.vue'
 import QuestionForm from '../components/QuestionForm.vue'
 import { formErrors, type FormErrors } from '../lib/question-form'
 import { questionDetailPath } from '../lib/question-list'
@@ -77,28 +76,20 @@ async function save(body: QuestionInputBody): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="question-edit-page">
-    <div class="flex min-w-0 items-center gap-3">
-      <UButton
-        :to="questionDetailPath(id)"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        aria-label="Kembali"
-        class="size-11 shrink-0 justify-center"
-        data-testid="question-back"
-      />
-      <p class="min-w-0 text-body text-muted">Kemaskini maklumat soalan #{{ id }}</p>
-    </div>
-
-    <div v-if="loadError" class="flex flex-col gap-3" data-testid="question-form-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" class="min-h-11" data-testid="question-form-retry" @click="retry">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+  <DsPage
+    :subtitle="`Kemaskini maklumat soalan #${String(id)}`"
+    data-testid="question-edit-page"
+  >
+    <template #breadcrumb>
+      <DsBackLink :to="questionDetailPath(id)" data-testid="question-back" />
+    </template>
+    <DsLoadError
+      v-if="loadError"
+      :message="LOAD_ERROR"
+      testid="question-form-error"
+      retry-testid="question-form-retry"
+      @retry="retry"
+    />
 
     <div v-else-if="!ready" class="flex flex-col gap-4" data-testid="question-form-skeleton">
       <USkeleton class="h-64 w-full" />

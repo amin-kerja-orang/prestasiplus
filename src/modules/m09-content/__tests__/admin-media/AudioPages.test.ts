@@ -210,8 +210,8 @@ function fillRequired(w: VueWrapper): Promise<void[]> {
 describe('AudioSetCreatePage (S13)', () => {
   it('renders the header, guide, "Maklumat Set" defaults and no "Batal"', async () => {
     const { wrapper: w } = await create()
-    expect(t(w, 'back-link').text()).toBe('Kembali')
-    expect(t(w, 'back-link').attributes('href')).toBe('/admin/audio-kbat')
+    expect(w.get('[data-ds=back-link]').text()).toBe('Kembali')
+    expect(w.get('[data-ds=back-link]').attributes('href')).toBe('/admin/audio-kbat')
     expect(w.text()).toContain(
       'Format fixed: 4 audio section, 30 soalan MCQ, soalan dipaparkan serentak mengikut section.',
     )
@@ -235,7 +235,7 @@ describe('AudioSetCreatePage (S13)', () => {
         .map((o) => o.text()),
     ).toEqual(['Pilih Subjek', 'Bahasa Arab', 'Bahasa Melayu', 'Matematik'])
     expect(w.text()).not.toContain('Batal')
-    expect(t(w, 'audio-submit').text()).toBe('Simpan Set Audio KBAT')
+    expect(t(w, 'form-submit').text()).toBe('Simpan Set Audio KBAT')
   })
 
   it('has 4 section cards (8/8/8/6 questions) and 30 question blocks with defaults', async () => {
@@ -250,7 +250,7 @@ describe('AudioSetCreatePage (S13)', () => {
     expect(
       w.findAll('[data-testid=section-title]').map((i) => (i.element as HTMLInputElement).value),
     ).toEqual(['Audio 1', 'Audio 2', 'Audio 3', 'Audio 4'])
-    const audio = w.get('[data-testid=section-audio]')
+    const audio = w.get('[data-testid=section-audio] input[type="file"]')
     expect(audio.attributes('accept')).toBe('.mp3,.m4a,.wav,.ogg,.aac,.mp4,audio/*')
     expect(audio.attributes('required')).toBeUndefined()
     expect(w.get('[data-testid=section-transcript]').attributes('placeholder')).toBe(
@@ -258,8 +258,8 @@ describe('AudioSetCreatePage (S13)', () => {
     )
     const blocks = w.findAll('[data-testid=question-block]')
     expect(blocks).toHaveLength(30)
-    expect(blocks[0]!.get('h3').text()).toBe('Soalan 1')
-    expect(blocks[29]!.get('h3').text()).toBe('Soalan 30')
+    expect(blocks[0]!.get('h2').text()).toBe('Soalan 1')
+    expect(blocks[29]!.get('h2').text()).toBe('Soalan 30')
     expect(blocks[0]!.text()).toContain('KBAT Audio')
     expect((blocks[0]!.get('[data-testid=q-answer]').element as HTMLSelectElement).value).toBe('A')
     expect((blocks[0]!.get('[data-testid=q-marks]').element as HTMLInputElement).value).toBe('1')

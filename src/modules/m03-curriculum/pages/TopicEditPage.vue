@@ -8,12 +8,10 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import { fetchTopic, updateTopic } from '../api/admin-curriculum'
 import ChapterContextCard from '../components/curriculum/ChapterContextCard.vue'
-import CurriculumBackLink from '../components/curriculum/CurriculumBackLink.vue'
-import ErrorBox from '../components/ErrorBox.vue'
 import TopicForm, {
   type TopicFormPayload,
   type TopicFormValues,
@@ -36,6 +34,7 @@ const {
   data: topic,
   error: topicError,
   loading: topicLoading,
+  reload: retry,
 } = useApi(
   (signal) => fetchTopic(props.id, { signal }),
   () => props.id,
@@ -93,11 +92,27 @@ async function submit(payload: TopicFormPayload): Promise<void> {
 
 <template>
   <DsPage class="max-w-3xl" data-testid="topic-edit-page">
-    <ErrorBox v-if="loadFailed" :messages="LOAD_ERROR" data-testid="curriculum-load-error" />
+    <DsLoadError
+      v-if="loadFailed"
+      :message="LOAD_ERROR"
+      testid="curriculum-load-error"
+      @retry="retry()"
+    />
     <template v-else-if="ready && topic">
-      <CurriculumBackLink :to="backTo" />
+      <DsBackLink :to="backTo" label="Kembali ke Kurikulum" data-testid="curriculum-back" />
       <ChapterContextCard :chapter="topic.chapter" />
-      <ErrorBox :messages="errors" data-testid="curriculum-form-alert" />
+      <UAlert
+        v-if="errors.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="curriculum-form-alert"
+      >
+        <template #description>
+          <p v-for="(line, i) in errors" :key="i">{{ line }}</p>
+        </template>
+      </UAlert>
       <TopicForm
         mode="edit"
         :initial="initial"

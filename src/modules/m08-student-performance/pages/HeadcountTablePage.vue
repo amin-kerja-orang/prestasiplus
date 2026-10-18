@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useClickOutside } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatusBadge } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import {
@@ -23,9 +23,6 @@ import {
 import type { DropAction, HeadcountSort } from '../api/headcount-types'
 import HeadcountConfirmModals from '../components/headcount/HeadcountConfirmModals.vue'
 import HeadcountTable from '../components/headcount/HeadcountTable.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
 import { percentOf } from '../lib/headcount/format'
 import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
 
@@ -130,25 +127,17 @@ const exportHref = computed(
 
 <template>
   <DsPage data-testid="headcount-table-page">
-    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <PageHeader :title="data.config.subject" :subtitle="subtitle" subtitle-testid="table-subtitle">
-        <template #leading>
-          <UButton
-            to="/headcount"
-            color="neutral"
-            variant="ghost"
-            size="lg"
-            icon="i-ph-arrow-left"
-            aria-label="Kembali"
-            data-testid="back-link"
-          />
+      <DsPageHeader :title="data.config.subject" :subtitle="subtitle" subtitle-testid="table-subtitle">
+        <template #breadcrumb>
+          <DsBackLink to="/headcount" label="Kembali" data-testid="back-link" />
         </template>
         <template #actions>
-          <UBadge color="success" variant="subtle" label="Active" data-testid="status-pill" />
+          <DsStatusBadge status="active" label="Active" data-testid="status-pill" />
         </template>
-      </PageHeader>
+      </DsPageHeader>
 
       <div v-if="chips" class="flex flex-wrap gap-2" data-testid="chips">
         <UBadge
@@ -197,7 +186,7 @@ const exportHref = computed(
             data-testid="action-key-in"
             @click="keyInOpen = !keyInOpen"
           />
-          <UCard v-if="keyInOpen" data-testid="key-in-menu">
+          <DsPanel v-if="keyInOpen" data-testid="key-in-menu">
             <ul class="flex flex-wrap gap-2">
               <li v-for="n in data.config.activeOtrs" :key="n">
                 <UButton
@@ -210,7 +199,7 @@ const exportHref = computed(
                 />
               </li>
             </ul>
-          </UCard>
+          </DsPanel>
         </div>
         <UButton
           :to="`/headcount/${String(id)}/edit`"
@@ -316,7 +305,7 @@ const exportHref = computed(
         />
       </div>
 
-      <UCard v-if="selected.length > 0" data-testid="selection-bar">
+      <DsPanel v-if="selected.length > 0" data-testid="selection-bar">
         <div class="flex flex-wrap items-center gap-3">
           <span class="inline-flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-check-square" class="size-5" /><span data-testid="selection-count">{{
@@ -359,7 +348,7 @@ const exportHref = computed(
             />
           </div>
         </div>
-      </UCard>
+      </DsPanel>
 
       <div data-testid="table-card">
         <HeadcountTable v-model:selected="selected" :detail="data" />
@@ -376,6 +365,9 @@ const exportHref = computed(
         @confirm-delete="confirmDelete"
       />
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

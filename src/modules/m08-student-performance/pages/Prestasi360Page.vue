@@ -7,7 +7,7 @@
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsPage, DsStatTile } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow, DsStatTile } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchStudentPerformance } from '../api/performance'
@@ -16,14 +16,13 @@ import HeadcountCards from '../components/prestasi360/HeadcountCards.vue'
 import MasteryCard from '../components/prestasi360/MasteryCard.vue'
 import SuggestionsCard from '../components/prestasi360/SuggestionsCard.vue'
 import WeakTopicsCard from '../components/prestasi360/WeakTopicsCard.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
 import { usePhIcon } from '../lib/icons'
 import { studyTime } from '../lib/analitik'
 import { grouped, pct1, plain } from '../lib/prestasi/format'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { useStatItems, type StatSpec } from '../lib/stat-items'
+
+const statItems = useStatItems()
 
 const route = useRoute()
 const router = useRouter()
@@ -50,7 +49,7 @@ const back = (): void => {
   router.back()
 }
 
-const stats = computed<StatItem[]>(() => {
+const stats = computed<StatSpec[]>(() => {
   const s = data.value?.stats
   if (!s) return []
   return [
@@ -93,26 +92,19 @@ const activity = computed(() => {
 
 <template>
   <DsPage data-testid="prestasi360-page">
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <div data-testid="hero">
-        <PageHeader
-          :title="data.user.name"
+        <DsPageHeader
+          :show-title="true" :title="data.user.name"
           subtitle="Prestasi 360 — Dashboard Individu"
           title-testid="hero-name"
         >
+          <template #breadcrumb>
+            <DsBackLink to="/prestasi/kelas" label="Kembali" data-testid="back" @click.prevent="back" />
+          </template>
           <template #leading>
-            <UButton
-              type="button"
-              color="neutral"
-              variant="ghost"
-              size="lg"
-              :icon="icon('arrow-left')"
-              aria-label="Kembali"
-              data-testid="back"
-              @click="back"
-            />
             <UAvatar :text="data.user.initial" size="xl" data-testid="avatar" />
           </template>
           <template #actions>
@@ -131,10 +123,10 @@ const activity = computed(() => {
               </p>
             </div>
           </template>
-        </PageHeader>
+        </DsPageHeader>
       </div>
 
-      <StatGrid :items="stats" />
+      <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
 
       <HeadcountCards
         v-if="data.headcount.length > 0"
@@ -145,7 +137,7 @@ const activity = computed(() => {
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
         <MasteryCard :mastery="data.mastery" />
         <div class="flex min-w-0 flex-col gap-4 md:gap-6">
-          <UCard class="min-w-0" data-testid="activity-card">
+          <DsPanel class="min-w-0" data-testid="activity-card">
             <div class="flex flex-col gap-4">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon :name="icon('fire')" class="size-5 text-primary" />Aktiviti
@@ -163,8 +155,8 @@ const activity = computed(() => {
                 </li>
               </ul>
             </div>
-          </UCard>
-          <UCard v-if="data.badges.length > 0" class="min-w-0" data-testid="badges-card">
+          </DsPanel>
+          <DsPanel v-if="data.badges.length > 0" class="min-w-0" data-testid="badges-card">
             <div class="flex flex-col gap-4">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon :name="icon('medal')" class="size-5 text-primary" />Lencana ({{
@@ -185,7 +177,7 @@ const activity = computed(() => {
                 />
               </div>
             </div>
-          </UCard>
+          </DsPanel>
         </div>
       </div>
 
@@ -196,6 +188,9 @@ const activity = computed(() => {
         <SuggestionsCard :items="data.suggestions" />
       </div>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

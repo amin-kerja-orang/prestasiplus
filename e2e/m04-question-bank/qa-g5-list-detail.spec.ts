@@ -237,9 +237,9 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     page,
     mock,
   }) => {
-    await byId(page, 'question-select').nth(0).check()
-    await byId(page, 'question-select').nth(1).check()
-    await byId(page, 'question-select').nth(2).check()
+    await page.locator('tbody [role="checkbox"]').nth(0).check()
+    await page.locator('tbody [role="checkbox"]').nth(1).check()
+    await page.locator('tbody [role="checkbox"]').nth(2).check()
     await expect(byId(page, 'questions-selected-count')).toHaveText('3')
     const opts = (await byId(page, 'questions-bulk-action').locator('option').allInnerTexts()).map(
       (s) => s.trim(),
@@ -276,8 +276,8 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     const totalBefore = Number(
       (await byId(page, 'questions-total').innerText()).replace(/[^0-9]/g, ''),
     )
-    await byId(page, 'question-select').nth(0).check()
-    await byId(page, 'question-select').nth(1).check()
+    await page.locator('tbody [role="checkbox"]').nth(0).check()
+    await page.locator('tbody [role="checkbox"]').nth(1).check()
     await byId(page, 'questions-bulk-action').selectOption('archive')
     const d = acceptNextDialog(page, { type: 'confirm' })
     await byId(page, 'questions-bulk-submit').click()
@@ -286,7 +286,7 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'question-status').nth(0)).toHaveText('Arkib')
     await expect(byId(page, 'question-status').nth(1)).toHaveText('Arkib')
 
-    await byId(page, 'question-select').nth(2).check()
+    await page.locator('tbody [role="checkbox"]').nth(2).check()
     await byId(page, 'questions-bulk-action').selectOption('delete')
     const id = (await byId(page, 'question-id').nth(2).innerText()).trim()
     const d2 = acceptNextDialog(page, { type: 'confirm' })

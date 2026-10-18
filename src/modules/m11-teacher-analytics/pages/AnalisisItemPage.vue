@@ -8,11 +8,18 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import {
+  DsEmptyState,
+  DsFilterBar,
+  DsFormField,
+  DsIcon,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+} from '@/ds'
 
 import { fetchItemAnalysis } from '../api'
 import { ITEM_COPY } from '../components/analisis-item/copy'
-import ItemFilterCard from '../components/analisis-item/ItemFilterCard.vue'
 import ItemLegend from '../components/analisis-item/ItemLegend.vue'
 import ItemTable from '../components/analisis-item/ItemTable.vue'
 import { parseId } from '../components/laporan/format'
@@ -36,6 +43,11 @@ const analysis = useApi(
 )
 
 const d = computed(() => analysis.data.value)
+
+const subjectValue = computed(() =>
+  selectedSubject.value === null ? '' : String(selectedSubject.value),
+)
+const classValue = computed(() => (selectedClass.value === null ? '' : String(selectedClass.value)))
 
 /** The selects show a value only when it is one of their options (an unknown id reads "Semua …"). */
 const selectedSubject = computed(() =>
@@ -66,17 +78,13 @@ function onChange(field: 'subject_id' | 'classroom_id', value: string): void {
     },
   })
 }
+/** FR-M11-77: Reset links to the bare page. */
+const reset = (): void => void router.push('/guru/analisis-item')
 </script>
 
 <template>
   <DsPage data-testid="analisis-item-page">
-    <UAlert
-      v-if="analysis.error.value"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning"
-      :description="ITEM_COPY.loadFailed"
-    />
+    <DsLoadError v-if="analysis.error.value" @retry="analysis.reload" />
 
     <div
       v-else-if="!d"
@@ -87,13 +95,60 @@ function onChange(field: 'subject_id' | 'classroom_id', value: string): void {
     </div>
 
     <template v-else>
-      <ItemFilterCard
-        :options="d.options"
-        :subject-id="selectedSubject"
-        :classroom-id="selectedClass"
+      <!-- FN-M11-5.1.1: each select submits on change and keeps the other; live copy "Tapis:" and "Reset". -->
+      <DsFilterBar
         :show-reset="showReset"
-        @change="onChange"
-      />
+        :active-count="showReset ? 1 : 0"
+        apply-label="Tapis"
+        :reset-label="ITEM_COPY.reset"
+        data-testid="filter-card"
+        @apply="onChange('subject_id', subjectValue)"
+        @reset="reset"
+      >
+        <p class="flex items-center gap-2 pb-3 text-label text-highlighted">
+          <DsIcon name="funnel" class="size-4" />{{ ITEM_COPY.filterLabel }}
+        </p>
+        <DsFormField
+          v-slot="{ id }"
+          native
+          :label="ITEM_COPY.subjectLabel"
+          for="filter-subject"
+          class="w-full md:w-56"
+        >
+          <DsNativeSelect
+            :id="id"
+            name="subject_id"
+            :model-value="subjectValue"
+            data-testid="filter-subject"
+            @update:model-value="onChange('subject_id', $event as string)"
+          >
+            <option value="">{{ ITEM_COPY.allSubjects }}</option>
+            <option v-for="s in d.options.subjects" :key="s.id" :value="String(s.id)">
+              {{ s.name }}
+            </option>
+          </DsNativeSelect>
+        </DsFormField>
+        <DsFormField
+          v-slot="{ id }"
+          native
+          :label="ITEM_COPY.classLabel"
+          for="filter-classroom"
+          class="w-full md:w-56"
+        >
+          <DsNativeSelect
+            :id="id"
+            name="classroom_id"
+            :model-value="classValue"
+            data-testid="filter-classroom"
+            @update:model-value="onChange('classroom_id', $event as string)"
+          >
+            <option value="">{{ ITEM_COPY.allClasses }}</option>
+            <option v-for="c in d.options.classes" :key="c.id" :value="String(c.id)">
+              {{ c.name }}
+            </option>
+          </DsNativeSelect>
+        </DsFormField>
+      </DsFilterBar>
       <ItemLegend />
       <div v-if="d.rows.length === 0" data-testid="item-empty">
         <DsEmptyState

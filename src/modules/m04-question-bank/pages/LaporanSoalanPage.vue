@@ -12,12 +12,11 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage, DsPanel, DsStatTile } from '@/ds'
+import { DsEmptyState, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
-import ErrorBox from '../components/ErrorBox.vue'
-import { fetchMyReports, type ReportDisplayStatus } from '../api/reports'
-import { DISPLAY_STATUS_LABEL } from '../lib/report-reasons'
+import { fetchMyReports } from '../api/reports'
+import { DISPLAY_STATUS_DS, DISPLAY_STATUS_LABEL } from '../lib/report-reasons'
 import { LOAD_ERROR } from '../lib/ui-errors'
 
 const { data, error, reload } = useApi((signal) => fetchMyReports({ signal }))
@@ -27,62 +26,50 @@ const counts = computed(() => data.value?.meta.counts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
 
 const COUNTERS = [
-  { key: 'all', label: 'Jumlah', icon: 'i-ph-stack', accent: 'action' },
-  { key: 'pending', label: 'Menunggu', icon: 'i-ph-hourglass', accent: 'trial' },
-  { key: 'reviewed', label: 'Disemak', icon: 'i-ph-eye', accent: 'friend' },
-  { key: 'fixed', label: 'Diperbaiki', icon: 'i-ph-check-circle', accent: 'win' },
-  { key: 'dismissed', label: 'Ditolak', icon: 'i-ph-x-circle', accent: 'heat' },
+  { key: 'all', label: 'Jumlah', icon: 'stack', accent: 'action' },
+  { key: 'pending', label: 'Menunggu', icon: 'hourglass', accent: 'trial' },
+  { key: 'reviewed', label: 'Disemak', icon: 'eye', accent: 'friend' },
+  { key: 'fixed', label: 'Diperbaiki', icon: 'check-circle', accent: 'win' },
+  { key: 'dismissed', label: 'Ditolak', icon: 'x-circle', accent: 'heat' },
 ] as const
 
-const STATUS_COLOR: Record<
-  ReportDisplayStatus,
-  'warning' | 'info' | 'success' | 'error' | 'neutral'
-> = {
-  pending: 'warning',
-  reviewed: 'info',
-  fixed: 'success',
-  removed: 'error',
-  dismissed: 'neutral',
-}
+const counters = computed<StatItem[]>(() =>
+  COUNTERS.map((c) => ({
+    key: c.key,
+    label: c.label,
+    value: counts.value?.[c.key] ?? 0,
+    icon: c.icon,
+    accent: c.accent,
+  })),
+)
+
 </script>
 
 <template>
   <DsPage data-testid="my-reports-page">
-    <section
-      class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5"
+    <DsStatRow
+      :items="counters"
+      :loading="!counts"
+      prefix="my-reports-count"
       data-testid="my-reports-counters"
-    >
-      <template v-if="counts">
-        <DsStatTile
-          v-for="c in COUNTERS"
-          :key="c.key"
-          :value="counts[c.key]"
-          :unit="c.label"
-          :icon="c.icon"
-          :accent="c.accent"
-          :data-testid="`my-reports-count-${c.key}`"
-        />
-      </template>
-      <USkeleton v-for="n in COUNTERS" v-else :key="n.key" class="h-24 w-full" />
-    </section>
+    />
 
-    <div v-if="error" class="flex flex-col gap-3" data-testid="my-reports-error">
-      <ErrorBox :messages="LOAD_ERROR" />
-      <div>
-        <UButton type="button" data-testid="my-reports-retry" @click="reload()">
-          Cuba Semula
-        </UButton>
-      </div>
-    </div>
+    <DsLoadError
+      v-if="error"
+      :message="LOAD_ERROR"
+      testid="my-reports-error"
+      retry-testid="my-reports-retry"
+      @retry="reload()"
+    />
 
     <USkeleton v-else-if="firstLoad" class="h-40 w-full" data-testid="my-reports-skeleton" />
 
     <DsPanel v-else-if="rows.length === 0" data-testid="my-reports-empty">
-      <div class="flex flex-col items-center gap-2 p-8 text-center">
-        <div class="text-title" aria-hidden="true">📋</div>
-        <h3 class="text-subheading text-highlighted">Tiada Laporan</h3>
-        <p class="text-body text-muted">Anda belum menghantar sebarang laporan soalan.</p>
-      </div>
+      <DsEmptyState
+        title="Tiada Laporan"
+        description="Anda belum menghantar sebarang laporan soalan."
+        icon="clipboard-text"
+      />
     </DsPanel>
 
     <ul v-else class="grid grid-cols-1 gap-3 xl:grid-cols-2" data-testid="my-reports-list">
@@ -100,9 +87,8 @@ const STATUS_COLOR: Record<
                   r.questionId
                 }}
               </h3>
-              <UBadge
-                :color="STATUS_COLOR[r.displayStatus]"
-                variant="subtle"
+              <DsStatusBadge
+                :status="DISPLAY_STATUS_DS[r.displayStatus]"
                 :label="DISPLAY_STATUS_LABEL[r.displayStatus]"
                 data-testid="my-report-status"
               />
@@ -120,15 +106,15 @@ const STATUS_COLOR: Record<
                 data-testid="my-report-reason"
               />
             </div>
-            <div v-if="r.adminNotes" class="rounded-chip bg-elevated p-3" data-testid="my-report-notes">
-              <p class="flex items-center gap-2 text-label text-highlighted">
-                <UIcon name="i-ph-note" class="size-4" aria-hidden="true" />
-                Status tindakan admin:
-              </p>
-              <p class="mt-1 text-body break-words whitespace-pre-line text-default">
-                {{ r.adminNotes }}
-              </p>
-            </div>
+            <UAlert
+              v-if="r.adminNotes"
+              color="neutral"
+              variant="subtle"
+              icon="i-ph-note"
+              title="Status tindakan admin:"
+              :description="r.adminNotes"
+              data-testid="my-report-notes"
+            />
           </div>
         </DsPanel>
       </li>

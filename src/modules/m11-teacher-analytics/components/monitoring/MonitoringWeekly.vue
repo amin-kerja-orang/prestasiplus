@@ -7,9 +7,9 @@
  * rows; cards below md.
  */
 import type { TableColumn } from '@nuxt/ui'
-import { computed, h } from 'vue'
+import { computed, h, ref } from 'vue'
 
-import { DsPagedTable } from '@/ds'
+import { DsDataTable } from '@/ds'
 
 import type { WeeklyCellClass, WeeklyRow } from '../../api/types'
 import { count, type UiColor } from './monitoring-format'
@@ -20,6 +20,10 @@ const props = defineProps<{
   rows: readonly WeeklyRow[]
   paths: MonitoringPaths
 }>()
+
+/** Paged at 20 rows (FN-M11-3.6.1). */
+const pageSize = ref(20)
+const PAGE_SIZES = [10, 20, 50]
 
 const CELL: Record<WeeklyCellClass, UiColor> = {
   zero: 'neutral',
@@ -62,7 +66,15 @@ const columns = computed<TableColumn<Row>[]>(() => [
       </p>
     </div>
 
-    <DsPagedTable dense :data="data" :columns="columns" caption="Tracking mingguan">
+    <DsDataTable
+      v-model:page-size="pageSize"
+      variant="bare"
+      density="tight"
+      :page-size-options="PAGE_SIZES"
+      :data="data"
+      :columns="columns"
+      caption="Tracking mingguan"
+    >
       <template #school-cell="{ row }">
         <div class="flex max-w-56 min-w-36 flex-col gap-1" data-testid="mon-weekly-row">
           <RouterLink
@@ -161,7 +173,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
           </ul>
         </div>
       </template>
-    </DsPagedTable>
+    </DsDataTable>
 
     <p class="flex flex-wrap gap-x-4 gap-y-1 text-body text-muted" data-testid="mon-week-footer">
       <span v-for="w in weeks" :key="w.k"

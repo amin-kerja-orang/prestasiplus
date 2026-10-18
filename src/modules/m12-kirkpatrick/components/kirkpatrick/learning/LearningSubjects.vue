@@ -4,8 +4,10 @@
  * accuracy descending (the API order): name, progress bar with the 1-decimal label, status badge and
  * "{n} soalan". Rows have no action (DV-M12-05). Status is carried by the badge word, not colour alone.
  */
+import { DsPanel } from '@/ds'
+
 import type { Learning, SubjectStatus } from '../../../api/types'
-import { KirkpatrickPanel, pct1, plain, type KirkColor } from '../common'
+import { pct1, plain, type KirkColor } from '../common'
 
 defineProps<{ subjects: Learning['subjects'] }>()
 
@@ -17,7 +19,7 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
 </script>
 
 <template>
-  <KirkpatrickPanel title="Prestasi Mengikut Subjek" icon="i-ph-book" data-testid="kirk-subjects">
+  <DsPanel title="Prestasi Mengikut Subjek" icon="i-ph-book" data-testid="kirk-subjects">
     <ul class="flex flex-col gap-3">
       <li
         v-for="s in subjects"
@@ -61,5 +63,5 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
         </div>
       </li>
     </ul>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>

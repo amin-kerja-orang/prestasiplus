@@ -6,10 +6,12 @@
  */
 import { computed } from 'vue'
 
+import { DsPanel } from '@/ds'
+
 import { formatPercent } from '@/lib/number'
 
 import type { Comparison, ComparisonPanel } from '../../../api/types'
-import { count, dateEn, KirkpatrickPanel, pct, plain } from '../common'
+import { count, dateEn, pct, plain } from '../common'
 
 const props = defineProps<{ comparison: Comparison }>()
 
@@ -53,7 +55,7 @@ const deltas = computed(() => {
 </script>
 
 <template>
-  <KirkpatrickPanel
+  <DsPanel
     title="Perbandingan Sebelum & Selepas"
     icon="i-ph-arrows-left-right"
     data-testid="kirk-comparison"
@@ -128,5 +130,5 @@ const deltas = computed(() => {
         </template>
       </UAlert>
     </div>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>

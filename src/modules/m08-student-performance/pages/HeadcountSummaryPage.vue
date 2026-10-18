@@ -8,16 +8,15 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { DsChart, DsPage } from '@/ds'
+import { DsBackLink, DsChart, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadHeadcountCsv, fetchHeadcountSummary } from '../api/headcount'
-import PageHeader from '../components/shared/PageHeader.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
 import { DASH, num1 } from '../lib/headcount/format'
 import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
+import { useStatItems, type StatSpec } from '../lib/stat-items'
+
+const statItems = useStatItems()
 
 const route = useRoute()
 const id = computed(() => Number(route.params.id))
@@ -46,7 +45,7 @@ const subtitle = computed(() => {
   const c = data.value?.config
   return c ? `${c.subject} · ${c.className} · ${c.levelName} · ${String(c.year)}` : ''
 })
-const tiles = computed<StatItem[]>(() => {
+const tiles = computed<StatSpec[]>(() => {
   const d = data.value
   if (!d) return []
   return [
@@ -81,26 +80,18 @@ const series = computed(() => {
 
 <template>
   <DsPage data-testid="headcount-summary-page">
-    <PageLoadError v-if="isLoadError(error)" @retry="reload()" />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <PageHeader title="Ringkasan Kelas" :subtitle="subtitle" subtitle-testid="summary-subtitle">
-        <template #leading>
-          <UButton
-            :to="`/headcount/${String(data.config.id)}`"
-            color="neutral"
-            variant="ghost"
-            size="lg"
-            icon="i-ph-arrow-left"
-            aria-label="Kembali"
-            data-testid="back-link"
-          />
+      <DsPageHeader title="Ringkasan Kelas" :subtitle="subtitle" subtitle-testid="summary-subtitle">
+        <template #breadcrumb>
+          <DsBackLink :to="`/headcount/${String(data.config.id)}`" label="Kembali" data-testid="back-link" />
         </template>
-      </PageHeader>
+      </DsPageHeader>
 
-      <StatGrid :items="tiles" prefix="card" />
+      <DsStatRow :items="statItems(tiles)" data-testid="stat-cards" :cols="4" prefix="card" />
 
-      <UCard data-testid="distribution">
+      <DsPanel data-testid="distribution">
         <div class="flex flex-col gap-4">
           <DsChart
             type="bar"
@@ -130,7 +121,7 @@ const series = computed(() => {
             </li>
           </ul>
         </div>
-      </UCard>
+      </DsPanel>
 
       <UAlert
         v-if="actionError"
@@ -162,6 +153,9 @@ const series = computed(() => {
         />
       </div>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

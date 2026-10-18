@@ -3,7 +3,7 @@ import { type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import KirkpatrickReactionPage from '../../../pages/KirkpatrickReactionPage.vue'
-import { all, has, mountPage, reaction, squash, t } from '../fixtures'
+import { has, mountPage, reaction, squash, t, tiles } from '../fixtures'
 
 const api = vi.hoisted(() => ({ fetchKirkpatrickReaction: vi.fn() }))
 vi.mock('../../../api', () => api)
@@ -33,13 +33,13 @@ afterEach(() => {
 describe('S2 T1 Reaksi (AC-M12-10.1, 10.2, 01.3)', () => {
   it('shows the four cards and nothing else', async () => {
     const w = await open()
-    expect(all(w, 'kirk-stat-label').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.label)).toEqual([
       'NPS Pelajar',
       'NPS Guru',
       'NPS Admin',
       'Kepuasan Purata',
     ])
-    expect(all(w, 'kirk-stat-value').map((e) => e.text())).toEqual([
+    expect(tiles(w).map((x) => x.value)).toEqual([
       '8.4/10',
       '6.5/10',
       '9.6/10',
@@ -80,10 +80,10 @@ describe('S2 T1 Reaksi (AC-M12-10.1, 10.2, 01.3)', () => {
     expect(api.fetchKirkpatrickReaction).toHaveBeenCalledWith({ signal: expect.anything() })
   })
 
-  it('grid is 2 columns below lg and 4 from lg', async () => {
+  it('grid is 2 columns, 3 from md and 4 from xl', async () => {
     const w = await open()
     expect(t(w, 'kirk-reaction-cards').classes()).toEqual(
-      expect.arrayContaining(['grid-cols-2', 'lg:grid-cols-4']),
+      expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3', 'xl:grid-cols-4']),
     )
   })
 })

@@ -4,15 +4,15 @@
  * (warning below 60, success otherwise; DV-M12-02) and the "Kesimpulan ALESA:" box. The
  * difference is 100+ minus 1-20, one decimal, signed.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+
+import { DsDataTable, DsPanel } from '@/ds'
 
 import { formatNumber } from '@/lib/number'
 
 import type { Chain } from '../../../api/types'
-import KirkpatrickPanel from '../common/KirkpatrickPanel.vue'
 import { pct, plain } from '../common/kirkpatrick-format'
-import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{
   correlation: Chain['correlation']
@@ -56,16 +56,23 @@ const cardFields = [
   { key: 'students', label: 'Bil. Pelajar' },
   { key: 'accuracy', label: 'Purata Ketepatan' },
 ]
+
+/** Paged at 20 rows. */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(20)
 </script>
 
 <template>
-  <KirkpatrickPanel
+  <DsPanel
     title="Analisis Korelasi: Penggunaan → Pencapaian"
     icon="i-ph-chart-line-up"
     data-testid="chain-correlation"
   >
     <div class="flex flex-col gap-4">
-      <KirkpatrickTable
+      <DsDataTable
+        v-model:page-size="pageSize"
+        variant="bare"
+        :page-size-options="PAGE_SIZES"
         :data="rows"
         :columns="columns"
         caption="Analisis korelasi penggunaan dan pencapaian"
@@ -86,7 +93,7 @@ const cardFields = [
             data-testid="corr-bar"
           />
         </template>
-      </KirkpatrickTable>
+      </DsDataTable>
       <UAlert color="primary" variant="soft" icon="i-ph-sparkle" data-testid="corr-conclusion">
         <template #description>
           <strong>Kesimpulan ALESA:</strong> Pelajar yang menjawab 100+ soalan mencapai ketepatan
@@ -96,5 +103,5 @@ const cardFields = [
         </template>
       </UAlert>
     </div>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>

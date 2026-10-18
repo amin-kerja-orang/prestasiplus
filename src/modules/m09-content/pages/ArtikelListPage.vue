@@ -15,7 +15,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useSession } from '@/composables'
-import { DsArt3D, DsEmptyState, DsPage } from '@/ds'
+import { DsArt3D, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 
 import {
   fetchArticles,
@@ -51,7 +51,7 @@ const filtered = computed(() => applied.value.search !== '' || applied.value.cat
 
 const queryDeps = [() => route.query.search, () => route.query.category, () => route.query.page]
 
-const { data, error } = useApi(
+const { data, error, reload } = useApi(
   (signal) =>
     fetchArticles(
       {
@@ -120,13 +120,7 @@ function goToPage(page: number): void {
       </p>
     </header>
 
-    <UAlert
-      v-if="error"
-      color="error"
-      variant="soft"
-      icon="i-ph-warning-duotone"
-      :description="ARTIKEL_COPY.loadFailed"
-    />
+    <DsLoadError v-if="error" :message="ARTIKEL_COPY.loadFailed" @retry="reload()" />
 
     <!-- Hot section (FR-M09-28): only without search or category. -->
     <section v-if="hot.length > 0" class="flex flex-col gap-4" data-testid="artikel-hot">

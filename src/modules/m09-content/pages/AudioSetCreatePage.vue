@@ -15,14 +15,9 @@ import { computed, nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsFormBar, DsFormField, DsFormSection, DsLoadError, DsNativeSelect, DsPage } from '@/ds'
 
 import { createAudioSet, fetchLevelOptions, fetchSubjectOptions } from '../api/admin-media'
-import AdminBackLink from '../components/admin-articles-notes/AdminBackLink.vue'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
-import AdminField from '../components/admin-kit/AdminField.vue'
-import AdminSection from '../components/admin-kit/AdminSection.vue'
-import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
 import AudioQuestionBlock from '../components/admin-media/AudioQuestionBlock.vue'
 import AudioSectionCard from '../components/admin-media/AudioSectionCard.vue'
 import AudioTemplateLink from '../components/admin-media/AudioTemplateLink.vue'
@@ -43,9 +38,21 @@ const flash = useFlash()
 
 const form = reactive(emptyAudioSetForm())
 
-const { data: levels, error: levelsError } = useApi((signal) => fetchLevelOptions({ signal }))
-const { data: subjects, error: subjectsError } = useApi((signal) => fetchSubjectOptions({ signal }))
+const {
+  data: levels,
+  error: levelsError,
+  reload: reloadLevels,
+} = useApi((signal) => fetchLevelOptions({ signal }))
+const {
+  data: subjects,
+  error: subjectsError,
+  reload: reloadSubjects,
+} = useApi((signal) => fetchSubjectOptions({ signal }))
 const subjectOptions = computed(() => sortByName(subjects.value?.data ?? []))
+function retryLookups(): void {
+  void reloadLevels()
+  void reloadSubjects()
+}
 const lookupFailed = computed(() => levelsError.value !== null || subjectsError.value !== null)
 
 /** The state objects of the section and question children (they edit them in place). */
@@ -90,14 +97,10 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="audio-create-page">
-    <div class="flex flex-col gap-2">
-      <AdminBackLink :to="AUDIO_PATH" label="Kembali" />
-      <p class="text-body text-muted">
-        Format fixed: 4 audio section, 30 soalan MCQ, soalan dipaparkan serentak mengikut section.
-      </p>
-    </div>
-
+  <DsPage :back-to="AUDIO_PATH" back-label="Kembali" data-testid="audio-create-page">
+    <template #subtitle>
+      Format fixed: 4 audio section, 30 soalan MCQ, soalan dipaparkan serentak mengikut section.
+    </template>
     <UAlert
       color="info"
       variant="subtle"
@@ -116,7 +119,12 @@ async function submit(): Promise<void> {
       </template>
     </UAlert>
 
-    <AdminAlert v-if="lookupFailed" :messages="[COPY.loadFailed]" data-testid="audio-load-error" />
+    <DsLoadError
+      v-if="lookupFailed"
+      :message="COPY.loadFailed"
+      testid="audio-load-error"
+      @retry="retryLookups"
+    />
 
     <form
       v-else
@@ -127,11 +135,22 @@ async function submit(): Promise<void> {
       @submit.prevent="submit"
     >
       <div ref="alertRef">
-        <AdminAlert :messages="boxMessages" data-testid="audio-form-alert" />
+        <UAlert
+          v-if="boxMessages.length > 0"
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          role="alert"
+          data-testid="audio-form-alert"
+        >
+          <template #description>
+            <p v-for="m in boxMessages" :key="m">{{ m }}</p>
+          </template>
+        </UAlert>
       </div>
 
-      <AdminSection title="Maklumat Set" icon="i-ph-list-checks" accent="action">
-        <AdminField for="set-title" label="Tajuk Set" :error="errors.title">
+      <DsFormSection title="Maklumat Set" icon="i-ph-list-checks" accent="action">
+        <DsFormField native for="set-title" label="Tajuk Set" :error="errors.title">
           <UInput
             id="set-title"
             v-model="form.title"
@@ -144,10 +163,10 @@ async function submit(): Promise<void> {
             :color="invalid('title') ? 'error' : undefined"
             data-testid="set-title"
           />
-        </AdminField>
+        </DsFormField>
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <AdminField for="set-level" label="Tahap" :error="errors.educationLevelId">
-            <NativeSelect
+          <DsFormField native for="set-level" label="Tahap" :error="errors.educationLevelId">
+            <DsNativeSelect
               id="set-level"
               v-model="form.educationLevelId"
               name="education_level_id"
@@ -159,10 +178,10 @@ async function submit(): Promise<void> {
               <option v-for="level in levels?.data ?? []" :key="level.id" :value="level.id">
                 {{ level.name }}
               </option>
-            </NativeSelect>
-          </AdminField>
-          <AdminField for="set-subject" label="Subjek" :error="errors.subjectId">
-            <NativeSelect
+            </DsNativeSelect>
+          </DsFormField>
+          <DsFormField native for="set-subject" label="Subjek" :error="errors.subjectId">
+            <DsNativeSelect
               id="set-subject"
               v-model="form.subjectId"
               name="subject_id"
@@ -174,10 +193,10 @@ async function submit(): Promise<void> {
               <option v-for="subject in subjectOptions" :key="subject.id" :value="subject.id">
                 {{ subject.name }}
               </option>
-            </NativeSelect>
-          </AdminField>
-          <AdminField for="set-status" label="Status">
-            <NativeSelect
+            </DsNativeSelect>
+          </DsFormField>
+          <DsFormField native for="set-status" label="Status">
+            <DsNativeSelect
               id="set-status"
               v-model="form.status"
               name="status"
@@ -186,9 +205,9 @@ async function submit(): Promise<void> {
               <option v-for="s in CREATE_STATUS_OPTIONS" :key="s.value" :value="s.value">
                 {{ s.label }}
               </option>
-            </NativeSelect>
-          </AdminField>
-          <AdminField for="set-source" label="Sumber / Penyumbang">
+            </DsNativeSelect>
+          </DsFormField>
+          <DsFormField native for="set-source" label="Sumber / Penyumbang">
             <UInput
               id="set-source"
               v-model="form.sourceLabel"
@@ -199,9 +218,9 @@ async function submit(): Promise<void> {
               class="w-full"
               data-testid="set-source"
             />
-          </AdminField>
+          </DsFormField>
         </div>
-        <AdminField for="set-instructions" label="Arahan Umum">
+        <DsFormField native for="set-instructions" label="Arahan Umum">
           <UTextarea
             id="set-instructions"
             v-model="form.instructions"
@@ -212,8 +231,8 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="set-instructions"
           />
-        </AdminField>
-      </AdminSection>
+        </DsFormField>
+      </DsFormSection>
 
       <template v-for="(range, index) in SECTION_RANGES" :key="range.no">
         <AudioSectionCard
@@ -230,20 +249,7 @@ async function submit(): Promise<void> {
         />
       </template>
 
-      <UCard class="sticky bottom-0" :ui="{ body: 'p-4 sm:p-6' }">
-        <div class="flex justify-end">
-          <UButton
-            type="submit"
-            icon="i-ph-floppy-disk"
-            label="Simpan Set Audio KBAT"
-            size="md"
-            class="min-h-11"
-            :loading="saving"
-            :disabled="saving"
-            data-testid="audio-submit"
-          />
-        </div>
-      </UCard>
+      <DsFormBar submit-label="Simpan Set Audio KBAT" :show-cancel="false" :saving="saving" />
     </form>
   </DsPage>
 </template>

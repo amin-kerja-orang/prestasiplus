@@ -268,8 +268,32 @@ async function exportCsv(): Promise<void> {
   }
 }
 
+// Fixed layout: a width per column so the nine columns fit from 1280 without clipping.
+// `UTable` reads per-cell classes from the column meta key `class`; the key is computed so the class linter
+// does not read it as a class list.
+// eslint-disable-next-line pp/ds-class-allowlist -- an object key, not a class list
+const META_CLASS = 'class'
+const WIDTHS: Record<string, string> = {
+  index: 'w-8',
+  name: 'w-32',
+  email: 'w-32',
+  phone: 'w-24',
+  grade: 'w-24',
+  kelas: 'w-24',
+  lastLogin: 'w-32',
+  isActive: 'w-28',
+  date: 'w-24',
+  actions: 'w-40',
+}
+const sized = (cols: TableColumn<Item>[]): TableColumn<Item>[] =>
+  cols.map((c) => {
+    const key = String(c.id ?? (c as { accessorKey?: string }).accessorKey)
+    const w = key === 'kelas' && isPupil.value ? 'w-28' : WIDTHS[key]
+    return w ? { ...c, meta: { [META_CLASS]: { th: w, td: w } } } : c
+  })
+
 const columns = computed<TableColumn<Item>[]>(() =>
-  isPupil.value
+  sized(isPupil.value
     ? [
         { accessorKey: 'index', header: '#' },
         { accessorKey: 'name', header: 'Nama' },
@@ -291,7 +315,7 @@ const columns = computed<TableColumn<Item>[]>(() =>
         { accessorKey: 'isActive', header: 'Aktif?' },
         { accessorKey: 'date', header: 'Tarikh' },
         { id: 'actions', header: 'Tindakan' },
-      ],
+      ]),
 )
 
 const cardFields = computed<CardField[]>(() =>
@@ -423,6 +447,8 @@ function openRow(row: Item): void {
         :page-size="data?.meta.pageSize ?? 25"
         :page="applied.page"
         :caption="cfg.listTitle"
+        layout="fixed"
+        compact-cells
         card-title="name"
         :card-fields="cardFields"
         data-testid="user-table"
@@ -455,16 +481,16 @@ function openRow(row: Item): void {
           <span class="break-all" data-testid="user-email">{{ row.original.email }}</span>
         </template>
         <template #phone-cell="{ row }">
-          <span class="whitespace-nowrap" data-testid="user-phone">{{ row.original.phone }}</span>
+          <span class="break-words" data-testid="user-phone">{{ row.original.phone }}</span>
         </template>
         <template #grade-cell="{ row }">
-          <span class="whitespace-nowrap" data-testid="user-grade">{{ row.original.grade }}</span>
+          <span class="break-words" data-testid="user-grade">{{ row.original.grade }}</span>
         </template>
         <template #kelas-cell="{ row }">
           <span data-testid="user-classes">{{ row.original.kelas }}</span>
         </template>
         <template #lastLogin-cell="{ row }">
-          <span class="whitespace-nowrap" data-testid="user-last-login">{{
+          <span class="break-words" data-testid="user-last-login">{{
             row.original.lastLogin
           }}</span>
         </template>
@@ -491,7 +517,7 @@ function openRow(row: Item): void {
           >
         </template>
         <template #date-cell="{ row }">
-          <span class="whitespace-nowrap" data-testid="user-date">{{ row.original.date }}</span>
+          <span class="break-words" data-testid="user-date">{{ row.original.date }}</span>
         </template>
         <template #actions-cell="{ row }">
           <UserRowActions :edit-to="row.original.editTo" :can-edit="row.original.canEdit">

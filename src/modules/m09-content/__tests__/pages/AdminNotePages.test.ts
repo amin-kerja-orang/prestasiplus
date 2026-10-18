@@ -205,8 +205,9 @@ describe('AdminNoteListPage (M09 S5)', () => {
   it('links the row actions and confirms before deleting', async () => {
     const w = await mountAt(AdminNoteListPage, '/admin/notes')
     const items = await openRowMenu(w, 0)
+    expect(menuItem(items, 'Padam')).toBeDefined()
+    expect(w.find('a[href="/admin/notes/1/edit"]').exists()).toBe(true)
     expect(menuItem(items, 'Lihat')?.getAttribute('href')).toBe('/admin/notes/1')
-    expect(menuItem(items, 'Edit')?.getAttribute('href')).toBe('/admin/notes/1/edit')
 
     confirmSpy.mockReturnValue(false)
     await chooseRowAction(w, 0, 'Padam')
@@ -235,7 +236,7 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
   it('create: shows the form (not a 500 page) with required fields and options', async () => {
     const w = await mountAt(AdminNoteFormPage, '/form', { mode: 'create' })
     expect(w.text()).not.toContain('Ralat Pelayan')
-    expect(t(w, 'back-link').attributes('href')).toBe('/admin/notes')
+    expect(w.get('[data-ds=back-link]').attributes('href')).toBe('/admin/notes')
     expect(el<HTMLInputElement>(w, 'note-title').required).toBe(true)
     expect(el<HTMLTextAreaElement>(w, 'note-content').required).toBe(true)
     expect(el<HTMLTextAreaElement>(w, 'note-content').rows).toBe(15)
@@ -273,7 +274,7 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
     await t(w, 'note-subject').setValue('sains')
     await t(w, 'note-type').setValue('RINGKASAN')
     await t(w, 'note-grade').setValue('DARJAH_3')
-    await t(w, 'note-published').setValue(true)
+    await t(w, 'note-published').trigger('click')
     await t(w, 'admin-note-form').trigger('submit')
     await flushPromises()
     expect(api.createAdminNote).toHaveBeenCalledWith({

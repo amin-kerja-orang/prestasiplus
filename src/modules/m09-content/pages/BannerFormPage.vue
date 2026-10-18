@@ -16,16 +16,18 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsArt3D, DsPage } from '@/ds'
+import {
+  DsArt3D,
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+} from '@/ds'
 
 import { createBanner, fetchAdminBanner, updateBanner } from '../api/admin-media'
-import AdminBackLink from '../components/admin-articles-notes/AdminBackLink.vue'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
-import AdminField from '../components/admin-kit/AdminField.vue'
-import AdminFormBar from '../components/admin-kit/AdminFormBar.vue'
-import AdminSection from '../components/admin-kit/AdminSection.vue'
-import AdminSwitch from '../components/admin-kit/AdminSwitch.vue'
-import NativeSelect from '../components/admin-kit/native/NativeSelect.vue'
 import {
   AUDIENCE_OPTIONS,
   BANNER_TYPE_OPTIONS,
@@ -58,7 +60,11 @@ const linkExtra = ref<SelectOption | null>(null)
 const audienceExtra = ref<SelectOption | null>(null)
 
 // S11: GET /api/admin/banners/:id pre-fills the form.
-const { data: loaded, error: loadError } = useApi(
+const {
+  data: loaded,
+  error: loadError,
+  reload,
+} = useApi(
   (signal) => fetchAdminBanner(props.id, { signal }),
   () => props.id,
   { immediate: props.mode === 'edit' },
@@ -158,16 +164,19 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage data-testid="banner-form-page">
-    <AdminBackLink :to="BANNERS_PATH" />
+  <DsPage :back-to="BANNERS_PATH" back-label="Kembali ke Senarai" data-testid="banner-form-page">
+    <DsLoadError
+      v-if="failed"
+      :message="COPY.loadFailed"
+      testid="banner-load-error"
+      @retry="reload()"
+    />
 
-    <AdminAlert v-if="failed" :messages="[COPY.loadFailed]" data-testid="banner-load-error" />
-
-    <UCard v-else-if="!ready" data-testid="banner-form-skeleton">
+    <DsPanel v-else-if="!ready" data-testid="banner-form-skeleton">
       <div class="flex flex-col gap-6">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
       </div>
-    </UCard>
+    </DsPanel>
 
     <form
       v-else
@@ -176,12 +185,29 @@ async function submit(): Promise<void> {
       data-testid="banner-form"
       @submit.prevent="submit"
     >
-      <AdminAlert :messages="boxMessages" data-testid="banner-form-alert" />
+      <UAlert
+        v-if="boxMessages.length > 0"
+        color="error"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        role="alert"
+        data-testid="banner-form-alert"
+      >
+        <template #description>
+          <p v-for="m in boxMessages" :key="m">{{ m }}</p>
+        </template>
+      </UAlert>
 
-      <AdminSection title="Maklumat Banner" icon="i-ph-image" accent="action">
+      <DsFormSection title="Maklumat Banner" icon="i-ph-image" accent="action">
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
-            <AdminField for="banner-title" label="Tajuk Banner" required :error="errors.title">
+            <DsFormField
+              native
+              for="banner-title"
+              label="Tajuk Banner"
+              required
+              :error="errors.title"
+            >
               <UInput
                 id="banner-title"
                 v-model="form.title"
@@ -194,9 +220,14 @@ async function submit(): Promise<void> {
                 :color="invalid('title') ? 'error' : undefined"
                 data-testid="banner-title"
               />
-            </AdminField>
+            </DsFormField>
 
-            <AdminField for="banner-description" label="Penerangan" :error="errors.description">
+            <DsFormField
+              native
+              for="banner-description"
+              label="Penerangan"
+              :error="errors.description"
+            >
               <UTextarea
                 id="banner-description"
                 v-model="form.description"
@@ -208,9 +239,10 @@ async function submit(): Promise<void> {
                 :color="invalid('description') ? 'error' : undefined"
                 data-testid="banner-description"
               />
-            </AdminField>
+            </DsFormField>
 
-            <AdminField
+            <DsFormField
+              native
               for="banner-image"
               label="URL Gambar"
               hint="Masukkan URL gambar banner"
@@ -227,7 +259,7 @@ async function submit(): Promise<void> {
                 :color="invalid('imageUrl') ? 'error' : undefined"
                 data-testid="banner-image-url"
               />
-            </AdminField>
+            </DsFormField>
           </div>
 
           <div class="flex min-w-0 flex-col gap-2">
@@ -249,12 +281,18 @@ async function submit(): Promise<void> {
             </div>
           </div>
         </div>
-      </AdminSection>
+      </DsFormSection>
 
-      <AdminSection title="Pautan & Sasaran" icon="i-ph-link" accent="friend">
+      <DsFormSection title="Pautan & Sasaran" icon="i-ph-link" accent="friend">
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <AdminField for="banner-type" label="Jenis Banner" required :error="errors.bannerType">
-            <NativeSelect
+          <DsFormField
+            native
+            for="banner-type"
+            label="Jenis Banner"
+            required
+            :error="errors.bannerType"
+          >
+            <DsNativeSelect
               id="banner-type"
               v-model="form.bannerType"
               name="banner_type"
@@ -267,16 +305,17 @@ async function submit(): Promise<void> {
               <option v-for="o in BANNER_TYPE_OPTIONS" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
-            </NativeSelect>
-          </AdminField>
+            </DsNativeSelect>
+          </DsFormField>
 
-          <AdminField
+          <DsFormField
+            native
             for="banner-audience"
             label="Sasaran Penonton"
             required
             :error="errors.targetAudience"
           >
-            <NativeSelect
+            <DsNativeSelect
               id="banner-audience"
               v-model="form.targetAudience"
               name="target_audience"
@@ -290,12 +329,17 @@ async function submit(): Promise<void> {
               <option v-for="o in AUDIENCE_OPTIONS" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
-            </NativeSelect>
-          </AdminField>
+            </DsNativeSelect>
+          </DsFormField>
 
           <div class="flex min-w-0 flex-col gap-3 md:col-span-2">
-            <AdminField for="banner-link-type" label="Jenis Pautan" :error="errors.linkType">
-              <NativeSelect
+            <DsFormField
+              native
+              for="banner-link-type"
+              label="Jenis Pautan"
+              :error="errors.linkType"
+            >
+              <DsNativeSelect
                 id="banner-link-type"
                 v-model="form.linkType"
                 name="link_type"
@@ -306,8 +350,8 @@ async function submit(): Promise<void> {
                 <option v-for="o in LINK_TYPE_OPTIONS" :key="o.value" :value="o.value">
                   {{ o.label }}
                 </option>
-              </NativeSelect>
-            </AdminField>
+              </DsNativeSelect>
+            </DsFormField>
             <div v-show="showExternal" class="flex flex-col gap-2">
               <UInput
                 v-model="form.externalUrl"
@@ -326,11 +370,12 @@ async function submit(): Promise<void> {
             </div>
           </div>
         </div>
-      </AdminSection>
+      </DsFormSection>
 
-      <AdminSection title="Jadual & Status" icon="i-ph-calendar-check" accent="heat">
+      <DsFormSection title="Jadual & Status" icon="i-ph-calendar-check" accent="heat">
         <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <AdminField
+          <DsFormField
+            native
             for="banner-order"
             label="Susunan Paparan"
             hint="Nombor lebih kecil akan dipaparkan dahulu"
@@ -347,9 +392,9 @@ async function submit(): Promise<void> {
               :color="invalid('displayOrder') ? 'error' : undefined"
               data-testid="banner-order"
             />
-          </AdminField>
+          </DsFormField>
 
-          <AdminField for="banner-start" label="Tarikh Mula" :error="errors.startDate">
+          <DsFormField native for="banner-start" label="Tarikh Mula" :error="errors.startDate">
             <UInput
               id="banner-start"
               v-model="form.startDate"
@@ -360,9 +405,9 @@ async function submit(): Promise<void> {
               :color="invalid('startDate') ? 'error' : undefined"
               data-testid="banner-start"
             />
-          </AdminField>
+          </DsFormField>
 
-          <AdminField for="banner-end" label="Tarikh Tamat" :error="errors.endDate">
+          <DsFormField native for="banner-end" label="Tarikh Tamat" :error="errors.endDate">
             <UInput
               id="banner-end"
               v-model="form.endDate"
@@ -373,19 +418,20 @@ async function submit(): Promise<void> {
               :color="invalid('endDate') ? 'error' : undefined"
               data-testid="banner-end"
             />
-          </AdminField>
+          </DsFormField>
         </div>
 
-        <AdminSwitch
+        <USwitch
           v-model="form.isActive"
           name="is_active"
           label="Banner Aktif"
-          hint="Tandakan untuk memaparkan banner"
-          testid="banner-active"
+          description="Tandakan untuk memaparkan banner"
+          class="min-h-11"
+          data-testid="banner-active"
         />
-      </AdminSection>
+      </DsFormSection>
 
-      <AdminFormBar
+      <DsFormBar
         :cancel-to="BANNERS_PATH"
         :submit-label="editing ? 'Kemaskini Banner' : 'Simpan Banner'"
         :saving="saving"

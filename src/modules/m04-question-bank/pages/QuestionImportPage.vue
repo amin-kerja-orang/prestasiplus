@@ -13,14 +13,11 @@
 import { computed, nextTick, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsBackLink, DsFileField, DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage, DsPanel } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadImportTemplate, importQuestions } from '../api/imports'
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
-import ErrorBox from '../components/ErrorBox.vue'
-import NativeFile from '../components/native/NativeFile.vue'
-import NativeSelect from '../components/native/NativeSelect.vue'
 import { DIFFICULTY_OPTIONS, IMPORT_HISTORY_PATH } from '../lib/import-quality'
 import { QUESTIONS_LIST_PATH } from '../lib/question-list'
 import { errorLines } from '../lib/ui-errors'
@@ -34,17 +31,13 @@ const levelOptions = computed(() => levels.data.value?.data ?? [])
 
 const form = ref<HTMLFormElement | null>(null)
 const alertBox = ref<HTMLElement | null>(null)
-const file = ref<File | null>(null)
+const file = ref<File | File[] | null>(null)
 const subjectId = ref('')
 const levelId = ref('')
 const difficulty = ref('2')
 
 const submitting = ref(false)
 const errors = ref<string[]>([])
-
-function onPick(event: Event): void {
-  file.value = (event.target as HTMLInputElement).files?.[0] ?? null
-}
 
 function toId(value: string): number | null {
   return value === '' ? null : Number(value)
@@ -56,7 +49,7 @@ async function submit(): Promise<void> {
   errors.value = []
   try {
     const result = await importQuestions({
-      csvFile: file.value,
+      csvFile: Array.isArray(file.value) ? (file.value[0] ?? null) : file.value,
       defaultSubjectId: toId(subjectId.value),
       defaultEducationLevelId: toId(levelId.value),
       defaultDifficultyLevel: toId(difficulty.value),
@@ -96,7 +89,10 @@ async function downloadTemplate(): Promise<void> {
 
 <template>
   <DsPage data-testid="import-page">
-    <div class="flex flex-wrap items-center gap-3">
+    <template #breadcrumb>
+      <DsBackLink :to="QUESTIONS_LIST_PATH" data-testid="import-back" />
+    </template>
+    <template #actions>
       <UButton
         :to="IMPORT_HISTORY_PATH"
         color="neutral"
@@ -107,67 +103,67 @@ async function downloadTemplate(): Promise<void> {
       >
         Sejarah Import
       </UButton>
-      <UButton
-        :to="QUESTIONS_LIST_PATH"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        class="min-h-11"
-        data-testid="import-back"
-      >
-        Kembali
-      </UButton>
-    </div>
+    </template>
 
     <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
       <form
         ref="form"
         method="post"
         enctype="multipart/form-data"
-        class="min-w-0 lg:col-span-2 lg:self-start"
+        class="flex min-w-0 flex-col gap-4 lg:col-span-2 lg:self-start"
         data-testid="import-form"
         @submit.prevent="submit"
       >
-        <UCard>
-          <h3 class="mb-4 flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-file-arrow-up" class="size-5 text-primary" />
-            Muat Naik Fail CSV
-          </h3>
-
-          <div ref="alertBox" >
-            <ErrorBox :messages="errors" class="mb-4" data-testid="import-alert" />
+        <DsFormSection title="Muat Naik Fail CSV" icon="i-ph-file-arrow-up">
+          <div ref="alertBox">
+            <UAlert
+              v-if="errors.length > 0"
+              color="error"
+              variant="subtle"
+              icon="i-ph-warning-circle"
+              role="alert"
+              data-testid="import-alert"
+            >
+              <template #description>
+                <p v-for="(line, i) in errors" :key="i">{{ line }}</p>
+              </template>
+            </UAlert>
           </div>
 
-          <div class="min-w-0">
-            <label for="import-csv-file" class="mb-2 block text-label text-highlighted">
-              Fail CSV *
-            </label>
-            <NativeFile
-              id="import-csv-file"
+          <DsFormField
+            v-slot="{ id }"
+            native
+            for="import-csv-file"
+            label="Fail CSV"
+            required
+            hint="Saiz maksimum: 5MB. Format: CSV atau TXT"
+          >
+            <DsFileField
+              :id="id"
+              v-model="file"
               name="csv_file"
               accept=".csv,.txt"
               required
               data-testid="import-file"
-              @change="onPick"
             />
-            <p class="mt-2 flex items-center gap-2 text-caption text-muted">
-              <UIcon name="i-ph-info" class="size-4 shrink-0" />
-              Saiz maksimum: 5MB. Format: CSV atau TXT
-            </p>
-          </div>
+          </DsFormField>
 
-          <div class="mt-6">
-            <h4 class="mb-1 text-label text-highlighted">Tetapan Lalai (Opsional)</h4>
-            <p class="mb-4 text-body text-muted">
-              Nilai ini digunakan jika kolum berkaitan tiada dalam CSV.
-            </p>
+          <div class="flex min-w-0 flex-col gap-4">
+            <div>
+              <h4 class="text-label text-highlighted">Tetapan Lalai (Opsional)</h4>
+              <p class="text-body text-muted">
+                Nilai ini digunakan jika kolum berkaitan tiada dalam CSV.
+              </p>
+            </div>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div class="min-w-0">
-                <label for="import-default-subject" class="mb-2 block text-label text-highlighted"
-                  >Subjek Lalai</label
-                >
-                <NativeSelect
-                  id="import-default-subject"
+              <DsFormField
+                v-slot="{ id }"
+                native
+                for="import-default-subject"
+                label="Subjek Lalai"
+              >
+                <DsNativeSelect
+                  :id="id"
                   v-model="subjectId"
                   name="default_subject_id"
                   data-testid="import-default-subject"
@@ -176,14 +172,16 @@ async function downloadTemplate(): Promise<void> {
                   <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">
                     {{ s.name }}
                   </option>
-                </NativeSelect>
-              </div>
-              <div class="min-w-0">
-                <label for="import-default-level" class="mb-2 block text-label text-highlighted"
-                  >Tahap Pendidikan</label
-                >
-                <NativeSelect
-                  id="import-default-level"
+                </DsNativeSelect>
+              </DsFormField>
+              <DsFormField
+                v-slot="{ id }"
+                native
+                for="import-default-level"
+                label="Tahap Pendidikan"
+              >
+                <DsNativeSelect
+                  :id="id"
                   v-model="levelId"
                   name="default_education_level_id"
                   data-testid="import-default-level"
@@ -192,14 +190,16 @@ async function downloadTemplate(): Promise<void> {
                   <option v-for="l in levelOptions" :key="l.id" :value="String(l.id)">
                     {{ l.name }}
                   </option>
-                </NativeSelect>
-              </div>
-              <div class="min-w-0">
-                <label for="import-default-difficulty" class="mb-2 block text-label text-highlighted"
-                  >Kesukaran</label
-                >
-                <NativeSelect
-                  id="import-default-difficulty"
+                </DsNativeSelect>
+              </DsFormField>
+              <DsFormField
+                v-slot="{ id }"
+                native
+                for="import-default-difficulty"
+                label="Kesukaran"
+              >
+                <DsNativeSelect
+                  :id="id"
                   v-model="difficulty"
                   name="default_difficulty_level"
                   data-testid="import-default-difficulty"
@@ -208,16 +208,20 @@ async function downloadTemplate(): Promise<void> {
                   <option v-for="d in DIFFICULTY_OPTIONS" :key="d.value" :value="String(d.value)">
                     {{ d.label }}
                   </option>
-                </NativeSelect>
-              </div>
+                </DsNativeSelect>
+              </DsFormField>
             </div>
           </div>
+        </DsFormSection>
 
-          <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-            <p class="flex items-center gap-2 text-body text-muted">
+        <DsFormBar :show-cancel="false" :sticky="false">
+          <template #status>
+            <span class="flex items-center gap-2 text-body text-muted">
               <UIcon name="i-ph-shield-check" class="size-4 text-primary" />
               Soalan disimpan sebagai draf
-            </p>
+            </span>
+          </template>
+          <template #submit>
             <UButton
               type="submit"
               :loading="submitting"
@@ -228,12 +232,12 @@ async function downloadTemplate(): Promise<void> {
             >
               Mula Import
             </UButton>
-          </div>
-        </UCard>
+          </template>
+        </DsFormBar>
       </form>
 
       <div class="flex min-w-0 flex-col gap-4 md:gap-6">
-        <UCard data-testid="import-template-card">
+        <DsPanel data-testid="import-template-card">
           <div class="flex flex-col items-center gap-2 text-center">
             <UIcon name="i-ph-download-simple" class="size-8 text-primary" />
             <h3 class="text-subheading text-highlighted">Muat Turun Template</h3>
@@ -251,13 +255,9 @@ async function downloadTemplate(): Promise<void> {
               Download Template
             </UButton>
           </div>
-        </UCard>
+        </DsPanel>
 
-        <UCard data-testid="import-format-card">
-          <h3 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-info" class="size-5 text-primary" />
-            Format CSV
-          </h3>
+        <DsPanel title="Format CSV" icon="i-ph-info" data-testid="import-format-card">
           <p class="mb-1 text-label text-highlighted">Kolum diperlukan:</p>
           <ul class="mb-3 flex flex-col gap-2 text-body text-default">
             <li><code class="bg-elevated px-1 text-caption">question_text</code> — Teks soalan</li>
@@ -291,13 +291,9 @@ async function downloadTemplate(): Promise<void> {
               <code class="bg-elevated px-1 text-caption">explanation</code>
             </li>
           </ul>
-        </UCard>
+        </DsPanel>
 
-        <UCard data-testid="import-tips-card">
-          <h3 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-lightbulb" class="size-5 text-primary" />
-            Tips
-          </h3>
+        <DsPanel title="Tips" icon="i-ph-lightbulb" data-testid="import-tips-card">
           <ul class="flex flex-col gap-2 text-body text-default">
             <li class="flex items-start gap-2">
               <UIcon name="i-ph-check" class="mt-1 size-4 shrink-0 text-success" />
@@ -316,7 +312,7 @@ async function downloadTemplate(): Promise<void> {
               Semua soalan disimpan sebagai "draf"
             </li>
           </ul>
-        </UCard>
+        </DsPanel>
       </div>
     </div>
   </DsPage>

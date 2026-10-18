@@ -13,12 +13,9 @@ import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
 import { fetchAdminArticle } from '../api/admin-articles-notes'
-import AdminBackLink from '../components/admin-articles-notes/AdminBackLink.vue'
-import AdminStatusPill from '../components/admin-articles-notes/AdminStatusPill.vue'
-import AdminAlert from '../components/admin-kit/AdminAlert.vue'
 import { ARTICLES_LIST_PATH, COPY, isNotFoundError, previewDate } from '../lib/admin-articles-notes'
 
 const props = defineProps<{ id: string }>()
@@ -29,7 +26,11 @@ const meta = usePageMeta()
 
 const numericId = computed(() => (/^\d+$/.test(props.id) ? Number(props.id) : null))
 
-const { data: article, error } = useApi(
+const {
+  data: article,
+  error,
+  reload,
+} = useApi(
   (signal) => fetchAdminArticle(numericId.value ?? 0, { signal }),
   () => props.id,
   { immediate: numericId.value !== null },
@@ -54,20 +55,26 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
 </script>
 
 <template>
-  <DsPage data-testid="admin-article-preview-page">
-    <AdminBackLink :to="ARTICLES_LIST_PATH" />
-
-    <AdminAlert
+  <DsPage
+    :back-to="ARTICLES_LIST_PATH"
+    back-label="Kembali ke Senarai"
+    data-testid="admin-article-preview-page"
+  >
+    <DsLoadError
       v-if="failed"
-      :messages="[COPY.loadFailed]"
-      data-testid="admin-article-load-error"
+      :message="COPY.loadFailed"
+      testid="admin-article-load-error"
+      @retry="reload()"
     />
 
-    <UCard v-else-if="article" data-testid="admin-article-card">
-      <article class="flex min-w-0 flex-col gap-6">
+    <DsPanel v-else-if="article" data-testid="admin-article-card">
+      <article class="flex min-w-0 flex-col gap-6 p-2 sm:p-4">
         <div class="flex flex-col gap-3">
           <div class="flex flex-wrap items-center gap-2">
-            <AdminStatusPill :published="article.isPublished" />
+            <DsStatusBadge
+              :status="article.isPublished ? 'published' : 'draft'"
+              data-testid="status-pill"
+            />
             <UBadge
               v-if="article.isFeatured"
               color="warning"
@@ -121,6 +128,6 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
           />
         </div>
       </article>
-    </UCard>
+    </DsPanel>
   </DsPage>
 </template>

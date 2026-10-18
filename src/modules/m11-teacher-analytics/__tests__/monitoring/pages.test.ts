@@ -358,6 +358,8 @@ async function mountAt(component: Component, path: string, props: Record<string,
 /** Dialog content mounts after a timer (reka presence). */
 const settle = () => new Promise((r) => setTimeout(r, 80)).then(() => flushPromises())
 const tid = (id: string) => wrapper?.find(`[data-testid="${id}"]`)
+/** The i-th crumb of the `DsBreadcrumb` (the last one is plain text, FN-M11-1.1.3). */
+const crumb = (i: number) => tid('mon-crumbs')?.findAll('[data-ds="breadcrumb-item"]')[i]
 const all = (id: string) => wrapper?.findAll(`[data-testid="${id}"]`) ?? []
 /** The big numbers of the `DsStatTile`s under a test id (the tile root, or a strip holding tiles). */
 const valuesIn = (id: string) =>
@@ -488,7 +490,7 @@ describe('S2 Monitoring Penglibatan', () => {
 
   it('filters: no Reset by default; Tapis navigates with the query and a dummy token; Reset then shows', async () => {
     await mountAt(MonitoringPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
-    expect(tid('mon-reset')?.exists()).toBe(false)
+    expect(tid('active-filters-reset')?.exists()).toBe(false)
     await tid('mon-period')?.setValue('7d')
     await tid('mon-filters')?.trigger('submit')
     await flushPromises()
@@ -499,7 +501,12 @@ describe('S2 Monitoring Penglibatan', () => {
       { period: '7d', state: '', tahap: '' },
       expect.anything(),
     )
-    expect(tid('mon-reset')?.attributes('href')).toBe('/guru/monitoring')
+    expect(tid('active-filters')?.text()).toContain('Tempoh: 7 Hari')
+    await tid('active-filters-reset')?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/guru/monitoring')
+    await router.push('/guru/monitoring?period=7d&state=&tahap=')
+    await flushPromises()
     expect(tid('mon-export-pdf')?.attributes('href')).toBe('/guru/monitoring/export/pdf?period=7d')
   })
 
@@ -551,11 +558,11 @@ describe('S3 Detail Sekolah', () => {
     expect(tid('mon-school-name')?.text()).toBe('SMK Contoh')
     expect(tid('mon-school-tahap')?.text()).toBe('Cemerlang — 89.7%')
     expect(tid('mon-subscription')?.text()).toContain('Active — sehingga 12 May 2027')
-    expect(valuesIn('mon-stat')).toEqual(['4', '2', '53,494', '2', '1'])
+    expect(valuesIn('mon-school-cards')).toEqual(['4', '2', '53,494', '2', '1'])
     expect(tid('mon-warning')?.text().replace(/ {2,}/g, ' ')).toBe(
       '⚠ 2 akaun menunjukkan aktiviti luar biasa (kelajuan menjawab tidak munasabah — perlu semak). 1 daripadanya dikecualikan dari peratus penglibatan kerana corak seperti automasi. Angka penglibatan di atas ialah nilai tulen selepas tapis.',
     )
-    expect(tid('mon-crumb-monitoring')?.attributes('href')).toBe('/guru/monitoring')
+    expect(crumb(0)?.find('a').attributes('href')).toBe('/guru/monitoring')
   })
 
   it('one-sentence warning when none is excluded; no box without flags; "Tiada langganan"', async () => {
@@ -692,9 +699,9 @@ describe('S4 Detail Pelajar', () => {
     await open()
     expect(tid('mon-student-meta')?.text()).toBe('adam@demo.test · T5')
     expect(tid('mon-student-last')?.text()).toBe('Aktiviti Terakhir: 16/06/2026 14:19')
-    expect(valuesIn('mon-stat')).toEqual(['71', '53', '18', '74.6%'])
-    expect(tid('mon-crumb-school')?.attributes('href')).toBe('/guru/monitoring/sekolah/8080')
-    expect(tid('mon-crumb-person')?.text()).toBe('Adam Demo')
+    expect(valuesIn('mon-student-cards')).toEqual(['71', '53', '18', '74.6%'])
+    expect(crumb(1)?.find('a').attributes('href')).toBe('/guru/monitoring/sekolah/8080')
+    expect(crumb(2)?.text()).toBe('Adam Demo')
     expect(all('mon-tab-chip').map((n) => n.text())).toEqual(['45', '1'])
   })
 
@@ -820,7 +827,7 @@ describe('S4 Detail Pelajar', () => {
       userId: 4664,
     })
     expect(tid('mon-student-last')?.text()).toBe('Aktiviti Terakhir: -')
-    expect(valuesIn('mon-stat')).toEqual(['0', '0', '0', '0%'])
+    expect(valuesIn('mon-student-cards')).toEqual(['0', '0', '0', '0%'])
     await tid('mon-tab-list')?.trigger('click')
     expect(tid('mon-list-heading')?.text()).toBe('Senarai Soalan (0 tersedia daripada 0)')
     expect(tid('mon-list-more')?.exists()).toBe(false)
@@ -853,7 +860,7 @@ describe('S5 Detail Guru', () => {
     await open()
     expect(tid('mon-teacher-last')?.text()).toBe('Login Terakhir: 20/09/2026 08:00')
     expect(tid('mon-teacher-pill')?.text()).toBe('Pernah Login')
-    expect(valuesIn('mon-stat')).toEqual(['3', '2', '66.7%', '1'])
+    expect(valuesIn('mon-teacher-cards')).toEqual(['3', '2', '66.7%', '1'])
     const rows = all('mon-teacher-student-row')
     expect(rows).toHaveLength(3)
     expect(rows[0]?.find('a').attributes('href')).toBe('/guru/monitoring/sekolah/8080/pelajar/1')

@@ -6,8 +6,9 @@
  */
 import { computed } from 'vue'
 
+import { DsStatRow, type StatItem } from '@/ds'
+
 import type { Results } from '../../../api/types'
-import KirkpatrickStatCard from '../common/KirkpatrickStatCard.vue'
 import { count, gps, pct, plain } from '../common/kirkpatrick-format'
 
 const props = defineProps<{ kpi: Results['kpi'] }>()
@@ -27,51 +28,53 @@ const gradeACaption = computed(() =>
     ? `${plain(props.kpi.candidates)} calon`
     : `${pct(props.kpi.gradeAPct ?? 0)} daripada ${plain(props.kpi.candidates)}`,
 )
+
+const items = computed<StatItem[]>(() => [
+  {
+    key: 'gps',
+    label: 'GPS Headcount',
+    value: props.kpi.gps === null ? '-' : gps(props.kpi.gps),
+    icon: 'i-ph-trophy', accent: 'action',
+    sub: gpsCaption.value,
+  },
+  {
+    key: 'pass',
+    label: 'Kadar Lulus',
+    value: props.kpi.passPct === null ? '-' : pct(props.kpi.passPct),
+    icon: 'i-ph-seal-check', accent: 'win',
+    sub: passCaption.value,
+  },
+  {
+    key: 'gradeA',
+    label: 'Pelajar Gred A',
+    value: props.kpi.gradeA === null ? '-' : plain(props.kpi.gradeA),
+    icon: 'i-ph-star', accent: 'heat',
+    sub: gradeACaption.value,
+  },
+  {
+    key: 'accuracy',
+    label: 'Ketepatan Platform',
+    value: pct(props.kpi.accuracy),
+    icon: 'i-ph-target', accent: 'trial',
+    sub: `${count(props.kpi.answers)} soalan`,
+  },
+  {
+    key: 'active',
+    label: 'Pelajar Aktif',
+    value: plain(props.kpi.active),
+    icon: 'i-ph-users', accent: 'friend',
+    sub: `${pct(props.kpi.activePct)} daripada ${count(props.kpi.t4t5)}`,
+  },
+  {
+    key: 'records',
+    label: 'Rekod Headcount',
+    value: plain(props.kpi.records),
+    icon: 'i-ph-database', accent: 'action',
+    sub: 'Data OTR',
+  },
+])
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" data-testid="res-kpis">
-    <KirkpatrickStatCard
-      label="GPS Headcount"
-      icon="i-ph-trophy"
-      accent="action"
-      :value="kpi.gps === null ? '-' : gps(kpi.gps)"
-      :caption="gpsCaption"
-    />
-    <KirkpatrickStatCard
-      label="Kadar Lulus"
-      icon="i-ph-seal-check"
-      accent="win"
-      :value="kpi.passPct === null ? '-' : pct(kpi.passPct)"
-      :caption="passCaption"
-    />
-    <KirkpatrickStatCard
-      label="Pelajar Gred A"
-      icon="i-ph-star"
-      accent="heat"
-      :value="kpi.gradeA === null ? '-' : plain(kpi.gradeA)"
-      :caption="gradeACaption"
-    />
-    <KirkpatrickStatCard
-      label="Ketepatan Platform"
-      icon="i-ph-target"
-      accent="trial"
-      :value="pct(kpi.accuracy)"
-      :caption="`${count(kpi.answers)} soalan`"
-    />
-    <KirkpatrickStatCard
-      label="Pelajar Aktif"
-      icon="i-ph-users"
-      accent="friend"
-      :value="plain(kpi.active)"
-      :caption="`${pct(kpi.activePct)} daripada ${count(kpi.t4t5)}`"
-    />
-    <KirkpatrickStatCard
-      label="Rekod Headcount"
-      icon="i-ph-database"
-      accent="action"
-      :value="plain(kpi.records)"
-      caption="Data OTR"
-    />
-  </div>
+  <DsStatRow :items="items" prefix="res-kpi" :cols="3" roomy data-testid="res-kpis" />
 </template>

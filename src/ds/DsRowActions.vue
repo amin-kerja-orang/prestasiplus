@@ -20,6 +20,8 @@ export interface RowAction {
   onSelect?: () => void
   danger?: boolean
   disabled?: boolean
+  /** `data-testid` of the button / menu item. */
+  testid?: string
   /** Ask first. `true` uses the glossary dialog ("Padam {label}?"). */
   confirm?: boolean | { title?: string; body?: string; confirmLabel?: string }
 }
@@ -64,6 +66,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
     ...(a.icon ? { icon: a.icon } : {}),
     ...(a.to ? { to: a.to } : {}),
     ...(a.danger ? { color: 'error' as const } : {}),
+    ...(a.testid ? { 'data-testid': a.testid } : {}),
     disabled: a.disabled ?? false,
     onSelect: () => {
       void run(a)
@@ -88,6 +91,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       :label="a.label"
       :to="a.to"
       :disabled="a.disabled"
+      :data-testid="a.testid"
       @click="run(a)"
     />
     <UDropdownMenu v-if="menuActions.length" :items="items" :content="{ align: 'end' }">

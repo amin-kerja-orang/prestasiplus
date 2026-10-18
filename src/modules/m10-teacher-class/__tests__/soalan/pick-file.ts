@@ -16,7 +16,7 @@ export async function pickFiles(
   const root = w.get(`[data-testid="${testid}"]`).element
   const upload = w
     .findAllComponents({ name: 'FileUpload' })
-    .find((c) => root === c.element || root.contains(c.element))
+    .find((c) => root === c.element || root.contains(c.element) || c.element.contains(root))
   if (!upload) throw new Error(`no FileUpload inside ${testid}`)
   upload.vm.$emit('update:modelValue', multiple ? files : (files[0] ?? null))
   await flushPromises()

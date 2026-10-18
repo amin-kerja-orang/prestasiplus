@@ -9,17 +9,12 @@ import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsChart, DsDataTable, DsEmptyState, DsPage } from '@/ds'
+import { DsBreadcrumb, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow, DsPillNav, type PillItem } from '@/ds'
 import { usePrototypeScope } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchSchoolItemAnalysis } from '../api/performance'
 import SchoolQuestionList from '../components/analisa-item/SchoolQuestionList.vue'
-import PageHeader from '../components/shared/PageHeader.vue'
-import ToneText from '../components/shared/ToneText.vue'
-import PageLoadError from '../components/shared/PageLoadError.vue'
-import PageSkeleton from '../components/shared/PageSkeleton.vue'
-import StatGrid, { type StatItem } from '../components/shared/StatGrid.vue'
 import { usePhIcon } from '../lib/icons'
 import {
   BAND_STYLE,
@@ -32,7 +27,10 @@ import {
   ratioPct,
 } from '../lib/prestasi/format'
 import { sparklineSeries } from '../lib/prestasi/gps-chart'
-import { isLoadError, useRouteData } from '../lib/prestasi/load'
+import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { useStatItems, type StatSpec } from '../lib/stat-items'
+
+const statItems = useStatItems()
 
 const route = useRoute()
 const pageMeta = usePageMeta()
@@ -82,11 +80,12 @@ const base = computed(() =>
     ? '/analisa-item/sekolah'
     : `/analisa-item/sekolah/${String(schoolId.value)}`,
 )
-const chips = computed(() => [
-  { label: 'Semua', to: base.value, active: !hasQuery.value },
-  { label: 'Tingkatan 4', to: `${base.value}?tingkatan=T4`, active: tingkatan.value === 'T4' },
-  { label: 'Tingkatan 5', to: `${base.value}?tingkatan=T5`, active: tingkatan.value === 'T5' },
+const chips = computed<PillItem<string>[]>(() => [
+  { key: 'all', label: 'Semua', to: base.value },
+  { key: 'T4', label: 'Tingkatan 4', to: `${base.value}?tingkatan=T4` },
+  { key: 'T5', label: 'Tingkatan 5', to: `${base.value}?tingkatan=T5` },
 ])
+const activeChip = computed(() => (!hasQuery.value ? 'all' : tingkatan.value))
 
 const emptyCopy = computed(() =>
   data.value?.variant === 'byId'
@@ -94,7 +93,7 @@ const emptyCopy = computed(() =>
     : 'Tiada data pelajar untuk sekolah ini. Pastikan pelajar telah berdaftar dan menjawab soalan latihan.',
 )
 
-const stats = computed<StatItem[]>(() => {
+const stats = computed<StatSpec[]>(() => {
   const d = data.value
   if (!d) return []
   return [
@@ -165,29 +164,18 @@ const cardFields = [
 
 <template>
   <DsPage data-testid="analisa-item-sekolah-page">
-    <PageLoadError v-if="loadFailed" @retry="reload()" />
+    <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <nav
-        class="flex flex-wrap items-center gap-1 text-caption text-muted"
+      <DsBreadcrumb
+        :items="[{ label: 'Papan Pemuka', to: home }, { label: 'Analisa Item Sekolah' }]"
         aria-label="Breadcrumb"
         data-testid="breadcrumb"
-      >
-        <UButton
-          :to="home"
-          color="neutral"
-          variant="ghost"
-          size="lg"
-          :icon="icon('arrow-left')"
-          label="Papan Pemuka"
-        />
-        <span aria-hidden="true">/</span>
-        <span class="text-label text-highlighted" aria-current="page">Analisa Item Sekolah</span>
-      </nav>
+      />
 
-      <PageHeader title="Analisa Item — Sekolah" :subtitle="subtitle" />
+      <DsPageHeader title="Analisa Item — Sekolah" :subtitle="subtitle" />
 
-      <UCard v-if="data.school.name" data-testid="school-card">
+      <DsPanel v-if="data.school.name" data-testid="school-card">
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex min-w-0 grow flex-col gap-2">
             <h2 class="text-heading break-words text-highlighted" data-testid="school-name">
@@ -217,28 +205,9 @@ const cardFields = [
             </div>
           </dl>
         </div>
-      </UCard>
+      </DsPanel>
 
-      <div
-        class="flex max-w-full items-center gap-2 overflow-x-auto pb-1"
-        role="group"
-        aria-label="Tingkatan"
-        data-testid="tingkatan-chips"
-      >
-        <span class="flex shrink-0 items-center gap-1 text-label text-muted"
-          ><UIcon :name="icon('graduation-cap')" class="size-4" />Tingkatan:</span
-        >
-        <UButton
-          v-for="c in chips"
-          :key="c.label"
-          :to="c.to"
-          size="lg"
-          class="shrink-0 whitespace-nowrap"
-          :color="c.active ? 'primary' : 'neutral'"
-          :variant="c.active ? 'solid' : 'soft'"
-          :label="c.label"
-        />
-      </div>
+      <DsPillNav :items="chips" :active="activeChip" label="Tingkatan" data-testid="tingkatan-chips" />
 
       <div v-if="data.students === 0" data-testid="school-empty">
         <DsEmptyState title="Tiada Data Pelajar" :description="emptyCopy" icon="i-ph-user-minus" />
@@ -246,11 +215,11 @@ const cardFields = [
 
       <template v-else>
         <div data-testid="school-stats">
-          <StatGrid :items="stats" />
+          <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
         </div>
 
         <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-          <UCard class="min-w-0" data-testid="difficulty-card">
+          <DsPanel class="min-w-0" data-testid="difficulty-card">
             <div class="flex flex-col gap-4">
               <h2 class="text-subheading text-highlighted">Profil Kesukaran</h2>
               <p v-if="!difficulty || difficulty.total === 0" class="text-body text-muted">
@@ -281,18 +250,16 @@ const cardFields = [
                 </li>
               </ul>
             </div>
-          </UCard>
+          </DsPanel>
 
-          <UCard class="min-w-0" data-testid="school-gps-card">
+          <DsPanel class="min-w-0" data-testid="school-gps-card">
             <div class="flex flex-col gap-3">
               <h2 class="text-subheading text-highlighted">GPS Anggaran Sekolah</h2>
               <div class="flex flex-wrap items-center gap-3">
-                <ToneText
-                  :tone="data.gps.band ? BAND_STYLE[data.gps.band].text : 'text-dimmed'"
-                  class="tabular text-display"
+                <span
+:class="[data.gps.band ? BAND_STYLE[data.gps.band].text : 'text-dimmed', 'tabular text-display']"
                   data-testid="school-gps-value"
-                  >{{ data.gps.value === null ? DASH : dec2(data.gps.value) }}</ToneText
-                >
+                  >{{ data.gps.value === null ? DASH : dec2(data.gps.value) }}</span>
                 <UBadge
                   v-if="data.gps.band"
                   :color="BAND_STYLE[data.gps.band].badge"
@@ -322,7 +289,7 @@ const cardFields = [
                 label="Prestasi 360"
               />
             </div>
-          </UCard>
+          </DsPanel>
         </div>
 
         <section class="flex min-w-0 flex-col gap-3" data-testid="school-subjects">
@@ -346,6 +313,9 @@ const cardFields = [
         <SchoolQuestionList v-if="data.questions.length > 0" :questions="data.questions" />
       </template>
     </template>
-    <PageSkeleton v-else-if="!error" />
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
   </DsPage>
 </template>

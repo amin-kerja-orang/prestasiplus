@@ -4,17 +4,18 @@
  * The grid scrolls inside its card. α = max(0.15, n ÷ max) picks a step of a single kobalt ramp; a zero
  * cell is a flat layer with no number.
  */
+import { DsPanel } from '@/ds'
+
 import type { Behavior } from '../../../api/types'
-import { KirkpatrickPanel } from '../common'
 import { HEAT_DAYS, HEAT_HOURS, heatClass, heatTitle } from './behavior-format'
 
 defineProps<{ heat: Behavior['heat'] }>()
 </script>
 
 <template>
-  <KirkpatrickPanel
+  <DsPanel
     title="Corak Masa Aktiviti"
-    subtitle="Bilangan soalan dijawab mengikut jam dan hari"
+    description="Bilangan soalan dijawab mengikut jam dan hari"
     icon="i-ph-clock"
     data-testid="beh-heat"
   >
@@ -45,5 +46,5 @@ defineProps<{ heat: Behavior['heat'] }>()
         </template>
       </div>
     </div>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>
