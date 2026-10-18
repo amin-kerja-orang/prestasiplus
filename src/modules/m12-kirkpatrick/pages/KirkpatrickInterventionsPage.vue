@@ -3,12 +3,11 @@
  * S7 Intervensi (FR-M12-70 ... 76; URS EP-M12-8). Mounted on `/admin/kirkpatrick/interventions` and the `/guru`
  * twin. Both query parameters are ignored. A saved record reloads the KPIs and the list.
  */
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 
 import { fetchKirkpatrickInterventions } from '../api'
 import {
   KIRKPATRICK_ADMIN_BASE,
-  KirkpatrickLoadState,
   KirkpatrickTabs,
   useKirkpatrickPage,
 } from '../components/kirkpatrick/common'
@@ -29,7 +28,15 @@ const { data, error, loading, reload } = useKirkpatrickPage((signal) =>
     subtitle="Rekod tindakan intervensi berdasarkan amaran Kirkpatrick"
   >
     <KirkpatrickTabs :base-path="basePath" current="interventions" />
-    <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
+    <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
+    <p
+      v-else-if="data === null && loading"
+      class="flex items-center gap-2 text-label text-muted"
+      data-testid="kirk-loading"
+      role="status"
+    >
+      <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
+    </p>
     <template v-if="data">
       <InterventionKpis :kpi="data.kpi" />
       <InterventionForm @saved="reload" />

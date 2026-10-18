@@ -3,6 +3,8 @@
  * SRS M17 §3 FR-M17-48..60, URS FN-M17-5.x). The pages draw the staff theme (v2).
  */
 
+import type { StatItem } from '@/ds'
+
 import { formatCount, formatNumber } from '@/lib/number'
 import { formatMyt } from '@/lib/time'
 
@@ -69,7 +71,13 @@ export function gradeTone(grade: string | null): AccuracyTone {
   return 'warning'
 }
 
-export const LOAD_ERROR_COPY = 'Ralat memuatkan data'
+/** Live copy of the S7 dialog load failures (FN-M17-5.4.x, observed). */
+export const MODAL_ERROR_COPY = 'Ralat memuatkan data'
+
+/** The label / value pairs of the S7 dialogs as `DsStatRow` items. */
+export function statItems(stats: { label: string; value: string }[]): StatItem[] {
+  return stats.map((s) => ({ key: s.label, label: s.label, value: s.value }))
+}
 
 /** What the S7 sessions modal lists: one week, every session, or one subject. */
 export type CcSessionsSource =

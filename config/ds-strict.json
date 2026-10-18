@@ -178,7 +178,13 @@
     { "glob": "src/modules/m09-content/pages/**", "level": "page" },
     { "glob": "src/modules/m09-content/components/**", "level": "page" },
     { "glob": "src/modules/m07-pksk/pages/**", "level": "page" },
-    { "glob": "src/modules/m07-pksk/components/**", "level": "page" }
+    { "glob": "src/modules/m07-pksk/components/**", "level": "page" },
+    { "glob": "src/modules/m11-teacher-analytics/pages/**", "level": "page" },
+    { "glob": "src/modules/m11-teacher-analytics/components/**", "level": "page" },
+    { "glob": "src/modules/m12-kirkpatrick/pages/**", "level": "page" },
+    { "glob": "src/modules/m12-kirkpatrick/components/**", "level": "page" },
+    { "glob": "src/modules/m17-admin-dashboard/pages/**", "level": "page" },
+    { "glob": "src/modules/m17-admin-dashboard/components/**", "level": "page" }
   ],
   "exempt": [
     "src/theme/**"

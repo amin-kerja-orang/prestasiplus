@@ -5,14 +5,14 @@
  * (`data-faded`) with "-" for Ketepatan and Soalan; Engagement shows "-" unless the school has a session (940).
  * Staff table (`DsDataTable`).
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
+import { DsDataTable, DsPanel } from '@/ds'
+
 import type { BandKey, ResultsSchoolRow } from '../../../api/types'
-import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
 import { BAND, count, mean, pct, plain } from '../common/kirkpatrick-format'
-import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ rows: ResultsSchoolRow[]; schoolPath: (id: number) => string }>()
 
@@ -71,15 +71,22 @@ const cardFields = [
   { key: 'engagement', label: 'Engagement' },
   { key: 'tahapText', label: 'Tahap' },
 ]
+
+/** Paged at 20 rows. */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(20)
 </script>
 
 <template>
-  <KirkpatrickTableSection
+  <DsPanel
     title="Prestasi Mengikut Sekolah (Platform + Headcount)"
     icon="i-ph-buildings"
     data-testid="res-schools"
   >
-    <KirkpatrickTable
+    <DsDataTable
+      v-model:page-size="pageSize"
+      variant="bare"
+      :page-size-options="PAGE_SIZES"
       :data="data"
       :columns="columns"
       caption="Prestasi mengikut sekolah"
@@ -89,7 +96,10 @@ const cardFields = [
       <template #name-cell="{ row }">
         <RouterLink
           :to="schoolPath(row.original.schoolId)"
-          :class="['line-clamp-2 max-w-72 text-label', row.original.faded ? 'text-dimmed' : 'text-primary']"
+          :class="[
+            'line-clamp-2 max-w-72 text-label',
+            row.original.faded ? 'text-dimmed' : 'text-primary',
+          ]"
           :data-faded="row.original.faded ? 'true' : 'false'"
           data-testid="res-school-link"
           >{{ row.original.name }}</RouterLink
@@ -136,6 +146,6 @@ const cardFields = [
           data-testid="cell-tahap"
         />
       </template>
-    </KirkpatrickTable>
-  </KirkpatrickTableSection>
+    </DsDataTable>
+  </DsPanel>
 </template>

@@ -341,13 +341,13 @@ describe('S1 Laporan: states', () => {
     expect(has(wrapper, 'summary-cards')).toBe(true)
   })
 
-  // @provisional: the error copy is PROPOSED (no M11 copy in the SRS)
+  // @provisional: the error copy is the design-system default (no M11 copy in the SRS)
   it('@provisional shows the error message when the request fails', async () => {
     api.fetchTeacherReport.mockRejectedValue(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }),
     )
     const w = await mountAt('/guru/laporan')
-    expect(w.text()).toContain('Ralat berlaku. Sila cuba lagi.')
+    expect(w.text()).toContain('Tidak dapat memuatkan data. Sila cuba semula.')
     expect(has(w, 'summary-cards')).toBe(false)
   })
 })

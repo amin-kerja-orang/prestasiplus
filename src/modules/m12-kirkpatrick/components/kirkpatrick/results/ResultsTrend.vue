@@ -4,14 +4,14 @@
  * "Keseluruhan" is highlighted. Values <= 4.00 are success, above warning; a missing value is "-" dimmed
  * (DV-M12-14); every Trend cell is the success up arrow as live. Staff table (`DsDataTable`).
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
+import { DsDataTable, DsPanel } from '@/ds'
+
 import { gps } from '../common/kirkpatrick-format'
 import { gpsText } from './results-format'
 import type { ResultsTrend } from './results-types'
-import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ trend: ResultsTrend }>()
 
@@ -45,16 +45,18 @@ const columns = computed<TableColumn<Row>[]>(() => [
 const cardFields = computed(() => [
   ...props.trend.years.map((y, c) => ({ key: `t${c}`, label: String(y) })),
 ])
+
+/** Paged at 20 rows. */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(20)
 </script>
 
 <template>
-  <KirkpatrickTableSection
-    :title="`Trend GPS (${range})`"
-    icon="i-ph-chart-line"
-    footnote="↑ = GPS menurun (improving). Sumber: Headcount OTR & SPM sebenar."
-    data-testid="res-trend"
-  >
-    <KirkpatrickTable
+  <DsPanel :title="`Trend GPS (${range})`" icon="i-ph-chart-line" data-testid="res-trend">
+    <DsDataTable
+      v-model:page-size="pageSize"
+      variant="bare"
+      :page-size-options="PAGE_SIZES"
       :data="rows"
       :columns="columns"
       caption="Trend GPS mengikut subjek"
@@ -83,6 +85,10 @@ const cardFields = computed(() => [
       <template #trend-cell>
         <UIcon name="i-ph-arrow-up" class="size-4 text-success" />
       </template>
-    </KirkpatrickTable>
-  </KirkpatrickTableSection>
+    </DsDataTable>
+    <p class="flex items-start gap-2 px-1 pt-3 text-caption text-muted">
+      <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />↑ = GPS menurun (improving). Sumber:
+      Headcount OTR & SPM sebenar.
+    </p>
+  </DsPanel>
 </template>

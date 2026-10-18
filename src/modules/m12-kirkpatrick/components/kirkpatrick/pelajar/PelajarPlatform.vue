@@ -5,8 +5,9 @@
  */
 import { computed } from 'vue'
 
+import { DsPanel } from '@/ds'
+
 import type { StudentKirkpatrick } from '../../../api/types'
-import KirkpatrickPanel from '../common/KirkpatrickPanel.vue'
 import { pct1 } from '../common/kirkpatrick-format'
 import { barColor } from './pelajar-format'
 
@@ -16,11 +17,7 @@ const rows = computed(() => [...props.platform].sort((a, b) => b.accuracy - a.ac
 </script>
 
 <template>
-  <KirkpatrickPanel
-    title="Tahap 2 — Prestasi Platform"
-    icon="i-ph-chart-bar"
-    data-testid="pel-platform"
-  >
+  <DsPanel title="Tahap 2 — Prestasi Platform" icon="i-ph-chart-bar" data-testid="pel-platform">
     <ul class="flex flex-col gap-3">
       <li v-for="r in rows" :key="r.subjectName" data-testid="pel-plat-row">
         <div class="flex items-baseline justify-between gap-3">
@@ -40,5 +37,5 @@ const rows = computed(() => [...props.platform].sort((a, b) => b.accuracy - a.ac
         />
       </li>
     </ul>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>

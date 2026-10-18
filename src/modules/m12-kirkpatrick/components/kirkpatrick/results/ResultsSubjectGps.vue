@@ -4,13 +4,13 @@
  * ascending. The subject cell is plain text with no action (DV-M12-05). The same platform
  * rows show in every scope (DV-M12-26). Staff table (`DsDataTable`).
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import KirkpatrickTableSection from '../common/KirkpatrickTableSection.vue'
+import { DsDataTable, DsPanel } from '@/ds'
+
 import { gps } from '../common/kirkpatrick-format'
 import type { ResultsSubjectGps } from './results-types'
-import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ subjectGps: ResultsSubjectGps }>()
 
@@ -54,16 +54,22 @@ const cardFields = [
   { key: 'candidates', label: 'Calon' },
   { key: 'trendText', label: 'Trend' },
 ]
+
+/** Paged at 20 rows. */
+const PAGE_SIZES = [10, 20, 50]
+const pageSize = ref(20)
 </script>
 
 <template>
-  <KirkpatrickTableSection
+  <DsPanel
     :title="`GPS Mengikut Subjek (${subjectGps.year})`"
     icon="i-ph-book"
-    footnote="GPS rendah = lebih baik. Trend: berbanding tahun sebelumnya."
     data-testid="res-subject-gps"
   >
-    <KirkpatrickTable
+    <DsDataTable
+      v-model:page-size="pageSize"
+      variant="bare"
+      :page-size-options="PAGE_SIZES"
       :data="rows"
       :columns="columns"
       caption="GPS mengikut subjek"
@@ -103,6 +109,10 @@ const cardFields = [
           </span>
         </span>
       </template>
-    </KirkpatrickTable>
-  </KirkpatrickTableSection>
+    </DsDataTable>
+    <p class="flex items-start gap-2 px-1 pt-3 text-caption text-muted">
+      <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />GPS rendah = lebih baik. Trend:
+      berbanding tahun sebelumnya.
+    </p>
+  </DsPanel>
 </template>

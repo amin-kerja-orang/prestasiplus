@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /** "ROI Platform (Anggaran)" (FN-M12-6.8.1; FR-M12-58; BR-M12-23): four figures and the static note. */
+import { DsPanel } from '@/ds'
+
 import type { Results } from '../../../api/types'
-import KirkpatrickPanel from '../common/KirkpatrickPanel.vue'
 import { gps, mean, pct, plain } from '../common/kirkpatrick-format'
 
 defineProps<{ roi: Results['roi'] }>()
@@ -14,7 +15,7 @@ const STEPS = [
 </script>
 
 <template>
-  <KirkpatrickPanel title="ROI Platform (Anggaran)" icon="i-ph-coins" data-testid="res-roi">
+  <DsPanel title="ROI Platform (Anggaran)" icon="i-ph-coins" data-testid="res-roi">
     <div class="flex flex-col gap-4">
       <div class="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
         <div>
@@ -55,5 +56,5 @@ const STEPS = [
         </template>
       </UAlert>
     </div>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>

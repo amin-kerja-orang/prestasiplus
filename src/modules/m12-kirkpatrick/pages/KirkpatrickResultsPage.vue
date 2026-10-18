@@ -7,12 +7,11 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { DsPage } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 
 import { fetchKirkpatrickResults } from '../api'
 import {
   KIRKPATRICK_ADMIN_BASE,
-  KirkpatrickLoadState,
   KirkpatrickTabs,
   kirkpatrickPaths,
   queryString,
@@ -40,7 +39,7 @@ const schoolId = computed(() =>
   /^\d+$/.test(schoolQuery.value) ? Number(schoolQuery.value) : null,
 )
 
-const { data, error, loading } = useKirkpatrickPage(
+const { data, error, loading, reload } = useKirkpatrickPage(
   (signal) => fetchKirkpatrickResults({ schoolId: schoolId.value }, { signal }),
   () => route.fullPath,
 )
@@ -52,7 +51,15 @@ const { data, error, loading } = useKirkpatrickPage(
     subtitle="Impak terhadap keputusan peperiksaan dan prestasi akademik"
   >
     <KirkpatrickTabs :base-path="basePath" current="results" />
-    <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
+    <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
+    <p
+      v-else-if="data === null && loading"
+      class="flex items-center gap-2 text-label text-muted"
+      data-testid="kirk-loading"
+      role="status"
+    >
+      <UIcon name="i-ph-circle-notch" class="size-5" />Memuatkan...
+    </p>
     <template v-if="data">
       <ResultsKpis :kpi="data.kpi" />
       <ResultsGrades v-if="data.distribution" :distribution="data.distribution" />

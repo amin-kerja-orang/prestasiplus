@@ -1,10 +1,13 @@
 <script setup lang="ts">
 /**
  * The in-page level tab strip of S2, S3, S4, S5 and S7 (FN-M12-1.1.9; FR-M12-09): six plain links to
- * unfiltered URLs of the mount, the current one soft kobalt. S1 and S6 show no strip. The strip scrolls
- * inside itself on a narrow screen. Targets are built from `basePath` (see `kirkpatrick-paths.ts`).
+ * unfiltered URLs of the mount, the current one active. S1 and S6 show no strip. The strip is a
+ * `DsPillNav` (it scrolls inside itself on a narrow screen). Targets are built from `basePath` (see
+ * `kirkpatrick-paths.ts`).
  */
 import { computed } from 'vue'
+
+import { DsPillNav, type PillItem } from '@/ds'
 
 import { kirkpatrickPaths } from './kirkpatrick-paths'
 
@@ -22,23 +25,17 @@ const TABS: { key: KirkpatrickTab; label: string; icon: string }[] = [
   { key: 'results', label: 'T4: Hasil', icon: 'i-ph-trophy' },
   { key: 'interventions', label: 'Intervensi', icon: 'i-ph-hand-heart' },
 ]
+const items = computed<PillItem<KirkpatrickTab>[]>(() =>
+  TABS.map((t) => ({ ...t, to: paths.value[t.key] })),
+)
 </script>
 
 <template>
-  <nav class="max-w-full overflow-x-auto" aria-label="Tahap Kirkpatrick" data-testid="kirk-tabs">
-    <div class="flex w-max gap-2">
-      <UButton
-        v-for="tab in TABS"
-        :key="tab.key"
-        :to="paths[tab.key]"
-        :label="tab.label"
-        :icon="tab.icon"
-        size="md"
-        :color="tab.key === current ? 'primary' : 'neutral'"
-        :variant="tab.key === current ? 'soft' : 'ghost'"
-        :data-testid="`kirk-tab-${tab.key}`"
-        :data-active="tab.key === current ? 'true' : 'false'"
-      />
-    </div>
-  </nav>
+  <DsPillNav
+    :items="items"
+    :active="current"
+    label="Tahap Kirkpatrick"
+    testid-prefix="kirk-tab"
+    data-testid="kirk-tabs"
+  />
 </template>

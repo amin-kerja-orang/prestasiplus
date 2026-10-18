@@ -10,7 +10,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsIcon, DsLoadError, DsNativeSelect, DsPage, DsPanel, DsPillNav } from '@/ds'
 
 import { fetchTeacherReport } from '../api'
 import ActivityPanel from '../components/laporan/ActivityPanel.vue'
@@ -20,9 +20,9 @@ import {
   loginPanelTitle,
   neverLoggedCount,
   practisePanelTitle,
+  RANGE_PILLS,
   rangeAgo,
 } from '../components/laporan/copy'
-import FilterCard from '../components/laporan/FilterCard.vue'
 import { grouped, parseId, parseRange, pctInt } from '../components/laporan/format'
 import ScorePanel from '../components/laporan/ScorePanel.vue'
 import StudentRows from '../components/laporan/StudentRows.vue'
@@ -63,31 +63,54 @@ function onClassChange(value: string): void {
   })
 }
 
+/** FN-M11-2.1.2: the pills link to `?range=N` only, so they drop `classroom_id` (live behaviour). */
+const rangeItems = RANGE_PILLS.map((p) => ({
+  key: p.range,
+  label: p.label,
+  to: { path: '/guru/laporan', query: { range: String(p.range) } },
+}))
+
 const d = computed(() => report.data.value)
 const n = computed(() => d.value?.population.total ?? 0)
 </script>
 
 <template>
   <DsPage data-testid="laporan-page">
-    <UAlert
-      v-if="report.error.value"
-      color="error"
-      variant="subtle"
-      icon="i-ph-warning"
-      :description="LAPORAN_COPY.loadFailed"
-    />
+    <DsLoadError v-if="report.error.value" @retry="report.reload" />
 
     <div v-else-if="!d" class="flex justify-center py-12 text-muted" data-testid="laporan-loading">
       <UProgress class="max-w-48" />
     </div>
 
     <template v-else>
-      <FilterCard
-        :range="range"
-        :classes="d.options.classes"
-        :classroom-id="d.classroomId"
-        @update:classroom="onClassChange"
-      />
+      <!-- FN-M11-2.1.1: the class select submits on change and keeps `range`. -->
+      <DsPanel data-testid="filter-card">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <p class="flex items-center gap-2 text-label text-highlighted">
+            <DsIcon name="funnel" class="size-4" />{{ LAPORAN_COPY.filterLabel }}
+          </p>
+          <DsNativeSelect
+            class="sm:w-64"
+            name="classroom_id"
+            aria-label="Kelas"
+            :model-value="d.classroomId === null ? '' : String(d.classroomId)"
+            data-testid="filter-classroom"
+            @update:model-value="onClassChange(String($event))"
+          >
+            <option value="">{{ LAPORAN_COPY.allClasses }}</option>
+            <option v-for="c in d.options.classes" :key="c.id" :value="String(c.id)">
+              {{ c.name }}
+            </option>
+          </DsNativeSelect>
+          <DsPillNav
+            :items="rangeItems"
+            :active="range"
+            label="Julat"
+            testid-prefix="range"
+            data-testid="range-pills"
+          />
+        </div>
+      </DsPanel>
 
       <div class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-testid="summary-cards">
         <SummaryCard

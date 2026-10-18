@@ -1,18 +1,15 @@
 <script setup lang="ts">
 /** "Tahap 2 — Head Count" (FN-M12-9.3.1; FR-M12-82; BR-M12-30): "{tahun} — Head Count" and one row per subject, "TOV:{x}" or "-". */
+import { DsPanel } from '@/ds'
+
 import type { StudentKirkpatrick } from '../../../api/types'
-import KirkpatrickPanel from '../common/KirkpatrickPanel.vue'
 import { gps } from '../common/kirkpatrick-format'
 
 defineProps<{ headcount: StudentKirkpatrick['headcount'] }>()
 </script>
 
 <template>
-  <KirkpatrickPanel
-    title="Tahap 2 — Head Count"
-    icon="i-ph-users-three"
-    data-testid="pel-headcount"
-  >
+  <DsPanel title="Tahap 2 — Head Count" icon="i-ph-users-three" data-testid="pel-headcount">
     <p class="mb-2 text-label text-highlighted" data-testid="pel-hc-heading">
       {{ headcount.year }} — Head Count
     </p>
@@ -29,5 +26,5 @@ defineProps<{ headcount: StudentKirkpatrick['headcount'] }>()
         }}</span>
       </li>
     </ul>
-  </KirkpatrickPanel>
+  </DsPanel>
 </template>
