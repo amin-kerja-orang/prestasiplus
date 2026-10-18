@@ -45,6 +45,7 @@ import DsGalleryStates from './DsGalleryStates.vue'
 import DsGalleryTables from './DsGalleryTables.vue'
 import DsGalleryForms from './DsGalleryForms.vue'
 import DsGalleryPage from './DsGalleryPage.vue'
+import DsGalleryPrimitives from './DsGalleryPrimitives.vue'
 import DsGalleryWave0 from './DsGalleryWave0.vue'
 
 const toast = useToast()
@@ -466,5 +467,6 @@ const drilled = ref('')
     <DsGalleryStates />
     <DsGalleryForms />
     <DsGalleryPage />
+    <DsGalleryPrimitives />
   </div>
 </template>
