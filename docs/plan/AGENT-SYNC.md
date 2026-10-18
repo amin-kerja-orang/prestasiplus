@@ -76,7 +76,7 @@ gh issue list --label lead --state open      # LEAD instructions: do what applie
    - every card in `Depends on` is `done`;
    - **no clash:** no card currently `in-progress` or `review` in the same lane touches the same module folder or Prisma file (check the "Files" or scope section of both card files). Two cards of one lane may run in parallel only when neither depends on the other and their files do not overlap (example: BE-08 curriculum and BE-11 wallet).
 3. Take the ready card with the **highest priority** (P0, then P1, then P2); on a tie, the one that unblocks the most other cards (the most cards list it in `Depends on`); then the lowest card number.
-4. Read the lane prompt of that card's lane (`agent-kickoff/PC-n.md`, where `PC-n` is the `Lane` column) for its folders, rules and verification, then the card file.
+4. Read the lane prompt of that card's lane (`agent-kickoff/PC-n.md`, where `PC-n` is the `Lane` column) for its folders, rules and verification, then the card file. Before writing code, also read the requirements for your domain in [v2-backend-urs.md](../requirements/v2-backend-urs.md) (your BE-FR rows plus the BE-NFR, BE-MIG and BE-OPS sections) and the developer handbook [backend-dev-guide.md](backend-dev-guide.md).
 
 ## 2. Claim it immediately (before writing code)
 

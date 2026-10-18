@@ -127,6 +127,7 @@ The NestJS + PostgreSQL backend is built by several PCs and Claude Code sessions
 - Status of all 40 cards (BE-01 to BE-40): [docs/plan/backend-tracker.md](docs/plan/backend-tracker.md). Backend sessions edit only their own rows; `docs/TRACKER.md` stays lead-only.
 - Lanes, order, sync points, Gantt, file-ownership map and the GitHub flow: [docs/plan/sessions.md](docs/plan/sessions.md).
 - Paste-ready agent prompts per lane and how to start a PC: [docs/plan/agent-kickoff/](docs/plan/agent-kickoff/README.md). Task cards: [docs/plan/backend-tasks/](docs/plan/backend-tasks/README.md).
+- Backend requirements (functional, non-functional, migration, ops, traceability to cards): [docs/requirements/v2-backend-urs.md](docs/requirements/v2-backend-urs.md). Developer handbook (layout, module anatomy, errors and BM copy, Prisma, testing, Definition of Done): [docs/plan/backend-dev-guide.md](docs/plan/backend-dev-guide.md). Read both before working on a card.
 - Backend agents: branch `be/<card-id>-<slug>` from `feature/v2-backend`, PR into it, contract first, work only in your lane's folders, never `src/**`, `e2e/**` or `docs/TRACKER.md`, no secrets and no access to the old systems' databases (the lead supplies anonymised dumps out-of-band).
 
 ## 9. How to pick up a task

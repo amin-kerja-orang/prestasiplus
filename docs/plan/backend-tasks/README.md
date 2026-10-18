@@ -2,6 +2,8 @@
 
 One card per task. Each card is self-contained: goal, inputs (exact paths), outputs, endpoints, tables, testable acceptance criteria, test commands, dependencies, size, and a **Prompt for Claude Code** block to paste as-is. Read [../../architecture/v2-backend-plan.md](../../architecture/v2-backend-plan.md) once before the first card. Sizes: S up to 0.5 day, M 1 to 2 days, L 3 to 5 days (one developer or one agent session).
 
+Requirements and handbook: every card is traced to a requirement ID (BE-FR / BE-NFR / BE-MIG / BE-OPS) in [../../requirements/v2-backend-urs.md](../../requirements/v2-backend-urs.md) (section 9.2 lists the requirements per card); how to write the code is in [../backend-dev-guide.md](../backend-dev-guide.md).
+
 Programme view: status per card is in [../backend-tracker.md](../backend-tracker.md); lanes, order and sync points are in [../sessions.md](../sessions.md); paste-ready agent prompts per lane are in [../agent-kickoff/](../agent-kickoff/README.md). BE-34 to BE-40 were added on 2026-10-19 (migration-first design and the D52 SPM intake / paper builder).
 
 Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak attempts / teacher / reports / economy, 4 aggregates and integration, M = migration stream (independent of the API lanes, blocked only by OD-2 and OD-10).
