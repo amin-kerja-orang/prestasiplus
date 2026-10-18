@@ -277,11 +277,6 @@ const accountItems = computed(() => [
                   size="sm"
                   class="lg:hidden"
                 />
-                <span
-                  class="hidden h-8 max-w-64 items-center truncate rounded-full bg-elevated px-3 text-caption font-medium text-muted lg:inline-flex"
-                  data-testid="pentadbiran-scope-chip"
-                  >{{ SCOPE_CHIP }}</span
-                >
                 <UButton
                   color="neutral"
                   variant="ghost"
