@@ -25,7 +25,7 @@ const crumbs = computed(() => [
 </script>
 
 <template>
-  <DsBreadcrumb :items="crumbs" data-testid="sd-breadcrumb" />
+  <DsBreadcrumb v-if="crumbs.length > 1" :items="crumbs" data-testid="sd-breadcrumb" />
 
   <DsPanel data-testid="sd-banner">
     <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">

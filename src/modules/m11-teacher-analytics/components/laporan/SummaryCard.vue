@@ -4,10 +4,11 @@
  * "Klik untuk ..." hint with a chevron that turns when open. A card with a click handler, as live
  * (D10: no role, no tabindex). The open card takes the outlined variant (the single focus point).
  */
-import { DsIconChip } from '@/ds'
+import { type DsAccent, DsIconChip } from '@/ds'
 
 defineProps<{
   icon: string
+  accent?: DsAccent
   value: string
   title: string
   hint: string
@@ -27,7 +28,7 @@ defineEmits<{ toggle: [] }>()
   >
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between gap-2">
-        <DsIconChip :icon="icon" />
+        <DsIconChip :icon="icon" :accent="accent" />
         <span class="tabular text-heading text-highlighted" data-testid="card-value">{{
           value
         }}</span>

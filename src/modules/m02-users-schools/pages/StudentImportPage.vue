@@ -170,6 +170,7 @@ async function submit(): Promise<void> {
           title="Sekolah"
           description="Pilih sekolah dan semak kuota pelajar."
           icon="buildings"
+          accent="win"
           :columns="2"
         >
           <div class="flex flex-col gap-4 sm:col-span-2">
@@ -189,6 +190,7 @@ async function submit(): Promise<void> {
           title="Darjah / Tingkatan"
           description="Pilih tahap pelajar yang diimport."
           icon="graduation-cap"
+          accent="heat"
           :columns="2"
         >
           <div class="flex min-w-0 flex-col gap-4 sm:col-span-2" data-testid="student-classes">
@@ -254,6 +256,7 @@ async function submit(): Promise<void> {
           title="Data Pelajar"
           description="Muat naik CSV atau tampal data DELIMa."
           icon="file-arrow-up"
+          accent="friend"
           :columns="2"
         >
           <div class="sm:col-span-2">
@@ -307,7 +310,7 @@ async function submit(): Promise<void> {
         <DsPanel flush data-testid="student-hero">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
             <div class="flex items-center gap-4">
-              <DsIconChip icon="identification-card" size="lg" />
+              <DsIconChip icon="identification-card" accent="trial" size="lg" />
               <h3 class="text-subheading text-highlighted">Login pelajar</h3>
             </div>
             <div class="flex flex-wrap gap-2">

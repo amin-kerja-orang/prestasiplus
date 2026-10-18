@@ -200,5 +200,18 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
       retry-testid="progress-retry"
       @retry="reload"
     />
+
+    <div
+      v-else
+      class="flex flex-col gap-4"
+      role="status"
+      aria-label="Memuatkan kemajuan"
+      data-testid="progress-loading"
+    >
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <USkeleton v-for="i in 4" :key="i" class="h-24" />
+      </div>
+      <USkeleton class="h-64" />
+    </div>
   </DsPage>
 </template>

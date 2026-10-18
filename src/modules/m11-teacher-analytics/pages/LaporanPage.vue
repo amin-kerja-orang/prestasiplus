@@ -115,6 +115,7 @@ const n = computed(() => d.value?.population.total ?? 0)
       <div class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-testid="summary-cards">
         <SummaryCard
           icon="i-ph-sign-in"
+          accent="action"
           :value="pctInt(d.population.loggedIn, n)"
           :title="LAPORAN_COPY.loginTitle"
           :hint="LAPORAN_COPY.clickList"
@@ -138,6 +139,7 @@ const n = computed(() => d.value?.population.total ?? 0)
 
         <SummaryCard
           icon="i-ph-pencil-simple"
+          accent="win"
           :value="pctInt(d.population.practised, n)"
           :title="LAPORAN_COPY.practiseTitle"
           :hint="LAPORAN_COPY.clickList"
@@ -152,6 +154,7 @@ const n = computed(() => d.value?.population.total ?? 0)
 
         <SummaryCard
           icon="i-ph-chart-bar"
+          accent="heat"
           :value="grouped(d.activity.total)"
           :title="LAPORAN_COPY.activityTitle"
           :hint="LAPORAN_COPY.clickBreakdown"
@@ -166,6 +169,7 @@ const n = computed(() => d.value?.population.total ?? 0)
 
         <SummaryCard
           icon="i-ph-star"
+          accent="trial"
           :value="d.score.overall === null ? LAPORAN_COPY.noScore : `${d.score.overall}%`"
           :title="LAPORAN_COPY.scoreTitle"
           :hint="LAPORAN_COPY.clickBreakdown"

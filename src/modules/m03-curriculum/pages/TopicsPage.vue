@@ -10,6 +10,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { useApi } from '@/composables'
 import { DsEmptyState, DsIconChip, DsPage } from '@/ds'
 
+import { topicAccent, topicGlyph } from '../lib/topic-accent'
 import { fetchTopics } from '../api/student-curriculum'
 import {
   EMPTY_TOPICS,
@@ -101,7 +102,7 @@ const loaded = computed(() => data.value !== null)
           :data-topic-id="t.id"
         >
           <div class="flex items-start justify-between gap-2">
-            <DsIconChip icon="i-ph-books-duotone" accent="action" size="lg" />
+            <DsIconChip :icon="topicGlyph(t.subject)" :accent="topicAccent(t.subject)" size="lg" />
             <span
               class="rounded-full bg-elevated px-3 py-1 text-caption font-bold text-default"
               data-testid="topic-subtopic-count"

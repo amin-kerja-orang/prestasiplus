@@ -225,8 +225,8 @@ async function submit(): Promise<void> {
               :data-testid="`grade-${String(n)}`"
               @click="grade = n"
             >
-              <span class="text-caption">Darjah</span>
-              <span class="text-subheading">{{ n }}</span>
+              <span class="text-caption text-muted">Darjah</span>
+              <span class="text-subheading text-highlighted">{{ n }}</span>
             </DsPanel>
           </div>
         </div>
@@ -245,8 +245,8 @@ async function submit(): Promise<void> {
               :data-testid="`grade-${String(n + 6)}`"
               @click="grade = n + 6"
             >
-              <span class="text-caption">Ting.</span>
-              <span class="text-subheading">{{ n }}</span>
+              <span class="text-caption text-muted">Ting.</span>
+              <span class="text-subheading text-highlighted">{{ n }}</span>
             </DsPanel>
           </div>
         </div>
