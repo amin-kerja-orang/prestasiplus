@@ -20,7 +20,10 @@ export const moodLabel = (v: Mood | null) =>
   v === null ? '' : (MOODS.find((m) => m.value === v)?.label ?? v)
 
 /** Status badge colour (PROPOSED layout, FN-M12-8.3.2); the badge also prints the status word. */
-export const STATUS_COLOR: Record<NonNullable<InterventionStatus>, 'warning' | 'success' | 'error'> = {
+export const STATUS_COLOR: Record<
+  NonNullable<InterventionStatus>,
+  'warning' | 'success' | 'error'
+> = {
   'Menunggu Semakan': 'warning',
   Meningkat: 'success',
   Menurun: 'error',

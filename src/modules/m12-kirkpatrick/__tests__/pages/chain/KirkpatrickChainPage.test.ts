@@ -205,7 +205,7 @@ describe('S6 correlation and conclusions (AC-M12-26.1, 26.2)', () => {
 
   it('scrolls the correlation table inside its card', async () => {
     const w = await open()
-    expect(t(w, 'chain-correlation').find('.overflow-x-auto').exists()).toBe(true)
+    expect(t(w, 'chain-correlation').find('[data-ds="paged-table"]').exists()).toBe(true)
   })
 })
 

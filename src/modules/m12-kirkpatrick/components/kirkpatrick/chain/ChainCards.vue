@@ -89,17 +89,13 @@ const steps = computed<Step[]>(() => {
 <template>
   <div class="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-2" data-testid="chain-cards">
     <template v-for="(s, i) in steps" :key="s.key">
-      <UCard
-        class="min-w-0 flex-1"
-        :data-testid="`chain-${s.key}`"
-        :data-tone="s.color"
-      >
+      <UCard class="min-w-0 flex-1" :data-testid="`chain-${s.key}`" :data-tone="s.color">
         <template #header>
           <div class="flex items-start gap-3">
             <UBadge :color="s.color" variant="soft" :label="s.tag" />
             <div class="flex min-w-0 flex-col gap-1">
               <h2 class="text-label text-highlighted">{{ s.title }}</h2>
-              <p class="text-caption text-muted">{{ s.sub }}</p>
+              <p class="text-body text-muted">{{ s.sub }}</p>
             </div>
           </div>
         </template>
@@ -116,8 +112,8 @@ const steps = computed<Step[]>(() => {
           </div>
         </dl>
         <template v-if="s.key === 't3'">
-          <p class="mt-3 text-caption text-muted">Taburan Konsistensi:</p>
-          <ul class="mt-1 flex flex-col gap-1 text-caption text-default" data-testid="chain-bands">
+          <p class="mt-3 text-body text-muted">Taburan Konsistensi:</p>
+          <ul class="mt-1 flex flex-col gap-1 text-body text-default" data-testid="chain-bands">
             <li
               v-for="b in chain.t3.bands"
               :key="b.key"

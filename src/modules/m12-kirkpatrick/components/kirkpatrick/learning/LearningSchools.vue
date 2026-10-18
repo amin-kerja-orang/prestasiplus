@@ -8,8 +8,6 @@ import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
-import { DsDataTable } from '@/ds'
-
 import type { Learning } from '../../../api/types'
 import {
   accuracyText,
@@ -19,6 +17,7 @@ import {
   plain,
   type KirkpatrickPaths,
 } from '../common'
+import KirkpatrickTable from '../common/KirkpatrickTable.vue'
 
 const props = defineProps<{ schools: Learning['schools']; paths: KirkpatrickPaths }>()
 
@@ -73,19 +72,18 @@ const cardFields = [
     icon="i-ph-buildings"
     data-testid="kirk-schools"
   >
-    <DsDataTable
+    <KirkpatrickTable
       :data="rows"
       :columns="columns"
       caption="Pembelajaran mengikut sekolah"
       card-title="name"
       :card-fields="cardFields"
-      :page-size="1000"
       data-testid="kirk-schools-scroller"
     >
       <template #name-cell="{ row }">
         <RouterLink
           :to="paths.monitoringSchool(row.original.schoolId)"
-          class="text-label text-primary"
+          class="line-clamp-2 max-w-72 text-label text-primary"
           data-testid="kirk-school-link"
           >{{ row.original.name }}</RouterLink
         >
@@ -97,6 +95,6 @@ const cardFields = [
           >{{ row.original.accuracyText }}</span
         >
       </template>
-    </DsDataTable>
+    </KirkpatrickTable>
   </KirkpatrickTableSection>
 </template>

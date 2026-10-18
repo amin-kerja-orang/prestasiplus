@@ -11,6 +11,7 @@ import {
   DsErrorPage,
   DsFilterBar,
   DsPage,
+  DsPagedTable,
   DsThemeScope,
   useConfirm,
 } from '@/ds'
@@ -95,8 +96,33 @@ describe('DsDataTable', () => {
     const w = mount(DsDataTable, { props: { data: [], columns, error: 'Gagal memuatkan' } })
     await wait()
     expect(w.text()).toContain('Gagal memuatkan')
-    await w.findAll('button').find((b) => b.text() === 'Cuba Lagi')!.trigger('click')
+    await w
+      .findAll('button')
+      .find((b) => b.text() === 'Cuba Lagi')!
+      .trigger('click')
     expect(w.emitted('retry')).toHaveLength(1)
+  })
+})
+
+describe('DsPagedTable', () => {
+  const data = Array.from({ length: 45 }, (_, i) => ({ nama: `Murid #${i + 1}.`, skor: 'x' }))
+  const columns = [
+    { accessorKey: 'nama', header: 'Nama' },
+    { accessorKey: 'skor', header: 'Skor' },
+  ]
+  it('pages 20 rows by default with the BM summary and a page-size selector', async () => {
+    const w = mount(DsPagedTable, { props: { data, columns } })
+    await wait()
+    expect(w.text()).toContain('Menunjukkan 1-20 daripada 45 hasil')
+    expect(w.text()).toContain('Murid #20.')
+    expect(w.text()).not.toContain('Murid #21.')
+    expect(w.find('[aria-label="Bilangan baris setiap halaman"]').exists()).toBe(true)
+  })
+  it('keeps the header and shows the empty label when there are no rows', async () => {
+    const w = mount(DsPagedTable, { props: { data: [], columns, emptyLabel: 'Tiada pelajar' } })
+    await wait()
+    expect(w.find('thead').exists()).toBe(true)
+    expect(w.text()).toContain('Tiada pelajar')
   })
 })
 

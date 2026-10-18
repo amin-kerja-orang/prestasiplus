@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
- * S2 KPI cards, `#section-ringkasan` (FN-M11-3.3.1 / 3.3.2; FR-M11-35, 36). Row 1: six cards
- * (`grid-cols-2 lg:grid-cols-3 xl:grid-cols-6`); row 2: three (`grid-cols-2 sm:grid-cols-3`).
+ * S2 KPI strip, `#section-ringkasan` (FN-M11-3.3.1 / 3.3.2; FR-M11-35, 36). Row 1: six tiles
+ * (`grid-cols-2 lg:grid-cols-3 xl:grid-cols-6`); row 2: the three teacher tiles. Roomy `DsStatTile`s.
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsStatTile } from '@/ds'
+import type { DsAccent } from '@/ds/types'
 
 import type { MonitoringKpi } from '../../api/types'
 import { avg, count, pct } from './monitoring-format'
@@ -16,52 +17,59 @@ interface Card {
   key: string
   label: string
   value: string
-  sub?: string
   icon: string
+  accent: DsAccent
+  tone: string
 }
 
 const row1 = computed<Card[]>(() => [
   {
     key: 'schools',
-    label: 'Jumlah Sekolah',
+    label: 'Jumlah Sekolah · Berdaftar',
     value: count(props.kpi.schools),
-    sub: 'Berdaftar',
     icon: 'i-ph-buildings',
+    accent: 'action',
+    tone: 'text-primary',
   },
   {
     key: 'students',
-    label: 'Pelajar T4/T5',
+    label: 'Pelajar T4/T5 · Berdaftar',
     value: count(props.kpi.students),
-    sub: 'Berdaftar',
     icon: 'i-ph-graduation-cap',
+    accent: 'friend',
+    tone: 'text-highlighted',
   },
   {
     key: 'engaged',
-    label: 'Pernah Aktif',
+    label: 'Pernah Aktif · Min. 1 soalan',
     value: count(props.kpi.engaged),
-    sub: 'Min. 1 soalan',
     icon: 'i-ph-check-circle',
+    accent: 'win',
+    tone: 'text-success',
   },
   {
     key: 'engagement',
-    label: '% Penglibatan',
+    label: '% Penglibatan · Keseluruhan',
     value: pct(props.kpi.engagementPct),
-    sub: 'Keseluruhan',
     icon: 'i-ph-chart-line-up',
+    accent: 'heat',
+    tone: 'text-primary',
   },
   {
     key: 'answers',
-    label: 'Soalan Dijawab',
+    label: 'Soalan Dijawab · Total',
     value: count(props.kpi.answers),
-    sub: 'Total',
     icon: 'i-ph-pencil-simple',
+    accent: 'trial',
+    tone: 'text-highlighted',
   },
   {
     key: 'average',
-    label: 'Purata/Pelajar',
+    label: 'Purata/Pelajar · Soalan/pelajar aktif',
     value: avg(props.kpi.avgPerStudent),
-    sub: 'Soalan/pelajar aktif',
     icon: 'i-ph-calculator',
+    accent: 'action',
+    tone: 'text-highlighted',
   },
 ])
 
@@ -71,50 +79,55 @@ const row2 = computed<Card[]>(() => [
     label: 'Guru Berdaftar',
     value: count(props.kpi.teachers),
     icon: 'i-ph-chalkboard-teacher',
+    accent: 'friend',
+    tone: 'text-highlighted',
   },
   {
     key: 'teachersLoggedIn',
     label: 'Guru Pernah Login',
     value: count(props.kpi.teachersLoggedIn),
     icon: 'i-ph-sign-in',
+    accent: 'win',
+    tone: 'text-success',
   },
   {
     key: 'teacherPct',
     label: '% Penglibatan Guru',
     value: pct(props.kpi.teacherPct),
     icon: 'i-ph-percent',
+    accent: 'heat',
+    tone: 'text-primary',
   },
 ])
 </script>
 
 <template>
-  <section id="section-ringkasan" class="flex flex-col gap-3" data-testid="mon-kpis">
-    <div class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-      <UCard v-for="c in row1" :key="c.key" class="min-w-0" :data-testid="`mon-kpi-${c.key}`">
-        <div class="flex items-start justify-between gap-2">
-          <div class="flex min-w-0 flex-col gap-1">
-            <p class="text-caption text-muted">{{ c.label }}</p>
-            <p class="tabular text-heading text-highlighted" data-testid="mon-kpi-value">
-              {{ c.value }}
-            </p>
-            <p v-if="c.sub" class="text-caption text-dimmed">{{ c.sub }}</p>
-          </div>
-          <DsIconChip :icon="c.icon" />
-        </div>
-      </UCard>
+  <section id="section-ringkasan" class="flex flex-col gap-4" data-testid="mon-kpis">
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+      <DsStatTile
+        v-for="c in row1"
+        :key="c.key"
+        roomy
+        :value="c.value"
+        :unit="c.label"
+        :icon="c.icon"
+        :accent="c.accent"
+        :value-class="c.tone"
+        :data-testid="`mon-kpi-${c.key}`"
+      />
     </div>
-    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <UCard v-for="c in row2" :key="c.key" class="min-w-0" :data-testid="`mon-kpi-${c.key}`">
-        <div class="flex items-start justify-between gap-2">
-          <div class="flex min-w-0 flex-col gap-1">
-            <p class="text-caption text-muted">{{ c.label }}</p>
-            <p class="tabular text-heading text-highlighted" data-testid="mon-kpi-value">
-              {{ c.value }}
-            </p>
-          </div>
-          <DsIconChip :icon="c.icon" />
-        </div>
-      </UCard>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <DsStatTile
+        v-for="c in row2"
+        :key="c.key"
+        roomy
+        :value="c.value"
+        :unit="c.label"
+        :icon="c.icon"
+        :accent="c.accent"
+        :value-class="c.tone"
+        :data-testid="`mon-kpi-${c.key}`"
+      />
     </div>
   </section>
 </template>

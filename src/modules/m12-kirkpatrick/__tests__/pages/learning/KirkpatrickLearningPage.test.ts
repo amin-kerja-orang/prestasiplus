@@ -139,7 +139,7 @@ describe('S3 school table (AC-M12-13.1..13.3)', () => {
 
   it('scrolls inside its card; links follow the guru mount', async () => {
     const w = await open('/guru/kirkpatrick')
-    expect(t(w, 'kirk-schools-scroller').find('.overflow-x-auto').exists()).toBe(true)
+    expect(t(w, 'kirk-schools-scroller').find('[data-ds="paged-table"]').exists()).toBe(true)
     expect(all(w, 'kirk-school-link')[0]!.attributes('href')).toBe('/guru/monitoring/sekolah/8880')
     expect(t(w, 'kirk-tab-overview').attributes('href')).toBe('/guru/kirkpatrick')
   })

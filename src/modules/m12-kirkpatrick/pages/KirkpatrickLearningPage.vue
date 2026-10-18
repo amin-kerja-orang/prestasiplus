@@ -41,7 +41,10 @@ const { data, error, loading } = useKirkpatrickPage(
 </script>
 
 <template>
-  <DsPage data-testid="kirk-learning-page">
+  <DsPage
+    data-testid="kirk-learning-page"
+    subtitle="Peningkatan pengetahuan, kemahiran, dan kefahaman pelajar"
+  >
     <KirkpatrickTabs :base-path="basePath" current="learning" />
 
     <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />

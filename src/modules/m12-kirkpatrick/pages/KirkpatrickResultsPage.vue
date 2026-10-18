@@ -47,7 +47,10 @@ const { data, error, loading } = useKirkpatrickPage(
 </script>
 
 <template>
-  <DsPage data-testid="kirk-results">
+  <DsPage
+    data-testid="kirk-results"
+    subtitle="Impak terhadap keputusan peperiksaan dan prestasi akademik"
+  >
     <KirkpatrickTabs :base-path="basePath" current="results" />
     <KirkpatrickLoadState :loading="loading" :error="error" :has-data="data !== null" />
     <template v-if="data">

@@ -86,13 +86,8 @@ const steps = computed<Step[]>(() => [
         >
           <DsIconChip :icon="s.icon" size="lg" />
           <span class="text-label text-highlighted">{{ s.label }}</span>
-          <span class="text-caption text-muted">{{ s.sub }}</span>
-          <UBadge
-            color="primary"
-            variant="soft"
-            :label="s.pill"
-            data-testid="kirk-flow-pill"
-          />
+          <span class="text-body text-muted">{{ s.sub }}</span>
+          <UBadge color="primary" variant="soft" :label="s.pill" data-testid="kirk-flow-pill" />
         </KirkpatrickLink>
       </div>
     </div>
@@ -107,9 +102,9 @@ const steps = computed<Step[]>(() => [
           <DsIconChip :icon="s.icon" size="sm" />
           <span class="min-w-0 flex-1">
             <span class="block text-label text-highlighted">{{ s.label }}</span>
-            <span class="block text-caption text-muted">{{ s.sub }}</span>
+            <span class="block text-body text-muted">{{ s.sub }}</span>
           </span>
-          <span class="shrink-0 text-caption text-primary" data-testid="kirk-flow-pill">{{
+          <span class="shrink-0 text-body text-primary" data-testid="kirk-flow-pill">{{
             s.pill
           }}</span>
           <UIcon v-if="s.to !== null" name="i-ph-caret-right" class="size-4 shrink-0 text-dimmed" />

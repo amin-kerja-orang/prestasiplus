@@ -41,7 +41,11 @@ const paragraph = computed(() => alesaParagraph(props.data))
         <p class="text-caption text-muted">Streak</p>
       </UCard>
     </div>
-    <p v-if="data.strongest && data.weakest" class="mt-3 text-caption text-muted" data-testid="pel-strength">
+    <p
+      v-if="data.strongest && data.weakest"
+      class="mt-3 text-caption text-muted"
+      data-testid="pel-strength"
+    >
       Terkuat:
       <strong>{{ data.strongest.subjectName }} ({{ pct1(data.strongest.accuracy) }})</strong>
       · Perlu perhatian:

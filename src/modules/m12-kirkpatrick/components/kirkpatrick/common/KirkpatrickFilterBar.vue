@@ -67,7 +67,7 @@ function submit() {
 
 <template>
   <UCard>
-    <form class="flex flex-wrap items-end gap-3" data-testid="kirk-filter" @submit.prevent="submit">
+    <form class="flex flex-wrap items-end gap-4" data-testid="kirk-filter" @submit.prevent="submit">
       <UFormField label="Sekolah" class="min-w-0 basis-full sm:basis-64">
         <USelect
           v-model="schoolModel"
@@ -88,8 +88,7 @@ function submit() {
       </UFormField>
       <UButton
         type="submit"
-        size="lg"
-        class="min-h-11"
+        size="md"
         icon="i-ph-funnel"
         label="Tapis"
         data-testid="kirk-filter-apply"
@@ -97,8 +96,7 @@ function submit() {
       <UButton
         v-if="schoolId !== '' || (withState && state !== '')"
         :to="resetTo"
-        size="lg"
-        class="min-h-11"
+        size="md"
         color="neutral"
         variant="soft"
         icon="i-ph-x"
