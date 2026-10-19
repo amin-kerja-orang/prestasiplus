@@ -62,7 +62,7 @@ Submit, approve and publish of the resulting questions use the BE-10 endpoints; 
 
 ## DB tables touched
 
-New: `intake_items`, `intake_item_events`, `duplicate_links`. Writes questions only through `QuestionsService`.
+New: `intake_items`, `intake_item_events`, `duplicate_links`; adds the nullable `intake_batches.source_paper_id` pointer to `source_papers` (BE-10; D53/OWN-1: `intake_batches` is the Submission, `source_papers` the paper identity and rights registry). Frontend routes of the D52 review flow (UI, not API): intake list `/admin/spm/soalan/ekstrak`, review `/admin/spm/soalan/ekstrak/:batchId`, review queue `/admin/spm/semakan`, bank `/admin/spm/soalan`. Writes questions only through `QuestionsService`.
 
 ## Acceptance criteria
 

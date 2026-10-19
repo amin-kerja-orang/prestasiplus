@@ -49,6 +49,10 @@ Everything a PC may write for this card. A path outside this list needs a `cross
 - Append-only shared files (one line each, never reorder): `apps/api/src/modules/index.ts` (one import and one array entry); `apps/api/prisma/migratable-models.json` (model names, alphabetical); your own rows of the mapping matrix, plan section 14.7; `docs/architecture/v2-backend-deviations.md` (a dated row only if you deviate); your own row in `docs/plan/backend-tracker.md`.
 - No-clash note: intake.prisma is shared with BE-38 and BE-40 (BE-38 depends on BE-37, BE-40 on BE-38). BE-37 runs in parallel with BE-36 (ai.prisma) and BE-10.
 
+**D53/OWN-1 (owner decision, 2026-10-19):** `intake_batches` IS the question-paper Submission. There is no separate `question_submissions` table (dropped from BE-10); the mock routes `GET /api/question-submissions*`, `PATCH /api/question-submissions/:id/status` and `POST /api/guru/question-papers` are served by the batch endpoints below. `source_papers` (BE-10) stays the paper identity and rights registry; BE-38 adds the nullable `intake_batches.source_paper_id` pointer once BE-10 has merged.
+
+Frontend routes of the D52 admin flow (merged locally, pending push): upload `/admin/spm/soalan/muat-naik`, intake list `/admin/spm/soalan/ekstrak`, review `/admin/spm/soalan/ekstrak/:batchId`, bank `/admin/spm/soalan`, review queue `/admin/spm/semakan`, papers `/admin/spm/kertas`. These are UI routes, not API paths.
+
 ## Endpoints (new; Guru for own batches, Admin Pusat for all; no mock route exists; paths fixed in this card's contract PR)
 
 | Method and path | Notes |
@@ -58,6 +62,7 @@ Everything a PC may write for this card. A path outside this list needs a `cross
 | `GET /api/intake/batches`, `GET /api/intake/batches/:id` | status Dihantar / Sedang diproses / Sedia untuk semakan / Gagal, per-file progress |
 | `GET /api/intake/files/:id/pages/:n/image`, `GET /api/intake/files/:id/pages/:n/thumb` | authenticated, scope-checked image serving |
 | `GET /api/intake/figures/:id/image` | figure crop |
+| `GET /api/intake/files/:id/original` | download of the stored original (replaces mock `GET /api/question-submissions/:id/files/:index`): owner Guru or Admin Pusat, `Content-Disposition: attachment`, stored `Content-Type`, `nosniff`; others 404 |
 | `POST /api/intake/batches/:id/cancel` | cancel pending jobs |
 
 The browser mock tracks a batch as `draf` / `semakan` only (review state, BE-38); the processing statuses above are new (D52).
@@ -109,6 +114,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. BM wording for upload rejections (type, size, pages, encrypted, duplicate) is not in any spec. Working assumption: short new copy listed in the PR; the lead approves it.
 2. Which input formats beyond PDF (OD-20 / Q10 of v2-question-bank)? Working assumption: PDF only in this card.
+3. Submission statuses (D53/OWN-1): the mock Submission has `pending|processing|done|rejected` plus `adminNotes` (max 1000 characters, message "Nota admin tidak boleh melebihi 1000 aksara."); the batch has Dihantar / Sedang diproses / Sedia untuk semakan / Gagal. Working assumption: keep the batch statuses, add a nullable `admin_notes` column on `intake_batches` edited by Admin Pusat, and let the UI map the labels. Lead to confirm.
 
 ## Prompt for Claude Code
 

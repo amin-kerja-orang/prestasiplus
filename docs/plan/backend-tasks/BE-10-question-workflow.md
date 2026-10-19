@@ -1,4 +1,4 @@
-# BE-10 Question workflow: reports, submissions, imports, quality, DSKP source
+# BE-10 Question workflow: reports, imports, quality, DSKP source
 
 | Field | Value |
 |---|---|
@@ -12,7 +12,7 @@
 
 ## Goal
 
-The review lifecycle and the supporting M04 features: Draf, Semakan, Lulus, Terbit, Diarkib transitions with audit, Guru verification of own uploads, Admin Pusat approval/publication, student question reports, teacher submissions, CSV import with templates, quality audit, diagram audit, DSKP source lookups, AI-explanation **stub**.
+The review lifecycle and the supporting M04 features: Draf, Semakan, Lulus, Terbit, Diarkib transitions with audit, Guru verification of own uploads, Admin Pusat approval/publication, student question reports, CSV import with templates, quality audit, diagram audit, DSKP source lookups, AI-explanation **stub**.
 
 ## Inputs (read these)
 
@@ -28,7 +28,7 @@ The review lifecycle and the supporting M04 features: Draf, Semakan, Lulus, Terb
 ## Outputs
 
 - Contract: `packages/contract/src/question-workflow/**` (a new contract folder for lane PC-5; add it to the lane list in `sessions.md` section 5 in the same PR via the lead)
-- `apps/api/prisma/schema/questions-workflow.prisma` + migration: `question_reports`, `question_submissions`, `question_imports`, `question_status_events`, `source_papers` (provenance, rights declaration, `natural_key`, `content_hash` for the BE-30 backfill), `quality_audits`
+- `apps/api/prisma/schema/questions-workflow.prisma` + migration: `question_reports`, `question_imports`, `question_status_events`, `source_papers` (provenance, rights declaration, `natural_key`, `content_hash` for the BE-30 backfill), `quality_audits`
 - `apps/api/src/modules/questions/workflow/**` (lane PC-5; code and tables are separate from PC-2's `questions/` and `questions.prisma`, so this card never edits them; it calls `QuestionsService.setStatus` from BE-09)
 - Tests under `apps/api/test/questions-workflow/**`
 
@@ -52,12 +52,12 @@ Every route below exists in the mock (verified).
 | Method and path | Notes |
 |---|---|
 | `POST /api/question-reports`, `GET /api/question-reports`, `GET /api/question-reports/mine`, `PATCH /api/question-reports/:id` | any signed-in user reports (mock `#15`); admin lists and resolves; a report that deactivates calls `QuestionsRepository.deactivate` |
-| `GET /api/question-submissions`, `GET /api/question-submissions/:id/files/:index`, `PATCH /api/question-submissions/:id/status` | teacher submissions queue, file download, status change |
+| ~~`GET /api/question-submissions`~~, ~~`GET /api/question-submissions/:id/files/:index`~~, ~~`PATCH /api/question-submissions/:id/status`~~ | **Not ported here (D53/OWN-1).** There is one table for a question-paper submission: `intake_batches` (BE-37) is the Submission and `question_submissions` is dropped. Each mock route is served by intake: the queue list and detail by `GET /api/intake/batches` (BE-37); the file download by `GET /api/intake/files/:id/original` (BE-37); the teacher upload `POST /api/guru/question-papers` (listed in BE-18) by `POST /api/intake/batches` plus `.../files` (BE-37); the admin status/note change by the BE-37 cancel and BE-38 reject actions plus the batch note (BE-37 open question 3). `source_papers` stays the paper identity and rights registry that an intake batch points to (data model OWN-2). BE-10 adds no read endpoint over intake. |
 | `GET /api/question-imports`, `POST /api/question-imports`, `GET /api/question-imports/template` | Excel/CSV import with per-row report; every valid row becomes a `draft` question |
 | `GET /api/question-quality`, `POST /api/question-quality/audit` | quality dashboard and re-audit |
 | `GET /api/diagram-audit`, `POST /api/diagram-audit/:kind/:id/image`, `POST /api/diagram-audit/:kind/:id/dismiss` | diagram audit tools |
 | `POST /api/guru/questions/import`, `GET /api/guru/questions/template` | Guru CSV contribution (same import service) |
-| `GET /api/guru/dskp/bidang`, `GET /api/guru/dskp/sk`, `GET /api/guru/dskp/sp` | DSKP lookups for question tagging (the POSTs are BE-18) |
+| `GET /api/guru/dskp/bidang`, `GET /api/guru/dskp/sk`, `GET /api/guru/dskp/sp` | DSKP lookups for the teacher's picking list (the POSTs are BE-18). Questions are tagged with `curriculum_node` only (D53(h), v2-exam-schema D9); `dskp_*` rows are never a question tag |
 | `GET /api/master-notes`, `POST /api/master-notes/:id/:action` | notes lookup and the approve / unflag / regen actions (SRS BR-M04-23) |
 | `POST /api/questions/:id/ai-explanation` | **stub** (see criterion 8) |
 
@@ -65,7 +65,7 @@ The status-transition endpoint: the mock changes status through `POST /api/quest
 
 ## DB tables touched
 
-`question_reports`, `question_submissions`, `question_imports`, `question_status_events`, `source_papers`, `quality_audits`, `questions`, `files` (diagram image).
+`question_reports`, `question_imports`, `question_status_events`, `source_papers`, `quality_audits`, `questions`, `files` (diagram image).
 
 ## Acceptance criteria
 

@@ -12,7 +12,7 @@
 
 ## Goal
 
-CMS content (articles, banners, videos, notes, Perutusan messages, screenshots, audio KBAT sets) and the support-ticket flow (learner create/list, admin queue, notify admins). Audio KBAT student play is backlog; only the admin and set listing routes in the mock are carded here.
+CMS content (articles, banners, videos, notes, Perutusan messages, screenshots, audio KBAT sets) and the support-ticket flow (learner create/list, admin queue, notify admins). Student Audio KBAT play (set detail and attempt submit, matrix row 27) is in B1 (D53(a)).
 
 ## Inputs (read these)
 
@@ -29,7 +29,7 @@ CMS content (articles, banners, videos, notes, Perutusan messages, screenshots, 
 ## Outputs
 
 - Contract: `packages/contract/src/content/**`, `packages/contract/src/support/**`
-- `apps/api/prisma/schema/content.prisma` + migration (support tables live in the same file): `articles`, `article_attachments`, `banners`, `videos`, `video_schools`, `notes`, `perutusan`, `perutusan_comments`, `perutusan_reactions`, `perutusan_reads`, `screenshots`, `audio_kbat_sets`, `support_config`, `support_tickets`
+- `apps/api/prisma/schema/content.prisma` + migration (support tables live in the same file): `articles`, `article_attachments`, `banners`, `videos`, `video_schools`, `notes`, `perutusan`, `perutusan_comments`, `perutusan_reactions`, `perutusan_reads`, `screenshots`, `audio_kbat_sets`, `audio_kbat_attempts`, `support_config`, `support_tickets`
 - `apps/api/src/modules/content/**`, `apps/api/src/modules/support/**`
 - Seed `apps/api/prisma/seed/content.ts` (a handful of fictitious articles, banners, videos; one line in the registry)
 - Tests under `apps/api/test/content/**`, `apps/api/test/support/**`
@@ -46,16 +46,16 @@ Everything a PC may write for this card. A path outside this list needs a `cross
 - Append-only shared files (one line each, never reorder): `apps/api/src/modules/index.ts` (one import and one array entry); `apps/api/prisma/migratable-models.json` (model names, alphabetical); your own rows of the mapping matrix, plan section 14.7; `docs/architecture/v2-backend-deviations.md` (a dated row only if you deviate); your own row in `docs/plan/backend-tracker.md`.
 - No-clash note: content.prisma belongs to this card alone (support tables included). It can run in parallel with BE-25 (schools.prisma) once BE-06 has merged.
 
-## Endpoints (45 mock routes, paths from the mock: the 47 M09 and M22 routes minus the two student audio-play routes)
+## Endpoints (47 mock routes, paths from the mock: all M09 and M22 routes, including the two student audio-play routes)
 
-Every route below exists in the mock (verified). Student audio play is backlog and **not** built here: `GET /api/audio-kbat-sets/:id` and `POST /api/audio-kbat-sets/:id/attempts`.
+Every route below exists in the mock (verified). Student audio play is built here (D53(a)): `GET /api/audio-kbat-sets/:id` and `POST /api/audio-kbat-sets/:id/attempts`.
 
 | Group | Endpoints |
 |---|---|
 | Articles and banners | `GET /api/articles`, `GET /api/articles/hot`, `GET /api/articles/latest`, `GET /api/articles/:slug`, `GET /api/banners/active`, `GET /api/config/support` |
 | Videos | `GET /api/videos`, `GET /api/videos/:id`, `GET /api/videos/form-context`, `POST /api/videos`, `PUT /api/videos/:id`, `DELETE /api/videos/:id` |
 | Perutusan | `GET /api/perutusan`, `GET /api/perutusan/:id`, `GET /api/perutusan/mine`, `GET /api/perutusan/compose-context`, `POST /api/perutusan`, `POST /api/perutusan/:id/comments`, `POST /api/perutusan/:id/reactions`, `GET /api/public/perutusan/:id` |
-| Audio KBAT | `GET /api/audio-kbat-sets` (list only) |
+| Audio KBAT (student) | `GET /api/audio-kbat-sets` (filters `educationLevelId`, `subjectId`; approved sets only), `GET /api/audio-kbat-sets/:id`, `POST /api/audio-kbat-sets/:id/attempts` |
 | Admin articles | `GET /api/admin/articles`, `GET /api/admin/articles/:id`, `POST /api/admin/articles`, `PUT /api/admin/articles/:id`, `DELETE /api/admin/articles/:id` |
 | Admin banners | `GET /api/admin/banners`, `GET /api/admin/banners/:id`, `POST /api/admin/banners`, `PUT /api/admin/banners/:id`, `DELETE /api/admin/banners/:id` |
 | Admin notes | `GET /api/admin/notes`, `GET /api/admin/notes/:id`, `POST /api/admin/notes`, `PUT /api/admin/notes/:id`, `DELETE /api/admin/notes/:id` |
@@ -76,6 +76,7 @@ The tables listed in Outputs; `notifications` (via `NotificationsService`), `fil
 6. Slugs are unique and stable (a rename keeps the slug unless the mock regenerates it; replay the mock case); list pagination and `meta` as in the mock.
 7. Uploaded images (banners, article attachments, screenshots) go through BE-04 with `purpose=cms_image`.
 8. Roles: admin routes need `admin`; teacher routes as the mock guards; no session 401 where a session is required; missing CSRF 403 `CSRF_INVALID`.
+9. Audio KBAT student play (mock `audio.ts`, SRS M09 #24 to #26): all three routes need a session (401 otherwise); only `approved` sets are visible, so a draft or unknown set gives 404 (the mock answers the default "Not Found." for both routes) and the list contains approved sets only. `GET /api/audio-kbat-sets/:id` returns `id`, `title`, `instructions` and the 4 `sections` (`no`, `title`, `audioUrl`, the section's `questions` with `no`, `questionText`, `options` A to D and `marks`) and never the correct answers or explanations (recursive key-scan test); `audioUrl` is served through BE-04 `FileStorage` (authenticated, not a public path). `POST .../attempts` takes `{ answers: [{ no, choice }] }`: `answers` missing gives 422 `fields.answers` "Medan ini diperlukan."; a non-array, a `no` outside 1 to 30, a duplicate `no` or a `choice` outside A to D gives 422 `fields.answers` "Medan ini tidak sah."; success is 201 `{ data: { score, totalMarks } }` where each correct answer adds that question's marks; one `audio_kbat_attempts` row per submit (user from the session, never the body); `is_test` stamped under Mod Pelajar.
 
 ## Test commands
 
@@ -106,7 +107,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
-1. Student Audio KBAT play (`GET /api/audio-kbat-sets/:id`, `POST .../attempts`) is backlog; confirm it stays out of B1.
+1. Student Audio KBAT play is in B1 (D53(a)); nothing to confirm.
 2. Who may create videos (`POST /api/videos`) and Perutusan (`POST /api/perutusan`) is defined by the mock guards; if a guard is missing in the mock, ask before choosing.
 
 ## Prompt for Claude Code
@@ -116,5 +117,5 @@ You are the backend developer for PrestasiPlus v2 working on task BE-24 (content
 Read first, in order: docs/plan/AGENT-SYNC.md (how to claim, commit and push); AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 14; section 15 for intake and builder cards); docs/plan/sessions.md section 5 (folder ownership); docs/plan/backend-tasks/BE-24-content-support.md (this card, all of it).
 Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 When finished run npm run be:verify (and the card test commands) and report: files changed, endpoints done, tables, real test output, deviations from the mock/contract, open questions.
-Task: implement BE-24. Port content and ticket behaviour from the m09 and m22 mock handlers. Sanitise all HTML on write, never trust a client-sent userId, and notify admins through NotificationsService (BE-06). Cover audio KBAT only for the routes listed; student audio play is backlog.
+Task: implement BE-24. Port content and ticket behaviour from the m09 and m22 mock handlers. Sanitise all HTML on write, never trust a client-sent userId, and notify admins through NotificationsService (BE-06). Cover all audio KBAT routes including the student play (AC 9).
 ```
