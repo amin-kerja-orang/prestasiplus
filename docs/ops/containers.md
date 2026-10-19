@@ -54,3 +54,15 @@ When the backend exists:
 2. Add a `location /api/ { proxy_pass http://api:3000; }` block to `docker/frontend/nginx.conf` so the SPA and API share one origin.
 3. Build the frontend with `VITE_API_MODE=http`.
 4. Run migrations as a one-off job before the API starts (see ADR-0015..0018 and `docs/architecture/v2-data-migration.md`).
+
+## Database migrations (BE-03)
+
+`compose.yaml` has a one-shot `migrate` service. It is built from the `build` stage of `docker/api/Dockerfile` (the runtime image has no Prisma CLI, which is a devDependency), runs `npm run be:db:migrate` (`prisma migrate deploy`) as the `node` user with a read-only root filesystem and `/tmp` as tmpfs, then exits. It reads `DATABASE_URL` from `.env.api`.
+`api` has `depends_on: migrate: condition: service_completed_successfully`, so a failed migration keeps the API from starting.
+
+```
+docker compose up -d --build db migrate api
+docker compose logs migrate        # applied migrations
+```
+
+Re-running is safe: `migrate deploy` only applies pending migrations.

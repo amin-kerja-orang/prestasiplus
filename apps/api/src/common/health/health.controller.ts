@@ -3,11 +3,13 @@ import type { Timestamp } from '@pp/contract'
 
 import { PrismaService } from '../../db/prisma.service'
 import { ApiError } from '../errors/api-error'
+import { Public } from '../guards/decorators'
 import { ok } from '../http/respond'
 import { toMytTimestamp } from '../time/myt'
 
 const DB_CHECK_TIMEOUT_MS = 3_000
 
+@Public()
 @Controller('health')
 export class HealthController {
   private readonly logger = new Logger(HealthController.name)

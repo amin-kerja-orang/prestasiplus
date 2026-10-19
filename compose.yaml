@@ -47,8 +47,42 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     expose:
       - '3000'
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: 'no'
+
+  # ---- One-shot schema migration (BE-03). Runs `prisma migrate deploy` and exits before the api starts. ----
+  # Built from the Dockerfile `build` stage because the Prisma CLI is a devDependency (not in the runtime image).
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: build
+    image: pretasiplus-api-migrate:local
+    container_name: pretasiplus-migrate
+    working_dir: /app
+    command: ['npm', 'run', 'be:db:migrate']
+    user: node
+    env_file:
+      - path: .env.api              # needs DATABASE_URL; never committed
+        required: false
+    environment:
+      NODE_ENV: production
+      HOME: /tmp
+      npm_config_cache: /tmp/.npm
+      npm_config_update_notifier: 'false'
+    depends_on:
+      db:
+        condition: service_healthy
     read_only: true
     tmpfs:
       - /tmp

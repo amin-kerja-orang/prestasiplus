@@ -2770,7 +2770,7 @@ Owner: BE-34, Prisma file `etl.prisma` (`public` schema). The audited BE-28/BE-2
 
 | Table | Column | Type | Null | Default | Notes |
 |---|---|---|---|---|---|
-| `etl_runs` (PK, created_at) | mode | enum(E-etl_mode) | Y | `dry_run` | `dry_run`, `apply` |
+| `etl_runs` (PK, created_at) | mode | enum(E-etl_mode) | Y | `dry-run` | `dry-run`, `apply` |
 | | sources | text[] | Y | | `cloud`, `my` |
 | | entity_set | text[] | Y | | entities in this invocation |
 | | git_sha | text | N | | |
@@ -3215,7 +3215,7 @@ Every enum used in a persisted column. Storage is `text` + `CHECK` (G-05). "Mock
 | `E-comment_status` | `perutusan_comments.status` | `pending`, `approved`, `rejected` | mock | (UI-owned) |
 | `E-audio_kbat_status` | `audio_kbat_sets.status` | `draft`, `pending_review`, `approved`, `archived` | mock | `src/modules/m09-content/mock/handlers/admin-audio.ts` (`STATUS_LABELS`) |
 | `E-ticket_status` | `support_tickets.status` | `open`, `in_progress`, `awaiting_reply`, `resolved`, `closed` | **mock stores BM**: `dibuka`, `dalam_proses`, `menunggu_balas`, `selesai`, `ditutup` (BR-M22-02); proposed English (plan 14.7) | `src/modules/m22-support-tickets/api/types.ts` (`TICKET_STATUS_LABELS`) |
-| `E-etl_mode` | `etl_runs.mode` | `dry_run`, `apply` | plan 14.4 writes `dry-run`/`apply` | n/a |
+| `E-etl_mode` | `etl_runs.mode` | `dry-run`, `apply` | plan 14.4 writes `dry-run`/`apply` | n/a |
 | `E-etl_status` | `etl_runs.status` | `running`, `succeeded`, `failed` | **[P]** | n/a |
 | `E-etl_reject_reason` | `etl_rejects.reason` | `UNKNOWN_ENUM`, `ORPHAN_PARENT`, `DUPLICATE_KEY`, `INVALID_VALUE`, `UNSUPPORTED` | plan 14.4 (upper case, kept as written) | n/a |
 | `E-recon_status` | `etl_recon.status` | `ok`, `mismatch` | **[P]** | n/a |
