@@ -41,6 +41,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-16 | Bijak SPM: attempts, autosave, timer, marking, results, history | PC-3 | P1 | BE-15, BE-14, BE-04, BE-11 | L | todo | - | `be/BE-16-bijak-attempts` | - | Security review (photos). Server timer. |
 | BE-17 | Classes and teacher basics (M10 part A) | PC-6 | P1 | BE-05, BE-08 | M | todo | - | `be/BE-17-classes-teacher` | - | Contract merged 2026-10-19 (PR -, be/BE-17-contract).  |
 | BE-16 | Bijak SPM: attempts, autosave, timer, marking, results, history | PC-3 | P1 | BE-15, BE-14, BE-04, BE-11 | L | in-progress | s-vm-obgn | `be/BE-16-contract` | - | Contract only (bijak attempts). Security review (photos). Server timer. |
+| BE-16 | Bijak SPM: attempts, autosave, timer, marking, results, history | PC-3 | P1 | BE-15, BE-14, BE-04, BE-11 | L | review | s-vm-obgn | `be/BE-16-contract` | #10 | Contract only (bijak attempts): 10 routes, 36 components; PR ready. Security review (photos). Server timer. |
 | BE-17 | Classes and teacher basics (M10 part A) | PC-6 | P1 | BE-05, BE-08 | M | todo | - | `be/BE-17-classes-teacher` | - |  |
 | BE-18 | Teacher missions, remedial tests, question sets and DSKP picks (M10 part B) | PC-6 | P1 | BE-17, BE-09, BE-12 | M | todo | - | `be/BE-18-missions-remedial-sets` | - | Also owns GET /api/missions/today and /api/remedial-tests/*. Mission create routes are provisional (card Open question 1). |
 | BE-19 | Student performance read models (M08) | PC-6 | P1 | BE-12, BE-17 | L | todo | - | `be/BE-19-student-performance` | - |  |
