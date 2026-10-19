@@ -112,10 +112,16 @@ describe('admin curriculum tree', () => {
       expect(parseData(await tree(bm, d1), CurriculumTreeSchema).chapters.at(-1)!.id).toBe(chapterId)
     })
 
-    it('#15 ignores mass assignment of isActive, inTree, strand and dskpCode on create', async () => {
+    it('#15 rejects isActive, inTree, strand and dskpCode on create (strict body) and writes nothing', async () => {
+      const before = await count(t.db, 'select count(*) n from chapters')
       const res = await admin.post('/api/admin/curriculum/chapters', chapterBody({ name: 'Bab Jisim', chapterNumber: 98, isActive: false, inTree: false, strand: 'X', dskpCode: '1.1.1' }))
-      const { data } = parseStatus(res, CurriculumChapterSchema, 201)
-      expect(data).toMatchObject({ isActive: true, inTree: true, strand: null, dskpCode: null })
+      expect(expectError(res, 'VALIDATION_ERROR').fields).toEqual({
+        isActive: 'The is active field is prohibited.',
+        inTree: 'The in tree field is prohibited.',
+        strand: 'The strand field is prohibited.',
+        dskpCode: 'The dskp code field is prohibited.',
+      })
+      expect(await count(t.db, 'select count(*) n from chapters')).toBe(before)
     })
 
     it('#14 returns the chapter with its subject and level', async () => {
@@ -172,13 +178,11 @@ describe('admin curriculum tree', () => {
       expect(parseStatus(await admin.put(`/api/admin/curriculum/chapters/${chapterId}`, chapterBody({ subjectId: sains, educationLevelId: d2, isActive: '1' })), CurriculumChapterSchema, 200).data.isActive).toBe(true)
     })
 
-    it('#16 strand and dskpCode are read-only: an update never changes them', async () => {
+    it('#16 strand and dskpCode are read-only: sending them is a 422 and an update without them keeps the stored values', async () => {
       await t.db.query(`update chapters set strand = 'Strand A', dskp_code = '1.1.1' where id = $1`, [chapterId])
-      const { data } = parseStatus(
-        await admin.put(`/api/admin/curriculum/chapters/${chapterId}`, chapterBody({ subjectId: sains, educationLevelId: d2, strand: 'Lain', dskpCode: '9.9.9' })),
-        CurriculumChapterSchema,
-        200,
-      )
+      const res = await admin.put(`/api/admin/curriculum/chapters/${chapterId}`, chapterBody({ subjectId: sains, educationLevelId: d2, strand: 'Lain', dskpCode: '9.9.9' }))
+      expect(expectError(res, 'VALIDATION_ERROR').fields).toEqual({ strand: 'The strand field is prohibited.', dskpCode: 'The dskp code field is prohibited.' })
+      const { data } = parseStatus(await admin.put(`/api/admin/curriculum/chapters/${chapterId}`, chapterBody({ subjectId: sains, educationLevelId: d2 })), CurriculumChapterSchema, 200)
       expect(data).toMatchObject({ strand: 'Strand A', dskpCode: '1.1.1' })
     })
 
@@ -223,9 +227,12 @@ describe('admin curriculum tree', () => {
       expect(node.topics.map((x) => x.id)).toContain(topicId)
     })
 
-    it('#19 ignores isActive on create and a text topicNumber is kept as is', async () => {
-      const { data } = parseStatus(await admin.post('/api/admin/curriculum/topics', { chapterId, name: 'B', topicNumber: '1.2a', isActive: false }), CurriculumTopicSchema, 201)
+    it('#19 keeps a text topicNumber as is; isActive on create is a 422', async () => {
+      const { data } = parseStatus(await admin.post('/api/admin/curriculum/topics', { chapterId, name: 'B', topicNumber: '1.2a' }), CurriculumTopicSchema, 201)
       expect(data).toMatchObject({ topicNumber: '1.2a', isActive: true })
+      expect(expectError(await admin.post('/api/admin/curriculum/topics', { chapterId, name: 'C', isActive: false }), 'VALIDATION_ERROR').fields).toEqual({
+        isActive: 'The is active field is prohibited.',
+      })
     })
 
     it('#18 returns the topic with its chapter, subject and level', async () => {
@@ -322,8 +329,11 @@ describe('admin curriculum tree', () => {
       })
     })
 
-    it('#23 updates (topic fixed, topicId ignored); 404 "Subtopik tidak dijumpai." for an unknown id', async () => {
-      const { data, status } = parseStatus(await admin.put(`/api/admin/curriculum/subtopics/${subtopicId}`, { topicId: '1', name: 'Sub B', nameEn: null, learningObjective: '' }), CurriculumSubtopicSchema, 200)
+    it('#23 updates (topic fixed, topicId is a 422); 404 "Subtopik tidak dijumpai." for an unknown id', async () => {
+      expect(expectError(await admin.put(`/api/admin/curriculum/subtopics/${subtopicId}`, { topicId: '1', name: 'Sub B' }), 'VALIDATION_ERROR').fields).toEqual({
+        topicId: 'The topic id field is prohibited.',
+      })
+      const { data, status } = parseStatus(await admin.put(`/api/admin/curriculum/subtopics/${subtopicId}`, { name: 'Sub B', nameEn: null, learningObjective: '' }), CurriculumSubtopicSchema, 200)
       expect(status).toBe(FLASH.subtopic.updated)
       expect(data).toMatchObject({ topicId, name: 'Sub B', nameEn: null, learningObjective: null })
       expect(expectError(await admin.put(`/api/admin/curriculum/subtopics/${subtopicId}`, {}), 'VALIDATION_ERROR').fields).toEqual({ name: 'The name field is required.' })

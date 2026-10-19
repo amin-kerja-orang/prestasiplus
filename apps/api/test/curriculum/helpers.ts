@@ -17,7 +17,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { CurriculumModule } from '../../src/modules/curriculum'
-import { QUESTION_COUNT_PROVIDER, TOPIC_PROGRESS_PROVIDER } from '../../src/modules/curriculum/providers'
+import { CurriculumPorts, type QuestionCountProvider, type TopicProgressProvider } from '../../src/modules/curriculum/providers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 export const DEMO_PASSWORD = 'Demo1234'
@@ -51,14 +51,15 @@ export async function bootCurriculumApp(opts: BootOptions = {}): Promise<Curricu
     LOGIN_FAILURE_FLOOR_MS: '0',
   })
   const clock = new FixedClock(START)
-  let builder = Test.createTestingModule({ imports: [defineAppModule([AuthModule, CurriculumModule])] })
+  const builder = Test.createTestingModule({ imports: [defineAppModule([AuthModule, CurriculumModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
-  if (opts.progress) builder = builder.overrideProvider(TOPIC_PROGRESS_PROVIDER).useValue(opts.progress)
-  if (opts.questionCounts) builder = builder.overrideProvider(QUESTION_COUNT_PROVIDER).useValue(opts.questionCounts)
   const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
+  const ports = app.get(CurriculumPorts)
+  if (opts.progress) ports.provideTopicProgress(opts.progress as TopicProgressProvider)
+  if (opts.questionCounts) ports.provideQuestionCounts(opts.questionCounts as QuestionCountProvider)
   await app.init()
   return {
     app,

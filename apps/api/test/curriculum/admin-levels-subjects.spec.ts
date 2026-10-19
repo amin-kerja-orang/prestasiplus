@@ -97,14 +97,17 @@ describe('admin subjects and education levels', () => {
       expect(parseStatus(res, CurriculumSubjectSchema, 201).data).toMatchObject({ isCore: true, order: 7 })
     })
 
-    it('#3 ignores keys it does not own (mass assignment): isActive, id and legacy keys never bind', async () => {
+    it('#3 rejects keys it does not own (mass assignment): isActive, id and legacy keys are 422 and nothing is written', async () => {
+      const before = await count(t.db, 'select count(*) n from subjects')
       const res = await admin.post('/api/admin/subjects', subjectWrite({ code: 'MASS1', isActive: false, id: '5', legacySource: 'cloud', legacyId: '9', createdAt: '2000-01-01T00:00:00+08:00' }))
-      const { data } = parseStatus(res, CurriculumSubjectSchema, 201)
-      expect(data.isActive).toBe(true)
-      expect(data.id).not.toBe('5')
-      expect(data.createdAt.startsWith('2026-10-19')).toBe(true)
-      const row = (await t.db.query<{ legacy_source: string | null }>('select legacy_source from subjects where id = $1', [data.id]))[0]
-      expect(row?.legacy_source).toBeNull()
+      expect(expectError(res, 'VALIDATION_ERROR').fields).toEqual({
+        isActive: 'The is active field is prohibited.',
+        id: 'The id field is prohibited.',
+        legacySource: 'The legacy source field is prohibited.',
+        legacyId: 'The legacy id field is prohibited.',
+        createdAt: 'The created at field is prohibited.',
+      })
+      expect(await count(t.db, 'select count(*) n from subjects')).toBe(before)
     })
 
     it('#3/#4 validate: required, duplicate code, length, colour, order and unknown level, all in one 422', async () => {
@@ -126,10 +129,13 @@ describe('admin subjects and education levels', () => {
       expect(await count(t.db, `select count(*) n from subjects where code in ('OK1', 'OK2')`)).toBe(0)
     })
 
-    it('#3 a non-object body is read as empty (required errors), never a server error', async () => {
-      const res = await admin.post('/api/admin/subjects', 'not json object' as unknown as object)
-      expect(expectError(res, 'VALIDATION_ERROR').fields).toHaveProperty('name')
-      expect(expectError(await admin.post('/api/admin/subjects', [1, 2] as unknown as object), 'VALIDATION_ERROR').fields).toHaveProperty('code')
+    it('#3 a JSON body that is not an object is a 422, never a server error', async () => {
+      const post = (text: string) => admin.noCsrf.post('/api/admin/subjects').set('X-CSRF-Token', admin.csrf).type('json').send(text)
+      // An array reaches the module's validation; a bare scalar or null is refused by the body parser (400 mapped to 422).
+      for (const body of [[1, 2], []]) {
+        expect(expectError(await post(JSON.stringify(body)), 'VALIDATION_ERROR').fields, JSON.stringify(body)).toEqual({ _: 'The request body must be a JSON object.' })
+      }
+      for (const text of ['"text"', '5', 'true', 'null', '{bad json']) expectError(await post(text), 'VALIDATION_ERROR')
     })
 
     it('#4 keeps omitted educationLevelIds, color, isCore, order and icon; an empty list or icon clears them', async () => {
