@@ -48,7 +48,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 =======
 | BE-18 | Teacher missions, remedial tests, question sets and DSKP picks (M10 part B) | PC-6 | P1 | BE-17, BE-09, BE-12 | M | todo | - | `be/BE-18-missions-remedial-sets` | - | Also owns GET /api/missions/today and /api/remedial-tests/*. Mission create routes are provisional (card Open question 1). |
 | BE-19 | Student performance read models (M08) | PC-6 | P1 | BE-12, BE-17 | L | todo | - | `be/BE-19-student-performance` | - |  |
-| BE-20 | Teacher analytics, monitoring and Kirkpatrick (M11, M12) | PC-6 | P2 | BE-19 | L | in-progress | s-aminfaudzi-mlcq | `be/BE-20-contract` | - | Contract only (reports/analytics, reports/kirkpatrick).  |
+| BE-20 | Teacher analytics, monitoring and Kirkpatrick (M11, M12) | PC-6 | P2 | BE-19 | L | review | s-aminfaudzi-mlcq | `be/BE-20-contract` | - | Contract only (reports/analytics, reports/kirkpatrick): 21 routes, fix commit 3d75ac1, checks green. |
 | BE-21 | School admin (M27): dashboards, reports, staff and student management | PC-6 | P1 | BE-05, BE-17, BE-19 | L | todo | - | `be/BE-21-school-admin` | - | Security review (school scope). |
 >>>>>>> 6e74bcba (chore(BE-20): claim card (contract only))
 | BE-22 | Command Center and admin dashboard aggregates (M17, M10 Command Center) | PC-6 | P1 | BE-17, BE-19, BE-23 | L | todo | - | `be/BE-22-command-center-admin` | - | Contract merged 2026-10-19 (PR -, be/BE-22-contract). Deviations: string ids (mock numeric); server-status follows mock host readings, not the card's build/DB/queue flags; ETag/no-store only in descriptions. Admin aggregates; Command Center. Needs BE-23 (badges and achievements). |
