@@ -1,6 +1,6 @@
 /**
  * Menu of the Portal Pentadbiran (D30; `docs/requirements/v2-portals.md` section 6): 9 groups and
- * 100 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
+ * 103 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
  * next round; `PENTADBIRAN_MENU` (rendered) holds built screens only and drops empty groups.
  * Unbuilt items are listed in `docs/requirements/v2-pentadbiran-backlog.md`.
  */
@@ -107,14 +107,17 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     icon: 'scroll',
     items: items([
       ['KS-01', 'Gambaran SPM'],
-      ['KS-02', 'Databank Soalan'],
+      ['KS-13', 'Muat Naik Kertas', '/admin/spm/soalan/muat-naik'],
+      ['KS-14', 'Senarai Ekstrak', '/admin/spm/soalan/ekstrak'],
+      ['KS-15', 'Baris Gilir Semakan', '/admin/spm/semakan'],
+      ['KS-02', 'Bank Soalan SPM', '/admin/spm/soalan'],
       ['KS-03', 'Latih Tubi'],
       ['KS-04', 'Tracking A'],
       ['KS-05', 'Subjektif'],
       ['KS-06', 'Bijak SPM (Simulasi)'],
       ['KS-07', 'Kertas Subjektif'],
       ['KS-08', 'Kontrak Simulasi'],
-      ['KS-09', 'Set Builder'],
+      ['KS-09', 'Pembina Kertas', '/admin/spm/kertas'],
       ['KS-10', 'Tanda Karangan'],
       ['KS-11', 'Ramalan SPM'],
       ['KS-12', 'Set Soalan'],
@@ -208,7 +211,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
   },
 ]
 
-/** All 100 items, built or not (backlog data). */
+/** All 103 items, built or not (backlog data). */
 export const FULL_ITEMS: readonly PentadbiranItem[] = PENTADBIRAN_FULL_MENU.flatMap((g) => g.items)
 
 /** The rendered menu: built screens only; a group with no built item is dropped. */

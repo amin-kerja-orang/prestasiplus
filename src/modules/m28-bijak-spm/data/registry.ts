@@ -201,14 +201,15 @@ export const BLUEPRINTS: Blueprint[] = [
     instructions: matK2Instructions,
     reference: MAT_REFERENCE,
     sections: [
-      { label: 'Bahagian A', rule: { type: 'all' }, pool: 'MAT2-A', take: 3 },
-      { label: 'Bahagian B', rule: { type: 'all' }, pool: 'MAT2-B', take: 1 },
+      { label: 'Bahagian A', rule: { type: 'all' }, pool: 'MAT2-A', take: 3, markBudget: 9 },
+      { label: 'Bahagian B', rule: { type: 'all' }, pool: 'MAT2-B', take: 1, markBudget: 6 },
       {
         label: 'Bahagian C',
         instruction: 'Jawab 1 daripada 2 soalan.',
         rule: { type: 'choose', n: 1 },
         pool: 'MAT2-C',
         take: 2,
+        markBudget: 6,
       },
     ],
   },
@@ -220,13 +221,14 @@ export const BLUEPRINTS: Blueprint[] = [
     durationMin: 60,
     instructions: snInstructions,
     sections: [
-      { label: 'Bahagian A', rule: { type: 'all' }, pool: 'SN2-A', take: 3 },
+      { label: 'Bahagian A', rule: { type: 'all' }, pool: 'SN2-A', take: 3, markBudget: 9 },
       {
         label: 'Bahagian B',
         instruction: 'Jawab 1 daripada 2 soalan.',
         rule: { type: 'choose', n: 1 },
         pool: 'SN2-B',
         take: 2,
+        markBudget: 4,
       },
     ],
   },
@@ -238,7 +240,9 @@ export const BLUEPRINTS: Blueprint[] = [
     code: '4541/1',
     durationMin: 60,
     instructions: ['Kertas ini mengandungi 40 soalan objektif.'],
-    sections: [{ label: 'Bahagian A', rule: { type: 'all' }, pool: 'SN1-A', take: 40 }],
+    sections: [
+      { label: 'Bahagian A', rule: { type: 'all' }, pool: 'SN1-A', take: 40, markBudget: 40 },
+    ],
   },
 ]
 

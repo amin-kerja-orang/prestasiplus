@@ -1,5 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import adminPapers from './routes/admin-papers'
+
 /**
  * Bijak SPM routes (v2 student flow). They sit under `/spm`, so the Murid menu row 13 "SPM" of the
  * role-access matrix (D43) already covers them. Students only (and Admin Pusat in Mod Pelajar);
@@ -16,6 +18,7 @@ const base = {
 } as const
 
 const routes: RouteRecordRaw[] = [
+  ...adminPapers,
   {
     path: '/spm/bijak',
     name: 'm28.bijak',

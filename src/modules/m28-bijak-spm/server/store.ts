@@ -6,11 +6,13 @@
  * Reveal rules (US-15): an answer key or mark scheme leaves this class only inside a graded
  * result, i.e. after submit (exam) or after "Semak" on that one question (latihan).
  */
+import { AdminOps, seedAdminSlice, type AdminSlice } from './admin'
 import { composeFromBlueprint, poolUnits, type PoolUnit } from '../domain/blueprint'
 import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registry'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
 import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
+import type { BankFilter, DecisionAction, PaperPatch, QueueFilter } from '../domain/admin-types'
 import type {
   Attempt,
   AttemptMode,
@@ -86,7 +88,7 @@ interface GeneratedPaper extends PaperDef {
   createdAt: number
 }
 
-interface State {
+interface State extends AdminSlice {
   seq: number
   attempts: Record<string, Attempt>
   generated: Record<string, GeneratedPaper>
@@ -115,6 +117,7 @@ export class BijakServer {
   private readonly key: string
   private state: State
   private offline = false
+  private readonly ops: AdminOps
 
   constructor(opts: ServerOptions = {}) {
     this.storage = opts.storage ?? new MemoryStorage()
@@ -122,18 +125,27 @@ export class BijakServer {
     this.latencyMs = opts.latencyMs ?? 0
     this.key = opts.storageKey ?? SERVER_STORAGE_KEY
     this.state = this.load()
+    this.ops = new AdminOps({
+      slice: () => this.state,
+      now: () => this.now(),
+      persist: () => this.persist(),
+      tick: () => this.tick(),
+      error: (code, message) => new BijakError(code, message),
+    })
   }
 
   /* ------------------------------------------------------------------------- plumbing */
 
   private load(): State {
+    let st: State = { seq: 0, attempts: {}, generated: {} }
     try {
       const raw = this.storage.getItem(this.key)
-      if (raw) return JSON.parse(raw) as State
+      if (raw) st = JSON.parse(raw) as State
     } catch {
       /* start empty */
     }
-    return { seq: 0, attempts: {}, generated: {} }
+    seedAdminSlice(st, this.now())
+    return st
   }
 
   private persist(): void {
@@ -168,6 +180,8 @@ export class BijakServer {
   private resolvePaper(id: string, userId: number): PaperDef & { kind: PaperKind } {
     const fixed = PAPERS.find((p) => p.id === id)
     if (fixed) return { ...fixed, kind: 'pilihan' }
+    const published = this.ops.publishedPaper(id)
+    if (published) return { ...published, kind: 'pilihan' }
     const gen = this.state.generated[id]
     if (gen && gen.userId === userId) return { ...gen, kind: 'jana' }
     throw new BijakError('not_found', 'Kertas tidak ditemui')
@@ -225,7 +239,9 @@ export class BijakServer {
   async listPapers(userId: number): Promise<PaperSummary[]> {
     await this.tick()
     this.sweep()
-    return PAPERS.map((p) => this.summary({ ...p, kind: 'pilihan' }, userId))
+    return [...PAPERS, ...this.ops.publishedPapers()].map((p) =>
+      this.summary({ ...p, kind: 'pilihan' }, userId),
+    )
   }
 
   async getCover(userId: number, paperId: string): Promise<PaperCover> {
@@ -804,6 +820,60 @@ export class BijakServer {
         ),
         ...(a.result ? { score: a.result.score, max: a.result.max } : {}),
       }))
+  }
+
+  /* ------------------------------------------------- question bank admin (v2-question-bank) */
+
+  listReviewQueue(f?: QueueFilter) {
+    return this.ops.listReviewQueue(f)
+  }
+  getReviewItem(key: string) {
+    return this.ops.getReviewItem(key)
+  }
+  reviewDecision(key: string, d: { action: DecisionAction; reason?: string; by?: string }) {
+    return this.ops.reviewDecision(key, d)
+  }
+  resubmit(key: string) {
+    return this.ops.resubmit(key)
+  }
+  reviseQuestion(qid: string, stem: string, note: string) {
+    return this.ops.reviseQuestion(qid, stem, note)
+  }
+  listBank(f?: BankFilter) {
+    return this.ops.listBank(f)
+  }
+  bankStats() {
+    return this.ops.bankStats()
+  }
+  getBankDetail(qid: string) {
+    return this.ops.getBankDetail(qid)
+  }
+  listBlueprints() {
+    return this.ops.listBlueprints()
+  }
+  listAdminPapers() {
+    return this.ops.listAdminPapers()
+  }
+  getPaperEditor(id: string) {
+    return this.ops.getPaperEditor(id)
+  }
+  createPaper(input: { subject: SubjectCode; kertas: 1 | 2; title?: string }) {
+    return this.ops.createPaper(input)
+  }
+  savePaper(id: string, patch: PaperPatch) {
+    return this.ops.savePaper(id, patch)
+  }
+  publishPaper(id: string) {
+    return this.ops.publishPaper(id)
+  }
+  unpublishPaper(id: string) {
+    return this.ops.unpublishPaper(id)
+  }
+  previewQuestions(ids: string[]) {
+    return this.ops.previewQuestions(ids)
+  }
+  deletePaper(id: string) {
+    return this.ops.deletePaper(id)
   }
 
   /** Test helper: the saved answers of an attempt, as the server holds them. */
