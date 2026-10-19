@@ -45,6 +45,8 @@ export function registeredRoutes(app: INestApplication): Set<string> {
 
 /** The supertest `HttpClient`: same interface as the mock adapter, plus `set-cookie` and a file part. */
 export function supertestClient(app: INestApplication, baseHeaders: () => Record<string, string>): HttpClient {
+  // supertest binds the server to a port per request and leaves listeners behind; a whole suite sends thousands.
+  ;(app.getHttpServer() as { setMaxListeners(n: number): void }).setMaxListeners(0)
   return {
     async request(method: HttpMethod, path: string, init: HttpRequestInit = {}): Promise<HttpResponse> {
       const agent = request(app.getHttpServer())
