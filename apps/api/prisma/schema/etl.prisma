@@ -1,0 +1,97 @@
+// ETL control tables (BE-34, plan 14.4). Owner: the migration kit; BE-27..BE-30 read and write them
+// only through `src/migration/kit`. They are CONTROL tables: not migratable (no legacy_* columns,
+// not listed in migratable-models.json). Enum-like columns are text + CHECK (written in the
+// migration), never Postgres enums. No personal values are ever stored here (BE-NFR-11).
+
+model EtlRun {
+  id         BigInt    @id @default(autoincrement())
+  /// 'dry-run' | 'apply' (CHECK in the migration).
+  mode       String    @default("dry-run")
+  /// Allowed values: 'cloud', 'my'.
+  sources    String[]  @default([])
+  entitySet  String[]  @default([]) @map("entity_set")
+  gitSha     String?   @map("git_sha")
+  /// Hash of the run input; `--apply` needs a succeeded dry-run with the same hash.
+  inputHash  String?   @map("input_hash")
+  /// 'running' | 'succeeded' | 'failed' (CHECK in the migration).
+  status     String    @default("running")
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+  /// Per-entity counters (aggregates only).
+  counters   Json?
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  checkpoints EtlCheckpoint[]
+  rejects     EtlReject[]
+  recon       EtlRecon[]
+
+  @@index([mode, inputHash, status], map: "ix_etl_runs_mode_input_status")
+  @@map("etl_runs")
+}
+
+model EtlCheckpoint {
+  id        BigInt   @id @default(autoincrement())
+  runId     BigInt   @map("run_id")
+  entity    String
+  /// Last processed source key (text) of the last committed batch.
+  lastKey   String?  @map("last_key")
+  batch     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  run EtlRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, entity], map: "uq_etl_checkpoints_run_entity")
+  @@map("etl_checkpoints")
+}
+
+model EtlIdMap {
+  id           BigInt   @id @default(autoincrement())
+  legacySource String   @map("legacy_source")
+  entity       String
+  legacyId     String   @map("legacy_id")
+  /// Decimal string or uuid text (one column for both key types).
+  newId        String   @map("new_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([legacySource, entity, legacyId], map: "uq_etl_id_map_key")
+  @@map("etl_id_map")
+}
+
+model EtlReject {
+  id         BigInt   @id @default(autoincrement())
+  runId      BigInt   @map("run_id")
+  entity     String
+  legacyId   String?  @map("legacy_id")
+  /// UNKNOWN_ENUM | ORPHAN_PARENT | DUPLICATE_KEY | INVALID_VALUE | UNSUPPORTED (CHECK in the migration).
+  reason     String
+  columnName String?  @map("column_name")
+  /// The offending enum value or a hash only, never a personal value.
+  offending  String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  run EtlRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, entity, reason], map: "ix_etl_rejects_run_entity_reason")
+  @@map("etl_rejects")
+}
+
+model EtlRecon {
+  id            BigInt   @id @default(autoincrement())
+  runId         BigInt   @map("run_id")
+  entity        String
+  sourceCount   Int      @map("source_count")
+  /// After documented exclusions.
+  eligibleCount Int      @map("eligible_count")
+  loaded        Int
+  rejected      Int
+  expectedDelta Int      @default(0) @map("expected_delta")
+  /// 'ok' | 'mismatch' (CHECK in the migration).
+  status        String
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  run EtlRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, entity], map: "uq_etl_recon_run_entity")
+  @@map("etl_recon")
+}
