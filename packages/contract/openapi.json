@@ -12986,6 +12986,2719 @@
         ],
         "description": "201; `message` is \"Berjaya menyertai kelas {name}.\""
       },
+      "GamesRoomGame": {
+        "type": "string",
+        "enum": [
+          "papan-bijak",
+          "perang-fakta",
+          "benteng-ilmu",
+          "perlumbaan-matematik",
+          "kuiz-relay",
+          "teka-silang-kata"
+        ],
+        "description": "Room game key. An unknown key in a path answers 404 NOT_FOUND \"Permainan tidak dijumpai.\"."
+      },
+      "GamesSoloGame": {
+        "type": "string",
+        "enum": [
+          "betul-salah",
+          "cabaran-kilat",
+          "tembak-jawapan",
+          "susun-jawapan",
+          "kad-memori"
+        ],
+        "description": "Single-player game key. An unknown key answers 404 \"Permainan tidak dijumpai.\"."
+      },
+      "GamesRoomSubject": {
+        "type": "string",
+        "enum": [
+          "MATEMATIK",
+          "BAHASA_MELAYU",
+          "BAHASA_INGGERIS",
+          "SAINS",
+          "SEJARAH"
+        ]
+      },
+      "GamesPapanBijakSubject": {
+        "type": "string",
+        "enum": [
+          "MATEMATIK",
+          "BAHASA_MELAYU",
+          "BAHASA_INGGERIS",
+          "SAINS"
+        ]
+      },
+      "GamesMatchMode": {
+        "type": "string",
+        "enum": [
+          "same_grade",
+          "same_level",
+          "custom"
+        ],
+        "description": "`custom` (a grade range) is for Papan Bijak only."
+      },
+      "GamesRoomStatus": {
+        "type": "string",
+        "enum": [
+          "waiting",
+          "playing",
+          "finished",
+          "closed"
+        ]
+      },
+      "GamesGradeLevel": {
+        "type": "string",
+        "enum": [
+          "DARJAH_1",
+          "DARJAH_2",
+          "DARJAH_3",
+          "DARJAH_4",
+          "DARJAH_5",
+          "DARJAH_6",
+          "TINGKATAN_1",
+          "TINGKATAN_2",
+          "TINGKATAN_3",
+          "TINGKATAN_4",
+          "TINGKATAN_5"
+        ]
+      },
+      "GamesRoomCode": {
+        "type": "string",
+        "pattern": "^[A-Z0-9]{6}$",
+        "example": "PB1234"
+      },
+      "GamesKeylessOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "Option index 0..3 (not an entity id)."
+          },
+          "label": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKeylessQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "text": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesKeylessOption"
+            },
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "options"
+        ],
+        "additionalProperties": false,
+        "description": "Question without any answer key. The correct option is never part of a question served before it is answered."
+      },
+      "GamesRawError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "GamesRawMessage": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "GamesHubOpenRoom": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/GamesRoomGame"
+          },
+          "code": {
+            "$ref": "#/components/schemas/GamesRoomCode"
+          },
+          "host": {
+            "type": "string",
+            "description": "Display name of the host."
+          },
+          "players": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "game",
+          "code",
+          "host",
+          "players",
+          "max"
+        ],
+        "additionalProperties": false
+      },
+      "GamesHub": {
+        "type": "object",
+        "properties": {
+          "openRooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesHubOpenRoom"
+            },
+            "maxItems": 6,
+            "description": "Up to 6 newest `waiting` rooms with a free seat, newest first (code ascending as tie-break)."
+          },
+          "chips": {
+            "type": "object",
+            "properties": {
+              "papanBijakPlayed": {
+                "type": "boolean",
+                "description": "The caller has a Papan Bijak standing with jumlah > 0."
+              },
+              "battled": {
+                "type": "boolean",
+                "description": "The caller has a finished or forfeited battle (BE-44 read)."
+              }
+            },
+            "required": [
+              "papanBijakPlayed",
+              "battled"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "openRooms",
+          "chips"
+        ],
+        "additionalProperties": false
+      },
+      "GamesPapanBijakTopRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 18,
+            "description": "Truncated to 15 characters + \"...\"."
+          },
+          "initials": {
+            "type": "string",
+            "maxLength": 2,
+            "description": "First letters of up to two words, upper case."
+          },
+          "menang": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "jumlah": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kadar": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "round(menang / jumlah * 100), 0 when jumlah is 0."
+          },
+          "skor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "betul": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "rank",
+          "userId",
+          "name",
+          "initials",
+          "menang",
+          "jumlah",
+          "kadar",
+          "skor",
+          "betul"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLobbyLeader": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "rank",
+          "userId",
+          "name",
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLobbyPapanBijak": {
+        "type": "object",
+        "properties": {
+          "autoGrade": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "DARJAH_1",
+              "DARJAH_2",
+              "DARJAH_3",
+              "DARJAH_4",
+              "DARJAH_5",
+              "DARJAH_6",
+              "TINGKATAN_1",
+              "TINGKATAN_2",
+              "TINGKATAN_3",
+              "TINGKATAN_4",
+              "TINGKATAN_5",
+              null
+            ],
+            "description": "The caller grade, null without a grade."
+          },
+          "autoGradeName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "\"Darjah n\" or \"Tingkatan n\", null without a grade."
+          },
+          "top10": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesPapanBijakTopRow"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "autoGrade",
+          "autoGradeName",
+          "top10"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLobbyLeaders": {
+        "type": "object",
+        "properties": {
+          "autoGrade": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "DARJAH_1",
+              "DARJAH_2",
+              "DARJAH_3",
+              "DARJAH_4",
+              "DARJAH_5",
+              "DARJAH_6",
+              "TINGKATAN_1",
+              "TINGKATAN_2",
+              "TINGKATAN_3",
+              "TINGKATAN_4",
+              "TINGKATAN_5",
+              null
+            ],
+            "description": "The caller grade, null without a grade."
+          },
+          "autoGradeName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "\"Darjah n\" or \"Tingkatan n\", null without a grade."
+          },
+          "leaders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesLobbyLeader"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "autoGrade",
+          "autoGradeName",
+          "leaders"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLobby": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/GamesLobbyPapanBijak"
+          },
+          {
+            "$ref": "#/components/schemas/GamesLobbyLeaders"
+          }
+        ]
+      },
+      "GamesRoomCreateRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "enum": [
+              "MATEMATIK",
+              "BAHASA_MELAYU",
+              "BAHASA_INGGERIS",
+              "SAINS",
+              "SEJARAH"
+            ]
+          },
+          "grade_level": {
+            "type": "string",
+            "enum": [
+              "DARJAH_1",
+              "DARJAH_2",
+              "DARJAH_3",
+              "DARJAH_4",
+              "DARJAH_5",
+              "DARJAH_6",
+              "TINGKATAN_1",
+              "TINGKATAN_2",
+              "TINGKATAN_3",
+              "TINGKATAN_4",
+              "TINGKATAN_5"
+            ]
+          },
+          "match_mode": {
+            "type": "string",
+            "enum": [
+              "same_grade",
+              "same_level",
+              "custom"
+            ]
+          },
+          "grade_min": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 11
+          },
+          "grade_max": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 11
+          },
+          "max_players": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 6
+          }
+        },
+        "required": [
+          "subject",
+          "grade_level",
+          "match_mode"
+        ],
+        "description": "422 messages (field): \"Subjek tidak sah.\" (subject), \"Tahap soalan tidak sah.\" (grade_level), \"Julat tahap tidak sah.\" (match_mode, grade_min), \"Bilangan pemain tidak sah.\" (max_players). `custom` needs integer grade_min <= grade_max within 1..11. Papan Bijak: SEJARAH not allowed, max_players required (2..6). Other games: match_mode same_grade or same_level only, max_players ignored."
+      },
+      "GamesRoomCodeResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/GamesRoomCode"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "GamesRoomJoinRequest": {
+        "type": "object",
+        "properties": {
+          "room_code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "room_code"
+        ]
+      },
+      "GamesRoomPlayer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name only (D54(d))."
+          },
+          "grade": {
+            "type": "string",
+            "description": "\"Darjah n\", \"Tingkatan n\" or \"\" without a grade."
+          },
+          "team": {
+            "type": "integer",
+            "description": "Kuiz Relay team number, once teams are set."
+          },
+          "points": {
+            "type": "integer"
+          },
+          "isBot": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "grade",
+          "points",
+          "isBot"
+        ],
+        "additionalProperties": false
+      },
+      "GamesRoomSettings": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/GamesRoomSubject"
+          },
+          "gradeLevel": {
+            "$ref": "#/components/schemas/GamesGradeLevel"
+          },
+          "matchMode": {
+            "$ref": "#/components/schemas/GamesMatchMode"
+          },
+          "gradeMin": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 11
+          },
+          "gradeMax": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 11
+          },
+          "maxPlayers": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 8
+          },
+          "minPlayers": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "subject",
+          "gradeLevel",
+          "matchMode",
+          "gradeMin",
+          "gradeMax",
+          "maxPlayers",
+          "minPlayers"
+        ],
+        "additionalProperties": false
+      },
+      "GamesBoardTile": {
+        "type": "string",
+        "pattern": "^(plain|start|finish|bonus|trap|quiz|(ladder|snake):\\d+)$"
+      },
+      "GamesRoomState": {
+        "type": "object",
+        "properties": {
+          "awaiting": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "roll",
+              "answer",
+              null
+            ]
+          },
+          "round": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "humanId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The only player who may act (the host; every other player is a bot).",
+            "example": "1042"
+          },
+          "board": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesBoardTile"
+            },
+            "description": "Papan Bijak: the 50 tiles."
+          },
+          "positions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Papan Bijak: tile by user id."
+          },
+          "meter": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Benteng Ilmu HP, Perlumbaan Matematik steps or Teka Silang Kata words, by user id."
+          },
+          "teamScores": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Kuiz Relay: score by team number."
+          },
+          "log": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "roundSecondsLeft": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Perang Fakta: seconds left in the 10 s round (server clock)."
+          },
+          "secondsLeft": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Teka Silang Kata: seconds left of the 5 minutes (server clock)."
+          }
+        },
+        "required": [
+          "awaiting",
+          "round",
+          "total",
+          "humanId",
+          "log"
+        ],
+        "additionalProperties": false
+      },
+      "GamesRoomResult": {
+        "type": "object",
+        "properties": {
+          "winnerId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "winnerName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mvpId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "points": {
+                  "type": "integer"
+                },
+                "correct": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "points",
+                "correct"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "winnerId",
+          "winnerName",
+          "mvpId",
+          "scores"
+        ],
+        "additionalProperties": false
+      },
+      "GamesRoomView": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/GamesRoomCode"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GamesRoomGame"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GamesRoomStatus"
+          },
+          "host": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesRoomPlayer"
+            }
+          },
+          "settings": {
+            "$ref": "#/components/schemas/GamesRoomSettings"
+          },
+          "state": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GamesRoomState"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "round": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Present with `state`."
+          },
+          "question": {
+            "$ref": "#/components/schemas/GamesKeylessQuestion"
+          },
+          "result": {
+            "$ref": "#/components/schemas/GamesRoomResult"
+          }
+        },
+        "required": [
+          "code",
+          "game",
+          "status",
+          "host",
+          "players",
+          "settings",
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "GamesRoomRollAction": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "roll"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "GamesRoomAnswerAction": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "answer"
+            ]
+          },
+          "questionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the pending question; a different one is 422 \"Soalan tidak sepadan.\"."
+          },
+          "optionId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 3
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Perang Fakta true / false; Teka Silang Kata the typed word."
+          },
+          "seconds": {
+            "type": "number",
+            "minimum": 0,
+            "default": 15,
+            "description": "Default 15."
+          }
+        },
+        "required": [
+          "type",
+          "questionId"
+        ]
+      },
+      "GamesRoomActionRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GamesRoomRollAction"
+          },
+          {
+            "$ref": "#/components/schemas/GamesRoomAnswerAction"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "roll": "#/components/schemas/GamesRoomRollAction",
+            "answer": "#/components/schemas/GamesRoomAnswerAction"
+          }
+        }
+      },
+      "GamesQuickMatchStartRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "enum": [
+              "MATEMATIK",
+              "BAHASA_MELAYU",
+              "BAHASA_INGGERIS",
+              "SAINS"
+            ]
+          },
+          "match_mode": {
+            "type": "string",
+            "enum": [
+              "same_grade",
+              "same_level"
+            ]
+          }
+        },
+        "required": [
+          "subject",
+          "match_mode"
+        ],
+        "description": "Refusals are raw `{ error }` 422: \"Subjek tidak sah.\" then \"Padanan tidak sah.\"."
+      },
+      "GamesQuickMatchStartResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "searching"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "GamesQuickMatchPollResponse": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "searching",
+                  "expired",
+                  "cancelled"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "matched"
+                ]
+              },
+              "room_code": {
+                "$ref": "#/components/schemas/GamesRoomCode"
+              }
+            },
+            "required": [
+              "status",
+              "room_code"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "The caller latest search: none or cancelled = cancelled; older than 120 s = expired; the third poll matches (a Papan Bijak room, 4 seats, caller grade level, one bot) and answers matched with room_code; before that searching."
+      },
+      "GamesQuickMatchCancelResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSessionId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Opaque game session id (uuid)."
+      },
+      "GamesSoloQuery": {
+        "type": "object",
+        "properties": {
+          "darjah": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 11,
+            "description": "Grade 1..11 (7..11 are Tingkatan 1..5)."
+          }
+        }
+      },
+      "GamesBetulSalahPayload": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "personalBest": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "canEarnSyiling": {
+            "type": "boolean"
+          },
+          "statements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "statement": {
+                  "type": "string"
+                },
+                "is_true": {
+                  "type": "boolean",
+                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
+                },
+                "difficulty": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "id",
+                "statement",
+                "is_true",
+                "difficulty"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 40
+          }
+        },
+        "required": [
+          "sessionId",
+          "personalBest",
+          "canEarnSyiling",
+          "statements"
+        ],
+        "additionalProperties": false
+      },
+      "GamesCabaranKilatPayload": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "personalBest": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "canEarnSyiling": {
+            "type": "boolean"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "question_text": {
+                  "type": "string"
+                },
+                "difficulty": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "correct": {
+                        "type": "boolean",
+                        "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "text",
+                      "correct"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "question_text",
+                "difficulty",
+                "options"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 30
+          }
+        },
+        "required": [
+          "sessionId",
+          "personalBest",
+          "canEarnSyiling",
+          "questions"
+        ],
+        "additionalProperties": false
+      },
+      "GamesTembakJawapanPayload": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "personalBest": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "canEarnSyiling": {
+            "type": "boolean"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "question": {
+                  "type": "string"
+                },
+                "difficulty": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "string"
+                      },
+                      "correct": {
+                        "type": "boolean",
+                        "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "correct"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "question",
+                "difficulty",
+                "options"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 30
+          }
+        },
+        "required": [
+          "sessionId",
+          "personalBest",
+          "canEarnSyiling",
+          "questions"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSusunJawapanPayload": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "personalBest": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "canEarnSyiling": {
+            "type": "boolean"
+          },
+          "puzzles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "question": {
+                  "type": "string"
+                },
+                "answer": {
+                  "type": "string",
+                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
+                },
+                "scrambled": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "letters",
+                    "words"
+                  ]
+                },
+                "difficulty": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "points": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "id",
+                "question",
+                "answer",
+                "scrambled",
+                "type",
+                "difficulty",
+                "points"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "sessionId",
+          "personalBest",
+          "canEarnSyiling",
+          "puzzles"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriPayload": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "personalBest": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "canEarnSyiling": {
+            "type": "boolean"
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12
+                },
+                "pair_id": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 5,
+                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "question",
+                    "answer"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                },
+                "difficulty": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "id",
+                "pair_id",
+                "type",
+                "content",
+                "difficulty"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 12
+          }
+        },
+        "required": [
+          "sessionId",
+          "personalBest",
+          "canEarnSyiling",
+          "cards"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSoloPayload": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/GamesBetulSalahPayload"
+          },
+          {
+            "$ref": "#/components/schemas/GamesCabaranKilatPayload"
+          },
+          {
+            "$ref": "#/components/schemas/GamesTembakJawapanPayload"
+          },
+          {
+            "$ref": "#/components/schemas/GamesSusunJawapanPayload"
+          },
+          {
+            "$ref": "#/components/schemas/GamesKadMemoriPayload"
+          }
+        ],
+        "description": "The payload of the requested game: statements (betul-salah), questions (cabaran-kilat, tembak-jawapan), puzzles (susun-jawapan) or cards (kad-memori). A session row is created by the GET."
+      },
+      "GamesBetulSalahSubmit": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "streak": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "syiling_earned": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "session_id",
+          "correct_count",
+          "total_answered",
+          "streak",
+          "score",
+          "syiling_earned"
+        ]
+      },
+      "GamesCabaranKilatSubmit": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_combo": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "syiling_earned": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "session_id",
+          "correct_count",
+          "total_answered",
+          "max_combo",
+          "score",
+          "syiling_earned"
+        ]
+      },
+      "GamesTembakJawapanSubmit": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "correct_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_level": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "syiling_earned": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "session_id",
+          "correct_count",
+          "total_answered",
+          "max_level",
+          "score",
+          "syiling_earned"
+        ]
+      },
+      "GamesSusunJawapanSubmit": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "solved_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_puzzles": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "syiling_earned": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "session_id",
+          "solved_count",
+          "total_puzzles",
+          "score",
+          "syiling_earned"
+        ]
+      },
+      "GamesKadMemoriSubmit": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "matches": {
+            "type": "number",
+            "enum": [
+              6
+            ]
+          },
+          "total_pairs": {
+            "type": "number",
+            "enum": [
+              6
+            ]
+          },
+          "moves": {
+            "type": "integer",
+            "minimum": 6
+          },
+          "time_seconds": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "session_id",
+          "matches",
+          "total_pairs",
+          "moves",
+          "time_seconds"
+        ]
+      },
+      "GamesSoloSubmitRequest": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/GamesBetulSalahSubmit"
+          },
+          {
+            "$ref": "#/components/schemas/GamesCabaranKilatSubmit"
+          },
+          {
+            "$ref": "#/components/schemas/GamesTembakJawapanSubmit"
+          },
+          {
+            "$ref": "#/components/schemas/GamesSusunJawapanSubmit"
+          },
+          {
+            "$ref": "#/components/schemas/GamesKadMemoriSubmit"
+          }
+        ]
+      },
+      "GamesSoloSubmitResponse": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "is_new_record": {
+                "type": "boolean"
+              },
+              "syiling_awarded": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "is_new_record",
+              "syiling_awarded"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "object",
+                "properties": {
+                  "syiling_earned": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "accuracy": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "round(6 / moves * 100); coins 6."
+                  }
+                },
+                "required": [
+                  "syiling_earned",
+                  "accuracy"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "results"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "GamesSpinSegment": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "syiling",
+              "nothing"
+            ]
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "color": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "type",
+          "value",
+          "weight",
+          "color",
+          "icon"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSpinPage": {
+        "type": "object",
+        "properties": {
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesSpinSegment"
+            },
+            "description": "The 8 fixed segments in order: 1 Syiling, 3 Syiling, 5 Syiling, 10 Syiling, 20 Syiling, Cuba Lagi, 2 Syiling, 7 Syiling (weights 25/20/15/8/3/15/10/4)."
+          },
+          "spins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "won": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "alreadySpun": {
+            "type": "boolean",
+            "description": "A spin exists on today's Malaysia date."
+          },
+          "canEarnSyiling": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "segments",
+          "spins",
+          "won",
+          "alreadySpun",
+          "canEarnSyiling"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSpinResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string",
+            "enum": [
+              ""
+            ]
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "segment_index": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 7
+              },
+              "label": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "syiling",
+                  "nothing"
+                ]
+              },
+              "value": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "segment_index",
+              "label",
+              "icon",
+              "type",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "coinsCredited": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "result",
+          "coinsCredited"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSpinRefused": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "success",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "GamesJutawanQuery": {
+        "type": "object",
+        "properties": {
+          "darjah": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 11,
+            "description": "Grade 1..11 (7..11 are Tingkatan 1..5)."
+          }
+        }
+      },
+      "GamesJutawanSubject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "colour": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Questions available at that level."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "emoji",
+          "colour",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "GamesJutawanPage": {
+        "type": "object",
+        "properties": {
+          "bestLevel": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 15
+          },
+          "games": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "heading": {
+            "type": "string",
+            "description": "\"DARJAH n\" for 1 to 6, \"TINGKATAN n\" for 7 to 11."
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesJutawanSubject"
+            }
+          }
+        },
+        "required": [
+          "bestLevel",
+          "games"
+        ],
+        "additionalProperties": false
+      },
+      "GamesJutawanStartRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Subject id (opaque; the mock sends a number). Unknown or too few questions: 422 \"Subjek tidak sah.\" / \"Soalan tidak mencukupi.\" (subject).",
+            "example": "1042"
+          },
+          "darjah": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 11,
+            "description": "Else 422 \"Tahap tidak sah.\" (darjah)."
+          }
+        },
+        "required": [
+          "subject",
+          "darjah"
+        ]
+      },
+      "GamesJutawanStartResponse": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "index": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          },
+          "question": {
+            "$ref": "#/components/schemas/GamesKeylessQuestion"
+          },
+          "lifelines": {
+            "type": "number",
+            "enum": [
+              3
+            ]
+          }
+        },
+        "required": [
+          "sessionId",
+          "index",
+          "question",
+          "lifelines"
+        ],
+        "additionalProperties": false
+      },
+      "GamesJutawanAnswerRequest": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Must be the current question: else 422 \"Soalan tidak sepadan.\" (questionId).",
+            "example": "1042"
+          },
+          "optionId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "questionId",
+          "optionId"
+        ]
+      },
+      "GamesJutawanAnswerResponse": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 15
+          },
+          "next": {
+            "$ref": "#/components/schemas/GamesKeylessQuestion"
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 15
+              },
+              "credited": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "level",
+              "credited"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "correct",
+          "level"
+        ],
+        "additionalProperties": false
+      },
+      "GamesJutawanLifelineRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "50:50"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "GamesJutawanLifelineResponse": {
+        "type": "object",
+        "properties": {
+          "removedOptionIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3
+            },
+            "maxItems": 2,
+            "description": "Two wrong option indexes of the current question (remembered for it)."
+          },
+          "lifelines": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "removedOptionIds",
+          "lifelines"
+        ],
+        "additionalProperties": false
+      },
+      "GamesWeeklyRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name only (D54(d))."
+          },
+          "sesi": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "betul": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tepat": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "rank",
+          "userId",
+          "name",
+          "sesi",
+          "betul",
+          "tepat"
+        ],
+        "additionalProperties": false
+      },
+      "GamesWeeklyCompetition": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "weekEnd": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Sunday 23:59:59 +08:00.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "prizes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "[100, 50, 25] syiling for ranks 1 to 3."
+          },
+          "me": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "rank": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "betul": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "rank",
+              "betul"
+            ],
+            "additionalProperties": false
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesWeeklyRow"
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "weekStart",
+          "weekEnd",
+          "endsAt",
+          "prizes",
+          "me",
+          "rows"
+        ],
+        "additionalProperties": false
+      },
+      "GamesUjiMinda": {
+        "type": "object",
+        "properties": {
+          "challenge": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "challenge"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLeagueType": {
+        "type": "string",
+        "enum": [
+          "friendly",
+          "tournament",
+          "league"
+        ]
+      },
+      "GamesLeagueScope": {
+        "type": "string",
+        "enum": [
+          "school",
+          "district",
+          "state",
+          "national"
+        ]
+      },
+      "GamesLeagueGameMode": {
+        "type": "string",
+        "enum": [
+          "mixed",
+          "quiz",
+          "multiplayer"
+        ]
+      },
+      "GamesLeagueScoring": {
+        "type": "string",
+        "enum": [
+          "total_score",
+          "avg_accuracy",
+          "wins"
+        ]
+      },
+      "GamesLeagueStatus": {
+        "type": "string",
+        "enum": [
+          "upcoming",
+          "ongoing",
+          "ended"
+        ]
+      },
+      "GamesLeagueClassLevel": {
+        "type": "string",
+        "enum": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6",
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5"
+        ]
+      },
+      "GamesLeagueCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "status": {
+            "$ref": "#/components/schemas/GamesLeagueStatus"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "scopeLabel": {
+            "type": "string"
+          },
+          "typeLabel": {
+            "type": "string"
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "endDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "schools": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of participating schools."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "statusLabel",
+          "scopeLabel",
+          "typeLabel",
+          "subjectName",
+          "startDate",
+          "endDate",
+          "schools"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLeagueList": {
+        "type": "object",
+        "properties": {
+          "mine": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesLeagueCard"
+            }
+          },
+          "open": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesLeagueCard"
+            }
+          }
+        },
+        "required": [
+          "mine",
+          "open"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLeagueCreateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "friendly",
+              "tournament",
+              "league"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "school",
+              "district",
+              "state",
+              "national"
+            ]
+          },
+          "subject_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Existing subject; unknown 422 \"Mata pelajaran tidak sah.\" (subject_id).",
+            "example": "1042"
+          },
+          "game_mode": {
+            "type": "string",
+            "enum": [
+              "mixed",
+              "quiz",
+              "multiplayer"
+            ]
+          },
+          "class_levels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "D1",
+                "D2",
+                "D3",
+                "D4",
+                "D5",
+                "D6",
+                "T1",
+                "T2",
+                "T3",
+                "T4",
+                "T5"
+              ]
+            }
+          },
+          "scoring_method": {
+            "type": "string",
+            "enum": [
+              "total_score",
+              "avg_accuracy",
+              "wins"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "max_schools": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 2,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "scope",
+          "game_mode",
+          "scoring_method",
+          "start_date",
+          "end_date"
+        ]
+      },
+      "GamesLeagueIdResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLeagueJoinRequest": {
+        "type": "object",
+        "properties": {
+          "invite_code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "invite_code"
+        ]
+      },
+      "GamesLeagueStandingRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "description": "School name."
+          },
+          "ppdState": {
+            "type": "string",
+            "description": "\"District, State\" of the school."
+          },
+          "peserta": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skor": {
+            "type": "number",
+            "minimum": 0
+          },
+          "purata": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "rank",
+          "schoolId",
+          "name",
+          "ppdState",
+          "peserta",
+          "skor",
+          "purata"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLeagueDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "status": {
+            "$ref": "#/components/schemas/GamesLeagueStatus"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "scopeLabel": {
+            "type": "string"
+          },
+          "typeLabel": {
+            "type": "string"
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "endDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "scoringLabel": {
+            "type": "string"
+          },
+          "creatorName": {
+            "type": "string",
+            "description": "Display name of the creator."
+          },
+          "classLevels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesLeagueClassLevel"
+            }
+          },
+          "inviteCode": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{8}$",
+            "description": "Visible to non-members, as live."
+          },
+          "shareUrl": {
+            "type": "string",
+            "description": "WhatsApp share link (https://wa.me/?text=...)."
+          },
+          "canJoin": {
+            "type": "boolean",
+            "description": "Not ended, the caller school is not in, and not full."
+          },
+          "schools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "standings": {
+            "type": "object",
+            "properties": {
+              "D1": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "D2": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "D3": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "D4": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "D5": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "D6": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "T1": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "T2": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "T3": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "T4": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              },
+              "T5": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesLeagueStandingRow"
+                }
+              }
+            },
+            "description": "Class level to rows, only for the levels that have rows (stored job output, never recomputed)."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "statusLabel",
+          "scopeLabel",
+          "typeLabel",
+          "subjectName",
+          "startDate",
+          "endDate",
+          "scoringLabel",
+          "creatorName",
+          "classLevels",
+          "inviteCode",
+          "shareUrl",
+          "canJoin",
+          "schools",
+          "standings"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSekolahBersaingQuery": {
+        "type": "object",
+        "properties": {
+          "week": {
+            "type": "string",
+            "description": "Any text; an invalid value is ignored."
+          }
+        }
+      },
+      "GamesSekolahBersaingRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "aktifPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "streakAvg": {
+            "type": "number",
+            "minimum": 0
+          },
+          "notaPer10": {
+            "type": "number",
+            "minimum": 0
+          },
+          "anonymous": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rank",
+          "schoolName",
+          "state",
+          "aktifPct",
+          "streakAvg",
+          "notaPer10",
+          "anonymous"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSekolahBersaing": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date",
+            "description": "Monday of the selected week.",
+            "example": "2026-10-16"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesSekolahBersaingRow"
+            },
+            "description": "Stored rank order; [] for an empty week."
+          }
+        },
+        "required": [
+          "weekStart",
+          "count",
+          "rows"
+        ],
+        "additionalProperties": false
+      },
+      "GamesAdminOverview": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "rooms": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "playing": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "finished": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "players": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Distinct users in rooms."
+              }
+            },
+            "required": [
+              "rooms",
+              "playing",
+              "finished",
+              "players"
+            ],
+            "additionalProperties": false
+          },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "boardgameQuizTiles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 38
+              }
+            },
+            "required": [
+              "boardgameQuizTiles"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "stats",
+          "settings"
+        ],
+        "additionalProperties": false
+      },
+      "GamesAdminSettingsUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "boardgame_quiz_tiles": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 38
+          }
+        },
+        "required": [
+          "boardgame_quiz_tiles"
+        ]
+      },
+      "GamesAdminSettingsResult": {
+        "type": "object",
+        "properties": {
+          "boardgameQuizTiles": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 38
+          }
+        },
+        "required": [
+          "boardgameQuizTiles"
+        ],
+        "additionalProperties": false
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -28860,6 +31573,2002 @@
           },
           "422": {
             "description": "VALIDATION_ERROR fields.classCode \"Sila masukkan kod kelas.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/hub": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Permainan hub: open rooms and chips (M16-22)",
+        "description": "Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44).",
+        "responses": {
+          "200": {
+            "description": "Open rooms and chips.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesHub"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/{game}/lobby": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Lobby of a room game (M16-23)",
+        "description": "papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "papan-bijak",
+                "perang-fakta",
+                "benteng-ilmu",
+                "perlumbaan-matematik",
+                "kuiz-relay",
+                "teka-silang-kata"
+              ],
+              "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lobby.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesLobby"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Permainan tidak dijumpai.\" (unknown game).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/{game}/rooms": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Create a room (M16-24)",
+        "description": "The caller becomes host and first (human) player; the room is waiting. Success is 201. Validation order: subject, grade_level, match_mode, grade_min, max_players.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "papan-bijak",
+                "perang-fakta",
+                "benteng-ilmu",
+                "perlumbaan-matematik",
+                "kuiz-relay",
+                "teka-silang-kata"
+              ],
+              "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesRoomCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Room created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesRoomCodeResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Permainan tidak dijumpai.\" (unknown game).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields[x] = message and the same top-level message: \"Subjek tidak sah.\" (subject), \"Tahap soalan tidak sah.\" (grade_level), \"Julat tahap tidak sah.\" (match_mode or grade_min), \"Bilangan pemain tidak sah.\" (max_players).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/{game}/rooms/join": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Join a waiting room by code (M16-25)",
+        "description": "Every refusal is 404 \"Bilik tidak dijumpai.\" (blank code, unknown room, other game, not waiting, full, grade not allowed by the match mode). Already a player: 200 with the same code, no second row.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "papan-bijak",
+                "perang-fakta",
+                "benteng-ilmu",
+                "perlumbaan-matematik",
+                "kuiz-relay",
+                "teka-silang-kata"
+              ],
+              "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesRoomJoinRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Joined (or already a player).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesRoomCodeResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Bilik tidak dijumpai.\" for every refusal, or \"Permainan tidak dijumpai.\" (unknown game).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/{game}/rooms/{code}": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Room view, polled every 3 s (M16-26)",
+        "description": "Only players of the room; others get 404. SIMULATION on read (D53(a)): a poll by the host of a waiting room below the minimum players (2, Kuiz Relay 4) adds one bot; server clocks advance or finish timed games (Perang Fakta 10 s rounds, Teka Silang Kata 5 minutes) and settle rewards once. The question is keyless.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "papan-bijak",
+                "perang-fakta",
+                "benteng-ilmu",
+                "perlumbaan-matematik",
+                "kuiz-relay",
+                "teka-silang-kata"
+              ],
+              "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Room code (trimmed and upper-cased by the server)."
+            },
+            "required": true,
+            "description": "Room code (trimmed and upper-cased by the server).",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The room.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesRoomView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Bilik tidak dijumpai.\" (unknown, other game, or caller is not a player), or \"Permainan tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/{game}/rooms/{code}/start": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Start the game (M16-27)",
+        "description": "Host only. Draws the question pool for the room subject and the host level. No body.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "papan-bijak",
+                "perang-fakta",
+                "benteng-ilmu",
+                "perlumbaan-matematik",
+                "kuiz-relay",
+                "teka-silang-kata"
+              ],
+              "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Room code (trimmed and upper-cased by the server)."
+            },
+            "required": true,
+            "description": "Room code (trimmed and upper-cased by the server).",
+            "name": "code",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The playing room.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesRoomView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Hanya hos boleh memulakan permainan.\" (caller is not the host), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Bilik tidak dijumpai.\" or \"Permainan tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Permainan sudah dimulakan.\" (not waiting), \"Pemain belum mencukupi.\" (below the minimum players) or \"Soalan tidak mencukupi.\" (question pool).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/{game}/rooms/{code}/action": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Roll the dice or answer (M16-28)",
+        "description": "Only the room human (the host) acts; every other player is a bot. If a server clock ended the game just before the action, the finished room is returned instead of an error. On finish: standings and one reward report for the caller.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "papan-bijak",
+                "perang-fakta",
+                "benteng-ilmu",
+                "perlumbaan-matematik",
+                "kuiz-relay",
+                "teka-silang-kata"
+              ],
+              "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Room game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Room code (trimmed and upper-cased by the server)."
+            },
+            "required": true,
+            "description": "Room code (trimmed and upper-cased by the server).",
+            "name": "code",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesRoomActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The room after the action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesRoomView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Bukan giliran anda.\" (caller is not the room human), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Bilik tidak dijumpai.\" or \"Permainan tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Permainan belum bermula.\", \"Bukan giliran anda untuk gulung dadu.\", \"Tiada soalan untuk dijawab.\" or \"Tiada jam untuk permainan ini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: \"Soalan tidak sah.\" (questionId), \"Pilihan tidak sah.\" (optionId), \"Masa tidak sah.\" (seconds), \"Tindakan tidak sah.\" (type), \"Soalan tidak sepadan.\" (questionId), \"Jawapan tidak sah.\" (value).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/papan-bijak/quick-match": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Start a Papan Bijak quick-match search (M16-29)",
+        "description": "RAW live-shaped body (no `{ data }`). The 422 body is raw `{ error: \"<BM>\" }`, not the standard error body.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesQuickMatchStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Searching.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesQuickMatchStartResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Raw `{ error }`: \"Subjek tidak sah.\" or \"Padanan tidak sah.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/papan-bijak/quick-match/poll": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Poll the quick match (M16-30)",
+        "description": "RAW body, polled every 3 s. The third poll matches and creates the room (host = caller, 4 seats, one bot).",
+        "responses": {
+          "200": {
+            "description": "Search state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesQuickMatchPollResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/papan-bijak/quick-match/cancel": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Cancel the quick match (M16-31)",
+        "description": "RAW body. Always answers cancelled and turns a searching row into cancelled.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesQuickMatchCancelResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/solo/{game}": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Start a single-player game session (M16-32)",
+        "description": "Creates a session row and returns its items. SECURITY EXCEPTION (SEC-M16-01, BE-45 Open question 8): as in the mock, this payload carries the answer keys (is_true, correct, answer, pair_id).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "betul-salah",
+                "cabaran-kilat",
+                "tembak-jawapan",
+                "susun-jawapan",
+                "kad-memori"
+              ],
+              "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 11,
+              "description": "Grade 1..11 (7..11 are Tingkatan 1..5)."
+            },
+            "required": false,
+            "description": "Grade 1..11 (7..11 are Tingkatan 1..5).",
+            "name": "darjah",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session id and the items of the game.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesSoloPayload"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Permainan tidak dijumpai.\" (unknown game).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Tahap tidak sah.\" (fields.darjah): darjah outside 1..11.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/solo/{game}/submit": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Submit a single-player result (M16-33)",
+        "description": "RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "betul-salah",
+                "cabaran-kilat",
+                "tembak-jawapan",
+                "susun-jawapan",
+                "kad-memori"
+              ],
+              "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesSoloSubmitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ is_new_record, syiling_awarded } or, for Kad Memori, { results }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesSoloSubmitResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Raw `{ message: \"Permainan tidak dijumpai.\" }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesRawMessage"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Raw `{ message: \"Keputusan sudah dihantar.\" }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesRawMessage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Raw `{ message: \"Keputusan tidak sah.\" }` (unknown or foreign session, or values beyond the bounds).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesRawMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/roda-nasib": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Roda Nasib page (M16-34)",
+        "responses": {
+          "200": {
+            "description": "Segments, counters and today state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesSpinPage"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/roda-nasib/spin": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Spin the wheel, once per Malaysia day (M16-35)",
+        "description": "RAW body. The segment is drawn server-side by the weights. A second spin the same day is 409 raw `{ success: false, message }`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spin result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesSpinResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Raw `{ success: false, message: \"Anda sudah spin hari ini.\" }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesSpinRefused"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/jutawan": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Jutawan Ilmu page (M16-36)",
+        "description": "With `darjah` the page also carries `heading` and the `subjects` tiles for that level.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 11,
+              "description": "Grade 1..11 (7..11 are Tingkatan 1..5)."
+            },
+            "required": false,
+            "description": "Grade 1..11 (7..11 are Tingkatan 1..5).",
+            "name": "darjah",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Best level, games and optional subject tiles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesJutawanPage"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Tahap tidak sah.\" (fields.darjah).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/jutawan/start": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Start a Jutawan Ilmu game (M16-37)",
+        "description": "Success is 200 (not 201). The first question is keyless.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesJutawanStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session, question 1 and 3 lifelines.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesJutawanStartResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: \"Tahap tidak sah.\" (darjah), \"Subjek tidak sah.\" (subject), \"Soalan tidak mencukupi.\" (subject; fewer than 15 questions).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/jutawan/{sessionId}/answer": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Answer the current Jutawan question (M16-38)",
+        "description": "Own session only. A wrong answer or level 15 ends the game with `result`; otherwise `next` is the keyless next question. On end the best level and games count are updated and one reward report is made.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Jutawan session id (uuid string)."
+            },
+            "required": true,
+            "description": "Jutawan session id (uuid string).",
+            "name": "sessionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesJutawanAnswerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Answer outcome.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesJutawanAnswerResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Sesi tidak dijumpai.\" or \"Soalan tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Permainan sudah tamat.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Soalan tidak sepadan.\" (questionId) or \"Pilihan tidak sah.\" (optionId).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/jutawan/{sessionId}/lifeline": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Use the 50:50 lifeline (M16-39)",
+        "description": "Removes two wrong options of the current question and remembers the removal for it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Jutawan session id (uuid string)."
+            },
+            "required": true,
+            "description": "Jutawan session id (uuid string).",
+            "name": "sessionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesJutawanLifelineRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Removed options and lifelines left.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesJutawanLifelineResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Sesi tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Permainan sudah tamat.\" or \"Tiada bantuan tersedia.\" (none left, or already used on this question).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Bantuan tidak sah.\" (type).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/pertandingan": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Weekly competition board (M16-40)",
+        "description": "`?week=` is ignored (as live). Top 20 by the practice weekly ranking; names are display names only (D54(d)).",
+        "responses": {
+          "200": {
+            "description": "Weekly board.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesWeeklyCompetition"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/uji-minda": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Uji Minda placeholder (M16-41)",
+        "description": "Constant `{ data: { challenge: null } }`.",
+        "responses": {
+          "200": {
+            "description": "No challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesUjiMinda"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leagues": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Leagues list (M16-46)",
+        "description": "mine = leagues containing the caller school; open = every league that is not ended.",
+        "responses": {
+          "200": {
+            "description": "Mine and open leagues.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesLeagueList"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Create a league (M16-47)",
+        "description": "Any signed-in role. The league is upcoming with an 8-character invite code (A-Z0-9); the creator school (if any) joins. Success is 201.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesLeagueCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "League created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesLeagueIdResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR, top-level message = the first field message: \"Sila lengkapkan semua medan wajib.\" (name, type, scope, game_mode, scoring_method, start_date, end_date), \"Tarikh tamat mesti selepas tarikh mula.\" (end_date), \"Had sekolah mesti antara 2 dan 500.\" (max_schools), \"Mata pelajaran tidak sah.\" (subject_id), \"Tingkatan tidak sah.\" (class_levels).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leagues/join": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Join a league by invite code (M16-48)",
+        "description": "The caller school joins. Static path: wins over `/leagues/{id}`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesLeagueJoinRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Joined.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesLeagueIdResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.invite_code: \"Kod jemputan tidak sah.\", \"Liga ini sudah tamat.\", \"Anda perlu mempunyai sekolah untuk menyertai liga ini.\", \"Sekolah anda sudah menyertai liga ini.\", \"Liga ini sudah penuh.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leagues/{id}": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "League detail (M16-49)",
+        "description": "The invite code and share link are visible to non-members, as live.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "League id. Digits only; a non-numeric segment does not match the route."
+            },
+            "required": true,
+            "description": "League id. Digits only; a non-numeric segment does not match the route.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "League detail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesLeagueDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Liga tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sekolah-bersaing": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Sekolah Bersaing weekly board (M16-50)",
+        "description": "National board, no school scope. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. An anonymous row shows \"Sekolah anonim\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Any text; an invalid value is ignored."
+            },
+            "required": false,
+            "description": "Any text; an invalid value is ignored.",
+            "name": "week",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Weekly snapshot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesSekolahBersaing"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/games": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Admin game statistics and settings (M16-51)",
+        "description": "Role admin only.",
+        "responses": {
+          "200": {
+            "description": "Room statistics and settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesAdminOverview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/games/settings": {
+      "put": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Save the Papan Bijak quiz-tile count (M16-52)",
+        "description": "Role admin only. The mock writes no audit event.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesAdminSettingsUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesAdminSettingsResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Nilai mesti antara 0 dan 38.\" (fields.boardgame_quiz_tiles).",
             "content": {
               "application/json": {
                 "schema": {
