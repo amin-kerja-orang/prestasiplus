@@ -12,6 +12,9 @@ import {
   ClassStudentAddRequestSchema,
   ClassStudentRemoveQuerySchema,
   TeacherChapterCreateRequestSchema,
+  TeacherChaptersQuerySchema,
+  TeacherStudentsQuerySchema,
+  TeacherTopicsQuerySchema,
   TeacherClassSchema,
   TeacherContributionsSchema,
   TeacherDashboardSchema,
@@ -176,5 +179,32 @@ describe('OpenAPI document', () => {
   })
   it('contains every BE-17 component', () => {
     for (const name of Object.keys(CLASSES_COMPONENT_SCHEMAS)) expect(doc.components.schemas[name], name).toBeDefined()
+  })
+})
+
+describe('contract is no stricter than the mock', () => {
+  it('accepts any tab and any query id string (the mock falls back / answers [])', () => {
+    expect(TeacherStudentsQuerySchema.safeParse({ tab: 'whatever', search: 'x' }).success).toBe(true)
+    expect(TeacherChaptersQuerySchema.safeParse({ subjectId: 'abc' }).success).toBe(true)
+    expect(TeacherTopicsQuerySchema.safeParse({ chapterId: '' }).success).toBe(true)
+  })
+  it('accepts an empty or null schoolId and a numeric-string chapterNumber', () => {
+    const base = { name: 'K', subjectId: '1', educationLevel: 'tahun-1' }
+    expect(ClassCreateRequestSchema.safeParse({ ...base, schoolId: '' }).success).toBe(true)
+    expect(ClassCreateRequestSchema.safeParse({ ...base, schoolId: null, description: null }).success).toBe(true)
+    const ch = { name: 'Bab', subjectId: '1', educationLevelId: '2' }
+    expect(TeacherChapterCreateRequestSchema.parse({ ...ch, chapterNumber: '5' }).chapterNumber).toBe(5)
+  })
+  it('wires the BM message for every other field the mock refuses', () => {
+    const base = { name: 'K', subjectId: '1', educationLevel: 'tahun-1' }
+    expect(fieldsOf(ClassCreateRequestSchema.safeParse({ ...base, schoolId: 5 }))).toEqual({ schoolId: CLASS_MESSAGES.school })
+    expect(fieldsOf(ClassCreateRequestSchema.safeParse({ ...base, description: 5 }))).toEqual({ description: CLASS_MESSAGES.invalid })
+    expect(fieldsOf(ClassCreateRequestSchema.safeParse({ ...base, subjectId: '' }))).toEqual({ subjectId: CLASS_MESSAGES.subject })
+    const ch = { subjectId: '1', educationLevelId: '2' }
+    expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'x'.repeat(256), chapterNumber: 1 }))).toEqual({ name: CLASS_MESSAGES.chapterName })
+    expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'Bab' }))).toEqual({ chapterNumber: CLASS_MESSAGES.chapterNumber })
+    expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'Bab', chapterNumber: 0 }))).toEqual({ chapterNumber: CLASS_MESSAGES.chapterNumber })
+    expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'Bab', chapterNumber: 1.5 }))).toEqual({ chapterNumber: CLASS_MESSAGES.chapterNumber })
+    expect(fieldsOf(TeacherTopicCreateRequestSchema.safeParse({ name: 'x'.repeat(256), chapterId: '1' }))).toEqual({ name: CLASS_MESSAGES.topicName })
   })
 })

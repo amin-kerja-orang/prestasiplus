@@ -7776,6 +7776,806 @@
           "meta"
         ]
       },
+      "ClassEducationLevelSlug": {
+        "type": "string",
+        "enum": [
+          "tahun-1",
+          "tahun-2",
+          "tahun-3",
+          "tahun-4",
+          "tahun-5",
+          "tahun-6",
+          "tingkatan-1",
+          "tingkatan-2",
+          "tingkatan-3",
+          "tingkatan-4",
+          "tingkatan-5"
+        ]
+      },
+      "ClassroomKind": {
+        "type": "string",
+        "enum": [
+          "classroom",
+          "school_class"
+        ]
+      },
+      "ClassEnrolmentStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "removed"
+        ]
+      },
+      "ClassEnrolmentSource": {
+        "type": "string",
+        "enum": [
+          "code",
+          "teacher",
+          "school_admin",
+          "complimentary"
+        ]
+      },
+      "TeacherClass": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ClassroomKind"
+          },
+          "teacherId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "schoolId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "null = \"Tiada Subjek\"."
+          },
+          "educationLevel": {
+            "$ref": "#/components/schemas/ClassEducationLevelSlug"
+          },
+          "levelId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "levelLabel": {
+            "type": "string",
+            "minLength": 1,
+            "description": "\"Tahun n\" or \"Ting. n\"."
+          },
+          "academicYear": {
+            "type": "integer"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "joinCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "studentCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "teacherId",
+          "schoolId",
+          "name",
+          "subjectId",
+          "subjectName",
+          "educationLevel",
+          "levelId",
+          "levelLabel",
+          "academicYear",
+          "description",
+          "joinCode",
+          "isActive",
+          "createdAt",
+          "studentCount"
+        ]
+      },
+      "ClassCreateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "educationLevel": {
+            "$ref": "#/components/schemas/ClassEducationLevelSlug"
+          },
+          "schoolId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional; null or empty means no school. An unknown school gives fields.schoolId."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "name",
+          "subjectId",
+          "educationLevel"
+        ]
+      },
+      "ClassQrData": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "school": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "joinUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "name",
+          "school",
+          "joinUrl"
+        ]
+      },
+      "TeacherStudentsQuery": {
+        "type": "object",
+        "properties": {
+          "tab": {
+            "type": "string",
+            "description": "mine or school; any other value falls back to \"mine\" (no 422)."
+          },
+          "search": {
+            "type": "string",
+            "description": "Case-insensitive name filter."
+          }
+        }
+      },
+      "TeacherStudent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "levelName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "M03 level name of the pupil grade."
+          },
+          "classNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The own active classes the pupil is in."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "levelName",
+          "classNames"
+        ]
+      },
+      "TeacherStudentsMeta": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Matches before the 200-row cap of the school tab."
+          },
+          "schoolSet": {
+            "type": "boolean",
+            "description": "Whether the teacher profile has a school (BR-M10-30)."
+          }
+        },
+        "required": [
+          "count",
+          "schoolSet"
+        ]
+      },
+      "ClassStudentAddRequest": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "classroomId"
+        ]
+      },
+      "ClassStudentRemoveQuery": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "classroomId"
+        ]
+      },
+      "ClassEnrolment": {
+        "type": "object",
+        "properties": {
+          "classroomKind": {
+            "$ref": "#/components/schemas/ClassroomKind"
+          },
+          "classroomId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ClassEnrolmentStatus"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ClassEnrolmentSource"
+          },
+          "joinedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "classroomKind",
+          "classroomId",
+          "studentId",
+          "status",
+          "source",
+          "joinedAt"
+        ]
+      },
+      "ClassStudentRemoved": {
+        "type": "object",
+        "properties": {
+          "removed": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          }
+        },
+        "required": [
+          "removed"
+        ]
+      },
+      "TeacherDashboard": {
+        "type": "object",
+        "properties": {
+          "checklist": {
+            "type": "object",
+            "properties": {
+              "hasClass": {
+                "type": "boolean"
+              },
+              "hasStudents": {
+                "type": "boolean"
+              },
+              "hasMission": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "hasClass",
+              "hasStudents",
+              "hasMission"
+            ]
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "activeClasses": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalClasses": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "students": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "questions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "questionsApproved": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "assignments": {
+                "type": "number",
+                "enum": [
+                  0
+                ]
+              }
+            },
+            "required": [
+              "activeClasses",
+              "totalClasses",
+              "students",
+              "questions",
+              "questionsApproved",
+              "assignments"
+            ]
+          },
+          "today": {
+            "type": "object",
+            "properties": {
+              "students": {
+                "type": "array",
+                "items": {},
+                "description": "Always empty (L-M10-01)."
+              },
+              "topics": {
+                "type": "array",
+                "items": {},
+                "description": "Always empty (L-M10-01)."
+              },
+              "actions": {
+                "type": "array",
+                "items": {},
+                "description": "Always empty (L-M10-01)."
+              }
+            },
+            "required": [
+              "students",
+              "topics",
+              "actions"
+            ]
+          },
+          "peerTutor": {
+            "type": "array",
+            "items": {},
+            "description": "Always empty (L-M10-01)."
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "studentCount": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "studentCount"
+              ]
+            }
+          },
+          "submissions": {
+            "type": "array",
+            "items": {},
+            "description": "Always empty (OQ-M10-11)."
+          }
+        },
+        "required": [
+          "checklist",
+          "stats",
+          "today",
+          "peerTutor",
+          "classes",
+          "submissions"
+        ]
+      },
+      "TeacherChaptersQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string"
+          },
+          "educationLevelId": {
+            "type": "string"
+          }
+        },
+        "description": "Either one missing (or unknown) gives an empty array, never an error."
+      },
+      "TeacherTopicsQuery": {
+        "type": "object",
+        "properties": {
+          "chapterId": {
+            "type": "string"
+          }
+        },
+        "description": "Missing or unknown chapter gives an empty array."
+      },
+      "TeacherChapterOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "chapterNumber": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "chapterNumber",
+          "name"
+        ]
+      },
+      "TeacherTopicOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "topicNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "topicNumber",
+          "name"
+        ]
+      },
+      "TeacherChapterCreateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "chapterNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "name",
+          "chapterNumber",
+          "subjectId",
+          "educationLevelId"
+        ]
+      },
+      "TeacherTopicCreateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "chapterId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "name",
+          "chapterId"
+        ]
+      },
+      "TeacherContributions": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "approved": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pending": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "used": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "total",
+              "approved",
+              "pending",
+              "used"
+            ]
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "threshold": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "icon": {
+                  "type": "string",
+                  "description": "Font Awesome class resolved by the client (BR-05)."
+                },
+                "reached": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "threshold",
+                "icon",
+                "reached"
+              ]
+            }
+          },
+          "nextTier": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "threshold": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "name",
+              "threshold"
+            ]
+          },
+          "breakdown": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "label",
+                "count"
+              ]
+            }
+          }
+        },
+        "required": [
+          "stats",
+          "tiers",
+          "nextTier",
+          "breakdown"
+        ]
+      },
+      "TeacherGalleryQuery": {
+        "type": "object",
+        "properties": {
+          "folder": {
+            "type": "string"
+          }
+        }
+      },
+      "TeacherGallery": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "folders": {
+                "type": "array",
+                "items": {}
+              }
+            },
+            "required": [
+              "folders"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "images": {
+                "type": "array",
+                "items": {}
+              }
+            },
+            "required": [
+              "images"
+            ]
+          }
+        ]
+      },
+      "ClassJoinedClass": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "teacherName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "levelLabel": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "subjectName",
+          "teacherName",
+          "levelLabel"
+        ]
+      },
+      "ClassJoinRequest": {
+        "type": "object",
+        "properties": {
+          "classCode": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "classCode"
+        ]
+      },
+      "ClassJoinResult": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "classroomId"
+        ]
+      },
+      "ClassJoinResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ClassJoinResult"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "data",
+          "message"
+        ],
+        "description": "201; `message` is \"Berjaya menyertai kelas {name}.\""
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -14873,6 +15673,1024 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/classes": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Own classes (newest first, active and inactive)",
+        "description": "Single-page list meta (page 1, pageSize = max(1, n)); live does not paginate.",
+        "responses": {
+          "200": {
+            "description": "The own classes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TeacherClass"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Create a class with a server-generated unique join code",
+        "description": "Owner is the caller, isActive true, academic year from the clock. The join code is never accepted from the client.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created class.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TeacherClass"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: name, subjectId, educationLevel, schoolId, description.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/classes/{id}/qr-data": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Join-QR payload of an own class (bare body)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bare `{ name, school, joinUrl }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassQrData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown, not owned, or a school class (never names a model).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/students": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Pelajar Saya: roster of own classes, or students of the teacher profile school",
+        "description": "tab=mine: distinct pupils with an active enrolment in an active own class. tab=school: active students of the teacher-profile school, at most 200 rows. Ordered by name A-Z then id.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "mine or school; any other value falls back to \"mine\" (no 422)."
+            },
+            "required": false,
+            "description": "mine or school; any other value falls back to \"mine\" (no 422).",
+            "name": "tab",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Case-insensitive name filter."
+            },
+            "required": false,
+            "description": "Case-insensitive name filter.",
+            "name": "search",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Students and `{ count, schoolSet }` (not the standard list meta).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TeacherStudent"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/TeacherStudentsMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/students/{id}": {
+      "put": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Add a student of the teacher school to an own class",
+        "description": "Checks in order: classroomId (422), student exists and is a student (404), class exists (404), class owned (403), same school (403), not already a member (409).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassStudentAddRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The active enrolment (source \"teacher\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ClassEnrolment"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Kelas ini bukan milik anda.\" or \"Pelajar bukan daripada sekolah anda.\"; or role / CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Pelajar tidak dijumpai.\" or \"Kelas tidak sah.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Pelajar sudah berada dalam kelas ini.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.classroomId \"Kelas tidak sah.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Remove a student from an own class (enrolment status becomes removed)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "classroomId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ data: { removed: 1 } }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ClassStudentRemoved"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Kelas ini bukan milik anda.\"; or role / CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kelas tidak sah.\" or \"Pelajar tiada dalam kelas ini.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.classroomId \"Kelas tidak sah.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/dashboard": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Teacher dashboard counters",
+        "description": "All counters are computed from the tables (no stored aggregates). today, peerTutor and submissions are always empty; assignments is 0.",
+        "responses": {
+          "200": {
+            "description": "Dashboard.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TeacherDashboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/chapters": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Active chapters of a subject and level (bare array; M03 data)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "educationLevelId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bare array; `[]` when a parent is missing or unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeacherChapterOption"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Inline \"Bab Baru\" (creates an M03 chapter)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherChapterCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bare `{ id, chapterNumber, name }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherChapterOption"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (v2 shape; the mock answers 200 `{ error }`): name, chapterNumber, subjectId/educationLevelId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/topics": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Active topics of a chapter (bare array; M03 data)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "chapterId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bare array; `[]` when the chapter is missing or unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeacherTopicOption"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Inline \"Topik Baru\" (creates an M03 topic numbered max + 1)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherTopicCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bare `{ id, topicNumber, name }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherTopicOption"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (v2 shape; the mock answers 200 `{ error }`): name, chapterId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/contributions": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Sumbang Soalan header: stats, eight tiers, subject breakdown (bare body)",
+        "responses": {
+          "200": {
+            "description": "Bare contributions body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherContributions"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/galeri-rajah": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Galeri Rajah (empty in the prototype, D22; bare body)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "folder",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ folders: [] }`, or `{ images: [] }` with `folder`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherGallery"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kelas-saya": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Classes the signed-in user has joined (newest first)",
+        "description": "School classes are not joined classes and are left out. Single-page list meta.",
+        "responses": {
+          "200": {
+            "description": "Joined classes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ClassJoinedClass"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kelas-saya/join": {
+      "post": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Join a class by code",
+        "description": "classCode is trimmed and compared case-insensitively. Only student (and admin) may join. The enrolment source is \"code\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassJoinRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`{ data: { classroomId }, message }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassJoinResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: role may not join; or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kod kelas tidak sah.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Anda sudah menyertai kelas ini.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.classCode \"Sila masukkan kod kelas.\"",
             "content": {
               "application/json": {
                 "schema": {

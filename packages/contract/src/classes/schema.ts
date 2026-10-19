@@ -49,7 +49,7 @@ const text = (message: string, max?: number, maxMessage: string = CLASS_MESSAGES
   return max === undefined ? base : base.max(max, maxMessage)
 }
 /** Opaque id in a request body, with the field's own BM message when missing. */
-const refId = (message: string) => z.string({ error: message }).min(1, message).max(64)
+const refId = (message: string) => z.string({ error: message }).min(1, message)
 
 // --- Shared pieces -----------------------------------------------------------------------------
 
@@ -109,8 +109,8 @@ export const ClassCreateRequestSchema = z
     name: text(CLASS_MESSAGES.className, 255),
     subjectId: refId(CLASS_MESSAGES.subject),
     educationLevel: ClassEducationLevelSlugSchema,
-    schoolId: IdSchema.nullish(),
-    description: z.string().trim().max(2000, CLASS_MESSAGES.invalid).nullish(),
+    schoolId: z.string({ error: CLASS_MESSAGES.school }).nullish().meta({ description: 'Optional; null or empty means no school. An unknown school gives fields.schoolId.' }),
+    description: z.string({ error: CLASS_MESSAGES.invalid }).trim().max(2000, CLASS_MESSAGES.invalid).nullish(),
   })
   .meta({ id: 'ClassCreateRequest' })
 export type ClassCreateRequest = z.infer<typeof ClassCreateRequestSchema>
@@ -128,7 +128,7 @@ export const TEACHER_SCHOOL_TAB_LIMIT = 200
 
 export const TeacherStudentsQuerySchema = z
   .object({
-    tab: z.enum(TEACHER_STUDENT_TABS).optional().meta({ description: 'Any other value is treated as "mine".' }),
+    tab: z.string().optional().meta({ description: 'mine or school; any other value falls back to "mine" (no 422).' }),
     search: z.string().optional().meta({ description: 'Case-insensitive name filter.' }),
   })
   .meta({ id: 'TeacherStudentsQuery' })
@@ -200,10 +200,10 @@ export type TeacherDashboard = z.infer<typeof TeacherDashboardSchema>
 // --- Chapters and topics (M03 data, BE-08 owns) ------------------------------------------------
 
 export const TeacherChaptersQuerySchema = z
-  .object({ subjectId: IdSchema.optional(), educationLevelId: IdSchema.optional() })
+  .object({ subjectId: z.string().optional(), educationLevelId: z.string().optional() })
   .meta({ id: 'TeacherChaptersQuery', description: 'Either one missing (or unknown) gives an empty array, never an error.' })
 export const TeacherTopicsQuerySchema = z
-  .object({ chapterId: IdSchema.optional() })
+  .object({ chapterId: z.string().optional() })
   .meta({ id: 'TeacherTopicsQuery', description: 'Missing or unknown chapter gives an empty array.' })
 
 export const TeacherChapterOptionSchema = z
@@ -216,7 +216,7 @@ export const TeacherTopicOptionSchema = z
 export const TeacherChapterCreateRequestSchema = z
   .object({
     name: text(CLASS_MESSAGES.chapterName, 255, CLASS_MESSAGES.chapterName),
-    chapterNumber: z
+    chapterNumber: z.coerce
       .number({ error: CLASS_MESSAGES.chapterNumber })
       .int(CLASS_MESSAGES.chapterNumber)
       .min(1, CLASS_MESSAGES.chapterNumber)
