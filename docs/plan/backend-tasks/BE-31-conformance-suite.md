@@ -68,7 +68,7 @@ None (runs on the seeded test database).
 ## Test commands
 
 ```
-npm run be:test -- apps/api/test/conformance
+npm run conformance:api
 npm run contract:check
 npm run be:verify
 ```
@@ -77,7 +77,7 @@ npm run be:verify
 
 1. Plan section 10 (all ten items) is met.
 2. `npm run contract:check && npm run be:verify` is green. Paste the real tail of the output in the PR.
-3. This card is the conformance suite itself: its own scenarios are the BE-03 auth and session scenarios of acceptance criterion 1, and `npm run be:test -- apps/api/test/conformance` must pass in CI and be documented in the package README as the command every later card runs.
+3. This card is the conformance suite itself: its own scenarios are the BE-03 auth and session scenarios of acceptance criterion 1, and `npm run conformance:api` must pass in CI and be documented in the package README as the command every later card runs.
 4. This card creates no tables; the migration-first checklist (plan section 14.9) does not apply, but no change may break `npm run be:lint:migration` (once BE-34 is merged).
 5. No security review is required; list any security-relevant decision in the PR anyway.
 6. The card's tracker row is updated (status, PR number, one-line note) and the PR description follows the template in `docs/plan/backend-tasks/README.md`. Nothing stays only on your PC (AGENT-SYNC.md section 4).
