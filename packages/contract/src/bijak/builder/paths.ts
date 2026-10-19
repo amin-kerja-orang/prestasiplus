@@ -107,8 +107,7 @@ const BlueprintIdParams = z.object({
   id: IdSchema.meta({ description: 'Blueprint (family) id, stable over versions.' }),
 })
 
-const ROLE_NOTE =
-  'Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.'
+const ROLE_NOTE = 'Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.'
 const UNAUTHORIZED = err('UNAUTHORIZED (no valid session).')
 const FORBIDDEN_READ = err('FORBIDDEN (the active role is not Admin Pusat).')
 const FORBIDDEN_WRITE = json(
@@ -117,10 +116,12 @@ const FORBIDDEN_WRITE = json(
 )
 const PAPER_NOT_FOUND = err(`NOT_FOUND "${BIJAK_BUILDER_MESSAGES.paperNotFound}".`)
 const BLUEPRINT_NOT_FOUND = err(`NOT_FOUND "${BIJAK_BUILDER_MESSAGES.blueprintNotFound}".`)
-const PAPER_LOCKED = err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.paperLocked}" (the paper is published).`)
+const PAPER_LOCKED = err(
+  `CONFLICT "${BIJAK_BUILDER_MESSAGES.paperLocked}" (the paper is published).`,
+)
 
 /**
- * Registers the 14 admin routes of BE-39. There is no mock route or mock method behind them: the
+ * Registers the 15 admin operations of BE-39. There is no mock route or mock method behind them: the
  * paths are fixed by this contract (card BE-39 Endpoints). Every response is `{ data }`,
  * `{ data, meta }` or `{ error }`; every mutation needs `X-CSRF-Token`.
  */
@@ -153,7 +154,9 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: BLUEPRINT_NOT_FOUND,
-      422: err('VALIDATION_ERROR with fields (title, subject, kertas, year, code, durationMin, blueprint).'),
+      422: err(
+        'VALIDATION_ERROR with fields (title, subject, kertas, year, code, durationMin, blueprint).',
+      ),
     },
   })
 
@@ -213,14 +216,20 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: replace the ordered section list',
     description: `The array order is the section order; an item with an existing id keeps its placements, an item without id is created. A section that is left out is removed and must hold no placement (422 fields.sections "${BIJAK_BUILDER_MESSAGES.sectionHasPlacements}"). Answers the whole paper. Refused with 409 while the paper is published. ${ROLE_NOTE}`,
-    request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderSectionsRequestSchema) },
+    request: {
+      params: PaperIdParams,
+      headers: [csrf],
+      body: body(BijakBuilderSectionsRequestSchema),
+    },
     responses: {
       200: json(envelopeOf(BijakBuilderPaperSchema), 'The paper with the new sections.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
       409: PAPER_LOCKED,
-      422: err('VALIDATION_ERROR with fields (sections, sections.N.label, sections.N.rule, sections.N.markBudget).'),
+      422: err(
+        'VALIDATION_ERROR with fields (sections, sections.N.label, sections.N.rule, sections.N.markBudget).',
+      ),
     },
   })
 
@@ -332,7 +341,9 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintExists}".`),
-      422: err('VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*).'),
+      422: err(
+        'VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*).',
+      ),
     },
   })
 

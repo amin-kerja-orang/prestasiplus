@@ -171,15 +171,10 @@ export const BijakBuilderPlacementSchema = z
       .nullable()
       .meta({ description: 'Printed number, e.g. "12" or "5(a)"; null when not set.' }),
     questionId: IdSchema,
-    pinnedVersion: z
-      .number()
-      .int()
-      .min(1)
-      .nullable()
-      .meta({
-        description:
-          'Question version pinned to the paper. Null in a draft until publish pins it (a later edit of the question, version n+1, never changes a published paper).',
-      }),
+    pinnedVersion: z.number().int().min(1).nullable().meta({
+      description:
+        'Question version pinned to the paper. Null in a draft until publish pins it (a later edit of the question, version n+1, never changes a published paper).',
+    }),
     marksOverride: z
       .number()
       .int()
@@ -214,15 +209,15 @@ export const BijakBuilderSectionSchema = z
       .int()
       .min(0)
       .meta({ description: 'Marks the section is worth after choose-N (printed budget).' }),
-    questionCount: z.number().int().min(0).meta({ description: 'Questions placed in the section.' }),
-    marks: z
+    questionCount: z
       .number()
       .int()
       .min(0)
-      .meta({
-        description:
-          'Effective marks derived from the placements (choose-N counts the N largest); never stored by hand.',
-      }),
+      .meta({ description: 'Questions placed in the section.' }),
+    marks: z.number().int().min(0).meta({
+      description:
+        'Effective marks derived from the placements (choose-N counts the N largest); never stored by hand.',
+    }),
     placements: z.array(BijakBuilderPlacementSchema),
   })
   .meta({ id: 'BijakBuilderSection' })
@@ -286,12 +281,10 @@ export const BijakBuilderPaperInputSchema = z
     durationMin: z.number().int().min(1).max(600),
     instructions: Instructions.optional().meta({ description: 'Default: empty.' }),
     reference: Reference.optional().meta({ description: 'Default: empty.' }),
-    blueprint: BijakBuilderBlueprintRefSchema.nullable()
-      .optional()
-      .meta({
-        description:
-          'Blueprint version to check the paper against; null clears it. A retired blueprint is refused (422).',
-      }),
+    blueprint: BijakBuilderBlueprintRefSchema.nullable().optional().meta({
+      description:
+        'Blueprint version to check the paper against; null clears it. A retired blueprint is refused (422).',
+    }),
   })
   .meta({ id: 'BijakBuilderPaperInput' })
 export type BijakBuilderPaperInput = z.infer<typeof BijakBuilderPaperInputSchema>
@@ -413,13 +406,16 @@ export type BijakBuilderConformanceRule = z.infer<typeof BijakBuilderConformance
 export const BijakBuilderIssueSchema = z
   .strictObject({
     rule: BijakBuilderConformanceRuleSchema,
-    sectionId: IdSchema.nullable().meta({ description: 'Paper section, null for a paper-wide gap.' }),
+    sectionId: IdSchema.nullable().meta({
+      description: 'Paper section, null for a paper-wide gap.',
+    }),
     sectionLabel: z.string().nullable(),
     questionId: IdSchema.nullable(),
     expected: z.union([z.number(), z.string()]).nullable(),
     actual: z.union([z.number(), z.string()]).nullable(),
     message: z.string().min(1).meta({
-      description: 'BM text for direct display, e.g. "Bahagian A: perlu 3 soalan, hanya 2 tersedia".',
+      description:
+        'BM text for direct display, e.g. "Bahagian A: perlu 3 soalan, hanya 2 tersedia".',
     }),
   })
   .meta({ id: 'BijakBuilderIssue' })
@@ -457,7 +453,8 @@ export const BijakBuilderConformanceSchema = z
         'True when there is no gap of the blueprint rules (marks_budget, count, mode, choose_n, section, group_integrity, blueprint).',
     }),
     publishable: z.boolean().meta({
-      description: 'True when there is no gap at all (conforms and every placed question is published).',
+      description:
+        'True when there is no gap at all (conforms and every placed question is published).',
     }),
     totals: z.strictObject({
       questionCount: z.number().int().min(0),
@@ -539,7 +536,9 @@ const blueprintSectionShape = {
     .int()
     .min(1)
     .max(500)
-    .meta({ description: 'Questions the section holds (a stimulus group counts with all its questions).' }),
+    .meta({
+      description: 'Questions the section holds (a stimulus group counts with all its questions).',
+    }),
   markBudget: z
     .number()
     .int()
@@ -636,12 +635,18 @@ export const BijakBlueprintAdminVersionSchema = z
     provenance: z.string().nullable(),
     confidence: z.string().nullable(),
     sections: z.array(BijakBlueprintAdminSectionSchema).min(1),
-    questionCount: z.number().int().min(0).meta({ description: 'Sum of the section `take` values.' }),
+    questionCount: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: 'Sum of the section `take` values.' }),
     totalMarks: z
       .number()
       .int()
       .min(0)
-      .meta({ description: 'Sum of the section marks (choose-N already in `markBudget`); derived.' }),
+      .meta({
+        description: 'Sum of the section marks (choose-N already in `markBudget`); derived.',
+      }),
     locked: z.boolean().meta({
       description:
         'True once a published paper uses this version: it can never change (edit = new version).',
