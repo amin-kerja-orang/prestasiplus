@@ -39,8 +39,13 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 
 Rules for `contract-only`:
 - The frontend mock is the spec: match the mock handlers' request and response shapes, error codes and BM messages exactly.
-- Run `npm run contract:check` and `npm run contract:emit`.
 - Never edit `packages/contract/src/{common,session,auth,access}/**`; those belong to the LEAD.
+- Recipe (copy the pattern of `packages/contract/src/session/`):
+  1. Schemas in `packages/contract/src/<domain>/schema.ts`; import `z` from `'../zod'`, never from `'zod'`.
+  2. `packages/contract/src/<domain>/paths.ts` exports `<DOMAIN>_COMPONENT_SCHEMAS` and `register<Domain>Paths(registry)` (see `session/paths.ts`).
+  3. Register in `packages/contract/src/openapi.ts`: add the import, `...<DOMAIN>_COMPONENT_SCHEMAS,` inside `COMPONENT_SCHEMAS`, and `register<Domain>Paths(registry)` inside `buildOpenApiDocument()`. Add `export * from './<domain>/schema'` to `src/index.ts`. These shared files take added lines only; on a rebase conflict keep both sides.
+  4. Tests in `packages/contract/src/<domain>/__tests__/<domain>.test.ts` (patterns: `src/access/__tests__/`, `src/__tests__/session.test.ts`): valid mock payloads parse, invalid ones are rejected, and `buildOpenApiDocument()` contains your paths and components.
+  5. `npm run contract:emit`, commit the changed `packages/contract/openapi.json` (never hand-edit it), then `npm run contract:check` and `npm test -- packages/contract` (about 10 seconds).
 
 ### Lead notices (current instructions; newest first)
 
@@ -81,11 +86,14 @@ Then, for the card you take, read its domain sources:
 
 ## 1. Start of session: find your task
 
+First time on this PC? Do the one-time setup in [agent-kickoff/README.md](agent-kickoff/README.md) section 1 (each tool has a one-line check: `node -v`, `docker info`, `gh auth status`).
+
 ```
 git fetch origin --prune
 git switch feature/v2-backend && git pull --ff-only
+git ls-remote --heads origin "be/*"          # existing be/ branches = cards already taken
 gh pr list --base feature/v2-backend --state open --json number,title,headRefName,isDraft
-gh issue list --label lead --state open      # LEAD instructions: do what applies to you first
+gh issue list --label lead --state open      # LEAD instructions; if the label does not exist yet, ignore the error
 ```
 
 1. **Unfinished card of yours first:** if this PC already holds a card (its branch or draft PR, Owner = your PC name), continue it.
@@ -100,13 +108,17 @@ gh issue list --label lead --state open      # LEAD instructions: do what applie
 ## 2. Claim it immediately (before writing code)
 
 ```
-git switch -c be/<card-id>-<slug> origin/feature/v2-backend
-# set the card's tracker row: Status in-progress, Owner <pc-name>/S<n>, Branch
-git commit -am "chore(<card-id>): claim card" && git push -u origin HEAD
-gh pr create --draft --base feature/v2-backend --title "<card-id>: <title>" --label lane:PC-n --body-file <template>
+git switch -c be/<card-id>-<slug> origin/feature/v2-backend     # contract-only: be/<card-id>-contract
+# edit the card's row in docs/plan/backend-tracker.md: Status in-progress, Owner <pc-name>/S<n>, Branch
+git add docs/plan/backend-tracker.md
+git commit -m "chore(<card-id>): claim card" && git push -u origin HEAD
+gh pr create --draft --base feature/v2-backend --title "[PC-n] <card-id>: <title>" --body-file .github/pull_request_template.md
+gh pr edit --add-label lane:PC-n || true     # add `contract` for contract-only; labels may not exist yet, ignore the error
 ```
 
-**The draft PR is the claim.** Other PCs see it within seconds. If `git push` says the branch already exists, someone claimed it first: delete your local branch and go back to section 1.
+`PC-n` is the card's `Lane` column. The `[PC-n]` title prefix always carries the lane, so a missing label costs nothing. Always `git add` explicit paths, never `git commit -a`: the full test run rewrites a tracked snapshot under `src/`, and it must not enter your PR.
+
+**The draft PR is the claim.** Other PCs see it within seconds. If `git push` says the branch already exists, someone claimed it first: delete your local branch and go back to section 1. If `gh` says you are not logged in, run `gh auth login` once; do not skip the PR.
 
 ## 3. While working: commit and push often
 
@@ -118,7 +130,15 @@ gh pr create --draft --base feature/v2-backend --title "<card-id>: <title>" --la
 
 ## 4. End of session (always, even if unfinished)
 
-1. `npm run contract:check && npm run be:verify`, and paste the real output into the PR.
+1. Run the checks that exist for your card and paste the real tail of the output into the PR:
+
+   | Card | Checks |
+   |---|---|
+   | `contract-only` | `npm run contract:check`, `npm test -- packages/contract`, `npm run typecheck` |
+   | `full`, before BE-01 is merged (`be:verify` does not exist yet) | `npm run contract:check`, `npm run typecheck`, `npm test -- <your test folder>` |
+   | `full`, after BE-01 is merged | `npm run contract:check && npm run be:verify` |
+
+   BE-01 creates `be:verify`, `be:test`, `be:db:*` and the `.env.*.example` files; until it merges, do not look for them. `npm run typecheck` needs the generated, git-ignored `auto-imports.d.ts` and `components.d.ts`; a fresh clone gets them from any vitest run, so run `npm test -- packages/contract` first (6 seconds). The full root `npm test` takes 15+ minutes and has a few failures on a clean checkout that are not yours: do not fix them, report only new failures, and run it only if you touched `packages/**` outside `packages/contract`.
 2. Update the card's tracker row on your branch: `in-progress` (unfinished), `review` (verify green, PR marked ready with `gh pr ready`) or `blocked` (one-line reason, plus a GitHub issue labelled `blocked`).
 3. Commit and push. Nothing may be left only on this PC.
 4. Report in 5 lines (to the PC owner, and as a PR comment if the LEAD must act): card, status, PR link, what is left, any question for the LEAD.

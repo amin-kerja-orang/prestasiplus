@@ -328,6 +328,7 @@ Branch `be/<card>-<slug>` from `origin/feature/v2-backend`; claim with a draft P
 ## 12. Useful commands
 
 ```
+# Before BE-01 merges only contract:*, typecheck and test exist (AGENT-SYNC section 4); the be:* scripts below arrive with BE-01.
 npm run contract:emit && npm run contract:check   # after any contract edit
 npm run be:db:migrate && npm run be:db:seed
 npm run be:test -- apps/api/test/<domain>

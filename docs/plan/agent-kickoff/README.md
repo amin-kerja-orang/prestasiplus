@@ -4,24 +4,32 @@ Each backend lane has a paste-ready prompt: [PC-1](PC-1.md) Foundation to Identi
 
 ## 0. Before anyone starts (lead, once)
 
-The lead completes sync point S0 ([../sessions.md](../sessions.md) section 2): `feature/v2-backend` exists on GitHub with the plan, branch protection is on, each collaborator has write access to branches `be/*`, and the open decisions OD-1, OD-3, OD-12, OD-19 are answered. Nobody starts a lane before S0.
+The lead completes sync point S0 ([../sessions.md](../sessions.md) section 2): `feature/v2-backend` exists on GitHub with the plan, branch protection is on, each collaborator has write access to branches `be/*`, the open decisions OD-1, OD-3, OD-12, OD-19 are answered, and the labels exist (`bash scripts/gh-labels.sh`, idempotent). Nobody starts a lane before S0.
 
 **Short rules for every agent session: [../AGENT-SYNC.md](../AGENT-SYNC.md)** (find a task, claim it with a draft PR, push hourly and at session end).
 
 ## 1. One-time setup on a new PC
 
-Requirements: Git, Node 22.22.2 or newer (see `engines` in `package.json` and `.nvmrc`), Docker Desktop with Compose v2 (needed for PostgreSQL and Testcontainers), Claude Code installed and signed in, GitHub access to `github.com/amin-kerja-orang/prestasiplus`.
+Requirements, each with a one-line check:
+
+| Need | Check | Fix |
+|---|---|---|
+| Git | `git --version` | install Git |
+| Node per `.nvmrc` (22.22.2 or newer; `engines` in `package.json`) | `node -v` | `nvm use` / install from nodejs.org |
+| Docker Desktop with Compose v2, running (only needed from BE-01 on: PostgreSQL, Testcontainers) | `docker info` | start Docker Desktop |
+| GitHub CLI, logged in with write access to `github.com/amin-kerja-orang/prestasiplus` | `gh auth status` | `gh auth login` |
+| Claude Code, signed in | `claude --version` | install and sign in |
 
 ```
-git clone https://github.com/amin-kerja-orang/prestasiplus.git
+git clone --branch feature/v2-backend https://github.com/amin-kerja-orang/prestasiplus.git
 cd prestasiplus
-git fetch origin
-git switch feature/v2-backend
-node -v                      # must satisfy engines
-npm ci                       # installs every workspace
-npm run contract:check       # must pass on a clean checkout
-npm run typecheck && npm test   # frontend baseline must be green first
+npm ci                          # installs every workspace (5 to 6 minutes)
+npm run contract:check          # must print "contract:check ok"
+npm test -- packages/contract   # 77 tests, 6 seconds; also generates auto-imports.d.ts that typecheck needs
+npm run typecheck               # must be green (it can take 15 minutes on a busy PC)
 ```
+
+Do not run the full `npm test` as a gate: it takes 15+ minutes and a few tests fail on a clean checkout. The tool checks above are all you need before claiming a card; `be:verify`, `be:test`, `be:db:*` and the `.env.*.example` files do not exist until BE-01 merges.
 
 Once BE-01 and BE-02 are merged (PC-1 does them first):
 
@@ -67,7 +75,7 @@ git fetch origin
 git rebase origin/feature/v2-backend     # on your own be/ branch
 npm ci                                    # only if package-lock.json changed
 npm run contract:check
-npm run be:verify
+npm run be:verify                         # after BE-01 merges; before that see AGENT-SYNC section 4
 git push --force-with-lease               # your own branch only
 ```
 
